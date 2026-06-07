@@ -21,10 +21,13 @@ import {
 import { Writer } from 'n3';
 
 import { Compose } from '../../src/modules/composition/Compose.js';
-import { JsonTology } from '../../src/index.js';
+import {
+  JsonTology, Skolemize
+} from '../../src/index.js';
 import { MaterializationError } from '../../src/errors/MaterializationError.js';
 import { isRecord } from '../../src/modules/data/DataTypes.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { SkolemizeFnType } from '../../src/types/Skolemize.js';
 
 type TripleTermQuad = QuadInterface & { 'subject': QuadInterface };
 
@@ -290,6 +293,152 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
     assert.match(turtle, /ratingGiven>\s+5\b/u);
   });
 
+  // ---------------------------------------------------------------------------
+  // Depth-gated iriFor: nested-object annotated-edge target minted at depth+1
+  // ---------------------------------------------------------------------------
+  //
+  // BUG (pre-fix): resolveEdgeTargetIri called minter.mint(..., 0) for nested-
+  // object targets.  A depth-gated iriFor that returns a ROOT IRI only at
+  // depth===0 would therefore receive depth===0 for BOTH the root instance AND
+  // the edge target, collapsing them onto the same IRI.
+  //
+  // FIX: the call site now passes `depth + 1`, so the iriFor callback sees
+  // depth > 0 for the nested target and can return a distinct IRI.
+  //
+  // This test FAILS against the old `…, 0)` call and PASSES with `depth + 1`.
+
+  void describe('annotated-edge nested-object target is minted at depth+1 (fix: was hardcoded 0)', () => {
+    // Schemas for Citation -> cites -> Article with a confidence annotation.
+    const ArticleSchema = {
+      '$id': 'urn:test:Article',
+      'properties': { 'title': { 'type': 'string' } },
+      'required': ['title'],
+      'type': 'object'
+    } as const;
+
+    const ConfidenceSchema = {
+      '$id': 'urn:test:Confidence',
+      'maximum': 1,
+      'minimum': 0,
+      'type': 'number'
+    } as const;
+
+    const CitesArticleEdge = Compose.annotatedEdge({
+      'annotations': { 'confidence': { '$ref': 'urn:test:Confidence' } },
+      'predicate': 'https://test.example/cites',
+      'targetRef': 'urn:test:Article'
+    });
+
+    const CitationSchema = {
+      '$id': 'urn:test:Citation',
+      'properties': {
+        'article': CitesArticleEdge,
+        'citationId': { 'type': 'string' }
+      },
+      'required': ['citationId'],
+      'type': 'object'
+    } as const;
+
+    const CITATION_GRAPH = 'https://test.example/graph/citations';
+    const ROOT_IRI = 'https://test.example/instances/root-citation';
+    const NESTED_IRI = 'https://test.example/instances/nested-article';
+
+    // iriFor branches on depth: root instance gets ROOT_IRI, nested target gets NESTED_IRI.
+    const depthGatedIriFor: SkolemizeFnType = (ctx) => {
+      if (ctx.depth === 0) {
+        return ROOT_IRI;
+      }
+
+      return NESTED_IRI;
+    };
+
+    function freshCitationJt(): ReturnType<typeof JsonTology.create> {
+      const jt = JsonTology.create({
+        'baseIRI': 'https://test.example',
+        'enableStrictGraph': false
+      });
+
+      jt.set(ArticleSchema);
+      jt.set(ConfidenceSchema);
+      jt.set(CitationSchema);
+
+      return jt;
+    }
+
+    void it('nested-object target receives depth+1 — base triple object is NESTED_IRI, not ROOT_IRI', () => {
+      const jt = freshCitationJt();
+
+      // The target is a NESTED OBJECT (no @id/id) — must be minted via iriFor.
+      const instance = {
+        'article': {
+          'annotations': { 'confidence': 0.9 },
+          'target': { 'title': 'Example Article' }
+        },
+        'citationId': 'cit-001'
+      };
+
+      const quads = jt.toQuads(CitationSchema, instance, {
+        'graphIRI': CITATION_GRAPH,
+        'iriFor': depthGatedIriFor
+      });
+
+      const baseTriples = quads.filter((quad) => {
+        return quad.predicate.value === 'https://test.example/cites'
+          && quad.subject.termType === 'NamedNode';
+      });
+
+      assert.equal(baseTriples.length, 1, 'exactly one base triple for the annotated edge');
+
+      const objectIri = baseTriples[0].object.value;
+
+      // With the fix (depth+1): iriFor is called with depth>0 → returns NESTED_IRI.
+      // Without the fix (depth 0): iriFor is called with depth===0 → returns ROOT_IRI.
+      assert.equal(
+        objectIri,
+        NESTED_IRI,
+        `base triple object must be the nested-target IRI (${NESTED_IRI}), not the root IRI (${ROOT_IRI})`
+      );
+
+      assert.notEqual(
+        objectIri,
+        ROOT_IRI,
+        'base triple object must NOT collapse onto the root subject IRI'
+      );
+    });
+
+    void it('string target on an annotated edge is returned verbatim (regression guard)', () => {
+      const jt = freshCitationJt();
+
+      const EXPLICIT_ARTICLE_IRI = 'urn:test:instances/article/well-known';
+      const instance = {
+        'article': {
+          'annotations': { 'confidence': 0.8 },
+          'target': EXPLICIT_ARTICLE_IRI
+        },
+        'citationId': 'cit-002'
+      };
+
+      const quads = jt.toQuads(CitationSchema, instance, {
+        'graphIRI': CITATION_GRAPH,
+        'iriFor': depthGatedIriFor
+      });
+
+      const baseTriples = quads.filter((quad) => {
+        return quad.predicate.value === 'https://test.example/cites'
+          && quad.subject.termType === 'NamedNode';
+      });
+
+      assert.equal(baseTriples.length, 1, 'exactly one base triple for the string-target edge');
+
+      // String targets bypass iriFor entirely; the literal IRI is used as-is.
+      assert.equal(
+        baseTriples[0].object.value,
+        EXPLICIT_ARTICLE_IRI,
+        'string target is passed through verbatim regardless of iriFor'
+      );
+    });
+  });
+
   void it('every emitted predicate IRI (including triple-term annotation quads) has at most one #', () => {
     const jt = freshJt();
     const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
@@ -385,5 +534,344 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     assert.ok(isRecord(liftedAnnotations), 'annotations present after round-trip');
     assert.equal(liftedAnnotations.ratingValue, 4, 'ratingValue annotation survives round-trip');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Nested-object target (minter path)
+  // Exercises resolveEdgeTargetIri branches where target is a record, covering
+  // @id/@id bypass, IRI minting strategies, and the depth regression.
+  // ---------------------------------------------------------------------------
+
+  void describe('nested-object target (minter path)', () => {
+    // Happy: @id present → bypasses minting entirely
+    void it('@id field on record target bypasses minting and uses that IRI directly', () => {
+      const jt = freshJt();
+      const instance = {
+        'book': {
+          'annotations': {
+            'ratingGiven': 4,
+            'verifiedPurchase': false
+          },
+          'target': {
+            '@id': BOOK_IRI,
+            'title': 'Dune'
+          }
+        },
+        'reviewId': 'rev-at-id'
+      };
+
+      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+      const baseTriple = quads.find((quad) => {
+        return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
+      });
+
+      assert.ok(baseTriple, 'base triple emitted');
+      assert.equal(baseTriple.object.value, BOOK_IRI, 'target IRI taken from @id field, not minted');
+    });
+
+    // Happy: id present → bypasses minting
+    void it('id field on record target bypasses minting and uses that IRI directly', () => {
+      const jt = freshJt();
+      const instance = {
+        'book': {
+          'annotations': {
+            'ratingGiven': 3,
+            'verifiedPurchase': true
+          },
+          'target': { 'id': BOOK_IRI }
+        },
+        'reviewId': 'rev-id-field'
+      };
+
+      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+      const baseTriple = quads.find((quad) => {
+        return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
+      });
+
+      assert.ok(baseTriple, 'base triple emitted');
+      assert.equal(baseTriple.object.value, BOOK_IRI, 'target IRI taken from id field, not minted');
+    });
+
+    // Happy: @id round-trips through fromQuads as a string IRI
+    void it('@id target round-trips through fromQuads as a string IRI', () => {
+      const jt = freshJt();
+      const instance = {
+        'book': {
+          'annotations': {
+            'ratingGiven': 5,
+            'verifiedPurchase': true
+          },
+          'target': {
+            '@id': BOOK_IRI,
+            'extra': 'ignored'
+          }
+        },
+        'reviewId': 'rev-at-id-rt'
+      };
+
+      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+      const lifted = jt.fromQuads(ReviewSchema, quads);
+
+      assert.equal(lifted.length, 1);
+
+      const edge = (lifted[0] as Record<string, unknown>).book;
+
+      assert.ok(isRecord(edge), 'edge present');
+      assert.equal(edge.target, BOOK_IRI, 'target round-trips as string IRI');
+    });
+
+    // Happy: no @id/id → IRI minted from property value via Skolemize.fromProperty
+    void it('mints target IRI from a property value via Skolemize.fromProperty', () => {
+      const BASE = 'https://bookstore.example';
+      const BOOK_TITLE = 'Dune';
+      const jt = freshJt();
+      const instance = {
+        'book': {
+          'annotations': {
+            'ratingGiven': 5,
+            'verifiedPurchase': true
+          },
+          'target': { 'title': BOOK_TITLE }
+        },
+        'reviewId': 'rev-from-prop'
+      };
+
+      const quads = jt.toQuads(ReviewSchema, instance, {
+        'graphIRI': REVIEWS_GRAPH,
+        'iriFor': Skolemize.fromProperty('title', { 'baseIRI': BASE })
+      });
+      const baseTriple = quads.find((quad) => {
+        return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
+      });
+
+      assert.ok(baseTriple, 'base triple emitted');
+      assert.ok(
+        baseTriple.object.value.includes(encodeURIComponent(BOOK_TITLE)),
+        `target IRI contains encoded title — got: ${baseTriple.object.value}`
+      );
+      assert.notEqual(
+        baseTriple.subject.value,
+        baseTriple.object.value,
+        'root subject IRI and target IRI are distinct'
+      );
+    });
+
+    // Happy: no @id/id → IRI minted via Skolemize.hash, distinct from root
+    void it('mints target IRI via Skolemize.hash — distinct from root subject IRI', () => {
+      const BASE = 'https://bookstore.example';
+      const jt = freshJt();
+      const instance = {
+        'book': {
+          'annotations': {
+            'ratingGiven': 2,
+            'verifiedPurchase': false
+          },
+          'target': {
+            'isbn': '978-0-553-80371-0',
+            'title': 'Foundation'
+          }
+        },
+        'reviewId': 'rev-hash'
+      };
+
+      const quads = jt.toQuads(ReviewSchema, instance, {
+        'graphIRI': REVIEWS_GRAPH,
+        'iriFor': Skolemize.hash({ 'baseIRI': BASE })
+      });
+      const baseTriple = quads.find((quad) => {
+        return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
+      });
+
+      assert.ok(baseTriple, 'base triple emitted');
+      const targetIRI = baseTriple.object.value;
+
+      // Verify the target IRI is scoped to BASE with a path separator, preventing
+      // bare prefix matches like https://bookstore.example.other.com.
+      assert.ok(
+        targetIRI === BASE || targetIRI.startsWith(`${BASE}/`),
+        `target IRI must be equal to or a path under baseIRI — got: ${targetIRI}`
+      );
+      assert.notEqual(baseTriple.subject.value, baseTriple.object.value, 'root and target IRIs are distinct');
+    });
+
+    // Regression: depth passed to iriFor must be ≥ 1 for nested object targets.
+    // Before the fix, resolveEdgeTargetIri hardcoded depth: 0, so every nested
+    // object target appeared to be the root — iriFor saw depth 0 for all objects.
+    void it('passes depth ≥ 1 to iriFor for a nested object target (regression: was hardcoded 0)', () => {
+      const jt = freshJt();
+      const capturedDepths: number[] = [];
+      const iriFor: SkolemizeFnType = (ctx) => {
+        capturedDepths.push(ctx.depth);
+
+        return;
+      };
+
+      const instance = {
+        'book': {
+          'annotations': {
+            'ratingGiven': 5,
+            'verifiedPurchase': true
+          },
+          'target': { 'title': 'The Left Hand of Darkness' }
+        },
+        'reviewId': 'rev-depth'
+      };
+
+      jt.toQuads(ReviewSchema, instance, {
+        'graphIRI': REVIEWS_GRAPH,
+        iriFor
+      });
+
+      assert.ok(
+        capturedDepths.some((depth) => {
+          return depth >= 1;
+        }),
+        `iriFor was never called with depth ≥ 1; depths seen: [${capturedDepths.join(', ')}]`
+      );
+
+      const nestedCalls = capturedDepths.filter((depth) => {
+        return depth >= 1;
+      });
+
+      assert.equal(nestedCalls.length, 1, 'exactly one nested-target iriFor call');
+    });
+
+    // Regression (behavioural): a depth-sensitive iriFor must not collapse the
+    // target IRI onto the root subject IRI. With depth hardcoded to 0, the
+    // root-only strategy returned the same IRI for both, making the base triple
+    // self-referential (subject === object).
+    void it('target IRI does not collapse onto root subject IRI when iriFor is depth-sensitive', () => {
+      const ROOT_IRI = 'https://bookstore.example/reviews/rev-depth-fix';
+      const jt = freshJt();
+      const instance = {
+        'book': {
+          'annotations': {
+            'ratingGiven': 5,
+            'verifiedPurchase': true
+          },
+          'target': { 'title': 'The Name of the Wind' }
+        },
+        'reviewId': 'rev-depth-fix'
+      };
+
+      // Returns ROOT_IRI only at depth 0 (the root instance); returns undefined
+      // for anything deeper, letting the default content-hash minter take over.
+      const iriFor: SkolemizeFnType = (ctx) => {
+        return ctx.depth === 0 ? ROOT_IRI : undefined;
+      };
+
+      const quads = jt.toQuads(ReviewSchema, instance, {
+        'graphIRI': REVIEWS_GRAPH,
+        iriFor
+      });
+      const baseTriple = quads.find((quad) => {
+        return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
+      });
+
+      assert.ok(baseTriple, 'base triple emitted');
+      assert.equal(baseTriple.subject.value, ROOT_IRI, 'root subject carries the depth-0 IRI');
+      assert.notEqual(
+        baseTriple.object.value,
+        ROOT_IRI,
+        'target IRI must not collapse onto root subject IRI'
+      );
+    });
+
+    // Edge: two distinct nested object targets produce two distinct IRIs
+    void it('two distinct nested object targets produce distinct minted IRIs', () => {
+      const BASE = 'https://bookstore.example';
+      const SecondEdge = Compose.annotatedEdge({
+        'annotations': {
+          'ratingGiven': { '$ref': 'urn:bookstore:RatingScore' },
+          'verifiedPurchase': { '$ref': 'urn:bookstore:VerifiedPurchase' }
+        },
+        'predicate': 'https://bookstore.example/alsoReviews',
+        'targetRef': 'urn:bookstore:Book'
+      });
+
+      const DualReviewSchema = {
+        '$id': 'urn:bookstore:DualReview',
+        'properties': {
+          'book1': ReviewsBookEdge,
+          'book2': SecondEdge,
+          'reviewId': { 'type': 'string' }
+        },
+        'required': ['reviewId'],
+        'type': 'object'
+      } as const;
+
+      const jt = JsonTology.create({
+        'baseIRI': BASE,
+        'enableStrictGraph': false
+      });
+
+      jt.set(BookSchema);
+      jt.set(RatingScoreSchema);
+      jt.set(VerifiedPurchaseSchema);
+      jt.set(DualReviewSchema);
+
+      const instance = {
+        'book1': {
+          'annotations': {
+            'ratingGiven': 5,
+            'verifiedPurchase': true
+          },
+          'target': { 'title': 'Dune' }
+        },
+        'book2': {
+          'annotations': {
+            'ratingGiven': 3,
+            'verifiedPurchase': false
+          },
+          'target': { 'title': 'Foundation' }
+        },
+        'reviewId': 'rev-dual'
+      };
+
+      const quads = jt.toQuads(DualReviewSchema, instance, {
+        'graphIRI': REVIEWS_GRAPH,
+        'iriFor': Skolemize.fromProperty('title', { 'baseIRI': BASE })
+      });
+
+      const baseTriples = quads.filter((quad) => {
+        return (
+          quad.subject.termType === 'NamedNode'
+          && (quad.predicate.value === 'https://bookstore.example/reviews'
+            || quad.predicate.value === 'https://bookstore.example/alsoReviews')
+        );
+      });
+
+      assert.equal(baseTriples.length, 2, 'two base triples emitted');
+
+      const objectIris = baseTriples.map((quad) => {
+        return quad.object.value;
+      });
+
+      assert.notEqual(objectIris[0], objectIris[1], 'distinct targets produce distinct IRIs');
+    });
+
+    // Edge: missing annotations object emits base triple only, no annotation quads
+    void it('empty annotations object emits base triple only — no triple-term quads', () => {
+      const jt = freshJt();
+      const instance = {
+        'book': {
+          'annotations': {},
+          'target': BOOK_IRI
+        },
+        'reviewId': 'rev-no-ann'
+      };
+
+      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+
+      const baseTriples = quads.filter((quad) => {
+        return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
+      });
+      const annotationQuads = quads.filter((quad) => {
+        return quad.subject.termType === 'Quad';
+      });
+
+      assert.equal(baseTriples.length, 1, 'one base triple emitted');
+      assert.equal(annotationQuads.length, 0, 'no triple-term quads when annotations is empty');
+    });
   });
 });

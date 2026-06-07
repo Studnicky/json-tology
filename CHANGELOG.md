@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.2] - 2026-06-07
+
+Fixes annotated-edge nested-object IRI generation: `resolveEdgeTargetIri` was
+passing a hardcoded depth of `0` to the minter for nested-object targets, causing
+all such nodes to receive root-level Skolem/hash IRIs regardless of their actual
+nesting depth. The correct `depth + 1` is now threaded through the call chain.
+
+### Fixed
+
+- **`resolveEdgeTargetIri` depth regression — annotated-edge nested objects.**
+  `Projection.resolveEdgeTargetIri` now passes `depth + 1` to `minter.mint` for
+  nested-object edge targets instead of the hardcoded `0`. `depth` is added to
+  `ProjectAnnotatedEdgeArgs` and `ResolveEdgeTargetIriArgs` and threaded through
+  the full call chain. Fixes IRI collapse when two annotated-edge targets produce
+  different object shapes at different nesting levels.
+
 ## [0.20.1] - 2026-06-05
 
 `allOf` cross-branch default pre-pass: a required field declared in one branch whose

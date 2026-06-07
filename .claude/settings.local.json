@@ -103,7 +103,26 @@
       "Bash(/usr/bin/head -10)",
       "Bash(/usr/bin/grep \"^/\")",
       "Bash(/usr/bin/head -3)",
-      "Bash(/usr/bin/git push *)"
+      "Bash(/usr/bin/git push *)",
+      "Bash(python3 *)",
+      "Read(//Users/studs/**)",
+      "Read(//Users/studs/Workspace/**)",
+      "Bash(cat src/interfaces/ValidationReportInterface.ts)",
+      "Bash(cat src/interfaces/ViolationInterface.ts)",
+      "Bash(cat src/types/SeverityType.ts)",
+      "Bash(sed -n '1,120p' src/response/buildFromRdf.ts)",
+      "Bash(cp /Users/studs/Workspace/json-tology/docs/public/data/bookstore-graph.json /tmp/bookstore-graph.json.bak)",
+      "Bash(cp /tmp/bookstore-graph.json.bak /Users/studs/Workspace/json-tology/docs/public/data/bookstore-graph.json)",
+      "Bash(xargs -I{} basename {} .ts)",
+      "Bash(perl -pi -e 's/\\\\bq\\\\./quad./g; s/\\\\br\\\\./result./g;' test/integration/validateWithShacl.test.ts test/unit/shaclValidator.test.ts)",
+      "Bash(perl -pi -e 's/\\\\bv\\\\b/violation/g;' test/integration/validateWithShacl.test.ts test/unit/shaclValidator.test.ts)",
+      "Bash(enginseer session *)",
+      "Bash(archivum git:release *)",
+      "Bash(archivum --help)",
+      "Bash(gh pr *)",
+      "Bash(archivum git:github-release *)",
+      "Bash(gh release *)",
+      "Bash(gh run *)"
     ]
   }
 }
