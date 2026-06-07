@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.2] - 2026-06-07
+
 Fixes annotated-edge nested-object IRI generation: `resolveEdgeTargetIri` was
 passing a hardcoded depth of `0` to the minter for nested-object targets, causing
 all such nodes to receive root-level Skolem/hash IRIs regardless of their actual
