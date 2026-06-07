@@ -761,6 +761,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgs): void {
   if (annotatedEdge !== undefined) {
     projectAnnotatedEdge({
       curie,
+      depth,
       'edge': annotatedEdge,
       graphTerm,
       'instanceIri': instIRI,
@@ -867,6 +868,7 @@ function projectInstance(args: ProjectInstanceArgs): string {
 
 interface ProjectAnnotatedEdgeArgs {
   readonly 'curie': CurieInterface | undefined;
+  readonly 'depth': number;
   readonly 'edge': AnnotatedEdgeStructure;
   readonly 'graphTerm': DefaultGraphTermType | IriTermType;
   readonly 'instanceIri': string;
@@ -904,6 +906,7 @@ function findAnnotatedEdgeStructure(
  * - a nested instance object — minted via the IRI minter.
  */
 interface ResolveEdgeTargetIriArgs {
+  readonly 'depth': number;
   readonly 'edge': AnnotatedEdgeStructure;
   readonly 'minter': IriMinterInterface;
   readonly 'path': string;
@@ -912,7 +915,7 @@ interface ResolveEdgeTargetIriArgs {
 
 function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgs): string {
   const {
-    edge, minter, path, target
+    depth, edge, minter, path, target
   } = args;
 
   if (typeof target === 'string') {
@@ -926,7 +929,7 @@ function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgs): string {
       return idValue;
     }
 
-    return minter.mint(edge.edgeTarget, target, `${path}/target`, 0);
+    return minter.mint(edge.edgeTarget, target, `${path}/target`, depth + 1);
   }
 
   return String(target);
@@ -1047,7 +1050,7 @@ function emitAnnotationQuads(args: EmitAnnotationQuadsArgs): void {
 
 function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
   const {
-    curie, edge, graphTerm, instanceIri, minter, path, predicateResolver, quadOpts, quads, sourceId, value
+    curie, depth, edge, graphTerm, instanceIri, minter, path, predicateResolver, quadOpts, quads, sourceId, value
   } = args;
 
   if (graphTerm.termType === 'DefaultGraph') {
@@ -1073,6 +1076,7 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
   }
 
   const targetIri = resolveEdgeTargetIri({
+    depth,
     edge,
     minter,
     path,
