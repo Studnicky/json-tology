@@ -83,7 +83,7 @@ All error classes and ValidationErrors are defined in `src/errors/`. Import each
 - `CoercionError` — coercion validation failures (carries `ValidationErrors` collection)
 
 **Shared utilities in `src/modules/data/DataTypes.ts`**
-Type guards (`isRecord`, `isPlainObject`), `deepEqual`, XSD type maps/resolvers, and `propertyIri` live here. Do not duplicate these — import from DataTypes.
+Type guards (`isRecord`, `isPlainObject`), `deepEqual`, and XSD type maps/resolvers live here. Do not duplicate these — import from DataTypes. Graph-identity helpers live on `SchemaIri` (`propertyIri`, `parseRef`, `splitSubject`); deep freezing on `Frozen.deepFreeze`; CURIE expansion/compaction on `Curie`.
 
 **Serializers are thin wrappers over projection + formatting**
 `GraphOntologySerializer` and `GraphShaclSerializer` delegate to `src/modules/rdf/OwlProjection.ts` and `src/modules/rdf/ShaclProjection.ts` respectively. Projections read `graph.allRelations()` and emit vocabulary-specific quads. `src/modules/rdf/JsonLdFormatter.ts` converts quads to JSON-LD nodes. Serializers only add post-processing normalization (e.g. `ensureArray`, `normalizeArrays`).

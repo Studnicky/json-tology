@@ -7,7 +7,7 @@ import { Transform } from '../transform/Transform.js';
 import { EncodeError } from '../../errors/EncodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
 
 const graphTransformCache = new WeakMap<SchemaGraphInterface, boolean>();
 
@@ -382,7 +382,7 @@ export class Dumper {
       };
     }
 
-    const parsed = GraphEngineSupport.parseRef(ref);
+    const parsed = SchemaIri.parseRef(ref);
     const lookedUp = registry.graphEntry(parsed.id);
 
     if (lookedUp === undefined) {

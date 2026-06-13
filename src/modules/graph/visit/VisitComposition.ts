@@ -8,10 +8,9 @@ import type { DynamicScopeEntryInterface } from '../../../interfaces/DynamicScop
 import type { InternalExecutionResultInterface } from '../../../interfaces/InternalExecutionResult.js';
 import type { VisitContextInterface } from '../../../interfaces/VisitContext.js';
 import { GraphEngineSupport } from '../GraphEngineSupport.js';
+import type { VariantEntryInterface } from '../../../interfaces/VariantEntry.js';
 
-interface VariantEntry { 'node': SchemaGraphNodeInterface;
-  'sem': ReturnType<SchemaGraphInterface['semantics']> }
-const oneOfVariantCache = new WeakMap<SchemaGraphNodeInterface[], VariantEntry[]>();
+const oneOfVariantCache = new WeakMap<SchemaGraphNodeInterface[], VariantEntryInterface[]>();
 
 export class VisitComposition {
   static allOf(

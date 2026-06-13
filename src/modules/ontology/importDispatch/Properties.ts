@@ -30,12 +30,22 @@ import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-import {
-  OWL, RDF, RDFS
-} from '../../../constants/IRI.js';
-import { XSD_TO_JSON_SCHEMA } from '../../../constants/XSD_REVERSE_MAPS.js';
 import type { XsdJsonSchemaPrimitiveInterface } from '../../../interfaces/XsdJsonSchemaPrimitiveInterface.js';
+import type { PropIndexEntry } from '../../../interfaces/PropIndexEntry.js';
+import type { PropertyCollectionMaps } from '../../../interfaces/PropertyCollectionMaps.js';
+import type { ApplyPropertyArgs } from '../../../interfaces/ApplyPropertyArgs.js';
+import type { PropertyIndexValue } from '../../../interfaces/PropertyIndexValue.js';
+import { RDF } from '../../../constants/IRI.js';
+import { XSD_TO_JSON_SCHEMA } from '../../../constants/XSD_REVERSE_MAPS.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
+import {
+  DATATYPE_PROPERTY_TYPES,
+  DOMAIN_PREDICATES,
+  INVERSE_OF_PREDICATES,
+  OBJECT_PROPERTY_TYPES,
+  RANGE_PREDICATES,
+  SUB_PROPERTY_PREDICATES
+} from '../../../constants/ONTOLOGY_PREDICATES.js';
 
 // ---------------------------------------------------------------------------
 // XSD IRI → JSON Schema { type, format? } reverse map — imported from constants
@@ -78,95 +88,12 @@ function localNameOf(propertyIri: string): string {
   return propertyIri;
 }
 
-// ---------------------------------------------------------------------------
-// Predicate constants — accept full IRI and CURIE forms both
-// ---------------------------------------------------------------------------
-
-const OBJECT_PROPERTY_TYPES: ReadonlySet<string> = new Set([
-  OWL.ObjectProperty,
-  'owl:ObjectProperty'
-]);
-
-const DATATYPE_PROPERTY_TYPES: ReadonlySet<string> = new Set([
-  OWL.DatatypeProperty,
-  'owl:DatatypeProperty'
-]);
-
-const DOMAIN_PREDICATES: ReadonlySet<string> = new Set([
-  RDFS.domain,
-  'rdfs:domain'
-]);
-
-const RANGE_PREDICATES: ReadonlySet<string> = new Set([
-  RDFS.range,
-  'rdfs:range'
-]);
-
-const SUB_PROPERTY_PREDICATES: ReadonlySet<string> = new Set([
-  RDFS.subPropertyOf,
-  'rdfs:subPropertyOf'
-]);
-
-const INVERSE_OF_PREDICATES: ReadonlySet<string> = new Set([
-  OWL.inverseOf,
-  'owl:inverseOf'
-]);
-
 /** Compact form of the RDF List IRI. */
 const RDF_LIST_CURIE = 'rdf:List';
 
 // ---------------------------------------------------------------------------
-// Index types
-// ---------------------------------------------------------------------------
-
-/** Internal per-property accumulator built during the graph traversal pass. */
-interface PropIndexEntry {
-  readonly 'domains': string[];
-  readonly 'inverseOf': string[];
-  readonly 'propertyIri': string;
-  readonly 'range': null | string;
-  readonly 'subPropertyOf': string[];
-  readonly 'type': 'datatype' | 'object';
-}
-
-// ---------------------------------------------------------------------------
-// IRI resolution helper
-// ---------------------------------------------------------------------------
-
-/**
- * Expand a target IRI or CURIE to a full IRI using the context curie handler.
- *
- * QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
- * map. Expand them back so downstream class-IRI / datatype membership checks
- * (which operate on full IRIs) match the rest of the importer pipeline.
- */
-function resolveTargetIri(target: string | { 'id': string }, ctx: OwlImportContext): string {
-  const raw = typeof target === 'string' ? target : target.id;
-
-  if (raw === '' || raw.startsWith('_:') || raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('urn:')) {
-    return raw;
-  }
-
-  // Treat as CURIE — expand. If no prefix matches, returns raw unchanged.
-  return ctx.curie.expand(raw);
-}
-
-// ---------------------------------------------------------------------------
 // Phase 1: collect property declarations from graph relations
 // ---------------------------------------------------------------------------
-
-/** Intermediate collection maps produced by the single traversal pass. */
-interface PropertyCollectionMaps {
-  readonly 'domainsByProperty': Map<string, string[]>;
-  readonly 'inverseOf': Map<string, string[]>;
-  readonly 'propertyIndex': Map<string, { 'domains': string[];
-    'inverseOf': string[];
-    'range': null | string;
-    'subPropertyOf': string[];
-    'type': 'datatype' | 'object' }>;
-  readonly 'rangeByProperty': Map<string, string>;
-  readonly 'subPropertyOf': Map<string, string[]>;
-}
 
 /** Push `value` into `map[key]` deduplicating entries. */
 function pushUnique(map: Map<string, string[]>, key: string, value: string): void {
@@ -184,11 +111,7 @@ function pushUnique(map: Map<string, string[]>, key: string, value: string): voi
 
 /** Record an object-property type declaration in the property index. */
 function indexPropertyType(
-  propertyIndex: Map<string, { 'domains': string[];
-    'inverseOf': string[];
-    'range': null | string;
-    'subPropertyOf': string[];
-    'type': 'datatype' | 'object' }>,
+  propertyIndex: Map<string, PropertyIndexValue>,
   subjectIri: string,
   propType: 'datatype' | 'object'
 ): void {
@@ -205,11 +128,7 @@ function indexPropertyType(
 
 /** Handle an rdf:type relation — record object or datatype property declarations. */
 function handleTypeRelation(
-  propertyIndex: Map<string, { 'domains': string[];
-    'inverseOf': string[];
-    'range': null | string;
-    'subPropertyOf': string[];
-    'type': 'datatype' | 'object' }>,
+  propertyIndex: Map<string, PropertyIndexValue>,
   subjectIri: string,
   targetIri: string
 ): void {
@@ -226,11 +145,7 @@ function handleTypeRelation(
  * separate maps for later merging.
  */
 function collectPropertyDeclarations(ctx: OwlImportContext): PropertyCollectionMaps {
-  const propertyIndex = new Map<string, { 'domains': string[];
-    'inverseOf': string[];
-    'range': null | string;
-    'subPropertyOf': string[];
-    'type': 'datatype' | 'object' }>();
+  const propertyIndex = new Map<string, PropertyIndexValue>();
   const domainsByProperty = new Map<string, string[]>();
   const rangeByProperty = new Map<string, string>();
   const subPropertyOf = new Map<string, string[]>();
@@ -239,7 +154,8 @@ function collectPropertyDeclarations(ctx: OwlImportContext): PropertyCollectionM
   for (const relation of ctx.graph.allRelations()) {
     const subjectIri = relation.source.id;
     const predicate = relation.predicate;
-    const targetIri = resolveTargetIri(relation.target, ctx);
+    const raw = typeof relation.target === 'string' ? relation.target : relation.target.id;
+    const targetIri = ctx.curie.expandIfNeeded(raw);
 
     if (predicate === RDF.type) {
       handleTypeRelation(propertyIndex, subjectIri, targetIri);
@@ -383,14 +299,6 @@ function resolvePropertyShape(
 // ---------------------------------------------------------------------------
 // Phase 3b: apply property shape to every domain class
 // ---------------------------------------------------------------------------
-
-/** Arguments for {@link applyPropertyToDomains}. */
-interface ApplyPropertyArgs {
-  readonly 'domains': string[];
-  readonly 'propertyIri': string;
-  readonly 'propShape': null | Record<string, unknown>;
-  readonly 'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
-}
 
 /**
  * Update `schemaDeltas` for each class in `domains` with the property shape.

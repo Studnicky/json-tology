@@ -37,6 +37,7 @@ import { brand } from '../../types/Brand.js';
 import type {
   CanonicalShapeType
 } from '../../types/Infer.js';
+import type { JsonTologyReferencesInterface } from '../../types/SchemaReferences.js';
 import type { TransformFnsInterface } from '../../interfaces/TransformFns.js';
 import type {
   AnyTransformStageInterface,
@@ -151,7 +152,7 @@ export class Transform {
   public static create<
     TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
     TWire = unknown,
-    TReferences = Record<never, never>
+    TReferences = JsonTologyReferencesInterface
   >(
     schema: TSchema,
     fns: {
@@ -160,10 +161,12 @@ export class Transform {
       // canonical, branded form. `encode` is the inverse. The schema describes
       // `decode`'s OUTPUT, so validation runs on the decoded result.
       //
-      // `TReferences` is the optional ref-resolving canonical path: supply a
-      // schema-references map so a `$ref`-bearing (or composed) schema resolves
-      // its canonical output type instead of degrading to `RefNotFound`. It
-      // defaults to the empty map, preserving the standalone behaviour.
+      // `TReferences` is the ref-resolving canonical path: a `$ref`-bearing (or
+      // composed) schema resolves its canonical output type instead of degrading
+      // to `RefNotFound`. It defaults to the global, consumer-augmentable
+      // `JsonTologyReferencesInterface`, so a transform authored against
+      // registered schemas resolves cross-refs auto-magically — the same default
+      // as `CanonicalShapeType`/`InferType`. Pass an explicit map to override.
       //
       // Both sides speak the brand-free structural canonical (`CanonicalShapeType`):
       // `decode` produces plain values (no per-leaf `brand()`), and `validate`

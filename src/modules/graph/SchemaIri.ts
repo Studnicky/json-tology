@@ -35,6 +35,18 @@ export class SchemaIri {
     return segments.at(-1) ?? '';
   }
 
+  static parseRef(ref: string): { 'fragment': string;
+    'id': string } {
+    const hashIndex = ref.indexOf('#');
+    const id = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+    const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
+
+    return {
+      fragment,
+      id
+    };
+  }
+
   static propertyIri(classId: string, propertyName: string): string {
     return `${classId}#${propertyName}`;
   }

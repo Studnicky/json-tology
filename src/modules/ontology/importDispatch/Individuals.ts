@@ -31,73 +31,20 @@ import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
 import type { InvariantInterface } from '../../../interfaces/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-
-// ---------------------------------------------------------------------------
-// OWL / RDF IRI constants (full and prefixed forms)
-// ---------------------------------------------------------------------------
-
-const OWL_NS = 'http://www.w3.org/2002/07/owl#';
-const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-
-const NAMED_INDIVIDUAL_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}NamedIndividual`,
-  'owl:NamedIndividual'
-]);
-
-const SAME_AS_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}sameAs`,
-  'owl:sameAs'
-]);
-
-const DIFFERENT_FROM_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}differentFrom`,
-  'owl:differentFrom'
-]);
-
-const ALL_DIFFERENT_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}AllDifferent`,
-  'owl:AllDifferent'
-]);
-
-const DISTINCT_MEMBERS_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}distinctMembers`,
-  'owl:distinctMembers'
-]);
-
-const NEGATIVE_PROPERTY_ASSERTION_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}NegativePropertyAssertion`,
-  'owl:NegativePropertyAssertion'
-]);
-
-const SOURCE_INDIVIDUAL_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}sourceIndividual`,
-  'owl:sourceIndividual'
-]);
-
-const ASSERTION_PROPERTY_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}assertionProperty`,
-  'owl:assertionProperty'
-]);
-
-const TARGET_INDIVIDUAL_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}targetIndividual`,
-  'owl:targetIndividual'
-]);
-
-const TARGET_VALUE_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}targetValue`,
-  'owl:targetValue'
-]);
-
-const HAS_KEY_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}hasKey`,
-  'owl:hasKey'
-]);
-
-const TYPE_PREDICATES: ReadonlySet<string> = new Set([
-  `${RDF_NS}type`,
-  'rdf:type'
-]);
+import {
+  ALL_DIFFERENT_IRIS,
+  ASSERTION_PROPERTY_IRIS,
+  DIFFERENT_FROM_IRIS,
+  DISTINCT_MEMBERS_IRIS,
+  HAS_KEY_IRIS,
+  NAMED_INDIVIDUAL_IRIS,
+  NEGATIVE_PROPERTY_ASSERTION_IRIS,
+  RDF_TYPE_PREDICATES,
+  SAME_AS_IRIS,
+  SOURCE_INDIVIDUAL_IRIS,
+  TARGET_INDIVIDUAL_IRIS,
+  TARGET_VALUE_IRIS
+} from '../../../constants/ONTOLOGY_PREDICATES.js';
 
 // ---------------------------------------------------------------------------
 // Helpers — read from graph relations
@@ -270,7 +217,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
   const namedIndividualIris = new Set<string>();
 
   for (const relation of allRelations) {
-    if (predicateIn(relation, TYPE_PREDICATES) && targetIriIn(relation, NAMED_INDIVIDUAL_IRIS)) {
+    if (predicateIn(relation, RDF_TYPE_PREDICATES) && targetIriIn(relation, NAMED_INDIVIDUAL_IRIS)) {
       const subject = relation.source.id;
 
       if (!subject.startsWith('_:')) {
@@ -293,7 +240,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
     const properties: Record<string, unknown> = {};
 
     for (const relation of subjectRelations) {
-      if (predicateIn(relation, TYPE_PREDICATES)) {
+      if (predicateIn(relation, RDF_TYPE_PREDICATES)) {
         const objectIri = namedNodeTarget(relation);
 
         if (objectIri === null || NAMED_INDIVIDUAL_IRIS.has(objectIri)) {
@@ -389,7 +336,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
   // ---- owl:AllDifferent + owl:distinctMembers (RDF list) ------------------
 
   for (const relation of allRelations) {
-    if (!predicateIn(relation, TYPE_PREDICATES) || !targetIriIn(relation, ALL_DIFFERENT_IRIS)) {
+    if (!predicateIn(relation, RDF_TYPE_PREDICATES) || !targetIriIn(relation, ALL_DIFFERENT_IRIS)) {
       continue;
     }
 
@@ -432,7 +379,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
   // ---- owl:NegativePropertyAssertion (blank-node sibling predicates) ------
 
   for (const relation of allRelations) {
-    if (!predicateIn(relation, TYPE_PREDICATES) || !targetIriIn(relation, NEGATIVE_PROPERTY_ASSERTION_IRIS)) {
+    if (!predicateIn(relation, RDF_TYPE_PREDICATES) || !targetIriIn(relation, NEGATIVE_PROPERTY_ASSERTION_IRIS)) {
       continue;
     }
 

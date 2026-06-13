@@ -6,7 +6,7 @@ import { DecodeError } from '../../errors/DecodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { Transform } from '../transform/Transform.js';
 import { isRecord } from '../data/DataTypes.js';
-import { GraphEngineSupport } from './GraphEngineSupport.js';
+import { SchemaIri } from './SchemaIri.js';
 
 export type { RefDecoderRegistryInterface } from '../../interfaces/RefDecoderRegistry.js';
 
@@ -274,7 +274,7 @@ export class RefDecoder {
       return RefDecoder.walk(graph, localTarget, value, registry, visited);
     }
 
-    const parsed = GraphEngineSupport.parseRef(refTarget);
+    const parsed = SchemaIri.parseRef(refTarget);
     const targetId = registry.resolveSchemaId(parsed.id);
     const targetSchema = registry.getSchema(targetId);
 

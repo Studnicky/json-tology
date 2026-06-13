@@ -65,10 +65,10 @@ import type {
 import type { IsEnabledType } from './TypeConfig.js';
 import type {
   AnchorNotFoundInterface,
-  HasReferencesType,
   RefNotFoundInterface
 } from './TypeErrors.js';
 import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
+import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
 
 // ---------------------------------------------------------------------------
 // Recursion limits (type-level caps to prevent infinite expansion)
@@ -574,6 +574,13 @@ type InferObjectType<T, TRoot, TReferences>
       & InferDependentSchemasPropsType<T, TRoot, TReferences>
       & InferObjectBrandsType<T>
       & InferObjectTypePropsType<TProps, ExtractRequiredKeysType<T>, TRoot, TReferences>
+    // patternProperties (no declared `properties`). A co-present
+    // `additionalProperties` schema is intentionally NOT folded in: it applies
+    // only to keys matching NO pattern, and "string keys except `pattern`" is
+    // inexpressible in TypeScript — a broad `[k: string]` index would conflict
+    // with the template-literal pattern index. The pattern value types are
+    // exact (refs resolve); the additionalProperties fallback is an accepted
+    // under-approximation, not unsound.
     : T extends { readonly 'patternProperties': infer PP;
       readonly 'type': 'object' }
       ? InferObjectBrandsType<T>
@@ -589,9 +596,17 @@ type InferObjectType<T, TRoot, TReferences>
           & (T extends { readonly 'additionalProperties': infer A }
             ? { readonly [P in K]?: InferSchemaType<A, TRoot, TReferences> }
             : { readonly [P in K]?: unknown })
-        : T extends { readonly 'type': 'object' }
-          ? InferObjectBrandsType<T> & Record<string, unknown>
-          : never;
+        // additionalProperties-only object (no declared properties): the value
+        // schema still types the index signature, so a `$ref` here resolves
+        // (and a miss brands) rather than collapsing to Record<string, unknown>.
+        // Matches only a schema-valued additionalProperties; `false`/`true` fall
+        // through to the open-object catch-all unchanged.
+        : T extends { readonly 'additionalProperties': Record<string, unknown>;
+          readonly 'type': 'object' }
+          ? InferAdditionalType<T, TRoot, TReferences> & InferObjectBrandsType<T>
+          : T extends { readonly 'type': 'object' }
+            ? InferObjectBrandsType<T> & Record<string, unknown>
+            : never;
 
 // ---------------------------------------------------------------------------
 // Composition
@@ -632,28 +647,55 @@ type FindAnchorType<TAnchor extends string, TRoot>
     // Search through $defs for matching $anchor
     : TRoot extends { readonly '$defs': infer TDefs }
       ? FindAnchorInDefsType<TAnchor, TDefs>
-      : unknown;
+      // Not found — `never` is the miss sentinel, branded by the caller. The
+      // value is never surfaced raw (`never extends Brand` is vacuously true).
+      : never;
 
-/** Search $defs entries for a matching $anchor. */
+/** Search $defs entries for a matching $anchor. Resolves to `never` (the miss
+ *  sentinel) when no entry matches. */
 type FindAnchorInDefsType<TAnchor extends string, TDefs>
   = TDefs extends Record<string, unknown>
     ? { [K in keyof TDefs]: TDefs[K] extends { readonly '$anchor': TAnchor } ? TDefs[K] : never }[keyof TDefs]
-    : unknown;
+    : never;
 
+/**
+ * Find an embedded schema resource by `$id` within a compound document.
+ *
+ * Searches the root schema's `$defs` for an entry whose `$id` matches `TId`.
+ * This is the graph-native resolution path: a self-contained (bundled) schema
+ * carries its referenced resources under `$defs`, so a cross-resource `$ref`
+ * resolves against the document's own embedded graph with no external
+ * references map. Resolves to `never` when no embedded resource matches.
+ */
+type FindSchemaByIdType<TId extends string, TRoot>
+  = TRoot extends { readonly '$defs': infer TDefs }
+    ? { [K in keyof TDefs]: TDefs[K] extends { readonly '$id': TId } ? TDefs[K] : never }[keyof TDefs]
+    : never;
+
+/**
+ * Resolve the schema a `$ref` base IRI denotes against the reference graph
+ * reachable at compile time. Resolution order:
+ *
+ *   1. the root schema itself, when its `$id` equals the base (self-reference);
+ *   2. an embedded resource under the root's `$defs` whose `$id` matches — the
+ *      graph-native compound-document path, requiring no references map;
+ *   3. an entry in the threaded references map (registry-bound resolution).
+ *
+ * When none match, the base is genuinely unreachable and resolves to
+ * `RefNotFoundInterface<TBase>` — uniformly. The outcome never depends on
+ * whether a references map happens to be present: the same unresolved base
+ * always yields the same brand, never a silent `unknown`.
+ */
 type ResolveRefBaseSchemaType<TBase extends string, TRoot, TReferences>
-  = TRoot extends { readonly '$id': infer TId extends string }
-    ? TBase extends TId
-      ? TRoot
-      : TBase extends keyof TReferences
-        ? TReferences[TBase]
-        : HasReferencesType<TReferences> extends true
-          ? RefNotFoundInterface<TBase>
-          : unknown
-    : TBase extends keyof TReferences
-      ? TReferences[TBase]
-      : HasReferencesType<TReferences> extends true
-        ? RefNotFoundInterface<TBase>
-        : unknown;
+  = TRoot extends { readonly '$id': TBase }
+    ? TRoot
+    : FindSchemaByIdType<TBase, TRoot> extends infer TEmbedded
+      ? [TEmbedded] extends [never]
+        ? TBase extends keyof TReferences
+          ? TReferences[TBase]
+          : RefNotFoundInterface<TBase>
+        : TEmbedded
+      : RefNotFoundInterface<TBase>;
 
 // ---------------------------------------------------------------------------
 // External fragment ref helpers
@@ -676,19 +718,20 @@ type SplitFragmentRefType<TRef extends string, TRoot, TReferences = Record<never
           ? TBaseSchema extends { readonly '$defs': infer TDefs }
             ? K extends keyof TDefs
               ? TDefs[K]
-              : HasReferencesType<TReferences> extends true
-                ? AnchorNotFoundInterface<Base, Fragment>
-                : unknown
-            : HasReferencesType<TReferences> extends true
-              ? AnchorNotFoundInterface<Base, Fragment>
-              : unknown
+              : AnchorNotFoundInterface<Base, Fragment>
+            : AnchorNotFoundInterface<Base, Fragment>
           : Fragment extends `/${infer TPath}`
-            ? NavigateSchemaPathType<TBaseSchema, TPath>
+            // JSON Pointer into a reachable base — a missing segment is
+            // AnchorNotFound (the `never` miss sentinel must not leak, since
+            // `never extends Brand` is vacuously true downstream).
+            ? NavigateSchemaPathType<TBaseSchema, TPath> extends infer TNav
+              ? [TNav] extends [never]
+                ? AnchorNotFoundInterface<Base, Fragment>
+                : TNav
+              : never
             : FindAnchorType<Fragment, TBaseSchema> extends infer TAnchorResult
-              ? [unknown] extends [TAnchorResult]
-                ? HasReferencesType<TReferences> extends true
-                  ? AnchorNotFoundInterface<Base, Fragment>
-                  : unknown
+              ? [TAnchorResult] extends [never]
+                ? AnchorNotFoundInterface<Base, Fragment>
                 : TAnchorResult
               : unknown
       : unknown
@@ -696,42 +739,60 @@ type SplitFragmentRefType<TRef extends string, TRoot, TReferences = Record<never
 
 /**
  * Navigate a JSON Pointer path segment within a schema.
- * Supports multi-level paths like `properties/name/type`.
+ * Supports multi-level paths like `properties/name/type`. Resolves to `never`
+ * (the miss sentinel) when a segment is absent — branded by the caller, never
+ * surfaced raw (a valid schema position is always an object, so `never` is an
+ * unambiguous "path not found").
  */
 type NavigateSchemaPathType<T, TPath extends string>
   = TPath extends `${infer Head}/${infer Rest}`
     ? Head extends keyof T
       ? NavigateSchemaPathType<T[Head], Rest>
-      : unknown
+      : never
     : TPath extends keyof T
       ? T[TPath]
-      : unknown;
+      : never;
 
 // ---------------------------------------------------------------------------
 // $ref / $defs / $anchor / $dynamicRef / $recursiveRef resolution
 // ---------------------------------------------------------------------------
 
+/**
+ * Resolve a same-document target (local `$defs` key, named `$anchor`, or JSON
+ * Pointer). A `never` input is the navigator / anchor-search miss sentinel and
+ * becomes `AnchorNotFoundInterface<'#', TFragment>` — uniform with cross-schema
+ * misses, never a silent `unknown`. A found target is inferred against the root
+ * so its own refs resolve.
+ */
+type ResolveLocalTargetType<TResolved, TFragment extends string, TRoot, TReferences>
+  = [TResolved] extends [never]
+    ? AnchorNotFoundInterface<'#', TFragment>
+    : InferSchemaType<TResolved, TRoot, TReferences>;
+
 type InferRefType<T, TRoot, TReferences>
   // Local $defs ref: #/$defs/Foo (simple key only, no further path segments)
   = T extends { readonly '$ref': `#/$defs/${infer K}` }
     ? K extends `${string}/${string}`
-      // Complex path through $defs — use JSON Pointer navigation
-      ? InferSchemaType<NavigateSchemaPathType<TRoot, `$defs/${K}`>, TRoot, TReferences>
+      // Complex path through $defs — use JSON Pointer navigation. A missing
+      // path is AnchorNotFoundInterface, never a silent unknown.
+      ? ResolveLocalTargetType<NavigateSchemaPathType<TRoot, `$defs/${K}`>, `/$defs/${K}`, TRoot, TReferences>
       : TRoot extends { readonly '$defs': infer TDefs }
         ? K extends keyof TDefs
           ? InferSchemaType<TDefs[K], TRoot, TReferences>
-          : unknown
-        : unknown
+          // Local $defs key absent → uniform AnchorNotFound brand.
+          : AnchorNotFoundInterface<'#', `/$defs/${K}`>
+        : AnchorNotFoundInterface<'#', `/$defs/${K}`>
     // Self ref: #
     : T extends { readonly '$ref': '#' }
       ? InferSchemaType<TRoot, TRoot, TReferences>
       // Anchor ref: #anchorName (no slash after #)
       : T extends { readonly '$ref': `#${infer TAnchor}` }
         ? TAnchor extends `/${string}`
-          // JSON Pointer path: #/properties/foo — navigate the path
-          ? InferSchemaType<NavigateSchemaPathType<TRoot, RemoveLeadingSlashType<TAnchor>>, TRoot, TReferences>
-          // Named anchor: #myAnchor
-          : InferSchemaType<FindAnchorType<TAnchor, TRoot>, TRoot, TReferences>
+          // JSON Pointer path: #/properties/foo — a missing segment is
+          // AnchorNotFoundInterface, never a silent unknown.
+          ? ResolveLocalTargetType<NavigateSchemaPathType<TRoot, RemoveLeadingSlashType<TAnchor>>, TAnchor, TRoot, TReferences>
+          // Named anchor: #myAnchor — an absent anchor is AnchorNotFoundInterface.
+          : ResolveLocalTargetType<FindAnchorType<TAnchor, TRoot>, TAnchor, TRoot, TReferences>
         // External ref with fragment: someUri#fragment
         : T extends { readonly '$ref': `${infer TBase}#${string}` }
           ? ResolveRefBaseSchemaType<TBase, TRoot, TReferences> extends infer TBaseSchema
@@ -743,23 +804,25 @@ type InferRefType<T, TRoot, TReferences>
                   : InferSchemaType<TResolved, TBaseSchema, TReferences>
               : unknown
             : unknown
-          // Absolute/external ref without fragment.
+          // Absolute/external ref without fragment. Resolution order mirrors
+          // the fragment path (ResolveRefBaseSchemaType): threaded references
+          // map first (so a referenced schema becomes its own root for deep
+          // transitive resolution), then self-reference to the root's own $id,
+          // then a resource embedded under the root's $defs by $id (the
+          // graph-native compound-document path — resolved against the original
+          // root so sibling resources stay reachable). An unreachable base is
+          // always RefNotFoundInterface<TRef> — uniform with the fragment path,
+          // never a silent unknown.
           : T extends { readonly '$ref': infer TRef extends string }
             ? TRef extends keyof TReferences
               ? InferSchemaType<TReferences[TRef], TReferences[TRef], TReferences>
-              // Self-ref to the document root's own $id resolves to the root
-              // schema — mirrors the fragment-ref path, where
-              // ResolveRefBaseSchemaType resolves `base#…` when `base` equals
-              // `root.$id`. A bare absolute-IRI $ref equal to the root's $id is
-              // resolvable with no references map (e.g. FOAF `Person.knows` →
-              // `Person`), so it must not degrade to RefNotFound.
               : TRoot extends { readonly '$id': TRef }
                 ? InferSchemaType<TRoot, TRoot, TReferences>
-                // A bare absolute-IRI $ref that is neither in TReferences nor the
-                // root's own $id is always a compile error (RefNotFoundInterface
-                // <TRef>), never silent unknown. Thread the referenced schema via
-                // SchemaReferencesMapType to resolve it.
-                : RefNotFoundInterface<TRef>
+                : FindSchemaByIdType<TRef, TRoot> extends infer TEmbedded
+                  ? [TEmbedded] extends [never]
+                    ? RefNotFoundInterface<TRef>
+                    : InferSchemaType<TEmbedded, TRoot, TReferences>
+                  : RefNotFoundInterface<TRef>
             : unknown;
 
 /** Strip the leading `/` from a JSON Pointer path segment. */
@@ -781,7 +844,15 @@ type RemoveLeadingSlashType<TStr extends string>
  */
 type InferDynamicRefType<T, TRoot, TReferences>
   = T extends { readonly '$dynamicRef': `#${infer TAnchor}` }
-    ? InferSchemaType<FindAnchorType<TAnchor, TRoot>, TRoot, TReferences>
+    ? FindAnchorType<TAnchor, TRoot> extends infer TFound
+      // Not found in the root: $dynamicRef resolves against runtime dynamic
+      // scope, which TypeScript cannot model — the honest fallback is `unknown`,
+      // NOT a static-miss brand (the anchor may legitimately live in another
+      // schema in scope). Distinct from a static `$ref`/`$anchor` miss.
+      ? [TFound] extends [never]
+        ? unknown
+        : InferSchemaType<TFound, TRoot, TReferences>
+      : unknown
     : unknown;
 
 /**
@@ -1000,7 +1071,7 @@ type InferSchemaTypeCoreType<T, TRoot = T, TReferences = Record<never, never>>
  * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
  * @typeParam TReferences - Map of external schema IRIs to their types.
  */
-export type InferSchemaType<T, TRoot = T, TReferences = Record<never, never>>
+export type InferSchemaType<T, TRoot = T, TReferences = JsonTologyReferencesInterface>
   = ApplyNotExclusionType<T, InferSchemaTypeCoreType<T, TRoot, TReferences>>;
 
 /**
@@ -1031,7 +1102,7 @@ export type InferSchemaType<T, TRoot = T, TReferences = Record<never, never>>
  * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
  * @typeParam TReferences - Map of external schema IRIs to their types.
  */
-export type NominalSchemaType<T, TRoot = T, TReferences = Record<never, never>>
+export type NominalSchemaType<T, TRoot = T, TReferences = JsonTologyReferencesInterface>
   = InferSchemaType<T, TRoot, TReferences>
     & (IsEnabledType<'nominalBrands'> extends true
       ? (T extends { readonly '$id': infer TId extends string }
@@ -1193,7 +1264,7 @@ type PropertiesWithDefaultType<TProps>
  * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
  * @typeParam TReferences - Map of external schema IRIs to their types.
  */
-export type MaterializedSchemaType<T, TRoot = T, TReferences = Record<never, never>>
+export type MaterializedSchemaType<T, TRoot = T, TReferences = JsonTologyReferencesInterface>
   = T extends { readonly 'properties': infer TProps;
     readonly 'type': 'object' }
     ? SimplifyType<
@@ -1361,7 +1432,7 @@ export type WriteOnlyKeysType<T>
  * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
  * @typeParam TReferences - Map of external schema IRIs to their types.
  */
-export type InputSchemaType<T, TRoot = T, TReferences = Record<never, never>>
+export type InputSchemaType<T, TRoot = T, TReferences = JsonTologyReferencesInterface>
   = T extends { readonly 'properties': unknown;
     readonly 'type': 'object' }
     ? SimplifyType<Omit<InferSchemaType<T, TRoot, TReferences>, ReadOnlyKeysType<T>>>
@@ -1393,7 +1464,7 @@ export type InputSchemaType<T, TRoot = T, TReferences = Record<never, never>>
  * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
  * @typeParam TReferences - Map of external schema IRIs to their types.
  */
-export type OutputSchemaType<T, TRoot = T, TReferences = Record<never, never>>
+export type OutputSchemaType<T, TRoot = T, TReferences = JsonTologyReferencesInterface>
   = T extends { readonly 'properties': unknown;
     readonly 'type': 'object' }
     ? SimplifyType<Omit<InferSchemaType<T, TRoot, TReferences>, WriteOnlyKeysType<T>>>
@@ -1458,7 +1529,7 @@ export type DeprecatedKeysType<T>
  * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
  * @typeParam TReferences - Map of external schema IRIs to their types.
  */
-export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = Record<never, never>>
+export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = JsonTologyReferencesInterface>
   = T extends { readonly 'properties': unknown;
     readonly 'type': 'object' }
     ? SimplifyType<Omit<InferSchemaType<T, TRoot, TReferences>, DeprecatedKeysType<T>>>
@@ -1796,7 +1867,7 @@ export type UnbrandType<T> = T extends unknown
  * @typeParam TSchema - The schema to resolve.
  * @typeParam TReferences - Cross-schema references map for `$ref` resolution.
  */
-export type CanonicalShapeType<TSchema, TReferences = Record<never, never>>
+export type CanonicalShapeType<TSchema, TReferences = JsonTologyReferencesInterface>
   = UnbrandType<InferSchemaType<TSchema, TSchema, TReferences>>;
 
 export type {

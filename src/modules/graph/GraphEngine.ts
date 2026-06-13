@@ -18,7 +18,11 @@ import { FormatRegistry } from '../format/FormatRegistry.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
+import {
+  EMPTY_EVALUATED_ITEMS, EMPTY_EVALUATED_PROPERTIES
+} from '../../constants/EXECUTION_OPTIONS.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
+import { SchemaIri } from './SchemaIri.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
 import type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
@@ -37,9 +41,7 @@ const escape = (segment: string): string => {
   return SchemaGraphSupport.escapeJsonPointerSegment(segment);
 };
 
-// Module-level singletons for boundary results — never mutated, safe to share.
-const EMPTY_EVALUATED_ITEMS = new Set<number>();
-const EMPTY_EVALUATED_PROPERTIES = new Set<string>();
+// EMPTY_EVALUATED_ITEMS and EMPTY_EVALUATED_PROPERTIES imported from EXECUTION_OPTIONS
 
 /**
  * Core validation and execution engine for compiled JSON Schema graphs.
@@ -536,7 +538,7 @@ export class GraphEngine implements GraphEngineInterface {
     if (ref.startsWith('#')) {
       fragment = ref.slice(1);
     } else {
-      const parsed = GraphEngineSupport.parseRef(ref);
+      const parsed = SchemaIri.parseRef(ref);
 
       fragment = parsed.fragment;
       graph = this.resolveRefGraph(ref, parsed);

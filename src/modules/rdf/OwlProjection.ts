@@ -17,9 +17,17 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
+import type { ProjectionEmitContextInterface } from '../../interfaces/ProjectionEmitContext.js';
+import type { EmitQualifiedCardinalityRestrictionArgsInterface } from '../../interfaces/EmitQualifiedCardinalityRestrictionArgs.js';
+import type { EmitRestrictionArgsInterface } from '../../interfaces/EmitRestrictionArgs.js';
+import type { OptionalQuadObjectType } from '../../types/OptionalQuadObjectType.js';
+import type { TypedLiteralObjectType } from '../../types/TypedLiteralObjectType.js';
+import type { ResolveArrayPropertyCanonicalIdArgsInterface } from '../../interfaces/ResolveArrayPropertyCanonicalIdArgs.js';
+import type { EmitPatternPropertyEntryArgsInterface } from '../../interfaces/EmitPatternPropertyEntryArgs.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
+import { OWL_CARDINALITY_PREDICATE_IRIS } from '../../constants/ONTOLOGY_PREDICATES.js';
 import {
   SHACL_TO_XSD_FACET,
   XSD_FACET_DATATYPE
@@ -38,25 +46,7 @@ import {
   resolveRestrictionOnProperty
 } from './ProjectionHelpers.js';
 
-interface EmitQualifiedCardinalityRestrictionArgs {
-  readonly 'cardinalityPredicate': string;
-  readonly 'containsIriObject': ReturnType<typeof QuadFactory.iri>;
-  readonly 'ctx': OwlEmitContextInterface;
-  readonly 'onProp': string;
-  readonly 'rels': readonly SchemaGraphRelationInterface[];
-  readonly 'subject': string;
-}
-
-interface EmitRestrictionArgs {
-  readonly 'constraint': string;
-  readonly 'constraintValue': QuadObjectType;
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'issuer'?: IdentifierIssuerInterface | undefined;
-  readonly 'onProperty': string;
-  readonly 'quads': QuadInterface[];
-}
-
-function emitRestriction(args: EmitRestrictionArgs): string {
+function emitRestriction(args: EmitRestrictionArgsInterface): string {
   const {
     constraint, constraintValue, curie, issuer, onProperty, quads
   } = args;
@@ -249,13 +239,7 @@ function isPrimitiveEntry(entry: RelationIndexInterface): boolean {
   return entry.byPredicate.has(SH.datatype) && !entry.byPredicate.has(OWL.Restriction);
 }
 
-const OWL_CARDINALITY_PREDICATES = new Set<string>([
-  OWL.cardinality,
-  OWL.maxCardinality,
-  OWL.maxQualifiedCardinality,
-  OWL.minCardinality,
-  OWL.minQualifiedCardinality
-]);
+// OWL_CARDINALITY_PREDICATE_IRIS imported from ONTOLOGY_PREDICATES
 
 function cardinalityConstraintValue(value: unknown, curie: CurieInterface | undefined): OptionalQuadObjectType {
   const n = typeof value === 'number' ? value : Number(value);
@@ -288,7 +272,7 @@ function restrictionConstraintValue(
   value: unknown,
   curie: CurieInterface | undefined
 ): OptionalQuadObjectType {
-  if (OWL_CARDINALITY_PREDICATES.has(constraint)) {
+  if (OWL_CARDINALITY_PREDICATE_IRIS.has(constraint)) {
     return cardinalityConstraintValue(value, curie);
   }
 
@@ -306,7 +290,7 @@ function restrictionConstraintValue(
 function emitDatatypeQuads(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, quads
@@ -330,7 +314,7 @@ function emitDatatypeQuads(
 function emitDatatypeFacetBnodes(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, issuer, quads
@@ -370,7 +354,7 @@ function emitDatatypeFacetBnodes(
 function emitDatatypeEnumeration(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, issuer, quads
@@ -391,7 +375,7 @@ function emitDatatypeEnumeration(
 function emitDatatypeMetadata(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, quads
@@ -426,22 +410,6 @@ function emitDatatypeMetadata(
 // ---------------------------------------------------------------------------
 // Shared emit context
 // ---------------------------------------------------------------------------
-
-/** Shared context for OWL quad emission — bundles curie, graph, index, issuer, predicateResolver, quads. */
-interface OwlEmitContextInterface {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'index': Map<string, RelationIndexInterface>;
-  readonly 'issuer': IdentifierIssuerInterface;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'quads': QuadInterface[];
-}
-
-/** Optional quad-object term — undefined when a constraint value cannot be represented. */
-type OptionalQuadObjectType = QuadObjectType | undefined;
-
-/** A typed literal object for JSON-LD `@value`/`@type` encoding, or null when unsupported. */
-type TypedLiteralObjectType = null | Record<string, unknown>;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -478,7 +446,7 @@ export const OwlProjection = {
     const quads: QuadInterface[] = [];
     const allRelations = graph.allRelations();
     const index = ProjectionIndex.build(allRelations);
-    const ctx: OwlEmitContextInterface = {
+    const ctx: ProjectionEmitContextInterface = {
       curie,
       graph,
       index,
@@ -519,7 +487,7 @@ export const OwlProjection = {
 function emitClassSubClassRelations(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, graph, issuer, predicateResolver, quads
@@ -558,7 +526,7 @@ function emitClassSubClassRelations(
 function emitClassRestrictionRelations(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, graph, issuer, predicateResolver, quads
@@ -599,7 +567,7 @@ function emitClassRestrictionRelations(
 function emitClassEquivalencesAndDisjoint(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, issuer, quads
@@ -650,7 +618,7 @@ function emitClassEquivalencesAndDisjoint(
 function emitClassEnumerations(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, issuer, quads
@@ -684,7 +652,7 @@ function emitClassEnumerations(
 function emitClassQuads(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, graph, issuer, predicateResolver, quads
@@ -763,7 +731,7 @@ const OWL_PROPERTY_CHARACTERISTICS: readonly string[] = [
 function emitPropertyCharacteristics(
   canonicalId: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, quads
@@ -785,7 +753,7 @@ function emitPropertyCharacteristics(
 function emitPropertyRangeAndUnion(
   canonicalId: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, issuer, quads
@@ -833,7 +801,7 @@ function emitPropertyRangeAndUnion(
 function emitPropertyAnnotations(
   canonicalId: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, quads
@@ -863,7 +831,7 @@ function emitPropertyAnnotations(
 function emitPropertyQuads(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, graph, predicateResolver, quads
@@ -931,7 +899,7 @@ function canonicalPropertyIri(subject: string): string {
  * Emit an optional qualified-cardinality restriction for a contains property.
  * Emits a subClassOf restriction bnode and attaches the onDataRange triple.
  */
-function emitQualifiedCardinalityRestriction(args: EmitQualifiedCardinalityRestrictionArgs): void {
+function emitQualifiedCardinalityRestriction(args: EmitQualifiedCardinalityRestrictionArgsInterface): void {
   const {
     cardinalityPredicate, containsIriObject, ctx, onProp, rels, subject
   } = args;
@@ -960,7 +928,7 @@ function emitQualifiedCardinalityRestriction(args: EmitQualifiedCardinalityRestr
 function emitContainsQuads(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, graph, issuer, predicateResolver, quads
@@ -1022,7 +990,7 @@ function emitContainsQuads(
 function emitPrefixItemQuads(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, issuer, quads
@@ -1084,15 +1052,8 @@ function resolveItemTypeId(
   return itemsSubject;
 }
 
-interface ResolveArrayPropertyCanonicalIdArgs {
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'propEntry': RelationIndexInterface;
-  readonly 'propSubject': string;
-}
-
 /** Resolve the canonical predicate IRI for an array-item property. */
-function resolveArrayPropertyCanonicalId(args: ResolveArrayPropertyCanonicalIdArgs): string {
+function resolveArrayPropertyCanonicalId(args: ResolveArrayPropertyCanonicalIdArgsInterface): string {
   const {
     graph, predicateResolver, propEntry, propSubject
   } = args;
@@ -1121,7 +1082,7 @@ function resolveArrayPropertyCanonicalId(args: ResolveArrayPropertyCanonicalIdAr
 function emitArrayItemQuads(
   subject: string,
   _entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, graph, index, issuer, predicateResolver, quads
@@ -1177,15 +1138,8 @@ function emitArrayItemQuads(
 // Pattern property emission
 // ---------------------------------------------------------------------------
 
-interface EmitPatternPropertyEntryArgs {
-  readonly 'ctx': OwlEmitContextInterface;
-  readonly 'pattern': string;
-  readonly 'patternEntry': RelationIndexInterface | undefined;
-  readonly 'subject': string;
-}
-
 /** Emit OWL quads for a single pattern-property entry. */
-function emitPatternPropertyEntry(args: EmitPatternPropertyEntryArgs): void {
+function emitPatternPropertyEntry(args: EmitPatternPropertyEntryArgsInterface): void {
   const {
     ctx, pattern, patternEntry, subject
   } = args;
@@ -1234,7 +1188,7 @@ function emitPatternPropertyEntry(args: EmitPatternPropertyEntryArgs): void {
 function emitPatternPropertyQuads(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: OwlEmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const { index } = ctx;
   const patternRels = entry.byPredicate.get(SH.pattern) ?? [];

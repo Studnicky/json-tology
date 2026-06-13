@@ -12,7 +12,7 @@ import type {
   OntologyBuilderOptionsInterface
 } from '../../interfaces/Ontology.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { JsonLdDatasetQuad } from '../rdf/QuadFactory.js';
+import type { JsonLdDatasetQuad } from '../../interfaces/JsonLdDatasetQuad.js';
 import jsonld from 'jsonld';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { RDFS } from '../../constants/IRI.js';

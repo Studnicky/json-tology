@@ -10,6 +10,7 @@ import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.
 
 import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/DataTypes.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
 
 export class SchemaRefWalker implements SchemaRefWalkerInterface {
   public assertResolvable(
@@ -34,8 +35,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
     const ref = node.$ref;
 
     if (typeof ref === 'string' && !ref.startsWith('#')) {
-      const hashIndex = ref.indexOf('#');
-      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+      const refIri = SchemaIri.parseRef(ref).id;
       const resolved = resolve(refIri);
 
       if (!knownIds(resolved) && !knownIds(refIri) && !embeddedIds.has(refIri)) {
@@ -96,8 +96,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
     const ref = node.$ref;
 
     if (typeof ref === 'string' && !ref.startsWith('#')) {
-      const hashIndex = ref.indexOf('#');
-      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+      const refIri = SchemaIri.parseRef(ref).id;
       const resolved = resolve(refIri);
 
       if (!knownIds(resolved) && !knownIds(refIri) && !embeddedIds.has(refIri)) {

@@ -14,8 +14,8 @@ import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
  *
  * Provides shared utilities (`ensureArray`, `normalizeArrays`), common
  * constructor wiring (Curie, predicateResolver, vocabulary plugins), and the
- * `serializeQuads` orchestration method. Subclasses implement `projectGraph`,
- * `postProcessNodes`, and `corePredicates`.
+ * `serializeQuads` orchestration method. Subclasses implement `projectGraph`
+ * and `corePredicates`.
  *
  * @remarks
  * The `serializeQuads` method calls `projectGraph` for each input graph to
@@ -28,7 +28,6 @@ import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
  * class MySerializer extends BaseGraphSerializer {
  *   protected corePredicates() { return new Set(['rdf:type']); }
  *   protected projectGraph(graph, issuer) { return []; }
- *   protected postProcessNodes(nodes) { }
  * }
  * ```
  *
@@ -110,8 +109,6 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
 
     return undefined;
   }
-
-  protected abstract postProcessNodes(nodes: Array<Record<string, unknown>>): void;
 
   protected abstract projectGraph(graph: SchemaGraphInterface, issuer?: IdentifierIssuerInterface): QuadInterface[];
 

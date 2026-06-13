@@ -31,6 +31,14 @@ export type * from './Schema.js';
 export type * from './SchemaGraph.js';
 export type * from './SchemaLookup.js';
 export type * from './SchemaRef.js';
+// Explicit named re-export so consumer module augmentation
+// (`declare module 'json-tology/types' { interface JsonTologyReferencesInterface }`)
+// merges into the canonical declaration that standalone `$ref` resolution
+// defaults to. A bare `export type *` star re-export does not create an
+// augmentable named binding, so registered schemas would never reach the
+// resolver default.
+export type { JsonTologyReferencesInterface } from './SchemaReferences.js';
+export type * from './SchemaReferences.js';
 export type * from './SchemaValidation.js';
 export type * from './Skolemize.js';
 export type * from './SubjectGroup.js';

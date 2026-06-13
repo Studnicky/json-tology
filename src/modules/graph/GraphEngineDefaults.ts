@@ -7,14 +7,7 @@ import { GraphEngineSupport } from './GraphEngineSupport.js';
 import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
 import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
 import { MAX_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
-
-/** Shared context threaded through recursive default-resolution calls. */
-interface DefaultResolutionStateInterface {
-  readonly 'context': DefaultResolutionContextInterface;
-  readonly 'dynamicScope': DynamicScopeEntryInterface[];
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'visited': Set<string>;
-}
+import type { DefaultResolutionStateInterface } from '../../interfaces/DefaultResolutionState.js';
 
 function propertiesFromSemantics(sem: SchemaGraphSemanticsInterface): ReadonlyMap<string, SchemaGraphNodeInterface> {
   return sem.properties;

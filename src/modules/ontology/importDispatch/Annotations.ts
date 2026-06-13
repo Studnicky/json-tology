@@ -31,71 +31,17 @@ import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
 import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
-import { STANDARD_PREFIXES } from '../../../constants/STANDARD_PREFIXES.js';
-
-// ---------------------------------------------------------------------------
-// IRI constants — derived from STANDARD_PREFIXES to avoid embedded literals
-// ---------------------------------------------------------------------------
-
-const RDFS_NS = STANDARD_PREFIXES.rdfs;
-const OWL_NS = STANDARD_PREFIXES.owl;
-const SKOS_NS = STANDARD_PREFIXES.skos;
-
-// ---------------------------------------------------------------------------
-// Predicate IRI sets (compact and full-IRI forms accepted)
-// ---------------------------------------------------------------------------
-
-// Predicates that map to `title` (last one wins if both present; English preferred)
-const LABEL_PREDICATES = new Set<string>([
-  `${RDFS_NS}label`,
-  `${SKOS_NS}prefLabel`,
-  'rdfs:label',
-  'skos:prefLabel'
-]);
-
-// Predicates that map to `description`
-const COMMENT_PREDICATES = new Set<string>([
-  `${RDFS_NS}comment`,
-  `${SKOS_NS}definition`,
-  'rdfs:comment',
-  'skos:definition'
-]);
-
-// Predicate for `deprecated`
-const DEPRECATED_PREDICATES = new Set<string>([
-  `${OWL_NS}deprecated`,
-  'owl:deprecated'
-]);
-
-// Predicate for `owl:versionInfo` → $comment "version: ..."
-const VERSION_INFO_PREDICATES = new Set<string>([
-  `${OWL_NS}versionInfo`,
-  'owl:versionInfo'
-]);
-
-// Predicate for `rdfs:isDefinedBy` → $comment "definedBy: <iri>"
-const IS_DEFINED_BY_PREDICATES = new Set<string>([
-  `${RDFS_NS}isDefinedBy`,
-  'rdfs:isDefinedBy'
-]);
-
-// Predicate for `rdfs:seeAlso` → $comment "seeAlso: <iri>"
-const SEE_ALSO_PREDICATES = new Set<string>([
-  `${RDFS_NS}seeAlso`,
-  'rdfs:seeAlso'
-]);
-
-// skos:altLabel — record as metadata only (no direct schema field)
-const ALT_LABEL_PREDICATES = new Set<string>([
-  `${SKOS_NS}altLabel`,
-  'skos:altLabel'
-]);
-
-// owl:AnnotationProperty declarations — silently accepted
-const ANNOTATION_PROPERTY_PREDICATES = new Set<string>([
-  `${OWL_NS}AnnotationProperty`,
-  'owl:AnnotationProperty'
-]);
+import type { AnnotationAccumulator } from '../../../interfaces/AnnotationAccumulator.js';
+import {
+  ALT_LABEL_PREDICATES,
+  ANNOTATION_PROPERTY_PREDICATES,
+  COMMENT_PREDICATES,
+  DEPRECATED_PREDICATES,
+  IS_DEFINED_BY_PREDICATES,
+  LABEL_PREDICATES,
+  SEE_ALSO_PREDICATES,
+  VERSION_INFO_PREDICATES
+} from '../../../constants/ONTOLOGY_PREDICATES.js';
 
 // ---------------------------------------------------------------------------
 // Relation-target extraction helpers — read from graph relations
@@ -142,26 +88,8 @@ function namedNodeIri(relation: SchemaGraphRelationInterface): null | string {
 }
 
 // ---------------------------------------------------------------------------
-// Accumulator shapes
+// Accumulator factory
 // ---------------------------------------------------------------------------
-
-/** Per-entity annotation accumulator before it is written into schemaDeltas. */
-interface AnnotationAccumulator {
-  /** Language-tagged alt labels: lang → string[]. */
-  'altLabels': Map<string, string[]>;
-  /** Language-tagged comments: lang → string[]. */
-  'comments': Map<string, string[]>;
-  /** `deprecated` flag, set when any owl:deprecated true literal is found. */
-  'deprecated': boolean;
-  /** rdfs:isDefinedBy IRI values. */
-  'isDefinedBy': string[];
-  /** Language-tagged labels: lang → string[]. */
-  'labels': Map<string, string[]>;
-  /** rdfs:seeAlso IRI values. */
-  'seeAlso': string[];
-  /** owl:versionInfo string values. */
-  'versionInfo': string[];
-}
 
 function makeAccumulator(): AnnotationAccumulator {
   return {

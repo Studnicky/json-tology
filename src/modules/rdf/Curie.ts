@@ -7,8 +7,48 @@
 import type { CurieInterface } from '../../interfaces/Curie.js';
 
 export class Curie implements CurieInterface {
+  /**
+   * Expand a value using an explicit prefix-to-namespace context map, passing
+   * through absolute IRIs, blank nodes, and values with no colon unchanged.
+   *
+   * @param value - A CURIE or IRI string
+   * @param context - Prefix-to-namespace map (e.g. `{ owl: 'http://www.w3.org/2002/07/owl#' }`)
+   * @returns The expanded IRI, or the original value if no prefix match is found
+   */
+  public static expandWithContext(value: string, context: Record<string, string>): string {
+    if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:')) {
+      return value;
+    }
+
+    if (value.startsWith('_:')) {
+      return value;
+    }
+
+    const colonIndex = value.indexOf(':');
+
+    if (colonIndex === -1) {
+      return value;
+    }
+
+    const prefix = value.slice(0, colonIndex);
+    const local = value.slice(colonIndex + 1);
+
+    return prefix in context ? `${context[prefix]}${local}` : value;
+  }
+  /**
+   * Returns true when `value` is an absolute IRI with an `http://`, `https://`,
+   * or `urn:` scheme. Blank nodes and relative references return false.
+   *
+   * @param value - Any string
+   * @returns Whether the value is an absolute IRI
+   */
+  public static isAbsolute(value: string): boolean {
+    return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:');
+  }
   private readonly compactCache = new Map<string, string>();
+
   private readonly expandCache = new Map<string, string>();
+
   private readonly prefixes: Record<string, string>;
 
   /**
@@ -91,5 +131,33 @@ export class Curie implements CurieInterface {
     this.expandCache.set(value, result);
 
     return result;
+  }
+
+  /**
+   * Expand a value to a full IRI when needed, passing through blank nodes,
+   * absolute IRIs, and empty strings unchanged. Returns the original value
+   * if CURIE expansion fails (unregistered prefix).
+   *
+   * @param value - A CURIE, full IRI, blank node ID, or empty string
+   * @returns The expanded IRI, or the original value unchanged
+   */
+  public expandIfNeeded(value: string): string {
+    if (value === '') {
+      return value;
+    }
+
+    if (value.startsWith('_:')) {
+      return value;
+    }
+
+    if (Curie.isAbsolute(value)) {
+      return value;
+    }
+
+    try {
+      return this.expand(value);
+    } catch {
+      return value;
+    }
   }
 }

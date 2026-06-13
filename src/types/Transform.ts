@@ -2,6 +2,7 @@ import type { ComputedExtensionBrandInterface } from '../interfaces/ComputedExte
 import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
 import type { AnyTransformStageInterface } from '../interfaces/TransformStage.js';
 import type { InferSchemaType } from './Infer.js';
+import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
 import type {
   ChainMismatchInterface,
   ChainSchemaMismatchInterface
@@ -27,7 +28,7 @@ export type TransformedType<TSchema, TWire> = TransformBrandInterface<TWire> & T
  *
  * @typeParam TReferences - Cross-schema references map for $ref resolution.
  */
-export type ParseOutputType<TSchema, TReferences = Record<never, never>>
+export type ParseOutputType<TSchema, TReferences = JsonTologyReferencesInterface>
   = TSchema extends TransformBrandInterface<unknown>
     ? InferSchemaType<TSchema, TSchema, TReferences>
     : InferSchemaType<TSchema, TSchema, TReferences>

@@ -1,6 +1,7 @@
 import type { ResolvedRefInterface } from '../../interfaces/ResolvedRef.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
 
 export class RefResolver {
   static resolve(
@@ -20,9 +21,9 @@ export class RefResolver {
       }
     }
 
-    const hashIndex = ref.indexOf('#');
-    const schemaId = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-    const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
+    const {
+      fragment, 'id': schemaId
+    } = SchemaIri.parseRef(ref);
 
     const refGraph = lookupGraph?.(schemaId) ?? ((): SchemaGraphInterface | undefined => {
       const refSchema = lookupSchema?.(schemaId);

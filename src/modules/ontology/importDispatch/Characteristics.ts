@@ -23,6 +23,7 @@ import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
+import type { RecordCharacteristicOptions } from '../../../interfaces/RecordCharacteristicOptions.js';
 import { RDF } from '../../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
@@ -106,20 +107,6 @@ function emptyFragment(): OwlImportFragment {
     'sameAs': [],
     'schemaDeltas': new Map()
   };
-}
-
-// ---------------------------------------------------------------------------
-// Options interfaces
-// ---------------------------------------------------------------------------
-
-/** Options for recording one characteristic tuple into the fragment. */
-interface RecordCharacteristicOptions {
-  readonly 'characteristicName': string;
-  readonly 'characteristicTarget': string;
-  readonly 'ctx': OwlImportContext;
-  readonly 'fragment': OwlImportFragment;
-  readonly 'propertyIri': string;
-  readonly 'seen': Set<string>;
 }
 
 // ---------------------------------------------------------------------------

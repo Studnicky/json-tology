@@ -30,26 +30,14 @@ import type {
   OwlImportContext,
   OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
-import type { RelationStructure } from '../../../types/SchemaGraph.js';
 import type { InvariantInterface } from '../../../interfaces/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
+import type { RestrictionStructure } from '../../../types/RestrictionStructure.js';
+import type { MutablePropertySchema } from '../../../interfaces/MutablePropertySchema.js';
 import {
   OWL,
   RDFS
 } from '../../../constants/IRI.js';
-
-// ---------------------------------------------------------------------------
-// Internal types
-// ---------------------------------------------------------------------------
-
-type RestrictionStructure = Extract<RelationStructure, { 'kind': 'restriction' }>;
-
-interface MutablePropertySchema {
-  'const'?: unknown;
-  'items'?: { '$ref': string };
-  'maxItems'?: number;
-  'minItems'?: number;
-}
 
 // ---------------------------------------------------------------------------
 // Property name extraction

@@ -895,15 +895,17 @@ const _LocalSchemaWithId = {
 
 void _LocalSchemaWithId;
 
-// Cross-schema ref must resolve to unknown (base URI mismatch)
+// Unreachable base → RefNotFoundInterface (uniform; no silent unknown). The
+// base 'https://other.com/X' is not the root $id, is not embedded under $defs
+// by $id, and no references map is present.
 type CrossSchemaRef = SplitFragmentRefType<'https://other.com/X#/$defs/Bar', typeof _LocalSchemaWithId>;
-assert<AssertEqual<CrossSchemaRef, unknown>>();
+assert<AssertEqual<CrossSchemaRef, RefNotFoundInterface<'https://other.com/X'>>>();
 
 // Same-schema ref resolves correctly (base URI matches $id)
 type SameSchemaRef = SplitFragmentRefType<'https://local.com/Foo#/$defs/Bar', typeof _LocalSchemaWithId>;
 assert<AssertEqual<SameSchemaRef, { readonly 'type': 'string' }>>();
 
-// Schema without $id → unknown (cannot verify base)
+// Schema without $id, unreachable base → RefNotFoundInterface (uniform).
 const _SchemaWithoutId = {
   '$defs': { 'X': { 'type': 'number' } },
   'type': 'object'
@@ -912,7 +914,7 @@ const _SchemaWithoutId = {
 void _SchemaWithoutId;
 
 type NoIdRef = SplitFragmentRefType<'https://any.com#/$defs/X', typeof _SchemaWithoutId>;
-assert<AssertEqual<NoIdRef, unknown>>();
+assert<AssertEqual<NoIdRef, RefNotFoundInterface<'https://any.com'>>>();
 
 // ---------------------------------------------------------------------------
 // Suppress unused variable warnings

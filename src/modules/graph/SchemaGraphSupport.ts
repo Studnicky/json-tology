@@ -32,6 +32,8 @@ import type {
   NormalizedLanguageTagType,
   OptionalNumberType,
   OptionalStringType,
+  PropertyEntry,
+  PropertyMap,
   ScalarFieldsType,
   SchemaExtensionsType,
   SemanticsBuildContextInterface,
@@ -163,9 +165,6 @@ function extractJtConfig(schema: Record<string, unknown>): ExtractedJtConfigType
 
   return Object.keys(config).length > 0 ? config : undefined;
 }
-
-type PropertyEntry = [string, SchemaGraphNodeInterface];
-type PropertyMap = ReadonlyMap<string, SchemaGraphNodeInterface>;
 
 const EMPTY_MAP: PropertyMap = new Map();
 

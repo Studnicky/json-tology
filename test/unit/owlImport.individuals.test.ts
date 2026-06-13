@@ -97,6 +97,9 @@ function makeCtx(
       },
       'expand': (curie: string) => {
         return curie;
+      },
+      'expandIfNeeded': (value: string) => {
+        return value;
       }
     },
     'graph': SchemaGraph.fromQuads([], { 'baseIRI': 'urn:test' }),

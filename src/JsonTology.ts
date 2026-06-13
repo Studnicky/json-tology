@@ -432,7 +432,11 @@ export class JsonTology<TRefs = Record<never, never>> {
     schema: TSchema,
     quads: QuadInterface[],
     options?: { 'deskolemize'?: boolean }
-  ): Array<InferSchemaType<TSchema>> {
+  // Ephemeral single-schema registry: only this schema's own (embedded) refs
+  // resolve, so the return pins empty external references rather than the
+  // global default — it must not claim cross-schema resolution the one-shot
+  // registry cannot deliver.
+  ): Array<InferSchemaType<TSchema, TSchema, Record<never, never>>> {
     const jt = JsonTology.ephemeral(schema);
 
     return jt.fromQuads(schema, quads, options);
@@ -473,10 +477,13 @@ export class JsonTology<TRefs = Record<never, never>> {
     schema: TSchema,
     data: unknown,
     options?: { 'enableDefaults'?: boolean }
-  ): InferSchemaType<TSchema> {
+  // Ephemeral single-schema registry pins empty external references — see
+  // `fromQuads`. The type must not claim cross-schema resolution the one-shot
+  // registry cannot deliver.
+  ): InferSchemaType<TSchema, TSchema, Record<never, never>> {
     const jt = JsonTology.ephemeral(schema);
 
-    return jt.instantiate(schema as JsonSchemaDocumentType & { readonly '$id': string }, data, options) as InferSchemaType<TSchema>;
+    return jt.instantiate(schema as JsonSchemaDocumentType & { readonly '$id': string }, data, options) as InferSchemaType<TSchema, TSchema, Record<never, never>>;
   }
 
   /**
@@ -502,12 +509,15 @@ export class JsonTology<TRefs = Record<never, never>> {
    */
   public static materialize<TSchema extends Record<string, unknown> & { readonly '$id': string }>(
     schema: TSchema,
-    data?: Partial<InferSchemaType<TSchema>>,
+    data?: Partial<InferSchemaType<TSchema, TSchema, Record<never, never>>>,
     options?: { 'enablePartial'?: boolean }
-  ): MaterializedSchemaType<TSchema> {
+  // Ephemeral single-schema registry pins empty external references — see
+  // `fromQuads`. The type must not claim cross-schema resolution the one-shot
+  // registry cannot deliver.
+  ): MaterializedSchemaType<TSchema, TSchema, Record<never, never>> {
     const jt = JsonTology.ephemeral(schema);
 
-    return jt.materialize(schema as JsonSchemaDocumentType & { readonly '$id': string }, data as Record<string, unknown>, options) as MaterializedSchemaType<TSchema>;
+    return jt.materialize(schema as JsonSchemaDocumentType & { readonly '$id': string }, data as Record<string, unknown>, options) as MaterializedSchemaType<TSchema, TSchema, Record<never, never>>;
   }
 
   /**
@@ -517,13 +527,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @returns An {@link OntologyBuilder} containing OWL + SHACL output.
    */
   public static ontology(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
-    const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
-
-    for (const schema of schemas) {
-      jt.registry.set(schema);
-    }
-
-    return jt.ontology();
+    return JsonTology.registryForSchemas(schemas).ontology();
   }
 
   /**
@@ -599,6 +603,26 @@ export class JsonTology<TRefs = Record<never, never>> {
   }
 
   /**
+   * Creates a `JsonTology` instance with the given schemas pre-registered.
+   * Shared by the static convenience methods that accept an array of schemas.
+   */
+  private static registryForSchemas(
+    schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>,
+    options?: { readonly 'enableStrictGraph'?: boolean }
+  ): JsonTology<SchemaReferencesMapType<ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>>> {
+    const jt = JsonTology.create({
+      'baseIRI': STATIC_BASE_IRI,
+      ...options
+    });
+
+    for (const schema of schemas) {
+      jt.registry.set(schema);
+    }
+
+    return jt;
+  }
+
+  /**
    * SubschemaAt — ephemeral registry variant. No instance required.
    *
    * @param schema - A schema object with `$id`.
@@ -652,16 +676,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public static toShacl(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
     // enableStrictGraph: false — static convenience method accepts any schema without
     // imposing graph-integrity constraints; the caller manages schema quality.
-    const jt = JsonTology.create({
-      'baseIRI': STATIC_BASE_IRI,
-      'enableStrictGraph': false
-    });
-
-    for (const schema of schemas) {
-      jt.registry.set(schema);
-    }
-
-    return jt.toShacl();
+    return JsonTology.registryForSchemas(schemas, { 'enableStrictGraph': false }).toShacl();
   }
   /**
    * ToTbox — ephemeral registry variant. No instance required.
@@ -672,16 +687,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public static toTbox(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
     // enableStrictGraph: false — static convenience method accepts any schema without
     // imposing graph-integrity constraints; the caller manages schema quality.
-    const jt = JsonTology.create({
-      'baseIRI': STATIC_BASE_IRI,
-      'enableStrictGraph': false
-    });
-
-    for (const schema of schemas) {
-      jt.registry.set(schema);
-    }
-
-    return jt.toTbox();
+    return JsonTology.registryForSchemas(schemas, { 'enableStrictGraph': false }).toTbox();
   }
   /**
    * Validate — ephemeral registry variant. No instance required.
@@ -1744,3 +1750,67 @@ export class JsonTology<TRefs = Record<never, never>> {
     return ShaclValidator.validate(shapeQuads, data);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Registry-derived type helpers
+//
+// A `JsonTology` instance created via `JsonTology.create({ schemas })` carries
+// its references map as the `TRefs` type parameter, so `typeof jt` already
+// holds every registered schema keyed by `$id`. These helpers read the
+// resolved type back out of that instance type — consumers name a registered
+// schema by `$id` instead of hand-rolling `SchemaReferencesMapType<typeof
+// tuple>`. Cross-schema `$ref`s resolve against the registry's own references.
+// ---------------------------------------------------------------------------
+
+/**
+ * The references map (`{ [$id]: schema }`) carried by a `JsonTology` instance
+ * type. `RegistryReferencesType<typeof jt>` recovers the map that
+ * `JsonTology.create({ schemas })` accumulated, with no tuple to reconstruct.
+ *
+ * @typeParam TJt - A `JsonTology<...>` instance type (usually `typeof jt`).
+ */
+export type RegistryReferencesType<TJt>
+  = TJt extends JsonTology<infer TRefs> ? TRefs : never;
+
+/**
+ * The canonical (brand-free, decoded) shape of a registered schema, selected
+ * by `$id` from a `JsonTology` instance type. Equivalent to the value `decode`
+ * produces — cross-schema `$ref`s resolved through the registry's references,
+ * no references map passed by hand.
+ *
+ * @example
+ * ```ts
+ * const jt = JsonTology.create({ schemas: [ChannelSchema, ChatMessageSchema] });
+ * type ChatMessage = RegisteredCanonicalType<typeof jt, 'urn:slack:ChatMessage'>;
+ * //   channel / sender resolve to their schema shapes, not RefNotFound
+ * ```
+ *
+ * @typeParam TJt - A `JsonTology<...>` instance type (usually `typeof jt`).
+ * @typeParam K - A registered schema `$id`.
+ */
+export type RegisteredCanonicalType<TJt, K extends keyof RegistryReferencesType<TJt> & string>
+  = CanonicalShapeType<RegistryReferencesType<TJt>[K], RegistryReferencesType<TJt>>;
+
+/**
+ * The materialized shape of a registered schema, selected by `$id` — required
+ * and defaulted properties are non-optional. Matches `materialize()` output.
+ *
+ * @typeParam TJt - A `JsonTology<...>` instance type (usually `typeof jt`).
+ * @typeParam K - A registered schema `$id`.
+ */
+export type RegisteredMaterializedType<TJt, K extends keyof RegistryReferencesType<TJt> & string>
+  = MaterializedSchemaType<
+    RegistryReferencesType<TJt>[K],
+    RegistryReferencesType<TJt>[K],
+    RegistryReferencesType<TJt>
+  >;
+
+/**
+ * The parse / wire output type of a registered schema, selected by `$id` —
+ * matches the return type of `instantiate()`, `parse()`, and `dump()`.
+ *
+ * @typeParam TJt - A `JsonTology<...>` instance type (usually `typeof jt`).
+ * @typeParam K - A registered schema `$id`.
+ */
+export type RegisteredOutputType<TJt, K extends keyof RegistryReferencesType<TJt> & string>
+  = ParseOutputType<RegistryReferencesType<TJt>[K], RegistryReferencesType<TJt>>;

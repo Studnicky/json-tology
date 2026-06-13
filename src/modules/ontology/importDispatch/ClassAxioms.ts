@@ -34,74 +34,20 @@ import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import type { InvariantInterface } from '../../../interfaces/Invariant.js';
 import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import type { AxiomContext } from '../../../interfaces/AxiomContext.js';
+import type { ApplyRelationOptions } from '../../../interfaces/ApplyRelationOptions.js';
+import type { ApplyBnodeLiteralOptions } from '../../../interfaces/ApplyBnodeLiteralOptions.js';
 import {
   OWL, RDF, RDFS
 } from '../../../constants/IRI.js';
-
-// ---------------------------------------------------------------------------
-// Predicate constants — accept full IRI and CURIE forms both
-// ---------------------------------------------------------------------------
-
-const COMPLEMENT_OF_PREDICATES: ReadonlySet<string> = new Set([
-  OWL.complementOf,
-  'owl:complementOf'
-]);
-
-const DISJOINT_UNION_OF_PREDICATES: ReadonlySet<string> = new Set([
-  OWL.disjointUnionOf,
-  'owl:disjointUnionOf'
-]);
-
-const DISJOINT_WITH_PREDICATES: ReadonlySet<string> = new Set([
-  OWL.disjointWith,
-  'owl:disjointWith'
-]);
-
-const EQUIVALENT_CLASS_PREDICATES: ReadonlySet<string> = new Set([
-  OWL.equivalentClass,
-  'owl:equivalentClass'
-]);
-
-const UNION_OF_PREDICATES: ReadonlySet<string> = new Set([
-  OWL.unionOf,
-  'owl:unionOf'
-]);
-
-/** Full IRI for rdfs:Class — W3C RDF Schema class IRI. */
-const RDFS_CLASS_IRI = 'http://www.w3.org/2000/01/rdf-schema#Class';
-
-const CLASS_TYPE_IRIS: ReadonlySet<string> = new Set([
-  OWL.Class,
-  'owl:Class',
-  'rdfs:Class',
-  RDFS_CLASS_IRI
-]);
-
-// ---------------------------------------------------------------------------
-// Options interfaces for helper functions
-// ---------------------------------------------------------------------------
-
-/** Shared mutable state threaded through axiom-arm helpers. */
-interface AxiomContext {
-  readonly 'allClassIris': ReadonlySet<string>;
-  readonly 'invariants': Array<{ 'invariant': InvariantInterface;
-    'schemaId': string }>;
-  readonly 'resolveIri': (target: string | { 'id': string }) => string;
-  readonly 'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
-}
-
-/** Options for applying a single relation to the delta map. */
-interface ApplyRelationOptions {
-  readonly 'axiomCtx': AxiomContext;
-  readonly 'relation': SchemaGraphRelationInterface;
-  readonly 'subjectIri': string;
-}
-
-/** Options for the bnode/literal equivalentClass arm. */
-interface ApplyBnodeLiteralOptions {
-  readonly 'axiomCtx': AxiomContext;
-  readonly 'graph': SchemaGraphInterface;
-}
+import {
+  CLASS_TYPE_IRIS,
+  COMPLEMENT_OF_PREDICATES,
+  DISJOINT_UNION_OF_IRIS,
+  DISJOINT_WITH_PREDICATES,
+  EQUIVALENT_CLASS_PREDICATES,
+  UNION_OF_IRIS
+} from '../../../constants/ONTOLOGY_PREDICATES.js';
 
 // ---------------------------------------------------------------------------
 // Graph-native helpers
@@ -176,7 +122,7 @@ function extractEquivalentMembersFromGraph(
   graph: SchemaGraphInterface
 ): string[] {
   const unionRelations = graph.relationsForSubject(bnodeId).filter((rel: SchemaGraphRelationInterface): boolean => {
-    return UNION_OF_PREDICATES.has(rel.predicate);
+    return UNION_OF_IRIS.has(rel.predicate);
   });
 
   if (unionRelations.length === 0) {
@@ -539,7 +485,7 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContext, axiomCtx: AxiomContext):
       continue;
     }
 
-    if (DISJOINT_UNION_OF_PREDICATES.has(predicate)) {
+    if (DISJOINT_UNION_OF_IRIS.has(predicate)) {
       applyDisjointUnionOf(bnodeOpts, relation, subjectIri);
     }
   }
@@ -587,23 +533,17 @@ export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContext
   const invariants: Array<{ 'invariant': InvariantInterface;
     'schemaId': string; }> = [];
 
-  // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
-  // map. Expand them back so $ref / disjointWith values match the full-IRI
-  // schema $id form used throughout the importer.
-  function resolveTargetIri(target: string | { 'id': string }): string {
-    const raw = typeof target === 'string' ? target : target.id;
-
-    if (raw === '' || raw.startsWith('_:') || raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('urn:')) {
-      return raw;
-    }
-
-    return ctx.curie.expand(raw);
-  }
-
   const axiomCtx: AxiomContext = {
     'allClassIris': ctx.allClassIris,
     invariants,
-    'resolveIri': resolveTargetIri,
+    // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
+    // map. Expand them back so $ref / disjointWith values match the full-IRI
+    // schema $id form used throughout the importer.
+    'resolveIri': (target: string | { 'id': string }): string => {
+      const raw = typeof target === 'string' ? target : target.id;
+
+      return ctx.curie.expandIfNeeded(raw);
+    },
     schemaDeltas
   };
 

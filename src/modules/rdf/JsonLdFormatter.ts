@@ -14,6 +14,7 @@ import { RDF } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { Lists } from './Lists.js';
 import { decodeLiteral } from './Terms.js';
+import { QuadFactory } from './QuadFactory.js';
 
 const RDF_NS_FULL = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const RDF_FIRST_FULL = `${RDF_NS_FULL}first`;
@@ -97,19 +98,7 @@ function buildSubjectIndex(quads: QuadInterface[]): {
   'listSegmentIds': ReadonlySet<string>;
   'subjectQuads': ReadonlyMap<string, QuadInterface[]>;
 } {
-  const subjectQuads = new Map<string, QuadInterface[]>();
-
-  for (const entry of quads) {
-    const key = entry.subject.value;
-    let list = subjectQuads.get(key);
-
-    if (list === undefined) {
-      list = [];
-      subjectQuads.set(key, list);
-    }
-    list.push(entry);
-  }
-
+  const subjectQuads = QuadFactory.indexBySubject(quads);
   const listSegmentIds = new Set<string>();
 
   for (const [

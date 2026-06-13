@@ -19,4 +19,14 @@ export interface CurieInterface {
    * @returns The expanded IRI, or the original value if no prefix match is found
    */
   expand(value: string): string;
+
+  /**
+   * Expand a value to a full IRI when needed, passing through blank nodes,
+   * absolute IRIs, and empty strings unchanged. Returns the original value
+   * if CURIE expansion fails (unregistered prefix).
+   *
+   * @param value - A CURIE, full IRI, blank node ID, or empty string
+   * @returns The expanded IRI, or the original value unchanged
+   */
+  expandIfNeeded(value: string): string;
 }

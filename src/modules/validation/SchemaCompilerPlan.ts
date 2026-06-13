@@ -51,11 +51,32 @@ import type {
   ValidateWithErrorsResultType
 } from '../../types/Validation.js';
 import type { LookupSchemaFnType } from '../../types/LookupSchema.js';
-import type { GraphCompileOptionsInterface } from '../../interfaces/GraphCompileOptions.js';
+import type {
+  GraphCompileOptionsInterface, GraphCompileWithSemanticsInterface
+} from '../../interfaces/GraphCompileOptions.js';
+import type { PlanCompileWithSemanticsInterface } from '../../interfaces/PlanCompileOptions.js';
+import type { ArrayChecksInterface } from '../../interfaces/ArrayChecks.js';
+import type { CheckObjectKeysOptionsInterface } from '../../interfaces/CheckObjectKeysOptions.js';
+import type { CollectBranchOptionsInterface } from '../../interfaces/CollectBranchOptions.js';
+import type { ContainsCheckOptionsInterface } from '../../interfaces/ContainsCheckOptions.js';
+import type { FlatObjectCheckContextInterface } from '../../interfaces/FlatObjectCheckContext.js';
+import type { NodeSupportContextInterface } from '../../interfaces/NodeSupportContext.js';
+import type { ObjectChecksInterface } from '../../interfaces/ObjectChecks.js';
+import type { PlanAllowedKeysOptionsInterface } from '../../interfaces/PlanAllowedKeysOptions.js';
+import type { PlanPreludeInterface } from '../../interfaces/PlanPrelude.js';
+import type { PropertyDefaultsOptionsInterface } from '../../interfaces/PropertyDefaultsOptions.js';
+import type { PropertyValidatorsOptionsInterface } from '../../interfaces/PropertyValidatorsOptions.js';
+import type { RefNodeSupportOptionsInterface } from '../../interfaces/RefNodeSupportOptions.js';
+import type { RefValidatorOptionsInterface } from '../../interfaces/RefValidatorOptions.js';
+import type { ResolveScanRefOptionsInterface } from '../../interfaces/ResolveScanRefOptions.js';
+import type { ScanConditionalOptionsInterface } from '../../interfaces/ScanConditionalOptions.js';
+import type { WalkInheritedRefOptionsInterface } from '../../interfaces/WalkInheritedRefOptions.js';
+import type { ConstraintValidatorsResult } from '../../types/ConstraintValidatorsResult.js';
 import {
   deepEqual, isRecord
 } from '../data/DataTypes.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
 import { Predicates } from './Predicates.js';
 import { RefResolver } from './RefResolver.js';
 import { BaseError } from '../../errors/BaseError.js';
@@ -100,14 +121,6 @@ const FALSE_VALIDATOR: ValidateWithErrorsFnType = (
 // Internal helpers (graph context)
 // ---------------------------------------------------------------------------
 
-/** Options for `walkInheritedRef`. */
-interface WalkInheritedRefOptionsInterface {
-  readonly 'currentGraph': SchemaGraphInterface;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'ref': string;
-  readonly 'walkFn': (g: SchemaGraphInterface, n: SchemaGraphNodeInterface) => void;
-}
-
 /**
  * Resolve a `$ref` string to its target graph and node within the `walk` traversal,
  * then continue collecting property names.
@@ -127,9 +140,9 @@ function walkInheritedRef(opts: WalkInheritedRefOptionsInterface): void {
     return;
   }
 
-  const hashIndex = ref.indexOf('#');
-  const id = hashIndex < 0 ? ref : ref.slice(0, hashIndex);
-  const fragment = hashIndex < 0 ? '' : ref.slice(hashIndex + 1);
+  const {
+    fragment, id
+  } = SchemaIri.parseRef(ref);
   const targetGraph = lookupGraph(id);
 
   if (targetGraph !== undefined) {
@@ -204,9 +217,9 @@ function resolveBranchRef(
     return undefined;
   }
 
-  const hashIndex = ref.indexOf('#');
-  const id = hashIndex < 0 ? ref : ref.slice(0, hashIndex);
-  const fragment = hashIndex < 0 ? '' : ref.slice(hashIndex + 1);
+  const {
+    fragment, id
+  } = SchemaIri.parseRef(ref);
   const targetGraph = lookupGraph(id);
 
   return targetGraph === undefined
@@ -215,21 +228,6 @@ function resolveBranchRef(
       'graph': targetGraph,
       'node': targetGraph.resolveFragment(fragment)
     };
-}
-
-/** Shared mutable state for the conditional-branch property scan. */
-interface BranchScanStateInterface {
-  readonly 'collectVisited': Set<SchemaGraphNodeInterface>;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'scanVisited': Set<SchemaGraphNodeInterface>;
-  readonly 'target': ConditionalPropertyKeySetType;
-}
-
-/** Options for `collectBranchPropertyNames`. */
-interface CollectBranchOptionsInterface {
-  readonly 'branchNode': SchemaGraphNodeInterface;
-  readonly 'scanState': BranchScanStateInterface;
-  readonly 'startGraph': SchemaGraphInterface;
 }
 
 /**
@@ -277,13 +275,6 @@ function collectBranchPropertyNames(opts: CollectBranchOptionsInterface): void {
   };
 
   collectFn(startGraph, branchNode);
-}
-
-/** Options for `scanForConditionalBranches`. */
-interface ScanConditionalOptionsInterface {
-  readonly 'currentGraph': SchemaGraphInterface;
-  readonly 'scanSem': SchemaGraphSemanticsInterface;
-  readonly 'scanState': BranchScanStateInterface;
 }
 
 /**
@@ -336,13 +327,6 @@ function scanForConditionalBranches(opts: ScanConditionalOptionsInterface): void
   }
 }
 
-/** Options for `resolveScanRef`. */
-interface ResolveScanRefOptionsInterface {
-  readonly 'currentGraph': SchemaGraphInterface;
-  readonly 'ref': string;
-  readonly 'scanState': BranchScanStateInterface;
-}
-
 /**
  * Resolve a `$ref` encountered during conditional-branch scanning.
  */
@@ -368,9 +352,9 @@ function resolveScanRef(opts: ResolveScanRefOptionsInterface): void {
     return;
   }
 
-  const hashIndex = ref.indexOf('#');
-  const id = hashIndex < 0 ? ref : ref.slice(0, hashIndex);
-  const fragment = hashIndex < 0 ? '' : ref.slice(hashIndex + 1);
+  const {
+    fragment, id
+  } = SchemaIri.parseRef(ref);
   const targetGraph = lookupGraph(id);
 
   if (targetGraph !== undefined) {
@@ -553,18 +537,6 @@ function runItemChecks(
   return true;
 }
 
-/** Compiled array constraint checks passed to `runArrayChecks`. */
-interface ArrayChecksInterface {
-  readonly 'containsCheck': OptionalCheckFnType;
-  readonly 'itemCheck': OptionalCheckFnType;
-  readonly 'maxContains': number | undefined;
-  readonly 'maxItems': number | undefined;
-  readonly 'minContains': number | undefined;
-  readonly 'minItems': number | undefined;
-  readonly 'prefixChecks': CheckFnType[] | undefined;
-  readonly 'uniqueItems': boolean;
-}
-
 /** Validate array size and uniqueness constraints. */
 function runArraySizeChecks(value: unknown[], checks: ArrayChecksInterface): boolean {
   if (checks.minItems !== undefined && value.length < checks.minItems) {
@@ -615,14 +587,6 @@ function runArrayChecks(value: unknown[], checks: ArrayChecksInterface): boolean
   }
 
   return runArrayItemChecks(value, checks);
-}
-
-/** Options for `runContainsCheck`. */
-interface ContainsCheckOptionsInterface {
-  readonly 'containsCheck': CheckFnType;
-  readonly 'maxContains': number | undefined;
-  readonly 'minContains': number | undefined;
-  readonly 'value': unknown[];
 }
 
 /** Evaluate a `contains` check against an array, returning whether the count satisfies min/max. */
@@ -833,17 +797,8 @@ export function compileEnumCheck(enumValues: unknown[]): CheckFnType {
   };
 }
 
-/** Options for `buildObjectPropValidators` and `buildPatternPropChecks`. */
-interface SemanticCompileOptionsInterface {
-  readonly 'context': SchemaCompilerGraphContextInterface;
-  readonly 'formatRegistry': FormatRegistryInterface;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'sem': SchemaGraphSemanticsInterface;
-}
-
 /** Build object property validators from semantics. */
-function buildObjectPropValidators(opts: SemanticCompileOptionsInterface): ObjectPropValidatorsMapType {
+function buildObjectPropValidators(opts: GraphCompileWithSemanticsInterface): ObjectPropValidatorsMapType {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
@@ -866,7 +821,7 @@ function buildObjectPropValidators(opts: SemanticCompileOptionsInterface): Objec
 }
 
 /** Build pattern-property validators from semantics. */
-function buildPatternPropChecks(opts: SemanticCompileOptionsInterface): PatternPropChecksResultType {
+function buildPatternPropChecks(opts: GraphCompileWithSemanticsInterface): PatternPropChecksResultType {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
@@ -928,18 +883,6 @@ function checkKeyAgainstPatterns(
   };
 }
 
-/** Compiled object constraint checks for `runObjectCheck`. */
-interface ObjectChecksInterface {
-  readonly 'additionalCheck': OptionalCheckFnType;
-  readonly 'additionalIsFalse': boolean;
-  readonly 'maxProperties': number | undefined;
-  readonly 'minProperties': number | undefined;
-  readonly 'patternChecks': PatternPropChecksResultType;
-  readonly 'properties': ReadonlyMap<string, SchemaGraphNodeInterface>;
-  readonly 'propValidators': ObjectPropValidatorsMapType;
-  readonly 'required': readonly string[] | undefined;
-}
-
 /** Execute all compiled object checks against a known-record value. */
 function runObjectCheck(value: Record<string, unknown>, checks: ObjectChecksInterface): boolean {
   const {
@@ -974,16 +917,6 @@ function runObjectCheck(value: Record<string, unknown>, checks: ObjectChecksInte
     properties,
     propValidators
   });
-}
-
-/** Options for `checkObjectKeys`. */
-interface CheckObjectKeysOptionsInterface {
-  readonly 'additionalCheck': OptionalCheckFnType;
-  readonly 'additionalIsFalse': boolean;
-  readonly 'obj': Record<string, unknown>;
-  readonly 'patternChecks': PatternPropChecksResultType;
-  readonly 'properties': ReadonlyMap<string, SchemaGraphNodeInterface>;
-  readonly 'propValidators': ObjectPropValidatorsMapType;
 }
 
 /** Evaluate all object keys against property, pattern, and additional validators. */
@@ -1056,7 +989,7 @@ export function compileObjectCheck(
   lookupSchema?: LookupSchemaFnType
 ): OptionalCheckFnType {
   const sem = graph.semantics(graphNode);
-  const semOpts: SemanticCompileOptionsInterface = {
+  const semOpts: GraphCompileWithSemanticsInterface = {
     context,
     formatRegistry,
     graph,
@@ -1160,9 +1093,9 @@ export function compileRefCheck(
 ): OptionalCheckFnType {
   // Fast path: cross-schema root ref with a pre-compiled entry
   if (!ref.startsWith('#')) {
-    const hashIndex = ref.indexOf('#');
-    const schemaId = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-    const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
+    const {
+      fragment, 'id': schemaId
+    } = SchemaIri.parseRef(ref);
     const fastPath = compileCrossSchemaRootRef(context, schemaId, fragment);
 
     if (fastPath !== undefined) {
@@ -1197,16 +1130,6 @@ export function compileRefCheck(
   return context.compileNodeCheck(targetNode, formatRegistry, targetGraph, lookupSchema);
 }
 
-/** Options for `checkRefNodeSupport`. */
-interface RefNodeSupportOptionsInterface {
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'ref': string;
-  readonly 'refTargetNode': SchemaGraphNodeInterface | undefined;
-  readonly 'visited': Set<SchemaGraphNodeInterface | string>;
-}
-
 /** Check whether a `$ref` target supports compilation, updating `visited` to prevent re-entry. */
 function checkRefNodeSupport(opts: RefNodeSupportOptionsInterface): boolean {
   const {
@@ -1217,8 +1140,7 @@ function checkRefNodeSupport(opts: RefNodeSupportOptionsInterface): boolean {
     return nodeSupportsCompilation(refTargetNode, graph, lookupSchema, visited, lookupGraph);
   }
 
-  const hashIndex = ref.indexOf('#');
-  const schemaId = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+  const { 'id': schemaId } = SchemaIri.parseRef(ref);
 
   if (visited.has(schemaId)) {
     return true;
@@ -1233,14 +1155,6 @@ function checkRefNodeSupport(opts: RefNodeSupportOptionsInterface): boolean {
   }
 
   return true;
-}
-
-/** Shared traversal context for node-support checks. */
-interface NodeSupportContextInterface {
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'visited': Set<SchemaGraphNodeInterface | string>;
 }
 
 /** Check that every branch in an array supports compilation. */
@@ -1477,13 +1391,6 @@ export function tryCompileFlatObjectCheck(
   };
 }
 
-/** Context for `runFlatObjectCheck`. */
-interface FlatObjectCheckContextInterface {
-  readonly 'propChecks': PropCheckInterface[];
-  readonly 'rejectsAdditional': boolean;
-  readonly 'semProperties': ReadonlyMap<string, SchemaGraphNodeInterface>;
-}
-
 /** Execute flat-object property and additional-property checks against a known-record value. */
 function runFlatObjectCheck(obj: Record<string, unknown>, ctx: FlatObjectCheckContextInterface): boolean {
   const {
@@ -1518,34 +1425,6 @@ function runFlatObjectCheck(obj: Record<string, unknown>, ctx: FlatObjectCheckCo
 // ---------------------------------------------------------------------------
 // Plan-time helpers (validate context)
 // ---------------------------------------------------------------------------
-
-/** Options for `compilePropertyValidators`. */
-interface PropertyValidatorsOptionsInterface {
-  readonly 'configStrict': boolean | undefined;
-  readonly 'context': SchemaCompilerValidatePlanContextInterface;
-  readonly 'formatRegistry': FormatRegistryInterface;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'propertyEntries': ReadonlyMap<string, SchemaGraphNodeInterface>;
-}
-
-/** Options for `compileRefValidator`. */
-interface RefValidatorOptionsInterface {
-  readonly 'context': SchemaCompilerValidatePlanContextInterface;
-  readonly 'formatRegistry': FormatRegistryInterface;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'ref': string | undefined;
-}
-
-/** Options for `buildPropertyDefaults`. */
-interface PropertyDefaultsOptionsInterface {
-  readonly 'context': SchemaCompilerValidatePlanContextInterface;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'propertyEntries': ReadonlyMap<string, SchemaGraphNodeInterface>;
-}
 
 function booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFnType {
   return schema ? TRUE_VALIDATOR : FALSE_VALIDATOR;
@@ -1735,25 +1614,8 @@ function buildEnumSet(enumValues: undefined | unknown[]): EnumPrimitiveSetType {
   return new Set<boolean | null | number | string>(primitiveValues);
 }
 
-/** Shared options for plan-time compile helpers taking context + sem + formatRegistry + graph + lookupSchema. */
-interface PlanSemCompileOptionsInterface {
-  readonly 'context': SchemaCompilerValidatePlanContextInterface;
-  readonly 'formatRegistry': FormatRegistryInterface;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'sem': SchemaGraphSemanticsInterface;
-}
-
-/** Options for `buildPlanAllowedKeys`. */
-interface PlanAllowedKeysOptionsInterface {
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'propertyEntries': ReadonlyMap<string, SchemaGraphNodeInterface>;
-  readonly 'sem': SchemaGraphSemanticsInterface;
-}
-
 /** Compile pattern-property validators from the semantics node. */
-function buildPlanPatternPropValidators(opts: PlanSemCompileOptionsInterface): PatternPropValidatorsResultType {
+function buildPlanPatternPropValidators(opts: PlanCompileWithSemanticsInterface): PatternPropValidatorsResultType {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
@@ -1778,7 +1640,7 @@ function buildPlanPatternPropValidators(opts: PlanSemCompileOptionsInterface): P
 }
 
 /** Compile `allOf` / `anyOf` / `oneOf` validators and checks from the semantics node. */
-function buildPlanCompositionValidators(opts: PlanSemCompileOptionsInterface): CompositionValidatorsResultInterface {
+function buildPlanCompositionValidators(opts: PlanCompileWithSemanticsInterface): CompositionValidatorsResultInterface {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
@@ -1817,7 +1679,7 @@ function buildPlanCompositionValidators(opts: PlanSemCompileOptionsInterface): C
 }
 
 /** Compile `if` / `then` / `else` checks and validators from the semantics node. */
-function buildPlanConditionalValidators(opts: PlanSemCompileOptionsInterface): ConditionalValidatorsResultInterface {
+function buildPlanConditionalValidators(opts: PlanCompileWithSemanticsInterface): ConditionalValidatorsResultInterface {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
@@ -1839,7 +1701,7 @@ function buildPlanConditionalValidators(opts: PlanSemCompileOptionsInterface): C
 }
 
 /** Compile `dependentSchemas` validators from the semantics node. */
-function buildPlanDependentSchemaValidators(opts: PlanSemCompileOptionsInterface): DependentSchemaValidatorsResultType {
+function buildPlanDependentSchemaValidators(opts: PlanCompileWithSemanticsInterface): DependentSchemaValidatorsResultType {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
@@ -1911,16 +1773,6 @@ function buildPlanAllowedKeys(opts: PlanAllowedKeysOptionsInterface): AllowedKey
 // buildNodePlan helpers — reduce complexity of the main plan builder
 // ---------------------------------------------------------------------------
 
-/** Result of `buildPlanPrelude` — the non-composition, non-conditional plan fragments. */
-interface PlanPreludeInterface {
-  readonly 'additionalValidator': OptionalValidateWithErrorsFnType;
-  readonly 'complementCheck': OptionalCheckFnType;
-  readonly 'depRequiredEntries': DepRequiredEntriesType;
-  readonly 'formatValidator': ReturnType<FormatRegistryInterface['get']> | undefined;
-  readonly 'patternRegex': RegExp | undefined;
-  readonly 'propertyNamesValidator': OptionalValidateWithErrorsFnType;
-}
-
 /** Collect `dependentRequired` entries with non-empty arrays from semantics. */
 function buildPlanDepRequired(dependentRequired: Readonly<Record<string, unknown>>): DepRequiredEntriesType {
   const entries: DepRequiredEntriesType = [];
@@ -1940,10 +1792,7 @@ function buildPlanDepRequired(dependentRequired: Readonly<Record<string, unknown
   return entries;
 }
 
-/** Compile the additional-properties, complement, and property-names validators. */
-type ConstraintValidatorsResult = Pick<PlanPreludeInterface, 'additionalValidator' | 'complementCheck' | 'propertyNamesValidator'>;
-
-function buildPlanConstraintValidators(opts: PlanSemCompileOptionsInterface): ConstraintValidatorsResult {
+function buildPlanConstraintValidators(opts: PlanCompileWithSemanticsInterface): ConstraintValidatorsResult {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
@@ -1968,7 +1817,7 @@ function buildPlanConstraintValidators(opts: PlanSemCompileOptionsInterface): Co
 }
 
 /** Compute scalar validators that have no mutual dependencies. */
-function buildPlanPrelude(opts: PlanSemCompileOptionsInterface): PlanPreludeInterface {
+function buildPlanPrelude(opts: PlanCompileWithSemanticsInterface): PlanPreludeInterface {
   const {
     context, formatRegistry, sem
   } = opts;
@@ -1995,7 +1844,7 @@ function buildPlanPrelude(opts: PlanSemCompileOptionsInterface): PlanPreludeInte
 // ---------------------------------------------------------------------------
 
 /** Build the array-related validators for a node plan. */
-function buildPlanArrayValidators(opts: PlanSemCompileOptionsInterface): PlanArrayValidatorsInterface {
+function buildPlanArrayValidators(opts: PlanCompileWithSemanticsInterface): PlanArrayValidatorsInterface {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
@@ -2062,7 +1911,7 @@ export function buildNodePlan(
   const sem = graph.semantics(graphNode);
   const propertyEntries = sem.properties;
 
-  const planSemOpts: PlanSemCompileOptionsInterface = {
+  const planSemOpts: PlanCompileWithSemanticsInterface = {
     context,
     formatRegistry,
     graph,
