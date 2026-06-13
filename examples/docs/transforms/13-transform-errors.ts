@@ -30,6 +30,7 @@ const jt = createBookstoreDocRegistry();
 const StrictDateSchema = Transform.create(
   {
     '$id': 'https://bookstore.example/StrictDate',
+    'format': 'date-time',
     'type': 'string'
   } as const,
   {
@@ -40,10 +41,10 @@ const StrictDateSchema = Transform.create(
         throw new TypeError(`Not a valid date string: "${raw}"`);
       }
 
-      return new Date(ms);
+      return new Date(ms).toISOString();
     },
-    'encode': (date: Date) => {
-      return date.toISOString();
+    'encode': (isoString: string) => {
+      return isoString;
     }
   }
 );
@@ -66,6 +67,7 @@ try {
 const AnnotatedDateSchema = Transform.create(
   {
     '$id': 'https://bookstore.example/AnnotatedDate',
+    'format': 'date-time',
     'type': 'string'
   } as const,
   {
@@ -74,10 +76,10 @@ const AnnotatedDateSchema = Transform.create(
         throw new DecodeError('Year out of antiquariat range', { 'path': '/placedAt' });
       }
 
-      return new Date(raw);
+      return new Date(raw).toISOString();
     },
-    'encode': (date: Date) => {
-      return date.toISOString();
+    'encode': (isoString: string) => {
+      return isoString;
     }
   }
 );
@@ -100,25 +102,28 @@ try {
 const GuardedEncodeSchema = Transform.create(
   {
     '$id': 'https://bookstore.example/GuardedEncode',
+    'format': 'date-time',
     'type': 'string'
   } as const,
   {
     'decode': (raw: string) => {
-      return new Date(raw);
+      return new Date(raw).toISOString();
     },
-    'encode': (date: Date) => {
+    'encode': (isoString: string) => {
+      const date = new Date(isoString);
+
       if (date.getFullYear() < 1900) {
         throw new Error('Cannot encode dates before 1900 to wire format');
       }
 
-      return date.toISOString();
+      return isoString;
     }
   }
 );
 
 jt.set(GuardedEncodeSchema);
 
-const ancientDate = new Date('1879-01-01T00:00:00Z');
+const ancientDate = '1879-01-01T00:00:00Z';
 
 try {
   jt.encode(GuardedEncodeSchema, ancientDate);

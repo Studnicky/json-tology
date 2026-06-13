@@ -1,16 +1,17 @@
 /**
  * Class hydration ORM recipes — DDD value object (Money)
  *
- * `fromPlain` is the right strategy here because `Money`'s
+ * `Money.fromPlain` is the right strategy here because `Money`'s
  * constructor enforces invariants. Bypassing it via prototype swap
  * would silently allow negative amounts. Registered on a sibling of
  * the canonical `MoneySchema` so the bookstore's plain wire shape
  * for money stays intact.
+ *
+ * The Money class is the wire side (TWire). decode lowers it to canonical JSON,
+ * encode hydrates canonical JSON into a Money instance.
  */
 
-import {
-  Compose, Transform
-} from '../../../src/index.js';
+import { Compose } from '../../../src/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
   MoneySchema
@@ -53,33 +54,40 @@ const DddMoneySchema = Compose.equivalent(
 
 jt.set(DddMoneySchema);
 
-const DddMoneyTransform = Transform.create<typeof DddMoneySchema, Money>(DddMoneySchema, {
-  'decode': (plain) => {
-    return Money.fromPlain(plain as {
-      'amount': number;
-      'currency': string;
-    });
-  },
-  'encode': (instance) => {
+// Class hydration: Money is the wire side. decode lowers it to canonical JSON,
+// encode hydrates back to a Money instance (via fromPlain).
+const dddMoneyTransform = jt.addTransform(DddMoneySchema, {
+  'decode': (instance: Money) => {
     return {
       'amount': instance.amount,
       'currency': instance.currency
     };
+  },
+  'encode': (wire) => {
+    // Narrow at the hydration boundary — runtime values are the validated
+    // canonical JSON.
+    const source = wire;
+
+    return Money.fromPlain({
+      'amount': source.amount,
+      'currency': source.currency
+    });
   }
 });
 
+// Hydrate canonical JSON into a Money instance.
 const wire = aboxFixtures.rareBook.price;
-const decoded = jt.instantiate(DddMoneyTransform, wire);
+const hydrated = jt.encode(dddMoneyTransform, wire);
 
-console.assert(decoded instanceof Money);
-console.assert(decoded.amount === wire.amount);
+console.assert(hydrated instanceof Money);
+console.assert(hydrated.amount === wire.amount);
 
-const doubled = decoded.add(decoded);
+const doubled = hydrated.add(hydrated);
 
 console.assert(doubled.amount === wire.amount * 2);
 // true — fromPlain ran
-console.log('instanceof Money:', decoded instanceof Money);
+console.log('instanceof Money:', hydrated instanceof Money);
 // rare book price amount
-console.log('amount:', decoded.amount);
+console.log('amount:', hydrated.amount);
 // amount * 2 via add()
 console.log('doubled amount:', doubled.amount);

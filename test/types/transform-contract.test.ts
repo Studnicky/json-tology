@@ -1,71 +1,87 @@
 import { JsonTology } from '../../src/JsonTology.js';
 import { Transform } from '../../src/modules/transform/Transform.js';
 import type { InferType } from '../../src/types/Schema.js';
-import type { ParseOutputType } from '../../src/types/Transform.js';
+import type {
+  ParseOutputType, ValidateChainType
+} from '../../src/types/Transform.js';
+import type {
+  ChainMismatchInterface, ChainSchemaMismatchInterface
+} from '../../src/types/TypeErrors.js';
 import type { TransformStageInterface } from '../../src/interfaces/TransformStage.js';
+
+// Bidirectional type-equality assertion: surfaces a compile error unless the
+// two types are mutually assignable.
+type AssertEqualType<TLeft, TRight>
+  = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
+
+function assert<T extends true>(): void {
+  void 0 as unknown as T;
+}
 
 const DateTimeSchema = {
   '$id': 'https://example.io/DateTime',
   'type': 'string'
 } as const;
 
-const TransformedDateSchema = Transform.create(DateTimeSchema, {
-  'decode': (raw: string) => {
-    return new Date(raw);
+// Normalize transform: decode maps a raw `{ iso }` wire payload into the
+// schema's canonical string form; encode is the inverse. The schema describes
+// decode's OUTPUT, so `ParseOutputType` is the canonical string.
+const NormalizedDateSchema = Transform.create(DateTimeSchema, {
+  'decode': (raw: { 'iso': string }) => {
+    return raw.iso;
   },
-  'encode': (date: Date) => {
-    return date.toISOString();
+  'encode': (value: string) => {
+    return { 'iso': value };
   }
 });
 
 const jt = JsonTology.create({
   'baseIRI': 'https://example.io',
   'enableStrictGraph': false,
-  'schemas': [TransformedDateSchema] as const
+  'schemas': [NormalizedDateSchema] as const
 });
 
-type WireDate = InferType<typeof TransformedDateSchema>;
-type ParsedDate = ParseOutputType<typeof TransformedDateSchema>;
+type WireLevel = InferType<typeof NormalizedDateSchema>;
+type ParsedCanonical = ParseOutputType<typeof NormalizedDateSchema>;
 
-const _wireTypeCheck: WireDate = '2024-01-01T00:00:00.000Z';
-const _parsedTypeCheck: ParsedDate = new Date('2024-01-01T00:00:00.000Z');
+const _wireTypeCheck: WireLevel = '2024-01-01T00:00:00.000Z';
+const _parsedTypeCheck: ParsedCanonical = '2024-01-01T00:00:00.000Z';
 
-const parsed = jt.instantiate(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
-const materialized = jt.materialize(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
-const encoded = jt.encode(TransformedDateSchema, new Date('2024-01-01T00:00:00.000Z'));
+const parsed = jt.instantiate(NormalizedDateSchema, { 'iso': '2024-01-01T00:00:00.000Z' });
+const materialized = jt.materialize(NormalizedDateSchema, '2024-01-01T00:00:00.000Z');
+const encoded = jt.encode(NormalizedDateSchema, '2024-01-01T00:00:00.000Z');
 
-const _parsedDate: Date = parsed;
-const _materializedWire: string = materialized;
-const _encodedWire: string = encoded;
+const _parsedCanonical: string = parsed;
+const _materializedCanonical: string = materialized;
+const _encodedWire: { 'iso': string } = encoded;
 
-// @ts-expect-error coerce() returns decoded output, not wire-form string
-const _badParsed: string = parsed;
-// @ts-expect-error materialize() returns wire-form output, not decoded Date
-const _badMaterialized: Date = materialized;
-// @ts-expect-error encode() returns wire-form output, not decoded Date
-const _badEncoded: Date = encoded;
+// @ts-expect-error instantiate() returns the canonical string, not the wire object
+const _badParsed: { 'iso': string } = parsed;
+// @ts-expect-error encode() returns the wire object, not the canonical string
+const _badEncoded: string = encoded;
 
 // Runtime-unsafe type assertions — guarded to prevent execution
 if (false as boolean) {
-  // @ts-expect-error materialize() expects wire-form input for transformed schemas
-  jt.materialize(TransformedDateSchema, new Date('2024-01-01T00:00:00.000Z'));
-  // @ts-expect-error encode() expects decoded input for transformed schemas
-  jt.encode(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
+  // @ts-expect-error encode() expects the canonical string, not a wire object
+  jt.encode(NormalizedDateSchema, { 'iso': '2024-01-01T00:00:00.000Z' });
 }
 
 void [
   _wireTypeCheck,
   _parsedTypeCheck,
-  _parsedDate,
-  _materializedWire,
+  _parsedCanonical,
+  _materializedCanonical,
   _encodedWire,
   _badParsed,
-  _badMaterialized,
   _badEncoded
 ];
 
 // ---------------------------------------------------------------------------
-// Finding 10 — Transform.chain pairwise chain compatibility
+// Transform.chain pairwise + tail compatibility
+//
+// A normalize chain decodes the raw wire type (first stage's free input) into
+// the schema's canonical type (last stage's output). PipeBase's canonical type
+// is string, so every valid chain must terminate in string.
 // ---------------------------------------------------------------------------
 
 const PipeBase = {
@@ -114,71 +130,49 @@ const numberToStringStage: TransformStageInterface<number, string> = {
   'encode': Number
 };
 
-// Positive: well-typed chain compiles and the final output type is the
-// last stage's decoded form.
+// Positive: well-typed chain terminating in the canonical string type.
 const okChain = Transform.chain(PipeBase, [
   trimStage,
-  upperStage,
-  stringToNumberStage,
-  numberToDateStage
+  upperStage
 ] as const);
 
 type OkChainOutput = ParseOutputType<typeof okChain>;
-const _okChainOutput: OkChainOutput = new Date(0);
+const _okChainOutput: OkChainOutput = 'value';
 
-// Two-stage chain ending in number — output must be number.
+// Round-trip through number and back to the canonical string.
 const twoStageChain = Transform.chain(PipeBase, [
-  trimStage,
-  stringToNumberStage
+  stringToNumberStage,
+  numberToStringStage
 ] as const);
 
 type TwoStageChainOutput = ParseOutputType<typeof twoStageChain>;
-const _twoStageChainOutput: TwoStageChainOutput = 42;
+const _twoStageChainOutput: TwoStageChainOutput = 'value';
 
-// Single-stage chain — output type is the only stage's decoded form.
-const singleStageChain = Transform.chain(PipeBase, [stringToNumberStage] as const);
+// Single-stage chain whose only stage produces the canonical string.
+const singleStageChain = Transform.chain(PipeBase, [trimStage] as const);
 
 type SingleStageChainOutput = ParseOutputType<typeof singleStageChain>;
-const _singleStageChainOutput: SingleStageChainOutput = 7;
+const _singleStageChainOutput: SingleStageChainOutput = 'value';
 
-// Negative: stage 0 produces `number`, stage 1 expects `string`.
-// The pairwise check must reject this at the call site.
-//
-// Each bad stage triggers its own type error, so each line carries its
-// own `@ts-expect-error` directive. The errors surface as the stage type
-// being not assignable to `never` (the contracted-tuple element produced
-// by `ValidateChainType` when the pair is incompatible).
-if (false as boolean) {
-  Transform.chain(PipeBase, [
-    // @ts-expect-error chain stage 0 produces number, stage 1 expects string
-    stringToNumberStage,
-    // @ts-expect-error chain stage 0 produces number, stage 1 expects string
-    upperStage
-  ] as const);
+// Negative cases assert the EXACT rejection brand the validator inserts, not
+// merely that the call fails to compile (which a line-based @ts-expect-error
+// would, even if the chain broke for an unrelated reason).
 
-  // Three-stage mismatch in the middle: ok → ok → bad.
-  Transform.chain(PipeBase, [
-    // @ts-expect-error chain stage 1 produces number, stage 2 expects string
-    trimStage,
-    // @ts-expect-error chain stage 1 produces number, stage 2 expects string
-    stringToNumberStage,
-    // @ts-expect-error chain stage 1 produces number, stage 2 expects string
-    upperStage
-  ] as const);
+// Interior mismatch: stage 0 produces number, stage 1 expects string →
+// ChainMismatchInterface<0, number, string> at the broken position.
+type InteriorMismatch = ValidateChainType<readonly [typeof stringToNumberStage, typeof upperStage], string>;
+assert<AssertEqualType<InteriorMismatch[1], ChainMismatchInterface<0, number, string>>>();
 
-  // Schema is `string` but first stage decodes `number`.
-  // @ts-expect-error first chain stage expects number but schema wire type is string
-  Transform.chain(PipeBase, [numberToDateStage] as const);
+// Tail mismatch: chain terminates in number, canonical type is string →
+// ChainSchemaMismatchInterface<string, number>.
+type TailNumberMismatch = ValidateChainType<readonly [typeof stringToNumberStage], string>;
+assert<AssertEqualType<TailNumberMismatch[0], ChainSchemaMismatchInterface<string, number>>>();
 
-  // Two stages, both consume number, but schema is string → first-stage mismatch.
-  // The error brand replaces only stage 0; stage 1 stays untouched because
-  // its in-type matches stage 0's out-type.
-  Transform.chain(PipeBase, [
-    // @ts-expect-error first chain stage expects number but schema wire type is string
-    numberToStringStage,
-    upperStage
-  ] as const);
-}
+// Tail mismatch: a pairwise-valid chain terminates in Date, canonical type is
+// string → ChainSchemaMismatchInterface<string, Date>. This isolates the
+// tail-anchor rule (the chain is internally consistent).
+type TailDateMismatch = ValidateChainType<readonly [typeof stringToNumberStage, typeof numberToDateStage], string>;
+assert<AssertEqualType<TailDateMismatch[1], ChainSchemaMismatchInterface<string, Date>>>();
 
 void [
   okChain,
@@ -186,29 +180,22 @@ void [
   singleStageChain,
   _okChainOutput,
   _twoStageChainOutput,
-  _singleStageChainOutput
+  _singleStageChainOutput,
+  numberToStringStage,
+  numberToDateStage
 ];
 
 // ---------------------------------------------------------------------------
-// Finding 11 — Transform.encode value must match decoded form
+// Transform.encode value must match the canonical form
 // ---------------------------------------------------------------------------
-//
-// Audit: `Transform.create` already constrains
-//   `encode: (output: TOut) => InferSchemaType<TSchema>`,
-// and `JsonTology.encode(schema, value)` already requires `value: TOut`.
-// The existing negative case at lines 51–52 above proves that a wire-form
-// value is rejected. The positive + extra negative cases below pin the
-// contract.
 
-// Positive: passing the decoded form to encode is accepted.
-const _encodedFromDate: string = jt.encode(TransformedDateSchema, new Date('2024-06-01T00:00:00.000Z'));
+// Positive: passing the canonical string to encode is accepted.
+const _encodedFromString: { 'iso': string } = jt.encode(NormalizedDateSchema, '2024-06-01T00:00:00.000Z');
 
-// Negative: number is neither wire (string) nor decoded (Date).
+// Negative: a number is neither the canonical string nor the wire object.
 if (false as boolean) {
-  // @ts-expect-error encode rejects values that are neither wire-form nor decoded
-  jt.encode(TransformedDateSchema, 42);
-  // @ts-expect-error encode rejects strings; the decoded type is Date
-  jt.encode(TransformedDateSchema, 'not-a-date' as unknown as { 'foo': 'bar' });
+  // @ts-expect-error encode rejects values that are not the canonical string
+  jt.encode(NormalizedDateSchema, 42);
 }
 
-void [_encodedFromDate];
+void [_encodedFromString];

@@ -1,17 +1,18 @@
 /**
- * Class hydration — encode direction: explicit `instance.toPlain()`
+ * Class hydration — decode direction: explicit `instance.toPlain()`
  *
  * The class needs to omit derived fields, hide private state, or
- * apply transforms before serialization. `toPlain()` is a useful
+ * apply transforms before lowering to canonical JSON. `toPlain()` is a useful
  * convention when `toJSON` is reserved for a different output
  * format (e.g. an external API representation).
  */
 
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
-  Compose, Transform
+  Compose
 } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities, createBookstoreDocRegistry,
+  aboxFixtures, createBookstoreDocRegistry,
   OrderSchema
 } from '../bookstore/index.js';
 
@@ -19,7 +20,8 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type OrderWire = typeof aboxFixtures.order;
+// The canonical (brand-free) Order shape
+type OrderWire = UnbrandType<typeof aboxFixtures.order>;
 
 class OrderWithToPlain {
   // Private state intentionally omitted from the wire shape.
@@ -66,19 +68,22 @@ const ToPlainOrderSchema = Compose.equivalent(
 
 jt.set(ToPlainOrderSchema);
 
-const ToPlainOrderTransform = Transform.create<typeof ToPlainOrderSchema, OrderWithToPlain>(ToPlainOrderSchema, {
-  'decode': (plain) => {
-    // fromPlain pattern: real `new` keeps the # field initialized.
+// Class is the wire side: decode uses toPlain, encode hydrates from JSON.
+const ToPlainOrderTransform = jt.addTransform(ToPlainOrderSchema, {
+  'decode': (instance: OrderWithToPlain) => {
+    return instance.toPlain();
+  },
+  'encode': (wire) => {
+    const source = wire as OrderWire;
+    // real `new` keeps the # field initialized.
     const built = new OrderWithToPlain();
 
-    return Object.assign(built, plain);
-  },
-  'encode': (instance) => {
-    return instance.toPlain();
+    return Object.assign(built, source);
   }
 });
 
-const hydrated = jt.instantiate(
+// Hydrate canonical JSON via encode.
+const hydrated = jt.encode(
   ToPlainOrderTransform,
   aboxFixtures.order
 );
@@ -86,14 +91,16 @@ const hydrated = jt.instantiate(
 hydrated.cacheTouch();
 console.assert(hydrated.cacheTouched());
 
-const wire = bookstoreEntities.encode(ToPlainOrderTransform, hydrated);
+// The instance has toPlain; decode will call it when lowering back to JSON.
+// Demonstrate by calling toPlain directly on the hydrated instance:
+const viaToPlain = hydrated.toPlain();
 
-console.assert(wire.orderId === aboxFixtures.order.orderId);
+console.assert(viaToPlain.orderId === aboxFixtures.order.orderId);
 // internalCacheKey is deliberately omitted from the wire shape.
-console.assert(!('internalCacheKey' in wire));
+console.assert(!('internalCacheKey' in viaToPlain));
 // true — # field lives in the instance
 console.log('cacheTouched:', hydrated.cacheTouched());
 // present — toPlain() includes it
-console.log('wire orderId:', wire.orderId);
+console.log('viaToPlain orderId:', viaToPlain.orderId);
 // false — omitted by toPlain()
-console.log('wire has private key?', 'internalCacheKey' in wire);
+console.log('viaToPlain has private key?', 'internalCacheKey' in viaToPlain);

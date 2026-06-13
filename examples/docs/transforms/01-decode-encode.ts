@@ -1,15 +1,17 @@
 /**
- * Transform.create / encode — Example 1: ISO datetime ↔ Date round-trip
- * Demonstrates: decode on coerce, encode reversal, InstantiationError on invalid input
+ * Transform.create / encode — Example 1: raw date string ↔ canonical ISO
+ * Demonstrates: decode normalizes wire → canonical, encode reversal, DecodeError
+ * on malformed input.
  *
- * The transform schema registers onto the canonical bookstore via
- * `jt.set()`. The decoded value is the moment Bastian
- * Balthazar Bux placed their order for the 1979 Neverending Story from
- * Coreander's antiquariat — `aboxFixtures.order.placedAt`.
+ * A normalize transform's `decode` turns the raw wire value into the schema's
+ * canonical form; the schema describes decode's OUTPUT, so validation runs on
+ * the decoded result (decode → validate → strip). The canonical value is the
+ * moment Bastian Balthazar Bux placed their order for the 1979 Neverending
+ * Story from Coreander's antiquariat — `aboxFixtures.order.placedAt`.
  */
 
 import {
-  InstantiationError, Transform
+  DecodeError, Transform
 } from '../../../src/index.js';
 import {
   aboxFixtures,
@@ -27,43 +29,38 @@ const PlacedAtSchema = Transform.create(
     'type': 'string'
   } as const,
   {
-    'decode': (isoString: string) => {
-      return new Date(isoString);
+    // Wire (a raw date string) → canonical ISO date-time string. A malformed
+    // input fails inside decode, before validation, surfacing a DecodeError.
+    'decode': (raw: string) => {
+      return new Date(raw).toISOString();
     },
-    'encode': (dateValue: Date) => {
-      return dateValue.toISOString();
+    'encode': (isoString) => {
+      return isoString;
     }
   }
 );
 
 jt.set(PlacedAtSchema);
 
-// Wire → Domain. Note: the canonical fixture timestamp lacks ms; we use
-// the millisecond-precision form here so the encode round-trip is exact.
+// Wire → canonical. The decoded value is the canonical ISO date-time string.
 const raw = '2026-04-12T14:23:11.000Z';
 const decoded = jt.instantiate(PlacedAtSchema, raw);
 
-if (!(decoded instanceof Date)) {
-  throw new TypeError('Iso8601 transform did not return a Date');
-}
-
-const date: Date = decoded;
-
-console.assert(date.getFullYear() === 2026);
+console.assert(typeof decoded === 'string');
 // Same instant as `aboxFixtures.order.placedAt`.
-console.assert(date.toISOString() === new Date(aboxFixtures.order.placedAt).toISOString());
+console.assert(decoded === new Date(aboxFixtures.order.placedAt).toISOString());
 
 // decoded: 2026-04-12T14:23:11.000Z
-console.log('decoded :', date.toISOString());
+console.log('decoded :', decoded);
 
-// Domain → Wire (encode reversal).
-const wire = jt.encode(PlacedAtSchema, date);
+// Canonical → wire (encode reversal).
+const wire = jt.encode(PlacedAtSchema, decoded);
 
 console.assert(wire === raw);
 // encoded: 2026-04-12T14:23:11.000Z (exact round-trip)
 console.log('encoded :', wire);
 
-// Invalid input still throws InstantiationError.
+// Malformed input fails inside decode → DecodeError.
 let threw = false;
 
 try {
@@ -71,7 +68,7 @@ try {
   // the registry's compile-time schema-ID union — pass the schema object.
   jt.instantiate(PlacedAtSchema, 'not-a-date');
 } catch (error) {
-  threw = error instanceof InstantiationError;
+  threw = error instanceof DecodeError;
 }
 console.assert(threw);
-console.log('invalid input threw InstantiationError:', threw);
+console.log('malformed input threw DecodeError:', threw);

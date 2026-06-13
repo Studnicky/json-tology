@@ -1,11 +1,10 @@
 /**
  * jt.encode — Example 2: Serialize before database write
- * Demonstrates: encode applied to a domain Date before persisting as ISO string
+ * Demonstrates: encode applied to a canonical ISO string before persisting to wire format
  *
- * After processing an order event the placement timestamp lives as a domain
- * Date object. Before writing to the database the encode step converts it
- * back to an ISO string. The example uses the canonical Bastian Balthazar
- * Bux order fixture from Coreander's antiquariat.
+ * The canonical form holds the timestamp as an ISO string. Before writing to the database,
+ * the encode step converts it to wire format (here, the same ISO string). The example uses
+ * the Bastian Balthazar Bux order fixture from Coreander's antiquariat.
  */
 
 import { Transform } from '../../../src/index.js';
@@ -26,10 +25,10 @@ const PlacedAtDbSchema = Transform.create(
   } as const,
   {
     'decode': (isoString: string) => {
-      return new Date(isoString);
+      return new Date(isoString).toISOString();
     },
-    'encode': (dateValue: Date) => {
-      return dateValue.toISOString();
+    'encode': (isoString: string) => {
+      return isoString;
     }
   }
 );
@@ -38,18 +37,18 @@ jt.set(PlacedAtDbSchema);
 
 // PlacedAtDbSchema was registered at runtime via set(), so it is not part of
 // the registry's compile-time schema-ID union — pass the schema object. The
-// transform decodes the ISO string into a domain Date.
-const placedDate = jt.instantiate(
+// transform decodes the ISO string to canonical form.
+const canonical = jt.instantiate(
   PlacedAtDbSchema,
   aboxFixtures.order.placedAt
 );
 
-// Before writing to DB — encode back to ISO string.
-const placedAtWire = jt.encode(PlacedAtDbSchema, placedDate);
+// Before writing to DB — encode to wire format.
+const placedAtWire = jt.encode(PlacedAtDbSchema, canonical);
 
 console.assert(typeof placedAtWire === 'string');
 console.assert(placedAtWire === new Date(aboxFixtures.order.placedAt).toISOString());
-console.log('domain Date  :', placedDate.toISOString());
+console.log('canonical form :', canonical);
 // ISO string ready for persistence
-console.log('db-ready wire:', placedAtWire);
+console.log('db-ready wire :', placedAtWire);
 

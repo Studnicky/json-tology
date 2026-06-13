@@ -35,32 +35,34 @@ const DateStringSchema = {
 
 const DateSchemaJt = Transform.create(DateStringSchema, {
   'decode': (input: string) => {
-    return new Date(input);
+    // Normalize: parse and re-emit as canonical ISO string
+    return new Date(input).toISOString();
   },
-  'encode': (output: Date) => {
-    return output.toISOString();
+  'encode': (canonical: string) => {
+    // Encode reversal: return canonical ISO string to wire
+    return canonical;
   }
 });
 
 const DateSchemaZod = z.string().datetime()
   .transform((input) => {
-    return new Date(input);
+    return new Date(input).toISOString();
   });
 
 const DateSchemaTypebox = Type.Transform(Type.String({ 'format': 'date-time' }))
   .Decode((input) => {
-    return new Date(input);
+    return new Date(input).toISOString();
   })
-  .Encode((output: Date) => {
-    return output.toISOString();
+  .Encode((canonical: string) => {
+    return canonical;
   });
 
-const DateSchemaIoTs = new IotType<Date, string, unknown>(
+const DateSchemaIoTs = new IotType<string, string, unknown>(
   'DateFromIsoString',
-  (input): input is Date => {
-    return input instanceof Date;
+  (input): input is string => {
+    return typeof input === 'string';
   },
-  (input, context): IotValidation<Date> => {
+  (input, context): IotValidation<string> => {
     if (typeof input !== 'string') {
       return {
         '_tag': 'Left',
@@ -84,16 +86,16 @@ const DateSchemaIoTs = new IotType<Date, string, unknown>(
 
     return {
       '_tag': 'Right',
-      'right': new Date(ms)
+      'right': new Date(ms).toISOString()
     };
   },
   (output) => {
-    return output.toISOString();
+    return output;
   }
 );
 
 const wireValue = '2024-01-15T10:30:00.000Z';
-const decodedValue = new Date(wireValue);
+const canonicalValue = new Date(wireValue).toISOString();
 
 export function runTransformBench(): BenchResult[] {
   const results: BenchResult[] = [];
@@ -109,9 +111,9 @@ export function runTransformBench(): BenchResult[] {
   Value.Decode(DateSchemaTypebox, wireValue);
   DateSchemaZod.parse(wireValue);
   DateSchemaIoTs.decode(wireValue);
-  DateSchemaIoTs.encode(decodedValue);
+  DateSchemaIoTs.encode(canonicalValue);
 
-  section('transform — decode wire → rich (string → Date)');
+  section('transform — decode wire → canonical (string normalize)');
 
   results.push(bench('decode date', 'json-tology', () => {
     jt.instantiate(DateSchemaJt, wireValue);
@@ -129,20 +131,20 @@ export function runTransformBench(): BenchResult[] {
     DateSchemaIoTs.decode(wireValue);
   }));
 
-  section('transform — encode rich → wire (Date → string)');
+  section('transform — encode canonical → wire (string reversal)');
 
   results.push(bench('encode date', 'json-tology', () => {
-    jt.encode(DateSchemaJt, decodedValue);
+    jt.encode(DateSchemaJt, canonicalValue);
   }));
 
   results.push(bench('encode date', 'typebox', () => {
     // interop: TypeBox's Transform Encode expects the statically-decoded shape.
-    // decodedValue is a `Date`, which matches it, so it is accepted directly.
-    Value.Encode(DateSchemaTypebox, decodedValue);
+    // canonicalValue is a `string`, which matches it, so it is accepted directly.
+    Value.Encode(DateSchemaTypebox, canonicalValue);
   }));
 
   results.push(bench('encode date', 'io-ts', () => {
-    DateSchemaIoTs.encode(decodedValue);
+    DateSchemaIoTs.encode(canonicalValue);
   }));
 
   // Zod 4 supports .pipe back; using zod codec round-trip via toJSON would be

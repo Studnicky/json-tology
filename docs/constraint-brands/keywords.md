@@ -147,14 +147,6 @@ Filter deprecated properties from a schema type:
 
 <RunnableExample src="examples/docs/constraint-brands/11-deprecated-keys" />
 
-### `LooseInputType<T>`
-
-Strips brands to the base primitive. Useful for function parameters that accept pre-validation input:
-
-<RunnableExample src="examples/docs/constraint-brands/12-loose-input-type" />
-
-`LooseInputType` is a standalone utility - it is not applied to library method signatures.
-
 ### `EnumValuesType<T>` / `ExhaustiveType<T>`
 
 Extract enum values and enforce exhaustive handling:

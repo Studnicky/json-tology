@@ -8,14 +8,19 @@ import type {
 } from './TypeErrors.js';
 
 /**
- * A schema annotated with a transform.
- * `InferType<T>` still gives the JSON-level type; `ParseOutputType<T>` gives the decoded type.
+ * A schema annotated with a normalize transform.
+ *
+ * `decode` consumes the raw wire type `TWire` and produces the schema's
+ * canonical form; the brand records `TWire` so `encode`/`dump` can recover the
+ * wire representation. `InferType<T>` still gives the JSON-level type;
+ * `ParseOutputType<T>` gives the canonical (validated) type.
  */
-export type TransformedType<TSchema, TOut> = TransformBrandInterface<TOut> & TSchema;
+export type TransformedType<TSchema, TWire> = TransformBrandInterface<TWire> & TSchema;
 
 /**
- * Resolve the output type of parse() for a schema.
- * - TransformedType schemas return the decoded TOut.
+ * Resolve the output type of instantiate() for a schema.
+ * - Transformed schemas resolve to the schema's canonical `InferSchemaType` —
+ *   a normalize transform always produces the schema-conforming form.
  * - All other schemas return the standard inferred result, intersected with
  *   any computed-field extensions registered via `addComputed` (encoded as
  *   `ComputedExtensionBrandInterface` on the raw schema entry in `TRefs`).
@@ -23,10 +28,17 @@ export type TransformedType<TSchema, TOut> = TransformBrandInterface<TOut> & TSc
  * @typeParam TReferences - Cross-schema references map for $ref resolution.
  */
 export type ParseOutputType<TSchema, TReferences = Record<never, never>>
-  = TSchema extends TransformBrandInterface<infer Out>
-    ? Out
+  = TSchema extends TransformBrandInterface<unknown>
+    ? InferSchemaType<TSchema, TSchema, TReferences>
     : InferSchemaType<TSchema, TSchema, TReferences>
       & (TSchema extends ComputedExtensionBrandInterface<infer TFields> ? TFields : unknown);
+
+/**
+ * Extract the raw wire type recorded on a transformed schema, or `never` when
+ * the schema carries no transform brand.
+ */
+export type TransformWireType<TSchema>
+  = TSchema extends TransformBrandInterface<infer TWire> ? TWire : never;
 
 // ---------------------------------------------------------------------------
 // Chain compatibility (compile-time pairwise validation)
@@ -40,36 +52,36 @@ export type ParseOutputType<TSchema, TReferences = Record<never, never>>
 type ChainRecursionCap = 10;
 
 /**
- * Walk a chain pairwise and verify each stage's output type matches
- * the next stage's input type. Each element in the resulting tuple is
- * either:
+ * Walk a chain pairwise and verify each stage's output type matches the next
+ * stage's input type, and that the LAST stage's output matches the schema's
+ * canonical type `TCanonical`. Each element in the resulting tuple is either:
  *   - the original stage type (compatibility holds), or
- *   - a `ChainMismatchInterface` brand (the chain is broken).
+ *   - a `ChainMismatchInterface` brand (an interior pair is broken), or
+ *   - a `ChainSchemaMismatchInterface` brand (the tail does not produce the
+ *     schema's canonical form).
  *
- * Additionally, the first stage's input type must accept the schema's
- * wire-form type `TWire`; otherwise the first element resolves to a
- * `ChainSchemaMismatchInterface` brand.
+ * A normalize chain decodes the raw wire type (the FIRST stage's free input)
+ * into the schema's canonical form (the LAST stage's output). The head input
+ * is therefore unconstrained; the tail output is anchored to `TCanonical`.
  *
- * The validator infers stage in/out types from each stage's `decode`
- * function shape so that contravariance does not interfere with the
- * inference of `TInNext` from a generic-bound stage.
- *
- * Applying this type to the `stages` parameter forces the call site to
- * be rejected when any pair fails: the user's literal stages are not
- * assignable to a tuple containing an error-branded element of a
- * different length.
+ * The validator infers stage in/out types from each stage's `decode` function
+ * shape so that contravariance does not interfere with inference. Applying this
+ * type to the `stages` parameter forces the call site to be rejected when any
+ * pair — or the tail — fails.
  */
 export type ValidateChainType<
   TStages extends readonly AnyTransformStageInterface[],
-  TWire,
+  TCanonical,
   TIndex extends readonly unknown[] = readonly []
 > = TIndex['length'] extends ChainRecursionCap
   ? TStages
   : TStages extends readonly [infer THead, ...infer TRest]
     ? TRest extends readonly AnyTransformStageInterface[]
-      ? THead extends { 'decode': (input: TWire) => infer TOutHead }
+      ? THead extends { 'decode': (input: never) => infer TOutHead }
         ? TRest extends readonly []
-          ? readonly [THead]
+          ? TOutHead extends TCanonical
+            ? readonly [THead]
+            : readonly [ChainSchemaMismatchInterface<TCanonical, TOutHead>]
           : TRest extends readonly [
             { 'decode': (input: infer TInNext) => unknown },
             ...readonly unknown[]
@@ -77,7 +89,7 @@ export type ValidateChainType<
             ? TOutHead extends TInNext
               ? readonly [
                 THead,
-                ...ValidateChainType<TRest, TOutHead, readonly [...TIndex, unknown]>
+                ...ValidateChainType<TRest, TCanonical, readonly [...TIndex, unknown]>
               ]
               : readonly [
                 THead,
@@ -85,34 +97,16 @@ export type ValidateChainType<
                 ...TRest
               ]
             : TStages
-        : THead extends { 'decode': (input: infer TInHead) => unknown }
-          ? readonly [
-            ChainSchemaMismatchInterface<TWire, TInHead>,
-            ...TRest
-          ]
-          : TStages
+        : TStages
       : TStages
     : TStages;
 
 /**
- * Extract the final decoded output type of a chain — the `TOut` of
- * the last stage. Used to type `Transform.chain`'s return value so the
- * resulting schema's `ParseOutputType` matches the chain's terminal type.
- *
- * Inferred from each stage's `decode` return type to avoid the variance
- * issues described on `ValidateChainType`.
+ * The raw wire type a chain consumes — the `decode` input type of its first
+ * stage. Recorded on the transformed schema's brand so `encode`/`dump` can
+ * recover the wire form.
  */
-export type ChainOutputType<
-  TStages extends readonly AnyTransformStageInterface[],
-  TIndex extends readonly unknown[] = readonly []
-> = TIndex['length'] extends ChainRecursionCap
-  ? unknown
-  : TStages extends readonly [infer TOnly]
-    ? TOnly extends { 'decode': (input: never) => infer TOut }
-      ? TOut
-      : unknown
-    : TStages extends readonly [AnyTransformStageInterface, ...infer TRest]
-      ? TRest extends readonly AnyTransformStageInterface[]
-        ? ChainOutputType<TRest, readonly [...TIndex, unknown]>
-        : unknown
-      : unknown;
+export type ChainWireType<TStages extends readonly AnyTransformStageInterface[]>
+  = TStages extends readonly [infer THead, ...readonly unknown[]]
+    ? THead extends { 'decode': (input: infer TIn) => unknown } ? TIn : unknown
+    : unknown;

@@ -36,7 +36,7 @@ import type { TransformFnsInterface } from './interfaces/TransformFns.js';
 import type { ValueInterface } from './interfaces/ValueImpl.js';
 import type { ValidationErrors } from './errors/ValidationErrors.js';
 import type {
-  InferSchemaType, LooseInputType, MaterializedSchemaType, SchemaPointerPathsType
+  CanonicalShapeType, InferSchemaType, MaterializedSchemaType, SchemaPointerPathsType
 } from './types/Infer.js';
 import type {
   ParseOutputType, TransformedType
@@ -435,7 +435,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   ): Array<InferSchemaType<TSchema>> {
     const jt = JsonTology.ephemeral(schema);
 
-    return jt.fromQuads(schema, quads, options) as Array<InferSchemaType<TSchema>>;
+    return jt.fromQuads(schema, quads, options);
   }
 
   /**
@@ -922,21 +922,22 @@ export class JsonTology<TRefs = Record<never, never>> {
    */
   public addTransform<
     TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
-    TOut extends NonNullable<unknown>
+    TWire = unknown
   >(
     schema: TSchema,
     fns: {
-      'decode': (input: InferSchemaType<TSchema, TSchema, TRefs>) => TOut;
-      'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>>;
+      'decode': (raw: TWire) => CanonicalShapeType<TSchema, TRefs>;
+      'encode': (value: CanonicalShapeType<TSchema, TRefs>) => TWire;
     }
-  ): TransformedType<TSchema, TOut> {
-    // `decode` receives the validated, branded OutputType; `encode` produces the
-    // brand-free InputType (wire shape) — brands are validation artifacts and do
-    // not exist on raw wire data. The single cast is the type-erasure boundary
-    // into the transform registry (identical to Transform.create), not a widening.
+  ): TransformedType<TSchema, TWire> {
+    // Registry-aware normalize transform: `decode` consumes the raw wire payload
+    // `TWire` and produces the schema's canonical, branded form (its `$ref`s
+    // resolved through this instance's TRefs); `encode` is the inverse. The
+    // single cast is the type-erasure boundary into the transform registry
+    // (identical to Transform.create), not a widening.
     Transform.register(schema, fns as TransformFnsInterface);
 
-    return brand<TransformedType<TSchema, TOut>>(schema);
+    return brand<TransformedType<TSchema, TWire>>(schema);
   }
   /**
    * Build the ABox identity descriptor list and schema-by-IRI index for `aboxGraph`.
@@ -1022,12 +1023,12 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param options - Filtering and mode options.
    * @returns Wire-form representation of the value.
    */
-  public dump<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: DumpOptionsInterface): LooseInputType<ParseOutputType<TRefs[K], TRefs>>;
+  public dump<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: DumpOptionsInterface): ParseOutputType<TRefs[K], TRefs>;
   public dump<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
     value: ParseOutputType<TSchema, TRefs>,
     options?: DumpOptionsInterface
-  ): LooseInputType<ParseOutputType<TSchema, TRefs>>;
+  ): ParseOutputType<TSchema, TRefs>;
   public dump(
     schema: (keyof TRefs & string) | (Record<string, unknown> & { '$id': string; }),
     value: unknown,
@@ -1086,18 +1087,18 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @returns The wire-format representation inferred from the schema.
    * @throws {@link EncodeError} when the registered transform encoder throws an unexpected error.
    */
-  public encode<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }, TOut extends unknown>(
-    schema: TransformedType<TSchema, TOut>,
-    value: TOut
-  ): LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>> {
+  public encode<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }, TWire>(
+    schema: TransformedType<TSchema, TWire>,
+    value: CanonicalShapeType<TSchema, TRefs>
+  ): TWire {
     const decoder = Transform.getDecoder(schema);
 
     if (decoder === undefined) {
-      return value as LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>>;
+      return value as unknown as TWire;
     }
 
     try {
-      return decoder.encode(value) as LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>>;
+      return decoder.encode(value) as TWire;
     } catch (error) {
       if (error instanceof TransformError) {
         throw error;
@@ -1323,12 +1324,12 @@ export class JsonTology<TRefs = Record<never, never>> {
    */
   public materialize<K extends keyof TRefs & string>(
     schemaId: K,
-    partial?: Partial<LooseInputType<InferSchemaType<TRefs[K], TRefs[K], TRefs>>>,
+    partial?: Partial<CanonicalShapeType<TRefs[K], TRefs>>,
     options?: { 'enablePartial'?: boolean }
   ): MaterializedSchemaType<TRefs[K], TRefs[K], TRefs>;
   public materialize<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
-    partial?: Partial<LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>>>,
+    partial?: Partial<CanonicalShapeType<TSchema, TRefs>>,
     options?: { 'enablePartial'?: boolean }
   ): MaterializedSchemaType<TSchema, TSchema, TRefs>;
   public materialize(

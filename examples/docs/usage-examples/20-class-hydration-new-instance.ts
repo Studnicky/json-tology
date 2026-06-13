@@ -9,8 +9,9 @@
  * Registered on a `Compose.equivalent` sibling of `OrderSchema`.
  */
 
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
-  Compose, Transform
+  Compose
 } from '../../../src/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
@@ -21,13 +22,16 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type OrderWire = typeof aboxFixtures.order;
+// The canonical (brand-free) Order shape
+type OrderWire = UnbrandType<typeof aboxFixtures.order>;
 
 class OrderViaNew {
   declare public customerId: string;
   declare public orderId: string;
   declare public orderLines: OrderWire['orderLines'];
   declare public orderTotal: OrderWire['orderTotal'];
+  declare public placedAt: OrderWire['placedAt'];
+  declare public shippingAddress: OrderWire['shippingAddress'];
 
   public summary(): string {
     return `order ${this.orderId}`;
@@ -41,16 +45,34 @@ const NewOrderSchema = Compose.equivalent(
 
 jt.set(NewOrderSchema);
 
-const NewOrderTransform = Transform.create<typeof NewOrderSchema, OrderViaNew>(NewOrderSchema, {
-  'decode': (plain) => {
-    return Object.assign(new OrderViaNew(), plain);
+// Class is the wire side: decode lowers to JSON, encode hydrates from JSON.
+const NewOrderTransform = jt.addTransform(NewOrderSchema, {
+  'decode': (instance: OrderViaNew) => {
+    return {
+      'customerId': instance.customerId,
+      'orderId': instance.orderId,
+      'orderLines': instance.orderLines,
+      'orderTotal': instance.orderTotal,
+      'placedAt': instance.placedAt,
+      'shippingAddress': instance.shippingAddress
+    };
   },
-  'encode': (instance) => {
-    return { ...instance };
+  'encode': (wire) => {
+    const source = wire as OrderWire;
+
+    return Object.assign(new OrderViaNew(), {
+      'customerId': source.customerId,
+      'orderId': source.orderId,
+      'orderLines': source.orderLines,
+      'orderTotal': source.orderTotal,
+      'placedAt': source.placedAt,
+      'shippingAddress': source.shippingAddress
+    });
   }
 });
 
-const hydrated = jt.instantiate(NewOrderTransform, aboxFixtures.order);
+// Hydrate canonical JSON via encode.
+const hydrated = jt.encode(NewOrderTransform, aboxFixtures.order);
 
 console.assert(hydrated instanceof OrderViaNew);
 console.assert(hydrated.summary().startsWith('order '));

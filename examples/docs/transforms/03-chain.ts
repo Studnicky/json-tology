@@ -18,13 +18,11 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const FormattedPriceSchema = {
-  '$id': 'https://bookstore.example/FormattedPrice',
-  'type': 'string'
-} as const;
-
 const PricedSchema = Transform.chain(
-  FormattedPriceSchema,
+  {
+    '$id': 'https://bookstore.example/Priced',
+    'type': 'number'
+  } as const,
   [
     // Step 1: strip currency symbol and thousands separators.
     {

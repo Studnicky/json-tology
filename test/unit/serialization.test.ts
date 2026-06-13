@@ -20,6 +20,8 @@ import { BaseGraphSerializer } from '../../src/modules/ontology/BaseGraphSeriali
 import {
   JsonTology, Transform
 } from '../../src/index.js';
+import { brand } from '../../src/types/Brand.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 import { bookstoreEntities as entities } from '../../examples/docs/bookstore/index.js';
 // JsonLdFormatter is a low-level JSON-LD formatter used by serializers; not surfaced by the public API.
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
@@ -773,12 +775,14 @@ import {
     'type': 'string'
   } as const;
 
+  // Normalize transform: decode canonicalizes a raw date string into the
+  // schema's canonical (branded) ISO date-time form; encode is the inverse.
   const TransformedDateSchema = Transform.create(DateTimeSchema, {
     'decode': (raw: string) => {
-      return new Date(raw);
+      return brand<InferSchemaType<typeof DateTimeSchema>>(new Date(raw).toISOString());
     },
-    'encode': (date: Date) => {
-      return date.toISOString();
+    'encode': (value) => {
+      return value;
     }
   });
 
@@ -966,10 +970,10 @@ import {
     void it('Transform encode, round-trip, json mode Date conversion, json mode no-op for plain objects', () => {
       const jt = makeJt();
 
-      // Transform: encode produces wire form
+      // Transform: encode produces wire form (canonical string → wire string)
       const isoString = '2026-01-01T00:00:00.000Z';
 
-      assert.equal(jt.dump(TransformedDateSchema.$id, new Date(isoString)), isoString);
+      assert.equal(jt.dump(TransformedDateSchema.$id, brand<InferSchemaType<typeof DateTimeSchema>>(isoString)), isoString);
 
       // Transform: round-trip decode then dump
       const isoString2 = '2026-06-15T12:00:00.000Z';
@@ -977,8 +981,8 @@ import {
 
       assert.equal(jt.dump(TransformedDateSchema.$id, decoded), isoString2);
 
-      // mode 'json': converts Date leaf to ISO string
-      assert.equal(jt.dump(TransformedDateSchema.$id, new Date(isoString), { 'mode': 'json' }), isoString);
+      // mode 'json': the canonical string round-trips as the wire string
+      assert.equal(jt.dump(TransformedDateSchema.$id, brand<InferSchemaType<typeof DateTimeSchema>>(isoString), { 'mode': 'json' }), isoString);
 
       // mode 'json': plain object untouched
       const plain = {

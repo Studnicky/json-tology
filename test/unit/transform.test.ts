@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import {
   BaseError, DecodeError, EncodeError, JsonTology, Transform, TransformError
 } from '../../src/index.js';
+import { brand } from '../../src/types/Brand.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -20,12 +22,15 @@ const DateTimeSchema = {
   'type': 'string'
 } as const;
 
+// Normalize transform: raw wire `{ value }` → canonical date-time string.
+// decode produces the schema's canonical (branded) form; the schema describes
+// decode's OUTPUT, so format validation runs on the decoded result.
 const TransformedDateSchema = Transform.create(DateTimeSchema, {
-  'decode': (raw: string) => {
-    return new Date(raw);
+  'decode': (raw: { 'value': string }) => {
+    return brand<InferSchemaType<typeof DateTimeSchema>>(raw.value);
   },
-  'encode': (date: Date) => {
-    return date.toISOString();
+  'encode': (value) => {
+    return { 'value': value };
   }
 });
 
@@ -82,12 +87,12 @@ void describe('Transform.create()', () => {
     },
     {
       'check': (jt) => {
-        const result = jt.instantiate(TransformedDateSchema, '2024-06-01T00:00:00.000Z');
+        const result = jt.instantiate(TransformedDateSchema, { 'value': '2024-06-01T00:00:00.000Z' });
 
-        assert.ok(result instanceof Date);
-        assert.equal(result.getFullYear(), 2024);
+        assert.equal(typeof result, 'string');
+        assert.equal(result, '2024-06-01T00:00:00.000Z');
       },
-      'name': 'happy: coerce() applies decode to produce Date',
+      'name': 'happy: decode normalizes the wire payload into the canonical string',
       'setup': () => {
         return JsonTology.create({
           'baseIRI': 'https://myapp.io',
@@ -99,7 +104,7 @@ void describe('Transform.create()', () => {
       'check': (jt) => {
         assert.throws(
           () => {
-            return jt.instantiate(TransformedDateSchema, 'not-a-date');
+            return jt.instantiate(TransformedDateSchema, { 'value': 'not-a-date' });
           },
           (err: unknown) => {
             return (err as Error).constructor.name === 'InstantiationError';
@@ -116,10 +121,9 @@ void describe('Transform.create()', () => {
     },
     {
       'check': (jt) => {
-        const dateValue = new Date('2024-06-01T00:00:00.000Z');
-        const wire = jt.encode(TransformedDateSchema, dateValue);
+        const wire = jt.encode(TransformedDateSchema, brand<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
 
-        assert.equal(wire, '2024-06-01T00:00:00.000Z');
+        assert.deepEqual(wire, { 'value': '2024-06-01T00:00:00.000Z' });
       },
       'name': 'happy: encode() converts back to wire format',
       'setup': () => {
@@ -270,12 +274,12 @@ void describe('Transform contract alignment', () => {
   }> = [
     {
       'check': (jt) => {
-        const parsed = jt.instantiate(TransformedDateSchema, '2024-06-01T00:00:00.000Z');
+        const parsed = jt.instantiate(TransformedDateSchema, { 'value': '2024-06-01T00:00:00.000Z' });
 
-        assert.ok(parsed instanceof Date);
-        assert.equal(parsed.toISOString(), '2024-06-01T00:00:00.000Z');
+        assert.equal(typeof parsed, 'string');
+        assert.equal(parsed, '2024-06-01T00:00:00.000Z');
       },
-      'name': 'happy: coerce() returns decoded output'
+      'name': 'happy: instantiate() returns the canonical form'
     },
     {
       'check': (jt) => {
@@ -284,16 +288,15 @@ void describe('Transform contract alignment', () => {
         assert.equal(typeof materialized, 'string');
         assert.equal(materialized, '2024-06-01T00:00:00.000Z');
       },
-      'name': 'happy: materialize() returns wire-form, not decoded'
+      'name': 'happy: materialize() returns the canonical form'
     },
     {
       'check': (jt) => {
-        const wire = jt.encode(TransformedDateSchema, new Date('2024-06-01T00:00:00.000Z'));
+        const wire = jt.encode(TransformedDateSchema, brand<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
 
-        assert.equal(typeof wire, 'string');
-        assert.equal(wire, '2024-06-01T00:00:00.000Z');
+        assert.deepEqual(wire, { 'value': '2024-06-01T00:00:00.000Z' });
       },
-      'name': 'happy: encode() returns wire-form'
+      'name': 'happy: encode() returns the wire form'
     },
     {
       'check': (jt) => {

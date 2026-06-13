@@ -19,6 +19,7 @@
 
 import { JsonTology } from '../../src/JsonTology.js';
 import { Transform } from '../../src/modules/transform/Transform.js';
+import { brand } from '../../src/types/Brand.js';
 import type {
   ContainsBrandInterface,
   ContentEncodingBrandInterface,
@@ -45,7 +46,6 @@ import type {
   ExhaustiveType,
   InputSchemaType,
   IntegerRangeType,
-  LooseInputType,
   MaterializedSchemaType,
   NominalSchemaType,
   NonDeprecatedSchemaType,
@@ -224,12 +224,14 @@ const DateSchema = {
   'type': 'string'
 } as const;
 
+// Normalize transform: decode maps a raw `{ epoch }` wire payload into the
+// schema's canonical (branded, date-time) string; encode is the inverse.
 const _TransformedDateSchema = Transform.create(DateSchema, {
-  'decode': (raw: string) => {
-    return new Date(raw);
+  'decode': (raw: { 'epoch': number }) => {
+    return brand(new Date(raw.epoch).toISOString());
   },
-  'encode': (date: Date) => {
-    return date.toISOString();
+  'encode': (value) => {
+    return { 'epoch': new Date(value).getTime() };
   }
 });
 
@@ -382,10 +384,10 @@ const NumSchema = {
 } as const;
 
 if (false as boolean) {
-  Transform.create(NumSchema, {
-    'decode': String,
-    // @ts-expect-error — encode must return number, not boolean
-    'encode': (_: string) => {
+  Transform.create<typeof NumSchema, string>(NumSchema, {
+    'decode': Number,
+    // @ts-expect-error — encode must return the wire type string, not boolean
+    'encode': (_value: number) => {
       return true;
     }
   });
@@ -1194,39 +1196,6 @@ const _ndObj: NonDeprecated = { 'name': 'Ada' };
 const _ndName: string = _ndObj.name;
 
 void _ndName;
-
-// ---------------------------------------------------------------------------
-// 33. LooseInputType — strips brands to base primitive
-// ---------------------------------------------------------------------------
-
-type LooseEmail = LooseInputType<InferType<typeof _EmailSchema>>;
-
-// LooseInputType resolves Email (string & FormatBrand) to plain string
-type LooseEmailIsString = LooseEmail extends string ? true : false;
-const _looseCheck: LooseEmailIsString = true;
-
-void _looseCheck;
-
-// Number branded type resolves to plain number
-type LooseNum = LooseInputType<InferType<typeof _ConstrainedNumSchema>>;
-type LooseNumIsNumber = LooseNum extends number ? true : false;
-const _looseNumCheck: LooseNumIsNumber = true;
-
-void _looseNumCheck;
-
-// Object resolves to Record<string, unknown>
-type LooseAddr = LooseInputType<InferType<typeof AddressSchema>>;
-type LooseAddrIsRecord = LooseAddr extends Record<string, unknown> ? true : false;
-const _looseAddrCheck: LooseAddrIsRecord = true;
-
-void _looseAddrCheck;
-
-// Array resolves to readonly unknown[]
-type LooseArr = LooseInputType<InferType<typeof _UniqueArraySchema>>;
-type LooseArrIsArray = LooseArr extends readonly unknown[] ? true : false;
-const _looseArrCheck: LooseArrIsArray = true;
-
-void _looseArrCheck;
 
 // ---------------------------------------------------------------------------
 // 34. EnumValuesType and ExhaustiveType

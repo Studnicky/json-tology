@@ -11,7 +11,7 @@ import {
   Compose, Hash, JsonTology, Transform, Value
 } from '../src/index.js';
 import type {
-  EnumValuesType, InferType, LooseInputType
+  EnumValuesType, InferType, UnbrandType
 } from '../src/types/index.js';
 import {
   allSchemas, DateTimeSchema, foafPersons, MboxSchema, PersonSchema
@@ -91,31 +91,31 @@ console.log('\n--- Branded Mbox ---');
 console.log('Mbox:', mbox);
 
 // ---------------------------------------------------------------------------
-// Transform roundtrip — parse yields Date, encode yields string
+// Transform roundtrip — decode normalizes to canonical ISO string, encode reverses
 // ---------------------------------------------------------------------------
 
-// Attach decode/encode so the schema is a TransformedType — decode yields a
-// Date, encode yields the ISO string. Registered via the schema object.
+// Attach decode/encode so the schema is a TransformedType — decode normalizes the
+// wire value to canonical ISO string form, encode yields the wire string.
+// Registered via the schema object.
 const DateTimeTransform = Transform.create(DateTimeSchema, {
-  'decode': (isoString) => {
-    return new Date(isoString);
+  'decode': (isoString: string) => {
+    // Normalize: parse and re-emit as canonical ISO string
+    return new Date(isoString).toISOString();
   },
-  'encode': (dateValue: Date) => {
-    return dateValue.toISOString();
+  'encode': (canonical: string) => {
+    // Encode reversal: return canonical ISO string to wire
+    return canonical;
   }
 });
 
 jt.set(DateTimeTransform);
 
-const date = jt.instantiate(DateTimeTransform, '2026-03-15T12:00:00.000Z');
-const wire = jt.encode(DateTimeTransform, date);
+const canonical = jt.instantiate(DateTimeTransform, '2026-03-15T12:00:00.000Z');
+const wire = jt.encode(DateTimeTransform, canonical);
 
 console.log('\n--- Transform roundtrip ---');
-if (date instanceof Date) {
-  console.log('Parsed type:', date.constructor.name, '→', date.toISOString());
-} else {
-  console.log('Parsed type:', typeof date);
-}
+console.log('Parsed type:', typeof canonical);
+console.log('Canonical:', canonical);
 console.log('Encoded back:', wire);
 
 // ---------------------------------------------------------------------------
@@ -181,14 +181,9 @@ type Status = EnumValuesType<typeof StatusSchema>;
 jt.set(StatusSchema);
 // 'active' | 'inactive' | 'pending'
 
-// LooseInputType strips brands to base primitives (for pre-validation input)
-type LooseMbox = LooseInputType<Mbox>;
-// string (brands removed — accepts any string before validation)
-
 console.log('\n--- Constraint brands ---');
 console.log('Rating type: literal union 1|2|3|4|5 (inferred from schema bounds)');
 console.log('Status type: literal union from enum');
-console.log('LooseMbox type: string (brands stripped)');
 
 // Register and validate with integer range
 const jt2 = jt.set(RatingSchema);
@@ -199,7 +194,8 @@ console.log('Validated rating:', rating);
 // Type assertions — these are compile-time only, no runtime effect
 const _r: Rating = 3;
 const _s: Status = 'active';
-const _l: LooseMbox = 'any-string-before-validation';
+// UnbrandType strips constraint brands to recover the wire value type
+const _l: UnbrandType<Mbox> = 'any-string-before-validation';
 
 void _r;
 void _s;

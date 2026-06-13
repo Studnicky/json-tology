@@ -43,17 +43,20 @@ const EventSchemaJt = Transform.create(
     'type': 'object'
   } as const,
   {
-    'decode': (raw: Record<string, unknown>) => {
+    'decode': (raw: { 'at': string;
+      'name': string }) => {
+      // Normalize: parse date and re-emit as canonical ISO string
       return {
-        'at': new Date(raw.at as string),
-        'name': raw.name as string
+        'at': new Date(raw.at).toISOString(),
+        'name': raw.name
       };
     },
-    'encode': (rich: { 'at': Date;
+    'encode': (canonical: { 'at': string;
       'name': string }) => {
+      // Encode reversal: return to wire form
       return {
-        'at': rich.at.toISOString(),
-        'name': rich.name
+        'at': canonical.at,
+        'name': canonical.name
       };
     }
   }
@@ -65,20 +68,20 @@ const EventSchemaTb = Type.Transform(Type.Object({
 }))
   .Decode((raw) => {
     return {
-      'at': new Date(raw.at),
+      'at': new Date(raw.at).toISOString(),
       'name': raw.name
     };
   })
-  .Encode((rich: { 'at': Date;
+  .Encode((canonical: { 'at': string;
     'name': string }) => {
     return {
-      'at': rich.at.toISOString(),
-      'name': rich.name
+      'at': canonical.at,
+      'name': canonical.name
     };
   });
 
-const richEvent = {
-  'at': new Date('2024-06-01T12:00:00.000Z'),
+const canonicalEvent = {
+  'at': new Date('2024-06-01T12:00:00.000Z').toISOString(),
   'name': 'Launch'
 };
 
@@ -103,7 +106,7 @@ export function runSerializeBench(): BenchResult[] {
   // Warm
   jt.dump(OrderSchema, orderInstantiated);
   jt.dumpJson(OrderSchema, orderInstantiated);
-  jt.encode(EventSchemaJt, richEvent);
+  jt.encode(EventSchemaJt, canonicalEvent);
 
   section('serialize — dump Order (validated → wire), no transforms');
 
@@ -129,17 +132,17 @@ export function runSerializeBench(): BenchResult[] {
     JSON.stringify(orderValid);
   }));
 
-  section('serialize — encode rich → wire (with transforms)');
+  section('serialize — encode canonical → wire (with transforms)');
 
   results.push(bench('encode event', 'json-tology', () => {
-    jt.encode(EventSchemaJt, richEvent);
+    jt.encode(EventSchemaJt, canonicalEvent);
   }));
 
   results.push(bench('encode event', 'typebox', () => {
     // interop: TypeBox's Transform Encode expects the statically-decoded shape.
-    // richEvent matches it structurally ({ at: Date; name: string }), so it is
+    // canonicalEvent matches it structurally ({ at: string; name: string }), so it is
     // accepted directly — no cast needed.
-    Value.Encode(EventSchemaTb, richEvent);
+    Value.Encode(EventSchemaTb, canonicalEvent);
   }));
 
   return results;

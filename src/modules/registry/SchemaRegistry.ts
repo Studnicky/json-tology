@@ -1041,7 +1041,16 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiledFromEntry(entry);
     const resolvedOptions = this.resolveInstantiateOptions(callOptions?.enableDefaults);
     const input = callOptions?.clone === false ? data : structuredClone(data);
-    const result = compiled.validate(input, resolvedOptions);
+    const schemaObj = typeof schema === 'string' ? entry.schema : schema;
+
+    // Normalize first: decode the raw wire payload into the schema's canonical
+    // form — the root transform reshapes the whole payload, then nested $ref
+    // decoders run over the canonical structure. Validation + strip then run on
+    // the decoded result, because the schema describes the transform's OUTPUT.
+    const rootDecoded = this.decodeWithTransform(schemaObj, input, schemaId);
+    const decoded = RefDecoder.run(this.graphOf(entry), rootDecoded, this.buildRefDecoderRegistry());
+
+    const result = compiled.validate(decoded, resolvedOptions);
 
     if (!result.valid) {
       throw new InstantiationError(new ValidationErrors(result.errors));
@@ -1053,11 +1062,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.applyComputedFields(computedNames, computedMap, coerced);
 
-    const schemaObj = typeof schema === 'string' ? entry.schema : schema;
-    const refDecoded = RefDecoder.run(this.graphOf(entry), coerced, this.buildRefDecoderRegistry());
-    const decoded = this.decodeWithTransform(schemaObj, refDecoded, schemaId);
-
-    return this.applyFrozenSeal(schemaObj, decoded);
+    return this.applyFrozenSeal(schemaObj, coerced);
   }
 
   public is(

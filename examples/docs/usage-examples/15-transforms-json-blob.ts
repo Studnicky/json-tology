@@ -1,9 +1,11 @@
 /**
- * Transforms recipes — JSON string ↔ parsed value
+ * Transforms recipes — JSON string ↔ parsed object
  *
- * Validation runs against the wire `string`. If callers want the
- * decoded value to be validated too, register the inner schema
- * separately and use a `$ref` rather than a transform.
+ * Wire format: JSON string. Canonical: parsed JavaScript object.
+ * The schema describes the canonical form (the parsed object).
+ * If callers want the decoded value to be more strictly validated,
+ * register the object schema separately and use a `$ref` rather
+ * than a generic `unknown` type.
  *
  * The payload is a serialized snapshot of the rare-book record
  * Bastian ordered — the same object as `aboxFixtures.rareBook`.
@@ -19,21 +21,23 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const JsonBlobSchema = {
-  '$id': 'https://bookstore.example/JsonBlob',
-  'type': 'string'
-} as const;
-
-jt.set(JsonBlobSchema);
-
-const JsonBlobTransform = Transform.create<typeof JsonBlobSchema, unknown>(JsonBlobSchema, {
-  'decode': (wire) => {
-    return JSON.parse(wire) as unknown;
-  },
-  'encode': (value) => {
-    return JSON.stringify(value);
+const JsonBlobTransform = Transform.create(
+  {
+    '$id': 'https://bookstore.example/JsonBlob',
+    'additionalProperties': true,
+    'type': 'object'
+  } as const,
+  {
+    'decode': (wire: string) => {
+      return JSON.parse(wire) as Record<string, unknown>;
+    },
+    'encode': (value: Record<string, unknown>) => {
+      return JSON.stringify(value);
+    }
   }
-});
+);
+
+jt.set(JsonBlobTransform);
 
 const wire = JSON.stringify(aboxFixtures.rareBook);
 const decoded = jt.instantiate(JsonBlobTransform, wire);

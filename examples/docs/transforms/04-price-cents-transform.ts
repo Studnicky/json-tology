@@ -18,7 +18,7 @@ const PriceCentsSchema = Transform.create(
   {
     '$id': 'https://bookstore.example/PriceCents',
     'minimum': 0,
-    'type': 'integer'
+    'type': 'number'
   } as const,
   {
     'decode': (cents: number) => {

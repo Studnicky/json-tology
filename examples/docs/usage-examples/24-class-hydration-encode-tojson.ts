@@ -1,16 +1,17 @@
 /**
- * Class hydration — encode direction: `instance.toJSON()`
+ * Class hydration — decode direction: `instance.toJSON()`
  *
  * The class already defines `toJSON` for `JSON.stringify` integration;
- * the encode body reuses it so there is one source of truth for
- * serialization shape.
+ * the decode body reuses it so there is one source of truth for
+ * lowering shape when converting back to canonical JSON.
  */
 
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
-  Compose, Transform
+  Compose
 } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities, createBookstoreDocRegistry,
+  aboxFixtures, createBookstoreDocRegistry,
   OrderSchema
 } from '../bookstore/index.js';
 
@@ -18,7 +19,8 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type OrderWire = typeof aboxFixtures.order;
+// The canonical (brand-free) Order shape
+type OrderWire = UnbrandType<typeof aboxFixtures.order>;
 
 class OrderWithToJson {
   declare public customerId: string;
@@ -54,28 +56,34 @@ const ToJsonOrderSchema = Compose.equivalent(
 
 jt.set(ToJsonOrderSchema);
 
-const ToJsonOrderTransform = Transform.create<typeof ToJsonOrderSchema, OrderWithToJson>(ToJsonOrderSchema, {
-  'decode': (plain) => {
-    return Object.assign(Reflect.construct(OrderWithToJson, []), plain);
-  },
-  'encode': (instance) => {
+// Class is the wire side: decode uses toJSON, encode hydrates from JSON.
+const ToJsonOrderTransform = jt.addTransform(ToJsonOrderSchema, {
+  'decode': (instance: OrderWithToJson) => {
     return instance.toJSON();
+  },
+  'encode': (wire) => {
+    const source = wire as OrderWire;
+
+    return Object.assign(Reflect.construct(OrderWithToJson, []), source);
   }
 });
 
-const hydrated = jt.instantiate(
+// Hydrate canonical JSON via encode.
+const hydrated = jt.encode(
   ToJsonOrderTransform,
   aboxFixtures.order
 );
 
-const wire = bookstoreEntities.encode(ToJsonOrderTransform, hydrated);
+// The instance has toJSON; decode will call it when lowering back to JSON.
+// Demonstrate by calling toJSON directly on the hydrated instance:
+const viaTojson = hydrated.toJSON();
 
-console.assert(wire.orderId === aboxFixtures.order.orderId);
+console.assert(viaTojson.orderId === aboxFixtures.order.orderId);
 // JSON.stringify will use the same toJSON shape.
-const cloned: unknown = structuredClone(hydrated.toJSON());
+const cloned: unknown = structuredClone(viaTojson);
 
 console.assert(typeof cloned === 'object');
-// same as fixture — toJSON() is the encode source
-console.log('wire orderId:', wire.orderId);
+// same as fixture — toJSON() is what decode uses
+console.log('viaTojson orderId:', viaTojson.orderId);
 // 'object' — structuredClone works on toJSON output
 console.log('cloned type:', typeof cloned);

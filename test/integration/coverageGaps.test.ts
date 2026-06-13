@@ -35,6 +35,8 @@ import {
   Skolemize,
   Transform
 } from '../../src/index.js';
+import { brand } from '../../src/types/Brand.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
 
@@ -213,21 +215,22 @@ void describe('dump / dumpJson failure modes', () => {
 // ===========================================================================
 
 void describe('encode — isolated behaviour', () => {
-  const TimestampSchema = Transform.create(
-    {
-      '$id': 'https://bookstore.io/Timestamp',
-      'format': 'date-time',
-      'type': 'string'
-    } as const,
-    {
-      'decode': (raw: string) => {
-        return new Date(raw);
-      },
-      'encode': (value: Date) => {
-        return value.toISOString();
-      }
+  const TimestampRawSchema = {
+    '$id': 'https://bookstore.io/Timestamp',
+    'format': 'date-time',
+    'type': 'string'
+  } as const;
+
+  // Normalize transform: decode canonicalizes a raw date string into the
+  // schema's canonical (branded) ISO date-time form; encode is the inverse.
+  const TimestampSchema = Transform.create(TimestampRawSchema, {
+    'decode': (raw: string) => {
+      return brand<InferSchemaType<typeof TimestampRawSchema>>(new Date(raw).toISOString());
+    },
+    'encode': (value) => {
+      return value;
     }
-  );
+  });
 
   void it('encode through chained Transform.chain runs encoders in reverse order', () => {
     const ChainedSchema = Transform.chain(
@@ -293,7 +296,7 @@ void describe('encode — isolated behaviour', () => {
         'baseIRI': 'https://bookstore.io',
         'schemas': [TimestampSchema] as const
       });
-      const wire = jt.encode(TimestampSchema, new Date('2026-01-01T00:00:00.000Z'));
+      const wire = jt.encode(TimestampSchema, brand<InferSchemaType<typeof TimestampRawSchema>>('2026-01-01T00:00:00.000Z'));
 
       assert.equal(wire, '2026-01-01T00:00:00.000Z');
     }
@@ -325,8 +328,8 @@ void describe('encode — isolated behaviour', () => {
       }) as Record<string, unknown>;
 
       assert.equal(decoded.subject, 'login');
-      assert.ok(decoded.occurredAt instanceof Date);
-      assert.equal((decoded.occurredAt).toISOString(), '2026-01-01T00:00:00.000Z');
+      assert.equal(typeof decoded.occurredAt, 'string');
+      assert.equal(decoded.occurredAt, '2026-01-01T00:00:00.000Z');
     }
   });
 });

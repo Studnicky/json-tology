@@ -1215,10 +1215,14 @@ import {
         'enableStrictGraph': false,
         'materializer': { 'passAdditionalProperties': true }
       });
+      // The materializer's passAdditionalProperties option accepts keys beyond
+      // the schema; the canonical partial type intentionally does not model
+      // extras, so the extra-bearing input is asserted past the static surface
+      // to exercise the runtime behaviour.
       const result = tology.materialize(StrictSchema, {
         'extra': 'allowed',
         'name': 'test'
-      } satisfies Record<string, unknown>) as Record<string, unknown>;
+      } as unknown as Partial<InferSchemaType<typeof StrictSchema>>) as Record<string, unknown>;
 
       assert.strictEqual(result.name, 'test', 'passAdditionalProperties — name');
       assert.strictEqual(result.extra, 'allowed', 'passAdditionalProperties — extra');

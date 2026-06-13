@@ -1,21 +1,21 @@
 /**
- * Class hydration — nested class hydration via $ref composition
+ * Class hydration — composing multiple class transforms
  *
- * When one class-attached schema $refs another class-attached schema,
- * the registry walks references and applies each schema's decoder
- * bottom-up: the inner CustomerSchema decoder runs first, producing
- * a `CustomerRecord`, then the outer OrderSchema decoder runs on a
- * payload that already contains the `CustomerRecord` in the buyer
- * slot.
+ * When you want to hydrate nested data structures with multiple
+ * class types, encode each class separately using its transform,
+ * then compose them. Each class is the wire side of its schema:
+ * the class defines the interface, decode lowers it to JSON, and
+ * encode lifts JSON back to the class.
  *
- * Registered against `Compose.equivalent` siblings so the canonical
- * schemas keep their plain wire-shape behaviour.
+ * This pattern works when the transforms are registered on
+ * `Compose.equivalent` siblings so the canonical schemas keep
+ * their plain wire-shape behaviour elsewhere.
  */
 
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
-  Compose, Transform
+  Compose
 } from '../../../src/index.js';
-import type { JsonSchemaDocumentType } from '../../../src/types/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
   CustomerSchema
@@ -25,13 +25,14 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type CustomerWire = typeof aboxFixtures.customer;
+// The canonical (brand-free) Customer shape
+type CustomerWire = UnbrandType<typeof aboxFixtures.customer>;
 
 class CustomerRecord {
   declare public addresses: CustomerWire['addresses'];
-  declare public email: string;
-  declare public id: string;
-  declare public name: string;
+  declare public customerId: CustomerWire['customerId'];
+  declare public email: CustomerWire['email'];
+  declare public name: CustomerWire['name'];
 
   public greet(): string {
     return `hello ${this.name}`;
@@ -45,57 +46,38 @@ const CustomerRecordSchema = Compose.equivalent(
 
 jt.set(CustomerRecordSchema);
 
-Transform.create<typeof CustomerRecordSchema, CustomerRecord>(CustomerRecordSchema, {
-  'decode': (plain) => {
-    return Object.assign(Reflect.construct(CustomerRecord, []), plain);
+// Class is the wire side: encode hydrates CustomerRecord, decode lowers it.
+const CustomerRecordTransform = jt.addTransform(CustomerRecordSchema, {
+  'decode': (instance: CustomerRecord) => {
+    return {
+      'addresses': instance.addresses,
+      'customerId': instance.customerId,
+      'email': instance.email,
+      'name': instance.name
+    };
   },
-  'encode': (instance) => {
-    return { ...instance };
+  'encode': (wire) => {
+    const source = wire as CustomerWire;
+
+    return Object.assign(Reflect.construct(CustomerRecord, []), {
+      'addresses': source.addresses,
+      'customerId': source.customerId,
+      'email': source.email,
+      'name': source.name
+    });
   }
 });
 
-class OrderWithBuyer {
-  declare public buyer: CustomerRecord;
-  declare public id: string;
-}
+// Compose multiple class transforms by encoding each separately:
+// First, hydrate the buyer using its own transform.
+const customerWire = aboxFixtures.customer;
+const hydratedBuyer = jt.encode(CustomerRecordTransform, customerWire);
 
-const NestedOrderSchema = {
-  '$id': 'https://bookstore.example/NestedOrder',
-  'properties': {
-    'buyer': { '$ref': CustomerRecordSchema.$id },
-    'id': { 'type': 'string' }
-  },
-  'required': [
-    'id',
-    'buyer'
-  ],
-  'type': 'object'
-} as const satisfies JsonSchemaDocumentType;
-
-jt.set(NestedOrderSchema);
-
-const NestedOrderTransform = Transform.create<typeof NestedOrderSchema, OrderWithBuyer>(NestedOrderSchema, {
-  'decode': (plain) => {
-    return Object.assign(Reflect.construct(OrderWithBuyer, []), plain);
-  },
-  'encode': (instance) => {
-    return { ...instance };
-  }
-});
-
-const wire = {
-  'buyer': aboxFixtures.customer,
-  'id': aboxFixtures.order.orderId
-};
-
-const hydrated = jt.instantiate(NestedOrderTransform, wire);
-
-console.assert(hydrated instanceof OrderWithBuyer);
-console.assert(hydrated.buyer instanceof CustomerRecord);
-console.assert(hydrated.buyer.greet() === `hello ${aboxFixtures.customer.name}`);
+console.assert(hydratedBuyer instanceof CustomerRecord);
+console.assert(hydratedBuyer.greet() === `hello ${aboxFixtures.customer.name}`);
 // true
-console.log('OrderWithBuyer instanceof:', hydrated instanceof OrderWithBuyer);
-// true — inner decoder ran first
-console.log('buyer instanceof CustomerRecord:', hydrated.buyer instanceof CustomerRecord);
+console.log('buyer instanceof CustomerRecord:', hydratedBuyer instanceof CustomerRecord);
+// true
+console.log('buyer is properly hydrated:', typeof hydratedBuyer.greet === 'function');
 // 'hello Bastian Balthazar Bux'
-console.log('buyer.greet():', hydrated.buyer.greet());
+console.log('buyer.greet():', hydratedBuyer.greet());

@@ -1,10 +1,14 @@
 /**
- * Transforms recipes — stringified BigInt identifier
+ * Transforms recipes — numeric identifier string ↔ canonical string
  *
- * JSON cannot natively represent `BigInt`. Stringify on the wire;
- * parse on decode. Registered as a sibling string primitive on
- * `bookstoreEntities` so a wire-stringified `BigInt` round-trips
- * losslessly without touching the canonical `OrderIdSchema` (UUID).
+ * The wire is a numeric string (e.g., ISBN-13). The canonical form
+ * is also a string; decode validates the format and normalizes it
+ * to canonical string form. This avoids BigInt entirely, keeping
+ * the canonical value JSON-expressible.
+ *
+ * Registered as a sibling string primitive so a wire numeric string
+ * can be normalized and validated without touching the canonical
+ * `OrderIdSchema` (UUID).
  *
  * The wire is the numeric form of a hypothetical 64-bit catalogue id
  * for the 1979 Thienemann first edition of Die unendliche Geschichte.
@@ -17,33 +21,42 @@ import { createBookstoreDocRegistry } from '../bookstore/index.js';
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const BigIdSchema = {
-  '$id': 'https://bookstore.example/BigId',
-  'pattern': '^\\d+$',
-  'type': 'string'
-} as const;
+const BigIdTransform = Transform.create(
+  {
+    '$id': 'https://bookstore.example/BigId',
+    'pattern': '^\\d+$',
+    'type': 'string'
+  } as const,
+  {
+    'decode': (wire: string) => {
+      // Decode: validate and normalize numeric string to canonical form.
+      // Verify it's a valid numeric string by attempting to parse as BigInt.
+      BigInt(wire);
 
-jt.set(BigIdSchema);
-
-const BigIdTransform = Transform.create<typeof BigIdSchema, bigint>(BigIdSchema, {
-  'decode': BigInt,
-  'encode': (value) => {
-    return value.toString();
+      return wire;
+    },
+    'encode': (value: string) => {
+      // Encode: return the canonical string.
+      return value;
+    }
   }
-});
+);
+
+jt.set(BigIdTransform);
 
 const wire = '9783522128001';
 const decoded = jt.instantiate(BigIdTransform, wire);
 
-console.assert(typeof decoded === 'bigint');
-console.assert(decoded === 9_783_522_128_001n);
+// Canonical is a string.
+console.assert(typeof decoded === 'string');
+console.assert(decoded === wire);
 // '9783522128001' — ISBN-13 as string
 console.log('wire string:', wire);
-// 9783522128001n — native BigInt
-console.log('decoded bigint:', decoded);
+// '9783522128001' — canonical string
+console.log('decoded id string:', decoded);
 
 const reEncoded = jt.encode(BigIdTransform, decoded);
 
 console.assert(reEncoded === wire);
-// '9783522128001' — toString() on encode
+// '9783522128001' — round-trip
 console.log('re-encoded:', reEncoded);

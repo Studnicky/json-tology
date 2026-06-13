@@ -1,35 +1,41 @@
 /**
  * Schema transforms
  *
- * Attach decode/encode functions to a schema so instantiate() automatically
- * transforms validated data into a richer type (e.g. string → Date).
+ * Attach decode/encode functions to a schema so instantiate() normalizes a raw
+ * wire payload into the schema's canonical form. `decode` consumes the raw wire
+ * type and produces the canonical value; the schema describes decode's OUTPUT,
+ * so validation runs on the decoded result (decode → validate → strip).
  *
  * The schema object is never mutated — transforms are stored in a WeakMap.
- * The output type is tracked via a phantom brand on the schema's TypeScript type.
+ * The raw wire type is tracked via a phantom brand on the schema's TypeScript type.
  *
  * @example
- * const DateSchema = Transform.create(
- *   { $id: 'Date', type: 'string', format: 'date-time' } as const,
- *   {
- *     decode: (s: string) => new Date(s),
- *     encode: (d: Date) => d.toISOString(),
- *   },
- * );
- * const date = jt.instantiate(DateSchema.$id, '2026-01-01'); // typed as Date
+ * const BookSchema = {
+ *   $id: 'https://bookstore.example/schema/Book',
+ *   type: 'object',
+ *   properties: { isbn: { type: 'string' }, title: { type: 'string' } },
+ *   required: ['isbn', 'title'],
+ * } as const;
+ * const BookCodec = Transform.create(BookSchema, {
+ *   decode: (raw: { isbn_13: string; title: string }) => ({ isbn: raw.isbn_13, title: raw.title }),
+ *   encode: (book) => ({ isbn_13: book.isbn, title: book.title }),
+ * });
+ * // raw wire { isbn_13, title } → canonical { isbn, title }
+ * const book = jt.instantiate(BookCodec.$id, { isbn_13: '9780743273565', title: 'Gatsby' });
  */
 
 import type {
   JsonSchemaDocumentObjectType, JsonSchemaDocumentType
 } from '../../types/Schema.js';
 import type {
-  ChainOutputType,
+  ChainWireType,
   TransformedType,
   ValidateChainType
 } from '../../types/Transform.js';
 import type { BrandedType } from '../../types/Brand.js';
 import { brand } from '../../types/Brand.js';
 import type {
-  InferSchemaType, LooseInputType
+  CanonicalShapeType
 } from '../../types/Infer.js';
 import type { TransformFnsInterface } from '../../interfaces/TransformFns.js';
 import type {
@@ -50,25 +56,29 @@ const transformRegistry = new WeakMap<object, TransformFnsInterface>();
 
 /**
  * Attaches decode/encode transform functions to a JSON Schema so that
- * `instantiate()` automatically converts validated data into a richer runtime
- * type (e.g. `string` → `Date`).
+ * `instantiate()` normalizes a raw wire payload into the schema's canonical
+ * form (decode → validate → strip). The schema describes decode's OUTPUT.
  *
  * @remarks
  * Schema objects are never mutated — transforms are stored in a `WeakMap`
- * keyed on the schema reference. The output type is tracked via a phantom
- * brand on the schema's TypeScript type so that `instantiate()` returns the
- * fully-decoded type without any runtime cast.
+ * keyed on the schema reference. The raw wire type is tracked via a phantom
+ * brand on the schema's TypeScript type; `instantiate()` returns the canonical
+ * type (the schema's `InferSchemaType`) without any runtime cast.
  *
  * @example
  * ```ts
- * const DateSchema = Transform.create(
- *   { $id: 'Date', type: 'string', format: 'date-time' } as const,
- *   {
- *     decode: (s: string) => new Date(s),
- *     encode: (d: Date) => d.toISOString(),
- *   },
- * );
- * const date = jt.instantiate(DateSchema.$id, '2026-01-01'); // typed as Date
+ * const BookSchema = {
+ *   $id: 'https://bookstore.example/schema/Book',
+ *   type: 'object',
+ *   properties: { isbn: { type: 'string' }, title: { type: 'string' } },
+ *   required: ['isbn', 'title'],
+ * } as const;
+ * const BookCodec = Transform.create(BookSchema, {
+ *   decode: (raw: { isbn_13: string; title: string }) => ({ isbn: raw.isbn_13, title: raw.title }),
+ *   encode: (book) => ({ isbn_13: book.isbn, title: book.title }),
+ * });
+ * // raw wire { isbn_13, title } → canonical { isbn, title }
+ * const book = jt.instantiate(BookCodec.$id, { isbn_13: '9780743273565', title: 'Gatsby' });
  * ```
  *
  * @category Transform
@@ -108,8 +118,8 @@ export class Transform {
     TStages extends readonly AnyTransformStageInterface[]
   >(
     schema: TSchema,
-    transforms: TStages & ValidateChainType<TStages, InferSchemaType<TSchema>>
-  ): TransformedType<TSchema, ChainOutputType<TStages>> {
+    transforms: TStages & ValidateChainType<TStages, CanonicalShapeType<TSchema>>
+  ): TransformedType<TSchema, ChainWireType<TStages>> {
     const stages = transforms as ReadonlyArray<TransformStageInterface<unknown, unknown>>;
     const composed: TransformFnsInterface = {
       'decode': (value: unknown): unknown => {
@@ -126,7 +136,7 @@ export class Transform {
 
     transformRegistry.set(schema, composed);
 
-    return brand<TransformedType<TSchema, ChainOutputType<TStages>>>(schema);
+    return brand<TransformedType<TSchema, ChainWireType<TStages>>>(schema);
   }
 
   /**
@@ -140,25 +150,31 @@ export class Transform {
    */
   public static create<
     TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
-    TOut extends unknown
+    TWire = unknown,
+    TReferences = Record<never, never>
   >(
     schema: TSchema,
     fns: {
-      // `decode` and `encode` are the two halves of the same wire boundary, so
-      // both speak the brand-free wire InputType: `decode` consumes raw wire
-      // data (pre-decode) and `encode` produces it. Brands are validation
-      // artifacts that do not exist on the wire; typing `decode`'s input as the
-      // branded `InferSchemaType` also degrades to `RefNotFound` for transforms
-      // attached to composed/`$ref`-bearing schemas (e.g. `Compose.equivalent(
-      // RegisteredEntity, …)`), which cannot resolve standalone in this static
-      // context. `LooseInputType` is the precise wire face for both directions.
-      'decode': (input: LooseInputType<InferSchemaType<TSchema>>) => TOut;
-      'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema>>;
+      // A normalize transform's `decode` consumes the raw wire payload `TWire`
+      // (author-supplied; not derived from the schema) and produces the schema's
+      // canonical, branded form. `encode` is the inverse. The schema describes
+      // `decode`'s OUTPUT, so validation runs on the decoded result.
+      //
+      // `TReferences` is the optional ref-resolving canonical path: supply a
+      // schema-references map so a `$ref`-bearing (or composed) schema resolves
+      // its canonical output type instead of degrading to `RefNotFound`. It
+      // defaults to the empty map, preserving the standalone behaviour.
+      //
+      // Both sides speak the brand-free structural canonical (`CanonicalShapeType`):
+      // `decode` produces plain values (no per-leaf `brand()`), and `validate`
+      // — run by `instantiate` — is the boundary that certifies the branded form.
+      'decode': (raw: TWire) => CanonicalShapeType<TSchema, TReferences>;
+      'encode': (value: CanonicalShapeType<TSchema, TReferences>) => TWire;
     }
-  ): TransformedType<TSchema, TOut> {
+  ): TransformedType<TSchema, TWire> {
     Transform.register(schema, fns as TransformFnsInterface);
 
-    return brand<TransformedType<TSchema, TOut>>(schema);
+    return brand<TransformedType<TSchema, TWire>>(schema);
   }
 
   /**

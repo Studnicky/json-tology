@@ -10,8 +10,9 @@
  * the canonical scenario keeps its plain wire shape.
  */
 
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
-  Compose, Transform
+  Compose
 } from '../../../src/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
@@ -22,7 +23,8 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type OrderWire = typeof aboxFixtures.order;
+// The canonical (brand-free) Order shape
+type OrderWire = UnbrandType<typeof aboxFixtures.order>;
 
 class OrderViaFromPlain {
   public static fromPlain(plain: OrderWire): OrderViaFromPlain {
@@ -72,16 +74,20 @@ const FromPlainOrderSchema = Compose.equivalent(
 
 jt.set(FromPlainOrderSchema);
 
-const FromPlainOrderTransform = Transform.create<typeof FromPlainOrderSchema, OrderViaFromPlain>(FromPlainOrderSchema, {
-  'decode': (plain) => {
-    return OrderViaFromPlain.fromPlain(plain as OrderWire);
-  },
-  'encode': (instance) => {
+// Class is the wire side: encode calls fromPlain to hydrate, decode calls toPlain to lower.
+const FromPlainOrderTransform = jt.addTransform(FromPlainOrderSchema, {
+  'decode': (instance: OrderViaFromPlain) => {
     return instance.toPlain();
+  },
+  'encode': (wire) => {
+    const source = wire as OrderWire;
+
+    return OrderViaFromPlain.fromPlain(source);
   }
 });
 
-const hydrated = jt.instantiate(FromPlainOrderTransform, aboxFixtures.order);
+// Hydrate canonical JSON via encode.
+const hydrated = jt.encode(FromPlainOrderTransform, aboxFixtures.order);
 
 console.assert(hydrated instanceof OrderViaFromPlain);
 console.assert(hydrated.orderId === aboxFixtures.order.orderId);

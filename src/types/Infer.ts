@@ -1746,40 +1746,58 @@ export type EnumValuesType<T>
 export type ExhaustiveType<T extends never> = T;
 
 // ---------------------------------------------------------------------------
-// Loose input hint
+// Brand stripping — structure-preserving
 // ---------------------------------------------------------------------------
 
 /**
- * Strip constraint brands, returning the base primitive type.
- *
- * Exported as a standalone utility — NOT applied to method signatures.
- * Uses `[T] extends [X]` to prevent distribution over unions.
- *
- * @remarks
- * Useful when a function must accept both a branded type (obtained via the
- * validation API) and an unvalidated primitive at the same call site.
- * Use sparingly — prefer branded types at API boundaries.
- *
- * @example
- * ```ts
- * type T = LooseInputType<EmailBrandInterface>;  // string
- * type N = LooseInputType<Int32BrandInterface>;  // number
- * ```
- *
- * @category Type Inference
- * @since 0.18.0
- * @see {@link InferSchemaType}
- * @group Type Inference
- *
- * @typeParam T - The branded or primitive type to strip.
+ * Reconstruct an array/tuple type with each element brand-stripped, dropping any
+ * container-level constraint brand (e.g. `minItems`) intersected on the array.
  */
-export type LooseInputType<T>
-  = [T] extends [string] ? string
+export type UnbrandArrayType<T>
+  = T extends readonly [infer THead, ...infer TTail]
+    ? readonly [UnbrandType<THead>, ...UnbrandArrayType<TTail>]
+    : T extends ReadonlyArray<infer TElem>
+      ? ReadonlyArray<UnbrandType<TElem>>
+      : readonly [];
+
+/**
+ * Strip constraint brands from a schema-inferred type while preserving its
+ * structure. Leaf brands collapse to their base primitive
+ * (`FormatBrand<'uuid'> & string` → `string`); object/array container brands
+ * (`MinItems`, `MinProperties`, …) are dropped; nested shape is preserved.
+ *
+ * This is the structural canonical form a normalize transform's `decode`
+ * produces and `encode` consumes: authors write plain mappers, and `validate`
+ * (run by `instantiate`) is the boundary that certifies the branded form. The
+ * difference from the (removed) `LooseInputType` is that structure is retained
+ * rather than flattened to `Record<string, unknown>`.
+ *
+ * @typeParam T - The branded type to strip (typically `InferSchemaType<TSchema>`).
+ */
+export type UnbrandType<T> = T extends unknown
+  ? [T] extends [string] ? string
     : [T] extends [number] ? number
       : [T] extends [boolean] ? boolean
-        : [T] extends [readonly unknown[]] ? readonly unknown[]
-          : [T] extends [Record<string, unknown>] ? Record<string, unknown>
-            : unknown;
+        : [T] extends [bigint] ? bigint
+          : T extends readonly unknown[] ? UnbrandArrayType<T>
+            : T extends object ? { [K in keyof T as K extends symbol ? never : K]: UnbrandType<T[K]> }
+              : T
+  : never;
+
+/**
+ * The brand-free structural canonical form of a schema — the type a normalize
+ * transform's `decode` produces and `encode` consumes, and the partial shape
+ * `materialize` accepts. Composes the two inference steps so call sites name one
+ * intention-revealing type instead of repeating
+ * `UnbrandType<InferSchemaType<TSchema, TSchema, TReferences>>`: it resolves the
+ * schema (threading `TReferences` for `$ref`s) and strips constraint brands,
+ * since `validate` — not the mapper — is the brand boundary.
+ *
+ * @typeParam TSchema - The schema to resolve.
+ * @typeParam TReferences - Cross-schema references map for `$ref` resolution.
+ */
+export type CanonicalShapeType<TSchema, TReferences = Record<never, never>>
+  = UnbrandType<InferSchemaType<TSchema, TSchema, TReferences>>;
 
 export type {
   FindAnchorType,

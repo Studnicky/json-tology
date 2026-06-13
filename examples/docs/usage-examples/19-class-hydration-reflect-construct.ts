@@ -4,16 +4,17 @@
  * Default strategy for parameterless constructors. Works whether or
  * not the constructor takes arguments because `Reflect.construct` is
  * called with an empty arg list. Tradeoff: the constructor runs once
- * per `instantiate` — if it does I/O or registers itself with a
- * parent collection, that work repeats on every decode.
+ * per `encode` — if it does I/O or registers itself with a
+ * parent collection, that work repeats on every hydration.
  *
  * Registered on a `Compose.equivalent` sibling of `OrderSchema` so
  * the canonical Bastian-orders-Neverending-Story scenario keeps its
  * plain wire-shape behaviour everywhere else.
  */
 
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
-  Compose, Transform
+  Compose
 } from '../../../src/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
@@ -24,13 +25,16 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type OrderWire = typeof aboxFixtures.order;
+// The canonical (brand-free) Order shape — what the transform's encode consumes
+type OrderWire = UnbrandType<typeof aboxFixtures.order>;
 
 class OrderViaReflect {
   declare public customerId: string;
   declare public orderId: string;
   declare public orderLines: OrderWire['orderLines'];
   declare public orderTotal: OrderWire['orderTotal'];
+  declare public placedAt: OrderWire['placedAt'];
+  declare public shippingAddress: OrderWire['shippingAddress'];
 
   public status(): string {
     return `shipped:${this.orderId}`;
@@ -44,16 +48,37 @@ const ReflectOrderSchema = Compose.equivalent(
 
 jt.set(ReflectOrderSchema);
 
-const ReflectOrderTransform = Transform.create<typeof ReflectOrderSchema, OrderViaReflect>(ReflectOrderSchema, {
-  'decode': (plain) => {
-    return Object.assign(Reflect.construct(OrderViaReflect, []), plain);
+// Class hydration: the class is the wire side (TWire).
+// - decode (class → canonical): lowers an OrderViaReflect instance to JSON.
+// - encode (canonical → class): hydrates canonical JSON into an OrderViaReflect.
+const ReflectOrderTransform = jt.addTransform(ReflectOrderSchema, {
+  'decode': (instance: OrderViaReflect) => {
+    return {
+      'customerId': instance.customerId,
+      'orderId': instance.orderId,
+      'orderLines': instance.orderLines,
+      'orderTotal': instance.orderTotal,
+      'placedAt': instance.placedAt,
+      'shippingAddress': instance.shippingAddress
+    };
   },
-  'encode': (instance) => {
-    return { ...instance };
+  'encode': (wire) => {
+    const source = wire as OrderWire;
+    const hydrated = Reflect.construct(OrderViaReflect, []);
+
+    return Object.assign(hydrated, {
+      'customerId': source.customerId,
+      'orderId': source.orderId,
+      'orderLines': source.orderLines,
+      'orderTotal': source.orderTotal,
+      'placedAt': source.placedAt,
+      'shippingAddress': source.shippingAddress
+    });
   }
 });
 
-const hydrated = jt.instantiate(ReflectOrderTransform, aboxFixtures.order);
+// Hydrate canonical JSON into a class instance via encode.
+const hydrated = jt.encode(ReflectOrderTransform, aboxFixtures.order);
 
 console.assert(hydrated instanceof OrderViaReflect);
 console.assert(hydrated.status().startsWith('shipped:'));

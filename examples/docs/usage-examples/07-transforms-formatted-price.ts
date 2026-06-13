@@ -21,31 +21,32 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const FormattedPriceSchema = {
-  '$id': 'https://bookstore.example/FormattedPrice',
-  'type': 'string'
-} as const;
-
-jt.set(FormattedPriceSchema);
-
-const FormattedPriceTransform = Transform.chain(FormattedPriceSchema, [
+const FormattedPriceTransform = Transform.chain(
   {
-    'decode': (raw: string) => {
-      return raw.replaceAll(/[$,]/gu, '');
+    '$id': 'https://bookstore.example/FormattedPrice',
+    'type': 'number'
+  } as const,
+  [
+    {
+      'decode': (raw: string) => {
+        return raw.replaceAll(/[$,]/gu, '');
+      },
+      'encode': (clean: string) => {
+        return `$${clean}`;
+      }
     },
-    'encode': (clean: string) => {
-      return `$${clean}`;
+    {
+      'decode': (clean: string) => {
+        return Number.parseFloat(clean);
+      },
+      'encode': (value: number) => {
+        return value.toFixed(2);
+      }
     }
-  },
-  {
-    'decode': (clean: string) => {
-      return Number.parseFloat(clean);
-    },
-    'encode': (value: number) => {
-      return value.toFixed(2);
-    }
-  }
-] as const);
+  ] as const
+);
+
+jt.set(FormattedPriceTransform);
 
 const wireAmount = aboxFixtures.rareBook.price.amount;
 const wire = `$${wireAmount.toFixed(2)}`;

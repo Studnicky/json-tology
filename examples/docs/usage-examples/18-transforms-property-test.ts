@@ -5,20 +5,18 @@
  * `decode(encode(y)) === y` for every value in the domain. This
  * file demonstrates the property-test pattern against the
  * `PlacedAt` transform registered in `03-transforms-recipes.ts`
- * — the ISO 8601 ↔ Date pair.
+ * — the ISO 8601 string ↔ canonical ISO 8601 string pair.
  *
  * The samples include the canonical Bastian-order timestamp and
  * two neighbouring instants to exercise non-trivial inputs.
  */
 
 import {
-  Compose, Transform
+  Transform
 } from '../../../src/index.js';
-import type { JsonSchemaDocumentType } from '../../../src/types/index.js';
 import type { TransformedType } from '../../../src/types/Transform.js';
 import {
-  aboxFixtures, createBookstoreDocRegistry,
-  Iso8601Schema
+  aboxFixtures, createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
 // Browser-safe strict equality assertion (same shape as node:assert.strict),
@@ -35,27 +33,35 @@ const assert = {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const RoundTripPlacedAtSchema = Compose.equivalent(
-  Iso8601Schema,
-  { '$id': 'https://bookstore.example/RoundTripPlacedAt' } as const
+const RoundTripPlacedAtTransform = Transform.create(
+  {
+    '$id': 'https://bookstore.example/RoundTripPlacedAt',
+    'format': 'date-time',
+    'type': 'string'
+  } as const,
+  {
+    'decode': (wire: string) => {
+      // Decode: normalize any ISO 8601 input to canonical Date.toISOString() form.
+      return new Date(wire).toISOString();
+    },
+    'encode': (isoString: string) => {
+      // Encode: return the canonical ISO string.
+      return isoString;
+    }
+  }
 );
 
-jt.set(RoundTripPlacedAtSchema);
+jt.set(RoundTripPlacedAtTransform);
 
-const RoundTripPlacedAtTransform = Transform.create<typeof RoundTripPlacedAtSchema, Date>(RoundTripPlacedAtSchema, {
-  'decode': (wire) => {
-    return new Date(wire as string);
-  },
-  'encode': (date) => {
-    return date.toISOString();
-  }
-});
-
-function roundTrip<
-  TSchema extends JsonSchemaDocumentType & { readonly '$id': string },
-  TOut
->(
-  schema: TransformedType<TSchema, TOut>,
+function roundTrip(
+  schema: TransformedType<
+    {
+      readonly '$id': 'https://bookstore.example/RoundTripPlacedAt';
+      readonly 'format': 'date-time';
+      readonly 'type': 'string';
+    },
+    string
+  >,
   samples: readonly string[]
 ): void {
   for (const wire of samples) {

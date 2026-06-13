@@ -236,7 +236,11 @@ const typeScriptPluginRules = {
   '@typescript-eslint/consistent-type-exports': ['error', { fixMixedExportsWithInlineTypeSpecifier: true }],
   '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'separate-type-imports', prefer: 'type-imports' }],
   '@typescript-eslint/default-param-last': 'error',
-  '@typescript-eslint/dot-notation': 'error',
+  // `allowIndexSignaturePropertyAccess` lets bracket access stand on
+  // index-signature types (e.g. `wire['author_name']`), so external/wire shapes
+  // typed as `Record<string, unknown>` are read with the dynamic accessor —
+  // signalling "this key belongs to the source's contract, not ours."
+  '@typescript-eslint/dot-notation': ['error', { 'allowIndexSignaturePropertyAccess': true }],
   '@typescript-eslint/naming-convention': [
     'error',
     { custom: { match: false, regex: '^I[A-Z]' }, format: ['PascalCase'], selector: 'interface' },

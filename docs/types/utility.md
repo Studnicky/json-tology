@@ -1,21 +1,20 @@
 ---
 title: Utility Types
-description: DeprecatedKeysType, NonDeprecatedSchemaType, LooseInputType, EnumValuesType, ExhaustiveType, and DefaultAlignedType - compile-time schema metadata utilities.
+description: DeprecatedKeysType, NonDeprecatedSchemaType, EnumValuesType, ExhaustiveType, and DefaultAlignedType - compile-time schema metadata utilities.
 ---
 
 # Utility Types <Badge type="info" text="Compile-time" />
 
-> This page covers utility types for working with schema-derived types: deprecated key extraction, loose input boundaries, enum unions, exhaustive checks, and default alignment guards. All examples use the [bookstore domain](/bookstore-domain). See [Schemas](/schemas) for how schemas are registered.
+> This page covers utility types for working with schema-derived types: deprecated key extraction, enum unions, exhaustive checks, and default alignment guards. All examples use the [bookstore domain](/bookstore-domain). See [Schemas](/schemas) for how schemas are registered.
 
 See also [Primary inference](./infer.md), [Range types](./ranges.md).
 
-json-tology exports six utility types for working with schema-derived types. Each has its own section below.
+json-tology exports five utility types for working with schema-derived types. Each has its own section below.
 
 | Type | Purpose |
 |------|---------|
 | [`DeprecatedKeysType<T>`](#deprecatedkeystype) | Extract keys marked `deprecated: true` |
 | [`NonDeprecatedSchemaType<T>`](#nondeprecatedschematype) | Omit deprecated properties from inferred type |
-| [`LooseInputType<T>`](#looseinputtype) | Strip constraint brands to base primitive |
 | [`EnumValuesType<T>`](#enumvaluestype) | Extract enum values as a TS union |
 | [`ExhaustiveType<T>`](#exhaustivetype) | Enforce exhaustive switch/case at compile time |
 | [`DefaultAlignedType<T>`](#defaultalignedtype) | `never` when declared defaults mismatch their declared types |
@@ -257,122 +256,6 @@ data.model_dump(exclude_deprecated=True)
 
 ---
 
-## `LooseInputType<T>`
-
-**Declaration.** Strips constraint brands from a schema-inferred type, returning the underlying TypeScript primitive. `string & FormatBrand<'email'>` becomes `string`; `number & MinimumBrand<0>` becomes `number`; object and array types fall back to `Record<string, unknown>` and `readonly unknown[]` respectively.
-
-**Use this when** you are writing a function that accepts user input _before_ validation - for example, a form handler, a CLI parser, or a test helper - where you want to accept plain primitives without requiring callers to produce pre-validated branded values.
-
-**Don't use this when** the value has already been validated; keep the branded type to preserve the constraint guarantee. `LooseInputType<T>` is an input-boundary utility, not a way to discard safety after validation.
-
-### Signature
-
-<RunnableExample src="examples/docs/types/15-looseinput-signature" />
-
-### Examples
-
-#### Example 1: Accepting unvalidated customer input
-
-<RunnableExample src="examples/docs/types/16-looseinput-form-handler" />
-
-#### Example 2: Stripping brands from a single field type
-
-<RunnableExample src="examples/docs/types/17-looseinput-single-field" />
-
-#### Example 3: Test helpers that produce fixture data
-
-<RunnableExample src="examples/docs/types/18-looseinput-test-fixture" />
-
-### Bad examples
-
-#### Anti-pattern 1: Stripping brands after validation
-
-<RunnableExample src="examples/docs/types/19-antipattern-strip-after-validation" />
-
-#### Anti-pattern 2: Using it as a permanent storage type
-
-<RunnableExample src="examples/docs/types/20-antipattern-loose-storage-type" />
-
-### Comparison
-
-::: code-group
-
-```ts [json-tology]
-type CustomerInput = LooseInputType<InferType<typeof CustomerSchema>>;
-// Record<string, unknown>  - brands stripped, safe for raw-input boundaries
-```
-
-```ts [Zod]
-// Concept not directly applicable  - Zod types are structural (no phantom brands).
-// Zod's z.infer<T> already returns plain primitives with no brand intersections.
-// For input boundaries, Zod uses z.input<T> vs z.output<T> for transform coercion.
-import { z } from 'zod';
-type CustomerInput = z.input<typeof CustomerSchema>; // pre-transform type
-```
-
-```ts [TypeBox]
-// TypeBox types are plain structural TypeScript  - no constraint brands exist.
-// Static<T> already gives the plain type; LooseInputType has no equivalent need.
-import type { Static } from '@sinclair/typebox';
-type CustomerInput = Static<typeof CustomerSchema>; // already brand-free
-```
-
-```ts [AJV]
-// Not applicable  - AJV provides no type inference.
-// Types are always declared manually as plain interfaces.
-```
-
-```py [Pydantic]
-# Concept specific to json-tology's constraint brand system.
-# Pydantic uses the same class for both input (pre-validation) and output (post-validation).
-# For loose input, use a TypedDict or dict[str, Any] at the boundary layer.
-from typing import Any
-CustomerInput = dict[str, Any]
-```
-
-
-```ts [Valibot]
-// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
-```
-
-```ts [Yup]
-// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
-```
-
-```ts [Joi]
-// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
-```
-
-```ts [io-ts]
-// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
-```
-
-```ts [Effect Schema]
-// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
-```
-
-```ts [ArkType]
-// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
-```
-
-```ts [Runtypes]
-// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
-```
-
-:::
-
-### Related
-
-- `EnumValuesType` - when you need the enum union, not the stripped primitive
-- [Constraint Brands](/constraint-brands) - the brand system that `LooseInputType` strips
-
-### See also
-
-- [Schemas](/schemas) - how constraint keywords produce brands
-- [`InferType`](./infer.md#infertype) - the fully branded output type
-
----
-
 ## `EnumValuesType<T>`
 
 **Declaration.** Extracts the union of `enum` values from a schema literal. Works on any schema shape that carries an `enum` array; returns `never` when no `enum` is declared.
@@ -487,7 +370,6 @@ Currency = Literal['USD', 'EUR', 'GBP']
 ### Related
 
 - `ExhaustiveType` - pair with `EnumValuesType` for exhaustive switch checks
-- `LooseInputType` - when you want to accept the base primitive at function boundaries
 
 ### See also
 
