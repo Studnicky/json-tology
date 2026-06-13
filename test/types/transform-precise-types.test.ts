@@ -3,10 +3,10 @@
  *
  *  #6 — `Transform.getDecoder` accepts a branded `Compose.*` schema directly,
  *       with no `as unknown as Record<string, unknown>` cast.
- *  #8 — `addTransform`'s `encode` returns the schema's brand-free InputType
- *       (`LooseInputType<InferSchemaType<…>>`), so the natural wire-producing
- *       encoder type-checks with no cast. `decode` still receives the branded
- *       OutputType.
+ *  #8 — `addTransform` is a normalize transform: `decode` consumes the raw
+ *       wire payload and produces the schema's canonical (branded) form;
+ *       `encode` is the inverse (canonical → wire). The author brands the
+ *       decoded leaf explicitly.
  *
  * Both checks are guarded in unexecuted functions: the bodies are type-checked
  * (the point of the test) but never run.
@@ -38,8 +38,11 @@ function getDecoderAcceptsBrandedSchema(): void {
 
 void getDecoderAcceptsBrandedSchema;
 
-// #8 — addTransform's encode returns the brand-free InputType (no cast).
-function addTransformEncodeIsBrandFree(): void {
+// #8 — addTransform is a normalize transform: decode consumes the raw wire
+// payload and produces the schema's canonical form. Both sides speak the
+// brand-free structural canonical (`UnbrandType`), so the mapper is plain —
+// no per-leaf `brand()`; `validate` (run by `instantiate`) is the brand boundary.
+function addTransformProducesCanonical(): void {
   const TimestampSchema = {
     '$id': 'ex:Timestamp',
     'minLength': 1,
@@ -52,16 +55,16 @@ function addTransformEncodeIsBrandFree(): void {
   });
 
   jt.addTransform(TimestampSchema, {
-    // `input` is the validated, branded OutputType (a length-constrained string).
-    'decode': (input: string): Date => {
-      return new Date(input);
+    // `raw` is the free wire payload; decode produces the canonical string as a
+    // plain value — the length-brand is applied at validation, not here.
+    'decode': (raw: { 'ms': number }) => {
+      return new Date(raw.ms).toISOString();
     },
-    // returns a plain `string` — the brand-free InputType. With the old branded
-    // signature this required a cast; now it type-checks as written.
-    'encode': (output: Date): string => {
-      return output.toISOString();
+    // encode is the inverse: canonical → raw wire payload.
+    'encode': (value) => {
+      return { 'ms': new Date(value).getTime() };
     }
   });
 }
 
-void addTransformEncodeIsBrandFree;
+void addTransformProducesCanonical;

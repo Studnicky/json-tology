@@ -6,6 +6,8 @@
  */
 
 import { Transform } from '../../src/index.js';
+import { brand } from '../../src/types/Brand.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -118,21 +120,23 @@ export const UserSchema = {
   'type': 'object'
 } as const;
 
-export const DateTimeSchema = Transform.create(
-  {
-    '$id': 'https://acl.io/DateTime',
-    'format': 'date-time',
-    'type': 'string'
-  } as const,
-  {
-    'decode': (raw: string) => {
-      return new Date(raw);
-    },
-    'encode': (date: Date) => {
-      return date.toISOString();
-    }
+const DateTimeRawSchema = {
+  '$id': 'https://acl.io/DateTime',
+  'format': 'date-time',
+  'type': 'string'
+} as const;
+
+// Normalize transform: the raw wire date-time string is normalized into the
+// schema's canonical (branded, format-validated) form. The schema describes
+// decode's OUTPUT, so format validation runs on the decoded result.
+export const DateTimeSchema = Transform.create(DateTimeRawSchema, {
+  'decode': (raw: string) => {
+    return brand<InferSchemaType<typeof DateTimeRawSchema>>(raw);
+  },
+  'encode': (value) => {
+    return value;
   }
-);
+});
 
 export const UserIdSchema = Transform.brand(
   {

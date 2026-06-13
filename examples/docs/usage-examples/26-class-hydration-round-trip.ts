@@ -1,19 +1,20 @@
 /**
  * Class hydration — round-trip property test pattern
  *
- * Class hydration is correct only if `encode(decode(x))` deep-equals
- * `x`. Validate that with an assert. The pair of `decode` and
+ * Class hydration is correct only if `decode(encode(wire))` deep-equals
+ * `wire`. Validate that with an assert. The pair of `decode` and
  * `encode` are independent functions; nothing forces them to be
  * inverses, so a round-trip test catches drift the moment it
  * happens — before it propagates into queue payloads, database
  * rows, or HTTP responses.
  */
 
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
-  Compose, Transform
+  Compose
 } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities, createBookstoreDocRegistry,
+  aboxFixtures, createBookstoreDocRegistry,
   OrderSchema
 } from '../bookstore/index.js';
 
@@ -36,7 +37,8 @@ const assert = {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type OrderWire = typeof aboxFixtures.order;
+// The canonical (brand-free) Order shape
+type OrderWire = UnbrandType<typeof aboxFixtures.order>;
 
 class RoundTripOrder {
   declare public customerId: string;
@@ -54,23 +56,28 @@ const RoundTripOrderSchema = Compose.equivalent(
 
 jt.set(RoundTripOrderSchema);
 
-const RoundTripOrderTransform = Transform.create<typeof RoundTripOrderSchema, RoundTripOrder>(RoundTripOrderSchema, {
-  'decode': (plain) => {
-    return Object.assign(Reflect.construct(RoundTripOrder, []), plain);
-  },
-  'encode': (instance) => {
+// Class is the wire side: encode hydrates, decode lowers.
+const RoundTripOrderTransform = jt.addTransform(RoundTripOrderSchema, {
+  'decode': (instance: RoundTripOrder) => {
     return { ...instance };
+  },
+  'encode': (wire) => {
+    const source = wire as OrderWire;
+
+    return Object.assign(Reflect.construct(RoundTripOrder, []), source);
   }
 });
 
 const wire = aboxFixtures.order;
-const instance = jt.instantiate(RoundTripOrderTransform, wire);
+// Hydrate canonical JSON via encode.
+const instance = jt.encode(RoundTripOrderTransform, wire);
 
 assert.ok(instance instanceof RoundTripOrder);
 
-const reEncoded = bookstoreEntities.encode(RoundTripOrderTransform, instance);
+// Lower the instance back to canonical JSON via instantiate (which calls decode).
+const reLowered = jt.instantiate(RoundTripOrderTransform, instance);
 
-assert.deepStrictEqual(reEncoded, wire);
+assert.deepStrictEqual(reLowered, wire);
 
 console.log('hydrated instance is RoundTripOrder:', instance instanceof RoundTripOrder);
-console.log('round-trip encode(decode(wire)) deep-equals wire:', JSON.stringify(reEncoded) === JSON.stringify(wire));
+console.log('round-trip instantiate(encode(wire)) deep-equals wire:', JSON.stringify(reLowered) === JSON.stringify(wire));

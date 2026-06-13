@@ -49,46 +49,48 @@ const jt = JsonTology.create({
   ] as const
 });
 
-// ── Domain type ───────────────────────────────────────────────────────────
-
-interface Money {
-  'currency': string;
-  'dollars': number;
-}
-
 // ── Register the transform ────────────────────────────────────────────────
 // `input.currency` is typed `string` and `input.valueInCents` is typed
 // `number` because `$ref: 'Currency'` resolved through TRefs.
-const MoneyCodec = jt.addTransform(PriceCentsSchema, {
-  'decode': (input): Money => {
+// The decode output must be a plain JSON value matching the schema's canonical form.
+const PriceCentsCodec = jt.addTransform(PriceCentsSchema, {
+  'decode': (input): { 'currency': string;
+    'valueInCents': number } => {
+    // Normalize: round up cents to nearest integer and validate range.
+    const roundedCents = Math.round(input.valueInCents);
+
     return {
       'currency': input.currency,
-      'dollars': input.valueInCents / 100
+      'valueInCents': roundedCents
     };
   },
-  'encode': (money: Money): { 'currency': string;
-    'valueInCents': number } => {
+  'encode': (value: { 'currency': string;
+    'valueInCents': number }): {
+    'currency': string;
+    'valueInCents': number
+  } => {
+    // Encode reversal: return to wire form.
     return {
-      'currency': money.currency,
-      'valueInCents': Math.round(money.dollars * 100)
+      'currency': value.currency,
+      'valueInCents': value.valueInCents
     };
   }
 });
 
-// ── instantiate: wire → domain ─────────────────────────────────────────────
+// ── instantiate: wire → canonical form ─────────────────────────────────────
 const wire = {
   'currency': 'EUR',
   'valueInCents': 1999
 };
 
-const money = jt.instantiate(MoneyCodec, wire);
+const canonical = jt.instantiate(PriceCentsCodec, wire);
 
-console.assert(money.dollars === 19.99, 'decoded dollars');
-console.assert(money.currency === 'EUR', 'decoded currency');
-console.log('Decoded:', money);
+console.assert(canonical.valueInCents === 1999, 'canonical cents');
+console.assert(canonical.currency === 'EUR', 'canonical currency');
+console.log('Canonical:', canonical);
 
-// ── encode: domain → wire ──────────────────────────────────────────────────
-const reEncoded = jt.encode(MoneyCodec, money);
+// ── encode: canonical → wire ──────────────────────────────────────────────────
+const reEncoded = jt.encode(PriceCentsCodec, canonical);
 
 console.assert(reEncoded.valueInCents === 1999, 'encoded cents');
 console.assert(reEncoded.currency === 'EUR', 'encoded currency');

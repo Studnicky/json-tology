@@ -3,16 +3,13 @@
  *
  * Storing money as integer cents avoids floating-point error. The
  * transform decodes the wire cents to a decimal number and encodes
- * back to cents on round-trip. Registered on a `Compose.equivalent`
- * sibling of the canonical `AmountSchema` so the canonical primitive
- * stays free of leaked transforms.
+ * back to cents on round-trip.
  */
 
 import {
-  Compose, Transform
+  Transform
 } from '../../../src/index.js';
 import {
-  AmountSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
@@ -20,18 +17,23 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const PriceCentsSchema = Compose.equivalent(AmountSchema, { '$id': 'https://bookstore.example/PriceCents' } as const);
-
-jt.set(PriceCentsSchema);
-
-const PriceCentsTransform = Transform.create<typeof PriceCentsSchema, number>(PriceCentsSchema, {
-  'decode': (cents) => {
-    return (cents as number) / 100;
-  },
-  'encode': (amount) => {
-    return Math.round(amount * 100);
+const PriceCentsTransform = Transform.create(
+  {
+    '$id': 'https://bookstore.example/PriceCents',
+    'minimum': 0,
+    'type': 'number'
+  } as const,
+  {
+    'decode': (cents: number) => {
+      return cents / 100;
+    },
+    'encode': (amount: number) => {
+      return Math.round(amount * 100);
+    }
   }
-});
+);
+
+jt.set(PriceCentsTransform);
 
 const wireCents = 1499;
 const decoded = jt.instantiate(PriceCentsTransform, wireCents);

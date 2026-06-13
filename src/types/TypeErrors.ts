@@ -244,18 +244,20 @@ export interface ChainMismatchInterface<
 }
 
 /**
- * Emitted when a `Transform.chain` first stage's decoded input type does not
- * match the schema's wire-form type.
+ * Emitted when a `Transform.chain`'s last stage decoded output type does not
+ * match the schema's canonical type. A normalize chain must terminate in the
+ * schema-conforming form; otherwise the post-decode validation would reject it.
  *
  * @remarks
- * Surfaces as the return type of `Transform.chain` when the first stage
- * cannot accept the wire type inferred from the schema, so the author sees
- * both types in the hover.
+ * Surfaces as the return type of `Transform.chain` when the final stage does
+ * not produce the schema's canonical type, so the author sees both types in
+ * the hover.
  *
  * @example
  * ```ts
- * // Transform.chain([stage]) where schema infers string but stage expects
- * // number → ChainSchemaMismatchInterface<string, number>
+ * // Transform.chain(StringSchema, [stage]) where the schema's canonical type
+ * // is string but the last stage produces number →
+ * // ChainSchemaMismatchInterface<string, number>
  * ```
  *
  * @category Type Errors
@@ -263,16 +265,16 @@ export interface ChainMismatchInterface<
  * @see {@link ChainMismatchInterface}
  * @group Type Errors
  *
- * @typeParam TWire - Wire-form type inferred from the schema.
- * @typeParam TFirstStageIn - Decoded input type of the first stage.
+ * @typeParam TCanonical - Canonical type inferred from the schema (required tail output).
+ * @typeParam TLastStageOut - Decoded output type produced by the chain's last stage.
  */
 export interface ChainSchemaMismatchInterface<
-  TWire,
-  TFirstStageIn
+  TCanonical,
+  TLastStageOut
 > {
-  readonly 'firstStageDecodeInput': TFirstStageIn;
   readonly 'kind': 'ChainSchemaMismatch';
-  readonly 'schemaWireType': TWire;
+  readonly 'lastStageDecodeOutput': TLastStageOut;
+  readonly 'schemaCanonicalType': TCanonical;
 }
 
 /**

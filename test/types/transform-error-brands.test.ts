@@ -5,6 +5,10 @@
  * 1. The brand interface has the expected structural shape.
  * 2. A Transform.chain call that triggers the error condition is rejected.
  * 3. A well-typed chain compiles without errors.
+ *
+ * A normalize chain decodes the raw wire type (the FIRST stage's free input)
+ * into the schema's canonical form (the LAST stage's output). The head input
+ * is unconstrained; the tail output is anchored to the schema's canonical type.
  */
 
 import {
@@ -12,6 +16,7 @@ import {
 } from 'node:test';
 
 import { Transform } from '../../src/modules/transform/Transform.js';
+import type { ValidateChainType } from '../../src/types/Transform.js';
 import type {
   ChainMismatchInterface,
   ChainSchemaMismatchInterface
@@ -83,67 +88,50 @@ assert<AssertEqualType<ChainMismatchInterface<0, string, number>['producedByPrio
 
 assert<AssertEqualType<ChainMismatchInterface<0, string, number>['expectedByThisStage'], number>>();
 
-// Positive: well-typed chain compiles
+// Positive: well-typed chain — decodes string → number → string (canonical).
 const _okChain = Transform.chain(StringSchema, [
   stringToNumber,
-  numberToDate
+  numberToString
 ] as const);
 
 void _okChain;
 
-// Negative: stage 0 produces number, stage 1 expects string
-// Each bad stage emits its own error so each carries @ts-expect-error
-if (false as boolean) {
-  Transform.chain(StringSchema, [
-    // @ts-expect-error — stage 0 produces number, stage 1 expects string (ChainMismatchInterface)
-    stringToNumber,
-    // @ts-expect-error — stage 0 produces number, stage 1 expects string (ChainMismatchInterface)
-    stringToString
-  ] as const);
-}
+// Negative: stage 0 produces number, stage 1 expects string. The validator
+// inserts ChainMismatchInterface<0, number, string> at the broken position —
+// assert that exact brand, not merely that the chain fails to compile.
+type TwoStageInteriorMismatch = ValidateChainType<readonly [typeof stringToNumber, typeof stringToString], string>;
+assert<AssertEqualType<TwoStageInteriorMismatch[1], ChainMismatchInterface<0, number, string>>>();
 
-// Negative: three-stage chain — mismatch at position 1
-if (false as boolean) {
-  Transform.chain(StringSchema, [
-    // @ts-expect-error — stage 1 produces number, stage 2 expects string (ChainMismatchInterface)
-    stringToString,
-    // @ts-expect-error — stage 1 produces number, stage 2 expects string (ChainMismatchInterface)
-    stringToNumber,
-    // @ts-expect-error — stage 1 produces number, stage 2 expects string (ChainMismatchInterface)
-    stringToString
-  ] as const);
-}
+// Negative: three-stage chain — mismatch at index 1 (stage 1 produces number,
+// stage 2 expects string).
+type ThreeStageInteriorMismatch = ValidateChainType<readonly [typeof stringToString, typeof stringToNumber, typeof stringToString], string>;
+assert<AssertEqualType<ThreeStageInteriorMismatch[2], ChainMismatchInterface<1, number, string>>>();
 
 // ---------------------------------------------------------------------------
-// Brand B2: ChainSchemaMismatchInterface — first stage input ≠ schema wire type
+// Brand B2: ChainSchemaMismatchInterface — last stage output ≠ schema canonical type
 // ---------------------------------------------------------------------------
 
-// Brand structural identity: carries kind, schemaWireType, firstStageDecodeInput
+// Brand structural identity: carries kind, schemaCanonicalType, lastStageDecodeOutput
 assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['kind'], 'ChainSchemaMismatch'>>();
 
-assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['schemaWireType'], string>>();
+assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['schemaCanonicalType'], string>>();
 
-assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['firstStageDecodeInput'], number>>();
+assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['lastStageDecodeOutput'], number>>();
 
-// Positive: first stage input matches schema wire type (string → string is fine)
-const _schemaMismatchOk = Transform.chain(StringSchema, [stringToNumber] as const);
+// Positive: last stage output matches the schema's canonical type (string).
+const _schemaMismatchOk = Transform.chain(StringSchema, [stringToString] as const);
 
 void _schemaMismatchOk;
 
-// Negative: schema is string but first stage expects number
-if (false as boolean) {
-  // @ts-expect-error — schema wire type is string, first stage expects number (ChainSchemaMismatchInterface)
-  Transform.chain(StringSchema, [numberToDate] as const);
-}
+// Negative: last stage produces number, canonical is string. The validator
+// replaces the tail with ChainSchemaMismatchInterface<string, number> — assert it.
+type TailNumberMismatch = ValidateChainType<readonly [typeof stringToNumber], string>;
+assert<AssertEqualType<TailNumberMismatch[0], ChainSchemaMismatchInterface<string, number>>>();
 
-// Negative: schema is string but first stage consumes number — two-stage case
-if (false as boolean) {
-  Transform.chain(StringSchema, [
-    // @ts-expect-error — schema wire type is string, first stage expects number (ChainSchemaMismatchInterface)
-    numberToString,
-    stringToNumber
-  ] as const);
-}
+// Negative: last stage produces Date, canonical is string —
+// ChainSchemaMismatchInterface<string, Date>.
+type TailDateMismatch = ValidateChainType<readonly [typeof numberToDate], string>;
+assert<AssertEqualType<TailDateMismatch[0], ChainSchemaMismatchInterface<string, Date>>>();
 
 // ---------------------------------------------------------------------------
 // Suppress unused warnings

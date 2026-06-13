@@ -152,27 +152,26 @@ console.log('Equal:', h1 === h2);
 // ===== 9. Transform roundtrip =============================================
 
 console.log('\n=== 9. Transform roundtrip ===');
-// Attach decode/encode so the schema is a TransformedType — decode yields a
-// Date, encode yields the ISO string. Registered via the schema object.
+// Attach decode/encode so the schema is a TransformedType — decode normalizes to
+// canonical ISO string, encode reverses. Registered via the schema object.
 const DateTimeTransform = Transform.create(DateTimeSchema, {
-  'decode': (isoString) => {
-    return new Date(isoString);
+  'decode': (isoString: string) => {
+    // Normalize: parse and re-emit as canonical ISO string
+    return new Date(isoString).toISOString();
   },
-  'encode': (dateValue: Date) => {
-    return dateValue.toISOString();
+  'encode': (canonical: string) => {
+    // Encode reversal: return canonical ISO string to wire
+    return canonical;
   }
 });
 
 jt.set(DateTimeTransform);
 
-const date = jt.instantiate(DateTimeTransform, '2026-03-15T10:30:00.000Z');
+const canonical = jt.instantiate(DateTimeTransform, '2026-03-15T10:30:00.000Z');
 
-if (date instanceof Date) {
-  console.log('Decoded:', date.constructor.name, date.toISOString());
-} else {
-  console.log('Decoded:', typeof date);
-}
-const wire = jt.encode(DateTimeTransform, date);
+console.log('Decoded:', typeof canonical, canonical);
+
+const wire = jt.encode(DateTimeTransform, canonical);
 
 console.log('Encoded:', wire);
 

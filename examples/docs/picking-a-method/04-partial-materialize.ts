@@ -16,7 +16,7 @@ import {
 
 // Partial construction — items and total are required in OrderSchema
 // but are omitted here. enablePartial suppresses the missing-field error.
-// materialize takes a schema object (not a $id string) as its first argument.
+// materialize takes a schema object as its first argument.
 const scaffold = bookstoreEntities.materialize(
   OrderSchema,
   { 'customerId': aboxFixtures.customer.customerId },

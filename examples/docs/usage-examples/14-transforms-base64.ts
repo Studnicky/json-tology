@@ -1,13 +1,13 @@
 /**
- * Transforms recipes — base64 string ↔ Uint8Array
+ * Transforms recipes — base64 string ↔ canonical UTF-8 text string
  *
- * Wire format: `string` with `contentEncoding: 'base64'`. Decoded
- * type: `Uint8Array`. Uses Node's `Buffer` (available everywhere
- * the bookstore tests run); replace with `atob`/`btoa` on browser
- * runtimes that lack `Buffer`.
+ * Wire format: `string` with `contentEncoding: 'base64'`. Canonical:
+ * UTF-8 text string. Decode base64 to text; encode re-encodes text to
+ * base64. Uses Node's `Buffer` (available everywhere the bookstore tests
+ * run); replace with `atob`/`btoa` on browser runtimes that lack `Buffer`.
  *
- * The payload is the UTF-8 bytes of "Bastian Balthazar Bux" —
- * the customer record's owner name — round-tripped through base64.
+ * The payload is the UTF-8 text of "Bastian Balthazar Bux" —
+ * the customer record's owner name — decoded from base64.
  */
 
 import { Transform } from '../../../src/index.js';
@@ -20,39 +20,40 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const BinarySchema = {
-  '$id': 'https://bookstore.example/Binary',
-  'contentEncoding': 'base64',
-  'type': 'string'
-} as const;
-
-jt.set(BinarySchema);
-
-const BinaryTransform = Transform.create<typeof BinarySchema, Uint8Array>(BinarySchema, {
-  'decode': (wire) => {
-    return new Uint8Array(Buffer.from(wire, 'base64'));
-  },
-  'encode': (bytes) => {
-    return Buffer.from(bytes).toString('base64');
+const BinaryTransform = Transform.create(
+  {
+    '$id': 'https://bookstore.example/Binary',
+    'contentEncoding': 'base64',
+    'type': 'string'
+  } as const,
+  {
+    'decode': (wire: string) => {
+      // Decode: base64 wire to canonical UTF-8 text string.
+      return Buffer.from(wire, 'base64').toString('utf8');
+    },
+    'encode': (textString: string) => {
+      // Encode: UTF-8 text string back to base64.
+      return Buffer.from(textString).toString('base64');
+    }
   }
-});
+);
+
+jt.set(BinaryTransform);
 
 const original = new TextEncoder().encode(aboxFixtures.customer.name);
 const wire = Buffer.from(original).toString('base64');
 const decoded = jt.instantiate(BinaryTransform, wire);
 
-if (!(decoded instanceof Uint8Array)) {
-  throw new TypeError('Binary transform did not return a Uint8Array');
-}
-
-console.assert(new TextDecoder().decode(decoded) === aboxFixtures.customer.name);
+// Canonical is a UTF-8 text string.
+console.assert(typeof decoded === 'string');
+console.assert(decoded === aboxFixtures.customer.name);
 // base64 of "Bastian Balthazar Bux"
 console.log('wire (base64):', wire);
-// 'Bastian Balthazar Bux'
-console.log('decoded text:', new TextDecoder().decode(decoded));
+// 'Bastian Balthazar Bux' — decoded text
+console.log('decoded text:', decoded);
 
 const reEncoded = jt.encode(BinaryTransform, decoded);
 
 console.assert(reEncoded === wire);
-// true — Uint8Array → base64
+// true — text → base64
 console.log('round-trip:', reEncoded === wire);

@@ -1,15 +1,17 @@
 /**
  * Class hydration ORM recipes — Active Record pattern
  *
- * Whatever flows out of `instantiate` is ready to call `.save()`,
+ * Whatever flows out of `encode` is ready to call `.save()`,
  * `.delete()`, or any other instance method. There is no separate
  * "hydrate" step in the call site. Registered on a `Compose.equivalent`
  * sibling of the bookstore `CustomerSchema`.
+ *
+ * The CustomerRecord class is the wire side (TWire). decode lowers it to
+ * canonical JSON, encode hydrates back to a CustomerRecord instance.
  */
 
-import {
-  Compose, Transform
-} from '../../../src/index.js';
+import { Compose } from '../../../src/index.js';
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
   CustomerSchema
@@ -19,7 +21,8 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type CustomerWire = typeof aboxFixtures.customer;
+// The canonical (brand-free) Customer shape.
+type CustomerWire = UnbrandType<typeof aboxFixtures.customer>;
 
 class CustomerRecord {
   declare public addresses: CustomerWire['addresses'];
@@ -45,28 +48,36 @@ const ActiveRecordCustomerSchema = Compose.equivalent(
 
 jt.set(ActiveRecordCustomerSchema);
 
-const ActiveRecordCustomerTransform = Transform.create<
-  typeof ActiveRecordCustomerSchema,
-  CustomerRecord
->(ActiveRecordCustomerSchema, {
-  'decode': (plain) => {
-    return Object.assign(Reflect.construct(CustomerRecord, []), plain);
-  },
-  'encode': (instance) => {
-    const entries = Object.entries(instance).filter(([
-      , value
-    ]) => {
-      return typeof value !== 'function';
-    });
+// Class hydration: CustomerRecord is the wire side. decode lowers it to canonical JSON,
+// encode hydrates back to a CustomerRecord instance.
+const activeRecordCustomerTransform = jt.addTransform(
+  ActiveRecordCustomerSchema,
+  {
+    'decode': (instance: CustomerRecord) => {
+      return {
+        'addresses': instance.addresses,
+        'customerId': instance.customerId,
+        'email': instance.email,
+        'name': instance.name
+      };
+    },
+    'encode': (wire) => {
+      // Narrow at the hydration boundary — runtime values are the validated
+      // canonical JSON.
+      const source = wire as CustomerWire;
 
-    return Object.fromEntries(entries);
+      return Object.assign(Reflect.construct(CustomerRecord, []), {
+        'addresses': source.addresses,
+        'customerId': source.customerId,
+        'email': source.email,
+        'name': source.name
+      });
+    }
   }
-});
-
-const customer = jt.instantiate(
-  ActiveRecordCustomerTransform,
-  aboxFixtures.customer
 );
+
+// Hydrate canonical JSON into a CustomerRecord instance.
+const customer = jt.encode(activeRecordCustomerTransform, aboxFixtures.customer);
 
 // Active-record method available immediately on the hydrated value.
 const saved = await customer.save();

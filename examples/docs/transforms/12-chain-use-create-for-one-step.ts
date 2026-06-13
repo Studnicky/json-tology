@@ -24,10 +24,10 @@ const CorrectSchema = Transform.create(
   } as const,
   {
     'decode': (isoString: string) => {
-      return new Date(isoString);
+      return new Date(isoString).toISOString();
     },
-    'encode': (dateValue: Date) => {
-      return dateValue.toISOString();
+    'encode': (isoString: string) => {
+      return isoString;
     }
   }
 );
@@ -35,15 +35,15 @@ const CorrectSchema = Transform.create(
 jt.set(CorrectSchema);
 
 const raw = '2026-04-12T14:23:11.000Z';
-const decoded = jt.instantiate(CorrectSchema, raw);
+const canonical = jt.instantiate(CorrectSchema, raw);
 
-if (!(decoded instanceof Date)) {
-  throw new TypeError('Expected Date');
+if (typeof canonical !== 'string') {
+  throw new TypeError('Expected string (ISO date-time) from decode');
 }
 
-const wire = jt.encode(CorrectSchema, decoded);
+const wire = jt.encode(CorrectSchema, canonical);
 
 console.assert(wire === raw);
 // Transform.create is the correct API for a single decode/encode pair.
-console.log('decoded Date :', decoded.toISOString());
-console.log('re-encoded   :', wire);
+console.log('canonical ISO :', canonical);
+console.log('re-encoded    :', wire);

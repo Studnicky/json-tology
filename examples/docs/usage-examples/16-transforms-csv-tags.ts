@@ -16,26 +16,28 @@ import { createBookstoreDocRegistry } from '../bookstore/index.js';
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const TagListSchema = {
-  '$id': 'https://bookstore.example/TagList',
-  'type': 'string'
-} as const;
-
-jt.set(TagListSchema);
-
-const TagListTransform = Transform.create<typeof TagListSchema, readonly string[]>(TagListSchema, {
-  'decode': (raw) => {
-    return raw
-      .split(',')
-      .map((tag) => {
-        return tag.trim();
-      })
-      .filter(Boolean);
-  },
-  'encode': (tags) => {
-    return tags.join(', ');
+const TagListTransform = Transform.create(
+  {
+    '$id': 'https://bookstore.example/TagList',
+    'items': { 'type': 'string' },
+    'type': 'array'
+  } as const,
+  {
+    'decode': (raw: string) => {
+      return raw
+        .split(',')
+        .map((tag: string) => {
+          return tag.trim();
+        })
+        .filter(Boolean);
+    },
+    'encode': (tags: readonly string[]) => {
+      return tags.join(', ');
+    }
   }
-});
+);
+
+jt.set(TagListTransform);
 
 const wire = 'fantasy, rare, first-edition, hardcover';
 const tags = jt.instantiate(TagListTransform, wire);

@@ -31,8 +31,6 @@
  */
 
 import { Transform } from '../../../src/index.js';
-import type { TransformStageInterface } from '../../../src/interfaces/TransformStage.js';
-import { IsbnSchema } from './entities/Isbn.js';
 
 // ---------------------------------------------------------------------------
 // Domain type produced at the end of the pipeline
@@ -92,42 +90,6 @@ export const stripHyphensSchema = Transform.create(RawIsbnSchema, {
 // can be unit-tested or reused in other chains independently.
 // ---------------------------------------------------------------------------
 
-/**
- * Stage 1 — validate that the input is exactly 13 digits.
- *
- * Precondition: the string is already stripped of separators (digits only).
- * Throws `RangeError` at runtime when the constraint is violated.
- */
-const validateIsbnLength: TransformStageInterface<string, string> = {
-  'decode': (stripped: string): string => {
-    if (!/^\d{13}$/u.test(stripped)) {
-      throw new RangeError(`Expected 13 digits after stripping; got "${stripped}"`);
-    }
-
-    return stripped;
-  },
-  'encode': (clean: string): string => {
-    return clean;
-  }
-};
-
-/**
- * Stage 2 — parse the validated 13-digit string into a structured value.
- */
-const parseIsbnSegments: TransformStageInterface<string, ParsedIsbnInterface> = {
-  'decode': (normalized: string): ParsedIsbnInterface => {
-    return {
-      'ean': normalized.slice(0, 3),
-      'group': normalized.slice(3, 4),
-      'normalized': normalized,
-      'publisher': normalized.slice(4, 8),
-      'title': normalized.slice(8, 12)
-    };
-  },
-  'encode': (parsed: ParsedIsbnInterface): string => {
-    return parsed.normalized;
-  }
-};
 
 /**
  * Full ISBN chain composed via `Transform.chain`.
@@ -150,19 +112,80 @@ const parseIsbnSegments: TransformStageInterface<string, ParsedIsbnInterface> = 
  * `ChainMismatchInterface` brand error because `ParsedIsbnInterface` is not
  * assignable to validateIsbnLength's `string` parameter.
  */
-// A self-contained string schema mirroring IsbnSchema's wire shape, with a
-// distinct $id. Transform.chain infers the schema's wire type via
-// InferSchemaType<TSchema> against the schema itself (no registry references),
-// so the base must resolve to `string` directly — a `Compose.equivalent`
-// `$ref` to IsbnSchema would resolve to `unknown` and break the pairwise
-// chain-compatibility check on the first stage's `string` decode input.
+// In the normalize model, the schema describes the CANONICAL OUTPUT form, not the wire.
+// Transform.chain verifies:
+// - each stage's `decode` output matches the next stage's input
+// - the final stage's `decode` output matches the schema type
+//
+// Wire: string (ISBN digits or formatted) — the instantiate input type
+// Stage 1: string → string (validate 13 digits)
+// Stage 2: string → canonical object
+// Canonical/Schema: { ean, group, normalized, publisher, title }
 const IsbnPipelineBase = {
   '$id': 'urn:bookstore:_IsbnPipeline',
-  'pattern': IsbnSchema.pattern,
-  'type': 'string'
+  'properties': {
+    'ean': { 'type': 'string' },
+    'group': { 'type': 'string' },
+    'normalized': { 'type': 'string' },
+    'publisher': { 'type': 'string' },
+    'title': { 'type': 'string' }
+  },
+  'required': [
+    'ean',
+    'group',
+    'normalized',
+    'publisher',
+    'title'
+  ],
+  'type': 'object'
 } as const;
 
+/**
+ * Full ISBN chain composed via `Transform.chain`.
+ *
+ * The chain processes wire strings through two stages:
+ * 1. Validate that the input is exactly 13 digits
+ * 2. Parse the 13-digit string into structured ParsedIsbnInterface
+ *
+ * Compile-time pairwise chain compatibility:
+ *   • Stage 1: string → string           (matches IsbnPipelineBase wire type)
+ *   • Stage 2: string → ParsedIsbnInterface (matches Stage 1 output)
+ *
+ * The canonical output (ParsedIsbnInterface) is JSON-expressible (plain object).
+ */
 export const IsbnPipelineSchema = Transform.chain(IsbnPipelineBase, [
-  validateIsbnLength,
-  parseIsbnSegments
+  {
+    'decode': (stripped: unknown) => {
+      // Stage 1: Validate that the input is exactly 13 digits
+      const s = stripped as string;
+
+      if (!/^\d{13}$/u.test(s)) {
+        throw new RangeError(`Expected 13 digits; got "${s}"`);
+      }
+
+      return s;
+    },
+    'encode': (clean: unknown) => {
+      return clean as string;
+    }
+  },
+  {
+    'decode': (normalized: unknown) => {
+      // Stage 2: Parse the 13-digit string into structured segments
+      const s = normalized as string;
+
+      return {
+        'ean': s.slice(0, 3),
+        'group': s.slice(3, 4),
+        'normalized': s,
+        'publisher': s.slice(4, 8),
+        'title': s.slice(8, 12)
+      };
+    },
+    'encode': (parsed: unknown) => {
+      const isbnRecord = parsed as ParsedIsbnInterface;
+
+      return isbnRecord.normalized;
+    }
+  }
 ] as const);

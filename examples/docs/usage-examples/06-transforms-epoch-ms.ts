@@ -1,11 +1,7 @@
 /**
- * Transforms recipes — Unix epoch milliseconds ↔ Date
+ * Transforms recipes — Unix epoch milliseconds ↔ canonical ISO 8601 string
  *
- * Wire format: integer milliseconds since the epoch. Decoded type: Date.
- * Defined as a sibling integer primitive registered against
- * `bookstoreEntities` so the canonical `Iso8601Schema` (string form)
- * continues to carry the RFC 3339 shape.
- *
+ * Wire format: integer milliseconds since the epoch. Canonical: ISO 8601 string.
  * The wire value is Bastian Balthazar Bux's order timestamp recast as
  * epoch ms — the same scenario as `03-transforms-recipes.ts`, expressed
  * in a different wire encoding.
@@ -21,35 +17,39 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const TimestampSchema = {
-  '$id': 'https://bookstore.example/Timestamp',
-  'minimum': 0,
-  'type': 'integer'
-} as const;
-
-jt.set(TimestampSchema);
-
-const TimestampTransform = Transform.create<typeof TimestampSchema, Date>(TimestampSchema, {
-  'decode': (wire) => {
-    return new Date(wire);
-  },
-  'encode': (date) => {
-    return date.getTime();
+const TimestampTransform = Transform.create(
+  {
+    '$id': 'https://bookstore.example/Timestamp',
+    'format': 'date-time',
+    'type': 'string'
+  } as const,
+  {
+    'decode': (wire: number) => {
+      // Decode epoch ms (wire) to canonical ISO 8601 string.
+      return new Date(wire).toISOString();
+    },
+    'encode': (isoString: string) => {
+      // Encode canonical ISO string back to epoch ms (wire).
+      return new Date(isoString).getTime();
+    }
   }
-});
+);
+
+jt.set(TimestampTransform);
 
 const wireMs = new Date(aboxFixtures.order.placedAt).getTime();
 const decoded = jt.instantiate(TimestampTransform, wireMs);
 
-if (!(decoded instanceof Date)) {
-  throw new TypeError('Timestamp transform did not return a Date');
-}
+// Canonical is an ISO 8601 string.
+console.assert(typeof decoded === 'string');
 
-console.assert(decoded.getUTCFullYear() === 2026);
+const date = new Date(decoded);
+
+console.assert(date.getUTCFullYear() === 2026);
 // epoch ms for the order timestamp
 console.log('wire ms:', wireMs);
-// same instant as placedAt
-console.log('decoded ISO:', decoded.toISOString());
+// same instant as placedAt, in canonical ISO form
+console.log('decoded ISO:', decoded);
 
 const reEncoded = jt.encode(TimestampTransform, decoded);
 

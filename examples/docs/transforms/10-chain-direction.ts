@@ -15,15 +15,13 @@ import { createBookstoreDocRegistry } from '../bookstore/index.js';
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const DisplayPriceSchema = {
-  '$id': 'https://bookstore.example/DisplayPrice',
-  'type': 'string'
-} as const;
-
-// Decode: A.decode → B.decode → C.decode = domain (number)
+// Decode: A.decode → B.decode → C.decode = canonical (number)
 // Encode: C.encode → B.encode → A.encode = wire (string)
 const ChainedPriceSchema = Transform.chain(
-  DisplayPriceSchema,
+  {
+    '$id': 'https://bookstore.example/ChainedPrice',
+    'type': 'number'
+  } as const,
   [
     // Step A: strip "Price: " prefix
     {

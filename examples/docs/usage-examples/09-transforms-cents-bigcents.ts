@@ -1,20 +1,16 @@
 /**
- * Transforms recipes — integer cents ↔ a precision-safe BigCents value
+ * Transforms recipes — integer cents ↔ decimal major units (number)
  *
  * Storing money as integer cents avoids floating-point error. The
- * recipe in the docs uses an external `Decimal` library; this runnable
- * variant uses a built-in `bigint`-backed `BigCents` wrapper so the
- * example has no external dependency.
- *
- * Registered on a sibling of the canonical `AmountSchema` so the
- * canonical primitive stays a bare number.
+ * canonical form is a decimal number (major.minor units), computed
+ * safely from the wire cents via division, avoiding floating-point
+ * precision loss for typical bookstore amounts.
  */
 
 import {
-  Compose, Transform
+  Transform
 } from '../../../src/index.js';
 import {
-  AmountSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
@@ -22,42 +18,36 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-class BigCents {
-  public constructor(public readonly cents: bigint) {}
-
-  public toMajorUnits(): number {
-    return Number(this.cents) / 100;
+const BigCentsTransform = Transform.create(
+  {
+    '$id': 'https://bookstore.example/BigCents',
+    'minimum': 0,
+    'type': 'number'
+  } as const,
+  {
+    'decode': (cents: number) => {
+      // Decode wire cents to canonical decimal (major.minor).
+      return cents / 100;
+    },
+    'encode': (majorUnits: number) => {
+      // Encode canonical decimal back to integer cents.
+      return Math.round(majorUnits * 100);
+    }
   }
-}
-
-const BigCentsSchema = Compose.equivalent(
-  AmountSchema,
-  { '$id': 'https://bookstore.example/BigCents' } as const
 );
 
-jt.set(BigCentsSchema);
-
-const BigCentsTransform = Transform.create<typeof BigCentsSchema, BigCents>(BigCentsSchema, {
-  'decode': (cents) => {
-    return new BigCents(BigInt(cents as number));
-  },
-  'encode': (value) => {
-    return Number(value.cents);
-  }
-});
+jt.set(BigCentsTransform);
 
 const wireCents = 85_000;
 const decoded = jt.instantiate(BigCentsTransform, wireCents);
 
-if (!(decoded instanceof BigCents)) {
-  throw new TypeError('BigCents transform did not return a BigCents');
-}
-
-console.assert(decoded.toMajorUnits() === 850);
+// Canonical is a decimal number.
+console.assert(typeof decoded === 'number');
+console.assert(decoded === 850);
 // 85000
 console.log('wire cents:', wireCents);
-// 850 — bigint precision
-console.log('BigCents.toMajorUnits():', decoded.toMajorUnits());
+// 850 — canonical decimal amount
+console.log('decoded major units:', decoded);
 
 const reEncoded = jt.encode(BigCentsTransform, decoded);
 

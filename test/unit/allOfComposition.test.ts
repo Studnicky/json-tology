@@ -610,7 +610,7 @@ void describe('$ref + sibling properties — default pre-apply', { 'concurrency'
         }
       },
       'type': 'object'
-    };
+    } as const;
     const engine = new GraphEngine(refChildSchema, {
       'applyDefaults': true,
       'lookupSchema': (id: string) => {

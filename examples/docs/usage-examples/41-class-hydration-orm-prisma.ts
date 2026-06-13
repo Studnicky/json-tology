@@ -8,22 +8,22 @@
  * methods and use it as the decode target.
  */
 
-import {
-  Compose, Transform
-} from '../../../src/index.js';
+import { Compose } from '../../../src/index.js';
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
   OrderSchema
 } from '../bookstore/index.js';
 
-type OrderWire = typeof aboxFixtures.order;
-
-// Stand-in for `import { Order } from '@prisma/client';`.
+// The canonical (brand-free) Order shape.
+type OrderWire = UnbrandType<typeof aboxFixtures.order>;
 
 // createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
+// Stand-in for `import { Order } from '@prisma/client';`.
+// The class is the wire side (TWire).
 class PrismaOrder {
   declare public customerId: string;
   declare public orderId: string;
@@ -40,23 +40,39 @@ const PrismaOrderSchema = Compose.equivalent(
 
 jt.set(PrismaOrderSchema);
 
-Transform.create<typeof PrismaOrderSchema, PrismaOrder>(PrismaOrderSchema, {
-  'decode': (plain) => {
-    return Object.assign(Reflect.construct(PrismaOrder, []), plain);
+// Class hydration: the class is the wire side, canonical JSON is the runtime.
+// Hydration is `encode`; lowering is `instantiate`.
+const prismaOrderTransform = jt.addTransform(PrismaOrderSchema, {
+  'decode': (instance: PrismaOrder) => {
+    return {
+      'customerId': instance.customerId,
+      'orderId': instance.orderId,
+      'orderLines': instance.orderLines,
+      'orderTotal': instance.orderTotal,
+      'placedAt': instance.placedAt,
+      'shippingAddress': instance.shippingAddress
+    };
   },
-  'encode': (instance) => {
-    return { ...instance };
+  'encode': (wire) => {
+    const source = wire as OrderWire;
+
+    return Object.assign(Reflect.construct(PrismaOrder, []), {
+      'customerId': source.customerId,
+      'orderId': source.orderId,
+      'orderLines': source.orderLines,
+      'orderTotal': source.orderTotal,
+      'placedAt': source.placedAt,
+      'shippingAddress': source.shippingAddress
+    });
   }
 });
 
-const order = jt.instantiate(
-  PrismaOrderSchema,
-  aboxFixtures.order
-);
+// Hydrate canonical JSON into a Prisma order instance.
+const order = jt.encode(prismaOrderTransform, aboxFixtures.order);
 
 console.assert(order instanceof PrismaOrder);
-console.assert((order as PrismaOrder).orderId === aboxFixtures.order.orderId);
+console.assert(order.orderId === aboxFixtures.order.orderId);
 // true
 console.log('instanceof PrismaOrder:', order instanceof PrismaOrder);
 // same UUID as fixture
-console.log('orderId:', (order as PrismaOrder).orderId);
+console.log('orderId:', order.orderId);

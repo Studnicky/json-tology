@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-06-13
+
+Transforms are redefined as **normalize transforms**. `decode` turns a raw wire
+payload into the schema's canonical form and `encode` is the inverse; the runtime
+order is now **decode → validate → strip**. The schema describes `decode`'s
+OUTPUT, so validation runs on the decoded result — a value that is not
+JSON-Schema-expressible (e.g. a `Date`) is rejected at the gate instead of being
+silently admitted. This is a breaking change to the Transform contract.
+
+### Changed
+
+- **BREAKING — Transform direction.** `Transform.create` and
+  `JsonTology.addTransform` now take `decode: (raw: TWire) => Canonical` and
+  `encode: (Canonical) => TWire`. The free generic moved from the output (`TOut`,
+  removed) to the wire input (`TWire`).
+- **BREAKING — `instantiate` ordering.** `decode` runs first on the raw payload;
+  validation and stripping then run on the decoded canonical value (previously
+  validate-then-decode). `Transform.chain` is re-anchored so its last stage must
+  produce the schema's canonical type.
+- Transform mappers speak the brand-free structural canonical, so `decode`/
+  `encode` need no per-leaf `brand()` calls — `validate` is the brand boundary.
+- `materialize`'s partial input is typed as the brand-free canonical
+  (`Partial<CanonicalShapeType<…>>`).
+- Class hydration is expressed as the transform in reverse: the class is the wire
+  type, `decode` lowers it to canonical JSON, and `encode` hydrates — so
+  `jt.encode` is the hydration step.
+
+### Added
+
+- `UnbrandType<T>` — strips constraint brands from a type while preserving its
+  structure (object/array shape, optionality).
+- `CanonicalShapeType<TSchema, TReferences>` — the brand-free canonical form a
+  normalize transform's `decode` produces and `encode` consumes.
+- Ref-resolving canonical path: an optional `TReferences` generic on
+  `Transform.create` so a `$ref`-bearing or composed transform schema resolves
+  its canonical output type instead of degrading to `RefNotFound`.
+
+### Removed
+
+- **BREAKING — `LooseInputType`.** Superseded by `UnbrandType` (which preserves
+  structure rather than flattening objects to `Record<string, unknown>`) and the
+  `CanonicalShapeType` alias.
+
 ## [0.20.2] - 2026-06-07
 
 Fixes annotated-edge nested-object IRI generation: `resolveEdgeTargetIri` was

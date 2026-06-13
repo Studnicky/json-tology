@@ -7,10 +7,12 @@
  * model — the bibliographic base the retail `Book` extends — using json-tology's
  * own machinery:
  *
- *   1. Wire schemas — one per source, registered alongside the canonical record
- *      graph so `jt.instantiate` validates the raw payload at the wire boundary.
- *   2. Pivot codecs — `Transform.create` decode/encode pairs translate each
- *      source shape into (and back out of) the canonical record.
+ *   1. Pivot codecs — each source has an `addTransform` decode/encode pair whose
+ *      SCHEMA is the canonical record (a `Compose.partial` of it, so a decoder
+ *      emits only what the source provides). `decode` normalizes the raw source
+ *      wire INTO the canonical record; `encode` fans it back out to that source.
+ *   2. Fan-in — `jt.instantiate(codec, rawWire)` runs the decoder and validates
+ *      the lenient canonical shape; the strict completeness gate runs next.
  *   3. Fan-in router — a `Map<tag, codec>` dispatches inbound records to
  *      the correct codec by source tag.
  *   4. Live fetch — graceful per-source try/catch so a network failure degrades
@@ -24,18 +26,20 @@
  * required; publishedOn optional). It deliberately omits retail fields like price
  * and printStatus: book-search APIs never carry them, so a decoder must never
  * fabricate them. Decoders map only the values a source actually provides; a
- * record missing a required field fails the canonical boundary rather than
+ * record missing a required field fails the strict completeness gate rather than
  * being papered over with a placeholder.
  *
- * Ingest enforces TWO boundaries: wire-in (via the source wire schema) and
- * canonical-out (via `jt.validate(BibliographicRecordSchema, decoded)`). Only records
- * that pass BOTH boundaries reach the pipeline.
+ * Ingest enforces TWO canonical gates: a lenient SHAPE gate — `jt.instantiate(
+ * codec, raw)` runs the decoder and validates the partial-record shape — and a
+ * strict COMPLETENESS gate — `jt.validate(BibliographicRecordSchema, decoded)`,
+ * which requires isbn / title / authors. Only records that pass BOTH reach the
+ * pipeline.
  *
  * Browser-safe: uses only the global `fetch` and standard JS. No Node imports.
  */
 
 import {
-  InstantiationError, JsonTology, Transform
+  Compose, InstantiationError, JsonTology
 } from '../../../src/index.js';
 import { AuthorNameSchema } from '../bookstore/entities/AuthorName.js';
 import { BibliographicRecordSchema } from '../bookstore/entities/BibliographicRecord.js';
@@ -48,9 +52,10 @@ import { TitleSchema } from '../bookstore/entities/Title.js';
 //
 // Each schema models the REAL raw API shape. Fields are intentionally
 // permissive (most optional) because live payloads vary across editions and
-// search result positions. Validation at the wire boundary surfaces missing
-// required fields as structured InstantiationError items rather than
-// silent undefined access later in the pipeline.
+// search result positions. These wire schemas document the source shapes and
+// register the graph (the demo runs under strict graph mode); each codec's
+// decoder reads a source shape and normalizes it into the canonical record,
+// where the two canonical gates below catch anything missing.
 
 // #region wire-schemas
 // Wire schemas are authored graph-natively, the same as the canonical record:
@@ -194,6 +199,37 @@ const jt = JsonTology.create({
   ] as const
 });
 
+// ── Per-source OUTPUT schemas — each codec normalizes its source wire INTO the
+// canonical BibliographicRecord (fan-in). A source decoder emits only the
+// fields the source provides, so each attaches to a `Compose.partial` of the
+// record (leniently typed — "never fabricate"); ingest() then runs the strict
+// `BibliographicRecordSchema` gate to reject incomplete records. Distinct $ids
+// let both book-source codecs target the same canonical shape (one transform
+// per schema object) and let `jt.encode` fan a single canonical record back out
+// to each source's wire format.
+const GoogleRecordSchema = Compose.partial(BibliographicRecordSchema, 'urn:bookstore:ingest:GoogleRecord' as const);
+const OpenLibraryRecordSchema = Compose.partial(BibliographicRecordSchema, 'urn:bookstore:ingest:OpenLibraryRecord' as const);
+
+// Wikipedia carries no ISBN, so it is enrichment, not a catalog record: its
+// codec normalizes into a small enrichment fragment with its own schema.
+const WikipediaEnrichmentSchema = {
+  '$id': 'urn:bookstore:ingest:WikipediaEnrichment',
+  'properties': {
+    'extract': { 'type': 'string' },
+    'title': { 'type': 'string' },
+    'wikiUrl': { 'type': 'string' }
+  },
+  'required': [
+    'extract',
+    'title',
+    'wikiUrl'
+  ],
+  'type': 'object'
+} as const;
+
+jt.set(GoogleRecordSchema).set(OpenLibraryRecordSchema)
+  .set(WikipediaEnrichmentSchema);
+
 // ── Step 2: pivot codecs ─────────────────────────────────────────────────────
 //
 // Each codec is a Transform.create(WireSchema, { decode, encode }) pair.
@@ -201,6 +237,12 @@ const jt = JsonTology.create({
 //         provides (absent fields are omitted, never defaulted).
 // encode: canonical record → best-effort wire shape (lossy where the source is
 //         narrower; the comment documents the direction of loss).
+
+// ── Wire type interfaces for each codec ────────────────────────────────────
+
+// OpenLibrary and Wikipedia wire payloads are read as `Record<string, unknown>`
+// with the dynamic accessor (`doc['author_name']`) — their field names belong to
+// the source's contract, so they are not declared as interface properties.
 
 // ── Helper: extract a 13-digit ISBN from a list of strings ──────────────────
 
@@ -249,7 +291,8 @@ function recordIri(isbn: string | undefined): string {
 // canonical boundary instead of being completed with placeholder values.
 
 interface BibliographicRecordWire {
-  'authors'?: string[];
+  // `authors` carries minItems:1, so the canonical types it as a non-empty tuple.
+  'authors'?: readonly [string, ...string[]];
   'isbn'?: string;
   'publishedOn'?: string;
   'title'?: string;
@@ -272,8 +315,11 @@ interface GoogleVolumeWire {
   };
 }
 
-const GoogleVolumeCodec = Transform.create<typeof GoogleVolumeSchema, BibliographicRecordWire>(GoogleVolumeSchema, {
-  'decode': (wire) => {
+// Google Books codec: raw wire → canonical bibliographic record
+// Decode maps Google's volumeInfo shape to our canonical format.
+// Encode maps canonical format back to Google's shape for round-tripping.
+const GoogleVolumeCodec = jt.addTransform(GoogleRecordSchema, {
+  'decode': (wire: unknown) => {
     const raw = wire as GoogleVolumeWire;
     const info = raw.volumeInfo ?? {};
 
@@ -291,7 +337,7 @@ const GoogleVolumeCodec = Transform.create<typeof GoogleVolumeSchema, Bibliograp
 
     // Map only the values Google actually returned; omit the rest.
     return {
-      ...(info.authors === undefined ? {} : { 'authors': [...info.authors] }),
+      ...(info.authors === undefined ? {} : { 'authors': [...info.authors] as [string, ...string[]] }),
       ...(isbn === undefined ? {} : { 'isbn': isbn }),
       ...(publishedOn === undefined ? {} : { 'publishedOn': publishedOn }),
       ...(info.title === undefined ? {} : { 'title': info.title })
@@ -299,7 +345,8 @@ const GoogleVolumeCodec = Transform.create<typeof GoogleVolumeSchema, Bibliograp
   },
   // encode: record → Google-Books-shaped volume (best-effort; omits fields the
   // bibliographic record does not carry).
-  'encode': (record) => {
+  'encode': (record: unknown) => {
+    const canonical = record as BibliographicRecordWire;
     const volumeInfo: {
       'authors'?: string[];
       'industryIdentifiers'?: Array<{ 'identifier': string;
@@ -308,20 +355,20 @@ const GoogleVolumeCodec = Transform.create<typeof GoogleVolumeSchema, Bibliograp
       'title'?: string;
     } = {};
 
-    if (record.authors !== undefined) {
-      volumeInfo.authors = [...record.authors];
+    if (canonical.authors !== undefined) {
+      volumeInfo.authors = [...canonical.authors];
     }
-    if (record.isbn !== undefined) {
+    if (canonical.isbn !== undefined) {
       volumeInfo.industryIdentifiers = [{
-        'identifier': record.isbn,
+        'identifier': canonical.isbn,
         'type': 'ISBN_13'
       }];
     }
-    if (record.publishedOn !== undefined) {
-      volumeInfo.publishedDate = record.publishedOn;
+    if (canonical.publishedOn !== undefined) {
+      volumeInfo.publishedDate = canonical.publishedOn;
     }
-    if (record.title !== undefined) {
-      volumeInfo.title = record.title;
+    if (canonical.title !== undefined) {
+      volumeInfo.title = canonical.title;
     }
 
     return { 'volumeInfo': volumeInfo };
@@ -330,31 +377,40 @@ const GoogleVolumeCodec = Transform.create<typeof GoogleVolumeSchema, Bibliograp
 // #endregion google-codec
 
 // #region openlibrary-codec
-const OpenLibraryDocCodec = Transform.create<
-  typeof OpenLibraryDocSchema, BibliographicRecordWire
->(OpenLibraryDocSchema, {
-  'decode': (wire) => {
+const OpenLibraryDocCodec = jt.addTransform(OpenLibraryRecordSchema, {
+  'decode': (wire: unknown) => {
+    // Wire keys belong to OpenLibrary's contract — read them dynamically.
+    const doc = wire as Record<string, unknown>;
     // isbn[] — filter to a 13-digit entry, strip hyphens; undefined when none found
-    const isbnArr = wire.isbn as readonly string[] | undefined;
-    const isbn = extractIsbn13(isbnArr);
-    const authorName = wire.author_name as string[] | undefined;
-    const title = wire.title as string | undefined;
+    const isbn = extractIsbn13(doc['isbn'] as readonly string[] | undefined);
+    const authorName = doc['author_name'] as readonly string[] | undefined;
+    const title = doc['title'] as string | undefined;
 
     // OpenLibrary only surfaces first_publish_year (a bare integer year), which
     // is not a full YYYY-MM-DD date, so publishedOn is omitted — not faked.
     return {
-      ...(authorName === undefined ? {} : { 'authors': [...authorName] }),
+      ...(authorName === undefined ? {} : { 'authors': [...authorName] as [string, ...string[]] }),
       ...(isbn === undefined ? {} : { 'isbn': isbn }),
       ...(title === undefined ? {} : { 'title': title })
     };
   },
-  // encode: record → OpenLibrary-shaped doc (best-effort).
-  'encode': (record) => {
-    return {
-      ...(record.authors === undefined ? {} : { 'author_name': [...record.authors] }),
-      ...(record.isbn === undefined ? {} : { 'isbn': [record.isbn] }),
-      ...(record.title === undefined ? {} : { 'title': record.title })
-    };
+  // encode: canonical record → OpenLibrary-shaped doc. Wire keys are written
+  // through the dynamic accessor, not as literal property names.
+  'encode': (record: unknown) => {
+    const canonical = record as BibliographicRecordWire;
+    const doc: Record<string, unknown> = {};
+
+    if (canonical.authors !== undefined) {
+      doc['author_name'] = [...canonical.authors];
+    }
+    if (canonical.isbn !== undefined) {
+      doc['isbn'] = [canonical.isbn];
+    }
+    if (canonical.title !== undefined) {
+      doc['title'] = canonical.title;
+    }
+
+    return doc;
   }
 });
 // #endregion openlibrary-codec
@@ -372,26 +428,31 @@ interface WikipediaEnrichment {
   'wikiUrl': string;
 }
 
-const WikipediaSummaryCodec = Transform.create<
-  typeof WikipediaSummarySchema, WikipediaEnrichment
->(WikipediaSummarySchema, {
-  'decode': (wire) => {
-    // content_urls is a $ref'd nested object; cast to read the nested page URL.
-    const links = wire.content_urls as undefined | { 'desktop'?: { 'page'?: string } };
+const WikipediaSummaryCodec = jt.addTransform(WikipediaEnrichmentSchema, {
+  'decode': (wire: unknown) => {
+    // Wire keys belong to Wikipedia's contract — read them dynamically.
+    const summary = wire as Record<string, unknown>;
+    const contentUrls = summary['content_urls'] as undefined | { 'desktop'?: { 'page'?: string } };
 
+    // Decode into our enrichment fragment structure.
     return {
-      'extract': (wire.extract as string | undefined) ?? '',
-      'title': (wire.title as string | undefined) ?? '',
-      'wikiUrl': links?.desktop?.page ?? ''
+      'extract': (summary['extract'] as string | undefined) ?? '',
+      'title': (summary['title'] as string | undefined) ?? '',
+      'wikiUrl': contentUrls?.desktop?.page ?? ''
     };
   },
-  // encode: enrichment fragment → Wikipedia-shaped summary (best-effort)
-  'encode': (enrichment) => {
-    return {
-      'content_urls': { 'desktop': { 'page': enrichment.wikiUrl } },
-      'extract': enrichment.extract,
-      'title': enrichment.title
+  // encode: enrichment fragment → Wikipedia-shaped summary. The wire key is
+  // written through the dynamic accessor, not as a literal property name.
+  'encode': (enrichment: unknown) => {
+    const enrich = enrichment as WikipediaEnrichment;
+    const summary: Record<string, unknown> = {
+      'extract': enrich.extract,
+      'title': enrich.title
     };
+
+    summary['content_urls'] = { 'desktop': { 'page': enrich.wikiUrl } };
+
+    return summary;
   }
 });
 
@@ -401,14 +462,16 @@ const WikipediaSummaryCodec = Transform.create<
 // Order of operations for book sources (google / openlibrary):
 //   1. Receive raw payload + source tag.
 //   2. Look up the codec for that tag.
-//   3. Call jt.instantiate(codec, raw) — validates wire boundary, runs decoder.
+//   3. Call jt.instantiate(codec, raw) — runs the decoder, validates the lenient
+//      canonical shape (the partial-record gate).
 //   4. If no ISBN-13 in decoded record: log "[<tag>] no ISBN-13, skipped" → return null.
-//   5. Call jt.validate(BibliographicRecordSchema, decoded) — validates canonical boundary.
+//   5. Call jt.validate(BibliographicRecordSchema, decoded) — the strict
+//      completeness gate (isbn / title / authors required).
 //   6. If canonical errors: log structured aggregate → return null.
-//   7. Return canonical record (passed BOTH boundaries).
+//   7. Return canonical record (passed BOTH canonical gates).
 //   8. On InstantiationError from step 3: log structured errors → return null (graceful).
 //
-// Note: ingest enforces wire-in AND canonical-out. Both gates must pass.
+// Note: ingest enforces the lenient SHAPE gate AND the strict COMPLETENESS gate. Both must pass.
 
 // #region router
 type WireCodec
@@ -436,6 +499,8 @@ function ingest(tag: string, raw: unknown): BibliographicRecordWire | null | Wik
   let decoded: BibliographicRecordWire | WikipediaEnrichment;
 
   try {
+    // The codec returns canonical JSON (BibliographicRecordWire or WikipediaEnrichment)
+    // after decoding the wire input. Narrow at the instantiation boundary.
     decoded = jt.instantiate(codec, raw);
   } catch (error) {
     if (error instanceof InstantiationError) {
@@ -461,7 +526,7 @@ function ingest(tag: string, raw: unknown): BibliographicRecordWire | null | Wik
     return null;
   }
 
-  // Validate the canonical boundary (wire-in passed; now check canonical-out).
+  // Strict completeness gate (the lenient shape gate already passed).
   const canonicalErrors = jt.validate(BibliographicRecordSchema, recordDecoded);
 
   if (canonicalErrors.length > 0) {
@@ -504,8 +569,8 @@ if (ingest('google', noIsbnPayload) === null) {
 // Case 2 — canonical-out validation. This volume passes the wire schema AND
 // carries a valid ISBN_13, so it clears the prerequisite — but its title
 // exceeds Title's 500-character ceiling, so jt.validate(BibliographicRecordSchema, …)
-// inside ingest() rejects it. This is the canonical boundary firing, distinct
-// from the wire boundary above.
+// inside ingest() rejects it. This is the strict completeness gate firing,
+// distinct from the lenient shape gate above.
 const overlongTitlePayload = {
   'id': 'overlong-title',
   'volumeInfo': {
@@ -604,10 +669,10 @@ const [
 
 // ── Fan-in: ingest all Google + OpenLibrary items ───────────────────────────
 //
-// ingest() enforces BOTH boundaries:
-//   wire-in:       jt.instantiate(codec, raw) validates the raw payload
-//   canonical-out: jt.validate(BibliographicRecordSchema, decoded) validates the record
-// Records missing an ISBN-13 are discarded before canonical validation.
+// ingest() enforces BOTH canonical gates:
+//   shape:        jt.instantiate(codec, raw) runs the decoder + validates the partial record
+//   completeness: jt.validate(BibliographicRecordSchema, decoded) requires isbn / title / authors
+// Records missing an ISBN-13 are discarded before the completeness gate.
 
 interface SourcedRecord {
   'record': BibliographicRecordWire;
@@ -734,7 +799,7 @@ if (sourcedRecords.length > 0) {
   console.log('\n── Fan-out re-encode: canonical record → Google Books volume ──');
   const toReEncode = sourcedRecords[0].record;
 
-  // jt.encode runs the GoogleVolumeCodec encoder
+  // jt.encode runs the GoogleVolumeCodec encoder, transforming canonical→wire.
   const reEncoded = jt.encode(GoogleVolumeCodec, toReEncode) as {
     'volumeInfo'?: {
       'authors'?: string[];

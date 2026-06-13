@@ -1,10 +1,12 @@
 /**
- * Transforms recipes — URL string ↔ URL object
+ * Transforms recipes — URL string ↔ canonical normalized URL string
  *
- * Wire format: `string` with `format: 'uri'`. Decoded type: native
- * `URL`. Registered as a new string primitive against
- * `bookstoreEntities` so callers can decode catalogue links straight
- * to `URL` instances.
+ * Wire format: `string` with `format: 'uri'`. Canonical: normalized
+ * URL string. Decode validates and normalizes the URL by parsing and
+ * re-stringifying it, ensuring consistent formatting and validity.
+ * Registered as a new string primitive against
+ * `bookstoreEntities` so callers can validate and normalize catalogue
+ * links.
  *
  * The wire is the catalogue page for the 1979 Thienemann first
  * edition of Die unendliche Geschichte that Bastian ordered.
@@ -20,38 +22,44 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const HrefSchema = {
-  '$id': 'https://bookstore.example/Href',
-  'format': 'uri',
-  'type': 'string'
-} as const;
+const HrefTransform = Transform.create(
+  {
+    '$id': 'https://bookstore.example/Href',
+    'format': 'uri',
+    'type': 'string'
+  } as const,
+  {
+    'decode': (wire: string) => {
+      // Decode: parse URL to validate, then normalize via toString().
+      const url = new URL(wire);
 
-jt.set(HrefSchema);
-
-const HrefTransform = Transform.create<typeof HrefSchema, URL>(HrefSchema, {
-  'decode': (wire) => {
-    return new URL(wire);
-  },
-  'encode': (url) => {
-    return url.toString();
+      return url.toString();
+    },
+    'encode': (canonicalUrlString: string) => {
+      // Encode: return the canonical URL string.
+      return canonicalUrlString;
+    }
   }
-});
+);
+
+jt.set(HrefTransform);
 
 const wire = `https://bookstore.example/catalogue/${aboxFixtures.rareBook.isbn}`;
 const decoded = jt.instantiate(HrefTransform, wire);
 
-if (!(decoded instanceof URL)) {
-  throw new TypeError('Href transform did not return a URL');
-}
+// Canonical is a normalized URL string.
+console.assert(typeof decoded === 'string');
 
-console.assert(decoded.pathname.endsWith(aboxFixtures.rareBook.isbn));
+const url = new URL(decoded);
+
+console.assert(url.pathname.endsWith(aboxFixtures.rareBook.isbn));
 // 'bookstore.example'
-console.log('decoded hostname:', decoded.hostname);
+console.log('decoded hostname:', url.hostname);
 // '/catalogue/<isbn>'
-console.log('decoded pathname:', decoded.pathname);
+console.log('decoded pathname:', url.pathname);
 
 const reEncoded = jt.encode(HrefTransform, decoded);
 
 console.assert(reEncoded === wire);
-// true — URL.toString() is the identity
+// true — string round-trip
 console.log('round-trip:', reEncoded === wire);

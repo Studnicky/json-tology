@@ -310,7 +310,7 @@ assert<ShapeRoundTrip>();
 void _shapeResult;
 
 // ---------------------------------------------------------------------------
-// Scenario 10: Transformed schema (decoded type ≠ wire type)
+// Scenario 10: Normalize transform (raw wire type ≠ canonical schema type)
 // ---------------------------------------------------------------------------
 
 const RawDateSchema = {
@@ -318,16 +318,18 @@ const RawDateSchema = {
   'type': 'string'
 } as const;
 
+// decode normalizes a raw `{ epoch }` wire payload into the schema's canonical
+// string form; encode is the inverse. The schema describes decode's OUTPUT.
 const TransformedDateSchema = Transform.create(RawDateSchema, {
-  'decode': (raw: string) => {
-    return new Date(raw);
+  'decode': (raw: { 'epoch': number }) => {
+    return new Date(raw.epoch).toISOString();
   },
-  'encode': (date: Date) => {
-    return date.toISOString();
+  'encode': (iso: string) => {
+    return { 'epoch': new Date(iso).getTime() };
   }
 });
 
-// For Transform schemas, ParseOutputType gives the decoded type.
+// For Transform schemas, ParseOutputType gives the canonical (schema) type.
 type TransformedExpected = ParseOutputType<typeof TransformedDateSchema>;
 
 const jtDate = JsonTology.create({
@@ -336,7 +338,7 @@ const jtDate = JsonTology.create({
   'schemas': [TransformedDateSchema] as const
 });
 
-const _dateResult = jtDate.instantiate('https://rt.test/Date', '2024-01-01');
+const _dateResult = jtDate.instantiate('https://rt.test/Date', { 'epoch': 1_704_067_200_000 });
 
 type DateRoundTrip = AssertEqualType<typeof _dateResult, TransformedExpected>;
 assert<DateRoundTrip>();

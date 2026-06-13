@@ -15,10 +15,13 @@ import {
 } from '../bookstore/index.js';
 
 // Full fixture — all required fields present. materialize succeeds.
-// materialize takes a schema object (not a $id string) as its first argument;
-// the result is typed via the registry's Order (the partial input carries
-// plain literals, so the materialize generic falls back to an untyped result).
-const order = bookstoreEntities.materialize(OrderSchema, { ...aboxFixtures.order });
+// materialize takes a schema object as its first argument; the result
+// is typed via the registry's Order (the partial input carries plain literals,
+// so the materialize generic falls back to an untyped result).
+const order = bookstoreEntities.materialize(
+  OrderSchema,
+  { ...aboxFixtures.order }
+);
 
 console.assert(order.customerId === aboxFixtures.order.customerId);
 console.log('materialize succeeded → orderId:', order.orderId, '| customerId:', order.customerId);

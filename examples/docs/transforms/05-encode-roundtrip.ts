@@ -1,10 +1,10 @@
 /**
  * jt.encode — Example 1: Round-trip a placement timestamp
- * Demonstrates: instantiate (wire → domain), encode (domain → wire), exact round-trip
+ * Demonstrates: instantiate (wire → canonical), encode (canonical → wire), exact round-trip
  *
- * Uses the PlacedAt transform registered in the bookstore. The timestamp is the
- * moment Bastian Balthazar Bux placed their order for the 1979 Thienemann first
- * edition from Coreander's antiquariat.
+ * A normalize transform: decode turns a wire ISO string into the schema's canonical ISO form,
+ * encode returns it to wire format. The timestamp is the moment Bastian Balthazar Bux placed
+ * their order for the 1979 Thienemann first edition from Coreander's antiquariat.
  */
 
 import { Transform } from '../../../src/index.js';
@@ -22,10 +22,10 @@ const PlacedAtRoundTripSchema = Transform.create(
   } as const,
   {
     'decode': (isoString: string) => {
-      return new Date(isoString);
+      return new Date(isoString).toISOString();
     },
-    'encode': (dateValue: Date) => {
-      return dateValue.toISOString();
+    'encode': (isoString: string) => {
+      return isoString;
     }
   }
 );
@@ -33,17 +33,17 @@ const PlacedAtRoundTripSchema = Transform.create(
 jt.set(PlacedAtRoundTripSchema);
 
 const raw = '2026-01-15T10:30:00.000Z';
-const date = jt.instantiate(PlacedAtRoundTripSchema, raw);
+const canonical = jt.instantiate(PlacedAtRoundTripSchema, raw);
 
-if (!(date instanceof Date)) {
-  throw new TypeError('Expected Date from decode');
+if (typeof canonical !== 'string') {
+  throw new TypeError('Expected string from decode');
 }
 
-const wire = jt.encode(PlacedAtRoundTripSchema, date);
+const wire = jt.encode(PlacedAtRoundTripSchema, canonical);
 
 console.assert(wire === raw);
 console.assert(typeof wire === 'string');
-console.log('wire   :', raw);
-console.log('domain :', date.toISOString());
+console.log('wire      :', raw);
+console.log('canonical :', canonical);
 // exact round-trip
 console.log('re-encoded === wire:', wire === raw);

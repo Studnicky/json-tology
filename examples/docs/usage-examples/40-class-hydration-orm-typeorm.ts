@@ -12,9 +12,8 @@
  * the canonical scenario keeps its plain wire-shape behaviour.
  */
 
-import {
-  Compose, Transform
-} from '../../../src/index.js';
+import { Compose } from '../../../src/index.js';
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
   OrderSchema
@@ -24,9 +23,13 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type OrderWire = typeof aboxFixtures.order;
+// The canonical (brand-free) Order shape — what the transform's decode produces
+// and encode consumes.
+type OrderWire = UnbrandType<typeof aboxFixtures.order>;
 
 // Stand-in for `@Entity()` + `@Column(...)` decorated TypeORM class.
+// The class is the wire side (TWire) — it gets decoded to canonical JSON and
+// encoded back from it.
 class OrderEntity {
   declare public customerId: string;
   declare public orderId: string;
@@ -48,21 +51,46 @@ const TypeOrmOrderSchema = Compose.equivalent(
 
 jt.set(TypeOrmOrderSchema);
 
-const TypeOrmOrderTransform = Transform.create<typeof TypeOrmOrderSchema, OrderEntity>(TypeOrmOrderSchema, {
-  'decode': (plain) => {
-    return Object.assign(Reflect.construct(OrderEntity, []), plain);
+// Class hydration uses a normalize transform in REVERSE: the class is the wire
+// side (TWire), the schema's canonical JSON is what `instantiate` validates.
+//   - decode (wire → canonical): lowers an OrderEntity instance to canonical JSON.
+//   - encode (canonical → wire): hydrates canonical JSON into an OrderEntity.
+// So hydration is `encode`; validating an entity into canonical JSON is `instantiate`.
+// `addTransform` (instance-bound) resolves the canonical via the registry's refs.
+const TypeOrmOrderTransform = jt.addTransform(TypeOrmOrderSchema, {
+  'decode': (instance: OrderEntity) => {
+    return {
+      'customerId': instance.customerId,
+      'orderId': instance.orderId,
+      'orderLines': instance.orderLines,
+      'orderTotal': instance.orderTotal,
+      'placedAt': instance.placedAt,
+      'shippingAddress': instance.shippingAddress
+    };
   },
-  'encode': (instance) => {
-    return { ...instance };
+  'encode': (wire) => {
+    // The canonical Order is structurally wider than the fixture-shaped entity.
+    // Narrow once at the hydration boundary — the runtime values are the validated
+    // canonical JSON.
+    const source = wire as OrderWire;
+
+    const entity = Object.assign(Reflect.construct(OrderEntity, []), {
+      'customerId': source.customerId,
+      'orderId': source.orderId,
+      'orderLines': source.orderLines,
+      'orderTotal': source.orderTotal,
+      'placedAt': source.placedAt,
+      'shippingAddress': source.shippingAddress
+    });
+
+    return entity;
   }
 });
 
-const entity = jt.instantiate(
-  TypeOrmOrderTransform,
-  aboxFixtures.order
-);
+// Hydrate canonical JSON into a class instance — the encode direction.
+const entity = jt.encode(TypeOrmOrderTransform, aboxFixtures.order);
 
-// Whatever flows out of `instantiate` is ready to call instance methods.
+// Whatever flows out of `encode` is ready to call instance methods.
 entity.markShipped();
 console.assert(entity.status === 'shipped');
 console.assert(entity instanceof OrderEntity);

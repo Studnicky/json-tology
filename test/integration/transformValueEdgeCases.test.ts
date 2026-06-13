@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import {
   Hash, Operations, Transform, Value
 } from '../../src/index.js';
+import { brand } from '../../src/types/Brand.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 // ---------------------------------------------------------------------------
 // Transform edge cases
 // ---------------------------------------------------------------------------
@@ -102,25 +104,27 @@ const transformScenarios: TransformScenario[] = [
         'type': 'string'
       } as const;
 
+      // Normalize: decode lower-cases the raw wire string into the canonical
+      // form; encode is the inverse, recovering the original wire value.
       Transform.create(RoundTripSchema, {
         'decode': (source: string) => {
-          return new Date(source);
+          return brand<InferSchemaType<typeof RoundTripSchema>>(source.toLowerCase());
         },
-        'encode': (date: Date) => {
-          return date.toISOString();
+        'encode': (value) => {
+          return value.toUpperCase();
         }
       });
       const fns = Transform.getDecoder(RoundTripSchema);
 
       assert.ok(fns !== undefined, 'round-trip — decoder exists');
 
-      const original = '2025-03-15T12:00:00.000Z';
-      const decoded = fns.decode(original) as Date;
+      const original = 'ABC';
+      const decoded = fns.decode(original) as string;
       const encoded = fns.encode(decoded) as string;
 
       assert.equal(encoded, original, 'round-trip — encoded matches original');
-      assert.ok(decoded instanceof Date, 'round-trip — decoded is Date');
-      assert.equal(decoded.toISOString(), original, 'round-trip — decoded ISO matches');
+      assert.equal(typeof decoded, 'string', 'round-trip — decoded is the canonical string');
+      assert.equal(decoded, 'abc', 'round-trip — decoded is normalized');
     },
     'name': 'recovers original value after decode then encode'
   },
@@ -135,22 +139,24 @@ const transformScenarios: TransformScenario[] = [
         'type': 'object'
       } as const;
 
+      // Normalize: decode maps a raw `{ x_coord, y_coord }` wire shape into the
+      // canonical `{ x, y }` form; encode is the inverse. Wire keys are read
+      // with the dynamic accessor — they belong to the source's contract.
       Transform.create(PointSchema, {
-        'decode': (raw: { 'x'?: number;
-          'y'?: number }) => {
+        'decode': (raw: Record<string, unknown>) => {
           return {
-            'magnitude': Math.hypot(raw.x ?? 0, raw.y ?? 0),
-            'x': raw.x ?? 0,
-            'y': raw.y ?? 0
+            'x': (raw['x_coord'] as number | undefined) ?? 0,
+            'y': (raw['y_coord'] as number | undefined) ?? 0
           };
         },
-        'encode': (enriched: { 'magnitude': number;
-          'x': number;
-          'y': number }) => {
-          return {
-            'x': enriched.x,
-            'y': enriched.y
-          };
+        'encode': (value) => {
+          // Wire keys are written through the dynamic accessor.
+          const wire: Record<string, unknown> = {};
+
+          wire['x_coord'] = value.x ?? 0;
+          wire['y_coord'] = value.y ?? 0;
+
+          return wire;
         }
       });
       const fns = Transform.getDecoder(PointSchema);
@@ -158,23 +164,20 @@ const transformScenarios: TransformScenario[] = [
       assert.ok(fns !== undefined, 'nested object — decoder exists');
 
       const wire = {
-        'x': 3,
-        'y': 4
+        'x_coord': 3,
+        'y_coord': 4
       };
-      const decoded = fns.decode(wire) as { 'magnitude': number;
-        'x': number;
+      const decoded = fns.decode(wire) as { 'x': number;
         'y': number };
 
       assert.equal(decoded.x, 3, 'nested object — x');
       assert.equal(decoded.y, 4, 'nested object — y');
-      assert.equal(decoded.magnitude, 5, 'nested object — magnitude');
 
-      const encoded = fns.encode(decoded) as { 'x': number;
-        'y': number };
+      const encoded = fns.encode(decoded) as Record<string, unknown>;
 
       assert.deepEqual(encoded, wire, 'nested object — encode round-trip');
     },
-    'name': 'decodes and encodes complex nested objects'
+    'name': 'normalizes a wire shape into the canonical object and back'
   }
 ];
 

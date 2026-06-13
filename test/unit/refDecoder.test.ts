@@ -17,6 +17,8 @@ import {
 import {
   JsonTology, Transform
 } from '../../src/index.js';
+import { brand } from '../../src/types/Brand.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { RefDecoder } from '../../src/modules/graph/RefDecoder.js';
 import type { RefDecoderRegistryInterface } from '../../src/interfaces/RefDecoderRegistry.js';
@@ -42,21 +44,22 @@ const emptyRegistry: RefDecoderRegistryInterface = {
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const DateSchema = Transform.create(
-  {
-    '$id': 'https://example.io/Date',
-    'format': 'date-time',
-    'type': 'string'
-  } as const,
-  {
-    'decode': (raw: string) => {
-      return new Date(raw);
-    },
-    'encode': (date: Date) => {
-      return date.toISOString();
-    }
+const DateRawSchema = {
+  '$id': 'https://example.io/Date',
+  'format': 'date-time',
+  'type': 'string'
+} as const;
+
+// Normalize transform: decode canonicalizes a raw date string into the schema's
+// canonical (branded) ISO date-time form; encode is the inverse pass-through.
+const DateSchema = Transform.create(DateRawSchema, {
+  'decode': (raw: string) => {
+    return brand<InferSchemaType<typeof DateRawSchema>>(new Date(raw).toISOString());
+  },
+  'encode': (value) => {
+    return value;
   }
-);
+});
 
 const EventSchema = {
   '$id': 'https://example.io/Event',
@@ -144,19 +147,18 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
       ] as const
     });
 
-    // interop: instantiate() return type reflects the schema's string field;
-    // the Transform decoder converts to Date at runtime but the static type
-    // has no typed path to the decoded Date shape.
+    // The cross-schema decoder fires at the $ref boundary, normalizing the raw
+    // date string into the canonical ISO date-time form.
     const result = jt.instantiate(EventSchema.$id, {
       'name': 'Launch',
-      'startedAt': '2024-06-01T00:00:00.000Z'
+      'startedAt': '2024-06-01'
     }) as unknown as {
       'name': string;
-      'startedAt': Date;
+      'startedAt': string;
     };
 
-    assert.ok(result.startedAt instanceof Date, 'decoder should have converted string to Date');
-    assert.equal(result.startedAt.getFullYear(), 2024);
+    assert.equal(typeof result.startedAt, 'string', 'decoder should produce the canonical date-time string');
+    assert.equal(result.startedAt, '2024-06-01T00:00:00.000Z', 'decoder should normalize to ISO');
   });
 
   void it('passes plain properties through unchanged when no decoder is registered', () => {
@@ -209,23 +211,22 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
       ] as const
     });
 
-    // interop: instantiate() return type reflects the schema's string fields;
-    // the cross-schema Transform decoder converts startedAt to Date at runtime
-    // but the static type has no typed path to the decoded nested Date shape.
+    // The nested cross-schema decoder fires through the wrapper at the $ref
+    // boundary, normalizing the raw date string into the canonical ISO form.
     const result = jt.instantiate(WrapperSchema.$id, {
       'event': {
         'name': 'Demo',
-        'startedAt': '2025-01-15T12:00:00.000Z'
+        'startedAt': '2025-01-15'
       }
     }) as unknown as {
       'event': {
         'name': string;
-        'startedAt': Date;
+        'startedAt': string;
       };
     };
 
-    assert.ok(result.event.startedAt instanceof Date, 'nested cross-schema decoder should fire through wrapper');
-    assert.equal(result.event.startedAt.getFullYear(), 2025);
+    assert.equal(typeof result.event.startedAt, 'string', 'nested cross-schema decoder should fire through wrapper');
+    assert.equal(result.event.startedAt, '2025-01-15T00:00:00.000Z');
   });
 
   void it('local fragment $ref (pointer) resolves without cross-schema lookup', () => {

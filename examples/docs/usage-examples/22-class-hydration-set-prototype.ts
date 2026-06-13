@@ -9,8 +9,9 @@
  * has no `#` fields and the constructor has no required work.
  */
 
+import type { UnbrandType } from '../../../src/types/index.js';
 import {
-  Compose, Transform
+  Compose
 } from '../../../src/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
@@ -21,13 +22,16 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-type OrderWire = typeof aboxFixtures.order;
+// The canonical (brand-free) Order shape
+type OrderWire = UnbrandType<typeof aboxFixtures.order>;
 
 class OrderViaProto {
   declare public customerId: string;
   declare public orderId: string;
   declare public orderLines: OrderWire['orderLines'];
   declare public orderTotal: OrderWire['orderTotal'];
+  declare public placedAt: OrderWire['placedAt'];
+  declare public shippingAddress: OrderWire['shippingAddress'];
 
   public lineCount(): number {
     return this.orderLines.length;
@@ -41,18 +45,41 @@ const ProtoOrderSchema = Compose.equivalent(
 
 jt.set(ProtoOrderSchema);
 
-const ProtoOrderTransform = Transform.create<typeof ProtoOrderSchema, OrderViaProto>(ProtoOrderSchema, {
-  'decode': (plain) => {
-    Object.setPrototypeOf(plain, OrderViaProto.prototype);
+// Class is the wire side: encode swaps prototype in place, decode spreads to plain object.
+const ProtoOrderTransform = jt.addTransform(ProtoOrderSchema, {
+  'decode': (instance: OrderViaProto) => {
+    const {
+      customerId, orderId, orderLines, orderTotal, placedAt, shippingAddress
+    } = instance;
 
-    return plain as OrderViaProto;
+    return {
+      customerId,
+      orderId,
+      orderLines,
+      orderTotal,
+      placedAt,
+      shippingAddress
+    };
   },
-  'encode': (instance) => {
-    return { ...instance };
+  'encode': (wire) => {
+    const source = wire as OrderWire;
+    const copy = {
+      'customerId': source.customerId,
+      'orderId': source.orderId,
+      'orderLines': source.orderLines,
+      'orderTotal': source.orderTotal,
+      'placedAt': source.placedAt,
+      'shippingAddress': source.shippingAddress
+    };
+
+    Object.setPrototypeOf(copy, OrderViaProto.prototype);
+
+    return copy as OrderViaProto;
   }
 });
 
-const hydrated = jt.instantiate(ProtoOrderTransform, { ...aboxFixtures.order });
+// Hydrate canonical JSON via encode.
+const hydrated = jt.encode(ProtoOrderTransform, { ...aboxFixtures.order });
 
 console.assert(hydrated instanceof OrderViaProto);
 console.assert(hydrated.lineCount() === aboxFixtures.order.orderLines.length);
