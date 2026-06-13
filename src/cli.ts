@@ -21,6 +21,7 @@ import {
 import { Command } from 'commander';
 import pkg from '../package.json' with { 'type': 'json' };
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
+import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
 import { GraphArtifact } from './modules/graph/GraphArtifact.js';
 import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
@@ -31,6 +32,7 @@ import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
 import type { BuildOptionsInterface } from './interfaces/BuildOptions.js';
 import type { VizOptionsInterface } from './interfaces/VizOptions.js';
+import type { BuildOutputOptionsInterface } from './interfaces/BuildOutputOptions.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
@@ -83,7 +85,7 @@ function loadSchemaFiles(schemaGlob: string): Array<Record<string, unknown>> {
   });
 }
 
-function loadSchemas(schemaGlob: string): SchemaRegistry {
+function loadSchemas(schemaGlob: string): SchemaRegistryInterface {
   const schemas = loadSchemaFiles(schemaGlob);
   const registry = new SchemaRegistry();
 
@@ -244,14 +246,7 @@ function openBrowser(filePath: string): void {
 // Build command
 // ---------------------------------------------------------------------------
 
-interface BuildOutputOptions {
-  readonly 'baseIRI': string;
-  readonly 'graphs': readonly SchemaGraphInterface[];
-  readonly 'output': string;
-  readonly 'outputFile': string | undefined;
-}
-
-function buildOntologyOutput(opts: BuildOutputOptions): void {
+function buildOntologyOutput(opts: BuildOutputOptionsInterface): void {
   const {
     baseIRI, graphs, output, outputFile
   } = opts;
@@ -267,7 +262,7 @@ function buildOntologyOutput(opts: BuildOutputOptions): void {
   writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
 }
 
-function buildShaclOutput(opts: BuildOutputOptions): void {
+function buildShaclOutput(opts: BuildOutputOptionsInterface): void {
   const {
     baseIRI, graphs, output, outputFile
   } = opts;
@@ -330,7 +325,7 @@ async function runBuild(options: BuildOptionsInterface): Promise<void> {
   const graphs = registry.listGraphs();
   const baseIRI = resolveBaseIRI(graphs, configuredBaseIRI);
 
-  const buildOpts: BuildOutputOptions = {
+  const buildOpts: BuildOutputOptionsInterface = {
     baseIRI,
     graphs,
     output,

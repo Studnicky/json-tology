@@ -481,3 +481,41 @@ export interface BooleanFlagsType {
   readonly 'uniqueItems': boolean;
   readonly 'writeOnly': boolean;
 }
+
+/**
+ * A single property entry: a tuple of property name and its resolved graph node.
+ *
+ * @remarks
+ * Used internally by `propertiesMap` in SchemaGraphSupport to build the properties
+ * map from indexed graph entries.
+ *
+ * @example
+ * ```ts
+ * const entries: PropertyEntry[] = graph.entries(node, 'properties');
+ * ```
+ *
+ * @category Graph
+ * @since 0.21.0
+ * @see {@link SchemaGraphSupport}
+ * @group Graph
+ */
+export type PropertyEntry = [string, SchemaGraphNodeInterface];
+
+/**
+ * An immutable map from property name to the resolved schema graph node.
+ *
+ * @remarks
+ * Returned by `propertiesMap` and held as `SchemaGraphSemanticsInterface.properties`.
+ * Using a `ReadonlyMap` prevents mutation of the semantics cache.
+ *
+ * @example
+ * ```ts
+ * const map: PropertyMap = propertiesMap(entries);
+ * ```
+ *
+ * @category Graph
+ * @since 0.21.0
+ * @see {@link SchemaGraphSupport}
+ * @group Graph
+ */
+export type PropertyMap = ReadonlyMap<string, SchemaGraphNodeInterface>;

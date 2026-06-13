@@ -1,4 +1,5 @@
 import type { InferSchemaType } from './Infer.js';
+import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
 import type {
   ApplyRestrictionsType,
   ComplementOfBrandInterface,
@@ -90,7 +91,7 @@ export type { InferSchemaType } from './Infer.js';
  * @typeParam TSchema - The JSON Schema literal to derive the TypeScript type from.
  * @typeParam TReferences - Optional map of additional referenced schema literals for cross-schema inference.
  */
-export type InferType<TSchema, TReferences = Record<never, never>>
+export type InferType<TSchema, TReferences = JsonTologyReferencesInterface>
   = ApplyComplementBrandType<TSchema,
     ApplyDisjointBrandType<TSchema,
       ApplyRestrictionsToInferredType<TSchema,

@@ -16,28 +16,7 @@ import type {
 } from '../interfaces/SchemaGraph.js';
 import type { QuadInterface } from '../interfaces/Quad.js';
 import type { SubjectIndexType } from '../interfaces/OwlImport.js';
-
-
-/**
- * Named return type for {@link buildExpansionMap}.
- *
- * Maps full-IRI prefixes to their `prefix:` compact form, used for IRI
- * compaction throughout the quad-backed graph.
- *
- * @remarks
- * Built once from `STANDARD_PREFIXES` merged with caller-supplied prefixes.
- *
- * @example
- * ```ts
- * const map: ExpansionMapType = buildExpansionMap(prefixes);
- * ```
- *
- * @category Graph
- * @since 0.18.0
- * @see {@link QuadBackedSchemaGraph}
- * @group Graph
- */
-export type ExpansionMapType = Map<string, string>;
+import type { CurieInterface } from '../interfaces/Curie.js';
 
 /**
  * Named return type for {@link buildPredicateIndex}.
@@ -73,7 +52,7 @@ export type PredicateIndexType = Map<string, Map<string, QuadInterface[]>>;
  *
  * @example
  * ```ts
- * const nodes: NodeMapType = buildNodeMap(subjectIndex, predicateIndex, expansionMap);
+ * const nodes: NodeMapType = buildNodeMap(subjectIndex, predicateIndex, curie);
  * ```
  *
  * @category Graph
@@ -302,7 +281,7 @@ export type RootSchemaRecordType = Record<string, unknown>;
  *
  * @example
  * ```ts
- * buildRelations({ nodeMap, predicateIndex, subjectIndex, expansionMap, stubMap });
+ * buildRelations({ nodeMap, predicateIndex, subjectIndex, curie, stubMap });
  * ```
  *
  * @category Graph
@@ -311,7 +290,7 @@ export type RootSchemaRecordType = Record<string, unknown>;
  * @group Graph
  */
 export interface BuildRelationsOptionsInterface {
-  readonly 'expansionMap': ExpansionMapType;
+  readonly 'curie': CurieInterface;
   readonly 'nodeMap': Map<string, SchemaGraphNodeInterface>;
   readonly 'predicateIndex': PredicateIndexType;
   readonly 'stubMap': Map<string, SchemaGraphNodeInterface>;
@@ -327,7 +306,7 @@ export interface BuildRelationsOptionsInterface {
  *
  * @example
  * ```ts
- * resolveRestrictionBnode({ bnodeId, bnodePredicateMap, expansionMap });
+ * resolveRestrictionBnode({ bnodeId, bnodePredicateMap, curie });
  * ```
  *
  * @category Graph
@@ -338,7 +317,7 @@ export interface BuildRelationsOptionsInterface {
 export interface ResolveRestrictionOptionsInterface {
   readonly 'bnodeId': string;
   readonly 'bnodePredicateMap': Map<string, QuadInterface[]> | undefined;
-  readonly 'expansionMap': ExpansionMapType;
+  readonly 'curie': CurieInterface;
 }
 
 export { type SubjectIndexType } from '../interfaces/OwlImport.js';

@@ -15,7 +15,7 @@ import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
-import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
 import { Projection } from '../rdf/Projection.js';
 import { Terms } from '../rdf/Terms.js';
 import { OWL } from '../../constants/IRI.js';
@@ -435,7 +435,7 @@ export class Materializer implements MaterializerInterface {
       ];
     }
 
-    const parsed = GraphEngineSupport.parseRef(ref);
+    const parsed = SchemaIri.parseRef(ref);
     const targetGraph = this.registry.graph(parsed.id);
 
     if (targetGraph !== undefined) {

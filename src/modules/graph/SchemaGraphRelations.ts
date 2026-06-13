@@ -12,23 +12,11 @@ import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
-
-/**
- * Common context bundle for relation-push helpers that need graph + node + semantics.
- * Satisfies the 3-parameter limit by packing the trio into one options object.
- */
-interface RelationsContextInterface {
-  readonly 'graph': GraphAccessorInterface;
-  readonly 'node': SchemaGraphNodeInterface;
-  readonly 'sem': SchemaGraphSemanticsInterface;
-}
-
-/**
- * Extended context that also carries the mutable accumulator.
- */
-interface RelationsPushContextInterface extends RelationsContextInterface {
-  readonly 'relations': SchemaGraphRelationInterface[];
-}
+import type {
+  CardinalityContextInterface,
+  RelationsPushContextInterface,
+  TypeRelationsContextInterface
+} from '../../interfaces/RelationsContext.js';
 
 function resolveNodeRef(
   graph: GraphAccessorInterface,
@@ -304,11 +292,6 @@ function pushPrefixItemRelations(ctx: RelationsPushContextInterface): void {
   }
 }
 
-/** Extended context for cardinality resolution, which also needs the node map. */
-interface CardinalityContextInterface extends RelationsPushContextInterface {
-  readonly 'nodeMap': Map<string, SchemaGraphNodeInterface>;
-}
-
 function pushPropertyCardinalityRelations(ctx: CardinalityContextInterface): void {
   const {
     graph, node, nodeMap, relations, sem
@@ -344,11 +327,6 @@ function pushPropertyCardinalityRelations(ctx: CardinalityContextInterface): voi
       }
     }
   }
-}
-
-/** Extended context for union/type relations, which also needs the pre-filtered non-null types. */
-interface TypeRelationsContextInterface extends RelationsPushContextInterface {
-  readonly 'nonNullTypes': string[];
 }
 
 function pushPropertyTypeRelations(ctx: TypeRelationsContextInterface): void {

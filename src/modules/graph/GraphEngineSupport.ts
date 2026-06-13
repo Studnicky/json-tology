@@ -115,20 +115,6 @@ export const GraphEngineSupport = {
     return fragment;
   },
 
-  parseRef(ref: string): {
-    'fragment': string;
-    'id': string;
-  } {
-    const hashIndex = ref.indexOf('#');
-    const id = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-    const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
-
-    return {
-      fragment,
-      id
-    };
-  },
-
   schemaId(schema: JsonSchemaDocumentType): string | undefined {
     if (!isRecord(schema)) {
       return undefined;

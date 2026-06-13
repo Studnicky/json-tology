@@ -37,17 +37,23 @@ const JT_NS = STANDARD_PREFIXES.jt;
  * @group Constants
  */
 export const OWL = {
+  'AllDifferent': `${OWL_NS}AllDifferent`,
   'allValuesFrom': `${OWL_NS}allValuesFrom`,
+  'AnnotationProperty': `${OWL_NS}AnnotationProperty`,
+  'assertionProperty': `${OWL_NS}assertionProperty`,
   'AsymmetricProperty': `${OWL_NS}AsymmetricProperty`,
   'cardinality': `${OWL_NS}cardinality`,
   'Class': `${OWL_NS}Class`,
   'complementOf': `${OWL_NS}complementOf`,
   'DatatypeProperty': `${OWL_NS}DatatypeProperty`,
   'deprecated': `${OWL_NS}deprecated`,
+  'differentFrom': `${OWL_NS}differentFrom`,
   'disjointUnionOf': `${OWL_NS}disjointUnionOf`,
   'disjointWith': `${OWL_NS}disjointWith`,
+  'distinctMembers': `${OWL_NS}distinctMembers`,
   'equivalentClass': `${OWL_NS}equivalentClass`,
   'FunctionalProperty': `${OWL_NS}FunctionalProperty`,
+  'hasKey': `${OWL_NS}hasKey`,
   'hasValue': `${OWL_NS}hasValue`,
   'intersectionOf': `${OWL_NS}intersectionOf`,
   'InverseFunctionalProperty': `${OWL_NS}InverseFunctionalProperty`,
@@ -57,6 +63,8 @@ export const OWL = {
   'maxQualifiedCardinality': `${OWL_NS}maxQualifiedCardinality`,
   'minCardinality': `${OWL_NS}minCardinality`,
   'minQualifiedCardinality': `${OWL_NS}minQualifiedCardinality`,
+  'NamedIndividual': `${OWL_NS}NamedIndividual`,
+  'NegativePropertyAssertion': `${OWL_NS}NegativePropertyAssertion`,
   'Nothing': `${OWL_NS}Nothing`,
   'ObjectProperty': `${OWL_NS}ObjectProperty`,
   'onDataRange': `${OWL_NS}onDataRange`,
@@ -67,9 +75,13 @@ export const OWL = {
   'Restriction': `${OWL_NS}Restriction`,
   'sameAs': `${OWL_NS}sameAs`,
   'someValuesFrom': `${OWL_NS}someValuesFrom`,
+  'sourceIndividual': `${OWL_NS}sourceIndividual`,
   'SymmetricProperty': `${OWL_NS}SymmetricProperty`,
+  'targetIndividual': `${OWL_NS}targetIndividual`,
+  'targetValue': `${OWL_NS}targetValue`,
   'TransitiveProperty': `${OWL_NS}TransitiveProperty`,
   'unionOf': `${OWL_NS}unionOf`,
+  'versionInfo': `${OWL_NS}versionInfo`,
   'withRestrictions': `${OWL_NS}withRestrictions`
 } as const;
 
@@ -123,6 +135,7 @@ export const RDF = {
  * @group Constants
  */
 export const RDFS = {
+  'Class': `${RDFS_NS}Class`,
   'comment': `${RDFS_NS}comment`,
   'Datatype': `${RDFS_NS}Datatype`,
   'domain': `${RDFS_NS}domain`,
@@ -132,6 +145,19 @@ export const RDFS = {
   'subClassOf': `${RDFS_NS}subClassOf`,
   'subPropertyOf': `${RDFS_NS}subPropertyOf`
 } as const;
+
+/**
+ * Compact prefix string for XSD datatypes (`xsd:`).
+ *
+ * @remarks
+ * Used in modules that need to strip or match the `xsd:` compact prefix
+ * without importing `STANDARD_PREFIXES`.
+ *
+ * @category IRI
+ * @since 0.21.0
+ * @group Constants
+ */
+export const XSD_COMPACT_PREFIX = 'xsd:';
 
 /**
  * Full-IRI constants for the SHACL vocabulary.

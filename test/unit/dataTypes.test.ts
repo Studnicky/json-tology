@@ -7,7 +7,6 @@ import type { SchemaGraphSemanticsInterface } from '../../src/interfaces/SchemaG
 // DataTypes guards/equality helpers are pure utilities used internally; no public surface.
 import {
   deepEqual,
-  deepFreeze,
   isPlainObject,
   isRecord
 } from '../../src/modules/data/DataTypes.js';
@@ -612,43 +611,6 @@ import {
       } of scenarios) {
         assert.equal(deepEqual(left, right), expected, `deepEqual: ${label}`);
       }
-    });
-  });
-
-  void describe('deepFreeze', { 'concurrency': true }, () => {
-    void it('GBU: top-level frozen, nested frozen, deeply-nested frozen, same-reference returned', () => {
-      // Good: top-level object
-      const flat = { 'a': 1 };
-
-      deepFreeze(flat);
-      assert.equal(Object.isFrozen(flat), true, 'top-level object is frozen');
-
-      // Good: nested object
-      const nested = { 'nested': { 'value': 42 } };
-
-      deepFreeze(nested);
-      assert.equal(Object.isFrozen(nested.nested), true, 'nested object is frozen');
-
-      // Good: deeply nested structure
-      const deep = { 'a': { 'b': { 'c': 3 } } };
-
-      deepFreeze(deep);
-      assert.equal(Object.isFrozen(deep.a.b), true, 'deeply nested object is frozen');
-
-      // Ugly: same reference returned
-      const ref = { 'x': 1 };
-      const result = deepFreeze(ref);
-
-      assert.equal(result, ref, 'deepFreeze returns the same reference');
-
-      // Ugly: already-frozen object is a no-op
-      const alreadyFrozen = Object.freeze({ 'y': 2 });
-
-      assert.doesNotThrow(() => {
-        deepFreeze(alreadyFrozen);
-      }, 'deepFreeze on already-frozen object does not throw');
-
-      assert.equal(Object.isFrozen(alreadyFrozen), true, 'already-frozen stays frozen');
     });
   });
 }

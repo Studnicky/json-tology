@@ -38,7 +38,7 @@ import { SchemaRefWalker } from './SchemaRefWalker.js';
 import { SameAsStore } from './SameAsStore.js';
 import { Curie } from '../rdf/Curie.js';
 import {
-  deepFreeze, isRecord
+  isRecord
 } from '../data/DataTypes.js';
 import { Frozen } from '../data/Frozen.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
@@ -1147,7 +1147,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.warnOnHashConflict(hash, schemaId);
 
     if (!Object.isFrozen(canonicalSchema)) {
-      deepFreeze(canonicalSchema);
+      Frozen.deepFreeze(canonicalSchema);
     }
 
     const entry: SchemaRegistryEntryInterface = {

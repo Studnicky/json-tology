@@ -13,20 +13,11 @@ import type {
   BnodeTermType, IriTermType, QuadObjectType
 } from '../../types/Quad.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
+import type { ListBuildResultInterface } from '../../interfaces/ListBuildResult.js';
+import type { OptionalListObjectType } from '../../types/OptionalListObjectType.js';
+import type { CollectStepResultInterface } from '../../interfaces/CollectStepResult.js';
 import { RDF } from '../../constants/IRI.js';
 import { Terms } from './Terms.js';
-
-// ---------------------------------------------------------------------------
-// Internal types
-// ---------------------------------------------------------------------------
-
-interface ListBuildResultInterface {
-  readonly 'head': BnodeTermType | IriTermType;
-  readonly 'triples': Quad[];
-}
-
-/** Optional list quad object — undefined when the term type is not a valid quad object position. */
-type OptionalListObjectType = QuadObjectType | undefined;
 
 // ---------------------------------------------------------------------------
 // Predicate helpers
@@ -92,12 +83,6 @@ function isValidGraph(quad: Quad): boolean {
 // ---------------------------------------------------------------------------
 // collect() loop helpers
 // ---------------------------------------------------------------------------
-
-interface CollectStepResultInterface {
-  readonly 'done': boolean;
-  readonly 'item': OptionalListObjectType;
-  readonly 'next': BnodeTermType | IriTermType | undefined;
-}
 
 function collectStep(
   cursor: BnodeTermType | IriTermType,

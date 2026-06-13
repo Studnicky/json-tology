@@ -25,7 +25,10 @@ import type {
 import type { JsonSchemaDocumentObjectType } from '../../types/Schema.js';
 import type { InvariantInterface } from '../../interfaces/Invariant.js';
 import type { QuadObjectType } from '../../types/Quad.js';
+import type { JsonLdModule } from '../../interfaces/JsonLdModule.js';
+import type { ExternalRdfJsQuad } from '../../interfaces/ExternalRdfJsQuad.js';
 import { Curie } from '../rdf/Curie.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import {
   OWL, RDF, RDFS
@@ -252,10 +255,6 @@ function isDatatypeIri(iri: string): boolean {
  * Not required when the caller passes QuadInterface[] or string/object input
  * that follows the OntologyBuilder compact format.
  */
-interface JsonLdModule {
-  'toRDF': (doc: unknown, opts?: { 'format'?: string }) => Promise<unknown>
-}
-
 async function tryLoadJsonLd(): Promise<JsonLdModule | null> {
   try {
     // jsonld is an optional peerDependency. Dynamic import is used so that
@@ -278,15 +277,6 @@ async function tryLoadJsonLd(): Promise<JsonLdModule | null> {
 // ---------------------------------------------------------------------------
 // fromJsonLdRdfOutput — convert jsonld.js output to QuadInterface[]
 // ---------------------------------------------------------------------------
-
-interface ExternalRdfJsQuad {
-  'object': { 'datatype'?: { 'value': string };
-    'language'?: string;
-    'termType': string;
-    'value': string };
-  'predicate': { 'value': string };
-  'subject': { 'value': string }
-}
 
 /** Build a single QuadInterface from an external RDF/JS quad shape. */
 function buildQuadFromExternal(quad: ExternalRdfJsQuad): QuadInterface {
@@ -459,7 +449,7 @@ const DISPATCHERS: readonly DispatcherFnInterface[] = [
  */
 export class OwlImporter {
   private readonly baseIRI: string;
-  private readonly curie: Curie;
+  private readonly curie: CurieInterface;
   private readonly prefixes: PrefixMap;
 
   public constructor(options: OwlImporterOptions) {

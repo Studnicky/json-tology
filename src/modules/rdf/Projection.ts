@@ -17,10 +17,6 @@ import type {
   SchemaGraphRelationInterface
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type {
-  DefaultGraphTermType, IriTermType
-} from '../../types/Quad.js';
-import type { IriMinterInterface } from '../../interfaces/Projection.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import type { SkolemizeFnType } from '../../types/Skolemize.js';
 import type { SpecialHandlerFn } from '../../types/SpecialHandlerFn.js';
@@ -28,9 +24,19 @@ import type { AnnotatedEdgeStructure } from '../../types/AnnotatedEdgeStructure.
 import type {
   ProjectInstanceArgs, ProjectPropertyArgs
 } from '../../interfaces/Projection.js';
+import type { RefTargetInterface } from '../../interfaces/RefTarget.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { QuadFactoryQuadOptsInterface } from '../../interfaces/QuadFactoryOpts.js';
+import type { LookupGraphFn } from '../../types/LookupGraphFn.js';
+import type { ProjectRelationArgsInterface } from '../../interfaces/ProjectRelationArgs.js';
+import type { WalkProjectionPropertiesArgsInterface } from '../../interfaces/WalkProjectionPropertiesArgs.js';
+import type { ProjectInstancePropertyArgsInterface } from '../../interfaces/ProjectInstancePropertyArgs.js';
+import type { ProjectAnnotatedEdgeArgsInterface } from '../../interfaces/ProjectAnnotatedEdgeArgs.js';
+import type { ResolveEdgeTargetIriArgsInterface } from '../../interfaces/ResolveEdgeTargetIriArgs.js';
+import type { EmitAnnotationQuadsArgsInterface } from '../../interfaces/EmitAnnotationQuadsArgs.js';
+import type { ProjectScalarValueArgsInterface } from '../../interfaces/ProjectScalarValueArgs.js';
+import type { ProjectAboxArgsInterface } from '../../interfaces/ProjectAboxArgs.js';
 import { Terms } from './Terms.js';
+import { Curie } from './Curie.js';
 
 import {
   JT, OWL, RDF, RDFS, SH, XSD
@@ -211,14 +217,7 @@ const SPECIAL_HANDLERS = new Map<string, SpecialHandlerFn>([
 // Relation → quad mapping
 // ---------------------------------------------------------------------------
 
-interface ProjectRelationArgs {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'issuer': IdentifierIssuerInterface;
-  readonly 'quads': QuadInterface[];
-  readonly 'relation': SchemaGraphRelationInterface;
-}
-
-function projectRelation(args: ProjectRelationArgs): void {
+function projectRelation(args: ProjectRelationArgsInterface): void {
   const {
     curie, issuer, quads, relation
   } = args;
@@ -261,7 +260,7 @@ function projectRelation(args: ProjectRelationArgs): void {
   }
 }
 
-function projectStructuredRelation(args: ProjectRelationArgs): void {
+function projectStructuredRelation(args: ProjectRelationArgsInterface): void {
   const {
     curie, issuer, quads, relation
   } = args;
@@ -362,19 +361,7 @@ class IriMinter {
   }
 }
 
-interface ProjectAboxArgs {
-  readonly 'baseIRI': string;
-  readonly 'curie'?: CurieInterface | undefined;
-  readonly 'data': unknown;
-  readonly 'entryNode'?: SchemaGraphNodeInterface | undefined;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'graphIRI'?: string | undefined;
-  readonly 'iriFor'?: SkolemizeFnType | undefined;
-  readonly 'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'predicateResolver'?: PredicateResolverFnType | undefined;
-}
-
-function projectAbox(args: ProjectAboxArgs): QuadInterface[] {
+function projectAbox(args: ProjectAboxArgsInterface): QuadInterface[] {
   const {
     baseIRI, curie, data, entryNode, graph, graphIRI, iriFor, lookupGraph, predicateResolver
   } = args;
@@ -439,7 +426,7 @@ function resolveNode(
   graph: SchemaGraphInterface,
   node: SchemaGraphNodeInterface,
   lookupGraph?: ((schemaId: string) => SchemaGraphInterface | undefined)
-): ResolvedNodeInterface {
+): RefTargetInterface {
   const nodeSemantics = graph.semantics(node);
 
   if (nodeSemantics.ref === undefined) {
@@ -509,11 +496,6 @@ function findNodeById(
   return undefined;
 }
 
-interface ResolvedNodeInterface {
-  'graph': SchemaGraphInterface;
-  'node': SchemaGraphNodeInterface;
-}
-
 /**
  * Test whether a member node is a bare `{ "type": "null" }` schema (the typical
  * nullable union sentinel) so it can be ignored when looking for the single
@@ -550,7 +532,7 @@ function unwrapSingleRef(
   graph: SchemaGraphInterface,
   node: SchemaGraphNodeInterface,
   lookupGraph?: ((schemaId: string) => SchemaGraphInterface | undefined)
-): ResolvedNodeInterface {
+): RefTargetInterface {
   const semantics = graph.semantics(node);
 
   // A direct `$ref` is already resolved by resolveNode; only union/allOf
@@ -625,27 +607,17 @@ function unwrapSingleRef(
 // inner Map is keyed by the lookupGraph closure (or a sentinel for the
 // no-lookupGraph case) because cross-graph resolution depends on which registry
 // the closure consults — caching across distinct closures would be unsafe.
-type LookupGraphFn = (schemaId: string) => SchemaGraphInterface | undefined;
-
 const NO_LOOKUP_GRAPH = Symbol('no-lookup-graph');
 const collectProjectionPropertiesCache = new WeakMap<
   SchemaGraphNodeInterface,
-  Map<LookupGraphFn | typeof NO_LOOKUP_GRAPH, Map<string, ResolvedNodeInterface>>
+  Map<LookupGraphFn | typeof NO_LOOKUP_GRAPH, Map<string, RefTargetInterface>>
 >();
-
-interface WalkProjectionPropertiesArgs {
-  readonly 'collected': Map<string, ResolvedNodeInterface>;
-  readonly 'current': SchemaGraphNodeInterface;
-  readonly 'currentGraph': SchemaGraphInterface;
-  readonly 'lookupGraph': LookupGraphFn | undefined;
-  readonly 'visited': Set<SchemaGraphNodeInterface>;
-}
 
 /**
  * Recursively walk `current` collecting all effective properties into `collected`,
  * following `allOf`, `then`, and `else` members.
  */
-function walkProjectionProperties(args: WalkProjectionPropertiesArgs): void {
+function walkProjectionProperties(args: WalkProjectionPropertiesArgsInterface): void {
   const {
     collected, current, currentGraph, lookupGraph, visited
   } = args;
@@ -707,7 +679,7 @@ function collectProjectionProperties(
   graph: SchemaGraphInterface,
   node: SchemaGraphNodeInterface,
   lookupGraph?: LookupGraphFn
-): Map<string, ResolvedNodeInterface> {
+): Map<string, RefTargetInterface> {
   const cacheKey = lookupGraph ?? NO_LOOKUP_GRAPH;
   let byLookup = collectProjectionPropertiesCache.get(node);
 
@@ -722,7 +694,7 @@ function collectProjectionProperties(
     }
   }
 
-  const collected = new Map<string, ResolvedNodeInterface>();
+  const collected = new Map<string, RefTargetInterface>();
   const visited = new Set<SchemaGraphNodeInterface>();
 
   walkProjectionProperties({
@@ -737,15 +709,7 @@ function collectProjectionProperties(
   return collected;
 }
 
-interface ProjectInstancePropertyArgs {
-  readonly 'baseArgs': ProjectInstanceArgs;
-  readonly 'instIRI': string;
-  readonly 'nodeId': string;
-  readonly 'propertyEntry': ResolvedNodeInterface;
-  readonly 'propertyName': string;
-}
-
-function projectInstanceProperty(args: ProjectInstancePropertyArgs): void {
+function projectInstanceProperty(args: ProjectInstancePropertyArgsInterface): void {
   const {
     baseArgs, instIRI, nodeId, propertyEntry, propertyName
   } = args;
@@ -866,21 +830,6 @@ function projectInstance(args: ProjectInstanceArgs): string {
 // Annotated edge (RDF 1.2 triple-term) projection
 // ---------------------------------------------------------------------------
 
-interface ProjectAnnotatedEdgeArgs {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'depth': number;
-  readonly 'edge': AnnotatedEdgeStructure;
-  readonly 'graphTerm': DefaultGraphTermType | IriTermType;
-  readonly 'instanceIri': string;
-  readonly 'minter': IriMinterInterface;
-  readonly 'path': string;
-  readonly 'predicateResolver': PredicateResolverFnType;
-  readonly 'quadOpts': QuadFactoryQuadOptsInterface;
-  readonly 'quads': QuadInterface[];
-  readonly 'sourceId': string;
-  readonly 'value': unknown;
-}
-
 /**
  * Find the `annotatedEdge` structure relation attached to a property node, if any.
  */
@@ -905,15 +854,7 @@ function findAnnotatedEdgeStructure(
  * - an object carrying an `@id` / `id` IRI, or
  * - a nested instance object — minted via the IRI minter.
  */
-interface ResolveEdgeTargetIriArgs {
-  readonly 'depth': number;
-  readonly 'edge': AnnotatedEdgeStructure;
-  readonly 'minter': IriMinterInterface;
-  readonly 'path': string;
-  readonly 'target': unknown;
-}
-
-function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgs): string {
+function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgsInterface): string {
   const {
     depth, edge, minter, path, target
   } = args;
@@ -942,7 +883,7 @@ function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgs): string {
  * annotation range resolves to a class IRI.
  */
 function annotationValueTerm(value: unknown, rangeRef: string): QuadObjectType {
-  if (typeof value === 'string' && isIriReference(value) && isClassRange(rangeRef)) {
+  if (typeof value === 'string' && Curie.isAbsolute(value) && isClassRange(rangeRef)) {
     return Terms.iri(value);
   }
 
@@ -968,10 +909,6 @@ function annotationValueTerm(value: unknown, rangeRef: string): QuadObjectType {
   }
 
   return Terms.literal(String(value), { 'datatype': Terms.iri(XSD.string) });
-}
-
-function isIriReference(value: string): boolean {
-  return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:');
 }
 
 // Allowed absolute-IRI schemes for x-jt-iriRef property values. Rejects
@@ -1001,7 +938,7 @@ function isAbsoluteIri(value: string): boolean {
 }
 
 function isClassRange(rangeRef: string): boolean {
-  return isIriReference(rangeRef);
+  return Curie.isAbsolute(rangeRef);
 }
 
 /**
@@ -1015,18 +952,8 @@ function isClassRange(rangeRef: string): boolean {
  * Raises a MaterializationError when no `graphIRI` was supplied (the default
  * graph is not a valid home for an annotated edge).
  */
-interface EmitAnnotationQuadsArgs {
-  readonly 'annotationValues': Record<string, unknown>;
-  readonly 'classId': string;
-  readonly 'edge': AnnotatedEdgeStructure;
-  readonly 'predicateResolver': PredicateResolverFnType;
-  readonly 'quadOpts': QuadFactoryQuadOptsInterface;
-  readonly 'quads': QuadInterface[];
-  readonly 'tripleTerm': ReturnType<typeof QuadFactory.tripleTerm>;
-}
-
 /** Emit one annotation quad per annotation on the edge. */
-function emitAnnotationQuads(args: EmitAnnotationQuadsArgs): void {
+function emitAnnotationQuads(args: EmitAnnotationQuadsArgsInterface): void {
   const {
     annotationValues, classId, edge, predicateResolver, quadOpts, quads, tripleTerm
   } = args;
@@ -1048,7 +975,7 @@ function emitAnnotationQuads(args: EmitAnnotationQuadsArgs): void {
   }
 }
 
-function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
+function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsInterface): void {
   const {
     curie, depth, edge, graphTerm, instanceIri, minter, path, predicateResolver, quadOpts, quads, sourceId, value
   } = args;
@@ -1151,17 +1078,7 @@ function numericDatatype(value: number, schemaTypes: readonly string[], format: 
   return XsdTypes.resolveSingle(declaredNumericType, formatOption) ?? runtimeFallback;
 }
 
-interface ProjectScalarValueArgs {
-  readonly 'instanceIri': string;
-  readonly 'path': string;
-  readonly 'propertyIRI': string;
-  readonly 'propertyNode': SchemaGraphNodeInterface;
-  readonly 'propertySemantics': ProjectPropertyArgs['propertySemantics'];
-  readonly 'quadOpts': QuadFactoryQuadOptsInterface;
-  readonly 'quads': QuadInterface[];
-}
-
-function projectStringValue(value: string, ctx: ProjectScalarValueArgs): void {
+function projectStringValue(value: string, ctx: ProjectScalarValueArgsInterface): void {
   const {
     instanceIri, path, propertyIRI, propertyNode, propertySemantics, quadOpts, quads
   } = ctx;
@@ -1202,7 +1119,7 @@ function projectStringValue(value: string, ctx: ProjectScalarValueArgs): void {
   quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, xsdDatatype), quadOpts));
 }
 
-function projectNumberValue(value: number, ctx: ProjectScalarValueArgs): void {
+function projectNumberValue(value: number, ctx: ProjectScalarValueArgsInterface): void {
   const {
     instanceIri, path, propertyIRI, propertyNode, propertySemantics, quadOpts, quads
   } = ctx;
@@ -1288,7 +1205,7 @@ function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unkn
     return;
   }
 
-  const scalarCtx: ProjectScalarValueArgs = {
+  const scalarCtx: ProjectScalarValueArgsInterface = {
     instanceIri,
     path,
     propertyIRI,

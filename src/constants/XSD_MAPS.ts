@@ -176,3 +176,29 @@ export const NUMBER_FORMAT_MAP: Readonly<Record<string, string>> = {
 // ---------------------------------------------------------------------------
 
 export { XsdTypes } from '../modules/rdf/XsdTypes.js';
+
+// ---------------------------------------------------------------------------
+// XSD type name sets — local XSD name strings (without prefix or full IRI)
+// ---------------------------------------------------------------------------
+
+export const INTEGER_XSD_TYPE_NAMES: ReadonlySet<string> = new Set([
+  'byte',
+  'int',
+  'integer',
+  'long',
+  'negativeInteger',
+  'nonNegativeInteger',
+  'nonPositiveInteger',
+  'positiveInteger',
+  'short',
+  'unsignedByte',
+  'unsignedInt',
+  'unsignedLong',
+  'unsignedShort'
+]);
+
+export const DECIMAL_XSD_TYPE_NAMES: ReadonlySet<string> = new Set([
+  'decimal',
+  'double',
+  'float'
+]);

@@ -19,14 +19,26 @@
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
-import type { QuadObjectType } from '../../types/Quad.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { SubjectGroupType } from '../../types/SubjectGroup.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { LiftOptionsInterface } from '../../interfaces/LiftOptionsInterface.js';
-
-import type { AnnotatedEdgeStructure } from '../../types/AnnotatedEdgeStructure.js';
+import type { ResolvedRefInterface } from '../../interfaces/ResolvedRef.js';
+import type { TripleTermIndexType } from '../../types/TripleTermIndexType.js';
+import type { PredicateIndexType } from '../../types/PredicateIndexType.js';
+import type { LiftedObjectType } from '../../types/LiftedObjectType.js';
+import type { SubjectTypeType } from '../../types/SubjectTypeType.js';
+import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
+import type { ResolvedTypeNodeType } from '../../types/ResolvedTypeNodeType.js';
+import type { OptionalAnnotatedEdgeType } from '../../types/OptionalAnnotatedEdgeType.js';
+import type { OptionalLiftedObjectType } from '../../types/OptionalLiftedObjectType.js';
+import type { FindPropertyQuadsArgsInterface } from '../../interfaces/FindPropertyQuadsArgs.js';
+import type { LiftContextInterface } from '../../interfaces/LiftContext.js';
+import type { LiftSubjectArgsInterface } from '../../interfaces/LiftSubjectArgs.js';
+import type { LiftSingleValueArgsInterface } from '../../interfaces/LiftSingleValueArgs.js';
+import type { LiftAnnotatedEdgeArgsInterface } from '../../interfaces/LiftAnnotatedEdgeArgs.js';
+import type { LiftPropertyValueArgsInterface } from '../../interfaces/LiftPropertyValueArgs.js';
+import type { LiftMatchingQuadsArgsInterface } from '../../interfaces/LiftMatchingQuadsArgs.js';
+import type { LiftImplArgsInterface } from '../../interfaces/LiftImplArgs.js';
 
 import { RDF } from '../../constants/IRI.js';
 
@@ -36,43 +48,6 @@ import { decodeLiteral } from './Terms.js';
 // ---------------------------------------------------------------------------
 // Lift internals
 // ---------------------------------------------------------------------------
-
-/**
- * Index of annotation quads (RDF 1.2 triple-term subjects), keyed by the
- * quoted inner triple `s p o`. Each entry holds the annotation quads
- * whose subject is that triple term.
- */
-type TripleTermIndexType = Map<string, QuadInterface[]>;
-
-/** Map from predicate IRI to matching quads — built when the subject has many properties. */
-type PredicateIndexType = Map<string, QuadInterface[]>;
-
-/** Arguments for finding quads matching a schema property predicate. */
-interface FindPropertyQuadsArgsInterface {
-  readonly 'index': PredicateIndexType | undefined;
-  readonly 'predicateIri': string;
-  readonly 'propName': string;
-  readonly 'subjectQuads': QuadInterface[];
-}
-
-/** Lifted JS object carrying the reconstructed property values. */
-type LiftedObjectType = Record<string, unknown>;
-
-/** RDF type IRI string, or undefined when the subject has no rdf:type triple. */
-type SubjectTypeType = string | undefined;
-
-/** Map from property name to effective lift property (graph+node). */
-type EffectivePropertyMapType = Map<string, EffectiveLiftPropertyType>;
-
-/** A type IRI resolved to its graph and node, or undefined when unknown. */
-type ResolvedTypeNodeType = undefined | { 'graph': SchemaGraphInterface;
-  'node': SchemaGraphNodeInterface };
-
-/** Optional annotated-edge structure for a property that may or may not be annotated. */
-type OptionalAnnotatedEdgeType = AnnotatedEdgeStructure | undefined;
-
-/** Optional lifted JS object — undefined when a quad carries no matching base triple. */
-type OptionalLiftedObjectType = LiftedObjectType | undefined;
 
 const TRIPLE_KEY_SEP = ' ';
 
@@ -237,7 +212,7 @@ function resolveNodeForType(
  */
 function isStructurallyCompatibleWithProps(
   candidateId: string,
-  targetProps: Map<string, EffectiveLiftPropertyType>,
+  targetProps: Map<string, ResolvedRefInterface>,
   registry: SchemaRegistryInterface
 ): boolean {
   const candidateGraph = registry.graph(candidateId);
@@ -275,7 +250,7 @@ function isStructurallyCompatibleWithProps(
 // ---------------------------------------------------------------------------
 const effectivePropertiesCache = new WeakMap<
   SchemaGraphNodeInterface,
-  Map<string, EffectiveLiftPropertyType>
+  Map<string, ResolvedRefInterface>
 >();
 
 const PREDICATE_INDEX_THRESHOLD = 3;
@@ -283,32 +258,6 @@ const PREDICATE_INDEX_THRESHOLD = 3;
 // ---------------------------------------------------------------------------
 // Lift context — shared parameters for liftSubject / liftSingleValue
 // ---------------------------------------------------------------------------
-
-/** Shared lift execution context — avoids passing 5–9 args through recursive calls. */
-interface LiftContextInterface {
-  readonly 'allGroups': SubjectGroupType;
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'registry': SchemaRegistryInterface;
-  readonly 'tripleTermIndex': TripleTermIndexType;
-}
-
-/** Arguments for lifting a single subject's quads to a typed JS object. */
-interface LiftSubjectArgsInterface {
-  readonly 'classId': string;
-  readonly 'ctx': LiftContextInterface;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'node': SchemaGraphNodeInterface;
-  readonly 'subjectQuads': QuadInterface[];
-}
-
-/** Arguments for lifting a single quad object value to a typed JS value. */
-interface LiftSingleValueArgsInterface {
-  readonly 'ctx': LiftContextInterface;
-  readonly 'obj': QuadObjectType;
-  readonly 'parentGraph': SchemaGraphInterface;
-  readonly 'targetNode': SchemaGraphNodeInterface;
-}
 
 function buildPredicateIndex(subjectQuads: QuadInterface[]): PredicateIndexType {
   const index: PredicateIndexType = new Map();
@@ -435,17 +384,6 @@ function findAnnotatedEdgeStructure(
  * quads (triple-term subjects) are grouped in `tripleTermIndex` by the quoted
  * inner triple. Returns undefined when no base triple is present.
  */
-/** Arguments for lifting an annotated edge back to its JS representation. */
-interface LiftAnnotatedEdgeArgsInterface {
-  readonly 'classId': string;
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'edge': AnnotatedEdgeStructure;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'subjectIri': string;
-  readonly 'subjectQuads': QuadInterface[];
-  readonly 'tripleTermIndex': TripleTermIndexType;
-}
-
 function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsInterface): OptionalLiftedObjectType {
   const {
     classId, curie, edge, predicateResolver, subjectIri, subjectQuads, tripleTermIndex
@@ -485,7 +423,7 @@ function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsInterface): OptionalLifted
         'propertyName': annotation.propertyName,
         'propertySchema': annotation.propertySchema
       });
-    const annotationPredicate = expandPredicateCurie(rawPredicate, curie);
+    const annotationPredicate = curie === undefined ? rawPredicate : curie.expandIfNeeded(rawPredicate);
     const match = annotationQuads.find((quad: QuadInterface): boolean => {
       return quad.predicate.value === annotationPredicate;
     });
@@ -509,11 +447,6 @@ function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsInterface): OptionalLifted
     annotations,
     'target': targetIri
   };
-}
-
-interface EffectiveLiftPropertyType {
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'node': SchemaGraphNodeInterface;
 }
 
 /**
@@ -615,48 +548,6 @@ function collectEffectiveLiftProperties(
   return result;
 }
 
-function expandPredicateCurie(predicateIri: string, curie: CurieInterface | undefined): string {
-  if (curie === undefined) {
-    return predicateIri;
-  }
-  // Pass through full IRIs and blank nodes unchanged; expand only compact CURIEs.
-  if (
-    predicateIri.startsWith('http://')
-    || predicateIri.startsWith('https://')
-    || predicateIri.startsWith('urn:')
-    || predicateIri.startsWith('_:')
-  ) {
-    return predicateIri;
-  }
-
-  try {
-    return curie.expand(predicateIri);
-  } catch {
-    return predicateIri;
-  }
-}
-
-/** Arguments for lifting a single property's matching quads. */
-interface LiftPropertyValueArgsInterface {
-  readonly 'classId': string;
-  readonly 'ctx': LiftContextInterface;
-  readonly 'index': PredicateIndexType | undefined;
-  readonly 'propEntry': EffectiveLiftPropertyType;
-  readonly 'propName': string;
-  readonly 'subjectIri': string;
-  readonly 'subjectQuads': QuadInterface[];
-}
-
-/** Arguments for lifting an array of matching quads for one property. */
-interface LiftMatchingQuadsArgsInterface {
-  readonly 'ctx': LiftContextInterface;
-  readonly 'isArray': boolean;
-  readonly 'matching': QuadInterface[];
-  readonly 'nestedNode': SchemaGraphNodeInterface;
-  readonly 'propGraph': SchemaGraphInterface;
-  readonly 'resolvedNode': SchemaGraphNodeInterface;
-}
-
 function liftPropertyValue(pvArgs: LiftPropertyValueArgsInterface): unknown {
   const {
     classId, ctx, index, propEntry, propName, subjectIri, subjectQuads
@@ -686,7 +577,7 @@ function liftPropertyValue(pvArgs: LiftPropertyValueArgsInterface): unknown {
     });
   // Expand CURIE predicates (e.g. 'bk:title' → full IRI) so they match the
   // full-IRI predicates emitted by toQuads/QuadFactory.
-  const predicateIri = expandPredicateCurie(rawPredicateIri, ctx.curie);
+  const predicateIri = ctx.curie === undefined ? rawPredicateIri : ctx.curie.expandIfNeeded(rawPredicateIri);
   const matching = findPropertyQuads({
     index,
     predicateIri,
@@ -848,13 +739,6 @@ function liftSingleValue(args: LiftSingleValueArgsInterface): unknown {
  * @param registry - Schema registry for graph/schema lookup.
  * @returns Array of reconstructed objects (unvalidated — caller should `instantiate()` for full validation).
  */
-/** Internal args for liftInstancesImpl — bundles registry + LiftOptionsInterface. */
-interface LiftImplArgsInterface {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'registry': SchemaRegistryInterface;
-}
-
 function liftInstancesImpl(
   schemaId: string,
   quads: QuadInterface[],

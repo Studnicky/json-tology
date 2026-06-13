@@ -56,6 +56,12 @@ import {
 import type { SchemaCompilerCheckExecutionContextInterface } from '../../interfaces/SchemaCompilerCheckExecutionContext.js';
 import type { SchemaCompilerGraphContextInterface } from '../../interfaces/SchemaCompilerGraphContext.js';
 import type { SchemaCompilerValidatePlanContextInterface } from '../../interfaces/SchemaCompilerValidatePlanContext.js';
+import type { ArrayValidationOptionsType } from '../../interfaces/ArrayValidationOptionsType.js';
+import type { DepSchemaEntryType } from '../../interfaces/DepSchemaEntryType.js';
+import type { ExtensionEntryType } from '../../interfaces/ExtensionEntryType.js';
+import type { NodeCheckBuildContextType } from '../../interfaces/NodeCheckBuildContextType.js';
+import type { ObjectValidationOptionsType } from '../../interfaces/ObjectValidationOptionsType.js';
+import type { ValidationRunOptionsType } from '../../interfaces/ValidationRunOptionsType.js';
 
 // ---------------------------------------------------------------------------
 // Local constants
@@ -63,70 +69,6 @@ import type { SchemaCompilerValidatePlanContextInterface } from '../../interface
 
 /** Maximum allowable `oneOf` branch count before early-exit is applied. */
 const ONEOF_EARLY_EXIT_THRESHOLD = 1;
-
-// ---------------------------------------------------------------------------
-// Private helper types
-// ---------------------------------------------------------------------------
-
-/** A typed entry used in the dependent-schema check list. */
-interface DepSchemaEntryType {
-  'check': CheckFnType;
-  'trigger': string;
-}
-
-/** A typed entry used in the extension-keyword check list. */
-interface ExtensionEntryType {
-  'allowedTypes': string[] | undefined;
-  'keyword': string;
-  'schemaValue': unknown;
-  'validate': KeywordDefinitionInterface['validate'];
-}
-
-/** Bundled execution flags passed through validation helper methods. */
-interface ValidationRunOptionsType {
-  'applyDefaults': boolean;
-  'collectErrors': boolean;
-  'doCoerce': boolean;
-  'stripUnknown': boolean;
-}
-
-/** Bundled graph-traversal context for node-check builder helpers. */
-interface NodeCheckBuildContextType {
-  'context': SchemaCompilerCheckExecutionContextInterface;
-  'formatRegistry': FormatRegistryInterface;
-  'graph': SchemaGraphInterface;
-  'lookupSchema': ((id: string) => Record<string, unknown> | undefined) | undefined;
-}
-
-/** Options passed to the object-fields validation helper. */
-interface ObjectValidationOptionsType {
-  'additionalIsFalse': boolean;
-  'additionalValidator': undefined | ValidateWithErrorsFnType;
-  'allowedKeys': Set<string> | undefined;
-  'allowedKeysForStrip': Set<string> | undefined;
-  'jtExtra': 'allow' | 'forbid' | 'ignore' | undefined;
-  'maxProperties': number | undefined;
-  'minProperties': number | undefined;
-  'patternPropValidators': Array<{ 'regex': RegExp;
-    'validator': ValidateWithErrorsFnType; }> | undefined;
-  'propertyAliases': Map<string, string>;
-  'propertyDefaults': Map<string, { 'defaultValue': unknown;
-    'hasDefault': boolean; }>;
-  'propValidators': Map<string, ValidateWithErrorsFnType>;
-  'required': string[] | undefined;
-}
-
-/** Options passed to the array-fields validation helper. */
-interface ArrayValidationOptionsType {
-  'containsCheck': CheckFnType | undefined;
-  'itemValidator': undefined | ValidateWithErrorsFnType;
-  'maxContains': number | undefined;
-  'maxItems': number | undefined;
-  'minContains': number | undefined;
-  'minItems': number | undefined;
-  'prefixValidators': undefined | ValidateWithErrorsFnType[];
-  'uniqueItems': boolean;
-}
 
 // ---------------------------------------------------------------------------
 // SchemaCompiler

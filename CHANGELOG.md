@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Compile-time `$ref` resolution is now uniform and graph-native, and the inline
+type surface has been consolidated into a canonical taxonomy.
+
+### Added
+
+- **Graph-native `$ref` resolution.** A `$ref` to a resource embedded under the
+  schema's own `$defs` (a bundled compound document) resolves standalone, with no
+  references map.
+- **Global references registry.** A consumer-augmentable
+  `JsonTologyReferencesInterface` is the default references map for `InferType`,
+  `CanonicalShapeType`, `MaterializedSchemaType`, `ParseOutputType`, and
+  `Transform.create`. After one `declare module 'json-tology/types'`
+  augmentation, standalone types resolve cross-schema `$ref`s with no per-call
+  map.
+- **Registry-derived type helpers.** `RegistryReferencesType`,
+  `RegisteredCanonicalType`, `RegisteredMaterializedType`, and
+  `RegisteredOutputType` read a registered schema's resolved type straight off a
+  `JsonTology` instance type — no hand-rolled `SchemaReferencesMapType`.
+- Schema-valued `additionalProperties` on an object without declared
+  `properties` now types the index signature (resolving `$ref` values) instead
+  of collapsing to `Record<string, unknown>`.
+
+### Changed
+
+- **BREAKING (type-level) — uniform `$ref` resolution.** An unresolvable `$ref`
+  now resolves to a `RefNotFoundInterface` / `AnchorNotFoundInterface` brand
+  rather than silently widening to `unknown`. This applies uniformly to bare
+  absolute IRIs, fragment refs, and missing local `$defs` keys, named anchors,
+  and JSON pointers. Consumers that relied on the silent `unknown` fallback will
+  see the brand instead; thread references (global augmentation, a registry
+  instance, or embedded `$defs`) to resolve, or handle the brand.
+
+### Internal
+
+- Deduplicated logic into canonical `noun.verb()` class methods
+  (`SchemaIri.parseRef`, `Curie.expandIfNeeded`/`compact`,
+  `QuadFactory.indexBySubject`, `Frozen.deepFreeze`); centralized predicate-IRI
+  constants into `src/constants`; extracted all inline interfaces and type
+  aliases into `src/interfaces` and `src/types`.
+
 ## [0.21.0] - 2026-06-13
 
 Transforms are redefined as **normalize transforms**. `decode` turns a raw wire

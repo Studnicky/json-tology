@@ -9,6 +9,7 @@ import type { FormatRegistryInterface } from './FormatRegistry.js';
 import type { SchemaCompilerGraphContextInterface } from './SchemaCompilerGraphContext.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type { LookupSchemaFnType } from '../types/LookupSchema.js';
+import type { SchemaGraphSemanticsInterface } from './SchemaGraph.js';
 
 export interface GraphCompileOptionsInterface {
   /** The compiler context providing node-check builder methods. */
@@ -19,4 +20,17 @@ export interface GraphCompileOptionsInterface {
   readonly 'graph': SchemaGraphInterface;
   /** Optional cross-schema lookup by `$id`. */
   readonly 'lookupSchema'?: LookupSchemaFnType;
+}
+
+export interface GraphCompileWithSemanticsInterface {
+  /** The compiler context providing node-check builder methods. */
+  readonly 'context': SchemaCompilerGraphContextInterface;
+  /** The format validator registry. */
+  readonly 'formatRegistry': FormatRegistryInterface;
+  /** The schema graph being compiled. */
+  readonly 'graph': SchemaGraphInterface;
+  /** Optional cross-schema lookup by `$id`. */
+  readonly 'lookupSchema': LookupSchemaFnType | undefined;
+  /** The schema graph semantics used during compilation. */
+  readonly 'sem': SchemaGraphSemanticsInterface;
 }

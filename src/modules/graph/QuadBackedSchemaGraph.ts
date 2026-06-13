@@ -44,7 +44,6 @@ import type { PrefixMap } from '../../interfaces/OwlImport.js';
 import type {
   BuildRelationsOptionsInterface,
   CollectedListType,
-  ExpansionMapType,
   LiteralTagsType,
   NodeEntriesType,
   NodeMapType,
@@ -57,13 +56,21 @@ import type {
   SubjectIndexType,
   SubjectRelationsType
 } from '../../types/QuadBackedSchemaGraph.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
 import { GraphError } from '../../errors/GraphError.js';
 import {
   OWL, RDF, RDFS
 } from '../../constants/IRI.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
+import {
+  OWL_NODE_TYPE_IRIS,
+  OWL_RESTRICTION_CONSTRAINT_IRIS,
+  RDF_TYPE_PREDICATES
+} from '../../constants/ONTOLOGY_PREDICATES.js';
+import { Curie } from '../rdf/Curie.js';
 import { decodeLiteral } from '../rdf/Terms.js';
 import { Lists } from '../rdf/Lists.js';
+import { QuadFactory } from '../rdf/QuadFactory.js';
 
 // ---------------------------------------------------------------------------
 // OWL term IRIs (full form) — used in normaliseIri expansion
@@ -73,106 +80,7 @@ const OWL_NS = 'http://www.w3.org/2002/07/owl#';
 const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const RDFS_NS = 'http://www.w3.org/2000/01/rdf-schema#';
 
-/** OWL type IRIs that introduce a graph node. Full IRI and prefixed forms.
- *
- * Includes OWL 2 property-characteristic classes (FunctionalProperty,
- * TransitiveProperty, etc.) so that a property declared solely via a
- * characteristic axiom (`<P> rdf:type owl:FunctionalProperty`) still becomes a
- * node in the inverted graph — otherwise the characteristic rdf:type relation
- * is dropped and the Characteristics dispatcher cannot see it. */
-const NODE_TYPES: ReadonlySet<string> = new Set([
-  `${OWL_NS}AsymmetricProperty`,
-  `${OWL_NS}Class`,
-  `${OWL_NS}DatatypeProperty`,
-  `${OWL_NS}FunctionalProperty`,
-  `${OWL_NS}InverseFunctionalProperty`,
-  `${OWL_NS}IrreflexiveProperty`,
-  `${OWL_NS}NamedIndividual`,
-  `${OWL_NS}ObjectProperty`,
-  `${OWL_NS}ReflexiveProperty`,
-  `${OWL_NS}Restriction`,
-  `${OWL_NS}SymmetricProperty`,
-  `${OWL_NS}TransitiveProperty`,
-  `${RDF_NS}Property`,
-  `${RDFS_NS}Class`,
-  `${RDFS_NS}Datatype`,
-  OWL.AsymmetricProperty,
-  OWL.Class,
-  OWL.DatatypeProperty,
-  OWL.FunctionalProperty,
-  OWL.InverseFunctionalProperty,
-  OWL.IrreflexiveProperty,
-  OWL.ObjectProperty,
-  OWL.ReflexiveProperty,
-  OWL.Restriction,
-  OWL.SymmetricProperty,
-  OWL.TransitiveProperty,
-  'owl:AsymmetricProperty',
-  'owl:FunctionalProperty',
-  'owl:InverseFunctionalProperty',
-  'owl:IrreflexiveProperty',
-  'owl:NamedIndividual',
-  'owl:ReflexiveProperty',
-  'owl:SymmetricProperty',
-  'owl:TransitiveProperty',
-  'rdf:Property',
-  'rdfs:Class',
-  'rdfs:Datatype'
-]);
-
-/** rdf:type predicate — full IRI and prefixed form. */
-const TYPE_PREDICATES: ReadonlySet<string> = new Set([
-  `${RDF_NS}type`,
-  RDF.type
-]);
-
-// ---------------------------------------------------------------------------
-// Normalise CURIE-prefixed IRI to its canonical (prefixed) form.
-// Handles both full IRI input and already-prefixed input.
-// ---------------------------------------------------------------------------
-
-function buildExpansionMap(prefixes: PrefixMap): ExpansionMapType {
-  const map: ExpansionMapType = new Map<string, string>();
-
-  for (const [
-    prefix,
-    ns
-  ] of Object.entries(prefixes)) {
-    map.set(ns, `${prefix}:`);
-  }
-
-  return map;
-}
-
-function compactIri(iri: string, expansionMap: ExpansionMapType): string {
-  for (const [
-    ns,
-    prefixColon
-  ] of expansionMap) {
-    if (iri.startsWith(ns)) {
-      return `${prefixColon}${iri.slice(ns.length)}`;
-    }
-  }
-
-  return iri;
-}
-
-function buildSubjectIndex(quads: readonly QuadInterface[]): SubjectIndexType {
-  const index: SubjectIndexType = new Map();
-
-  for (const quad of quads) {
-    const subjectIri = quad.subject.value;
-    let list = index.get(subjectIri);
-
-    if (list === undefined) {
-      list = [];
-      index.set(subjectIri, list);
-    }
-    list.push(quad);
-  }
-
-  return index;
-}
+// OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
 
 function buildPredicateIndex(subjectIndex: SubjectIndexType): PredicateIndexType {
   const index: PredicateIndexType = new Map();
@@ -300,7 +208,7 @@ const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
 function buildNodeMap(
   subjectIndex: SubjectIndexType,
   predicateIndex: PredicateIndexType,
-  expansionMap: ExpansionMapType
+  curie: CurieInterface
 ): NodeMapType {
   const nodeMap: NodeMapType = new Map();
 
@@ -312,7 +220,7 @@ function buildNodeMap(
     const typeQuads = predicateMap.get(`${RDF_NS}type`) ?? predicateMap.get(RDF.type) ?? [];
     const hasOWLType = typeQuads.some((typeQuad: QuadInterface): boolean => {
       return typeQuad.object.termType === 'NamedNode'
-        && (NODE_TYPES.has(typeQuad.object.value) || NODE_TYPES.has(compactIri(typeQuad.object.value, expansionMap)));
+        && (OWL_NODE_TYPE_IRIS.has(typeQuad.object.value) || OWL_NODE_TYPE_IRIS.has(curie.compact(typeQuad.object.value)));
     });
 
     if (!hasOWLType) {
@@ -342,9 +250,9 @@ function buildNodeMap(
 // Build SchemaGraphRelationInterface[] from indexed quads
 // ---------------------------------------------------------------------------
 
-function objectIriValue(quad: QuadInterface, expansionMap: Map<string, string>): string {
+function objectIriValue(quad: QuadInterface, curie: CurieInterface): string {
   if (quad.object.termType === 'NamedNode') {
-    return compactIri(quad.object.value, expansionMap);
+    return curie.compact(quad.object.value);
   }
   if (quad.object.termType === 'BlankNode') {
     return quad.object.value;
@@ -420,7 +328,7 @@ function nodeOrStub(
 
 function buildRelations(opts: BuildRelationsOptionsInterface): SchemaGraphRelationInterface[] {
   const {
-    expansionMap,
+    curie,
     nodeMap,
     predicateIndex,
     stubMap
@@ -438,15 +346,15 @@ function buildRelations(opts: BuildRelationsOptionsInterface): SchemaGraphRelati
       rawPredicate,
       quads
     ] of predicateMap) {
-      const predicate = compactIri(rawPredicate, expansionMap);
+      const predicate = curie.compact(rawPredicate);
 
       // rdf:type → collect as types on relations (used by ProjectionIndex)
-      if (TYPE_PREDICATES.has(rawPredicate)) {
+      if (RDF_TYPE_PREDICATES.has(rawPredicate)) {
         for (const quad of quads) {
           if (quad.object.termType !== 'NamedNode') {
             continue;
           }
-          const typeIri = compactIri(quad.object.value, expansionMap);
+          const typeIri = curie.compact(quad.object.value);
 
           relations.push({
             'predicate': RDF.type,
@@ -471,7 +379,7 @@ function buildRelations(opts: BuildRelationsOptionsInterface): SchemaGraphRelati
             const restriction = resolveRestrictionBnode({
               bnodeId,
               'bnodePredicateMap': bnodePredicateMap,
-              expansionMap
+              curie
             });
 
             if (restriction === undefined) {
@@ -492,7 +400,7 @@ function buildRelations(opts: BuildRelationsOptionsInterface): SchemaGraphRelati
               });
             }
           } else if (quad.object.termType === 'NamedNode') {
-            const targetIri = compactIri(quad.object.value, expansionMap);
+            const targetIri = curie.compact(quad.object.value);
             const targetNode = nodeMap.get(quad.object.value) ?? nodeMap.get(targetIri);
 
             relations.push({
@@ -508,7 +416,7 @@ function buildRelations(opts: BuildRelationsOptionsInterface): SchemaGraphRelati
 
       // All other predicates — emit a relation per quad with literal-tag preservation.
       for (const quad of quads) {
-        const targetValue = objectIriValue(quad, expansionMap);
+        const targetValue = objectIriValue(quad, curie);
         const targetNode = nodeMap.get(targetValue);
         const tags = literalTagsForQuad(quad);
 
@@ -530,30 +438,13 @@ function buildRelations(opts: BuildRelationsOptionsInterface): SchemaGraphRelati
 // ---------------------------------------------------------------------------
 
 
-const RESTRICTION_CONSTRAINTS: ReadonlySet<string> = new Set([
-  `${OWL_NS}allValuesFrom`,
-  `${OWL_NS}cardinality`,
-  `${OWL_NS}hasValue`,
-  `${OWL_NS}maxCardinality`,
-  `${OWL_NS}maxQualifiedCardinality`,
-  `${OWL_NS}minCardinality`,
-  `${OWL_NS}minQualifiedCardinality`,
-  `${OWL_NS}someValuesFrom`,
-  OWL.allValuesFrom,
-  OWL.cardinality,
-  OWL.hasValue,
-  OWL.maxCardinality,
-  OWL.maxQualifiedCardinality,
-  OWL.minCardinality,
-  OWL.minQualifiedCardinality,
-  OWL.someValuesFrom
-]);
+// OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
 
 function resolveRestrictionBnode(opts: ResolveRestrictionOptionsInterface): OptionalRestrictionType {
   const {
     bnodeId,
     bnodePredicateMap,
-    expansionMap
+    curie
   } = opts;
 
   if (bnodePredicateMap === undefined) {
@@ -577,17 +468,14 @@ function resolveRestrictionBnode(opts: ResolveRestrictionOptionsInterface): Opti
   if (onPropertyQuads.length === 0) {
     return undefined;
   }
-  const onPropertyIri = compactIri(
-    onPropertyQuads[0].object.termType === 'NamedNode' ? onPropertyQuads[0].object.value : '',
-    expansionMap
-  );
+  const onPropertyIri = curie.compact(onPropertyQuads[0].object.termType === 'NamedNode' ? onPropertyQuads[0].object.value : '');
 
   // Find the constraint predicate
   for (const [
     rawPred,
     constraintQuads
   ] of bnodePredicateMap) {
-    if (!RESTRICTION_CONSTRAINTS.has(rawPred)) {
+    if (!OWL_RESTRICTION_CONSTRAINT_IRIS.has(rawPred)) {
       continue;
     }
     // Keep constraint as full IRI — downstream importDispatch handlers compare
@@ -680,16 +568,16 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
       ...STANDARD_PREFIXES,
       ...options?.prefixes
     };
-    const expansionMap = buildExpansionMap(mergedPrefixes);
-    const subjectIndex = buildSubjectIndex(quads);
+    const curie = new Curie(mergedPrefixes);
+    const subjectIndex = QuadFactory.indexBySubject(quads);
     const predicateIndex = buildPredicateIndex(subjectIndex);
     const stubMap = new Map<string, SchemaGraphNodeInterface>();
 
     this.quads = quads;
-    this.nodeMap = buildNodeMap(subjectIndex, predicateIndex, expansionMap);
+    this.nodeMap = buildNodeMap(subjectIndex, predicateIndex, curie);
     this.nodeList = [...this.nodeMap.values()];
     this.relationList = buildRelations({
-      'expansionMap': expansionMap,
+      curie,
       'nodeMap': this.nodeMap,
       'predicateIndex': predicateIndex,
       'stubMap': stubMap,

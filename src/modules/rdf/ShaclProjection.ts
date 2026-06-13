@@ -16,6 +16,15 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
+import type { ProjectionEmitContextInterface } from '../../interfaces/ProjectionEmitContext.js';
+import type { EmitNodeShapeArgsInterface } from '../../interfaces/EmitNodeShapeArgs.js';
+import type { EmitPropertyShapeArgsInterface } from '../../interfaces/EmitPropertyShapeArgs.js';
+import type { EmitNodeShapePropertiesArgsInterface } from '../../interfaces/EmitNodeShapePropertiesArgs.js';
+import type { EmitNodeShapeCompositionArgsInterface } from '../../interfaces/EmitNodeShapeCompositionArgs.js';
+import type { EmitPropertyShapeConstraintsArgsInterface } from '../../interfaces/EmitPropertyShapeConstraintsArgs.js';
+import type { EmitCountConstraintArgsInterface } from '../../interfaces/EmitCountConstraintArgs.js';
+import type { EmitRangeConstraintArgsInterface } from '../../interfaces/EmitRangeConstraintArgs.js';
+import type { EmitContainsQualifiedCardinalityArgsInterface } from '../../interfaces/EmitContainsQualifiedCardinalityArgs.js';
 import { IdentifierIssuer } from './IdentifierIssuer.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
@@ -270,7 +279,7 @@ class ShaclVocabProjection extends VocabProjection {
       }
 
       const psBnode = QuadFactory.nextBnode(issuer);
-      const depCtx: EmitContextInterface = {
+      const depCtx: ProjectionEmitContextInterface = {
         curie,
         'graph': this.graph,
         'index': this.index,
@@ -414,7 +423,7 @@ export const ShaclProjection = {
     const propertyIndex = buildPropertyIndex(index);
 
     const shaclVocab = new ShaclVocabProjection(index, graph, predicateResolver);
-    const ctx: EmitContextInterface = {
+    const ctx: ProjectionEmitContextInterface = {
       curie,
       graph,
       index,
@@ -448,36 +457,7 @@ export const ShaclProjection = {
   }
 } as const;
 
-/** Shared emit context for node/property shape emission. */
-interface EmitContextInterface {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'index': Map<string, RelationIndexInterface>;
-  readonly 'issuer': IdentifierIssuerInterface | undefined;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'quads': QuadInterface[];
-}
-
-/** Arguments for emitNodeShape. */
-interface EmitNodeShapeArgsInterface {
-  readonly 'ctx': EmitContextInterface;
-  readonly 'entry': RelationIndexInterface;
-  readonly 'propertyIndex': Map<string, string[]>;
-  readonly 'shaclVocab': ShaclVocabProjection;
-  readonly 'subject': string;
-}
-
-/** Arguments for emitPropertyShape. */
-interface EmitPropertyShapeArgsInterface {
-  readonly 'bnodeId': string;
-  readonly 'classId': string;
-  readonly 'ctx': EmitContextInterface;
-  readonly 'entry': RelationIndexInterface;
-  readonly 'overridePathClassId': string | undefined;
-  readonly 'subject': string;
-}
-
-function emitNodeShapeMetadata(subject: string, entry: RelationIndexInterface, ctx: EmitContextInterface): void {
+function emitNodeShapeMetadata(subject: string, entry: RelationIndexInterface, ctx: ProjectionEmitContextInterface): void {
   const {
     curie, quads
   } = ctx;
@@ -497,14 +477,7 @@ function emitNodeShapeMetadata(subject: string, entry: RelationIndexInterface, c
   QuadFactory.emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, { curie });
 }
 
-interface EmitNodeShapePropertiesArgs {
-  readonly 'ctx': EmitContextInterface;
-  readonly 'entry': RelationIndexInterface;
-  readonly 'propertyIndex': Map<string, string[]>;
-  readonly 'subject': string;
-}
-
-function emitNodeShapeProperties(args: EmitNodeShapePropertiesArgs): void {
+function emitNodeShapeProperties(args: EmitNodeShapePropertiesArgsInterface): void {
   const {
     ctx, entry, propertyIndex, subject
   } = args;
@@ -540,14 +513,7 @@ function emitNodeShapeProperties(args: EmitNodeShapePropertiesArgs): void {
   emitContainsPropertyShape(subject, entry, ctx);
 }
 
-interface EmitNodeShapeCompositionArgs {
-  readonly 'ctx': EmitContextInterface;
-  readonly 'entry': RelationIndexInterface;
-  readonly 'shaclVocab': ShaclVocabProjection;
-  readonly 'subject': string;
-}
-
-function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgs): void {
+function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsInterface): void {
   const {
     ctx, entry, shaclVocab, subject
   } = args;
@@ -583,7 +549,7 @@ function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgs): void {
 function emitNodeShapeEquivalences(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: EmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, index, issuer, quads
@@ -650,31 +616,8 @@ function emitNodeShape(args: EmitNodeShapeArgsInterface): void {
   emitNodeShapeEquivalences(subject, entry, ctx);
 }
 
-interface EmitPropertyShapeConstraintsArgs {
-  readonly 'bnodeId': string;
-  readonly 'entry': RelationIndexInterface;
-  readonly 'opts': { 'curie': CurieInterface | undefined };
-  readonly 'quads': QuadInterface[];
-}
-
-interface EmitCountConstraintArgs {
-  readonly 'bnodeId': string;
-  readonly 'opts': { 'curie': CurieInterface | undefined };
-  readonly 'predicate': string;
-  readonly 'quads': QuadInterface[];
-  readonly 'rels': readonly SchemaGraphRelationInterface[];
-}
-
-interface EmitRangeConstraintArgs {
-  readonly 'bnodeId': string;
-  readonly 'datatypeRels': readonly SchemaGraphRelationInterface[];
-  readonly 'opts': { 'curie': CurieInterface | undefined };
-  readonly 'quads': QuadInterface[];
-  readonly 'rangeRels': readonly SchemaGraphRelationInterface[];
-}
-
 /** Emit a numeric count constraint (minCount or maxCount) if the relation list is non-empty. */
-function emitCountConstraint(args: EmitCountConstraintArgs): void {
+function emitCountConstraint(args: EmitCountConstraintArgsInterface): void {
   const {
     bnodeId, opts, predicate, quads, rels
   } = args;
@@ -688,7 +631,7 @@ function emitCountConstraint(args: EmitCountConstraintArgs): void {
 }
 
 /** Emit the sh:class or sh:node range constraint based on cardinality and datatype presence. */
-function emitRangeConstraint(args: EmitRangeConstraintArgs): void {
+function emitRangeConstraint(args: EmitRangeConstraintArgsInterface): void {
   const {
     bnodeId, datatypeRels, opts, quads, rangeRels
   } = args;
@@ -702,7 +645,7 @@ function emitRangeConstraint(args: EmitRangeConstraintArgs): void {
   quads.push(QuadFactory.quad(bnodeId, rangePredicate, rangeIri, opts));
 }
 
-function emitPropertyShapeTypeConstraints(args: EmitPropertyShapeConstraintsArgs): void {
+function emitPropertyShapeTypeConstraints(args: EmitPropertyShapeConstraintsArgsInterface): void {
   const {
     bnodeId, entry, opts, quads
   } = args;
@@ -738,7 +681,7 @@ function emitPropertyShapeTypeConstraints(args: EmitPropertyShapeConstraintsArgs
   });
 }
 
-function emitPropertyShapeValueConstraints(args: EmitPropertyShapeConstraintsArgs): void {
+function emitPropertyShapeValueConstraints(args: EmitPropertyShapeConstraintsArgsInterface): void {
   const {
     bnodeId, entry, opts, quads
   } = args;
@@ -818,14 +761,7 @@ function emitPropertyShape(args: EmitPropertyShapeArgsInterface): void {
   QuadFactory.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, opts);
 }
 
-interface EmitContainsQualifiedCardinalityArgs {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'entry': RelationIndexInterface;
-  readonly 'psBnode': string;
-  readonly 'quads': QuadInterface[];
-}
-
-function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinalityArgs): void {
+function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinalityArgsInterface): void {
   const {
     curie, entry, psBnode, quads
   } = args;
@@ -851,7 +787,7 @@ function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinality
 function emitContainsPropertyShape(
   subject: string,
   entry: RelationIndexInterface,
-  ctx: EmitContextInterface
+  ctx: ProjectionEmitContextInterface
 ): void {
   const {
     curie, issuer, quads

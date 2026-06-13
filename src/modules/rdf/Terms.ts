@@ -43,11 +43,15 @@ import type {
 } from '../../types/Quad.js';
 
 import { DECIMAL_RADIX } from '../../constants/FORMAT_VALIDATION.js';
-import { XSD } from '../../constants/IRI.js';
+import {
+  XSD, XSD_COMPACT_PREFIX
+} from '../../constants/IRI.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
+import {
+  DECIMAL_XSD_TYPE_NAMES, INTEGER_XSD_TYPE_NAMES
+} from '../../constants/XSD_MAPS.js';
 
 const XSD_IRI_PREFIX = STANDARD_PREFIXES.xsd;
-const XSD_COMPACT_PREFIX = 'xsd:';
 
 // ---------------------------------------------------------------------------
 // Equality helpers
@@ -325,27 +329,7 @@ function localXsdName(iri: string): string {
   return normalised.startsWith(XSD_COMPACT_PREFIX) ? normalised.slice(XSD_COMPACT_PREFIX.length) : normalised;
 }
 
-const INTEGER_XSD_NAMES: ReadonlySet<string> = new Set([
-  'byte',
-  'int',
-  'integer',
-  'long',
-  'negativeInteger',
-  'nonNegativeInteger',
-  'nonPositiveInteger',
-  'positiveInteger',
-  'short',
-  'unsignedByte',
-  'unsignedInt',
-  'unsignedLong',
-  'unsignedShort'
-]);
-
-const DECIMAL_XSD_NAMES: ReadonlySet<string> = new Set([
-  'decimal',
-  'double',
-  'float'
-]);
+// INTEGER_XSD_TYPE_NAMES and DECIMAL_XSD_TYPE_NAMES imported from XSD_MAPS
 
 /**
  * Decode an rdf/js Literal back to its typed JS value.
@@ -360,12 +344,12 @@ export function decodeLiteral(literal: LiteralTermType): unknown {
   if (dt === 'boolean') {
     return raw === 'true' || raw === '1';
   }
-  if (INTEGER_XSD_NAMES.has(dt)) {
+  if (INTEGER_XSD_TYPE_NAMES.has(dt)) {
     const num = Number.parseInt(raw, DECIMAL_RADIX);
 
     return Number.isFinite(num) ? num : raw;
   }
-  if (DECIMAL_XSD_NAMES.has(dt)) {
+  if (DECIMAL_XSD_TYPE_NAMES.has(dt)) {
     const num = Number.parseFloat(raw);
 
     return Number.isFinite(num) ? num : raw;

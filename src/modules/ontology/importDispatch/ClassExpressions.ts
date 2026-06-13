@@ -34,89 +34,26 @@ import type {
   SchemaGraphRelationInterface
 } from '../../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import type { ResolveItemOptions } from '../../../interfaces/ResolveItemOptions.js';
+import type { ResolveBnodeOptions } from '../../../interfaces/ResolveBnodeOptions.js';
+import type { ResolveListOptions } from '../../../interfaces/ResolveListOptions.js';
+import type { ClassExprContext } from '../../../interfaces/ClassExprContext.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
-
-// ---------------------------------------------------------------------------
-// OWL / RDF IRI constants — full IRIs for quad-level matching
-// ---------------------------------------------------------------------------
-
-const OWL_VOCAB = 'http://www.w3.org/2002/07/owl#';
-const RDF_VOCAB = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+import {
+  DISJOINT_UNION_OF_IRIS,
+  HAS_VALUE_IRIS,
+  INTERSECTION_OF_IRIS,
+  ON_PROPERTY_IRIS,
+  ONE_OF_IRIS,
+  RDF_TYPE_PREDICATES,
+  RESTRICTION_IRIS,
+  UNION_OF_IRIS
+} from '../../../constants/ONTOLOGY_PREDICATES.js';
 
 /** Maximum recursion depth for blank-node class expression resolution. */
 const MAX_BNODE_DEPTH = 20;
-
-/** Predicate values emitted by JsonLdToQuads (full IRI) and QuadFactory (prefixed). */
-const INTERSECTION_OF_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}intersectionOf`,
-  'owl:intersectionOf'
-]);
-const UNION_OF_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}unionOf`,
-  'owl:unionOf'
-]);
-const DISJOINT_UNION_OF_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}disjointUnionOf`,
-  'owl:disjointUnionOf'
-]);
-const ONE_OF_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}oneOf`,
-  'owl:oneOf'
-]);
-const HAS_VALUE_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}hasValue`,
-  'owl:hasValue'
-]);
-const ON_PROPERTY_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}onProperty`,
-  'owl:onProperty'
-]);
-const TYPE_IRIS: ReadonlySet<string> = new Set([
-  `${RDF_VOCAB}type`,
-  'rdf:type'
-]);
-const RESTRICTION_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}Restriction`,
-  'owl:Restriction'
-]);
-
-// ---------------------------------------------------------------------------
-// Options interfaces
-// ---------------------------------------------------------------------------
-
-/** Options for resolving a list item into a JSON Schema fragment. */
-interface ResolveItemOptions {
-  'allClassIris': ReadonlySet<string>;
-  'depth': number;
-  'graph': SchemaGraphInterface;
-  'item': ListItemType;
-}
-
-/** Options for resolving a blank-node class expression. */
-interface ResolveBnodeOptions {
-  'allClassIris': ReadonlySet<string>;
-  'bnodeId': string;
-  'depth': number;
-  'graph': SchemaGraphInterface;
-}
-
-/** Options for walking an RDF list and resolving each member. */
-interface ResolveListOptions {
-  'allClassIris': ReadonlySet<string>;
-  'depth': number;
-  'graph': SchemaGraphInterface;
-  'listHead': string;
-}
-
-/** Shared context for per-subject class expression handlers. */
-interface ClassExprContext {
-  readonly 'allClassIris': ReadonlySet<string>;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'reportUnsupported': (axiomIri: string, subjectIri: string) => void;
-  readonly 'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
-}
 
 // ---------------------------------------------------------------------------
 // Graph-native helpers
@@ -158,7 +95,7 @@ function decodeListItemLiteral(item: ListItemType): unknown {
 
 /** Return true when the blank node is an owl:Restriction or has onProperty. */
 function isBnodeRestriction(bnodeId: string, graph: SchemaGraphInterface): boolean {
-  const typeRelations = relationsByPredicate(graph, bnodeId, TYPE_IRIS);
+  const typeRelations = relationsByPredicate(graph, bnodeId, RDF_TYPE_PREDICATES);
   const isRestrictionType = typeRelations.some((rel: SchemaGraphRelationInterface): boolean => {
     return rel.termType === 'NamedNode' && RESTRICTION_IRIS.has(targetValue(rel));
   });

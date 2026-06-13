@@ -30,90 +30,29 @@ import type {
   SchemaGraphRelationInterface
 } from '../../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import type { ExtractFacetOptions } from '../../../interfaces/ExtractFacetOptions.js';
+import type { ApplyRestrictionsOptions } from '../../../interfaces/ApplyRestrictionsOptions.js';
 import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { FACET_MAP } from '../../../constants/XSD_FACETS.js';
 import { XSD_TO_SCHEMA_TYPE } from '../../../constants/XSD_REVERSE_MAPS.js';
-
-// ---------------------------------------------------------------------------
-// OWL / RDF / XSD IRI constants — full and prefixed forms
-// ---------------------------------------------------------------------------
-
-const OWL_VOCAB = 'http://www.w3.org/2002/07/owl#';
-const RDF_VOCAB = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-const RDFS_VOCAB = 'http://www.w3.org/2000/01/rdf-schema#';
-
-/** Base for decimal fraction-digit multipleOf calculation (10^-n). */
-const DECIMAL_BASE = 10;
-
-const TYPE_PREDICATES: ReadonlySet<string> = new Set([
-  `${RDF_VOCAB}type`,
-  'rdf:type'
-]);
-
-const RDFS_DATATYPE_IRIS: ReadonlySet<string> = new Set([
-  `${RDFS_VOCAB}Datatype`,
-  'rdfs:Datatype'
-]);
-
-const OWL_ON_DATATYPE_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}onDatatype`,
-  'owl:onDatatype'
-]);
-
-const OWL_WITH_RESTRICTIONS_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}withRestrictions`,
-  'owl:withRestrictions'
-]);
-
-const OWL_EQUIVALENT_CLASS_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}equivalentClass`,
-  'owl:equivalentClass'
-]);
-
-const OWL_ONE_OF_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_VOCAB}oneOf`,
-  'owl:oneOf'
-]);
-
-const JT_VOCAB = 'https://json-tology.dev/vocab#';
-
-const JT_MULTIPLE_OF_IRIS: ReadonlySet<string> = new Set([
-  `${JT_VOCAB}multipleOf`,
-  'jt:multipleOf'
-]);
-
-const JT_FORMAT_IRIS: ReadonlySet<string> = new Set([
-  `${JT_VOCAB}format`,
-  'jt:format'
-]);
+import {
+  EQUIVALENT_CLASS_PREDICATES,
+  JT_FORMAT_IRIS,
+  JT_MULTIPLE_OF_IRIS,
+  ONE_OF_IRIS,
+  OWL_ON_DATATYPE_IRIS,
+  OWL_WITH_RESTRICTIONS_IRIS,
+  RDF_TYPE_PREDICATES,
+  RDFS_DATATYPE_IRIS
+} from '../../../constants/ONTOLOGY_PREDICATES.js';
+import { DECIMAL_RADIX } from '../../../constants/FORMAT_VALIDATION.js';
 
 // ---------------------------------------------------------------------------
 // XSD facet predicate → JSON Schema keyword mapping and XSD base type mapping
 // are imported from src/constants/XSD_FACETS.ts and src/constants/XSD_REVERSE_MAPS.ts.
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Options interfaces
-// ---------------------------------------------------------------------------
-
-/** Options for extracting a facet patch from one blank-node descriptor. */
-interface ExtractFacetOptions {
-  'bnodeId': string;
-  'graph': SchemaGraphInterface;
-  'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void;
-  'schemaType': 'boolean' | 'integer' | 'number' | 'string' | undefined;
-}
-
-/** Options for applying facet restrictions to the delta record. */
-interface ApplyRestrictionsOptions {
-  readonly 'delta': Record<string, unknown>;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void;
-  readonly 'schemaType': 'boolean' | 'integer' | 'number' | 'string' | undefined;
-  readonly 'subjectIri': string;
-}
 
 // ---------------------------------------------------------------------------
 // Graph-native helpers
@@ -242,7 +181,7 @@ function applyFractionDigits(fr: SchemaGraphRelationInterface, delta: Record<str
   const num = literalNumber(fr);
 
   if (num !== null && num >= 0) {
-    delta.multipleOf = Math.pow(DECIMAL_BASE, -num);
+    delta.multipleOf = Math.pow(DECIMAL_RADIX, -num);
   }
 }
 
@@ -414,7 +353,7 @@ function applyOneOfEnum(
   graph: SchemaGraphInterface,
   delta: Record<string, unknown>
 ): void {
-  const oneOfRelations = relationsByPredicate(graph, equivBnode, OWL_ONE_OF_IRIS);
+  const oneOfRelations = relationsByPredicate(graph, equivBnode, ONE_OF_IRIS);
 
   for (const oo of oneOfRelations) {
     const enumValues = extractEnumValues(targetValue(oo), graph);
@@ -441,7 +380,7 @@ function applyEquivClassEnum(
   graph: SchemaGraphInterface,
   delta: Record<string, unknown>
 ): void {
-  const equivClass = relationsByPredicate(graph, subjectIri, OWL_EQUIVALENT_CLASS_IRIS);
+  const equivClass = relationsByPredicate(graph, subjectIri, EQUIVALENT_CLASS_PREDICATES);
 
   for (const ec of equivClass) {
     if (ec.termType !== 'BlankNode') {
@@ -594,7 +533,7 @@ export function importDatatypes(_quads: QuadInterface[], ctx: OwlImportContext):
 
   for (const relation of graph.allRelations()) {
     if (
-      TYPE_PREDICATES.has(relation.predicate)
+      RDF_TYPE_PREDICATES.has(relation.predicate)
       && relation.termType === 'NamedNode'
       && RDFS_DATATYPE_IRIS.has(targetValue(relation))
       && !relation.source.id.startsWith('_:')
