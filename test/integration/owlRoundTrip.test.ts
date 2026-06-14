@@ -259,7 +259,7 @@ function structurallyEqual(
 // ---------------------------------------------------------------------------
 
 void describe('OWL round-trip', () => {
-  void it('fromTbox([]) returns a well-formed OwlImportResult', () => {
+  void it('fromTbox([]) returns a well-formed OwlImportResultType', () => {
     const result = JsonTology.fromTbox([]);
 
     assert.ok(Array.isArray(result.schemas), 'schemas must be an array');
@@ -370,7 +370,7 @@ void describe('OWL round-trip', () => {
 
     for (const schema of result.schemas) {
       if (typeof schema.$id === 'string') {
-        rtById.set(schema.$id, schema as Record<string, unknown>);
+        rtById.set(schema.$id, schema);
       }
     }
 

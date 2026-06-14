@@ -20,7 +20,7 @@
 
 import type { InferType } from '../../src/types/Schema.js';
 import type {
-  FormatBrandInterface
+  FormatBrandType
 } from '../../src/types/ConstraintBrands.js';
 import { Compose } from '../../src/modules/composition/Compose.js';
 
@@ -51,7 +51,7 @@ const BookSchema = {
 
 void BookSchema;
 
-// A branded datatype: string with a format → FormatBrandInterface<'…'>.
+// A branded datatype: string with a format → FormatBrandType<'…'>.
 const ReviewIdSchema = {
   '$id': 'urn:bookstore:ReviewId',
   'format': 'uuid',
@@ -119,7 +119,7 @@ type ReviewIdRange = Annotations['reviewIdRef'];
 type RatingRange = Annotations['ratingGiven'];
 
 // The reviewId range carries the format brand (string is branded).
-assert<AssertAssignable<ReviewIdRange, FormatBrandInterface<'uuid'>>>();
+assert<AssertAssignable<ReviewIdRange, FormatBrandType<'uuid'>>>();
 assert<AssertAssignable<ReviewIdRange, string>>();
 
 // The rating range resolves to a precise numeric datatype — NOT `unknown`.

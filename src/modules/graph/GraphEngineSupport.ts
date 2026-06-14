@@ -9,18 +9,10 @@ import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/DataTypes.js';
 
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
-import type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
+import type { RootDialectPlanType } from '../../types/RootDialectPlan.js';
 
 export const GraphEngineSupport = {
-  buildEmbeddedSchemaMap(rootSchema: JsonSchemaDocumentType): Map<string, Record<string, unknown>> {
-    const out = new Map<string, JsonSchemaDocumentType>();
-
-    GraphEngineSupport.collectEmbeddedSchemas(rootSchema, out, true);
-
-    return out as unknown as Map<string, Record<string, unknown>>;
-  },
-
-  buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanInterface {
+  buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanType {
     if (!isRecord(rootSchema)) {
       return { 'formatAssertions': true };
     }
@@ -41,7 +33,7 @@ export const GraphEngineSupport = {
         uri,
         enabled
       ] of Object.entries(rawVocabulary)) {
-        if (enabled === true && !SUPPORTED_VOCABULARIES.has(uri)) {
+        if (enabled && !SUPPORTED_VOCABULARIES.has(uri)) {
           throw new GraphError('VOCABULARY_UNSUPPORTED', `Unsupported required JSON Schema vocabulary: ${uri}`);
         }
       }
@@ -73,32 +65,6 @@ export const GraphEngineSupport = {
     }
 
     return structuredClone(value);
-  },
-
-  collectEmbeddedSchemas(
-    node: unknown,
-    out: Map<string, JsonSchemaDocumentType>,
-    isRoot: boolean
-  ): void {
-    if (Array.isArray(node)) {
-      for (const item of node) {
-        GraphEngineSupport.collectEmbeddedSchemas(item, out, false);
-      }
-
-      return;
-    }
-
-    if (!isRecord(node)) {
-      return;
-    }
-
-    if (!isRoot && typeof node.$id === 'string' && node.$id !== '') {
-      out.set(node.$id, node);
-    }
-
-    for (const value of Object.values(node)) {
-      GraphEngineSupport.collectEmbeddedSchemas(value, out, false);
-    }
   },
 
   extractNamedFragment(ref: string): string | undefined {

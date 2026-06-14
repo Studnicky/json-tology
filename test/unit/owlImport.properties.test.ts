@@ -17,8 +17,8 @@ import {
 import { importProperties } from '../../src/modules/ontology/importDispatch/Properties.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../src/interfaces/OwlImport.js';
+  OwlImportContextType, OwlImportFragmentType
+} from '../../src/types/OwlImport.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
@@ -38,7 +38,7 @@ const BASE_IRI = 'urn:example';
 function makeCtx(
   quads: QuadInterface[],
   extraClassIris: string[] = []
-): OwlImportContext {
+): OwlImportContextType {
   const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': BASE_IRI });
   const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{ 'axiomIri': string;
@@ -93,7 +93,7 @@ function makeCtx(
   };
 }
 
-function getProps(fragment: OwlImportFragment, classIri: string): Record<string, unknown> {
+function getProps(fragment: OwlImportFragmentType, classIri: string): Record<string, unknown> {
   const delta = fragment.schemaDeltas.get(classIri);
 
   return (delta?.properties ?? {});

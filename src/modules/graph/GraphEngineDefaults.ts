@@ -1,22 +1,22 @@
 import type {
-  SchemaGraphNodeInterface,
-  SchemaGraphSemanticsInterface
-} from '../../interfaces/SchemaGraph.js';
+  SchemaGraphNodeType,
+  SchemaGraphSemanticsType
+} from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
-import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
-import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
+import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
+import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContext.js';
 import { MAX_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
-import type { DefaultResolutionStateInterface } from '../../interfaces/DefaultResolutionState.js';
+import type { DefaultResolutionStateType } from '../../types/DefaultResolutionState.js';
 
-function propertiesFromSemantics(sem: SchemaGraphSemanticsInterface): ReadonlyMap<string, SchemaGraphNodeInterface> {
+function propertiesFromSemantics(sem: SchemaGraphSemanticsType): ReadonlyMap<string, SchemaGraphNodeType> {
   return sem.properties;
 }
 
 /** Build an implicit default from a node's property tree, if any properties yield values. */
 function buildImplicitObjectDefault(
-  state: DefaultResolutionStateInterface,
-  node: SchemaGraphNodeInterface,
+  state: DefaultResolutionStateType,
+  node: SchemaGraphNodeType,
   depth: number
 ): Record<string, unknown> | undefined {
   const sem = state.graph.semantics(node);
@@ -39,8 +39,8 @@ function buildImplicitObjectDefault(
 }
 
 function createImplicitDefaultValueInternal(
-  state: DefaultResolutionStateInterface,
-  node: SchemaGraphNodeInterface,
+  state: DefaultResolutionStateType,
+  node: SchemaGraphNodeType,
   depth: number
 ): unknown {
   if (depth > MAX_DEFAULT_DEPTH) {
@@ -120,8 +120,8 @@ function synthesizePrimitiveZeroValue(types: readonly string[]): unknown {
 
 /** Merge allOf member zero-values into a single object, or return null when no object members. */
 function synthesizeAllOfZeroValue(
-  state: DefaultResolutionStateInterface,
-  allOf: readonly SchemaGraphNodeInterface[],
+  state: DefaultResolutionStateType,
+  allOf: readonly SchemaGraphNodeType[],
   depth: number
 ): null | Record<string, unknown> {
   const merged: Record<string, unknown> = {};
@@ -146,8 +146,8 @@ function synthesizeAllOfZeroValue(
 }
 
 function synthesizeZeroValueInternal(
-  state: DefaultResolutionStateInterface,
-  node: SchemaGraphNodeInterface,
+  state: DefaultResolutionStateType,
+  node: SchemaGraphNodeType,
   depth: number
 ): unknown {
   if (depth > MAX_DEFAULT_DEPTH) {
@@ -241,10 +241,10 @@ function synthesizeZeroValueInternal(
  */
 export const GraphEngineDefaults = {
   createImplicitDefaultValue(
-    context: DefaultResolutionContextInterface,
-    node: SchemaGraphNodeInterface,
+    context: DefaultResolutionContextType,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryType[]
   ): unknown {
     return createImplicitDefaultValueInternal({
       context,
@@ -255,10 +255,10 @@ export const GraphEngineDefaults = {
   },
 
   createImplicitDefaultValueSeeded(
-    context: DefaultResolutionContextInterface,
-    node: SchemaGraphNodeInterface,
+    context: DefaultResolutionContextType,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     visited: Set<string>
   ): unknown {
     return createImplicitDefaultValueInternal({
@@ -270,10 +270,10 @@ export const GraphEngineDefaults = {
   },
 
   synthesizeZeroValue(
-    context: DefaultResolutionContextInterface,
-    node: SchemaGraphNodeInterface,
+    context: DefaultResolutionContextType,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryType[]
   ): unknown {
     return synthesizeZeroValueInternal({
       context,

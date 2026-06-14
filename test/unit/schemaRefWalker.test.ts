@@ -1,11 +1,12 @@
 /**
  * Direct unit tests for SchemaRefWalker.
  *
- * SchemaRefWalker is a stateless tree walker that collects embedded $id values
- * and cross-schema $ref IRIs from a JSON Schema tree. Registry state is injected
- * via callbacks — the walker has no external dependencies. Tests exercise the
- * public API only: collectEmbeddedIds, collectRefsInNode, assertResolvable, and
- * collectUnresolved.
+ * SchemaRefWalker is a stateless tree walker that collects cross-schema $ref
+ * IRIs from a JSON Schema tree. Registry state — including the embedded-$id set,
+ * which the caller derives from the canonical graph — is injected via parameters,
+ * so the walker has no external dependencies and performs no embedded-id walk of
+ * its own. Tests exercise the public API only: collectRefsInNode, assertResolvable,
+ * and collectUnresolved.
  */
 
 import assert from 'node:assert/strict';
@@ -13,6 +14,7 @@ import {
   describe, it
 } from 'node:test';
 import { SchemaRefWalker } from '../../src/modules/registry/SchemaRefWalker.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { GraphError } from '../../src/errors/GraphError.js';
 
 // ---------------------------------------------------------------------------
@@ -41,78 +43,6 @@ function knownSet(ids: string[]): (id: string) => boolean {
 
 void describe('SchemaRefWalker', { 'concurrency': true }, () => {
   const walker = new SchemaRefWalker();
-
-  // -------------------------------------------------------------------------
-  // collectEmbeddedIds
-  // -------------------------------------------------------------------------
-
-  void it('collectEmbeddedIds collects the root $id', () => {
-    const ids = new Set<string>();
-
-    walker.collectEmbeddedIds({
-      '$id': 'https://example.io/Root',
-      'type': 'object'
-    }, ids);
-
-    assert.ok(ids.has('https://example.io/Root'));
-  });
-
-  void it('collectEmbeddedIds collects nested $id values in $defs', () => {
-    const schema = {
-      '$defs': {
-        'Nested': {
-          '$id': 'https://example.io/Nested',
-          'type': 'string'
-        }
-      },
-      '$id': 'https://example.io/Parent',
-      'type': 'object'
-    };
-    const ids = new Set<string>();
-
-    walker.collectEmbeddedIds(schema, ids);
-
-    assert.ok(ids.has('https://example.io/Parent'));
-    assert.ok(ids.has('https://example.io/Nested'));
-  });
-
-  void it('collectEmbeddedIds collects $id values inside arrays', () => {
-    const schema = {
-      'anyOf': [
-        {
-          '$id': 'https://example.io/A',
-          'type': 'string'
-        },
-        {
-          '$id': 'https://example.io/B',
-          'type': 'number'
-        }
-      ]
-    };
-    const ids = new Set<string>();
-
-    walker.collectEmbeddedIds(schema, ids);
-
-    assert.ok(ids.has('https://example.io/A'));
-    assert.ok(ids.has('https://example.io/B'));
-  });
-
-  void it('collectEmbeddedIds is a no-op for schema with no $id', () => {
-    const ids = new Set<string>();
-
-    walker.collectEmbeddedIds({ 'type': 'string' }, ids);
-
-    assert.equal(ids.size, 0);
-  });
-
-  void it('collectEmbeddedIds ignores non-record nodes (primitives, null, arrays at top)', () => {
-    const ids = new Set<string>();
-
-    walker.collectEmbeddedIds(42, ids);
-    walker.collectEmbeddedIds(null, ids);
-
-    assert.equal(ids.size, 0);
-  });
 
   // -------------------------------------------------------------------------
   // collectRefsInNode
@@ -258,7 +188,7 @@ void describe('SchemaRefWalker', { 'concurrency': true }, () => {
       'type': 'object'
     };
 
-    const unresolved = walker.collectUnresolved(schema, noKnown, identityResolve);
+    const unresolved = walker.collectUnresolved(schema, new Set(), noKnown, identityResolve);
 
     assert.ok(unresolved.has('https://example.io/Missing'));
   });
@@ -271,6 +201,7 @@ void describe('SchemaRefWalker', { 'concurrency': true }, () => {
 
     const unresolved = walker.collectUnresolved(
       schema,
+      new Set(),
       knownSet(['https://example.io/Known']),
       identityResolve
     );
@@ -284,12 +215,12 @@ void describe('SchemaRefWalker', { 'concurrency': true }, () => {
       'type': 'object'
     };
 
-    const unresolved = walker.collectUnresolved(schema, noKnown, identityResolve);
+    const unresolved = walker.collectUnresolved(schema, new Set(), noKnown, identityResolve);
 
     assert.equal(unresolved.size, 0);
   });
 
-  void it('collectUnresolved excludes refs that match embedded $id values', () => {
+  void it('collectUnresolved excludes refs that match graph-derived embedded $id values', () => {
     const schema = {
       '$defs': {
         'Inner': {
@@ -301,9 +232,12 @@ void describe('SchemaRefWalker', { 'concurrency': true }, () => {
       '$ref': 'https://example.io/Inner'
     };
 
-    const unresolved = walker.collectUnresolved(schema, noKnown, identityResolve);
+    // Embedded ids come solely from the canonical graph index.
+    const embeddedIds = new Set(new SchemaGraph(schema).embeddedSchemaIds());
+    const unresolved = walker.collectUnresolved(schema, embeddedIds, noKnown, identityResolve);
 
     // Inner is embedded in the same document, so it should not be unresolved
     assert.equal(unresolved.has('https://example.io/Inner'), false);
+    assert.ok(embeddedIds.has('https://example.io/Inner'), 'graph exposes the embedded Inner $id');
   });
 });

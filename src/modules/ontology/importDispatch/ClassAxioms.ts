@@ -28,15 +28,15 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../../interfaces/OwlImport.js';
+  OwlImportContextType, OwlImportFragmentType
+} from '../../../types/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-import type { InvariantInterface } from '../../../interfaces/Invariant.js';
-import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
+import type { InvariantType } from '../../../types/Invariant.js';
+import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
-import type { AxiomContext } from '../../../interfaces/AxiomContext.js';
-import type { ApplyRelationOptions } from '../../../interfaces/ApplyRelationOptions.js';
-import type { ApplyBnodeLiteralOptions } from '../../../interfaces/ApplyBnodeLiteralOptions.js';
+import type { AxiomContextType } from '../../../types/AxiomContextType.js';
+import type { ApplyRelationOptionsType } from '../../../types/ApplyRelationOptionsType.js';
+import type { ApplyBnodeLiteralOptionsType } from '../../../types/ApplyBnodeLiteralOptionsType.js';
 import {
   OWL, RDF, RDFS
 } from '../../../constants/IRI.js';
@@ -54,7 +54,7 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Resolve the IRI / bnode-id / lexical form of a relation target. */
-function targetValue(relation: SchemaGraphRelationInterface): string {
+function targetValue(relation: SchemaGraphRelationType): string {
   return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
@@ -121,7 +121,7 @@ function extractEquivalentMembersFromGraph(
   bnodeId: string,
   graph: SchemaGraphInterface
 ): string[] {
-  const unionRelations = graph.relationsForSubject(bnodeId).filter((rel: SchemaGraphRelationInterface): boolean => {
+  const unionRelations = graph.relationsForSubject(bnodeId).filter((rel: SchemaGraphRelationType): boolean => {
     return UNION_OF_IRIS.has(rel.predicate);
   });
 
@@ -188,7 +188,7 @@ function mergeAllOfRef(
  * stub for every named owl:Class or rdfs:Class found in the graph.
  */
 function emitClassStubs(
-  ctx: OwlImportContext,
+  ctx: OwlImportContextType,
   schemaDeltas: Map<string, Partial<JsonSchemaDocumentObjectType>>
 ): void {
   for (const relation of ctx.graph.allRelations()) {
@@ -221,7 +221,7 @@ function emitClassStubs(
 /**
  * Apply `rdfs:subClassOf` NamedNode target → `allOf: [{ $ref }]` on the subject.
  */
-function applySubClassOf(options: ApplyRelationOptions): void {
+function applySubClassOf(options: ApplyRelationOptionsType): void {
   const {
     axiomCtx, relation, subjectIri
   } = options;
@@ -242,7 +242,7 @@ function applySubClassOf(options: ApplyRelationOptions): void {
 /**
  * Apply `owl:complementOf` NamedNode target → `not: { $ref }` + invariant.
  */
-function applyComplementOf(options: ApplyRelationOptions): void {
+function applyComplementOf(options: ApplyRelationOptionsType): void {
   const {
     axiomCtx, relation, subjectIri
   } = options;
@@ -259,7 +259,7 @@ function applyComplementOf(options: ApplyRelationOptions): void {
     'not': { '$ref': targetIri }
   });
 
-  const inv: InvariantInterface = {
+  const inv: InvariantType = {
     'fn': (_: unknown): null => {
       return null;
     },
@@ -276,7 +276,7 @@ function applyComplementOf(options: ApplyRelationOptions): void {
 /**
  * Apply `owl:disjointWith` NamedNode target → symmetric disjointWith annotation.
  */
-function applyDisjointWith(options: ApplyRelationOptions): void {
+function applyDisjointWith(options: ApplyRelationOptionsType): void {
   const {
     axiomCtx, relation, subjectIri
   } = options;
@@ -308,7 +308,7 @@ function applyDisjointWith(options: ApplyRelationOptions): void {
 /**
  * Apply `owl:equivalentClass` NamedNode target → `$ref` on subject.
  */
-function applyEquivalentClassNamed(options: ApplyRelationOptions): void {
+function applyEquivalentClassNamed(options: ApplyRelationOptionsType): void {
   const {
     axiomCtx, relation, subjectIri
   } = options;
@@ -329,7 +329,7 @@ function applyEquivalentClassNamed(options: ApplyRelationOptions): void {
 /**
  * Pass 2: walk all relations on class subjects and apply named-node axiom arms.
  */
-function applyNamedNodeAxioms(ctx: OwlImportContext, axiomCtx: AxiomContext): void {
+function applyNamedNodeAxioms(ctx: OwlImportContextType, axiomCtx: AxiomContextType): void {
   for (const relation of ctx.graph.allRelations()) {
     const subjectIri = relation.source.id;
 
@@ -338,7 +338,7 @@ function applyNamedNodeAxioms(ctx: OwlImportContext, axiomCtx: AxiomContext): vo
     }
 
     const predicate = relation.predicate;
-    const relOpts: ApplyRelationOptions = {
+    const relOpts: ApplyRelationOptionsType = {
       axiomCtx,
       relation,
       subjectIri
@@ -374,8 +374,8 @@ function applyNamedNodeAxioms(ctx: OwlImportContext, axiomCtx: AxiomContext): vo
  * the graph and emits `anyOf` (multiple members) or `$ref` (single member).
  */
 function applyEquivalentClassBlankNode(
-  options: ApplyBnodeLiteralOptions,
-  relation: SchemaGraphRelationInterface,
+  options: ApplyBnodeLiteralOptionsType,
+  relation: SchemaGraphRelationType,
   subjectIri: string
 ): void {
   const members = extractEquivalentMembersFromGraph(targetValue(relation), options.graph);
@@ -406,7 +406,7 @@ function applyEquivalentClassBlankNode(
  */
 function applyEquivalentClassLiteral(
   schemaDeltas: Map<string, Partial<JsonSchemaDocumentObjectType>>,
-  relation: SchemaGraphRelationInterface,
+  relation: SchemaGraphRelationType,
   subjectIri: string
 ): void {
   const members = parseUnionLiteralWrapper(targetValue(relation));
@@ -425,8 +425,8 @@ function applyEquivalentClassLiteral(
  * Apply `owl:disjointUnionOf` RDF list → `oneOf: [{ $ref }]` on the subject.
  */
 function applyDisjointUnionOf(
-  options: ApplyBnodeLiteralOptions,
-  relation: SchemaGraphRelationInterface,
+  options: ApplyBnodeLiteralOptionsType,
+  relation: SchemaGraphRelationType,
   subjectIri: string
 ): void {
   if (relation.termType !== 'BlankNode' && relation.termType !== 'NamedNode') {
@@ -459,8 +459,8 @@ function applyDisjointUnionOf(
  * Pass 3: graph-native handling of BlankNode/Literal equivalentClass arms and
  * disjointUnionOf lists.
  */
-function applyBnodeLiteralAxioms(ctx: OwlImportContext, axiomCtx: AxiomContext): void {
-  const bnodeOpts: ApplyBnodeLiteralOptions = {
+function applyBnodeLiteralAxioms(ctx: OwlImportContextType, axiomCtx: AxiomContextType): void {
+  const bnodeOpts: ApplyBnodeLiteralOptionsType = {
     axiomCtx,
     'graph': ctx.graph
   };
@@ -509,7 +509,7 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContext, axiomCtx: AxiomContext):
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with schemaDeltas and/or invariants populated.
+ * @returns OwlImportFragmentType with schemaDeltas and/or invariants populated.
  *
  * @remarks
  * Implements the OWL 2 §9.1 class expression axiom set. Each axiom arm is
@@ -525,15 +525,15 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContext, axiomCtx: AxiomContext):
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContext
+ * @see OwlImportContextType
  * @group importDispatch
  */
-export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-  const invariants: Array<{ 'invariant': InvariantInterface;
+  const invariants: Array<{ 'invariant': InvariantType;
     'schemaId': string; }> = [];
 
-  const axiomCtx: AxiomContext = {
+  const axiomCtx: AxiomContextType = {
     'allClassIris': ctx.allClassIris,
     invariants,
     // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix

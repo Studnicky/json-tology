@@ -52,28 +52,6 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
     }
   }
 
-  public collectEmbeddedIds(node: unknown, ids: Set<string>): void {
-    if (Array.isArray(node)) {
-      for (const item of node) {
-        this.collectEmbeddedIds(item, ids);
-      }
-
-      return;
-    }
-
-    if (!isRecord(node)) {
-      return;
-    }
-
-    if (typeof node.$id === 'string' && node.$id !== '') {
-      ids.add(node.$id);
-    }
-
-    for (const value of Object.values(node)) {
-      this.collectEmbeddedIds(value, ids);
-    }
-  }
-
   public collectRefsInNode(
     node: unknown,
     embeddedIds: Set<string>,
@@ -111,13 +89,12 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
 
   public collectUnresolved(
     schema: Record<string, unknown>,
+    embeddedIds: Set<string>,
     knownIds: (id: string) => boolean,
     resolve: (id: string) => string
   ): ReadonlySet<string> {
     const unresolved = new Set<string>();
-    const embeddedIds = new Set<string>();
 
-    this.collectEmbeddedIds(schema, embeddedIds);
     this.collectRefsInNode(schema, embeddedIds, unresolved, knownIds, resolve);
 
     return unresolved;

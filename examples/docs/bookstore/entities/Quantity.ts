@@ -1,7 +1,7 @@
 /**
  * Quantity — primitive demonstrating a numeric format brand.
  *
- * InferType resolves to: number & FormatBrandInterface<'int32'>
+ * InferType resolves to: number & FormatBrandType<'int32'>
  * (aliased as Int32BrandInterface in ConstraintBrands.ts).
  *
  * Demonstrates:

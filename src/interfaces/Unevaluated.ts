@@ -9,15 +9,15 @@ import type { ValidationErrorType } from '../types/Validation.js';
 import type { VisitFnType } from '../types/VisitFn.js';
 import type { EffectiveOptionsType } from '../types/EffectiveOptions.js';
 import type {
-  KeywordDefinitionInterface
-} from '../interfaces/GraphEngine.js';
-import type { VisitContextInterface } from '../interfaces/VisitContext.js';
-import type { InternalExecutionResultInterface } from '../interfaces/InternalExecutionResult.js';
+  KeywordDefinitionType
+} from '../types/GraphEngine.js';
+import type { VisitContextType } from '../types/VisitContext.js';
+import type { InternalExecutionResultType } from '../types/InternalExecutionResult.js';
 
 export interface UnevaluatedInterface {
   customKeywords(
-    context: VisitContextInterface,
-    customKeywords: KeywordDefinitionInterface[],
+    context: VisitContextType,
+    customKeywords: KeywordDefinitionType[],
     extensions: Record<string, unknown>,
     workingValue: unknown,
     path: string,
@@ -25,10 +25,10 @@ export interface UnevaluatedInterface {
     errors: ValidationErrorType[],
     evaluatedItems: Set<number>,
     evaluatedProperties: Set<string>
-  ): InternalExecutionResultInterface | undefined;
+  ): InternalExecutionResultType | undefined;
 
   rdfsRange(
-    context: VisitContextInterface,
+    context: VisitContextType,
     rdfsRange: string,
     workingValue: unknown,
     path: string,

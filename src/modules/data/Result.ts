@@ -1,6 +1,6 @@
-import type {
-  FailResultInterface, PassResultInterface, ResultInterface
-} from '../../interfaces/Result.js';
+import type { FailResultType } from '../../types/FailResultType.js';
+import type { PassResultType } from '../../types/PassResultType.js';
+import type { ResultInterface } from '../../interfaces/Result.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import type { ValidationErrors } from '../../errors/ValidationErrors.js';
 
@@ -37,7 +37,7 @@ export class Result<T> implements ResultInterface<T> {
   public readonly errors: undefined | ValidationErrors;
   public readonly success: boolean;
 
-  private constructor(inner: FailResultInterface | PassResultInterface<T>) {
+  private constructor(inner: FailResultType | PassResultType<T>) {
     this.success = inner.success;
     this.data = inner.data;
     this.errors = inner.errors;

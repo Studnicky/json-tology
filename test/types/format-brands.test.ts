@@ -4,8 +4,8 @@
  *
  * Each registered JSON Schema `format` keyword produces a named branded
  * alias (`EmailBrandInterface`, `UriBrandInterface`, ...) layered on top
- * of the parametric `FormatBrandInterface<F>`. `InferType` already
- * intersects `FormatBrandInterface<F>` whenever `format: F` is declared
+ * of the parametric `FormatBrandType<F>`. `InferType` already
+ * intersects `FormatBrandType<F>` whenever `format: F` is declared
  * on a string or number property, so the named aliases are structurally
  * satisfied by the inferred type.
  *
@@ -32,7 +32,7 @@ import type {
   DurationBrandInterface,
   EmailBrandInterface,
   FloatBrandInterface,
-  FormatBrandInterface,
+  FormatBrandType,
   HostnameBrandInterface,
   IdnEmailBrandInterface,
   IdnHostnameBrandInterface,
@@ -79,7 +79,7 @@ void _EmailSchema;
 type Email = InferType<typeof _EmailSchema>;
 
 assert<AssertAssignableType<Email, EmailBrandInterface>>();
-assert<AssertAssignableType<Email, FormatBrandInterface<'email'>>>();
+assert<AssertAssignableType<Email, FormatBrandType<'email'>>>();
 assert<AssertAssignableType<Email, string>>();
 
 // instantiate returns the branded type; assignment to EmailBrandInterface is OK

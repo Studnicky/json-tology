@@ -7,15 +7,15 @@
  */
 
 import type {
-  AnnotatedEdgeSchemaInterface,
+  AnnotatedEdgeSchemaType,
   ComplementOfSchemaInterface,
-  DiscriminatedUnionSchemaInterface,
+  DiscriminatedUnionSchemaType,
   DisjointWithSchemaInterface,
-  IntersectionSchemaInterface,
-  OmitSchemaInterface,
-  PickSchemaInterface,
+  IntersectionSchemaType,
+  OmitSchemaType,
+  PickSchemaType,
   SubClassOfSchemaInterface
-} from '../../interfaces/Compose.js';
+} from '../../types/Compose.js';
 import type {
   ExtendSchemaType,
   ExtractPropertiesType,
@@ -129,7 +129,7 @@ export class Compose {
     readonly 'annotations': TAnnotations;
     readonly 'predicate': TPredicate;
     readonly 'targetRef': TTargetRef;
-  }): AnnotatedEdgeSchemaInterface<TPredicate, TTargetRef, TAnnotations> {
+  }): AnnotatedEdgeSchemaType<TPredicate, TTargetRef, TAnnotations> {
     return {
       'jt:annotatedEdge': {
         'annotations': options.annotations,
@@ -323,7 +323,7 @@ export class Compose {
     discriminatorProperty: TDiscriminator,
     variants: TVariants & ValidateDiscriminatedVariantsType<TVariants, TDiscriminator>,
     newId: TId
-  ): DiscriminatedUnionSchemaInterface<TDiscriminator, TVariants, TId> {
+  ): DiscriminatedUnionSchemaType<TDiscriminator, TVariants, TId> {
     return {
       '$id': newId,
       'discriminator': { 'propertyName': discriminatorProperty },
@@ -525,7 +525,7 @@ export class Compose {
   >(
     schemas: TSchemas,
     newId: TId & ValidateIntersectionIdType<TSchemas, TId>
-  ): IntersectionSchemaInterface<TSchemas, TId> {
+  ): IntersectionSchemaType<TSchemas, TId> {
     return {
       '$id': newId,
       'allOf': schemas
@@ -607,7 +607,7 @@ export class Compose {
     TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TKeys extends keyof ExtractPropertiesType<TSchema> & string,
     TId extends string
-  >(schema: TSchema, keys: readonly TKeys[], newId: TId): OmitSchemaInterface<TSchema, TKeys, TId> {
+  >(schema: TSchema, keys: readonly TKeys[], newId: TId): OmitSchemaType<TSchema, TKeys, TId> {
     const source: Record<string, unknown> = schema;
     const rawOmitProps = source.properties;
     const sourceProps = isRecord(rawOmitProps)
@@ -638,7 +638,7 @@ export class Compose {
       result['jt:config'] = source['jt:config'];
     }
 
-    return brand<OmitSchemaInterface<TSchema, TKeys, TId>>(result);
+    return brand<OmitSchemaType<TSchema, TKeys, TId>>(result);
   }
 
   /**
@@ -674,7 +674,7 @@ export class Compose {
     TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TKeys extends keyof ExtractPropertiesType<TSchema> & string,
     TId extends string
-  >(schema: TSchema, keys: readonly TKeys[], newId: TId): PickSchemaInterface<TSchema, TKeys, TId> {
+  >(schema: TSchema, keys: readonly TKeys[], newId: TId): PickSchemaType<TSchema, TKeys, TId> {
     const source: Record<string, unknown> = schema;
     const rawPickProps = source.properties;
     const sourceProps = isRecord(rawPickProps)
@@ -708,7 +708,7 @@ export class Compose {
       result['jt:config'] = source['jt:config'];
     }
 
-    return brand<PickSchemaInterface<TSchema, TKeys, TId>>(result);
+    return brand<PickSchemaType<TSchema, TKeys, TId>>(result);
   }
 
   /**

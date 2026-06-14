@@ -22,11 +22,11 @@ import {
 } from 'node:test';
 
 import type {
-  MaxLengthBrandInterface, MinLengthBrandInterface
+  MaxLengthBrandType, MinLengthBrandType
 } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
-declare module '../../src/types/TypeConfig.js' {
+declare module '../../src/interfaces/JsonTologyTypeConfig.js' {
   interface JsonTologyTypeConfigInterface { 'tightStringLengths': true }
 }
 
@@ -56,7 +56,7 @@ void _Len2Schema;
 assert<AssertAssignableType<InferType<typeof _Len2Schema>, string>>();
 assert<AssertAssignableType<
   InferType<typeof _Len2Schema>,
-  MaxLengthBrandInterface<2> & MinLengthBrandInterface<2>
+  MaxLengthBrandType<2> & MinLengthBrandType<2>
 >>();
 
 const _Len4Schema = {
@@ -70,7 +70,7 @@ void _Len4Schema;
 assert<AssertAssignableType<InferType<typeof _Len4Schema>, string>>();
 assert<AssertAssignableType<
   InferType<typeof _Len4Schema>,
-  MaxLengthBrandInterface<4> & MinLengthBrandInterface<4>
+  MaxLengthBrandType<4> & MinLengthBrandType<4>
 >>();
 
 // ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ void _RangeSchema;
 assert<AssertAssignableType<InferType<typeof _RangeSchema>, string>>();
 assert<AssertAssignableType<
   InferType<typeof _RangeSchema>,
-  MaxLengthBrandInterface<4> & MinLengthBrandInterface<2>
+  MaxLengthBrandType<4> & MinLengthBrandType<2>
 >>();
 
 // ---------------------------------------------------------------------------
@@ -107,7 +107,7 @@ void _BigLenSchema;
 assert<AssertAssignableType<InferType<typeof _BigLenSchema>, string>>();
 assert<AssertAssignableType<
   InferType<typeof _BigLenSchema>,
-  MaxLengthBrandInterface<64> & MinLengthBrandInterface<64>
+  MaxLengthBrandType<64> & MinLengthBrandType<64>
 >>();
 
 // maxLength alone with a small bound also narrows (range 0..maxLength) and
@@ -119,7 +119,7 @@ const _MaxOnlySchema = {
 
 void _MaxOnlySchema;
 assert<AssertAssignableType<InferType<typeof _MaxOnlySchema>, string>>();
-assert<AssertAssignableType<InferType<typeof _MaxOnlySchema>, MaxLengthBrandInterface<3>>>();
+assert<AssertAssignableType<InferType<typeof _MaxOnlySchema>, MaxLengthBrandType<3>>>();
 
 void describe('tight string-length narrowing (Finding 20)', () => {
   void it('compiles with the tightStringLengths flag enabled', () => {

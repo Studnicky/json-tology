@@ -8,85 +8,85 @@
 import type { ValidationErrorType } from '../types/Validation.js';
 import type { VisitFnType } from '../types/VisitFn.js';
 import type { EffectiveOptionsType } from '../types/EffectiveOptions.js';
-import type { SchemaGraphNodeInterface } from '../interfaces/SchemaGraph.js';
+import type { SchemaGraphNodeType } from '../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
-import type { CompositionAccumulatorInterface } from '../interfaces/CompositionAccumulator.js';
-import type { DynamicScopeEntryInterface } from '../interfaces/DynamicScopeEntry.js';
-import type { InternalExecutionResultInterface } from '../interfaces/InternalExecutionResult.js';
-import type { VisitContextInterface } from '../interfaces/VisitContext.js';
+import type { CompositionAccumulatorType } from '../types/CompositionAccumulator.js';
+import type { DynamicScopeEntryType } from '../types/DynamicScopeEntry.js';
+import type { InternalExecutionResultType } from '../types/InternalExecutionResult.js';
+import type { VisitContextType } from '../types/VisitContext.js';
 
 export interface VisitCompositionInterface {
   allOf(
-    context: VisitContextInterface,
-    allOf: SchemaGraphNodeInterface[],
+    context: VisitContextType,
+    allOf: SchemaGraphNodeType[],
     graph: SchemaGraphInterface,
-    acc: CompositionAccumulatorInterface,
+    acc: CompositionAccumulatorType,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
     pushErrors: (errors: ValidationErrorType[]) => void
-  ): InternalExecutionResultInterface | undefined;
+  ): InternalExecutionResultType | undefined;
 
   anyOf(
-    context: VisitContextInterface,
-    anyOf: SchemaGraphNodeInterface[],
+    context: VisitContextType,
+    anyOf: SchemaGraphNodeType[],
     graph: SchemaGraphInterface,
-    acc: CompositionAccumulatorInterface,
+    acc: CompositionAccumulatorType,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
-    invalid: (error: ValidationErrorType) => InternalExecutionResultInterface
-  ): InternalExecutionResultInterface | undefined;
+    invalid: (error: ValidationErrorType) => InternalExecutionResultType
+  ): InternalExecutionResultType | undefined;
 
   ifThenElse(
-    context: VisitContextInterface,
-    ifNode: SchemaGraphNodeInterface,
-    thenNode: SchemaGraphNodeInterface | undefined,
-    elseNode: SchemaGraphNodeInterface | undefined,
+    context: VisitContextType,
+    ifNode: SchemaGraphNodeType,
+    thenNode: SchemaGraphNodeType | undefined,
+    elseNode: SchemaGraphNodeType | undefined,
     graph: SchemaGraphInterface,
-    acc: CompositionAccumulatorInterface,
+    acc: CompositionAccumulatorType,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
     pushErrors: (errors: ValidationErrorType[]) => void
-  ): InternalExecutionResultInterface | undefined;
+  ): InternalExecutionResultType | undefined;
 
   not(
-    context: VisitContextInterface,
-    complementNode: SchemaGraphNodeInterface,
+    context: VisitContextType,
+    complementNode: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
     workingValue: unknown,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
-    invalid: (error: ValidationErrorType) => InternalExecutionResultInterface
-  ): InternalExecutionResultInterface | undefined;
+    invalid: (error: ValidationErrorType) => InternalExecutionResultType
+  ): InternalExecutionResultType | undefined;
 
   oneOf(
-    context: VisitContextInterface,
-    oneOf: SchemaGraphNodeInterface[],
+    context: VisitContextType,
+    oneOf: SchemaGraphNodeType[],
     graph: SchemaGraphInterface,
-    acc: CompositionAccumulatorInterface,
+    acc: CompositionAccumulatorType,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
-    invalid: (error: ValidationErrorType) => InternalExecutionResultInterface,
+    invalid: (error: ValidationErrorType) => InternalExecutionResultType,
     discriminatorPropertyName: string | undefined,
     discriminatorMapping: Record<string, string> | undefined
-  ): InternalExecutionResultInterface | undefined;
+  ): InternalExecutionResultType | undefined;
 }

@@ -3,7 +3,7 @@
  *
  * Branded types enforce that data goes through validation. The
  * canonical EmailSchema in the bookstore carries
- * `FormatBrandInterface<'email'>`; the only way to obtain a value of
+ * `FormatBrandType<'email'>`; the only way to obtain a value of
  * that branded type is to pass through `instantiate`, `value.instantiate`,
  * or the type guard `is`.
  */

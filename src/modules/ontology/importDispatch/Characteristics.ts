@@ -21,9 +21,9 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../../interfaces/OwlImport.js';
-import type { RecordCharacteristicOptions } from '../../../interfaces/RecordCharacteristicOptions.js';
+  OwlImportContextType, OwlImportFragmentType
+} from '../../../types/OwlImport.js';
+import type { RecordCharacteristicOptionsType } from '../../../types/RecordCharacteristicOptionsType.js';
 import { RDF } from '../../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
@@ -99,7 +99,7 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
 // Empty fragment factory
 // ---------------------------------------------------------------------------
 
-function emptyFragment(): OwlImportFragment {
+function emptyFragment(): OwlImportFragmentType {
   return {
     'characteristics': [],
     'individuals': [],
@@ -118,7 +118,7 @@ function emptyFragment(): OwlImportFragment {
  * Skips when the source IRI is not a known property subject (even after
  * curie compaction), reporting it as unsupported.
  */
-function recordCharacteristic(options: RecordCharacteristicOptions): void {
+function recordCharacteristic(options: RecordCharacteristicOptionsType): void {
   const {
     characteristicName,
     characteristicTarget,
@@ -171,7 +171,7 @@ function recordCharacteristic(options: RecordCharacteristicOptions): void {
  *
  * @param _quads - All quads from the input graph (unused; graph is traversed via ctx).
  * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with characteristics populated.
+ * @returns OwlImportFragmentType with characteristics populated.
  *
  * @remarks
  * Implements OWL 2 §9.2.1–9.2.8. The seven characteristic class IRIs are
@@ -188,10 +188,10 @@ function recordCharacteristic(options: RecordCharacteristicOptions): void {
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContext
+ * @see OwlImportContextType
  * @group importDispatch
  */
-export function importCharacteristics(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importCharacteristics(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
   const fragment = emptyFragment();
   const seen = new Set<string>();
 

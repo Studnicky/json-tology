@@ -21,7 +21,7 @@ import type {
   MultipleOfRangeType,
   SchemaPointerPathsType
 } from '../../src/types/Infer.js';
-import type { UniqueArrayBrandInterface } from '../../src/types/ConstraintBrands.js';
+import type { UniqueArrayBrandType } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
 // ---------------------------------------------------------------------------
@@ -58,7 +58,7 @@ void _DupSchema;
 type Dup2 = InferType<typeof _DupSchema>;
 assert<AssertEqualType<Dup2, never>>();
 
-// Above cap (9 elements): still carries UniqueArrayBrandInterface brand
+// Above cap (9 elements): still carries UniqueArrayBrandType brand
 const _L9WithDupSchema = {
   'prefixItems': [
     { 'const': 'a' },
@@ -80,7 +80,7 @@ void _L9WithDupSchema;
 type L9WithDup = InferType<typeof _L9WithDupSchema>;
 
 // The brand is applied regardless of whether pairwise narrowing fires
-assert<L9WithDup extends UniqueArrayBrandInterface<unknown> ? true : false>();
+assert<L9WithDup extends UniqueArrayBrandType<unknown> ? true : false>();
 
 // ---------------------------------------------------------------------------
 // 2. IntegerRangeType cap = 50

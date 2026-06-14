@@ -36,25 +36,25 @@
  */
 
 import type {
-  ContainsBrandInterface,
-  ContentEncodingBrandInterface,
-  ContentMediaTypeBrandInterface,
-  DialectBrandInterface,
-  ExclusiveMaximumBrandInterface,
-  ExclusiveMinimumBrandInterface,
-  FormatBrandInterface,
-  MaximumBrandInterface,
-  MaxItemsBrandInterface,
-  MaxLengthBrandInterface,
-  MaxPropertiesBrandInterface,
-  MinimumBrandInterface,
-  MinItemsBrandInterface,
-  MinLengthBrandInterface,
-  MinPropertiesBrandInterface,
-  MultipleOfBrandInterface,
-  PatternBrandInterface,
-  SchemaIdBrandInterface,
-  UniqueArrayBrandInterface
+  ContainsBrandType,
+  ContentEncodingBrandType,
+  ContentMediaTypeBrandType,
+  DialectBrandType,
+  ExclusiveMaximumBrandType,
+  ExclusiveMinimumBrandType,
+  FormatBrandType,
+  MaximumBrandType,
+  MaxItemsBrandType,
+  MaxLengthBrandType,
+  MaxPropertiesBrandType,
+  MinimumBrandType,
+  MinItemsBrandType,
+  MinLengthBrandType,
+  MinPropertiesBrandType,
+  MultipleOfBrandType,
+  PatternBrandType,
+  SchemaIdBrandType,
+  UniqueArrayBrandType
 } from './ConstraintBrands.js';
 import type {
   BuildAtLeastTupleType,
@@ -64,10 +64,10 @@ import type {
 } from './RestrictionInfer.js';
 import type { IsEnabledType } from './TypeConfig.js';
 import type {
-  AnchorNotFoundInterface,
-  RefNotFoundInterface
+  AnchorNotFoundType,
+  RefNotFoundType
 } from './TypeErrors.js';
-import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
+import type { TransformBrandType } from '../types/TransformBrand.js';
 import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
 
 // ---------------------------------------------------------------------------
@@ -310,45 +310,45 @@ type NormalizeMaxType<T>
 type InferStringBrandsType<T>
   = (IsEnabledType<'contentBrands'> extends true
     ? (T extends { readonly 'contentEncoding': infer E extends string }
-      ? ContentEncodingBrandInterface<E> : unknown)
+      ? ContentEncodingBrandType<E> : unknown)
       & (T extends { readonly 'contentMediaType': infer M extends string }
-        ? ContentMediaTypeBrandInterface<M> : unknown)
+        ? ContentMediaTypeBrandType<M> : unknown)
     : unknown)
   & (IsEnabledType<'formatBrands'> extends true
-    ? T extends { readonly 'format': infer F extends string } ? FormatBrandInterface<F> : unknown
+    ? T extends { readonly 'format': infer F extends string } ? FormatBrandType<F> : unknown
     : unknown)
   & (IsEnabledType<'stringBrands'> extends true
-    ? (T extends { readonly 'maxLength': infer N extends number } ? MaxLengthBrandInterface<N> : unknown)
-      & (T extends { readonly 'minLength': infer N extends number } ? MinLengthBrandInterface<N> : unknown)
-      & (T extends { readonly 'pattern': infer P extends string } ? PatternBrandInterface<P> : unknown)
+    ? (T extends { readonly 'maxLength': infer N extends number } ? MaxLengthBrandType<N> : unknown)
+      & (T extends { readonly 'minLength': infer N extends number } ? MinLengthBrandType<N> : unknown)
+      & (T extends { readonly 'pattern': infer P extends string } ? PatternBrandType<P> : unknown)
     : unknown);
 
 /** Intersect number constraint brands onto number. */
 type InferNumberBrandsType<T>
   = (IsEnabledType<'formatBrands'> extends true
-    ? T extends { readonly 'format': infer F extends string } ? FormatBrandInterface<F> : unknown
+    ? T extends { readonly 'format': infer F extends string } ? FormatBrandType<F> : unknown
     : unknown)
   & (IsEnabledType<'numericBrands'> extends true
-    ? (T extends { readonly 'exclusiveMaximum': infer N extends number } ? ExclusiveMaximumBrandInterface<N> : unknown)
-      & (T extends { readonly 'exclusiveMinimum': infer N extends number } ? ExclusiveMinimumBrandInterface<N> : unknown)
-      & (T extends { readonly 'maximum': infer N extends number } ? MaximumBrandInterface<N> : unknown)
-      & (T extends { readonly 'minimum': infer N extends number } ? MinimumBrandInterface<N> : unknown)
-      & (T extends { readonly 'multipleOf': infer N extends number } ? MultipleOfBrandInterface<N> : unknown)
+    ? (T extends { readonly 'exclusiveMaximum': infer N extends number } ? ExclusiveMaximumBrandType<N> : unknown)
+      & (T extends { readonly 'exclusiveMinimum': infer N extends number } ? ExclusiveMinimumBrandType<N> : unknown)
+      & (T extends { readonly 'maximum': infer N extends number } ? MaximumBrandType<N> : unknown)
+      & (T extends { readonly 'minimum': infer N extends number } ? MinimumBrandType<N> : unknown)
+      & (T extends { readonly 'multipleOf': infer N extends number } ? MultipleOfBrandType<N> : unknown)
     : unknown);
 
 /** Intersect array constraint brands. */
 type InferArrayBrandsType<T, TRoot, TReferences>
   = IsEnabledType<'arrayBrands'> extends true
     ? (T extends { readonly 'contains': infer C }
-      ? ContainsBrandInterface<InferSchemaType<C, TRoot, TReferences>>
+      ? ContainsBrandType<InferSchemaType<C, TRoot, TReferences>>
       : unknown)
       & (T extends { readonly 'maxItems': infer N extends number }
-        ? MaxItemsBrandInterface<N> : unknown)
+        ? MaxItemsBrandType<N> : unknown)
       & (T extends { readonly 'minItems': infer N extends number }
-        ? MinItemsBrandInterface<N> : unknown)
+        ? MinItemsBrandType<N> : unknown)
       & (T extends { readonly 'uniqueItems': true }
         ? T extends { readonly 'items': infer I }
-          ? UniqueArrayBrandInterface<InferSchemaType<I, TRoot, TReferences>>
+          ? UniqueArrayBrandType<InferSchemaType<I, TRoot, TReferences>>
           : unknown
         : unknown)
     : unknown;
@@ -357,9 +357,9 @@ type InferArrayBrandsType<T, TRoot, TReferences>
 type InferObjectBrandsType<T>
   = IsEnabledType<'objectBrands'> extends true
     ? (T extends { readonly 'maxProperties': infer N extends number }
-      ? MaxPropertiesBrandInterface<N> : unknown)
+      ? MaxPropertiesBrandType<N> : unknown)
       & (T extends { readonly 'minProperties': infer N extends number }
-        ? MinPropertiesBrandInterface<N> : unknown)
+        ? MinPropertiesBrandType<N> : unknown)
     : unknown;
 
 // ---------------------------------------------------------------------------
@@ -454,7 +454,7 @@ type UniqueTuplePairwiseType<TTuple, TPrev extends readonly unknown[] = []>
  * Apply tuple distinctness narrowing when `uniqueItems: true`. Tuples whose
  * elements are all literals (length ≤ 8) collapse to `never` if any pair shares
  * a type. Tuples with more than 8 elements exceed the pairwise cap — pairwise
- * narrowing is skipped and a `UniqueArrayBrandInterface<unknown>` brand is
+ * narrowing is skipped and a `UniqueArrayBrandType<unknown>` brand is
  * applied instead so the compile-time constraint is preserved. Non-tuple arrays
  * pass through unchanged (the brand on `InferArrayBrandsType` already prevents
  * raw arrays from satisfying the type).
@@ -467,7 +467,7 @@ type ApplyUniqueItemsTupleNarrowingType<T, TArr>
         unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown,
         ...unknown[]
       ]
-        ? TArr & UniqueArrayBrandInterface<unknown>
+        ? TArr & UniqueArrayBrandType<unknown>
         // ≤ 8 elements — apply pairwise distinctness narrowing.
         : UniqueTuplePairwiseType<TArr>
       : TArr
@@ -682,7 +682,7 @@ type FindSchemaByIdType<TId extends string, TRoot>
  *   3. an entry in the threaded references map (registry-bound resolution).
  *
  * When none match, the base is genuinely unreachable and resolves to
- * `RefNotFoundInterface<TBase>` — uniformly. The outcome never depends on
+ * `RefNotFoundType<TBase>` — uniformly. The outcome never depends on
  * whether a references map happens to be present: the same unresolved base
  * always yields the same brand, never a silent `unknown`.
  */
@@ -693,9 +693,9 @@ type ResolveRefBaseSchemaType<TBase extends string, TRoot, TReferences>
       ? [TEmbedded] extends [never]
         ? TBase extends keyof TReferences
           ? TReferences[TBase]
-          : RefNotFoundInterface<TBase>
+          : RefNotFoundType<TBase>
         : TEmbedded
-      : RefNotFoundInterface<TBase>;
+      : RefNotFoundType<TBase>;
 
 // ---------------------------------------------------------------------------
 // External fragment ref helpers
@@ -712,26 +712,26 @@ type ResolveRefBaseSchemaType<TBase extends string, TRoot, TReferences>
 type SplitFragmentRefType<TRef extends string, TRoot, TReferences = Record<never, never>>
   = TRef extends `${infer Base}#${infer Fragment}`
     ? ResolveRefBaseSchemaType<Base, TRoot, TReferences> extends infer TBaseSchema
-      ? TBaseSchema extends RefNotFoundInterface<string>
+      ? TBaseSchema extends RefNotFoundType<string>
         ? TBaseSchema
         : Fragment extends `/$defs/${infer K}`
           ? TBaseSchema extends { readonly '$defs': infer TDefs }
             ? K extends keyof TDefs
               ? TDefs[K]
-              : AnchorNotFoundInterface<Base, Fragment>
-            : AnchorNotFoundInterface<Base, Fragment>
+              : AnchorNotFoundType<Base, Fragment>
+            : AnchorNotFoundType<Base, Fragment>
           : Fragment extends `/${infer TPath}`
             // JSON Pointer into a reachable base — a missing segment is
             // AnchorNotFound (the `never` miss sentinel must not leak, since
             // `never extends Brand` is vacuously true downstream).
             ? NavigateSchemaPathType<TBaseSchema, TPath> extends infer TNav
               ? [TNav] extends [never]
-                ? AnchorNotFoundInterface<Base, Fragment>
+                ? AnchorNotFoundType<Base, Fragment>
                 : TNav
               : never
             : FindAnchorType<Fragment, TBaseSchema> extends infer TAnchorResult
               ? [TAnchorResult] extends [never]
-                ? AnchorNotFoundInterface<Base, Fragment>
+                ? AnchorNotFoundType<Base, Fragment>
                 : TAnchorResult
               : unknown
       : unknown
@@ -760,13 +760,13 @@ type NavigateSchemaPathType<T, TPath extends string>
 /**
  * Resolve a same-document target (local `$defs` key, named `$anchor`, or JSON
  * Pointer). A `never` input is the navigator / anchor-search miss sentinel and
- * becomes `AnchorNotFoundInterface<'#', TFragment>` — uniform with cross-schema
+ * becomes `AnchorNotFoundType<'#', TFragment>` — uniform with cross-schema
  * misses, never a silent `unknown`. A found target is inferred against the root
  * so its own refs resolve.
  */
 type ResolveLocalTargetType<TResolved, TFragment extends string, TRoot, TReferences>
   = [TResolved] extends [never]
-    ? AnchorNotFoundInterface<'#', TFragment>
+    ? AnchorNotFoundType<'#', TFragment>
     : InferSchemaType<TResolved, TRoot, TReferences>;
 
 type InferRefType<T, TRoot, TReferences>
@@ -774,14 +774,14 @@ type InferRefType<T, TRoot, TReferences>
   = T extends { readonly '$ref': `#/$defs/${infer K}` }
     ? K extends `${string}/${string}`
       // Complex path through $defs — use JSON Pointer navigation. A missing
-      // path is AnchorNotFoundInterface, never a silent unknown.
+      // path is AnchorNotFoundType, never a silent unknown.
       ? ResolveLocalTargetType<NavigateSchemaPathType<TRoot, `$defs/${K}`>, `/$defs/${K}`, TRoot, TReferences>
       : TRoot extends { readonly '$defs': infer TDefs }
         ? K extends keyof TDefs
           ? InferSchemaType<TDefs[K], TRoot, TReferences>
           // Local $defs key absent → uniform AnchorNotFound brand.
-          : AnchorNotFoundInterface<'#', `/$defs/${K}`>
-        : AnchorNotFoundInterface<'#', `/$defs/${K}`>
+          : AnchorNotFoundType<'#', `/$defs/${K}`>
+        : AnchorNotFoundType<'#', `/$defs/${K}`>
     // Self ref: #
     : T extends { readonly '$ref': '#' }
       ? InferSchemaType<TRoot, TRoot, TReferences>
@@ -789,17 +789,17 @@ type InferRefType<T, TRoot, TReferences>
       : T extends { readonly '$ref': `#${infer TAnchor}` }
         ? TAnchor extends `/${string}`
           // JSON Pointer path: #/properties/foo — a missing segment is
-          // AnchorNotFoundInterface, never a silent unknown.
+          // AnchorNotFoundType, never a silent unknown.
           ? ResolveLocalTargetType<NavigateSchemaPathType<TRoot, RemoveLeadingSlashType<TAnchor>>, TAnchor, TRoot, TReferences>
-          // Named anchor: #myAnchor — an absent anchor is AnchorNotFoundInterface.
+          // Named anchor: #myAnchor — an absent anchor is AnchorNotFoundType.
           : ResolveLocalTargetType<FindAnchorType<TAnchor, TRoot>, TAnchor, TRoot, TReferences>
         // External ref with fragment: someUri#fragment
         : T extends { readonly '$ref': `${infer TBase}#${string}` }
           ? ResolveRefBaseSchemaType<TBase, TRoot, TReferences> extends infer TBaseSchema
             ? SplitFragmentRefType<T['$ref'], TRoot, TReferences> extends infer TResolved
-              ? TResolved extends RefNotFoundInterface<string>
+              ? TResolved extends RefNotFoundType<string>
                 ? TResolved
-                : TResolved extends AnchorNotFoundInterface<string, string>
+                : TResolved extends AnchorNotFoundType<string, string>
                   ? TResolved
                   : InferSchemaType<TResolved, TBaseSchema, TReferences>
               : unknown
@@ -811,7 +811,7 @@ type InferRefType<T, TRoot, TReferences>
           // then a resource embedded under the root's $defs by $id (the
           // graph-native compound-document path — resolved against the original
           // root so sibling resources stay reachable). An unreachable base is
-          // always RefNotFoundInterface<TRef> — uniform with the fragment path,
+          // always RefNotFoundType<TRef> — uniform with the fragment path,
           // never a silent unknown.
           : T extends { readonly '$ref': infer TRef extends string }
             ? TRef extends keyof TReferences
@@ -820,9 +820,9 @@ type InferRefType<T, TRoot, TReferences>
                 ? InferSchemaType<TRoot, TRoot, TReferences>
                 : FindSchemaByIdType<TRef, TRoot> extends infer TEmbedded
                   ? [TEmbedded] extends [never]
-                    ? RefNotFoundInterface<TRef>
+                    ? RefNotFoundType<TRef>
                     : InferSchemaType<TEmbedded, TRoot, TReferences>
-                  : RefNotFoundInterface<TRef>
+                  : RefNotFoundType<TRef>
             : unknown;
 
 /** Strip the leading `/` from a JSON Pointer path segment. */
@@ -1018,8 +1018,8 @@ type InferSchemaTypeCoreType<T, TRoot = T, TReferences = Record<never, never>>
     : T extends { readonly 'jt:annotatedEdge': infer TEdge }
       ? InferAnnotatedEdgeType<TEdge, TRoot, TReferences>
     // Phase 1: Transform brands do not change the wire-form schema type.
-      : T extends TransformBrandInterface<unknown>
-        ? InferSchemaType<Omit<T, keyof TransformBrandInterface<unknown>>, TRoot, TReferences>
+      : T extends TransformBrandType<unknown>
+        ? InferSchemaType<Omit<T, keyof TransformBrandType<unknown>>, TRoot, TReferences>
       // Phase 2: Const/Enum literals
         : T extends { readonly 'const': unknown } ? InferConstType<T>
           : T extends { readonly 'enum': readonly unknown[] } ? InferEnumType<T>
@@ -1090,7 +1090,7 @@ export type InferSchemaType<T, TRoot = T, TReferences = JsonTologyReferencesInte
  * @example
  * ```ts
  * const UserSchema = { $id: 'https://example.com/User', type: 'object' } as const;
- * type User = NominalSchemaType<typeof UserSchema>;  // branded with SchemaIdBrandInterface
+ * type User = NominalSchemaType<typeof UserSchema>;  // branded with SchemaIdBrandType
  * ```
  *
  * @category Type Inference
@@ -1106,9 +1106,9 @@ export type NominalSchemaType<T, TRoot = T, TReferences = JsonTologyReferencesIn
   = InferSchemaType<T, TRoot, TReferences>
     & (IsEnabledType<'nominalBrands'> extends true
       ? (T extends { readonly '$id': infer TId extends string }
-        ? SchemaIdBrandInterface<TId> : unknown)
+        ? SchemaIdBrandType<TId> : unknown)
         & (T extends { readonly '$schema': infer D extends string }
-          ? DialectBrandInterface<D> : unknown)
+          ? DialectBrandType<D> : unknown)
       : unknown);
 
 // ---------------------------------------------------------------------------

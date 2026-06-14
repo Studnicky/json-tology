@@ -24,19 +24,19 @@ import {
   generateFromTbox, generateRegistryDirectory
 } from './owl-gen.js';
 import type {
-  GenerateFromTboxOptions,
-  GenerateRegistryDirectoryOptions,
-  WrittenEntityFile
-} from './interfaces/OwlGen.js';
+  GenerateFromTboxOptionsType,
+  GenerateRegistryDirectoryOptionsType,
+  WrittenEntityFileType
+} from './types/OwlGen.js';
 
-export type { WrittenEntityFile } from './interfaces/OwlGen.js';
+export type { WrittenEntityFileType } from './types/OwlGen.js';
 
 /**
  * Generate TypeScript source from an OWL 2 TBox and write it to `output`.
  *
  * @param options - Browser-safe codegen options plus the `output` file path.
  */
-export function writeFromTbox(options: GenerateFromTboxOptions & { readonly 'output': string }): void {
+export function writeFromTbox(options: GenerateFromTboxOptionsType & { readonly 'output': string }): void {
   const {
     output,
     ...rest
@@ -53,7 +53,7 @@ export function writeFromTbox(options: GenerateFromTboxOptions & { readonly 'out
  * @param options - Browser-safe codegen options plus the `outDir` directory.
  * @returns The written entity files (absolute paths) and the `index.ts` path.
  */
-export function writeRegistryDirectory(options: GenerateRegistryDirectoryOptions & { readonly 'outDir': string }): { readonly 'entityFiles': readonly WrittenEntityFile[];
+export function writeRegistryDirectory(options: GenerateRegistryDirectoryOptionsType & { readonly 'outDir': string }): { readonly 'entityFiles': readonly WrittenEntityFileType[];
   readonly 'indexFile': string } {
   const {
     outDir,
@@ -64,7 +64,7 @@ export function writeRegistryDirectory(options: GenerateRegistryDirectoryOptions
 
   mkdirSync(join(outDir, 'entities'), { 'recursive': true });
 
-  const entityFiles: WrittenEntityFile[] = [];
+  const entityFiles: WrittenEntityFileType[] = [];
 
   for (const entityFile of result.entityFiles) {
     const absPath = join(outDir, entityFile.path);

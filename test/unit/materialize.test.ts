@@ -11,11 +11,11 @@ import {
 import {
   JsonTology, MaterializationError
 } from '../../src/index.js';
-// SchemaGraph + projectGraph are graph-projection internals not surfaced via the public API.
+// SchemaGraph + OwlProjection are graph-projection internals not surfaced via the public API.
 // The cross-reference test below compares raw TBox QuadInterface[] (predicate/termType shape)
 // against ABox quads; OntologyBuilder.jsonLdObject()['@graph'] returns JSON-LD nodes, not the QuadInterface form.
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Projection } from '../../src/modules/rdf/Projection.js';
+import { OwlProjection } from '../../src/modules/rdf/OwlProjection.js';
 import {
   OWL, RDF
 } from '../../src/constants/IRI.js';
@@ -711,7 +711,7 @@ import {
           'schemas': [ConfigSchema] as const
         });
         const graph = new SchemaGraph(ConfigSchema);
-        const tbox = Projection.graph(graph);
+        const tbox = OwlProjection.graph(graph);
         const abox = tology.toQuads(ConfigSchema, { 'name': 'test' });
 
         const tboxClasses = new Set(tbox

@@ -9,13 +9,12 @@
  * @group Graph
  */
 
-import type { GraphAccessorInterface } from '../interfaces/GraphAccessor.js';
 import type {
-  SchemaGraphNodeInterface,
-  SchemaGraphSemanticsInterface
-} from '../interfaces/SchemaGraph.js';
+  SchemaGraphNodeType,
+  SchemaGraphSemanticsType
+} from './SchemaGraph.js';
 import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptor.js';
-import type { AnnotatedEdgeDescriptorInterface } from '../interfaces/AnnotatedEdgeDescriptorInterface.js';
+import type { AnnotatedEdgeDescriptorType } from '../types/AnnotatedEdgeDescriptorType.js';
 import type { JtConfigType } from './JtConfig.js';
 
 /**
@@ -97,7 +96,7 @@ export type ExtractedRestrictionsType = readonly RawRestrictionDescriptorType[];
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type ExtractedAnnotatedEdgeType = AnnotatedEdgeDescriptorInterface | undefined;
+export type ExtractedAnnotatedEdgeType = AnnotatedEdgeDescriptorType | undefined;
 
 /**
  * Named return type for {@link extractJtConfig}.
@@ -201,7 +200,7 @@ export type SchemaExtensionsType = Record<string, unknown>;
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type AdditionalSchemaNodeType = boolean | SchemaGraphNodeInterface | undefined;
+export type AdditionalSchemaNodeType = boolean | SchemaGraphNodeType | undefined;
 
 /**
  * Named return type for {@link parentPropertiesPointer}, {@link propertyNameFromPointer},
@@ -252,7 +251,7 @@ export type OptionalNumberType = number | undefined;
  * Partial semantics containing `additionalItemsNode` and `additionalPropertiesNode`.
  *
  * @remarks
- * Used to compose the final SchemaGraphSemanticsInterface without repeating resolution logic.
+ * Used to compose the final SchemaGraphSemanticsType without repeating resolution logic.
  *
  * @example
  * ```ts
@@ -264,10 +263,10 @@ export type OptionalNumberType = number | undefined;
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export interface AdditionalNodesResultType {
+export type AdditionalNodesResultType = {
   readonly 'additionalItemsNode': AdditionalSchemaNodeType;
   readonly 'additionalPropertiesNode': AdditionalSchemaNodeType;
-}
+};
 
 /**
  * Named return type for {@link extractDiscriminatorFields}.
@@ -275,7 +274,7 @@ export interface AdditionalNodesResultType {
  * Partial semantics containing `discriminatorMapping` and `discriminatorPropertyName`.
  *
  * @remarks
- * Used to compose the final SchemaGraphSemanticsInterface without repeating discriminator logic.
+ * Used to compose the final SchemaGraphSemanticsType without repeating discriminator logic.
  *
  * @example
  * ```ts
@@ -287,10 +286,10 @@ export interface AdditionalNodesResultType {
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export interface DiscriminatorFieldsType {
+export type DiscriminatorFieldsType = {
   readonly 'discriminatorMapping': Record<string, string> | undefined;
   readonly 'discriminatorPropertyName': string | undefined;
-}
+};
 
 /**
  * Named return type for {@link extractRdfsDomainRange}.
@@ -298,7 +297,7 @@ export interface DiscriminatorFieldsType {
  * Partial semantics containing `rdfsDomain` and `rdfsRange`.
  *
  * @remarks
- * Used to compose the final SchemaGraphSemanticsInterface.
+ * Used to compose the final SchemaGraphSemanticsType.
  *
  * @example
  * ```ts
@@ -310,10 +309,10 @@ export interface DiscriminatorFieldsType {
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export interface DomainRangeFieldsType {
+export type DomainRangeFieldsType = {
   readonly 'rdfsDomain': string | undefined;
   readonly 'rdfsRange': string | undefined;
-}
+};
 
 /**
  * Named return type for {@link extractScalarFields}.
@@ -335,7 +334,7 @@ export interface DomainRangeFieldsType {
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export interface ScalarFieldsType {
+export type ScalarFieldsType = {
   readonly 'comment': string | undefined;
   readonly 'contentEncoding': string | undefined;
   readonly 'contentMediaType': string | undefined;
@@ -365,7 +364,7 @@ export interface ScalarFieldsType {
   readonly 'schemaId': string | undefined;
   readonly 'schemaVocabulary': unknown;
   readonly 'title': string | undefined;
-}
+};
 
 /**
  * Named return type for {@link buildSemanticsGraphPart}.
@@ -374,7 +373,7 @@ export interface ScalarFieldsType {
  * children that require a live `GraphAccessorInterface` to resolve.
  *
  * @remarks
- * Used as a partial contribution to the final `SchemaGraphSemanticsInterface`
+ * Used as a partial contribution to the final `SchemaGraphSemanticsType`
  * in `buildSemantics`, which merges this with the scalar and boolean fields.
  *
  * @example
@@ -388,7 +387,7 @@ export interface ScalarFieldsType {
  * @group Graph
  */
 export type SemanticsGraphPartType = Pick<
-  SchemaGraphSemanticsInterface,
+  SchemaGraphSemanticsType,
   | 'allOf'
   | 'anyOf'
   | 'complementNode'
@@ -411,36 +410,7 @@ export type SemanticsGraphPartType = Pick<
   | 'unevaluatedPropertiesNode'
 >;
 
-/**
- * Context object for {@link buildSemanticsGraphPart} and {@link buildSemantics}.
- *
- * @remarks
- * Bundles the graph accessor, node, resolve function, schema record, and
- * resolved `$ref` string into a single shape to keep parameter counts
- * within the 3-parameter limit.
- *
- * @example
- * ```ts
- * const ctx: SemanticsBuildContextInterface = { graph, node, resolveLocalRef, schema, ref };
- * ```
- *
- * @category Graph
- * @since 0.18.0
- * @see {@link SchemaGraphSupport}
- * @group Graph
- */
-export interface SemanticsBuildContextInterface {
-  /** Live graph accessor for child/entry resolution. */
-  readonly 'graph': GraphAccessorInterface;
-  /** The schema node being processed. */
-  readonly 'node': SchemaGraphNodeInterface;
-  /** Resolved `$ref` string or undefined. */
-  readonly 'ref': string | undefined;
-  /** Callback to resolve a local fragment reference. */
-  readonly 'resolveLocalRef': (ref: string) => SchemaGraphNodeInterface;
-  /** The raw schema record from `node.schema`. */
-  readonly 'schema': Record<string, unknown>;
-}
+export type { SemanticsBuildContextType } from '../types/SemanticsBuildContext.js';
 
 /**
  * Named return type for {@link extractBooleanFlags}.
@@ -462,7 +432,7 @@ export interface SemanticsBuildContextInterface {
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export interface BooleanFlagsType {
+export type BooleanFlagsType = {
   readonly 'asymmetric': boolean;
   readonly 'computed': boolean;
   readonly 'deprecated': boolean;
@@ -480,7 +450,7 @@ export interface BooleanFlagsType {
   readonly 'transitive': boolean;
   readonly 'uniqueItems': boolean;
   readonly 'writeOnly': boolean;
-}
+};
 
 /**
  * A single property entry: a tuple of property name and its resolved graph node.
@@ -499,13 +469,13 @@ export interface BooleanFlagsType {
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type PropertyEntry = [string, SchemaGraphNodeInterface];
+export type PropertyEntry = [string, SchemaGraphNodeType];
 
 /**
  * An immutable map from property name to the resolved schema graph node.
  *
  * @remarks
- * Returned by `propertiesMap` and held as `SchemaGraphSemanticsInterface.properties`.
+ * Returned by `propertiesMap` and held as `SchemaGraphSemanticsType.properties`.
  * Using a `ReadonlyMap` prevents mutation of the semantics cache.
  *
  * @example
@@ -518,4 +488,4 @@ export type PropertyEntry = [string, SchemaGraphNodeInterface];
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type PropertyMap = ReadonlyMap<string, SchemaGraphNodeInterface>;
+export type PropertyMap = ReadonlyMap<string, SchemaGraphNodeType>;

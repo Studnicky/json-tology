@@ -1,4 +1,4 @@
-import type { ResolvedRefInterface } from '../interfaces/ResolvedRef.js';
+import type { RefTargetType } from '../types/RefTarget.js';
 
 /** Map from property name to effective lift property (graph+node). */
-export type EffectivePropertyMapType = Map<string, ResolvedRefInterface>;
+export type EffectivePropertyMapType = Map<string, RefTargetType>;

@@ -3,15 +3,15 @@
  * keys, named `$anchor`s, and JSON Pointers — proving they resolve when present
  * and fail UNIFORMLY when absent.
  *
- * A reference the document does not reach resolves to `AnchorNotFoundInterface`
+ * A reference the document does not reach resolves to `AnchorNotFoundType`
  * (base `'#'` for same-document fragments), consistent with cross-schema misses
- * yielding `RefNotFoundInterface`. No local miss degrades to a silent `unknown`.
+ * yielding `RefNotFoundType`. No local miss degrades to a silent `unknown`.
  *
  * Validates by compiling under `npm run type-check:tests`.
  */
 
 import type { InferType } from '../../src/types/Schema.js';
-import type { AnchorNotFoundInterface } from '../../src/types/TypeErrors.js';
+import type { AnchorNotFoundType } from '../../src/types/TypeErrors.js';
 
 type AssertAssignable<TSource, TTarget>
   = [TSource] extends [TTarget] ? true : false;
@@ -67,22 +67,22 @@ assert<AssertAssignable<Doc['viaAnchor'], { readonly 'amount': number }>>();
 assert<AssertAssignable<Doc['viaPointer'], string>>();
 assert<AssertAssignable<Doc['priceComplex'], number>>();
 
-// --- Absent references fail uniformly as AnchorNotFoundInterface, not unknown ---
+// --- Absent references fail uniformly as AnchorNotFoundType, not unknown ---
 assert<AssertAssignable<
   Doc['missingDef'],
-  AnchorNotFoundInterface<'#', '/$defs/Nope'>
+  AnchorNotFoundType<'#', '/$defs/Nope'>
 >>();
 assert<AssertAssignable<
   Doc['missingAnchor'],
-  AnchorNotFoundInterface<'#', 'noSuchAnchor'>
+  AnchorNotFoundType<'#', 'noSuchAnchor'>
 >>();
 assert<AssertAssignable<
   Doc['missingPointer'],
-  AnchorNotFoundInterface<'#', '/properties/nope'>
+  AnchorNotFoundType<'#', '/properties/nope'>
 >>();
 assert<AssertAssignable<
   Doc['missingComplex'],
-  AnchorNotFoundInterface<'#', '/$defs/Money/properties/nope'>
+  AnchorNotFoundType<'#', '/$defs/Money/properties/nope'>
 >>();
 
 // --- Negative: a miss must NOT be a silent unknown ---

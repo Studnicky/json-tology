@@ -3,7 +3,7 @@
  *
  * Every property key in `if.properties` must appear in the parent schema's
  * `properties`. Discriminator keys absent from `properties` surface an
- * `IfDiscriminatorNotInPropertiesInterface` brand error.
+ * `IfDiscriminatorNotInPropertiesType` brand error.
  *
  * This example shows the valid case — a book schema that conditionally
  * requires `isbn` when `kind` is 'physical'. Both `kind` and `isbn` are

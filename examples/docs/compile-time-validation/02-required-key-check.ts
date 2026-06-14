@@ -3,7 +3,7 @@
  *
  * Every key in `required` must appear in `properties`. A `required` entry
  * that references a non-existent property surfaces a
- * `RequiredKeyNotInPropertiesInterface` brand error at the call site.
+ * `RequiredKeyNotInPropertiesType` brand error at the call site.
  *
  * The IDE hover on a failing assignment shows the specific brand type and
  * the offending key rather than a generic "not assignable to never" message.

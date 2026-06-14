@@ -5,7 +5,7 @@
  * have been converted to a VitePress `<<<` include directive pointing
  * at a runnable example file in `examples/docs/`.
  *
- * Per the architecture invariant in ARCHITECTURE.md (#13), every docs
+ * Per the architecture invariant in docs/architecture.md (#13), every docs
  * TypeScript example must originate from a runnable example file so
  * the docs and the runtime stay in lockstep.
  *
@@ -24,9 +24,12 @@
  *      Migration pages use this marker for every block: each before/after
  *      pair references a removed API and cannot be compiled as-is.
  *
- * There are no file-pattern exemptions. Every file in docs/ is subject
- * to the ceiling; blocks that cannot be runnable carry the inline-ts-ok
- * marker with an explicit rationale.
+ * Directory exclusions (not file-pattern exemptions): `docs/design/` and
+ * `docs/proposals/` are skipped entirely at the directory-walk level.
+ * These hold design decision records and future-work proposals respectively —
+ * not authored user docs subject to the runnable-example invariant.
+ * Every other file in docs/ is subject to the ceiling; blocks that cannot
+ * be runnable carry the inline-ts-ok marker with an explicit rationale.
  *
  * Exit status:
  *   0 — under the ceiling
@@ -55,9 +58,12 @@ const DOCS_ROOT = join(REPO_ROOT, 'docs');
 // every block in every file must be either a `<<<` include or marked.
 const INLINE_TS_CEILING = 0;
 
-// No file-pattern exemptions. All migration pages have been processed:
-// every inline block either carries an `inline-ts-ok` marker (with rationale
-// naming the removed/legacy API) or was converted to a runnable example file.
+// No file-pattern exemptions within the scanned directories.
+// docs/design/ and docs/proposals/ are excluded at the directory-walk level
+// (not as patterns) because they are not authored user documentation.
+// All migration pages have been processed: every inline block either carries
+// an `inline-ts-ok` marker (with rationale naming the removed/legacy API)
+// or was converted to a runnable example file.
 const EXEMPT_FILE_PATTERNS = [];
 
 const INLINE_OK_MARKER = /<!--\s*inline-ts-ok:\s*([^>]*?)\s*-->/;
@@ -74,16 +80,20 @@ async function listMarkdownFiles(root) {
       const full = join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        // Skip generated assets and internal planning material — they are not
-        // authored user docs. `plans/` holds development planning artifacts
+        // Skip generated assets and development artifacts — they are not
+        // authored user docs subject to the runnable-example invariant.
+        // `proposals/` holds future-work plans and session analysis files
         // (excluded from the published site via `srcExclude` in the VitePress
-        // config); its before/after code references removed/in-progress APIs
-        // and is not subject to the runnable-example invariant.
+        // config); their code blocks reference in-progress or proposed APIs.
+        // `design/` holds dated decision records (ADR-style); their code blocks
+        // are historical specimens of proposed designs, not runnable examples.
         if (
           entry.name === '.vitepress'
           || entry.name === 'public'
           || entry.name === '_examples'
           || entry.name === 'plans'
+          || entry.name === 'proposals'
+          || entry.name === 'design'
         ) {
           continue;
         }

@@ -23,15 +23,15 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../../interfaces/OwlImport.js';
+  OwlImportContextType, OwlImportFragmentType
+} from '../../../types/OwlImport.js';
 import type {
   ListItemType,
-  SchemaGraphRelationInterface
-} from '../../../interfaces/SchemaGraph.js';
+  SchemaGraphRelationType
+} from '../../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
-import type { ExtractFacetOptions } from '../../../interfaces/ExtractFacetOptions.js';
-import type { ApplyRestrictionsOptions } from '../../../interfaces/ApplyRestrictionsOptions.js';
+import type { ExtractFacetOptionsType } from '../../../types/ExtractFacetOptionsType.js';
+import type { ApplyRestrictionsOptionsType } from '../../../types/ApplyRestrictionsOptionsType.js';
 import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
@@ -59,7 +59,7 @@ import { DECIMAL_RADIX } from '../../../constants/FORMAT_VALIDATION.js';
 // ---------------------------------------------------------------------------
 
 /** Resolve the IRI / bnode-id / lexical form of a relation target. */
-function targetValue(relation: SchemaGraphRelationInterface): string {
+function targetValue(relation: SchemaGraphRelationType): string {
   return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
@@ -68,8 +68,8 @@ function relationsByPredicate(
   graph: SchemaGraphInterface,
   subject: string,
   predicates: ReadonlySet<string>
-): readonly SchemaGraphRelationInterface[] {
-  return graph.relationsForSubject(subject).filter((rel: SchemaGraphRelationInterface): boolean => {
+): readonly SchemaGraphRelationType[] {
+  return graph.relationsForSubject(subject).filter((rel: SchemaGraphRelationType): boolean => {
     return predicates.has(rel.predicate);
   });
 }
@@ -78,7 +78,7 @@ function relationsByPredicate(
  * Extract a number from a Literal-typed relation target.
  * Returns null when the target is not a Literal or not numeric.
  */
-function literalNumber(relation: SchemaGraphRelationInterface): null | number {
+function literalNumber(relation: SchemaGraphRelationType): null | number {
   if (relation.termType !== 'Literal') {
     return null;
   }
@@ -92,7 +92,7 @@ function literalNumber(relation: SchemaGraphRelationInterface): null | number {
  * Extract a string from a Literal-typed relation target.
  * Returns null when the target is not a Literal.
  */
-function literalString(relation: SchemaGraphRelationInterface): null | string {
+function literalString(relation: SchemaGraphRelationType): null | string {
   if (relation.termType !== 'Literal') {
     return null;
   }
@@ -177,7 +177,7 @@ function inferEnumType(values: unknown[]): 'boolean' | 'integer' | 'number' | 's
 // ---------------------------------------------------------------------------
 
 /** Apply a `fractionDigits` facet: multipleOf = 10^-n. */
-function applyFractionDigits(fr: SchemaGraphRelationInterface, delta: Record<string, unknown>): void {
+function applyFractionDigits(fr: SchemaGraphRelationType, delta: Record<string, unknown>): void {
   const num = literalNumber(fr);
 
   if (num !== null && num >= 0) {
@@ -186,7 +186,7 @@ function applyFractionDigits(fr: SchemaGraphRelationInterface, delta: Record<str
 }
 
 /** Apply a `length` facet: minLength = maxLength = n. */
-function applyLengthFacet(fr: SchemaGraphRelationInterface, delta: Record<string, unknown>): void {
+function applyLengthFacet(fr: SchemaGraphRelationType, delta: Record<string, unknown>): void {
   const num = literalNumber(fr);
 
   if (num !== null) {
@@ -197,7 +197,7 @@ function applyLengthFacet(fr: SchemaGraphRelationInterface, delta: Record<string
 
 /** Apply a `numeric` facet: delta[key] = n. */
 function applyNumericFacet(
-  fr: SchemaGraphRelationInterface,
+  fr: SchemaGraphRelationType,
   delta: Record<string, unknown>,
   key: string
 ): void {
@@ -210,7 +210,7 @@ function applyNumericFacet(
 
 /** Apply a `string` facet: delta[key] = str. */
 function applyStringFacet(
-  fr: SchemaGraphRelationInterface,
+  fr: SchemaGraphRelationType,
   delta: Record<string, unknown>,
   key: string
 ): void {
@@ -230,7 +230,7 @@ function applyStringFacet(
  */
 function applyFacetRelation(options: { 'bnodeId': string
   'delta': Record<string, unknown>;
-  'fr': SchemaGraphRelationInterface;
+  'fr': SchemaGraphRelationType;
   'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void; }): void {
   const {
     bnodeId, delta, fr, reportUnsupported
@@ -272,7 +272,7 @@ function applyFacetRelation(options: { 'bnodeId': string
  *
  * Multiple predicates on one blank node are all applied.
  */
-function extractFacetFromBnode(options: ExtractFacetOptions): Partial<JsonSchemaDocumentObjectType> {
+function extractFacetFromBnode(options: ExtractFacetOptionsType): Partial<JsonSchemaDocumentObjectType> {
   const {
     bnodeId, graph, reportUnsupported
   } = options;
@@ -322,7 +322,7 @@ function applyOnDatatype(
 /**
  * Apply `owl:withRestrictions` facet list to the delta.
  */
-function applyWithRestrictions(options: ApplyRestrictionsOptions): void {
+function applyWithRestrictions(options: ApplyRestrictionsOptionsType): void {
   const {
     delta, graph, reportUnsupported, schemaType, subjectIri
   } = options;
@@ -474,7 +474,7 @@ function extractEnumValues(listHead: string, graph: SchemaGraphInterface): unkno
 // Empty fragment helper
 // ---------------------------------------------------------------------------
 
-function emptyFragment(): OwlImportFragment {
+function emptyFragment(): OwlImportFragmentType {
   return {
     'characteristics': [],
     'individuals': [],
@@ -506,7 +506,7 @@ function emptyFragment(): OwlImportFragment {
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with schemaDeltas populated.
+ * @returns OwlImportFragmentType with schemaDeltas populated.
  *
  * @remarks
  * Implements OWL 2 §9.4 Datatype Definitions and §4.7 Facet Restrictions.
@@ -524,10 +524,10 @@ function emptyFragment(): OwlImportFragment {
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContext
+ * @see OwlImportContextType
  * @group importDispatch
  */
-export function importDatatypes(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importDatatypes(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
   const graph = ctx.graph;
   const datatypeIris = new Set<string>();
 

@@ -2,7 +2,7 @@
  * OwlImporter — top-level orchestrator for OWL 2 TBox import.
  *
  * Converts OWL 2 quads (JSON-LD, raw quad array, or JSON-LD string) into
- * OwlImportResult: reconstructed JSON Schema objects, invariants, property
+ * OwlImportResultType: reconstructed JSON Schema objects, invariants, property
  * characteristics, owl:sameAs pairs, named individuals, and an unsupported-
  * axiom log for anything no dispatcher could handle.
  *
@@ -16,17 +16,17 @@
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type {
   DispatcherFnInterface,
-  OwlImportContext,
-  OwlImporterOptions,
-  OwlImportFragment,
-  OwlImportResult,
+  OwlImportContextType,
+  OwlImporterOptionsType,
+  OwlImportFragmentType,
+  OwlImportResultType,
   PrefixMap
-} from '../../interfaces/OwlImport.js';
+} from '../../types/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../types/Schema.js';
-import type { InvariantInterface } from '../../interfaces/Invariant.js';
+import type { InvariantType } from '../../types/Invariant.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { JsonLdModule } from '../../interfaces/JsonLdModule.js';
-import type { ExternalRdfJsQuad } from '../../interfaces/ExternalRdfJsQuad.js';
+import type { JsonLdModuleType } from '../../types/JsonLdModuleType.js';
+import type { ExternalRdfJsQuadType } from '../../types/ExternalRdfJsQuadType.js';
 import { Curie } from '../rdf/Curie.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
@@ -85,7 +85,7 @@ function isOwlImportNotImplemented(err: unknown): err is OwlImportError {
 // ---------------------------------------------------------------------------
 
 /** Merge all schema deltas from a list of fragments into a single map. */
-function mergeSchemaDeltas(fragments: OwlImportFragment[]): Map<string, Partial<JsonSchemaDocumentObjectType>> {
+function mergeSchemaDeltas(fragments: OwlImportFragmentType[]): Map<string, Partial<JsonSchemaDocumentObjectType>> {
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
 
   for (const fragment of fragments) {
@@ -110,7 +110,7 @@ function mergeSchemaDeltas(fragments: OwlImportFragment[]): Map<string, Partial<
 }
 
 /** Flatten a list of fragment arrays into a single array. */
-function flattenFragmentArrays<T>(fragments: OwlImportFragment[], key: keyof OwlImportFragment): T[] {
+function flattenFragmentArrays<T>(fragments: OwlImportFragmentType[], key: keyof OwlImportFragmentType): T[] {
   const result: T[] = [];
 
   for (const fragment of fragments) {
@@ -122,9 +122,9 @@ function flattenFragmentArrays<T>(fragments: OwlImportFragment[], key: keyof Owl
   return result;
 }
 
-function mergeFragments(fragments: OwlImportFragment[]): OwlImportFragment {
+function mergeFragments(fragments: OwlImportFragmentType[]): OwlImportFragmentType {
   const schemaDeltas = mergeSchemaDeltas(fragments);
-  const invariants = flattenFragmentArrays<{ 'invariant': InvariantInterface;
+  const invariants = flattenFragmentArrays<{ 'invariant': InvariantType;
     'schemaId': string; }>(fragments, 'invariants');
   const characteristics = flattenFragmentArrays<{ 'characteristic': string;
     'propertyIri': string; }>(fragments, 'characteristics');
@@ -255,7 +255,7 @@ function isDatatypeIri(iri: string): boolean {
  * Not required when the caller passes QuadInterface[] or string/object input
  * that follows the OntologyBuilder compact format.
  */
-async function tryLoadJsonLd(): Promise<JsonLdModule | null> {
+async function tryLoadJsonLd(): Promise<JsonLdModuleType | null> {
   try {
     // jsonld is an optional peerDependency. Dynamic import is used so that
     // the missing package is caught at runtime rather than compile time.
@@ -268,7 +268,7 @@ async function tryLoadJsonLd(): Promise<JsonLdModule | null> {
       return null;
     }
 
-    return mod as unknown as JsonLdModule;
+    return mod as unknown as JsonLdModuleType;
   } catch {
     return null;
   }
@@ -279,7 +279,7 @@ async function tryLoadJsonLd(): Promise<JsonLdModule | null> {
 // ---------------------------------------------------------------------------
 
 /** Build a single QuadInterface from an external RDF/JS quad shape. */
-function buildQuadFromExternal(quad: ExternalRdfJsQuad): QuadInterface {
+function buildQuadFromExternal(quad: ExternalRdfJsQuadType): QuadInterface {
   const obj = quad.object;
   let objectTerm: QuadObjectType;
 
@@ -322,10 +322,10 @@ function fromJsonLdRdfOutput(rdfOutput: unknown): QuadInterface[] {
   }
 
   return defaultGraph
-    .filter((quad: unknown): quad is ExternalRdfJsQuad => {
+    .filter((quad: unknown): quad is ExternalRdfJsQuadType => {
       return typeof quad === 'object' && quad !== null;
     })
-    .map((quad: ExternalRdfJsQuad): QuadInterface => {
+    .map((quad: ExternalRdfJsQuadType): QuadInterface => {
       return buildQuadFromExternal(quad);
     });
 }
@@ -444,7 +444,7 @@ const DISPATCHERS: readonly DispatcherFnInterface[] = [
  *
  * @category OWL Import
  * @since 0.18.0
- * @see {@link OwlImportResult}
+ * @see {@link OwlImportResultType}
  * @group OWL Import
  */
 export class OwlImporter {
@@ -452,7 +452,7 @@ export class OwlImporter {
   private readonly curie: CurieInterface;
   private readonly prefixes: PrefixMap;
 
-  public constructor(options: OwlImporterOptions) {
+  public constructor(options: OwlImporterOptionsType) {
     this.baseIRI = options.baseIRI;
     this.prefixes = {
       ...STANDARD_PREFIXES,
@@ -478,10 +478,10 @@ export class OwlImporter {
    *   - `object` — a JSON-LD document (synchronous compact-walker parse).
    *   For arbitrary JSON-LD documents, use `importAsync()` which calls
    *   `jsonld.toRDF` via the optional peerDependency.
-   * @returns OwlImportResult with schemas, invariants, characteristics,
+   * @returns OwlImportResultType with schemas, invariants, characteristics,
    *   sameAs, individuals, and unsupported entries.
    */
-  public import(jsonLd: object | QuadInterface[] | string): OwlImportResult {
+  public import(jsonLd: object | QuadInterface[] | string): OwlImportResultType {
     const quads = normalizeInput(jsonLd);
     const graph = SchemaGraph.fromQuads(quads, {
       'baseIRI': this.baseIRI,
@@ -494,7 +494,7 @@ export class OwlImporter {
     const unsupported: Array<{ 'axiomIri': string;
       'subjectIri': null | string }> = [];
 
-    const ctx: OwlImportContext = {
+    const ctx: OwlImportContextType = {
       allClassIris,
       allPropertyIris,
       'baseIRI': this.baseIRI,
@@ -512,7 +512,7 @@ export class OwlImporter {
       }
     };
 
-    const fragments: OwlImportFragment[] = [];
+    const fragments: OwlImportFragmentType[] = [];
 
     for (const dispatcher of DISPATCHERS) {
       try {
@@ -554,9 +554,9 @@ export class OwlImporter {
    *   npm install jsonld
    *
    * @param jsonLd - The input in one of three forms (same as `import()`).
-   * @returns Promise<OwlImportResult>
+   * @returns Promise<OwlImportResultType>
    */
-  public async importAsync(jsonLd: object | QuadInterface[] | string): Promise<OwlImportResult> {
+  public async importAsync(jsonLd: object | QuadInterface[] | string): Promise<OwlImportResultType> {
     let quads: QuadInterface[];
 
     if (Array.isArray(jsonLd)) {
@@ -605,7 +605,7 @@ export class OwlImporter {
  * in before the final schema objects are emitted.
  */
 function resolveSchemaDeltas(
-  merged: OwlImportFragment,
+  merged: OwlImportFragmentType,
   allClassIris: ReadonlySet<string>
 ): readonly JsonSchemaDocumentObjectType[] {
   const schemas: JsonSchemaDocumentObjectType[] = [];

@@ -13,18 +13,18 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraph.js';
+import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { ProjectionEmitContextInterface } from '../../interfaces/ProjectionEmitContext.js';
-import type { EmitNodeShapeArgsInterface } from '../../interfaces/EmitNodeShapeArgs.js';
-import type { EmitPropertyShapeArgsInterface } from '../../interfaces/EmitPropertyShapeArgs.js';
-import type { EmitNodeShapePropertiesArgsInterface } from '../../interfaces/EmitNodeShapePropertiesArgs.js';
-import type { EmitNodeShapeCompositionArgsInterface } from '../../interfaces/EmitNodeShapeCompositionArgs.js';
-import type { EmitPropertyShapeConstraintsArgsInterface } from '../../interfaces/EmitPropertyShapeConstraintsArgs.js';
-import type { EmitCountConstraintArgsInterface } from '../../interfaces/EmitCountConstraintArgs.js';
-import type { EmitRangeConstraintArgsInterface } from '../../interfaces/EmitRangeConstraintArgs.js';
-import type { EmitContainsQualifiedCardinalityArgsInterface } from '../../interfaces/EmitContainsQualifiedCardinalityArgs.js';
+import type { ProjectionEmitContextType } from '../../types/ProjectionEmitContext.js';
+import type { EmitNodeShapeArgsType } from '../../types/EmitNodeShapeArgs.js';
+import type { EmitPropertyShapeArgsType } from '../../types/EmitPropertyShapeArgs.js';
+import type { EmitNodeShapePropertiesArgsType } from '../../types/EmitNodeShapePropertiesArgs.js';
+import type { EmitNodeShapeCompositionArgsType } from '../../types/EmitNodeShapeCompositionArgs.js';
+import type { EmitPropertyShapeConstraintsArgsType } from '../../types/EmitPropertyShapeConstraintsArgs.js';
+import type { EmitCountConstraintArgsType } from '../../types/EmitCountConstraintArgs.js';
+import type { EmitRangeConstraintArgsType } from '../../types/EmitRangeConstraintArgs.js';
+import type { EmitContainsQualifiedCardinalityArgsType } from '../../types/EmitContainsQualifiedCardinalityArgs.js';
 import { IdentifierIssuer } from './IdentifierIssuer.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
@@ -34,14 +34,14 @@ import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
 import { resolvePropertySchema } from './ProjectionHelpers.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
-import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+import type { RelationIndexType } from '../../types/RelationIndex.js';
 import { VocabProjection } from './VocabProjection.js';
 
 const XSD_IRI_PREFIX = STANDARD_PREFIXES.xsd;
 
 function relationToEquivIri(
-  rel: SchemaGraphRelationInterface,
-  index: Map<string, RelationIndexInterface>,
+  rel: SchemaGraphRelationType,
+  index: Map<string, RelationIndexType>,
   curie: CurieInterface | undefined
 ): ReturnType<typeof QuadFactory.iri> {
   const targetId = resolveTargetRef(ProjectionIndex.relationTargetId(rel), index);
@@ -50,13 +50,13 @@ function relationToEquivIri(
 }
 
 function relationToOneOfLiteral(
-  rel: SchemaGraphRelationInterface,
+  rel: SchemaGraphRelationType,
   curie: CurieInterface | undefined
 ): ReturnType<typeof QuadFactory.literal> {
   return QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
 }
 
-function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndexInterface>): string {
+function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndexType>): string {
   const targetEntry = index.get(targetNodeId);
 
   if (targetEntry === undefined) {
@@ -90,7 +90,7 @@ function isExcludedFragment(fragment: null | string): boolean {
   return fragment === '/if' || fragment === '/then' || fragment === '/else';
 }
 
-function hasSerializablePredicate(entry: RelationIndexInterface): boolean {
+function hasSerializablePredicate(entry: RelationIndexType): boolean {
   return entry.byPredicate.has(RDFS.subClassOf)
     || entry.byPredicate.has(OWL.equivalentClass)
     || entry.byPredicate.has(OWL.complementOf)
@@ -101,7 +101,7 @@ function hasSerializablePredicate(entry: RelationIndexInterface): boolean {
     || entry.byPredicate.has(JT.dependentRequired);
 }
 
-function hasSerializableStructure(entry: RelationIndexInterface): boolean {
+function hasSerializableStructure(entry: RelationIndexType): boolean {
   for (const rel of entry.all) {
     if (rel.structure?.kind === 'conditional') {
       return true;
@@ -118,7 +118,7 @@ function hasSerializableStructure(entry: RelationIndexInterface): boolean {
 
 function isSerializationCandidate(
   subject: string,
-  entry: RelationIndexInterface,
+  entry: RelationIndexType,
   propertyIndex: Map<string, string[]>
 ): boolean {
   if (SchemaIri.isPropertySubject(subject)) {
@@ -150,11 +150,11 @@ function isSerializationCandidate(
 
 class ShaclVocabProjection extends VocabProjection {
   private readonly graph: SchemaGraphInterface;
-  private readonly index: Map<string, RelationIndexInterface>;
+  private readonly index: Map<string, RelationIndexType>;
   private readonly predicateResolver: PredicateResolverFnType | undefined;
 
   constructor(
-    index: Map<string, RelationIndexInterface>,
+    index: Map<string, RelationIndexType>,
     graph: SchemaGraphInterface,
     predicateResolver: PredicateResolverFnType | undefined
   ) {
@@ -279,7 +279,7 @@ class ShaclVocabProjection extends VocabProjection {
       }
 
       const psBnode = QuadFactory.nextBnode(issuer);
-      const depCtx: ProjectionEmitContextInterface = {
+      const depCtx: ProjectionEmitContextType = {
         curie,
         'graph': this.graph,
         'index': this.index,
@@ -371,7 +371,7 @@ class ShaclVocabProjection extends VocabProjection {
 }
 
 /** Build the property-parent index: maps each parent subject IRI to its property subject IRIs. */
-function buildPropertyIndex(index: Map<string, RelationIndexInterface>): Map<string, string[]> {
+function buildPropertyIndex(index: Map<string, RelationIndexType>): Map<string, string[]> {
   const propertyIndex = new Map<string, string[]>();
 
   for (const [subject] of index) {
@@ -423,7 +423,7 @@ export const ShaclProjection = {
     const propertyIndex = buildPropertyIndex(index);
 
     const shaclVocab = new ShaclVocabProjection(index, graph, predicateResolver);
-    const ctx: ProjectionEmitContextInterface = {
+    const ctx: ProjectionEmitContextType = {
       curie,
       graph,
       index,
@@ -457,7 +457,7 @@ export const ShaclProjection = {
   }
 } as const;
 
-function emitNodeShapeMetadata(subject: string, entry: RelationIndexInterface, ctx: ProjectionEmitContextInterface): void {
+function emitNodeShapeMetadata(subject: string, entry: RelationIndexType, ctx: ProjectionEmitContextType): void {
   const {
     curie, quads
   } = ctx;
@@ -477,7 +477,7 @@ function emitNodeShapeMetadata(subject: string, entry: RelationIndexInterface, c
   QuadFactory.emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, { curie });
 }
 
-function emitNodeShapeProperties(args: EmitNodeShapePropertiesArgsInterface): void {
+function emitNodeShapeProperties(args: EmitNodeShapePropertiesArgsType): void {
   const {
     ctx, entry, propertyIndex, subject
   } = args;
@@ -513,7 +513,7 @@ function emitNodeShapeProperties(args: EmitNodeShapePropertiesArgsInterface): vo
   emitContainsPropertyShape(subject, entry, ctx);
 }
 
-function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsInterface): void {
+function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsType): void {
   const {
     ctx, entry, shaclVocab, subject
   } = args;
@@ -548,8 +548,8 @@ function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsInterface): 
 
 function emitNodeShapeEquivalences(
   subject: string,
-  entry: RelationIndexInterface,
-  ctx: ProjectionEmitContextInterface
+  entry: RelationIndexType,
+  ctx: ProjectionEmitContextType
 ): void {
   const {
     curie, index, issuer, quads
@@ -557,7 +557,7 @@ function emitNodeShapeEquivalences(
   const equivRels = entry.byPredicate.get(OWL.equivalentClass) ?? [];
 
   if (equivRels.length > 0) {
-    const orItems = equivRels.map((rel: SchemaGraphRelationInterface): ReturnType<typeof QuadFactory.iri> => {
+    const orItems = equivRels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.iri> => {
       return relationToEquivIri(rel, index, curie);
     });
 
@@ -583,7 +583,7 @@ function emitNodeShapeEquivalences(
   const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
 
   if (oneOfRels.length > 0) {
-    const values = oneOfRels.map((rel: SchemaGraphRelationInterface): ReturnType<typeof QuadFactory.literal> => {
+    const values = oneOfRels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.literal> => {
       return relationToOneOfLiteral(rel, curie);
     });
 
@@ -591,7 +591,7 @@ function emitNodeShapeEquivalences(
   }
 }
 
-function emitNodeShape(args: EmitNodeShapeArgsInterface): void {
+function emitNodeShape(args: EmitNodeShapeArgsType): void {
   const {
     ctx, entry, propertyIndex, shaclVocab, subject
   } = args;
@@ -617,7 +617,7 @@ function emitNodeShape(args: EmitNodeShapeArgsInterface): void {
 }
 
 /** Emit a numeric count constraint (minCount or maxCount) if the relation list is non-empty. */
-function emitCountConstraint(args: EmitCountConstraintArgsInterface): void {
+function emitCountConstraint(args: EmitCountConstraintArgsType): void {
   const {
     bnodeId, opts, predicate, quads, rels
   } = args;
@@ -631,7 +631,7 @@ function emitCountConstraint(args: EmitCountConstraintArgsInterface): void {
 }
 
 /** Emit the sh:class or sh:node range constraint based on cardinality and datatype presence. */
-function emitRangeConstraint(args: EmitRangeConstraintArgsInterface): void {
+function emitRangeConstraint(args: EmitRangeConstraintArgsType): void {
   const {
     bnodeId, datatypeRels, opts, quads, rangeRels
   } = args;
@@ -645,7 +645,7 @@ function emitRangeConstraint(args: EmitRangeConstraintArgsInterface): void {
   quads.push(QuadFactory.quad(bnodeId, rangePredicate, rangeIri, opts));
 }
 
-function emitPropertyShapeTypeConstraints(args: EmitPropertyShapeConstraintsArgsInterface): void {
+function emitPropertyShapeTypeConstraints(args: EmitPropertyShapeConstraintsArgsType): void {
   const {
     bnodeId, entry, opts, quads
   } = args;
@@ -681,7 +681,7 @@ function emitPropertyShapeTypeConstraints(args: EmitPropertyShapeConstraintsArgs
   });
 }
 
-function emitPropertyShapeValueConstraints(args: EmitPropertyShapeConstraintsArgsInterface): void {
+function emitPropertyShapeValueConstraints(args: EmitPropertyShapeConstraintsArgsType): void {
   const {
     bnodeId, entry, opts, quads
   } = args;
@@ -719,7 +719,7 @@ function emitPropertyShapeValueConstraints(args: EmitPropertyShapeConstraintsArg
   }
 }
 
-function emitPropertyShape(args: EmitPropertyShapeArgsInterface): void {
+function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
   const {
     bnodeId, classId, ctx, entry, overridePathClassId, subject
   } = args;
@@ -761,7 +761,7 @@ function emitPropertyShape(args: EmitPropertyShapeArgsInterface): void {
   QuadFactory.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, opts);
 }
 
-function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinalityArgsInterface): void {
+function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinalityArgsType): void {
   const {
     curie, entry, psBnode, quads
   } = args;
@@ -786,13 +786,13 @@ function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinality
 
 function emitContainsPropertyShape(
   subject: string,
-  entry: RelationIndexInterface,
-  ctx: ProjectionEmitContextInterface
+  entry: RelationIndexType,
+  ctx: ProjectionEmitContextType
 ): void {
   const {
     curie, issuer, quads
   } = ctx;
-  const containsRels = entry.all.filter((rel: SchemaGraphRelationInterface): boolean => {
+  const containsRels = entry.all.filter((rel: SchemaGraphRelationType): boolean => {
     return ProjectionIndex.isRestrictionStructure(rel.structure)
       && rel.structure.constraint === OWL.someValuesFrom;
   });

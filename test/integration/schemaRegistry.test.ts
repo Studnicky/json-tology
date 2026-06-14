@@ -1007,3 +1007,151 @@ void describe('Structure Validation', () => {
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Wave C — single-path embedded-$id resolution via graph index
+// ---------------------------------------------------------------------------
+// Verifies that the sole resolution path (SchemaGraph.embeddedNode) correctly
+// resolves $refs to embedded $ids in $defs at the registry engine level,
+// through materialize and validate, without any raw-walk fallback.
+
+void describe('embedded-$id single-path resolution via graph index', { 'concurrency': true }, () => {
+  void it('registry.instantiate resolves $ref to an embedded $defs $id through the graph index', () => {
+    const AddressSchema = {
+      '$defs': {
+        'Address': {
+          '$id': 'https://x.test/Address',
+          'properties': {
+            'city': { 'type': 'string' },
+            'street': { 'type': 'string' }
+          },
+          'required': ['street'],
+          'type': 'object'
+        }
+      },
+      '$id': 'https://x.test/AddressHolder',
+      'properties': { 'home': { '$ref': 'https://x.test/Address' } },
+      'required': ['home'],
+      'type': 'object'
+    } as const;
+
+    const registry = JsonTology.create({ 'baseIRI': 'https://x.test' }).registry;
+
+    registry.set(AddressSchema);
+
+    // Valid: home.street is present — instantiate validates and returns the value
+    const result = registry.instantiate(AddressSchema, {
+      'home': {
+        'city': 'Boston',
+        'street': '1 Main St'
+      }
+    });
+
+    assert.deepEqual(result, {
+      'home': {
+        'city': 'Boston',
+        'street': '1 Main St'
+      }
+    });
+  });
+
+  void it('registry validate rejects data that violates the embedded $defs schema', () => {
+    const OrderSchema = {
+      '$defs': {
+        'LineItem': {
+          '$id': 'https://x.test/LineItem',
+          'properties': {
+            'qty': {
+              'minimum': 1,
+              'type': 'integer'
+            },
+            'sku': { 'type': 'string' }
+          },
+          'required': [
+            'sku',
+            'qty'
+          ],
+          'type': 'object'
+        }
+      },
+      '$id': 'https://x.test/Order',
+      'properties': {
+        'items': {
+          'items': { '$ref': 'https://x.test/LineItem' },
+          'type': 'array'
+        }
+      },
+      'required': ['items'],
+      'type': 'object'
+    } as const;
+
+    const registry = JsonTology.create({ 'baseIRI': 'https://x.test' }).registry;
+
+    registry.set(OrderSchema);
+
+    // validate() returns ValidationErrors; .length === 0 means valid
+    const validErrors = registry.validate(OrderSchema, {
+      'items': [{
+        'qty': 2,
+        'sku': 'ABC-1'
+      }]
+    });
+
+    assert.equal(validErrors.length, 0, 'valid order should produce zero errors');
+
+    const invalidErrors = registry.validate(OrderSchema, {
+      'items': [{
+        'qty': 0,
+        'sku': 'ABC-1'
+      }]
+    });
+
+    assert.ok(invalidErrors.length > 0, 'qty below minimum should produce errors');
+  });
+
+  void it('graph embeddedNode is the sole mechanism — engine resolves embedded $defs $ref via graph index', () => {
+    // Schema A embeds Sub under $defs with its own $id. The $ref to Sub's absolute
+    // $id is resolved by GraphEngine exclusively via the root graph's embeddedNode()
+    // index — no raw-walk fallback exists after Wave C cleanup.
+    // We use registry.engine() to exercise the GraphEngine resolution path directly.
+    const SchemaA = {
+      '$defs': {
+        'Sub': {
+          '$id': 'https://x.test/SchemaA/Sub',
+          'minimum': 0,
+          'type': 'integer'
+        }
+      },
+      '$id': 'https://x.test/SchemaA',
+      'properties': { 'val': { '$ref': 'https://x.test/SchemaA/Sub' } },
+      'required': ['val'],
+      'type': 'object'
+    } as const;
+
+    const registry = JsonTology.create({ 'baseIRI': 'https://x.test' }).registry;
+
+    registry.set(SchemaA);
+
+    // Confirm embeddedNode is populated on SchemaA's graph
+    const graph = registry.graph('https://x.test/SchemaA');
+
+    assert.notStrictEqual(graph, undefined, 'graph must exist');
+
+    const subNode = graph?.embeddedNode('https://x.test/SchemaA/Sub');
+
+    assert.notStrictEqual(subNode, undefined, 'embeddedNode must find SchemaA/Sub through graph index');
+
+    // Use registry.engine() which routes through GraphEngine.resolveRefGraph —
+    // the exact path now backed exclusively by embeddedNode().
+    const engine = registry.engine(SchemaA);
+
+    const passResult = engine.execute({ 'val': 5 });
+
+    assert.equal(passResult.valid, true, 'val=5 should pass');
+
+    const failResult = engine.execute({ 'val': -1 });
+
+    assert.equal(failResult.valid, false, 'val=-1 should fail minimum constraint');
+    assert.ok(failResult.errors.length > 0, 'should have errors');
+  });
+});

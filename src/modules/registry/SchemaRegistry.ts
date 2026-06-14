@@ -5,24 +5,23 @@
  * pointer-based sub-schema execution.
  */
 
-import type { CompiledValidatorInterface } from '../../interfaces/Compiler.js';
+import type { CompiledValidatorType } from '../../types/Compiler.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type {
-  GraphEngineOptionsInterface, KeywordDefinitionInterface
-} from '../../interfaces/GraphEngine.js';
+  GraphEngineOptionsType, KeywordDefinitionType
+} from '../../types/GraphEngine.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
-import type { InvariantInterface } from '../../interfaces/Invariant.js';
+import type { InvariantType } from '../../types/Invariant.js';
 import type { LoggerInterface } from '../../interfaces/Logger.js';
-import type { RegistryOptionsInterface } from '../../interfaces/Registry.js';
+import type { RegistryOptionsType } from '../../types/Registry.js';
 import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
-import type {
-  DuplicateReportEntryType, SchemaEntryStoreInterface
-} from '../../interfaces/SchemaEntryStore.js';
+import type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryType.js';
+import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStore.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { StructureWarningInterface } from '../../interfaces/SchemaGraph.js';
+import type { StructureWarningType } from '../../types/SchemaGraph.js';
 import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.js';
-import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
+import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntry.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
@@ -42,7 +41,6 @@ import {
 } from '../data/DataTypes.js';
 import { Frozen } from '../data/Frozen.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
-import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
 import { Materializer } from '../materialization/Materializer.js';
@@ -66,8 +64,6 @@ import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
 const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
-const EMPTY_EMBEDDED_MAP_MUTABLE = new Map<string, Record<string, unknown>>();
-const EMPTY_EMBEDDED_MAP: ReadonlyMap<string, Record<string, unknown>> = Object.freeze(EMPTY_EMBEDDED_MAP_MUTABLE);
 
 // Hoisted from addCharacteristic() — allocated once per module, not per call.
 const CHARACTERISTIC_TO_KEY: Readonly<Partial<Record<string, string>>> = Object.freeze({
@@ -84,36 +80,8 @@ function isStringItem(value: unknown): boolean {
   return typeof value === 'string';
 }
 
-function detectEmbeddedIds(node: unknown, isRoot: boolean): boolean {
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      if (detectEmbeddedIds(item, false)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  if (!isRecord(node)) {
-    return false;
-  }
-
-  if (!isRoot && typeof node.$id === 'string' && node.$id !== '') {
-    return true;
-  }
-
-  for (const value of Object.values(node)) {
-    if (detectEmbeddedIds(value, false)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 // Re-exported so existing consumers of SchemaRegistry keep their import paths.
-export type { DuplicateReportEntryType } from '../../interfaces/SchemaEntryStore.js';
+export type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryType.js';
 
 
 /**
@@ -147,7 +115,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Resolve registry option booleans to their effective values.
    * Centralises the defaults so the constructor complexity is reduced.
    */
-  private static resolveOptions(options: RegistryOptionsInterface | undefined): {
+  private static resolveOptions(options: RegistryOptionsType | undefined): {
     'castTypes': boolean;
     'enableDuplicateDetection': boolean;
     'enableInlineWarnings': boolean;
@@ -191,7 +159,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly formatRegistry: FormatRegistryInterface | undefined;
   private readonly instantiateOptions: Readonly<Record<string, boolean>>;
   private readonly invariants: InvariantStore;
-  private readonly keywords: KeywordDefinitionInterface[] | undefined;
+  private readonly keywords: KeywordDefinitionType[] | undefined;
   private readonly logger: LoggerInterface;
   private readonly lookupGraphFn: (id: string) => SchemaGraphInterface | undefined;
   private readonly maxSchemaDepth: number | undefined;
@@ -201,7 +169,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
   private readonly vocabularies: readonly VocabularyPluginInterface[];
 
-  public constructor(options?: RegistryOptionsInterface) {
+  public constructor(options?: RegistryOptionsType) {
     this.logger = options?.logger ?? SILENT_LOGGER;
 
     const config = SchemaRegistry.resolveOptions(options);
@@ -230,7 +198,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     };
     this.compiler = new SchemaCompiler({
       'logger': this.logger,
-      'lookupCompiled': (schemaId: string): CompiledValidatorInterface | undefined => {
+      'lookupCompiled': (schemaId: string): CompiledValidatorType | undefined => {
         return this.store.has(schemaId)
           ? this.compiled(schemaId)
           : undefined;
@@ -242,7 +210,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Apply an OWL 2 property characteristic to an already-registered class schema.
    *
    * Called by the fromTbox() registration path for each entry in
-   * OwlImportResult.characteristics. Parses the property IRI to locate the
+   * OwlImportResultType.characteristics. Parses the property IRI to locate the
    * owning class and property name, then re-registers the class schema with
    * the characteristic boolean flag added to the relevant property entry.
    *
@@ -308,7 +276,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.set(patchedSchema);
   }
 
-  public addInvariant(schemaId: string, invariant: InvariantInterface): void {
+  public addInvariant(schemaId: string, invariant: InvariantType): void {
     this.invariants.add(this.resolve(schemaId), invariant);
   }
 
@@ -469,15 +437,16 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    *
    * Result is cached on the entry so we only walk once per entry.
    */
-  private assertRefsResolvable(entry: SchemaRegistryEntryInterface): void {
+  private assertRefsResolvable(entry: SchemaRegistryEntryType): void {
     if (entry.refsChecked === true) {
       return;
     }
 
     const schemaId = (entry.schema.$id as string | undefined) ?? '<anonymous>';
-    const embeddedIds = new Set<string>();
+    // Embedded-$id knowledge comes solely from the canonical graph index.
+    // graphOf is memoised, so this reuses the entry's already-built graph.
+    const embeddedIds = new Set(this.graphOf(entry).embeddedSchemaIds());
 
-    this.refs.collectEmbeddedIds(entry.schema, embeddedIds);
     this.refs.assertResolvable(
       entry.schema,
       schemaId,
@@ -550,7 +519,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return;
     }
 
-    const message = `Schema "${schemaId}" contains inline shapes: ${warnings.map((warning: StructureWarningInterface): string => {
+    const message = `Schema "${schemaId}" contains inline shapes: ${warnings.map((warning: StructureWarningType): string => {
       return warning.message;
     }).join('; ')}`;
 
@@ -582,7 +551,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   /**
-   * Build the `RefDecoderRegistryInterface` object used by `RefDecoder.run`.
+   * Build the `RefDecoderRegistryType` object used by `RefDecoder.run`.
    * Centralises the three store-backed lookup callbacks.
    */
   private buildRefDecoderRegistry(): {
@@ -792,8 +761,14 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * that are not yet registered. Used by the loader walker in JsonTology.resolveAllRefs.
    */
   public collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string> {
+    // Embedded-$id knowledge comes solely from the canonical graph. The schema
+    // walked here is not yet registered (loader-driven resolution), so build a
+    // graph over it to enumerate its embedded sub-schema ids.
+    const embeddedIds = new Set(new SchemaGraph(schema).embeddedSchemaIds());
+
     return this.refs.collectUnresolved(
       schema,
+      embeddedIds,
       (id: string): boolean => {
         return this.store.has(id);
       },
@@ -803,7 +778,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     );
   }
 
-  private compiled(schemaId: string): CompiledValidatorInterface | undefined {
+  private compiled(schemaId: string): CompiledValidatorType | undefined {
     const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
@@ -813,7 +788,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.compiledFromEntry(entry);
   }
 
-  private compiledFromEntry(entry: SchemaRegistryEntryInterface): CompiledValidatorInterface {
+  private compiledFromEntry(entry: SchemaRegistryEntryType): CompiledValidatorType {
     this.assertRefsResolvable(entry);
 
     if (entry.compiled === undefined) {
@@ -906,24 +881,36 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     if (entry.engine === undefined) {
-      const embeddedSchemas = entry.hasEmbeddedIds
-        ? GraphEngineSupport.buildEmbeddedSchemaMap(entry.schema)
-        : EMPTY_EMBEDDED_MAP;
+      // Build the entry graph once so both the lookupSchema closure and the
+      // engine share the same graph instance (graphOf is memoised).
+      const entryGraph = this.graphOf(entry);
 
-      const engineOptions: GraphEngineOptionsInterface = {
+      const engineOptions: GraphEngineOptionsType = {
         'lookupGraph': this.lookupGraphFn,
         'lookupSchema': (lookupSchemaId: string): Record<string, unknown> | undefined => {
-          // Resolve CURIE refs against the canonical store key. The embedded
-          // fallback is tried under both the raw and resolved id so a $ref to an
-          // embedded $id authored as either form still resolves. This mirrors
-          // lookupGraph (registry.graph) so direct engine execution
-          // (materialize/createDefault) resolves CURIE $refs the same way the
-          // compiled validate/instantiate path already does.
+          // 1. Cross-registry lookup: other top-level registered schemas.
+          //    Resolve CURIE refs against the canonical store key first.
           const resolvedId = this.resolve(lookupSchemaId);
+          const storeSchema = this.store.get(resolvedId)?.schema;
 
-          return this.store.get(resolvedId)?.schema
-            ?? embeddedSchemas.get(lookupSchemaId)
-            ?? embeddedSchemas.get(resolvedId);
+          if (storeSchema !== undefined) {
+            return storeSchema;
+          }
+
+          // 2. Embedded $id lookup via the canonical graph index.
+          //    GraphEngine.resolveRefGraph resolves embedded $ids through the
+          //    root graph's embeddedNode() at runtime, but SchemaCompiler also
+          //    calls lookupSchema at compile time to build compiled validators
+          //    for $ref targets. Both callers therefore get the schema through
+          //    the same graph-owned index — one source, two access points.
+          const embeddedNode = entryGraph.embeddedNode(lookupSchemaId)
+            ?? entryGraph.embeddedNode(resolvedId);
+
+          if (embeddedNode !== undefined && isRecord(embeddedNode.schema)) {
+            return embeddedNode.schema;
+          }
+
+          return undefined;
         }
       };
 
@@ -996,7 +983,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     };
   }
 
-  private graphOf(entry: SchemaRegistryEntryInterface): SchemaGraphInterface {
+  private graphOf(entry: SchemaRegistryEntryType): SchemaGraphInterface {
     entry.graph ??= new SchemaGraph(entry.schema, { 'vocabularies': this.vocabularies });
 
     return entry.graph;
@@ -1088,13 +1075,13 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public list(): ReadonlyArray<Record<string, unknown>> {
-    return Array.from(this.store.values(), (entry: SchemaRegistryEntryInterface): Record<string, unknown> => {
+    return Array.from(this.store.values(), (entry: SchemaRegistryEntryType): Record<string, unknown> => {
       return entry.schema;
     });
   }
 
   public listGraphs(): readonly SchemaGraphInterface[] {
-    return Array.from(this.store.values(), (entry: SchemaRegistryEntryInterface): SchemaGraphInterface => {
+    return Array.from(this.store.values(), (entry: SchemaRegistryEntryType): SchemaGraphInterface => {
       return this.graphOf(entry);
     });
   }
@@ -1150,9 +1137,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       Frozen.deepFreeze(canonicalSchema);
     }
 
-    const entry: SchemaRegistryEntryInterface = {
+    const entry: SchemaRegistryEntryType = {
       'hasComputedFields': false,
-      'hasEmbeddedIds': detectEmbeddedIds(canonicalSchema, true),
       hash,
       'hasTransform': Transform.getDecoder(canonicalSchema) !== undefined,
       'schema': canonicalSchema
@@ -1390,7 +1376,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
-  public validator(schemaId: string): CompiledValidatorInterface {
+  public validator(schemaId: string): CompiledValidatorType {
     const compiled = this.compiled(this.resolve(schemaId));
 
     if (compiled === undefined) {

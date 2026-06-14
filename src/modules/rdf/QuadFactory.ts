@@ -19,16 +19,16 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { GraphError } from '../../errors/GraphError.js';
 import type {
-  QuadFactoryEmitOptsInterface,
-  QuadFactoryIriOptsInterface,
-  QuadFactoryLiteralOptsInterface,
-  QuadFactoryQuadOptsInterface
-} from '../../interfaces/QuadFactoryOpts.js';
-import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+  QuadFactoryEmitOptsType,
+  QuadFactoryIriOptsType,
+  QuadFactoryLiteralOptsType,
+  QuadFactoryQuadOptsType
+} from '../../types/QuadFactoryOpts.js';
+import type { RelationIndexType } from '../../types/RelationIndex.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { JsonLdDatasetQuad } from '../../interfaces/JsonLdDatasetQuad.js';
+import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
 
-export type { JsonLdDatasetQuad } from '../../interfaces/JsonLdDatasetQuad.js';
+export type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
 import { Lists } from './Lists.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import { Terms } from './Terms.js';
@@ -103,7 +103,7 @@ export class QuadFactory {
     tripleTerm: Quad,
     annotationPredicate: string,
     annotationValue: QuadObjectType,
-    options?: QuadFactoryQuadOptsInterface
+    options?: QuadFactoryQuadOptsType
   ): QuadInterface {
     const {
       curie, graph
@@ -124,11 +124,11 @@ export class QuadFactory {
    */
   static emitConstraintLiteral(
     subject: string,
-    entry: RelationIndexInterface,
+    entry: RelationIndexType,
     predicate: string,
     datatype: string,
     quads: QuadInterface[],
-    options?: QuadFactoryEmitOptsInterface
+    options?: QuadFactoryEmitOptsType
   ): void {
     const rels = entry.byPredicate.get(predicate) ?? [];
 
@@ -145,11 +145,11 @@ export class QuadFactory {
    */
   static emitLiterals(
     subject: string,
-    entry: RelationIndexInterface,
+    entry: RelationIndexType,
     predicate: string,
     outputPredicate: string,
     quads: QuadInterface[],
-    options?: QuadFactoryEmitOptsInterface
+    options?: QuadFactoryEmitOptsType
   ): void {
     const rels = entry.byPredicate.get(predicate);
 
@@ -167,7 +167,7 @@ export class QuadFactory {
   /**
    * Construct a `QuadInterface` from a jsonld dataset quad object.
    */
-  static fromDatasetQuad(datasetQuad: JsonLdDatasetQuad): QuadInterface {
+  static fromDatasetQuad(datasetQuad: JsonLdDatasetQuadType): QuadInterface {
     const subject = datasetQuad.subject.termType === 'BlankNode'
       ? Terms.blank(datasetQuad.subject.value)
       : Terms.iri(datasetQuad.subject.value);
@@ -231,7 +231,7 @@ export class QuadFactory {
    * Build an IRI term. When `options.curie` is provided, compact CURIEs
    * (`prefix:local`) are expanded against the shared `Curie` instance.
    */
-  static iri(value: string, options?: QuadFactoryIriOptsInterface): QuadObjectType {
+  static iri(value: string, options?: QuadFactoryIriOptsType): QuadObjectType {
     const curie = options?.curie;
     const expandedValue = curie === undefined ? value : curie.expandIfNeeded(value);
 
@@ -242,7 +242,7 @@ export class QuadFactory {
    * Build a typed literal term. `datatype` is expanded from compact CURIE
    * form when `options.curie` is provided.
    */
-  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptsInterface): QuadObjectType {
+  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptsType): QuadObjectType {
     const curie = options?.curie;
     const language = options?.language;
 
@@ -289,7 +289,7 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptsInterface
+    options?: QuadFactoryQuadOptsType
   ): QuadInterface {
     const {
       curie, graph
@@ -353,7 +353,7 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptsInterface
+    options?: QuadFactoryQuadOptsType
   ): Quad {
     const { curie } = options ?? {};
     const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;

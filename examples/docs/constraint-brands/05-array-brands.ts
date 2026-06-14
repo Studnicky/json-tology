@@ -9,7 +9,7 @@ const TagSetSchema = {
 } as const;
 
 type TagSet = InferType<typeof TagSetSchema>;
-// readonly string[] & UniqueItemsBrandInterface
+// readonly string[] & UniqueItemsBrandType
 
 const NumberArraySchema = {
   '$id': 'urn:brands:NumberArray',
@@ -18,7 +18,7 @@ const NumberArraySchema = {
 } as const;
 
 type NumberArray = InferType<typeof NumberArraySchema>;
-// readonly number[] & ContainsBrandInterface<number>
+// readonly number[] & ContainsBrandType<number>
 
 const jt = JsonTology.create({
   'baseIRI': 'urn:brands:',

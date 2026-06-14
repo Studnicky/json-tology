@@ -44,7 +44,7 @@ const fromTboxResult = JsonTology.fromTbox(tboxJsonLd, { 'baseIRI': 'urn:booksto
 function findRt(id: string): Record<string, unknown> | undefined {
   return fromTboxResult.schemas.find((schema) => {
     return schema.$id === id;
-  }) as Record<string, unknown> | undefined;
+  });
 }
 
 /** Collect all $ref strings from an allOf array (order-independent). */

@@ -1,10 +1,10 @@
-import type { InvariantInterface } from '../../interfaces/Invariant.js';
+import type { InvariantType } from '../../types/Invariant.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
 
 export class InvariantStore {
-  private readonly store = new Map<string, InvariantInterface[]>();
+  private readonly store = new Map<string, InvariantType[]>();
 
-  public constructor(initial?: Record<string, readonly InvariantInterface[]>) {
+  public constructor(initial?: Record<string, readonly InvariantType[]>) {
     if (initial !== undefined) {
       for (const [
         schemaId,
@@ -15,7 +15,7 @@ export class InvariantStore {
     }
   }
 
-  public add(schemaId: string, invariant: InvariantInterface): void {
+  public add(schemaId: string, invariant: InvariantType): void {
     const existing = this.store.get(schemaId);
 
     if (existing === undefined) {
@@ -25,7 +25,7 @@ export class InvariantStore {
     }
   }
 
-  public list(schemaId: string): readonly InvariantInterface[] {
+  public list(schemaId: string): readonly InvariantType[] {
     return this.store.get(schemaId) ?? [];
   }
 

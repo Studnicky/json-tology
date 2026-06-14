@@ -1,9 +1,9 @@
 import type { ValidationErrorType } from '../../../types/Validation.js';
-import type { KeywordContextInterface } from '../../../interfaces/GraphEngine.js';
+import type { KeywordContextType } from '../../../types/GraphEngine.js';
 import type {
   CheckFnType, ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../../types/Validation.js';
-import type { CustomKeywordEntryInterface } from '../../../interfaces/CustomKeywordEntry.js';
+import type { CustomKeywordEntryType } from '../../../types/CustomKeywordEntry.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import {
   isRecord
@@ -225,7 +225,7 @@ export class Composition {
   static validateCustomKeywords(
     path: string,
     value: unknown,
-    customKeywordEntries: CustomKeywordEntryInterface[] | undefined,
+    customKeywordEntries: CustomKeywordEntryType[] | undefined,
     errors: ValidationErrorType[]
   ): boolean {
     if (customKeywordEntries === undefined) {
@@ -240,7 +240,7 @@ export class Composition {
         continue;
       }
 
-      const ctx: KeywordContextInterface = {
+      const ctx: KeywordContextType = {
         'parentData': undefined,
         'parentKey': '',
         path,

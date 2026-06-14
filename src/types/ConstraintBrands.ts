@@ -45,17 +45,17 @@ declare const UNIQUE_ARRAY: unique symbol;
  *
  * @example
  * ```ts
- * type T = ContainsBrandInterface<string>;
+ * type T = ContainsBrandType<string>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link UniqueArrayBrandInterface}
+ * @see {@link UniqueArrayBrandType}
  * @group Constraint Brands
  *
  * @typeParam T - The inferred type of the `contains` sub-schema.
  */
-export interface ContainsBrandInterface<T> { readonly [CONTAINS]: T }
+export type ContainsBrandType<T> = { readonly [CONTAINS]: T };
 
 /**
  * Phantom brand for the `contentEncoding` keyword.
@@ -68,17 +68,17 @@ export interface ContainsBrandInterface<T> { readonly [CONTAINS]: T }
  *
  * @example
  * ```ts
- * type T = ContentEncodingBrandInterface<'base64'>;
+ * type T = ContentEncodingBrandType<'base64'>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link ContentMediaTypeBrandInterface}
+ * @see {@link ContentMediaTypeBrandType}
  * @group Constraint Brands
  *
  * @typeParam T - The `contentEncoding` string literal (e.g. `'base64'`).
  */
-export interface ContentEncodingBrandInterface<T extends string> { readonly [CONTENT_ENCODING]: T }
+export type ContentEncodingBrandType<T extends string> = { readonly [CONTENT_ENCODING]: T };
 
 /**
  * Phantom brand for the `contentMediaType` keyword.
@@ -92,17 +92,17 @@ export interface ContentEncodingBrandInterface<T extends string> { readonly [CON
  *
  * @example
  * ```ts
- * type T = ContentMediaTypeBrandInterface<'application/json'>;
+ * type T = ContentMediaTypeBrandType<'application/json'>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link ContentEncodingBrandInterface}
+ * @see {@link ContentEncodingBrandType}
  * @group Constraint Brands
  *
  * @typeParam T - The `contentMediaType` string literal (e.g. `'application/json'`).
  */
-export interface ContentMediaTypeBrandInterface<T extends string> { readonly [CONTENT_MEDIA_TYPE]: T }
+export type ContentMediaTypeBrandType<T extends string> = { readonly [CONTENT_MEDIA_TYPE]: T };
 
 /**
  * Phantom brand for the `$schema` dialect keyword.
@@ -115,17 +115,17 @@ export interface ContentMediaTypeBrandInterface<T extends string> { readonly [CO
  *
  * @example
  * ```ts
- * type T = DialectBrandInterface<'https://json-schema.org/draft/2020-12/schema'>;
+ * type T = DialectBrandType<'https://json-schema.org/draft/2020-12/schema'>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link SchemaIdBrandInterface}
+ * @see {@link SchemaIdBrandType}
  * @group Constraint Brands
  *
  * @typeParam T - The dialect URI string literal.
  */
-export interface DialectBrandInterface<T extends string> { readonly [DIALECT]: T }
+export type DialectBrandType<T extends string> = { readonly [DIALECT]: T };
 
 /**
  * Phantom brand for the `exclusiveMaximum` keyword.
@@ -138,17 +138,17 @@ export interface DialectBrandInterface<T extends string> { readonly [DIALECT]: T
  *
  * @example
  * ```ts
- * type T = ExclusiveMaximumBrandInterface<100>;
+ * type T = ExclusiveMaximumBrandType<100>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link ExclusiveMinimumBrandInterface}
+ * @see {@link ExclusiveMinimumBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the exclusive upper bound.
  */
-export interface ExclusiveMaximumBrandInterface<TN extends number> { readonly [EXCLUSIVE_MAXIMUM]: TN }
+export type ExclusiveMaximumBrandType<TN extends number> = { readonly [EXCLUSIVE_MAXIMUM]: TN };
 
 /**
  * Phantom brand for the `exclusiveMinimum` keyword.
@@ -161,17 +161,17 @@ export interface ExclusiveMaximumBrandInterface<TN extends number> { readonly [E
  *
  * @example
  * ```ts
- * type T = ExclusiveMinimumBrandInterface<0>;
+ * type T = ExclusiveMinimumBrandType<0>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link ExclusiveMaximumBrandInterface}
+ * @see {@link ExclusiveMaximumBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the exclusive lower bound.
  */
-export interface ExclusiveMinimumBrandInterface<TN extends number> { readonly [EXCLUSIVE_MINIMUM]: TN }
+export type ExclusiveMinimumBrandType<TN extends number> = { readonly [EXCLUSIVE_MINIMUM]: TN };
 
 /**
  * Phantom brand for the `format` keyword.
@@ -188,7 +188,7 @@ export interface ExclusiveMinimumBrandInterface<TN extends number> { readonly [E
  *
  * @example
  * ```ts
- * type T = FormatBrandInterface<'email'>;
+ * type T = FormatBrandType<'email'>;
  * ```
  *
  * @category Constraint Brands
@@ -198,7 +198,7 @@ export interface ExclusiveMinimumBrandInterface<TN extends number> { readonly [E
  *
  * @typeParam TF - The format string literal (e.g. `'email'`, `'uuid'`).
  */
-export interface FormatBrandInterface<TF extends string> { readonly [FORMAT]: TF }
+export type FormatBrandType<TF extends string> = { readonly [FORMAT]: TF };
 
 /**
  * Phantom brand for the `maxItems` keyword.
@@ -211,17 +211,17 @@ export interface FormatBrandInterface<TF extends string> { readonly [FORMAT]: TF
  *
  * @example
  * ```ts
- * type T = MaxItemsBrandInterface<10>;
+ * type T = MaxItemsBrandType<10>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MinItemsBrandInterface}
+ * @see {@link MinItemsBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the maximum item count.
  */
-export interface MaxItemsBrandInterface<TN extends number> { readonly [MAX_ITEMS]: TN }
+export type MaxItemsBrandType<TN extends number> = { readonly [MAX_ITEMS]: TN };
 
 /**
  * Phantom brand for the `maxLength` keyword.
@@ -234,17 +234,17 @@ export interface MaxItemsBrandInterface<TN extends number> { readonly [MAX_ITEMS
  *
  * @example
  * ```ts
- * type T = MaxLengthBrandInterface<255>;
+ * type T = MaxLengthBrandType<255>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MinLengthBrandInterface}
+ * @see {@link MinLengthBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the maximum string length.
  */
-export interface MaxLengthBrandInterface<TN extends number> { readonly [MAX_LENGTH]: TN }
+export type MaxLengthBrandType<TN extends number> = { readonly [MAX_LENGTH]: TN };
 
 /**
  * Phantom brand for the `maxProperties` keyword.
@@ -257,17 +257,17 @@ export interface MaxLengthBrandInterface<TN extends number> { readonly [MAX_LENG
  *
  * @example
  * ```ts
- * type T = MaxPropertiesBrandInterface<20>;
+ * type T = MaxPropertiesBrandType<20>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MinPropertiesBrandInterface}
+ * @see {@link MinPropertiesBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the maximum property count.
  */
-export interface MaxPropertiesBrandInterface<TN extends number> { readonly [MAX_PROPERTIES]: TN }
+export type MaxPropertiesBrandType<TN extends number> = { readonly [MAX_PROPERTIES]: TN };
 
 /**
  * Phantom brand for the `maximum` keyword.
@@ -280,17 +280,17 @@ export interface MaxPropertiesBrandInterface<TN extends number> { readonly [MAX_
  *
  * @example
  * ```ts
- * type T = MaximumBrandInterface<100>;
+ * type T = MaximumBrandType<100>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MinimumBrandInterface}
+ * @see {@link MinimumBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the inclusive upper bound.
  */
-export interface MaximumBrandInterface<TN extends number> { readonly [MAXIMUM]: TN }
+export type MaximumBrandType<TN extends number> = { readonly [MAXIMUM]: TN };
 
 /**
  * Phantom brand for the `minItems` keyword.
@@ -303,17 +303,17 @@ export interface MaximumBrandInterface<TN extends number> { readonly [MAXIMUM]: 
  *
  * @example
  * ```ts
- * type T = MinItemsBrandInterface<1>;
+ * type T = MinItemsBrandType<1>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MaxItemsBrandInterface}
+ * @see {@link MaxItemsBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the minimum item count.
  */
-export interface MinItemsBrandInterface<TN extends number> { readonly [MIN_ITEMS]: TN }
+export type MinItemsBrandType<TN extends number> = { readonly [MIN_ITEMS]: TN };
 
 /**
  * Phantom brand for the `minLength` keyword.
@@ -326,17 +326,17 @@ export interface MinItemsBrandInterface<TN extends number> { readonly [MIN_ITEMS
  *
  * @example
  * ```ts
- * type T = MinLengthBrandInterface<1>;
+ * type T = MinLengthBrandType<1>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MaxLengthBrandInterface}
+ * @see {@link MaxLengthBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the minimum string length.
  */
-export interface MinLengthBrandInterface<TN extends number> { readonly [MIN_LENGTH]: TN }
+export type MinLengthBrandType<TN extends number> = { readonly [MIN_LENGTH]: TN };
 
 /**
  * Phantom brand for the `minProperties` keyword.
@@ -349,17 +349,17 @@ export interface MinLengthBrandInterface<TN extends number> { readonly [MIN_LENG
  *
  * @example
  * ```ts
- * type T = MinPropertiesBrandInterface<1>;
+ * type T = MinPropertiesBrandType<1>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MaxPropertiesBrandInterface}
+ * @see {@link MaxPropertiesBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the minimum property count.
  */
-export interface MinPropertiesBrandInterface<TN extends number> { readonly [MIN_PROPERTIES]: TN }
+export type MinPropertiesBrandType<TN extends number> = { readonly [MIN_PROPERTIES]: TN };
 
 /**
  * Phantom brand for the `minimum` keyword.
@@ -372,17 +372,17 @@ export interface MinPropertiesBrandInterface<TN extends number> { readonly [MIN_
  *
  * @example
  * ```ts
- * type T = MinimumBrandInterface<0>;
+ * type T = MinimumBrandType<0>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MaximumBrandInterface}
+ * @see {@link MaximumBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the inclusive lower bound.
  */
-export interface MinimumBrandInterface<TN extends number> { readonly [MINIMUM]: TN }
+export type MinimumBrandType<TN extends number> = { readonly [MINIMUM]: TN };
 
 /**
  * Phantom brand for the `multipleOf` keyword.
@@ -395,17 +395,17 @@ export interface MinimumBrandInterface<TN extends number> { readonly [MINIMUM]: 
  *
  * @example
  * ```ts
- * type T = MultipleOfBrandInterface<5>;
+ * type T = MultipleOfBrandType<5>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MinimumBrandInterface}
+ * @see {@link MinimumBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the divisor.
  */
-export interface MultipleOfBrandInterface<TN extends number> { readonly [MULTIPLE_OF]: TN }
+export type MultipleOfBrandType<TN extends number> = { readonly [MULTIPLE_OF]: TN };
 
 /**
  * Phantom brand for the `pattern` keyword.
@@ -418,17 +418,17 @@ export interface MultipleOfBrandInterface<TN extends number> { readonly [MULTIPL
  *
  * @example
  * ```ts
- * type T = PatternBrandInterface<'^[a-z]+$'>;
+ * type T = PatternBrandType<'^[a-z]+$'>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link FormatBrandInterface}
+ * @see {@link FormatBrandType}
  * @group Constraint Brands
  *
  * @typeParam TP - The regex pattern string literal.
  */
-export interface PatternBrandInterface<TP extends string> { readonly [PATTERN]: TP }
+export type PatternBrandType<TP extends string> = { readonly [PATTERN]: TP };
 
 /**
  * Phantom brand for the `$id` keyword.
@@ -441,17 +441,17 @@ export interface PatternBrandInterface<TP extends string> { readonly [PATTERN]: 
  *
  * @example
  * ```ts
- * type T = SchemaIdBrandInterface<'https://example.com/User'>;
+ * type T = SchemaIdBrandType<'https://example.com/User'>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link DialectBrandInterface}
+ * @see {@link DialectBrandType}
  * @group Constraint Brands
  *
  * @typeParam TId - The `$id` IRI string literal.
  */
-export interface SchemaIdBrandInterface<TId extends string> { readonly [SCHEMA_ID]: TId }
+export type SchemaIdBrandType<TId extends string> = { readonly [SCHEMA_ID]: TId };
 
 /**
  * Phantom brand for the `uniqueItems: true` keyword.
@@ -462,19 +462,19 @@ export interface SchemaIdBrandInterface<TId extends string> { readonly [SCHEMA_I
  *
  * @remarks
  * Attach via `InferSchemaType` when `arrayBrands` is enabled.
- * See {@link UniqueArrayBrandInterface} for the parameterised variant.
+ * See {@link UniqueArrayBrandType} for the parameterised variant.
  *
  * @example
  * ```ts
- * type T = UniqueItemsBrandInterface;
+ * type T = UniqueItemsBrandType;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link UniqueArrayBrandInterface}
+ * @see {@link UniqueArrayBrandType}
  * @group Constraint Brands
  */
-export interface UniqueItemsBrandInterface { readonly [UNIQUE_ITEMS]: true }
+export type UniqueItemsBrandType = { readonly [UNIQUE_ITEMS]: true };
 
 /**
  * Generic uniqueness brand parameterised by element type. Lets downstream APIs
@@ -484,30 +484,30 @@ export interface UniqueItemsBrandInterface { readonly [UNIQUE_ITEMS]: true }
  * through the validation API.
  *
  * @remarks
- * Extends {@link UniqueItemsBrandInterface} and adds the element-type
+ * Extends {@link UniqueItemsBrandType} and adds the element-type
  * parameter so APIs that require `ReadonlyArray<T>` can additionally require
  * that the array was validated for uniqueness.
  *
  * @example
  * ```ts
- * type T = UniqueArrayBrandInterface<string>;
+ * type T = UniqueArrayBrandType<string>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link UniqueItemsBrandInterface}
+ * @see {@link UniqueItemsBrandType}
  * @group Constraint Brands
  *
  * @typeParam T - The element type of the unique array.
  */
-export interface UniqueArrayBrandInterface<T> extends UniqueItemsBrandInterface {
+export type UniqueArrayBrandType<T> = UniqueItemsBrandType & {
   readonly [UNIQUE_ARRAY]: T;
-}
+};
 
 /**
  * Per-format named brand aliases.
  *
- * `FormatBrandInterface<F>` is the underlying parametric brand. Each named
+ * `FormatBrandType<F>` is the underlying parametric brand. Each named
  * alias below specialises it to a single format string so consumer APIs can
  * write `function send(to: EmailBrandInterface): void` and reject plain
  * `string` arguments at compile time.
@@ -524,7 +524,7 @@ export interface UniqueArrayBrandInterface<T> extends UniqueItemsBrandInterface 
  * `double` plus the OpenAPI-flavoured string formats `binary`, `byte`
  * round out the json-tology built-in registry.
  *
- * Ordering note: `FormatBrandInterface<F> & string` (not `string & ...`) so
+ * Ordering note: `FormatBrandType<F> & string` (not `string & ...`) so
  * IDE hovers display the named brand first instead of `string`.
  */
 
@@ -532,7 +532,7 @@ export interface UniqueArrayBrandInterface<T> extends UniqueItemsBrandInterface 
  * Brand alias for strings validated as `format: 'email'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'email'>` so API signatures can express
+ * Specialises `FormatBrandType<'email'>` so API signatures can express
  * "must be a validated email address" without accepting any plain string.
  *
  * @example
@@ -542,16 +542,16 @@ export interface UniqueArrayBrandInterface<T> extends UniqueItemsBrandInterface 
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link FormatBrandInterface}
+ * @see {@link FormatBrandType}
  * @group Constraint Brands
  */
-export type EmailBrandInterface = FormatBrandInterface<'email'> & string;
+export type EmailBrandInterface = FormatBrandType<'email'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'idn-email'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'idn-email'>` for internationalised
+ * Specialises `FormatBrandType<'idn-email'>` for internationalised
  * email addresses (RFC 6531).
  *
  * @example
@@ -564,13 +564,13 @@ export type EmailBrandInterface = FormatBrandInterface<'email'> & string;
  * @see {@link EmailBrandInterface}
  * @group Constraint Brands
  */
-export type IdnEmailBrandInterface = FormatBrandInterface<'idn-email'> & string;
+export type IdnEmailBrandInterface = FormatBrandType<'idn-email'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'uri'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'uri'>` so URI-typed fields cannot accept
+ * Specialises `FormatBrandType<'uri'>` so URI-typed fields cannot accept
  * arbitrary strings without validation.
  *
  * @example
@@ -583,13 +583,13 @@ export type IdnEmailBrandInterface = FormatBrandInterface<'idn-email'> & string;
  * @see {@link UriReferenceBrandInterface}
  * @group Constraint Brands
  */
-export type UriBrandInterface = FormatBrandInterface<'uri'> & string;
+export type UriBrandInterface = FormatBrandType<'uri'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'uri-reference'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'uri-reference'>` for relative or
+ * Specialises `FormatBrandType<'uri-reference'>` for relative or
  * absolute URI references (RFC 3986).
  *
  * @example
@@ -602,13 +602,13 @@ export type UriBrandInterface = FormatBrandInterface<'uri'> & string;
  * @see {@link UriBrandInterface}
  * @group Constraint Brands
  */
-export type UriReferenceBrandInterface = FormatBrandInterface<'uri-reference'> & string;
+export type UriReferenceBrandInterface = FormatBrandType<'uri-reference'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'uri-template'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'uri-template'>` for RFC 6570 URI templates.
+ * Specialises `FormatBrandType<'uri-template'>` for RFC 6570 URI templates.
  *
  * @example
  * ```ts
@@ -620,13 +620,13 @@ export type UriReferenceBrandInterface = FormatBrandInterface<'uri-reference'> &
  * @see {@link UriBrandInterface}
  * @group Constraint Brands
  */
-export type UriTemplateBrandInterface = FormatBrandInterface<'uri-template'> & string;
+export type UriTemplateBrandInterface = FormatBrandType<'uri-template'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'iri'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'iri'>` for internationalised resource
+ * Specialises `FormatBrandType<'iri'>` for internationalised resource
  * identifiers (RFC 3987).
  *
  * @example
@@ -639,13 +639,13 @@ export type UriTemplateBrandInterface = FormatBrandInterface<'uri-template'> & s
  * @see {@link UriBrandInterface}
  * @group Constraint Brands
  */
-export type IriBrandInterface = FormatBrandInterface<'iri'> & string;
+export type IriBrandInterface = FormatBrandType<'iri'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'iri-reference'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'iri-reference'>` for relative or
+ * Specialises `FormatBrandType<'iri-reference'>` for relative or
  * absolute IRI references (RFC 3987).
  *
  * @example
@@ -658,13 +658,13 @@ export type IriBrandInterface = FormatBrandInterface<'iri'> & string;
  * @see {@link IriBrandInterface}
  * @group Constraint Brands
  */
-export type IriReferenceBrandInterface = FormatBrandInterface<'iri-reference'> & string;
+export type IriReferenceBrandInterface = FormatBrandType<'iri-reference'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'uuid'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'uuid'>` so UUID-typed fields reject
+ * Specialises `FormatBrandType<'uuid'>` so UUID-typed fields reject
  * arbitrary strings at compile time.
  *
  * @example
@@ -674,16 +674,16 @@ export type IriReferenceBrandInterface = FormatBrandInterface<'iri-reference'> &
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link FormatBrandInterface}
+ * @see {@link FormatBrandType}
  * @group Constraint Brands
  */
-export type UuidBrandInterface = FormatBrandInterface<'uuid'> & string;
+export type UuidBrandInterface = FormatBrandType<'uuid'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'date'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'date'>` for ISO 8601 full-date strings
+ * Specialises `FormatBrandType<'date'>` for ISO 8601 full-date strings
  * (e.g. `'2024-01-15'`).
  *
  * @example
@@ -696,13 +696,13 @@ export type UuidBrandInterface = FormatBrandInterface<'uuid'> & string;
  * @see {@link DateTimeBrandInterface}
  * @group Constraint Brands
  */
-export type DateBrandInterface = FormatBrandInterface<'date'> & string;
+export type DateBrandInterface = FormatBrandType<'date'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'date-time'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'date-time'>` for ISO 8601 date-time
+ * Specialises `FormatBrandType<'date-time'>` for ISO 8601 date-time
  * strings including timezone offset.
  *
  * @example
@@ -715,13 +715,13 @@ export type DateBrandInterface = FormatBrandInterface<'date'> & string;
  * @see {@link DateBrandInterface}
  * @group Constraint Brands
  */
-export type DateTimeBrandInterface = FormatBrandInterface<'date-time'> & string;
+export type DateTimeBrandInterface = FormatBrandType<'date-time'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'time'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'time'>` for ISO 8601 full-time strings
+ * Specialises `FormatBrandType<'time'>` for ISO 8601 full-time strings
  * (e.g. `'14:30:00Z'`).
  *
  * @example
@@ -734,13 +734,13 @@ export type DateTimeBrandInterface = FormatBrandInterface<'date-time'> & string;
  * @see {@link DateTimeBrandInterface}
  * @group Constraint Brands
  */
-export type TimeBrandInterface = FormatBrandInterface<'time'> & string;
+export type TimeBrandInterface = FormatBrandType<'time'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'duration'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'duration'>` for ISO 8601 duration
+ * Specialises `FormatBrandType<'duration'>` for ISO 8601 duration
  * strings (e.g. `'P1Y2M3DT4H5M6S'`).
  *
  * @example
@@ -753,13 +753,13 @@ export type TimeBrandInterface = FormatBrandInterface<'time'> & string;
  * @see {@link DateTimeBrandInterface}
  * @group Constraint Brands
  */
-export type DurationBrandInterface = FormatBrandInterface<'duration'> & string;
+export type DurationBrandInterface = FormatBrandType<'duration'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'hostname'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'hostname'>` for RFC 1123 internet host
+ * Specialises `FormatBrandType<'hostname'>` for RFC 1123 internet host
  * names.
  *
  * @example
@@ -772,13 +772,13 @@ export type DurationBrandInterface = FormatBrandInterface<'duration'> & string;
  * @see {@link IdnHostnameBrandInterface}
  * @group Constraint Brands
  */
-export type HostnameBrandInterface = FormatBrandInterface<'hostname'> & string;
+export type HostnameBrandInterface = FormatBrandType<'hostname'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'idn-hostname'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'idn-hostname'>` for internationalised
+ * Specialises `FormatBrandType<'idn-hostname'>` for internationalised
  * host names (RFC 5891).
  *
  * @example
@@ -791,13 +791,13 @@ export type HostnameBrandInterface = FormatBrandInterface<'hostname'> & string;
  * @see {@link HostnameBrandInterface}
  * @group Constraint Brands
  */
-export type IdnHostnameBrandInterface = FormatBrandInterface<'idn-hostname'> & string;
+export type IdnHostnameBrandInterface = FormatBrandType<'idn-hostname'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'ipv4'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'ipv4'>` for dotted-decimal IPv4 addresses
+ * Specialises `FormatBrandType<'ipv4'>` for dotted-decimal IPv4 addresses
  * (e.g. `'192.168.1.1'`).
  *
  * @example
@@ -810,13 +810,13 @@ export type IdnHostnameBrandInterface = FormatBrandInterface<'idn-hostname'> & s
  * @see {@link Ipv6BrandInterface}
  * @group Constraint Brands
  */
-export type Ipv4BrandInterface = FormatBrandInterface<'ipv4'> & string;
+export type Ipv4BrandInterface = FormatBrandType<'ipv4'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'ipv6'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'ipv6'>` for IPv6 addresses in colon-hex
+ * Specialises `FormatBrandType<'ipv6'>` for IPv6 addresses in colon-hex
  * notation.
  *
  * @example
@@ -829,13 +829,13 @@ export type Ipv4BrandInterface = FormatBrandInterface<'ipv4'> & string;
  * @see {@link Ipv4BrandInterface}
  * @group Constraint Brands
  */
-export type Ipv6BrandInterface = FormatBrandInterface<'ipv6'> & string;
+export type Ipv6BrandInterface = FormatBrandType<'ipv6'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'regex'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'regex'>` for ECMA 262 regular expression
+ * Specialises `FormatBrandType<'regex'>` for ECMA 262 regular expression
  * strings.
  *
  * @example
@@ -845,16 +845,16 @@ export type Ipv6BrandInterface = FormatBrandInterface<'ipv6'> & string;
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link PatternBrandInterface}
+ * @see {@link PatternBrandType}
  * @group Constraint Brands
  */
-export type RegexBrandInterface = FormatBrandInterface<'regex'> & string;
+export type RegexBrandInterface = FormatBrandType<'regex'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'json-pointer'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'json-pointer'>` for RFC 6901 JSON
+ * Specialises `FormatBrandType<'json-pointer'>` for RFC 6901 JSON
  * Pointer strings (e.g. `'/foo/bar'`).
  *
  * @example
@@ -867,13 +867,13 @@ export type RegexBrandInterface = FormatBrandInterface<'regex'> & string;
  * @see {@link RelativeJsonPointerBrandInterface}
  * @group Constraint Brands
  */
-export type JsonPointerBrandInterface = FormatBrandInterface<'json-pointer'> & string;
+export type JsonPointerBrandInterface = FormatBrandType<'json-pointer'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'relative-json-pointer'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'relative-json-pointer'>` for relative
+ * Specialises `FormatBrandType<'relative-json-pointer'>` for relative
  * JSON Pointer strings as defined in the JSON Schema draft specification.
  *
  * @example
@@ -886,13 +886,13 @@ export type JsonPointerBrandInterface = FormatBrandInterface<'json-pointer'> & s
  * @see {@link JsonPointerBrandInterface}
  * @group Constraint Brands
  */
-export type RelativeJsonPointerBrandInterface = FormatBrandInterface<'relative-json-pointer'> & string;
+export type RelativeJsonPointerBrandInterface = FormatBrandType<'relative-json-pointer'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'binary'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'binary'>` for OpenAPI-flavoured binary
+ * Specialises `FormatBrandType<'binary'>` for OpenAPI-flavoured binary
  * string fields (raw bytes transferred as a string).
  *
  * @example
@@ -905,13 +905,13 @@ export type RelativeJsonPointerBrandInterface = FormatBrandInterface<'relative-j
  * @see {@link ByteBrandInterface}
  * @group Constraint Brands
  */
-export type BinaryBrandInterface = FormatBrandInterface<'binary'> & string;
+export type BinaryBrandInterface = FormatBrandType<'binary'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'byte'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'byte'>` for base64-encoded byte strings
+ * Specialises `FormatBrandType<'byte'>` for base64-encoded byte strings
  * (OpenAPI `byte` format).
  *
  * @example
@@ -924,13 +924,13 @@ export type BinaryBrandInterface = FormatBrandInterface<'binary'> & string;
  * @see {@link BinaryBrandInterface}
  * @group Constraint Brands
  */
-export type ByteBrandInterface = FormatBrandInterface<'byte'> & string;
+export type ByteBrandInterface = FormatBrandType<'byte'> & string;
 
 /**
  * Brand alias for numbers validated as `format: 'int32'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'int32'>` for 32-bit signed integers.
+ * Specialises `FormatBrandType<'int32'>` for 32-bit signed integers.
  * Intersected with `number` rather than `string`.
  *
  * @example
@@ -943,13 +943,13 @@ export type ByteBrandInterface = FormatBrandInterface<'byte'> & string;
  * @see {@link Int64BrandInterface}
  * @group Constraint Brands
  */
-export type Int32BrandInterface = FormatBrandInterface<'int32'> & number;
+export type Int32BrandInterface = FormatBrandType<'int32'> & number;
 
 /**
  * Brand alias for numbers validated as `format: 'int64'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'int64'>` for 64-bit signed integers.
+ * Specialises `FormatBrandType<'int64'>` for 64-bit signed integers.
  * Intersected with `number` rather than `string`.
  *
  * @example
@@ -962,13 +962,13 @@ export type Int32BrandInterface = FormatBrandInterface<'int32'> & number;
  * @see {@link Int32BrandInterface}
  * @group Constraint Brands
  */
-export type Int64BrandInterface = FormatBrandInterface<'int64'> & number;
+export type Int64BrandInterface = FormatBrandType<'int64'> & number;
 
 /**
  * Brand alias for numbers validated as `format: 'float'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'float'>` for single-precision floating
+ * Specialises `FormatBrandType<'float'>` for single-precision floating
  * point numbers (OpenAPI `float` format). Intersected with `number`.
  *
  * @example
@@ -981,13 +981,13 @@ export type Int64BrandInterface = FormatBrandInterface<'int64'> & number;
  * @see {@link DoubleBrandInterface}
  * @group Constraint Brands
  */
-export type FloatBrandInterface = FormatBrandInterface<'float'> & number;
+export type FloatBrandInterface = FormatBrandType<'float'> & number;
 
 /**
  * Brand alias for numbers validated as `format: 'double'`.
  *
  * @remarks
- * Specialises `FormatBrandInterface<'double'>` for double-precision floating
+ * Specialises `FormatBrandType<'double'>` for double-precision floating
  * point numbers (OpenAPI `double` format). Intersected with `number`.
  *
  * @example
@@ -1000,4 +1000,4 @@ export type FloatBrandInterface = FormatBrandInterface<'float'> & number;
  * @see {@link FloatBrandInterface}
  * @group Constraint Brands
  */
-export type DoubleBrandInterface = FormatBrandInterface<'double'> & number;
+export type DoubleBrandInterface = FormatBrandType<'double'> & number;

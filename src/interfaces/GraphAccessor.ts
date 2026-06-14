@@ -1,11 +1,16 @@
 import type {
-  SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
-} from './SchemaGraph.js';
+  SchemaGraphNodeType, SchemaGraphSemanticsType
+} from '../types/SchemaGraph.js';
 
 export interface GraphAccessorInterface {
-  child(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined;
-  entries(node: SchemaGraphNodeInterface, key: string): Array<[string, SchemaGraphNodeInterface]>;
-  indexedChildren(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface[];
+  child(node: SchemaGraphNodeType, key: string): SchemaGraphNodeType | undefined;
+  /**
+   * Return the explicit domain node recorded during lower() for a property
+   * node. Returns `undefined` for non-property nodes.
+   */
+  domainOf(node: SchemaGraphNodeType): SchemaGraphNodeType | undefined;
+  entries(node: SchemaGraphNodeType, key: string): Array<[string, SchemaGraphNodeType]>;
+  indexedChildren(node: SchemaGraphNodeType, key: string): SchemaGraphNodeType[];
   resolveRefId(ref: string): string;
-  semantics(node: SchemaGraphNodeInterface): SchemaGraphSemanticsInterface;
+  semantics(node: SchemaGraphNodeType): SchemaGraphSemanticsType;
 }

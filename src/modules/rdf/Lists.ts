@@ -13,9 +13,9 @@ import type {
   BnodeTermType, IriTermType, QuadObjectType
 } from '../../types/Quad.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { ListBuildResultInterface } from '../../interfaces/ListBuildResult.js';
+import type { ListBuildResultType } from '../../types/ListBuildResult.js';
 import type { OptionalListObjectType } from '../../types/OptionalListObjectType.js';
-import type { CollectStepResultInterface } from '../../interfaces/CollectStepResult.js';
+import type { CollectStepResultType } from '../../types/CollectStepResult.js';
 import { RDF } from '../../constants/IRI.js';
 import { Terms } from './Terms.js';
 
@@ -87,7 +87,7 @@ function isValidGraph(quad: Quad): boolean {
 function collectStep(
   cursor: BnodeTermType | IriTermType,
   allQuads: readonly Quad[]
-): CollectStepResultInterface {
+): CollectStepResultType {
   const firstQuad = allQuads.find((quad: Quad): boolean => {
     return isFirstTriple(quad, cursor);
   });
@@ -193,7 +193,7 @@ export function resetListBnodeCounter(): void {
 export function build(
   items: readonly QuadObjectType[],
   issuer?: IdentifierIssuerInterface
-): ListBuildResultInterface {
+): ListBuildResultType {
   if (items.length === 0) {
     return {
       'head': Terms.iri(RDF.nil),

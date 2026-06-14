@@ -20,7 +20,7 @@
 import type {
   CanonicalShapeType, InferType
 } from '../../src/types/index.js';
-import type { RefNotFoundInterface } from '../../src/types/TypeErrors.js';
+import type { RefNotFoundType } from '../../src/types/TypeErrors.js';
 
 type AssertAssignable<TSource, TTarget>
   = [TSource] extends [TTarget] ? true : false;
@@ -61,7 +61,7 @@ void ChatMessageSchema;
 // Register the schemas in the global references map (declaration merging).
 // ---------------------------------------------------------------------------
 
-declare module '../../src/types/SchemaReferences.js' {
+declare module '../../src/interfaces/JsonTologyReferences.js' {
   interface JsonTologyReferencesInterface {
     readonly 'urn:aug:Channel': typeof ChannelSchema;
     readonly 'urn:aug:ChatMessage': typeof ChatMessageSchema;
@@ -80,7 +80,7 @@ assert<AssertAssignable<ChatMessage['text'], string>>();
 // Negative: it must NOT be the unresolved brand that an unregistered $ref
 // would produce.
 assert<AssertAssignable<
-  ChatMessage['channel'] extends RefNotFoundInterface<string> ? false : true,
+  ChatMessage['channel'] extends RefNotFoundType<string> ? false : true,
   true
 >>();
 

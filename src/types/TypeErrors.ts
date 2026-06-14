@@ -43,20 +43,20 @@
  * @example
  * ```ts
  * // Schema with a dependentRequired key not in properties → inferred type
- * // includes DependentRequiredKeyNotInPropertiesInterface<'missingKey'>.
+ * // includes DependentRequiredKeyNotInPropertiesType<'missingKey'>.
  * ```
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link RequiredKeyNotInPropertiesInterface}
+ * @see {@link RequiredKeyNotInPropertiesType}
  * @group Type Errors
  *
  * @typeParam TKey - The offending key (either the map key or a dependency entry).
  */
-export interface DependentRequiredKeyNotInPropertiesInterface<TKey extends string> {
+export type DependentRequiredKeyNotInPropertiesType<TKey extends string> = {
   readonly 'invalidKey': TKey;
   readonly 'kind': 'DependentRequiredKeyNotInProperties';
-}
+};
 
 /**
  * Emitted when an `if.properties` discriminator key is not a key of the parent
@@ -69,20 +69,20 @@ export interface DependentRequiredKeyNotInPropertiesInterface<TKey extends strin
  * @example
  * ```ts
  * // Schema whose if.properties references a key not in properties →
- * // inferred type includes IfDiscriminatorNotInPropertiesInterface<'missingKey'>.
+ * // inferred type includes IfDiscriminatorNotInPropertiesType<'missingKey'>.
  * ```
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link RequiredKeyNotInPropertiesInterface}
+ * @see {@link RequiredKeyNotInPropertiesType}
  * @group Type Errors
  *
  * @typeParam TKey - The offending discriminator property name.
  */
-export interface IfDiscriminatorNotInPropertiesInterface<TKey extends string> {
+export type IfDiscriminatorNotInPropertiesType<TKey extends string> = {
   readonly 'invalidKey': TKey;
   readonly 'kind': 'IfDiscriminatorNotInProperties';
-}
+};
 
 /**
  * Emitted when a `required` array entry is not a key of `properties`.
@@ -95,25 +95,25 @@ export interface IfDiscriminatorNotInPropertiesInterface<TKey extends string> {
  * @example
  * ```ts
  * // Schema with required: ['missing'] but properties: { name: ... } →
- * // inferred type includes RequiredKeyNotInPropertiesInterface<'missing', 'name'>.
+ * // inferred type includes RequiredKeyNotInPropertiesType<'missing', 'name'>.
  * ```
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link DependentRequiredKeyNotInPropertiesInterface}
+ * @see {@link DependentRequiredKeyNotInPropertiesType}
  * @group Type Errors
  *
  * @typeParam TKey - The offending entry from the `required` array.
  * @typeParam TActual - The union of valid `keyof properties` values.
  */
-export interface RequiredKeyNotInPropertiesInterface<
+export type RequiredKeyNotInPropertiesType<
   TKey extends string,
   TActual extends string
-> {
+> = {
   readonly 'actualPropertyKeys': TActual;
   readonly 'invalidKey': TKey;
   readonly 'kind': 'RequiredKeyNotInProperties';
-}
+};
 
 /**
  * Emitted when a `JsonTology.create({ schemas: [...] })` tuple contains two
@@ -129,20 +129,20 @@ export interface RequiredKeyNotInPropertiesInterface<
  * @example
  * ```ts
  * // JsonTology.create({ schemas: [SchemaA, SchemaA] }) →
- * // inferred type includes DuplicateSchemaIdInterface<'https://example.com/A'>.
+ * // inferred type includes DuplicateSchemaIdType<'https://example.com/A'>.
  * ```
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link RefNotFoundInterface}
+ * @see {@link RefNotFoundType}
  * @group Type Errors
  *
  * @typeParam TId - The duplicated `$id` IRI literal.
  */
-export interface DuplicateSchemaIdInterface<TId extends string> {
+export type DuplicateSchemaIdType<TId extends string> = {
   readonly 'duplicateId': TId;
   readonly 'kind': 'DuplicateSchemaId';
-}
+};
 
 /**
  * Emitted when an absolute `$ref` IRI is not present in the schema
@@ -157,20 +157,20 @@ export interface DuplicateSchemaIdInterface<TId extends string> {
  * @example
  * ```ts
  * // InferType<{ $ref: 'https://missing.example/' }, { 'https://other/': ... }>
- * // → RefNotFoundInterface<'https://missing.example/'>
+ * // → RefNotFoundType<'https://missing.example/'>
  * ```
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link AnchorNotFoundInterface}
+ * @see {@link AnchorNotFoundType}
  * @group Type Errors
  *
  * @typeParam TRef - The unresolved `$ref` IRI literal.
  */
-export interface RefNotFoundInterface<TRef extends string> {
+export type RefNotFoundType<TRef extends string> = {
   readonly 'kind': 'RefNotFound';
   readonly 'unresolvedRef': TRef;
-}
+};
 
 /**
  * Emitted when a cross-schema fragment ref of the form `<base>#<anchor>`
@@ -178,7 +178,7 @@ export interface RefNotFoundInterface<TRef extends string> {
  * JSON pointer fragment lands outside the schema graph).
  *
  * @remarks
- * Like `RefNotFoundInterface`, this brand only appears when the references
+ * Like `RefNotFoundType`, this brand only appears when the references
  * map is non-empty; otherwise the type falls back to `unknown` to preserve
  * usability in permissive contexts.
  *
@@ -186,25 +186,25 @@ export interface RefNotFoundInterface<TRef extends string> {
  * ```ts
  * // { $ref: 'https://example.com/Foo#missingAnchor' } with a references map
  * // that has 'https://example.com/Foo' but no '#missingAnchor' →
- * // AnchorNotFoundInterface<'https://example.com/Foo', 'missingAnchor'>
+ * // AnchorNotFoundType<'https://example.com/Foo', 'missingAnchor'>
  * ```
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link RefNotFoundInterface}
+ * @see {@link RefNotFoundType}
  * @group Type Errors
  *
  * @typeParam TBase - The base IRI portion of the ref.
  * @typeParam TAnchor - The anchor or pointer fragment that could not be resolved.
  */
-export interface AnchorNotFoundInterface<
+export type AnchorNotFoundType<
   TBase extends string,
   TAnchor extends string
-> {
+> = {
   readonly 'inSchema': TBase;
   readonly 'kind': 'AnchorNotFound';
   readonly 'unresolvedAnchor': TAnchor;
-}
+};
 
 /**
  * Emitted when a `Transform.chain` stage's decoded output type does not match
@@ -220,28 +220,28 @@ export interface AnchorNotFoundInterface<
  * @example
  * ```ts
  * // Transform.chain([stageA, stageB]) where stageA produces string but
- * // stageB expects number → ChainMismatchInterface<0, string, number>
+ * // stageB expects number → ChainMismatchType<0, string, number>
  * ```
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link ChainSchemaMismatchInterface}
+ * @see {@link ChainSchemaMismatchType}
  * @group Type Errors
  *
  * @typeParam TStageIndex - Zero-based index of the producing stage.
  * @typeParam TProduced - Decoded output type of the producing stage.
  * @typeParam TExpected - Decoded input type expected by the consuming stage.
  */
-export interface ChainMismatchInterface<
+export type ChainMismatchType<
   TStageIndex extends number,
   TProduced,
   TExpected
-> {
+> = {
   readonly 'expectedByThisStage': TExpected;
   readonly 'kind': 'ChainMismatch';
   readonly 'producedByPriorStage': TProduced;
   readonly 'stageIndex': TStageIndex;
-}
+};
 
 /**
  * Emitted when a `Transform.chain`'s last stage decoded output type does not
@@ -257,32 +257,32 @@ export interface ChainMismatchInterface<
  * ```ts
  * // Transform.chain(StringSchema, [stage]) where the schema's canonical type
  * // is string but the last stage produces number →
- * // ChainSchemaMismatchInterface<string, number>
+ * // ChainSchemaMismatchType<string, number>
  * ```
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link ChainMismatchInterface}
+ * @see {@link ChainMismatchType}
  * @group Type Errors
  *
  * @typeParam TCanonical - Canonical type inferred from the schema (required tail output).
  * @typeParam TLastStageOut - Decoded output type produced by the chain's last stage.
  */
-export interface ChainSchemaMismatchInterface<
+export type ChainSchemaMismatchType<
   TCanonical,
   TLastStageOut
-> {
+> = {
   readonly 'kind': 'ChainSchemaMismatch';
   readonly 'lastStageDecodeOutput': TLastStageOut;
   readonly 'schemaCanonicalType': TCanonical;
-}
+};
 
 /**
  * True when a references map is present (has at least one key).
  *
  * @remarks
  * Used throughout `InferSchemaType` to decide whether unresolved refs should
- * surface as diagnostic brands (`RefNotFoundInterface`, `AnchorNotFoundInterface`)
+ * surface as diagnostic brands (`RefNotFoundType`, `AnchorNotFoundType`)
  * or silently fall back to `unknown`. The distinction exists so consumers who
  * do not provide a references map are not flooded with errors.
  *
@@ -294,7 +294,7 @@ export interface ChainSchemaMismatchInterface<
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link RefNotFoundInterface}
+ * @see {@link RefNotFoundType}
  * @group Type Errors
  *
  * @typeParam TReferences - The references map type to test.
@@ -308,9 +308,9 @@ export type HasReferencesType<TReferences>
 
 declare const TYPE_ERROR_TAG: unique symbol;
 
-interface TypeErrorBrandInterface<TName extends string> {
+type TypeErrorBrandType<TName extends string> = {
   readonly [TYPE_ERROR_TAG]: TName;
-}
+};
 
 /**
  * Compose.subClassOf body's $id collides with the parent's $id.
@@ -333,7 +333,7 @@ interface TypeErrorBrandInterface<TName extends string> {
  *
  * @typeParam TId - The `$id` IRI that collides with the parent's identifier.
  */
-export type SelfSubClassType<TId extends string> = never & TypeErrorBrandInterface<'SelfSubClass'> & {
+export type SelfSubClassType<TId extends string> = never & TypeErrorBrandType<'SelfSubClass'> & {
   readonly 'collidingId': TId;
 };
 
@@ -362,7 +362,7 @@ export type SelfSubClassType<TId extends string> = never & TypeErrorBrandInterfa
 export type DiscriminatorMissingType<
   TProp extends string,
   TVariant
-> = never & TypeErrorBrandInterface<'DiscriminatorMissing'> & {
+> = never & TypeErrorBrandType<'DiscriminatorMissing'> & {
   readonly 'discriminator': TProp;
   readonly 'variant': TVariant;
 };
@@ -388,7 +388,7 @@ export type DiscriminatorMissingType<
  *
  * @typeParam TId - The `$id` IRI that collides with the source schema's identifier.
  */
-export type SelfEquivalentType<TId extends string> = never & TypeErrorBrandInterface<'SelfEquivalent'> & {
+export type SelfEquivalentType<TId extends string> = never & TypeErrorBrandType<'SelfEquivalent'> & {
   readonly 'collidingId': TId;
 };
 
@@ -413,7 +413,7 @@ export type SelfEquivalentType<TId extends string> = never & TypeErrorBrandInter
  *
  * @typeParam TId - The `$id` IRI that collides with one of the input schemas.
  */
-export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorBrandInterface<'IntersectionIdCollision'> & {
+export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorBrandType<'IntersectionIdCollision'> & {
   readonly 'collidingId': TId;
 };
 
@@ -440,7 +440,7 @@ export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorB
  * @example
  * ```ts
  * // Property with both symmetric: true and asymmetric: true →
- * // PropertyCharacteristicConflictInterface<'myProp', readonly ['symmetric', 'asymmetric']>
+ * // PropertyCharacteristicConflictType<'myProp', readonly ['symmetric', 'asymmetric']>
  * ```
  *
  * @category Type Errors
@@ -451,20 +451,20 @@ export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorB
  * @typeParam TProperty - The property name where the conflict was detected.
  * @typeParam TConflicts - Tuple of the conflicting characteristic names.
  */
-export interface PropertyCharacteristicConflictInterface<
+export type PropertyCharacteristicConflictType<
   TProperty extends string,
   TConflicts extends readonly string[]
-> {
+> = {
   readonly 'conflicts': TConflicts;
   readonly 'kind': 'PropertyCharacteristicConflict';
   readonly 'property': TProperty;
-}
+};
 
 /**
  * Check a single property schema for conflicting OWL 2 characteristics.
  *
  * Returns `never` when there are no conflicts; returns a
- * `PropertyCharacteristicConflictInterface` brand when a hard conflict is
+ * `PropertyCharacteristicConflictType` brand when a hard conflict is
  * detected. The brand is surfaced as a `schemaErrors` field on the enclosing
  * schema so `ValidateSchemaType` (and `ValidatePropertyCharacteristicsType`)
  * can propagate the incompatibility to the author's call site.
@@ -477,12 +477,12 @@ export interface PropertyCharacteristicConflictInterface<
  * @example
  * ```ts
  * type R = CheckPropertyCharacteristicsType<'myProp', { symmetric: true; asymmetric: true }>;
- * // → PropertyCharacteristicConflictInterface<'myProp', readonly ['symmetric', 'asymmetric']>
+ * // → PropertyCharacteristicConflictType<'myProp', readonly ['symmetric', 'asymmetric']>
  * ```
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link PropertyCharacteristicConflictInterface}
+ * @see {@link PropertyCharacteristicConflictType}
  * @group Type Errors
  *
  * @typeParam TName - The property name (for the brand payload).
@@ -491,13 +491,13 @@ export interface PropertyCharacteristicConflictInterface<
 export type CheckPropertyCharacteristicsType<TName extends string, TProp>
   = TProp extends { readonly 'asymmetric': true;
     readonly 'symmetric': true; }
-    ? PropertyCharacteristicConflictInterface<TName, readonly ['symmetric', 'asymmetric']>
+    ? PropertyCharacteristicConflictType<TName, readonly ['symmetric', 'asymmetric']>
     : TProp extends { readonly 'irreflexive': true;
       readonly 'reflexive': true; }
-      ? PropertyCharacteristicConflictInterface<TName, readonly ['reflexive', 'irreflexive']>
+      ? PropertyCharacteristicConflictType<TName, readonly ['reflexive', 'irreflexive']>
       : TProp extends { readonly 'asymmetric': true;
         readonly 'reflexive': true }
-        ? PropertyCharacteristicConflictInterface<TName, readonly ['asymmetric', 'reflexive']>
+        ? PropertyCharacteristicConflictType<TName, readonly ['asymmetric', 'reflexive']>
         : never;
 
 /**
@@ -515,7 +515,7 @@ export type CheckPropertyCharacteristicsType<TName extends string, TProp>
  *   a: { symmetric: true; asymmetric: true };
  *   b: { transitive: true };
  * }>;
- * // → PropertyCharacteristicConflictInterface<'a', readonly ['symmetric', 'asymmetric']>
+ * // → PropertyCharacteristicConflictType<'a', readonly ['symmetric', 'asymmetric']>
  * ```
  *
  * @category Type Errors
@@ -549,7 +549,7 @@ export type PropertyCharacteristicErrorsType<TProps>
  * type R = ValidatePropertyCharacteristicsType<{
  *   properties: { p: { symmetric: true; asymmetric: true } }
  * }>;
- * // T & { schemaErrors: PropertyCharacteristicConflictInterface<...> }
+ * // T & { schemaErrors: PropertyCharacteristicConflictType<...> }
  * ```
  *
  * @category Type Errors

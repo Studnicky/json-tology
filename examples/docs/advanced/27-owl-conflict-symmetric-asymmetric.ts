@@ -2,7 +2,7 @@
  * Compile-time conflict: symmetric + asymmetric are mutually exclusive.
  *
  * ValidatePropertyCharacteristicsType brands the schema with
- * PropertyCharacteristicConflictInterface when a property declares both.
+ * PropertyCharacteristicConflictType when a property declares both.
  * The @ts-expect-error directive proves the brand fires at the property
  * definition site.
  */
@@ -10,7 +10,7 @@
 import type { ValidatePropertyCharacteristicsType } from '../../../src/types/TypeErrors.js';
 
 // @ts-expect-error — 'relates' sets symmetric:true and asymmetric:true
-//                     (PropertyCharacteristicConflictInterface)
+//                     (PropertyCharacteristicConflictType)
 const _bad: ValidatePropertyCharacteristicsType<{
   readonly '$id': 'urn:test:Bad';
   readonly 'properties': {
@@ -33,4 +33,4 @@ void _bad;
 
 // The @ts-expect-error above confirms the brand fires at the definition site.
 // At runtime the object is structurally valid; the conflict is a compile-time guarantee.
-console.log('symmetric+asymmetric conflict detected at compile time (PropertyCharacteristicConflictInterface)');
+console.log('symmetric+asymmetric conflict detected at compile time (PropertyCharacteristicConflictType)');

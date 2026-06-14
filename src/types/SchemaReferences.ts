@@ -12,7 +12,7 @@
  *
  * Empty by default: with no augmentation `keyof` is `never`, so resolution is
  * identical to passing no references — an unreachable `$ref` is a
- * `RefNotFoundInterface` brand, never a silent `unknown`. Augmentation only
+ * `RefNotFoundType` brand, never a silent `unknown`. Augmentation only
  * ADDS `$id` keys, so it merges cleanly with no conflicting declarations (unlike
  * {@link JsonTologyTypeConfigInterface}, which carries an index signature
  * because its flags are overridden rather than added).
@@ -39,5 +39,4 @@
  *
  * @category Type Inference
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- intentionally empty: a consumer-augmentable declaration-merge target; any member would pollute `keyof` and resolve every $ref prematurely.
-export interface JsonTologyReferencesInterface {}
+export type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferences.js';

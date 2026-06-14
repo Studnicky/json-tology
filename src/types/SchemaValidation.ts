@@ -25,9 +25,9 @@
  */
 
 import type {
-  DependentRequiredKeyNotInPropertiesInterface,
-  IfDiscriminatorNotInPropertiesInterface,
-  RequiredKeyNotInPropertiesInterface
+  DependentRequiredKeyNotInPropertiesType,
+  IfDiscriminatorNotInPropertiesType,
+  RequiredKeyNotInPropertiesType
 } from './TypeErrors.js';
 
 /** The set of valid property keys for a schema, or `never` if no properties. */
@@ -39,7 +39,7 @@ type SchemaPropertyKeysType<T>
 /**
  * Walk `required` and emit a brand for any entry not in `properties`.
  *
- * The result is a union of `RequiredKeyNotInPropertiesInterface<bad-key, ...>`
+ * The result is a union of `RequiredKeyNotInPropertiesType<bad-key, ...>`
  * brands; if every entry resolves, the union is `never`.
  */
 type RequiredErrorsType<T, TPropKeys extends string>
@@ -48,7 +48,7 @@ type RequiredErrorsType<T, TPropKeys extends string>
       ? TEntry extends string
         ? TEntry extends TPropKeys
           ? never
-          : RequiredKeyNotInPropertiesInterface<TEntry, TPropKeys>
+          : RequiredKeyNotInPropertiesType<TEntry, TPropKeys>
         : never
       : never
     : never;
@@ -67,10 +67,10 @@ type DependentRequiredErrorsType<T, TPropKeys extends string>
               ? TDep extends string
                 ? TDep extends TPropKeys
                   ? never
-                  : DependentRequiredKeyNotInPropertiesInterface<TDep>
+                  : DependentRequiredKeyNotInPropertiesType<TDep>
                 : never
               : never
-            : DependentRequiredKeyNotInPropertiesInterface<TKey>
+            : DependentRequiredKeyNotInPropertiesType<TKey>
           : never
         : never)
       : never
@@ -83,7 +83,7 @@ type IfDiscriminatorErrorsType<T, TPropKeys extends string>
       ? TKey extends string
         ? TKey extends TPropKeys
           ? never
-          : IfDiscriminatorNotInPropertiesInterface<TKey>
+          : IfDiscriminatorNotInPropertiesType<TKey>
         : never
       : never
     : never;

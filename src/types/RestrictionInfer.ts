@@ -50,51 +50,51 @@
  * Phantom brand attached to a class declared `disjointWith` another.
  *
  * @remarks
- * Values typed as `DisjointWithBrandInterface<OtherId>` are structurally
- * incompatible with values typed as `DisjointWithBrandInterface<OtherId>`
+ * Values typed as `DisjointWithBrandType<OtherId>` are structurally
+ * incompatible with values typed as `DisjointWithBrandType<OtherId>`
  * carrying the same brand, so assigning a value of the "other" class to the
  * "this" class position is a compile error when the asymmetric brand is
  * checked.
  *
  * @example
  * ```ts
- * type Dog = DisjointWithBrandInterface<'https://example.com/Cat'> & { name: string };
+ * type Dog = DisjointWithBrandType<'https://example.com/Cat'> & { name: string };
  * ```
  *
  * @category Restriction Inference
  * @since 0.18.0
- * @see {@link ComplementOfBrandInterface}
+ * @see {@link ComplementOfBrandType}
  * @group Restriction Inference
  *
  * @typeParam TOtherId - The `$id` IRI of the class declared disjoint.
  */
-export interface DisjointWithBrandInterface<TOtherId extends string> {
+export type DisjointWithBrandType<TOtherId extends string> = {
   readonly '~jt:disjointWith': Readonly<Record<TOtherId, 'disjoint'>>;
-}
+};
 
 /**
  * Phantom brand attached to a class declared as the OWL `complementOf` another.
  *
  * @remarks
- * Uses a distinct symbol from `DisjointWithBrandInterface` so a class can carry
+ * Uses a distinct symbol from `DisjointWithBrandType` so a class can carry
  * both brands simultaneously — one for disjointness, one for complement —
  * without the brand keys colliding.
  *
  * @example
  * ```ts
- * type NonDog = ComplementOfBrandInterface<'https://example.com/Dog'> & { name: string };
+ * type NonDog = ComplementOfBrandType<'https://example.com/Dog'> & { name: string };
  * ```
  *
  * @category Restriction Inference
  * @since 0.18.0
- * @see {@link DisjointWithBrandInterface}
+ * @see {@link DisjointWithBrandType}
  * @group Restriction Inference
  *
  * @typeParam TOtherId - The `$id` IRI of the class this class is the complement of.
  */
-export interface ComplementOfBrandInterface<TOtherId extends string> {
+export type ComplementOfBrandType<TOtherId extends string> = {
   readonly '~jt:complementOf': Readonly<Record<TOtherId, 'complement'>>;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Property-IRI parsing — turns `<schemaId>#<name>` into the bare property key.
@@ -273,15 +273,15 @@ export type BuildBoundedTupleType<
 // `src/types/Restriction.ts` but expressed in compile-time form.
 // ---------------------------------------------------------------------------
 
-interface RestrictionShape<
+type RestrictionShapeType<
   TKind extends string,
   TProperty extends string,
   TValue
-> {
+> = {
   readonly 'kind': TKind;
   readonly 'onProperty': TProperty;
   readonly 'value': TValue;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Property element extraction — pulls element type out of an array property.
@@ -299,30 +299,30 @@ type NarrowPropertyType<TProps, TKey extends string, TNarrow>
     : TProps;
 
 type ApplyOneRestrictionType<TProps, TRestriction>
-  = TRestriction extends RestrictionShape<'hasValue', infer TProp extends string, infer TVal>
+  = TRestriction extends RestrictionShapeType<'hasValue', infer TProp extends string, infer TVal>
     ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>, TVal>
-    : TRestriction extends RestrictionShape<'cardinality', infer TProp extends string, infer TN>
+    : TRestriction extends RestrictionShapeType<'cardinality', infer TProp extends string, infer TN>
       ? TN extends number
         ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>,
           BuildExactTupleType<ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>, TN>>
         : TProps
-      : TRestriction extends RestrictionShape<'minCardinality', infer TProp extends string, infer TN>
+      : TRestriction extends RestrictionShapeType<'minCardinality', infer TProp extends string, infer TN>
         ? TN extends number
           ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>,
             BuildAtLeastTupleType<ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>, TN>>
           : TProps
-        : TRestriction extends RestrictionShape<'maxCardinality', infer TProp extends string, infer TN>
+        : TRestriction extends RestrictionShapeType<'maxCardinality', infer TProp extends string, infer TN>
           ? TN extends number
             ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>,
               BuildAtMostTupleType<ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>, TN>>
             : TProps
-          : TRestriction extends RestrictionShape<'someValuesFrom', infer TProp extends string, string>
+          : TRestriction extends RestrictionShapeType<'someValuesFrom', infer TProp extends string, string>
             ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>,
               readonly [
                 ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>,
                 ...Array<ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>>
               ]>
-            : TRestriction extends RestrictionShape<'allValuesFrom', infer TProp extends string, string>
+            : TRestriction extends RestrictionShapeType<'allValuesFrom', infer TProp extends string, string>
               ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>,
                 ReadonlyArray<ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>>>
               : TProps;

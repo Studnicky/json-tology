@@ -3,7 +3,7 @@
  * in its decode/encode canonical types through the global references registry —
  * the same auto-magic default as `CanonicalShapeType` / `InferType`. A transform
  * authored against registered schemas types decode's output and encode's input
- * as the resolved canonical shape, NOT `RefNotFoundInterface`.
+ * as the resolved canonical shape, NOT `RefNotFoundType`.
  *
  * Validates by compiling under `npm run type-check:tests:all`.
  */
@@ -34,7 +34,7 @@ const Outer = {
 void Inner;
 void Outer;
 
-declare module '../../src/types/SchemaReferences.js' {
+declare module '../../src/interfaces/JsonTologyReferences.js' {
   interface JsonTologyReferencesInterface {
     readonly 'urn:tr:Inner': typeof Inner;
     readonly 'urn:tr:Outer': typeof Outer;

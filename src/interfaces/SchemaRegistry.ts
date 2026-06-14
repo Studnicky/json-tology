@@ -1,12 +1,12 @@
-import type { CompiledValidatorInterface } from './Compiler.js';
+import type { CompiledValidatorType } from '../types/Compiler.js';
 import type { ComputedStoreInterface } from './ComputedStore.js';
 import type { CurieInterface } from './Curie.js';
 import type { GraphEngineInterface } from './GraphEngineImpl.js';
-import type { InvariantInterface } from './Invariant.js';
+import type { InvariantType } from '../types/Invariant.js';
 import type { SameAsStoreInterface } from './SameAsStore.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type { ValidationErrors } from '../errors/ValidationErrors.js';
-import type { DuplicateReportEntryType } from './SchemaEntryStore.js';
+import type { DuplicateReportEntryType } from '../types/DuplicateReportEntryType.js';
 
 export interface SchemaRegistryInterface extends Iterable<[string, Record<string, unknown>]> {
   /**
@@ -18,7 +18,7 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
    *   Transitive | Symmetric | Asymmetric | Reflexive | Irreflexive.
    */
   addCharacteristic(propertyIri: string, characteristic: string): void;
-  addInvariant(schemaId: string, invariant: InvariantInterface): void;
+  addInvariant(schemaId: string, invariant: InvariantType): void;
   cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown;
   readonly 'castTypes': boolean;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
@@ -81,6 +81,6 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
   readonly 'size': number;
   subschemaAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string): Record<string, unknown> & { '$id': string };
   validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): ValidationErrors;
-  validator(schemaId: string): CompiledValidatorInterface;
+  validator(schemaId: string): CompiledValidatorType;
   values(): IterableIterator<Record<string, unknown>>;
 }

@@ -1,4 +1,4 @@
-import type { ResolvedRefInterface } from '../../interfaces/ResolvedRef.js';
+import type { RefTargetType } from '../../types/RefTarget.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
@@ -9,7 +9,7 @@ export class RefResolver {
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined,
     lookupGraph?: (id: string) => SchemaGraphInterface | undefined
-  ): ResolvedRefInterface | undefined {
+  ): RefTargetType | undefined {
     if (ref.startsWith('#')) {
       try {
         return {

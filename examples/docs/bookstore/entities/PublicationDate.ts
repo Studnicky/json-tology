@@ -1,7 +1,7 @@
 /**
  * PublicationDate — primitive demonstrating the `date` format brand.
  *
- * InferType resolves to: string & FormatBrandInterface<'date'>
+ * InferType resolves to: string & FormatBrandType<'date'>
  * (aliased as DateBrandInterface in ConstraintBrands.ts).
  *
  * Demonstrates:

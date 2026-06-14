@@ -17,8 +17,8 @@ const TemperatureSchema = {
 type Percent = InferType<typeof PercentSchema>;
 type Temperature = InferType<typeof TemperatureSchema>;
 
-// Percent:     number & MinimumBrandInterface<0> & MaximumBrandInterface<100>
-// Temperature: number & MinimumBrandInterface<-273>
+// Percent:     number & MinimumBrandType<0> & MaximumBrandType<100>
+// Temperature: number & MinimumBrandType<-273>
 
 // Each branded value is constructed only from its own schema's brand —
 // the two are incompatible (different MinimumBrand values, and Percent

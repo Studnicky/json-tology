@@ -17,7 +17,7 @@
  */
 
 import type {
-  MaxItemsBrandInterface, MinItemsBrandInterface
+  MaxItemsBrandType, MinItemsBrandType
 } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
@@ -48,7 +48,7 @@ type ExactThree = InferType<typeof _ExactThreeSchema>;
 // Exactly three strings, carrying both item-count brands.
 assert<AssertEqualType<
   ExactThree,
-  MaxItemsBrandInterface<3> & MinItemsBrandInterface<3> & readonly [string, string, string]
+  MaxItemsBrandType<3> & MinItemsBrandType<3> & readonly [string, string, string]
 >>();
 
 // @ts-expect-error — length 2 is rejected, must be exactly 3
@@ -86,7 +86,7 @@ type AtLeastTwo = InferType<typeof _AtLeastTwoSchema>;
 // At least two numbers (non-empty prefix + variadic tail), carrying the minItems brand.
 assert<AssertEqualType<
   AtLeastTwo,
-  MinItemsBrandInterface<2> & readonly [number, number, ...number[]]
+  MinItemsBrandType<2> & readonly [number, number, ...number[]]
 >>();
 
 // @ts-expect-error — length 1 is rejected, requires at least 2
@@ -116,7 +116,7 @@ type AtMostThree = InferType<typeof _AtMostThreeSchema>;
 // Union of boolean tuples length 0..3, carrying the maxItems brand.
 assert<AssertEqualType<
   AtMostThree,
-  MaxItemsBrandInterface<3> & (
+  MaxItemsBrandType<3> & (
     | readonly []
     | readonly [boolean, boolean, boolean]
     | readonly [boolean, boolean]
@@ -152,7 +152,7 @@ type RangeTwoToFour = InferType<typeof _RangeTwoToFourSchema>;
 // Bounded union of string tuples across the 2..4 range, carrying both brands.
 assert<AssertEqualType<
   RangeTwoToFour,
-  MaxItemsBrandInterface<4> & MinItemsBrandInterface<2> & (
+  MaxItemsBrandType<4> & MinItemsBrandType<2> & (
     | readonly [string, string, string, string]
     | readonly [string, string]
   )
@@ -193,7 +193,7 @@ type BeyondCap = InferType<typeof _BeyondCapSchema>;
 // Above the cap, narrowing falls through to ReadonlyArray<number> + both brands.
 assert<AssertEqualType<
   BeyondCap,
-  MaxItemsBrandInterface<20> & MinItemsBrandInterface<20> & readonly number[]
+  MaxItemsBrandType<20> & MinItemsBrandType<20> & readonly number[]
 >>();
 
 // ---------------------------------------------------------------------------
@@ -242,7 +242,7 @@ type RawExact = InferType<typeof _RawExactSchema>;
 // Exactly two unknown elements, carrying both item-count brands.
 assert<AssertEqualType<
   RawExact,
-  MaxItemsBrandInterface<2> & MinItemsBrandInterface<2> & readonly [unknown, unknown]
+  MaxItemsBrandType<2> & MinItemsBrandType<2> & readonly [unknown, unknown]
 >>();
 
 // @ts-expect-error — length 1 is rejected, must be exactly 2

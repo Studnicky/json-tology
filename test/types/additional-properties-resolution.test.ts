@@ -10,7 +10,7 @@
  */
 
 import type { InferType } from '../../src/types/Schema.js';
-import type { AnchorNotFoundInterface } from '../../src/types/TypeErrors.js';
+import type { AnchorNotFoundType } from '../../src/types/TypeErrors.js';
 
 type AssertAssignable<TSource, TTarget>
   = [TSource] extends [TTarget] ? true : false;
@@ -68,7 +68,7 @@ assert<AssertAssignable<R['mapRef'], Readonly<Record<string, { readonly 'amt': n
 // A missing $ref brands per-value — never a silent Record<string, unknown>.
 assert<AssertAssignable<
   R['mapMiss'],
-  Readonly<Record<string, AnchorNotFoundInterface<'#', '/$defs/Nope'>>>
+  Readonly<Record<string, AnchorNotFoundType<'#', '/$defs/Nope'>>>
 >>();
 
 // additionalProperties: false stays an open record (unchanged behavior).

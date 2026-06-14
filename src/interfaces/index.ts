@@ -1,87 +1,38 @@
 export type * from './AboxGraphInterface.js';
-export type * from './AnnotatedEdgeDescriptorInterface.js';
-export type * from './ArrayResult.js';
 export type * from './Changeset.js';
-export type * from './ClassExprResolveContext.js';
 export type * from './CliWriter.js';
-export type * from './CompiledNodeValidationPlan.js';
-export type * from './Compiler.js';
-export type * from './Compose.js';
-export type * from './CompositionAccumulator.js';
 export type * from './ComputedStore.js';
-export type * from './Config.js';
 export type * from './Curie.js';
 export type * from './CursorInterface.js';
-export type * from './CustomKeywordEntry.js';
-export type * from './DefaultResolutionContext.js';
-export type * from './Dump.js';
-export type * from './DynamicScopeEntry.js';
-export type * from './Error.js';
-export type * from './FetchLoaderOptions.js';
 export type * from './FormatRegistry.js';
 export type * from './GraphAccessor.js';
-export type * from './GraphArtifact.js';
-export type * from './GraphEngine.js';
 export type * from './GraphEngineImpl.js';
 export type * from './IdentifierIssuer.js';
-export type * from './IdentifierIssuerOpts.js';
-export type * from './InternalExecutionResult.js';
-export type * from './Invariant.js';
-export type * from './JsonLdDatasetQuad.js';
-export type * from './JsonSchemaObject.js';
-export type * from './LiftOptionsInterface.js';
+export type * from './JsonTologyReferences.js';
+export type * from './JsonTologyTypeConfig.js';
 export type * from './Logger.js';
-export type * from './Materializer.js';
 export type * from './MaterializerImpl.js';
-export type * from './ObjectResult.js';
 export type * from './Ontology.js';
-export type * from './OwlCodegen.js';
-export type * from './OwlGen.js';
-export type * from './OwlImport.js';
-export type * from './Prefetch.js';
 export type * from './Projection.js';
-export type * from './ProjectionEmitContext.js';
-export type * from './PropCheck.js';
 export type * from './Quad.js';
-export type * from './QuadFactoryOpts.js';
 export type * from './RefDecoder.js';
-export type * from './RefDecoderRegistry.js';
 export type * from './Refs.js';
-export type * from './RefTarget.js';
-export type * from './Registry.js';
-export type * from './RelationIndex.js';
-export type * from './ResolvedRef.js';
 export type * from './Result.js';
-export type * from './RootDialectPlan.js';
 export type * from './SameAsStore.js';
-export type * from './ScalarResult.js';
-export type * from './SchemaCompilerCheckExecutionContext.js';
-export type * from './SchemaCompilerGraphContext.js';
 export type * from './SchemaCompilerImpl.js';
-export type * from './SchemaCompilerValidatePlanContext.js';
 export type * from './SchemaEntryStore.js';
-export type * from './SchemaGraph.js';
 export type * from './SchemaGraphImpl.js';
 export type * from './SchemaIri.js';
 export type * from './SchemaRegistry.js';
-export type * from './SchemaRegistryEntry.js';
 export type * from './Serializer.js';
-export type * from './Snapshot.js';
-export type * from './TransformBrand.js';
-export type * from './TransformFns.js';
-export type * from './TransformStage.js';
 export type * from './Unevaluated.js';
-export type * from './ValidateCallOptions.js';
 export type * from './ValueImpl.js';
 export type * from './VisitComposition.js';
-export type * from './VisitContext.js';
-export type * from './Viz.js';
 export type * from './VocabularyPlugin.js';
 
 // Intentionally unexported — internal implementation details not part of the public callable surface:
 // - BuildOptions      (internal graph serializer construction options)
 // - RefResolutionLoader (internal loader wiring; consumers use LoaderType from src/types/)
 // - SchemaRefWalker   (internal ref traversal; not a consumer-facing callable)
-// - SimplePredicateEntry (internal OWL predicate helper shape)
 // - VizOptions        (internal visualization options; consumed only by the viz subpath)
-// - XsdJsonSchemaPrimitiveInterface (internal XSD→JSON-Schema reverse-map shape; consumed by constants + import dispatch)
+// - XsdJsonSchemaPrimitiveType (internal XSD→JSON-Schema reverse-map shape; consumed by constants + import dispatch)

@@ -1,21 +1,23 @@
-import type { GraphExecutionResultInterface } from '../../interfaces/GraphEngine.js';
+import type { GraphExecutionResultType } from '../../types/GraphEngine.js';
 import type {
-  MaterializationResultInterface, MaterializerOptionsInterface
-} from '../../interfaces/Materializer.js';
+  MaterializationResultType, MaterializerOptionsType
+} from '../../types/Materializer.js';
 import type { MaterializerInterface } from '../../interfaces/MaterializerImpl.js';
-import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
+import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { InferSchemaType } from '../../types/Infer.js';
 import type { AboxOptionsType } from '../../types/AboxOptions.js';
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
+import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
+import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
 import { Projection } from '../rdf/Projection.js';
 import { Terms } from '../rdf/Terms.js';
 import { OWL } from '../../constants/IRI.js';
@@ -89,12 +91,13 @@ export class Materializer implements MaterializerInterface {
     readonly 'synthesizeDefaults': true;
   };
 
-  // Two-level WeakMap: graph → node → collected properties.
-  // Schema graphs and nodes are stable post-registration; the cache is always valid.
+  // Node-keyed WeakMap: node → collected effective-property map.
+  // Schema nodes are stable post-registration and each node has a unique identity
+  // within its home graph, so keying by node is safe. The cache is automatically
+  // invalidated when nodes are GC'd.
   private readonly effectivePropertiesCache = new WeakMap<
-    SchemaGraphInterface,
-    WeakMap<SchemaGraphNodeInterface, Map<string, { 'graph': SchemaGraphInterface;
-      'node': SchemaGraphNodeInterface }>>
+    SchemaGraphNodeType,
+    EffectivePropertyMapType
   >();
 
   // Bound once in the constructor; passed as `lookupGraph` to avoid a trivial
@@ -109,7 +112,7 @@ export class Materializer implements MaterializerInterface {
    */
   public constructor(
     private readonly registry: SchemaRegistryInterface,
-    options: MaterializerOptionsInterface = {}
+    options: MaterializerOptionsType = {}
   ) {
     const allowAdditionalProperties = options.passAdditionalProperties === true;
     const castTypes = registry.castTypes;
@@ -185,40 +188,29 @@ export class Materializer implements MaterializerInterface {
 
   /**
    * Collect every property the schema effectively carries: own `properties`
-   * plus those reachable through `allOf` members (recursively, resolving
-   * `$ref` parents that point to other graphs in the registry). Without
-   * this walk a `Compose.subClassOf(Parent, body)` schema only materializes
-   * the body's own properties; parent fields supplied at the wire level
-   * are dropped from the output even though validation accepts them.
+   * plus those reachable through `allOf` members and if/then/else conditional
+   * branches (recursively, resolving `$ref` parents that point to other graphs
+   * in the registry). Without this walk a `Compose.subClassOf(Parent, body)`
+   * schema only materializes the body's own properties; parent fields supplied
+   * at the wire level are dropped from the output even though validation accepts
+   * them. Conditional-branch properties (then/else) are now also included so
+   * they survive `fillImplicitProperties`.
+   *
+   * Delegates to the canonical `collectEffectivePropertiesMemo` walker with a
+   * `resolveGraph` backed by the registry and a node-keyed instance cache.
    */
   private collectEffectiveProperties(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface
-  ): Map<string, { 'graph': SchemaGraphInterface;
-    'node': SchemaGraphNodeInterface }> {
-    let graphCache = this.effectivePropertiesCache.get(graph);
-
-    if (graphCache !== undefined) {
-      const cached = graphCache.get(node);
-
-      if (cached !== undefined) {
-        return cached;
+    node: SchemaGraphNodeType
+  ): EffectivePropertyMapType {
+    return collectEffectivePropertiesMemo(
+      this.effectivePropertiesCache,
+      graph,
+      node,
+      (refId: string): SchemaGraphInterface | undefined => {
+        return this.registry.graph(refId);
       }
-    }
-
-    const collected = new Map<string, { 'graph': SchemaGraphInterface;
-      'node': SchemaGraphNodeInterface }>();
-    const visited = new Set<SchemaGraphNodeInterface>();
-
-    this.walkPropertyTree(graph, node, collected, visited);
-
-    if (graphCache === undefined) {
-      graphCache = new WeakMap();
-      this.effectivePropertiesCache.set(graph, graphCache);
-    }
-    graphCache.set(node, collected);
-
-    return collected;
+    );
   }
 
   /**
@@ -242,7 +234,7 @@ export class Materializer implements MaterializerInterface {
     data?: unknown,
     options?: { 'baseIRI'?: string;
       'synthesizeDefaults'?: boolean }
-  ): MaterializationResultInterface {
+  ): MaterializationResultType {
     const baseIRI = options?.baseIRI;
     const synthesize = options?.synthesizeDefaults === true;
     const runResult = this.run(schema, data, baseIRI, synthesize);
@@ -252,7 +244,7 @@ export class Materializer implements MaterializerInterface {
 
   private fillImplicitProperties(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     value: unknown,
     visited = new WeakSet()
   ): void {
@@ -288,7 +280,7 @@ export class Materializer implements MaterializerInterface {
 
   private fillImplicitProperty(
     propertyGraph: SchemaGraphInterface,
-    propertyTargetNode: SchemaGraphNodeInterface,
+    propertyTargetNode: SchemaGraphNodeType,
     propertyValue: unknown,
     visited: WeakSet<WeakKey>
   ): void {
@@ -309,7 +301,7 @@ export class Materializer implements MaterializerInterface {
     this.fillImplicitProperties(propertyGraph, propertyTargetNode, propertyValue, visited);
   }
 
-  private formatErrors(result: GraphExecutionResultInterface): string[] {
+  private formatErrors(result: GraphExecutionResultType): string[] {
     return BaseError.formatErrors(result.errors);
   }
 
@@ -347,7 +339,7 @@ export class Materializer implements MaterializerInterface {
 
     return value;
   }
-  private materializeResult(result: GraphExecutionResultInterface): unknown {
+  private materializeResult(result: GraphExecutionResultType): unknown {
     this.fillImplicitProperties(result.graph, result.entryNode, result.value);
 
     return result.value;
@@ -387,7 +379,7 @@ export class Materializer implements MaterializerInterface {
   }
 
   private projectAboxFromExecution(
-    execution: GraphExecutionResultInterface,
+    execution: GraphExecutionResultType,
     materialized: unknown,
     baseIRI: string,
     options?: AboxOptionsType
@@ -415,8 +407,8 @@ export class Materializer implements MaterializerInterface {
    */
   private resolveTargetGraphAndNode(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface
-  ): [SchemaGraphInterface, SchemaGraphNodeInterface] {
+    node: SchemaGraphNodeType
+  ): [SchemaGraphInterface, SchemaGraphNodeType] {
     const semantics = graph.semantics(node);
 
     if (semantics.ref === undefined) {
@@ -470,7 +462,7 @@ export class Materializer implements MaterializerInterface {
     baseIRI?: string,
     synthesizeDefaults = false,
     aboxOptions?: AboxOptionsType
-  ): MaterializationResultInterface {
+  ): MaterializationResultType {
     const id = schema.$id;
 
     if (!this.registry.has(id)) {
@@ -493,40 +485,5 @@ export class Materializer implements MaterializerInterface {
       'valid': execution.valid,
       'value': materialized
     };
-  }
-
-  private walkPropertyTree(
-    currentGraph: SchemaGraphInterface,
-    current: SchemaGraphNodeInterface,
-    collected: Map<string, { 'graph': SchemaGraphInterface;
-      'node': SchemaGraphNodeInterface }>,
-    visited: Set<SchemaGraphNodeInterface>
-  ): void {
-    if (visited.has(current)) {
-      return;
-    }
-    visited.add(current);
-
-    const [
-      resolvedGraph,
-      resolvedNode
-    ] = this.resolveTargetGraphAndNode(currentGraph, current);
-    const semantics = resolvedGraph.semantics(resolvedNode);
-
-    for (const [
-      name,
-      propNode
-    ] of semantics.properties) {
-      if (!collected.has(name)) {
-        collected.set(name, {
-          'graph': resolvedGraph,
-          'node': propNode
-        });
-      }
-    }
-
-    for (const member of semantics.allOf) {
-      this.walkPropertyTree(resolvedGraph, member, collected, visited);
-    }
   }
 }

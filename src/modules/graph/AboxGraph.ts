@@ -31,6 +31,7 @@ import type {
   AboxPredicateObjectType,
   AboxPredicateSubjectType
 } from '../../types/AboxGraph.js';
+import type { AboxLiftSubjectFnType } from '../../types/AboxLiftSubjectFn.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 
 import {
@@ -40,25 +41,6 @@ import { Cursor } from './Cursor.js';
 import { SchemaCursor } from './SchemaCursor.js';
 import { decodeLiteral } from '../rdf/Terms.js';
 
-/**
- * Lifts a set of quads to typed instances of a single schema.
- *
- * @remarks
- * Injected by `JsonTology.aboxGraph` so the graph reuses the same `fromQuads`
- * path the facade exposes (predicate resolver, curie, validation via
- * `instantiate`).
- *
- * @example
- * ```ts
- * const lift: AboxLiftSubjectFnInterface = (classId: string, quads: QuadInterface[]) => registry.fromQuads(classId, quads);
- * ```
- *
- * @category Graph
- * @since 0.1.0
- * @see {@link AboxGraphInterface}
- * @group Graph
- */
-export type AboxLiftSubjectFnInterface = (classId: string, quads: QuadInterface[]) => unknown[];
 
 function isLiteralObject(termType: AboxPredicateObjectType['objectTermType']): boolean {
   return termType === 'Literal';
@@ -118,7 +100,7 @@ export class AboxGraph implements AboxGraphInterface {
   private readonly instancesByType = new Map<string, string[]>();
 
   private readonly liftCache = new Map<string, unknown>();
-  private readonly liftSubject: AboxLiftSubjectFnInterface;
+  private readonly liftSubject: AboxLiftSubjectFnType;
   private readonly predicateResolver: PredicateResolverFnType;
   /** class IRI → Set of predicate IRIs whose rdfs:domain includes that class */
   private readonly predicatesOfClass = new Map<string, Set<string>>();
@@ -146,7 +128,7 @@ export class AboxGraph implements AboxGraphInterface {
     aboxQuads: readonly QuadInterface[],
     tboxQuads: readonly QuadInterface[],
     identities: readonly AboxIdentityDescriptorType[],
-    liftSubject: AboxLiftSubjectFnInterface,
+    liftSubject: AboxLiftSubjectFnType,
     predicateResolver: PredicateResolverFnType,
     schemaOf: (classIri: string) => unknown
   ) {

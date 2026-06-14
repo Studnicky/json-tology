@@ -57,6 +57,50 @@ const filenameMatchesExportRule = {
 
 const filenameExportPlugin = { rules: { 'match-named-export': filenameMatchesExportRule } };
 
+// Custom rule: interface must bear at least one method/call/construct signature
+// (the type-substrate rule: data shapes belong in src/types/ as `type`, not `interface`)
+const interfaceMustBeContractRule = {
+  meta: {
+    messages: {
+      dataShapeMustBeType:
+        "Interface '{{name}}' has no method/call/construct signatures. Per the type-substrate rule, data shapes must be declared as `type` in src/types/; `interface` is reserved for behavioral/class contracts and the allowlisted augmentation points."
+    },
+    schema: [],
+    type: 'problem'
+  },
+  create(context) {
+    const ALLOW = new Set([
+      'JsonTologyReferencesInterface',
+      'JsonTologyTypeConfigInterface'
+    ]);
+
+    return {
+      TSInterfaceDeclaration(node) {
+        if (ALLOW.has(node.id.name)) { return; }
+
+        const hasBehavioralMember = node.body.body.some(
+          (member) =>
+            member.type === 'TSMethodSignature'
+            || member.type === 'TSCallSignatureDeclaration'
+            || member.type === 'TSConstructSignatureDeclaration'
+          // NOTE: TSPropertySignature with TSFunctionType typeAnnotation is a
+          // function-valued FIELD (data), NOT behavioral. Do NOT count it.
+        );
+
+        if (!hasBehavioralMember) {
+          context.report({
+            data: { name: node.id.name },
+            messageId: 'dataShapeMustBeType',
+            node: node.id
+          });
+        }
+      }
+    };
+  }
+};
+
+const contractPlugin = { rules: { 'interface-must-be-contract': interfaceMustBeContractRule } };
+
 // ---------------------------------------------------------------------------
 // Rule sets
 // ---------------------------------------------------------------------------
@@ -232,7 +276,6 @@ const typeScriptPluginRules = {
   '@typescript-eslint/consistent-generic-constructors': ['error', 'constructor'],
   '@typescript-eslint/consistent-indexed-object-style': ['error', 'record'],
   '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'as', objectLiteralTypeAssertions: 'never' }],
-  '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
   '@typescript-eslint/consistent-type-exports': ['error', { fixMixedExportsWithInlineTypeSpecifier: true }],
   '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'separate-type-imports', prefer: 'type-imports' }],
   '@typescript-eslint/default-param-last': 'error',
@@ -243,7 +286,7 @@ const typeScriptPluginRules = {
   '@typescript-eslint/dot-notation': ['error', { 'allowIndexSignaturePropertyAccess': true }],
   '@typescript-eslint/naming-convention': [
     'error',
-    { custom: { match: false, regex: '^I[A-Z]' }, format: ['PascalCase'], selector: 'interface' },
+    { custom: { match: false, regex: '^I[A-Z]' }, format: ['PascalCase'], selector: 'interface', suffix: ['Interface'] },
     { format: ['PascalCase'], selector: 'typeAlias' },
     { format: ['PascalCase'], selector: 'enum' },
     { format: ['UPPER_CASE', 'PascalCase'], selector: 'enumMember' },
@@ -501,6 +544,7 @@ const jsModulePlugins = {
 const typeScriptPlugins = {
   '@stylistic': stylistic,
   '@typescript-eslint': tsPlugin,
+  'contract': contractPlugin,
   'filename-export': filenameExportPlugin,
   'perfectionist': perfectionist,
   'regexp': regexpPlugin,
@@ -588,7 +632,8 @@ export default [
       ...perfectionistPluginRules,
       ...typeScriptPluginRules,
       ...unicornPluginRules,
-      ...regexpPluginRules
+      ...regexpPluginRules,
+      'contract/interface-must-be-contract': 'error'
     }
   },
 
@@ -613,7 +658,66 @@ export default [
       ...typeScriptPluginRules,
       ...unicornPluginRules,
       ...regexpPluginRules,
-      'no-restricted-syntax': ['error', ...syntaxRestrictions]
+      'no-restricted-syntax': ['error', ...syntaxRestrictions],
+      // The Interface suffix requirement (suffix: ['Interface']) is a library-only rule.
+      // Demonstration code in test/, bench/, and examples/ uses plain PascalCase interfaces
+      // (e.g. interface Scenario, interface BenchResult) and must not be renamed.
+      // All other naming-convention selectors remain identical to the src/ version,
+      // except method names that require quoting (e.g. AST node selectors like
+      // 'TSInterfaceDeclaration' used as visitor keys in ESLint rule tests) are allowed
+      // any format — they are vocabulary-mandated identifiers, not user-chosen names.
+      '@typescript-eslint/naming-convention': [
+        'error',
+        { custom: { match: false, regex: '^I[A-Z]' }, format: ['PascalCase'], selector: 'interface' },
+        { format: ['PascalCase'], selector: 'typeAlias' },
+        { format: ['PascalCase'], selector: 'enum' },
+        { format: ['UPPER_CASE', 'PascalCase'], selector: 'enumMember' },
+        { format: ['PascalCase'], selector: 'class' },
+        { format: ['camelCase', 'PascalCase'], selector: 'function' },
+        { format: ['camelCase', 'PascalCase', 'UPPER_CASE'], leadingUnderscore: 'allow', selector: 'variable', trailingUnderscore: 'forbid' },
+        { format: ['camelCase'], leadingUnderscore: 'allow', selector: 'parameter' },
+        { format: null, modifiers: ['requiresQuotes'], selector: 'method' },
+        { format: ['camelCase'], selector: 'method' },
+        { format: ['camelCase', 'PascalCase', 'UPPER_CASE'], leadingUnderscore: 'allow', selector: 'property' },
+        { format: null, selector: 'objectLiteralProperty' },
+        {
+          filter: { match: true, regex: '^~?[a-z]+:|^@[a-z]' },
+          format: null,
+          selector: 'typeProperty'
+        },
+        { format: ['camelCase', 'PascalCase', 'UPPER_CASE'], selector: 'typeProperty' },
+        { format: ['camelCase'], selector: 'accessor' },
+        { format: ['PascalCase'], prefix: ['T', 'K', 'V', 'U'], selector: 'typeParameter' }
+      ]
+    }
+  },
+
+  // Location gate: interfaces belong in src/interfaces/, types belong in src/types/
+  {
+    files: ['src/types/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...syntaxRestrictions,
+        {
+          message: 'interfaces belong in src/interfaces/',
+          selector: 'TSInterfaceDeclaration'
+        }
+      ]
+    }
+  },
+
+  {
+    files: ['src/interfaces/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...syntaxRestrictions,
+        {
+          message: 'object-type aliases belong in src/types/',
+          selector: 'TSTypeAliasDeclaration > TSTypeLiteral'
+        }
+      ]
     }
   }
 ];

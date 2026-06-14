@@ -8,34 +8,34 @@
 import type { VisitFnType } from '../types/VisitFn.js';
 import type { EffectiveOptionsType } from '../types/EffectiveOptions.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
-import type { DynamicScopeEntryInterface } from '../interfaces/DynamicScopeEntry.js';
-import type { InternalExecutionResultInterface } from '../interfaces/InternalExecutionResult.js';
-import type { VisitContextInterface } from '../interfaces/VisitContext.js';
+import type { DynamicScopeEntryType } from '../types/DynamicScopeEntry.js';
+import type { InternalExecutionResultType } from '../types/InternalExecutionResult.js';
+import type { VisitContextType } from '../types/VisitContext.js';
 
 export interface RefsInterface {
   resolveDynamicRef(
-    context: VisitContextInterface,
+    context: VisitContextType,
     dynamicRef: string,
     graph: SchemaGraphInterface,
     workingValue: unknown,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType
-  ): InternalExecutionResultInterface;
+  ): InternalExecutionResultType;
 
   resolveRef(
-    context: VisitContextInterface,
+    context: VisitContextType,
     ref: string,
     graph: SchemaGraphInterface,
     workingValue: unknown,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType
-  ): InternalExecutionResultInterface;
+  ): InternalExecutionResultType;
 }

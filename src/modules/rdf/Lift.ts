@@ -18,11 +18,11 @@
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
+import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { SubjectGroupType } from '../../types/SubjectGroup.js';
-import type { LiftOptionsInterface } from '../../interfaces/LiftOptionsInterface.js';
-import type { ResolvedRefInterface } from '../../interfaces/ResolvedRef.js';
+import type { LiftOptionsType } from '../../types/LiftOptionsType.js';
+import type { RefTargetType } from '../../types/RefTarget.js';
 import type { TripleTermIndexType } from '../../types/TripleTermIndexType.js';
 import type { PredicateIndexType } from '../../types/PredicateIndexType.js';
 import type { LiftedObjectType } from '../../types/LiftedObjectType.js';
@@ -31,14 +31,15 @@ import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapT
 import type { ResolvedTypeNodeType } from '../../types/ResolvedTypeNodeType.js';
 import type { OptionalAnnotatedEdgeType } from '../../types/OptionalAnnotatedEdgeType.js';
 import type { OptionalLiftedObjectType } from '../../types/OptionalLiftedObjectType.js';
-import type { FindPropertyQuadsArgsInterface } from '../../interfaces/FindPropertyQuadsArgs.js';
-import type { LiftContextInterface } from '../../interfaces/LiftContext.js';
-import type { LiftSubjectArgsInterface } from '../../interfaces/LiftSubjectArgs.js';
-import type { LiftSingleValueArgsInterface } from '../../interfaces/LiftSingleValueArgs.js';
-import type { LiftAnnotatedEdgeArgsInterface } from '../../interfaces/LiftAnnotatedEdgeArgs.js';
-import type { LiftPropertyValueArgsInterface } from '../../interfaces/LiftPropertyValueArgs.js';
-import type { LiftMatchingQuadsArgsInterface } from '../../interfaces/LiftMatchingQuadsArgs.js';
-import type { LiftImplArgsInterface } from '../../interfaces/LiftImplArgs.js';
+import type { FindPropertyQuadsArgsType } from '../../types/FindPropertyQuadsArgs.js';
+import type { LiftContextType } from '../../types/LiftContext.js';
+import type { LiftSubjectArgsType } from '../../types/LiftSubjectArgs.js';
+import type { LiftSingleValueArgsType } from '../../types/LiftSingleValueArgs.js';
+import type { LiftAnnotatedEdgeArgsType } from '../../types/LiftAnnotatedEdgeArgs.js';
+import type { LiftPropertyValueArgsType } from '../../types/LiftPropertyValueArgs.js';
+import type { LiftMatchingQuadsArgsType } from '../../types/LiftMatchingQuadsArgs.js';
+import type { LiftImplArgsType } from '../../types/LiftImplArgs.js';
+import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
 
 import { RDF } from '../../constants/IRI.js';
 
@@ -212,7 +213,7 @@ function resolveNodeForType(
  */
 function isStructurallyCompatibleWithProps(
   candidateId: string,
-  targetProps: Map<string, ResolvedRefInterface>,
+  targetProps: Map<string, RefTargetType>,
   registry: SchemaRegistryInterface
 ): boolean {
   const candidateGraph = registry.graph(candidateId);
@@ -245,12 +246,12 @@ function isStructurallyCompatibleWithProps(
 // (especially for the same target class inside a large quad stream) skip
 // the recursive graph walk on all but the first call.
 //
-// The WeakMap key is the SchemaGraphNodeInterface (object reference), so
+// The WeakMap key is the SchemaGraphNodeType (object reference), so
 // the cache is automatically GC'd when the node is no longer reachable.
 // ---------------------------------------------------------------------------
 const effectivePropertiesCache = new WeakMap<
-  SchemaGraphNodeInterface,
-  Map<string, ResolvedRefInterface>
+  SchemaGraphNodeType,
+  EffectivePropertyMapType
 >();
 
 const PREDICATE_INDEX_THRESHOLD = 3;
@@ -284,7 +285,7 @@ function buildPredicateIndex(subjectQuads: QuadInterface[]): PredicateIndexType 
  * Pass 2: fragment match — any predicate whose fragment equals `propName`
  *         (legacy `classId#propName` safety net; no-ops for flat IRIs).
  */
-function findPropertyQuads(fpArgs: FindPropertyQuadsArgsInterface): QuadInterface[] {
+function findPropertyQuads(fpArgs: FindPropertyQuadsArgsType): QuadInterface[] {
   const {
     index, predicateIri, propName, subjectQuads
   } = fpArgs;
@@ -331,8 +332,8 @@ function findPropertyQuads(fpArgs: FindPropertyQuadsArgsInterface): QuadInterfac
 
 function resolveLocalRef(
   graph: SchemaGraphInterface,
-  node: SchemaGraphNodeInterface
-): SchemaGraphNodeInterface {
+  node: SchemaGraphNodeType
+): SchemaGraphNodeType {
   const sem = graph.semantics(node);
 
   if (sem.ref === undefined) {
@@ -366,7 +367,7 @@ function resolveLocalRef(
  */
 function findAnnotatedEdgeStructure(
   graph: SchemaGraphInterface,
-  propertyNode: SchemaGraphNodeInterface
+  propertyNode: SchemaGraphNodeType
 ): OptionalAnnotatedEdgeType {
   for (const relation of graph.relations(propertyNode)) {
     if (relation.structure?.kind === 'annotatedEdge') {
@@ -384,7 +385,7 @@ function findAnnotatedEdgeStructure(
  * quads (triple-term subjects) are grouped in `tripleTermIndex` by the quoted
  * inner triple. Returns undefined when no base triple is present.
  */
-function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsInterface): OptionalLiftedObjectType {
+function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsType): OptionalLiftedObjectType {
   const {
     classId, curie, edge, predicateResolver, subjectIri, subjectQuads, tripleTermIndex
   } = args;
@@ -451,104 +452,29 @@ function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsInterface): OptionalLifted
 
 /**
  * Collect every property an instance node effectively carries for lift:
- * its own `properties` plus those reachable through `allOf` members
- * (recursively, resolving `$ref` parents that point to other graphs in the
- * registry). `Compose.subClassOf(Parent, body)` schemas keep inherited fields
- * behind a `$ref` allOf member, so without this walk the lifted object only
- * regains the body-local fields and drops everything inherited — the exact
- * inverse asymmetry the projection side flattens via collectProjectionProperties.
+ * own `properties` plus those reachable through `allOf` members, and
+ * if/then/else conditional branches. Cross-graph `$ref` members are resolved
+ * via the registry. First declaration wins; cycle-safe.
  *
- * Each entry records the graph where the property's semantics live, which may
- * differ from the instance's graph for inherited (cross-graph $ref) fields.
- * First declaration wins (own properties shadow inherited ones).
- */
-function collectEffectiveLiftPropertiesImpl(
-  graph: SchemaGraphInterface,
-  node: SchemaGraphNodeInterface,
-  registry: SchemaRegistryInterface
-): EffectivePropertyMapType {
-  const collected: EffectivePropertyMapType = new Map();
-  const visited = new Set<SchemaGraphNodeInterface>();
-
-  const walk = (currentGraph: SchemaGraphInterface, current: SchemaGraphNodeInterface): void => {
-    if (visited.has(current)) {
-      return;
-    }
-    visited.add(current);
-
-    const sem = currentGraph.semantics(current);
-
-    // Cross-graph $ref member (e.g. allOf[0] = { $ref: 'urn:bookstore:Book' }):
-    // resolve into the referenced graph's root node and walk that.
-    if (sem.ref !== undefined && !sem.ref.startsWith('#')) {
-      const refId = currentGraph.resolveRefId(sem.ref);
-      const refGraph = registry.graph(refId);
-
-      if (refGraph !== undefined) {
-        walk(refGraph, refGraph.rootNode);
-
-        return;
-      }
-    }
-
-    for (const [
-      name,
-      propNode
-    ] of sem.properties) {
-      if (!collected.has(name)) {
-        collected.set(name, {
-          'graph': currentGraph,
-          'node': propNode
-        });
-      }
-    }
-
-    for (const member of sem.allOf) {
-      walk(currentGraph, member);
-    }
-
-    // if/then/else conditional-branch properties (e.g. EBook's epubVersion
-    // under the fileFormat==='epub' then-branch) are real instance properties;
-    // walk both branches so a projected branch property can be lifted back.
-    if (sem.thenNode !== undefined) {
-      walk(currentGraph, sem.thenNode);
-    }
-    if (sem.elseNode !== undefined) {
-      walk(currentGraph, sem.elseNode);
-    }
-  };
-
-  walk(graph, node);
-
-  return collected;
-}
-
-/**
- * Memoised wrapper around `collectEffectiveLiftPropertiesImpl`.
- *
- * The effective-property map is stable within a session (graphs and the
- * registry are immutable after schema registration), so we cache by node
- * identity. The WeakMap ensures no memory leak when nodes are GC'd.
+ * Delegates to the canonical `collectEffectivePropertiesMemo` walker with a
+ * `resolveGraph` backed by the registry and the module-level node-keyed cache.
  */
 function collectEffectiveLiftProperties(
   graph: SchemaGraphInterface,
-  node: SchemaGraphNodeInterface,
+  node: SchemaGraphNodeType,
   registry: SchemaRegistryInterface
 ): EffectivePropertyMapType {
-  const cached = effectivePropertiesCache.get(node);
-
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const result = collectEffectiveLiftPropertiesImpl(graph, node, registry);
-
-  effectivePropertiesCache.set(node, result);
-
-  return result;
+  return collectEffectivePropertiesMemo(
+    effectivePropertiesCache,
+    graph,
+    node,
+    (refId: string): SchemaGraphInterface | undefined => {
+      return registry.graph(refId);
+    }
+  );
 }
 
-function liftPropertyValue(pvArgs: LiftPropertyValueArgsInterface): unknown {
+function liftPropertyValue(pvArgs: LiftPropertyValueArgsType): unknown {
   const {
     classId, ctx, index, propEntry, propName, subjectIri, subjectQuads
   } = pvArgs;
@@ -606,7 +532,7 @@ function liftPropertyValue(pvArgs: LiftPropertyValueArgsInterface): unknown {
   });
 }
 
-function liftMatchingQuads(mqArgs: LiftMatchingQuadsArgsInterface): unknown {
+function liftMatchingQuads(mqArgs: LiftMatchingQuadsArgsType): unknown {
   const {
     ctx, isArray, matching, nestedNode, propGraph, resolvedNode
   } = mqArgs;
@@ -638,7 +564,7 @@ function liftMatchingQuads(mqArgs: LiftMatchingQuadsArgsInterface): unknown {
     });
 }
 
-function liftSubject(args: LiftSubjectArgsInterface): LiftedObjectType {
+function liftSubject(args: LiftSubjectArgsType): LiftedObjectType {
   const {
     classId, ctx, graph, node, subjectQuads
   } = args;
@@ -671,7 +597,7 @@ function liftSubject(args: LiftSubjectArgsInterface): LiftedObjectType {
   return obj;
 }
 
-function liftSingleValue(args: LiftSingleValueArgsInterface): unknown {
+function liftSingleValue(args: LiftSingleValueArgsType): unknown {
   const {
     ctx, obj, parentGraph, targetNode
   } = args;
@@ -742,7 +668,7 @@ function liftSingleValue(args: LiftSingleValueArgsInterface): unknown {
 function liftInstancesImpl(
   schemaId: string,
   quads: QuadInterface[],
-  args: LiftImplArgsInterface
+  args: LiftImplArgsType
 ): unknown[] {
   const {
     curie, predicateResolver, registry
@@ -770,7 +696,7 @@ function liftInstancesImpl(
     return results;
   }
 
-  const ctx: LiftContextInterface = {
+  const ctx: LiftContextType = {
     'allGroups': groups,
     curie,
     predicateResolver,
@@ -844,7 +770,7 @@ export const Lift = {
     schemaId: string,
     quads: QuadInterface[],
     registry: SchemaRegistryInterface,
-    options?: LiftOptionsInterface
+    options?: LiftOptionsType
   ): unknown[] {
     return liftInstancesImpl(schemaId, quads, {
       'curie': options?.curie,
