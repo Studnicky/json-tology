@@ -37,11 +37,20 @@ export class BaseError extends Error {
       return BaseError.formatPath(error);
     });
   }
+
   /**
    * Format a validation error as "path: message", using "root" when the path is empty.
    */
   static formatPath(error: ValidationErrorType): string {
     return `${error.path === '' ? 'root' : error.path}: ${error.message}`;
+  }
+  /**
+   * Normalize an unknown caught value into an `Error` suitable for a `.cause` chain.
+   * Returns the value unchanged when it is already an `Error`; otherwise wraps
+   * `String(error)` in a plain `Error`.
+   */
+  static toCause(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
   }
   static validationError(
     path: string,

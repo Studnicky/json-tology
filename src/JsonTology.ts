@@ -70,6 +70,7 @@ import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js
 import { Lift } from './modules/rdf/Lift.js';
 import { Materializer } from './modules/materialization/Materializer.js';
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
+import { BaseError } from './errors/BaseError.js';
 import { EncodeError } from './errors/EncodeError.js';
 import { TransformError } from './errors/TransformError.js';
 import { PredicateResolver } from './modules/graph/PredicateResolver.js';
@@ -1108,7 +1109,7 @@ export class JsonTology<TRefs = Record<never, never>> {
         throw error;
       }
 
-      const causeError = error instanceof Error ? error : new Error(String(error));
+      const causeError = BaseError.toCause(error);
       const schemaId = schema.$id;
 
       throw new EncodeError(

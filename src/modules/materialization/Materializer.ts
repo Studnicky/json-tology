@@ -13,12 +13,10 @@ import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
-import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
-import { SchemaIri } from '../graph/SchemaIri.js';
 import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
+import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
 import { Projection } from '../rdf/Projection.js';
 import { Terms } from '../rdf/Terms.js';
 import { OWL } from '../../constants/IRI.js';
@@ -172,7 +170,7 @@ export class Materializer implements MaterializerInterface {
       try {
         value[name] = fn(value);
       } catch (error) {
-        const causeError = error instanceof Error ? error : new Error(String(error));
+        const causeError = BaseError.toCause(error);
 
         throw new InstantiationError(
           new ValidationErrors([{
@@ -428,45 +426,12 @@ export class Materializer implements MaterializerInterface {
       ];
     }
 
-    const ref = semantics.ref;
+    const resolved = canonicalResolveRef(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn });
 
-    if (ref.startsWith('#')) {
-      return [
-        graph,
-        graph.resolveFragment(ref.slice(1))
-      ];
-    }
-
-    const parsed = SchemaIri.parseRef(ref);
-    const targetGraph = this.registry.graph(parsed.id);
-
-    if (targetGraph !== undefined) {
-      return [
-        targetGraph,
-        targetGraph.resolveFragment(parsed.fragment)
-      ];
-    }
-
-    // Embedded `$defs` `$id`: a non-fragment `$ref` whose target is an `$id`
-    // declared inside this same graph's `$defs` (e.g. `urn:bookstore:BookCatalogEntryVariant`)
-    // is not a separately-registered schema, so the registry lookup misses it.
-    // Resolve it within the current graph by matching the node whose id equals
-    // the ref target. Mirrors the same-graph embedded-$id fallback in
-    // Projection.resolveNode. Without this, ABox projection of such a ref
-    // throws REF_UNRESOLVED.
-    for (const candidate of graph.nodes()) {
-      if (candidate.id === parsed.id) {
-        return [
-          graph,
-          candidate
-        ];
-      }
-    }
-
-    throw new GraphError(`Unresolved schema reference: ${ref}`, {
-      'code': GraphErrorCode.REF_UNRESOLVED,
-      'pointer': ref
-    });
+    return [
+      resolved.graph,
+      resolved.node
+    ];
   }
 
   private run(

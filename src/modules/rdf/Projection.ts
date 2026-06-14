@@ -35,10 +35,7 @@ import {
 } from '../../constants/IRI.js';
 import { XsdTypes } from './XsdTypes.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
-import { GraphError } from '../../errors/GraphError.js';
-import {
-  GraphErrorCode, MaterializationErrorCode
-} from '../../constants/ERROR_CODES.js';
+import { MaterializationErrorCode } from '../../constants/ERROR_CODES.js';
 import {
   hasCycle, isRecord
 } from '../data/DataTypes.js';
@@ -47,6 +44,7 @@ import { SchemaIri } from '../graph/SchemaIri.js';
 import { Hash } from '../hash/Hash.js';
 import { QuadFactory } from './QuadFactory.js';
 import { findAnnotatedEdgeStructure } from './ProjectionHelpers.js';
+import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
 
 // ---------------------------------------------------------------------------
 // TBox projection — purely relation-driven
@@ -218,68 +216,12 @@ function resolveNode(
       node
     };
   }
-  if (nodeSemantics.ref.startsWith('#')) {
-    const fragment = nodeSemantics.ref.slice(1);
 
-    return {
-      graph,
-      'node': graph.resolveFragment(fragment)
-    };
-  }
-
-  const refId = graph.resolveRefId(nodeSemantics.ref);
-
-  if (lookupGraph !== undefined) {
-    const targetGraph = lookupGraph(refId);
-
-    if (targetGraph !== undefined) {
-      return {
-        'graph': targetGraph,
-        'node': targetGraph.rootNode
-      };
-    }
-  }
-
-  // Embedded `$defs` `$id`: a $ref whose target is an embedded `$id` declared
-  // inside this same graph's `$defs` is not a separately-registered schema, so
-  // lookupGraph cannot find it. Resolve it within the current graph by matching
-  // the node whose id equals the ref. Without this, ABox projection of such a
-  // ref leaves the node unresolved (its `$ref` never followed), which surfaces
-  // downstream as REF_UNRESOLVED.
-  const embedded = findNodeById(graph, refId);
-
-  if (embedded !== undefined) {
-    return {
-      graph,
-      'node': embedded
-    };
-  }
-
-  throw new GraphError(
-    `Unresolved schema reference in projection: ${nodeSemantics.ref}`,
-    {
-      'code': GraphErrorCode.REF_UNRESOLVED,
-      'pointer': nodeSemantics.ref
-    }
+  return canonicalResolveRef(
+    nodeSemantics.ref,
+    graph,
+    lookupGraph === undefined ? {} : { 'lookupGraph': lookupGraph }
   );
-}
-
-/**
- * Find a node within `graph` whose `id` matches `id`, if any. Used to resolve a
- * `$ref` that targets an embedded `$defs` `$id` declared in the same graph
- * (rather than a separately-registered schema).
- */
-function findNodeById(
-  graph: SchemaGraphInterface,
-  id: string
-): SchemaGraphNodeType | undefined {
-  for (const candidate of graph.nodes()) {
-    if (candidate.id === id) {
-      return candidate;
-    }
-  }
-
-  return undefined;
 }
 
 /**

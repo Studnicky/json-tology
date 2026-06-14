@@ -28,6 +28,7 @@ import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugi
 import type { SchemaRegistryForEachCallback } from '../../types/SchemaRegistryForEachCallback.js';
 import type { SetEntryType } from '../../types/SetEntryType.js';
 
+import { BaseError } from '../../errors/BaseError.js';
 import { CoercionError } from '../../errors/CoercionError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
@@ -302,7 +303,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       try {
         coerced[name] = fn(coerced);
       } catch (error) {
-        const causeError = error instanceof Error ? error : new Error(String(error));
+        const causeError = BaseError.toCause(error);
 
         throw new InstantiationError(
           new ValidationErrors([{
@@ -892,7 +893,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       if (error instanceof TransformError) {
         throw error;
       }
-      const causeError = error instanceof Error ? error : new Error(String(error));
+      const causeError = BaseError.toCause(error);
 
       throw new DecodeError(
         `transform decoder failed at root: ${causeError.message}`,
