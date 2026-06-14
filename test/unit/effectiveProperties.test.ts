@@ -106,14 +106,20 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
   });
 
   void it('collects properties from thenNode and elseNode', () => {
-    // Build the conditional schema from a JSON string to avoid unicorn/no-thenable —
-    // the rule fires on any object literal (or assignment to a computed key) whose
-    // resolved name is 'then'. JSON.parse is not a literal, so it is safe.
-
-    const conditionalSchema = JSON.parse('{"$id":"https://example.com/Conditional","if":{"properties":{"flag":{"type":"boolean"}}},'
-      + '"then":{"type":"object","properties":{"thenOnly":{"type":"string"}}},'
-      + '"else":{"type":"object","properties":{"elseOnly":{"type":"string"}}},'
-      + '"properties":{"base":{"type":"string"}},"type":"object"}') as Record<string, unknown>;
+    const conditionalSchema: Record<string, unknown> = {
+      '$id': 'https://example.com/Conditional',
+      'else': {
+        'properties': { 'elseOnly': { 'type': 'string' } },
+        'type': 'object'
+      },
+      'if': { 'properties': { 'flag': { 'type': 'boolean' } } },
+      'properties': { 'base': { 'type': 'string' } },
+      'then': {
+        'properties': { 'thenOnly': { 'type': 'string' } },
+        'type': 'object'
+      },
+      'type': 'object'
+    };
     const {
       graph, root
     } = buildGraph(conditionalSchema);

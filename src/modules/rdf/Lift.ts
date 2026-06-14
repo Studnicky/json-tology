@@ -29,7 +29,6 @@ import type { LiftedObjectType } from '../../types/LiftedObjectType.js';
 import type { SubjectTypeType } from '../../types/SubjectTypeType.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 import type { ResolvedTypeNodeType } from '../../types/ResolvedTypeNodeType.js';
-import type { OptionalAnnotatedEdgeType } from '../../types/OptionalAnnotatedEdgeType.js';
 import type { OptionalLiftedObjectType } from '../../types/OptionalLiftedObjectType.js';
 import type { FindPropertyQuadsArgsType } from '../../types/FindPropertyQuadsArgs.js';
 import type { LiftContextType } from '../../types/LiftContext.js';
@@ -45,6 +44,7 @@ import { RDF } from '../../constants/IRI.js';
 
 import { asQuadObject } from './Lists.js';
 import { decodeLiteral } from './Terms.js';
+import { findAnnotatedEdgeStructure } from './ProjectionHelpers.js';
 
 // ---------------------------------------------------------------------------
 // Lift internals
@@ -360,22 +360,6 @@ function resolveLocalRef(
   }
 
   return node;
-}
-
-/**
- * Find the `annotatedEdge` structure relation on a property node, if any.
- */
-function findAnnotatedEdgeStructure(
-  graph: SchemaGraphInterface,
-  propertyNode: SchemaGraphNodeType
-): OptionalAnnotatedEdgeType {
-  for (const relation of graph.relations(propertyNode)) {
-    if (relation.structure?.kind === 'annotatedEdge') {
-      return relation.structure;
-    }
-  }
-
-  return undefined;
 }
 
 /**

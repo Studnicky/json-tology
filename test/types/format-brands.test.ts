@@ -3,7 +3,7 @@
  * (Finding 23 / design 0002 cluster H).
  *
  * Each registered JSON Schema `format` keyword produces a named branded
- * alias (`EmailBrandInterface`, `UriBrandInterface`, ...) layered on top
+ * alias (`EmailBrandType`, `UriBrandType`, ...) layered on top
  * of the parametric `FormatBrandType<F>`. `InferType` already
  * intersects `FormatBrandType<F>` whenever `format: F` is declared
  * on a string or number property, so the named aliases are structurally
@@ -13,7 +13,7 @@
  *
  * - A raw `string` value cannot be assigned to a branded field (compile error).
  * - A value returned from `JsonTology.instantiate(EmailSchema, x)` is
- *   assignable to `EmailBrandInterface`.
+ *   assignable to `EmailBrandType`.
  * - Two distinct format brands are mutually incompatible (an `EmailBrand`
  *   value is not assignable to a `UriBrand` field).
  */
@@ -24,32 +24,32 @@ import {
 
 import { JsonTology } from '../../src/JsonTology.js';
 import type {
-  BinaryBrandInterface,
-  ByteBrandInterface,
-  DateBrandInterface,
-  DateTimeBrandInterface,
-  DoubleBrandInterface,
-  DurationBrandInterface,
-  EmailBrandInterface,
-  FloatBrandInterface,
+  BinaryBrandType,
+  ByteBrandType,
+  DateBrandType,
+  DateTimeBrandType,
+  DoubleBrandType,
+  DurationBrandType,
+  EmailBrandType,
+  FloatBrandType,
   FormatBrandType,
-  HostnameBrandInterface,
-  IdnEmailBrandInterface,
-  IdnHostnameBrandInterface,
-  Int32BrandInterface,
-  Int64BrandInterface,
-  Ipv4BrandInterface,
-  Ipv6BrandInterface,
-  IriBrandInterface,
-  IriReferenceBrandInterface,
-  JsonPointerBrandInterface,
-  RegexBrandInterface,
-  RelativeJsonPointerBrandInterface,
-  TimeBrandInterface,
-  UriBrandInterface,
-  UriReferenceBrandInterface,
-  UriTemplateBrandInterface,
-  UuidBrandInterface
+  HostnameBrandType,
+  IdnEmailBrandType,
+  IdnHostnameBrandType,
+  Int32BrandType,
+  Int64BrandType,
+  Ipv4BrandType,
+  Ipv6BrandType,
+  IriBrandType,
+  IriReferenceBrandType,
+  JsonPointerBrandType,
+  RegexBrandType,
+  RelativeJsonPointerBrandType,
+  TimeBrandType,
+  UriBrandType,
+  UriReferenceBrandType,
+  UriTemplateBrandType,
+  UuidBrandType
 } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
@@ -65,7 +65,7 @@ function assert<T extends true>(): void {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Email — InferType produces a value assignable to EmailBrandInterface
+// 1. Email — InferType produces a value assignable to EmailBrandType
 // ---------------------------------------------------------------------------
 
 const _EmailSchema = {
@@ -78,26 +78,26 @@ void _EmailSchema;
 
 type Email = InferType<typeof _EmailSchema>;
 
-assert<AssertAssignableType<Email, EmailBrandInterface>>();
+assert<AssertAssignableType<Email, EmailBrandType>>();
 assert<AssertAssignableType<Email, FormatBrandType<'email'>>>();
 assert<AssertAssignableType<Email, string>>();
 
-// instantiate returns the branded type; assignment to EmailBrandInterface is OK
+// instantiate returns the branded type; assignment to EmailBrandType is OK
 const jtEmail = JsonTology.create({
   'baseIRI': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [_EmailSchema] as const
 });
 
-const _emailGood: EmailBrandInterface = jtEmail.instantiate(
+const _emailGood: EmailBrandType = jtEmail.instantiate(
   'https://example.io/Email',
   'a@b.com'
 );
 
 void _emailGood;
 
-// Plain string is NOT assignable to EmailBrandInterface
-function takeEmail(_e: EmailBrandInterface): void {
+// Plain string is NOT assignable to EmailBrandType
+function takeEmail(_e: EmailBrandType): void {
   void _e;
 }
 
@@ -120,13 +120,13 @@ void _UriSchema;
 
 type Uri = InferType<typeof _UriSchema>;
 
-assert<AssertAssignableType<Uri, UriBrandInterface>>();
+assert<AssertAssignableType<Uri, UriBrandType>>();
 
 if (false as boolean) {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- need branded phantom value
-  const emailVal = {} as EmailBrandInterface;
-  // @ts-expect-error — EmailBrandInterface is not assignable to UriBrandInterface
-  const _uriFromEmail: UriBrandInterface = emailVal;
+  const emailVal = {} as EmailBrandType;
+  // @ts-expect-error — EmailBrandType is not assignable to UriBrandType
+  const _uriFromEmail: UriBrandType = emailVal;
 
   void _uriFromEmail;
 }
@@ -144,7 +144,7 @@ const _UuidSchema = {
 void _UuidSchema;
 
 type Uuid = InferType<typeof _UuidSchema>;
-assert<AssertAssignableType<Uuid, UuidBrandInterface>>();
+assert<AssertAssignableType<Uuid, UuidBrandType>>();
 
 // ---------------------------------------------------------------------------
 // 4. Date / Date-Time / Time / Duration
@@ -157,7 +157,7 @@ const _DateSchema = {
 } as const;
 
 void _DateSchema;
-assert<AssertAssignableType<InferType<typeof _DateSchema>, DateBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _DateSchema>, DateBrandType>>();
 
 const _DateTimeSchema = {
   '$id': 'https://example.io/DT',
@@ -166,7 +166,7 @@ const _DateTimeSchema = {
 } as const;
 
 void _DateTimeSchema;
-assert<AssertAssignableType<InferType<typeof _DateTimeSchema>, DateTimeBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _DateTimeSchema>, DateTimeBrandType>>();
 
 const _TimeSchema = {
   '$id': 'https://example.io/T',
@@ -175,7 +175,7 @@ const _TimeSchema = {
 } as const;
 
 void _TimeSchema;
-assert<AssertAssignableType<InferType<typeof _TimeSchema>, TimeBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _TimeSchema>, TimeBrandType>>();
 
 const _DurationSchema = {
   '$id': 'https://example.io/Du',
@@ -184,7 +184,7 @@ const _DurationSchema = {
 } as const;
 
 void _DurationSchema;
-assert<AssertAssignableType<InferType<typeof _DurationSchema>, DurationBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _DurationSchema>, DurationBrandType>>();
 
 // ---------------------------------------------------------------------------
 // 5. Hostname / IDN-hostname / IDN-email
@@ -197,7 +197,7 @@ const _HostnameSchema = {
 } as const;
 
 void _HostnameSchema;
-assert<AssertAssignableType<InferType<typeof _HostnameSchema>, HostnameBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _HostnameSchema>, HostnameBrandType>>();
 
 const _IdnHostnameSchema = {
   '$id': 'https://example.io/IH',
@@ -206,7 +206,7 @@ const _IdnHostnameSchema = {
 } as const;
 
 void _IdnHostnameSchema;
-assert<AssertAssignableType<InferType<typeof _IdnHostnameSchema>, IdnHostnameBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _IdnHostnameSchema>, IdnHostnameBrandType>>();
 
 const _IdnEmailSchema = {
   '$id': 'https://example.io/IE',
@@ -215,7 +215,7 @@ const _IdnEmailSchema = {
 } as const;
 
 void _IdnEmailSchema;
-assert<AssertAssignableType<InferType<typeof _IdnEmailSchema>, IdnEmailBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _IdnEmailSchema>, IdnEmailBrandType>>();
 
 // ---------------------------------------------------------------------------
 // 6. IPv4 / IPv6
@@ -228,7 +228,7 @@ const _Ipv4Schema = {
 } as const;
 
 void _Ipv4Schema;
-assert<AssertAssignableType<InferType<typeof _Ipv4Schema>, Ipv4BrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _Ipv4Schema>, Ipv4BrandType>>();
 
 const _Ipv6Schema = {
   '$id': 'https://example.io/Ip6',
@@ -237,14 +237,14 @@ const _Ipv6Schema = {
 } as const;
 
 void _Ipv6Schema;
-assert<AssertAssignableType<InferType<typeof _Ipv6Schema>, Ipv6BrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _Ipv6Schema>, Ipv6BrandType>>();
 
 // IPv4 and IPv6 are distinct brands
 if (false as boolean) {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- branded phantom value
-  const v4 = {} as Ipv4BrandInterface;
+  const v4 = {} as Ipv4BrandType;
   // @ts-expect-error — Ipv4 is not assignable to Ipv6
-  const _v6: Ipv6BrandInterface = v4;
+  const _v6: Ipv6BrandType = v4;
 
   void _v6;
 }
@@ -260,7 +260,7 @@ const _UriRefSchema = {
 } as const;
 
 void _UriRefSchema;
-assert<AssertAssignableType<InferType<typeof _UriRefSchema>, UriReferenceBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _UriRefSchema>, UriReferenceBrandType>>();
 
 const _UriTplSchema = {
   '$id': 'https://example.io/UT',
@@ -269,7 +269,7 @@ const _UriTplSchema = {
 } as const;
 
 void _UriTplSchema;
-assert<AssertAssignableType<InferType<typeof _UriTplSchema>, UriTemplateBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _UriTplSchema>, UriTemplateBrandType>>();
 
 const _IriSchema = {
   '$id': 'https://example.io/I',
@@ -278,7 +278,7 @@ const _IriSchema = {
 } as const;
 
 void _IriSchema;
-assert<AssertAssignableType<InferType<typeof _IriSchema>, IriBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _IriSchema>, IriBrandType>>();
 
 const _IriRefSchema = {
   '$id': 'https://example.io/IR',
@@ -287,14 +287,14 @@ const _IriRefSchema = {
 } as const;
 
 void _IriRefSchema;
-assert<AssertAssignableType<InferType<typeof _IriRefSchema>, IriReferenceBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _IriRefSchema>, IriReferenceBrandType>>();
 
 // uri and uri-reference are distinct brands
 if (false as boolean) {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- branded phantom value
-  const uri = {} as UriBrandInterface;
-  // @ts-expect-error — UriBrandInterface is not assignable to UriReferenceBrandInterface
-  const _ur: UriReferenceBrandInterface = uri;
+  const uri = {} as UriBrandType;
+  // @ts-expect-error — UriBrandType is not assignable to UriReferenceBrandType
+  const _ur: UriReferenceBrandType = uri;
 
   void _ur;
 }
@@ -310,7 +310,7 @@ const _RegexSchema = {
 } as const;
 
 void _RegexSchema;
-assert<AssertAssignableType<InferType<typeof _RegexSchema>, RegexBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _RegexSchema>, RegexBrandType>>();
 
 const _JsonPointerSchema = {
   '$id': 'https://example.io/JP',
@@ -319,7 +319,7 @@ const _JsonPointerSchema = {
 } as const;
 
 void _JsonPointerSchema;
-assert<AssertAssignableType<InferType<typeof _JsonPointerSchema>, JsonPointerBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _JsonPointerSchema>, JsonPointerBrandType>>();
 
 const _RelJsonPointerSchema = {
   '$id': 'https://example.io/RJP',
@@ -330,7 +330,7 @@ const _RelJsonPointerSchema = {
 void _RelJsonPointerSchema;
 assert<AssertAssignableType<
   InferType<typeof _RelJsonPointerSchema>,
-  RelativeJsonPointerBrandInterface
+  RelativeJsonPointerBrandType
 >>();
 
 // ---------------------------------------------------------------------------
@@ -344,7 +344,7 @@ const _BinarySchema = {
 } as const;
 
 void _BinarySchema;
-assert<AssertAssignableType<InferType<typeof _BinarySchema>, BinaryBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _BinarySchema>, BinaryBrandType>>();
 
 const _ByteSchema = {
   '$id': 'https://example.io/Byte',
@@ -353,7 +353,7 @@ const _ByteSchema = {
 } as const;
 
 void _ByteSchema;
-assert<AssertAssignableType<InferType<typeof _ByteSchema>, ByteBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _ByteSchema>, ByteBrandType>>();
 
 // ---------------------------------------------------------------------------
 // 10. Numeric formats — int32 / int64 / float / double
@@ -366,7 +366,7 @@ const _Int32Schema = {
 } as const;
 
 void _Int32Schema;
-assert<AssertAssignableType<InferType<typeof _Int32Schema>, Int32BrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _Int32Schema>, Int32BrandType>>();
 
 const _Int64Schema = {
   '$id': 'https://example.io/I64',
@@ -375,7 +375,7 @@ const _Int64Schema = {
 } as const;
 
 void _Int64Schema;
-assert<AssertAssignableType<InferType<typeof _Int64Schema>, Int64BrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _Int64Schema>, Int64BrandType>>();
 
 const _FloatSchema = {
   '$id': 'https://example.io/F',
@@ -384,7 +384,7 @@ const _FloatSchema = {
 } as const;
 
 void _FloatSchema;
-assert<AssertAssignableType<InferType<typeof _FloatSchema>, FloatBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _FloatSchema>, FloatBrandType>>();
 
 const _DoubleSchema = {
   '$id': 'https://example.io/Do',
@@ -393,10 +393,10 @@ const _DoubleSchema = {
 } as const;
 
 void _DoubleSchema;
-assert<AssertAssignableType<InferType<typeof _DoubleSchema>, DoubleBrandInterface>>();
+assert<AssertAssignableType<InferType<typeof _DoubleSchema>, DoubleBrandType>>();
 
-// Plain number is NOT assignable to Int32BrandInterface
-function takeInt32(_n: Int32BrandInterface): void {
+// Plain number is NOT assignable to Int32BrandType
+function takeInt32(_n: Int32BrandType): void {
   void _n;
 }
 
@@ -407,9 +407,9 @@ void takeInt32;
 
 // int32 and int64 are distinct brands
 if (false as boolean) {
-  const i32 = 0 as unknown as Int32BrandInterface;
+  const i32 = 0 as unknown as Int32BrandType;
   // @ts-expect-error — Int32 is not assignable to Int64
-  const _i64: Int64BrandInterface = i32;
+  const _i64: Int64BrandType = i32;
 
   void _i64;
 }
@@ -441,8 +441,8 @@ void _UserSchema;
 
 type User = InferType<typeof _UserSchema>;
 
-assert<AssertAssignableType<User['email'], EmailBrandInterface>>();
-assert<AssertAssignableType<User['id'], UuidBrandInterface>>();
+assert<AssertAssignableType<User['email'], EmailBrandType>>();
+assert<AssertAssignableType<User['id'], UuidBrandType>>();
 
 // instantiate returns a User where the fields satisfy their brands
 const jtUser = JsonTology.create({
@@ -456,8 +456,8 @@ const _u = jtUser.instantiate('https://example.io/User', {
   'id': '12345678-1234-4123-8123-123456789abc'
 });
 
-const _emailField: EmailBrandInterface = _u.email;
-const _idField: UuidBrandInterface = _u.id;
+const _emailField: EmailBrandType = _u.email;
+const _idField: UuidBrandType = _u.id;
 
 void _emailField;
 void _idField;

@@ -1258,7 +1258,33 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       this.activeLookupGraph
     );
 
-    return this.buildValidateWithErrorsExecution(plan);
+    // Compile value-producing validators for anyOf/oneOf members so that
+    // defaults and coercion applied inside a branch are propagated forward,
+    // matching the interpreted path (VisitComposition.anyOf/oneOf) semantics.
+    const sem = graph.semantics(graphNode);
+    let anyOfValidators: undefined | ValidateWithErrorsFnType[];
+
+    if (sem.anyOf.length > 0) {
+      anyOfValidators = sem.anyOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
+        return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+      });
+    }
+
+    let oneOfValidators: undefined | ValidateWithErrorsFnType[];
+
+    if (sem.oneOf.length > 0) {
+      oneOfValidators = sem.oneOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
+        return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+      });
+    }
+
+    const baseExecutor = this.buildValidateWithErrorsExecution(plan);
+
+    if (anyOfValidators === undefined && oneOfValidators === undefined) {
+      return baseExecutor;
+    }
+
+    return this.wrapWithValueProducingComposition(baseExecutor, anyOfValidators, oneOfValidators);
   }
 
   private compileNumberCheck(
@@ -1765,10 +1791,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // validate() compilation — with errors and mutation support
-  // ---------------------------------------------------------------------------
-
   private runPlanStructure(
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
@@ -1812,6 +1834,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       valid
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // validate() compilation — with errors and mutation support
+  // ---------------------------------------------------------------------------
 
   private runPlanStructureAndTail(
     plan: CompiledNodeValidationPlanType,
@@ -2228,11 +2254,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return this.runPlanStructureAndTail(plan, earlyResult.value, path, errors, runOpts, earlyResult.valid);
   }
 
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
   private validatePlanDependent(
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
@@ -2285,6 +2306,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       'value': depSchemaResult.value
     };
   }
+
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
 
   private validatePlanPropNamesAndKeywords(
     plan: CompiledNodeValidationPlanType,
@@ -2384,10 +2410,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Check execution (inlined from SchemaCompilerCheckExec)
-  // ---------------------------------------------------------------------------
-
   private validateStringNumberFormat(
     plan: CompiledNodeValidationPlanType,
     value: unknown,
@@ -2428,6 +2450,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       'valid': strResult.valid
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // Check execution (inlined from SchemaCompilerCheckExec)
+  // ---------------------------------------------------------------------------
 
   private validateStringPart(
     plan: CompiledNodeValidationPlanType,
@@ -2476,10 +2502,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Validate execution (inlined from SchemaCompilerValidateExec)
-  // ---------------------------------------------------------------------------
-
   private validateTypeEnumConst(
     plan: CompiledNodeValidationPlanType,
     value: unknown,
@@ -2526,6 +2548,99 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return {
       'earlyExit': false,
       valid
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Validate execution (inlined from SchemaCompilerValidateExec)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Wraps a base validator with value-producing anyOf/oneOf composition logic.
+   * Replaces the boolean-only anyOf/oneOf check path with full validators that
+   * propagate the winning branch's mutated value (defaults, coercion).
+   */
+  private wrapWithValueProducingComposition(
+    baseExecutor: ValidateWithErrorsFnType,
+    anyOfValidators: undefined | ValidateWithErrorsFnType[],
+    oneOfValidators: undefined | ValidateWithErrorsFnType[]
+  ): ValidateWithErrorsFnType {
+    return (
+      value: unknown,
+      path: string,
+      errors: ValidationErrorType[],
+      collectErrors: boolean,
+      applyDefaults: boolean,
+      doCoerce: boolean,
+      stripUnknown: boolean
+    ): ValidateWithErrorsResultType => {
+      const baseResult = baseExecutor(value, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+
+      // Run value-producing anyOf — this replaces the boolean anyOf check in the base executor.
+      // The base executor already validated and returned any anyOf errors; here we re-run
+      // with full validators to propagate the winner's value when applyDefaults or doCoerce is active.
+      if (!applyDefaults && !doCoerce) {
+        return baseResult;
+      }
+
+      if (!baseResult.valid) {
+        return baseResult;
+      }
+
+      let workingValue = baseResult.value;
+
+      if (anyOfValidators !== undefined) {
+        const anyResult = Composition.validateAnyOfWithValues(
+          path,
+          workingValue,
+          anyOfValidators,
+          errors,
+          collectErrors,
+          applyDefaults,
+          doCoerce,
+          stripUnknown,
+          <T>(candidate: T): T => {
+            return GraphEngineSupport.cloneCandidate(candidate);
+          }
+        );
+
+        if (!anyResult.valid) {
+          return {
+            'valid': false,
+            'value': anyResult.value
+          };
+        }
+        workingValue = anyResult.value;
+      }
+
+      if (oneOfValidators !== undefined) {
+        const oneResult = Composition.validateOneOfWithValues(
+          path,
+          workingValue,
+          oneOfValidators,
+          errors,
+          collectErrors,
+          applyDefaults,
+          doCoerce,
+          stripUnknown,
+          <T>(candidate: T): T => {
+            return GraphEngineSupport.cloneCandidate(candidate);
+          }
+        );
+
+        if (!oneResult.valid) {
+          return {
+            'valid': false,
+            'value': oneResult.value
+          };
+        }
+        workingValue = oneResult.value;
+      }
+
+      return {
+        'valid': true,
+        'value': workingValue
+      };
     };
   }
 }

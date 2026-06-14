@@ -379,6 +379,16 @@ function buildPropertyIndex(index: Map<string, RelationIndexType>): Map<string, 
       continue;
     }
 
+    // Skip array-item child subjects (/items, /prefixItems/N, /contains).
+    // Their range constraints are folded onto the parent array property shape
+    // in emitPropertyShape; emitting them as standalone property shapes would
+    // produce phantom "#items" shapes on the class node.
+    const parts = SchemaIri.splitSubject(subject);
+
+    if (isExcludedFragment(parts.fragment)) {
+      continue;
+    }
+
     const parentId = SchemaIri.structuralParent(subject);
     const list = propertyIndex.get(parentId) ?? [];
 
@@ -724,7 +734,7 @@ function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
     bnodeId, classId, ctx, entry, overridePathClassId, subject
   } = args;
   const {
-    curie, graph, predicateResolver, quads
+    curie, graph, index, predicateResolver, quads
   } = ctx;
   const opts = { curie };
 
@@ -751,6 +761,27 @@ function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
     opts,
     quads
   });
+
+  // For array properties whose own entry carries no range or datatype constraint,
+  // fold the constraint from the /items child entry (if present) onto this shape.
+  // This handles `{ type: 'array', items: { $ref: '...' } }` and
+  // `{ type: 'array', items: { type: 'string' } }` patterns.
+  const entryHasRange = (entry.byPredicate.get(RDFS.range) ?? []).length > 0;
+  const entryHasDatatype = (entry.byPredicate.get(SH.datatype) ?? []).length > 0;
+
+  if (!entryHasRange && !entryHasDatatype) {
+    const itemsEntry = index.get(`${subject}/items`);
+
+    if (itemsEntry !== undefined) {
+      emitPropertyShapeTypeConstraints({
+        bnodeId,
+        'entry': itemsEntry,
+        opts,
+        quads
+      });
+    }
+  }
+
   emitPropertyShapeValueConstraints({
     bnodeId,
     entry,

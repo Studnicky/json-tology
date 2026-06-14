@@ -1744,7 +1744,6 @@ const _ShapeSchema = {
     'radius': { 'type': 'number' },
     'width': { 'type': 'number' }
   },
-  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema keyword, not a Promise
   'then': { 'required': ['radius'] },
   'type': 'object'
 } as const;
@@ -1788,7 +1787,6 @@ const _IfThenOnlySchema = {
     'expires': { 'type': 'string' },
     'status': { 'type': 'string' }
   },
-  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema keyword, not a Promise
   'then': { 'required': ['expires'] },
   'type': 'object'
 } as const;

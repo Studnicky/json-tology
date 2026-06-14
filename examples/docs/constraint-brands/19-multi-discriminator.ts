@@ -7,7 +7,6 @@
 
 import type { InferType } from '../../../src/types/index.js';
 
-/* eslint-disable unicorn/no-thenable -- 'then' is a JSON Schema keyword, not a Promise thenable. */
 const _MultiDiscriminatorSchema = {
   'else': {
     'properties': { 'width': { 'type': 'number' } },
@@ -37,7 +36,6 @@ const _MultiDiscriminatorSchema = {
   },
   'type': 'object'
 } as const;
-/* eslint-enable unicorn/no-thenable */
 
 type MultiShape = InferType<typeof _MultiDiscriminatorSchema>;
 

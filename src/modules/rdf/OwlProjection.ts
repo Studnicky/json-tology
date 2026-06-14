@@ -605,8 +605,7 @@ function emitClassEquivalencesAndDisjoint(
   const disjointUnionRels = entry.byPredicate.get(OWL.disjointUnionOf) ?? [];
 
   if (disjointUnionRels.length > 0) {
-    type IriTerm = ReturnType<typeof QuadFactory.iri>;
-    const disjointUnionIris = disjointUnionRels.map((rel: SchemaGraphRelationType): IriTerm => {
+    const disjointUnionIris = disjointUnionRels.map((rel: SchemaGraphRelationType): QuadObjectType => {
       return QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
     });
     const disjointUnionList = QuadFactory.rdfList(disjointUnionIris, quads, issuer);

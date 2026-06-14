@@ -14,6 +14,7 @@ import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapT
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
@@ -453,7 +454,7 @@ export class Materializer implements MaterializerInterface {
       }
     }
 
-    throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
+    throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Unresolved schema reference: ${ref}`, { 'pointer': ref });
   }
 
   private run(

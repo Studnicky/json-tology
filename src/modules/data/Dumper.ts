@@ -7,6 +7,7 @@ import { Transform } from '../transform/Transform.js';
 import { EncodeError } from '../../errors/EncodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 
 const graphTransformCache = new WeakMap<SchemaGraphInterface, boolean>();
@@ -133,7 +134,7 @@ export class Dumper {
     const entry = registry.graphEntry(schemaId);
 
     if (entry === undefined) {
-      throw new GraphError('REF_UNRESOLVED', `Schema not registered: ${schemaId}`, { 'pointer': schemaId });
+      throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Schema not registered: ${schemaId}`, { 'pointer': schemaId });
     }
 
     const {
@@ -192,7 +193,7 @@ export class Dumper {
     const entry = registry.graphEntry(schemaId);
 
     if (entry === undefined) {
-      throw new GraphError('REF_UNRESOLVED', `Schema not registered: ${schemaId}`, { 'pointer': schemaId });
+      throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Schema not registered: ${schemaId}`, { 'pointer': schemaId });
     }
 
     if (!graphHasTransforms(entry.graph) && !hasActiveFilterOptions(options)) {
@@ -386,7 +387,7 @@ export class Dumper {
     const lookedUp = registry.graphEntry(parsed.id);
 
     if (lookedUp === undefined) {
-      throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
+      throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Unresolved schema reference: ${ref}`, { 'pointer': ref });
     }
 
     const {

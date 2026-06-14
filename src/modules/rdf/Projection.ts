@@ -16,7 +16,6 @@ import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import type { SkolemizeFnType } from '../../types/Skolemize.js';
-import type { AnnotatedEdgeStructure } from '../../types/AnnotatedEdgeStructure.js';
 import type { ProjectInstanceArgsType } from '../../types/ProjectInstanceArgsType.js';
 import type { ProjectPropertyArgsType } from '../../types/ProjectPropertyArgsType.js';
 import type { RefTargetType } from '../../types/RefTarget.js';
@@ -36,6 +35,10 @@ import {
 } from '../../constants/IRI.js';
 import { XsdTypes } from './XsdTypes.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
+import { GraphError } from '../../errors/GraphError.js';
+import {
+  GraphErrorCode, MaterializationErrorCode
+} from '../../constants/ERROR_CODES.js';
 import {
   hasCycle, isRecord
 } from '../data/DataTypes.js';
@@ -43,6 +46,7 @@ import { PredicateResolver } from '../graph/PredicateResolver.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Hash } from '../hash/Hash.js';
 import { QuadFactory } from './QuadFactory.js';
+import { findAnnotatedEdgeStructure } from './ProjectionHelpers.js';
 
 // ---------------------------------------------------------------------------
 // TBox projection — purely relation-driven
@@ -251,10 +255,11 @@ function resolveNode(
     };
   }
 
-  return {
-    graph,
-    node
-  };
+  throw new GraphError(
+    GraphErrorCode.REF_UNRESOLVED,
+    `Unresolved schema reference in projection: ${nodeSemantics.ref}`,
+    { 'pointer': nodeSemantics.ref }
+  );
 }
 
 /**
@@ -574,22 +579,6 @@ function projectInstance(args: ProjectInstanceArgsType): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Find the `annotatedEdge` structure relation attached to a property node, if any.
- */
-function findAnnotatedEdgeStructure(
-  graph: SchemaGraphInterface,
-  propertyNode: SchemaGraphNodeType
-): AnnotatedEdgeStructure | undefined {
-  for (const relation of graph.relations(propertyNode)) {
-    if (relation.structure?.kind === 'annotatedEdge') {
-      return relation.structure;
-    }
-  }
-
-  return undefined;
-}
-
-/**
  * Resolve the target term IRI for an annotated edge value.
  *
  * The value may be:
@@ -728,7 +717,7 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
       sourceId,
       [`annotated edge ${edge.edgePredicate} requires an explicit graphIRI`],
       {
-        'code': 'MISSING_GRAPH_IRI',
+        'code': MaterializationErrorCode.MISSING_GRAPH_IRI,
         'message': `Annotated edge ${edge.edgePredicate} at ${path} requires a graphIRI: a triple term carries no graph membership, so the base triple and its annotations must share one named graph. Pass { graphIRI } to toQuads.`
       }
     );
@@ -836,7 +825,7 @@ function projectStringValue(value: string, ctx: ProjectScalarValueArgsType): voi
         propertyNode.id,
         [`invalid IRI value at ${path}: ${value}`],
         {
-          'code': 'INVALID_IRI_VALUE',
+          'code': MaterializationErrorCode.INVALID_IRI_VALUE,
           'message': `Property ${propertyIRI} (x-jt-iriRef) received an invalid IRI: "${value}". Expected an absolute IRI with an allowed scheme (http/https/urn/ftp/file) and no control characters or spaces.`
         }
       );
@@ -875,7 +864,7 @@ function projectNumberValue(value: number, ctx: ProjectScalarValueArgsType): voi
       propertyNode.id,
       [`non-finite numeric value at ${path}`],
       {
-        'code': 'NON_FINITE_NUMBER',
+        'code': MaterializationErrorCode.NON_FINITE_NUMBER,
         'message': `Non-finite numeric value (${String(value)}) at ${path} cannot be serialized as an RDF literal. Supply a finite number.`
       }
     );

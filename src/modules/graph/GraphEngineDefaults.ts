@@ -215,6 +215,29 @@ function synthesizeZeroValueInternal(
     return synthesizeAllOfZeroValue(state, sem.allOf, depth);
   }
 
+  // anyOf/oneOf: synthesize from the first member that yields a non-null value.
+  // The same logic as allOf synthesis but we stop at the first viable member
+  // because union members are alternatives, not additive constraints.
+  if (sem.anyOf.length > 0) {
+    for (const memberNode of sem.anyOf) {
+      const memberValue = synthesizeZeroValueInternal(state, memberNode, depth + 1);
+
+      if (memberValue !== null && memberValue !== undefined) {
+        return memberValue;
+      }
+    }
+  }
+
+  if (sem.oneOf.length > 0) {
+    for (const memberNode of sem.oneOf) {
+      const memberValue = synthesizeZeroValueInternal(state, memberNode, depth + 1);
+
+      if (memberValue !== null && memberValue !== undefined) {
+        return memberValue;
+      }
+    }
+  }
+
   return null;
 }
 

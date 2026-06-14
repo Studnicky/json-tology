@@ -17,6 +17,7 @@ import {
 import { FormatRegistry } from '../format/FormatRegistry.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
 import {
   EMPTY_EVALUATED_ITEMS, EMPTY_EVALUATED_PROPERTIES
@@ -35,10 +36,6 @@ import type { DefaultResolutionContextType } from '../../types/DefaultResolution
 import { GraphEngineVisit } from './GraphEngineVisit.js';
 import type { VisitContextType } from '../../types/VisitContext.js';
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
-
-const escape = (segment: string): string => {
-  return SchemaGraphSupport.escapeJsonPointerSegment(segment);
-};
 
 // EMPTY_EVALUATED_ITEMS and EMPTY_EVALUATED_PROPERTIES imported from EXECUTION_OPTIONS
 
@@ -127,7 +124,7 @@ export class GraphEngine implements GraphEngineInterface {
       if (options.removeAdditionalProperties) {
         delete workingValue[key];
       } else {
-        errors.push(this.createError(`${path}/${escape(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
+        errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
       }
 
       return;
@@ -139,7 +136,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       return;
     }
-    const child = this.visit(additionalPropertiesNode, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+    const child = this.visit(additionalPropertiesNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
     if (child.valid) {
       workingValue[key] = child.value;
@@ -286,11 +283,11 @@ export class GraphEngine implements GraphEngineInterface {
 
       if (typeof unevaluatedPropertiesNode.schema === 'boolean') {
         if (!unevaluatedPropertiesNode.schema) {
-          errors.push(this.createError(`${path}/${escape(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
+          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
         }
         continue;
       }
-      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -339,10 +336,6 @@ export class GraphEngine implements GraphEngineInterface {
       'overrides': { 'collectErrors': false },
       'pointer': options?.pointer ?? ''
     }).valid;
-  }
-
-  private coerceValue(schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown {
-    return GraphEngineScalars.coerceGraphValue(schemaTypes, value, materializeContainers);
   }
 
   private createError(
@@ -440,10 +433,6 @@ export class GraphEngine implements GraphEngineInterface {
 
   public keywords(): KeywordDefinitionType[] {
     return this.customKeywords;
-  }
-
-  private matchesType(schemaTypes: string[], value: unknown): boolean {
-    return GraphEngineScalars.matchesSchemaTypes(schemaTypes, value);
   }
 
   private regexFor(pattern: string): RegExp {
@@ -589,7 +578,7 @@ export class GraphEngine implements GraphEngineInterface {
       return this.graphFor(embeddedGraphNode.schema);
     }
 
-    throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
+    throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Unresolved schema reference: ${ref}`, { 'pointer': ref });
   }
 
   public rootSchemaId(): string | undefined {
@@ -1162,7 +1151,7 @@ export class GraphEngine implements GraphEngineInterface {
       const propNode = propertyNodeMap.get(key);
 
       if (propNode !== undefined) {
-        const child = this.visit(propNode, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+        const child = this.visit(propNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -1213,7 +1202,7 @@ export class GraphEngine implements GraphEngineInterface {
       if (!patternEntry.regex.test(key)) {
         continue;
       }
-      const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+      const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -1252,7 +1241,7 @@ export class GraphEngine implements GraphEngineInterface {
     errors.push(...propertyNameResult.errors.map((error: ValidationErrorType): ValidationErrorType => {
       return {
         ...error,
-        'path': `${path}/${escape(key)}`
+        'path': `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`
       };
     }));
 
@@ -1302,7 +1291,7 @@ export class GraphEngine implements GraphEngineInterface {
   private visitContextResolution(): Pick<VisitContextType, 'coerceValue' | 'createError' | 'customKeywords' | 'graphFor' | 'matchesType' | 'resolveDynamicRef' | 'resolveRef' | 'synthesizeZeroValue'> {
     return {
       'coerceValue': (schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown => {
-        return this.coerceValue(schemaTypes, value, materializeContainers);
+        return GraphEngineScalars.coerceGraphValue(schemaTypes, value, materializeContainers);
       },
       'createError': (path: string, keyword: string, message: string, params?: Record<string, unknown>): ValidationErrorType => {
         return this.createError(path, keyword, message, params);
@@ -1312,7 +1301,7 @@ export class GraphEngine implements GraphEngineInterface {
         return this.graphFor(rootSchema);
       },
       'matchesType': (schemaTypes: string[], value: unknown): boolean => {
-        return this.matchesType(schemaTypes, value);
+        return GraphEngineScalars.matchesSchemaTypes(schemaTypes, value);
       },
       'resolveDynamicRef': (ref: string, currentGraph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryType[]): RefTargetType => {
         return this.resolveDynamicRef(ref, currentGraph, dynamicScope);

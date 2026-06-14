@@ -166,7 +166,7 @@ All error classes extend `BaseError`. Internal imports reference each file direc
 - `GraphError.ts` — pointer resolution, anchor lookup, ref resolution, dialect issues; codes: see `GraphErrorCode` in `src/constants/ERROR_CODES.ts`
 - `InstantiationError.ts` — schema instantiation failures; codes: `INSTANTIATION_FAILED`, `EXTRA_FORBIDDEN`
 - _(no LoadError class)_ — loader failures use `SchemaLoadErrorType` in `src/types/Loader.ts` (a discriminated union type, not an error class)
-- `MaterializationError.ts` — materialization and ABox validation failures; codes: `MATERIALIZATION_FAILED`, `CYCLIC_DATA`
+- `MaterializationError.ts` — materialization and ABox projection failures; codes: `MATERIALIZATION_FAILED`, `CYCLIC_DATA`, `INVALID_IRI_VALUE`, `NON_FINITE_NUMBER`, `MISSING_GRAPH_IRI`
 - `OwlImportError.ts` — OWL import fatal conditions; carries `axiomIri` and `subjectIri`; code: `OWL_IMPORT_NOT_IMPLEMENTED`
 - `SchemaError.ts` — registration, missing `$id`, structure validation; codes: see `SchemaErrorCode` in `src/constants/ERROR_CODES.ts`; additionally `SCHEMA_DUPLICATE_ID` and `SCHEMA_DUPLICATE_SHAPE` are thrown as direct strings (no corresponding `SchemaErrorCode` constant — see `src/types/ErrorCodes.ts`)
 - `TransformError.ts` — base class for directional transform failures; adds `direction`, `schemaId?`, `path?`; not thrown directly by the library
@@ -336,13 +336,19 @@ Shared data utilities. `DataTypes.ts` is the canonical location for type guards 
 
 Canonical graph construction and engine execution. `SchemaGraph.ts` is the canonical semantic graph. `GraphEngine.ts` consumes graph node kinds and relations directly.
 
+- `AboxGraph.ts` — lazy, typed in-memory ABox instance graph over projected ABox quads unioned with the registry's TBox quads; exposes `resource` / `instances` entry points returning a fluent `Cursor`; reads associations (object-property edges, inverse-functional identities) directly from the TBox
+- `Cursor.ts` — lazy, immutable selection of resource IRIs over an `AboxGraph`; navigation and refinement return a new cursor, terminals materialize the selection into typed instances
+- `EffectiveProperties.ts` — the single effective-property walk shared by materialization, RDF lift, and ABox projection; collects own `properties`, `allOf` members, and `if/then/else` branches (first-declaration-wins, cycle-safe, cross-graph `$ref` resolution)
 - `GraphArtifact.ts` — compiled graph artifact
 - `GraphEngine.ts` — graph execution engine; validates, parses, materializes, and encodes
 - `GraphEngineDefaults.ts` — default engine option resolution
 - `GraphEngineScalars.ts` — scalar validation paths
 - `GraphEngineSupport.ts` — engine utility functions
 - `GraphEngineVisit.ts` — graph traversal coordination
+- `PredicateResolver.ts` — resolves and validates property predicate IRIs; rejects multi-fragment IRIs and control characters with `GraphError` code `INVALID_PREDICATE_IRI`
+- `QuadBackedSchemaGraph.ts` — `SchemaGraphInterface` implementation backed by OWL 2 quads; the structural inverse of `OwlProjection.graph()`, ingesting projected quads and reconstructing nodes and relations for the import dispatchers to traverse
 - `RefDecoder.ts` — `$ref` decode and registry lookup
+- `SchemaCursor.ts` — lazy, immutable selection of class IRIs in the TBox; navigation (`subClassOf`) and terminals lift each class IRI to its authored JSON Schema object
 - `SchemaGraph.ts` — canonical schema graph; builds and holds node and relation data
 - `SchemaGraphRelations.ts` — relation construction helpers
 - `SchemaGraphSupport.ts` — graph support utilities; primitive constraint and type keyword sets
@@ -403,12 +409,14 @@ Axiom dispatchers for `OwlImporter`. Each dispatcher handles a subset of OWL 2 a
 RDF/JSON-LD output. Projections read `graph.allRelations()` and emit vocabulary-specific quads.
 
 - `Curie.ts` — CURIE prefix manager
+- `IdentifierIssuer.ts` — per-call blank-node counter; each projector call constructs its own issuer so concurrent serializations never share mutable counter state
 - `JsonLdFormatter.ts` — converts quads to JSON-LD nodes; detects rdf:first/rdf:rest list heads and emits `@list`
 - `JsonLdToQuads.ts` — inverse of `JsonLdFormatter`; converts compact JSON-LD back to `QuadInterface[]`
 - `Lift.ts` — lifts external rdf/js quads into typed JS objects; decodes literals via `decodeLiteral`
 - `Lists.ts` — RDF list construction (`Lists.build`), walking (`Lists.collect`), `Quad_Object` narrowing (`Lists.asQuadObject`), and external-quad narrowing (`Lists.narrowExternalQuads`)
 - `OwlProjection.ts` — OWL-specific quad projection
 - `Projection.ts` — shared RDF projection base; predicate and handler maps
+- `ProjectionHelpers.ts` — shared helpers for `OwlProjection` and `ShaclProjection`: `propertySubjectIri`, `resolvePropertySchema`, `resolveRestrictionOnProperty`, `findAnnotatedEdgeStructure`
 - `ProjectionIndex.ts` — relation-to-predicate index
 - `QuadFactory.ts` — quad construction helpers
 - `ShaclProjection.ts` — SHACL-specific quad projection

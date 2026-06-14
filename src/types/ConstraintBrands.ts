@@ -178,7 +178,7 @@ export type ExclusiveMinimumBrandType<TN extends number> = { readonly [EXCLUSIVE
  *
  * Carries the format string literal so a value validated as `'email'` cannot
  * be passed where a `'uri'`-validated value is expected. All per-format named
- * aliases (`EmailBrandInterface`, `UriBrandInterface`, etc.) are built on this
+ * aliases (`EmailBrandType`, `UriBrandType`, etc.) are built on this
  * parametric brand.
  *
  * @remarks
@@ -193,7 +193,7 @@ export type ExclusiveMinimumBrandType<TN extends number> = { readonly [EXCLUSIVE
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link EmailBrandInterface}
+ * @see {@link EmailBrandType}
  * @group Constraint Brands
  *
  * @typeParam TF - The format string literal (e.g. `'email'`, `'uuid'`).
@@ -509,7 +509,7 @@ export type UniqueArrayBrandType<T> = UniqueItemsBrandType & {
  *
  * `FormatBrandType<F>` is the underlying parametric brand. Each named
  * alias below specialises it to a single format string so consumer APIs can
- * write `function send(to: EmailBrandInterface): void` and reject plain
+ * write `function send(to: EmailBrandType): void` and reject plain
  * `string` arguments at compile time.
  *
  * A value carrying these brands is only obtainable via the validation API
@@ -537,7 +537,7 @@ export type UniqueArrayBrandType<T> = UniqueItemsBrandType & {
  *
  * @example
  * ```ts
- * function send(to: EmailBrandInterface): void { /* ... *\/ }
+ * function send(to: EmailBrandType): void { /* ... *\/ }
  * ```
  *
  * @category Constraint Brands
@@ -545,7 +545,7 @@ export type UniqueArrayBrandType<T> = UniqueItemsBrandType & {
  * @see {@link FormatBrandType}
  * @group Constraint Brands
  */
-export type EmailBrandInterface = FormatBrandType<'email'> & string;
+export type EmailBrandType = FormatBrandType<'email'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'idn-email'`.
@@ -556,15 +556,15 @@ export type EmailBrandInterface = FormatBrandType<'email'> & string;
  *
  * @example
  * ```ts
- * const addr: IdnEmailBrandInterface = coerce(schema, value);
+ * const addr: IdnEmailBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link EmailBrandInterface}
+ * @see {@link EmailBrandType}
  * @group Constraint Brands
  */
-export type IdnEmailBrandInterface = FormatBrandType<'idn-email'> & string;
+export type IdnEmailBrandType = FormatBrandType<'idn-email'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'uri'`.
@@ -575,15 +575,15 @@ export type IdnEmailBrandInterface = FormatBrandType<'idn-email'> & string;
  *
  * @example
  * ```ts
- * const href: UriBrandInterface = coerce(schema, value);
+ * const href: UriBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link UriReferenceBrandInterface}
+ * @see {@link UriReferenceBrandType}
  * @group Constraint Brands
  */
-export type UriBrandInterface = FormatBrandType<'uri'> & string;
+export type UriBrandType = FormatBrandType<'uri'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'uri-reference'`.
@@ -594,15 +594,15 @@ export type UriBrandInterface = FormatBrandType<'uri'> & string;
  *
  * @example
  * ```ts
- * const ref: UriReferenceBrandInterface = coerce(schema, value);
+ * const ref: UriReferenceBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link UriBrandInterface}
+ * @see {@link UriBrandType}
  * @group Constraint Brands
  */
-export type UriReferenceBrandInterface = FormatBrandType<'uri-reference'> & string;
+export type UriReferenceBrandType = FormatBrandType<'uri-reference'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'uri-template'`.
@@ -612,15 +612,15 @@ export type UriReferenceBrandInterface = FormatBrandType<'uri-reference'> & stri
  *
  * @example
  * ```ts
- * const tmpl: UriTemplateBrandInterface = coerce(schema, value);
+ * const tmpl: UriTemplateBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link UriBrandInterface}
+ * @see {@link UriBrandType}
  * @group Constraint Brands
  */
-export type UriTemplateBrandInterface = FormatBrandType<'uri-template'> & string;
+export type UriTemplateBrandType = FormatBrandType<'uri-template'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'iri'`.
@@ -631,15 +631,15 @@ export type UriTemplateBrandInterface = FormatBrandType<'uri-template'> & string
  *
  * @example
  * ```ts
- * const iri: IriBrandInterface = coerce(schema, value);
+ * const iri: IriBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link UriBrandInterface}
+ * @see {@link UriBrandType}
  * @group Constraint Brands
  */
-export type IriBrandInterface = FormatBrandType<'iri'> & string;
+export type IriBrandType = FormatBrandType<'iri'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'iri-reference'`.
@@ -650,15 +650,15 @@ export type IriBrandInterface = FormatBrandType<'iri'> & string;
  *
  * @example
  * ```ts
- * const ref: IriReferenceBrandInterface = coerce(schema, value);
+ * const ref: IriReferenceBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link IriBrandInterface}
+ * @see {@link IriBrandType}
  * @group Constraint Brands
  */
-export type IriReferenceBrandInterface = FormatBrandType<'iri-reference'> & string;
+export type IriReferenceBrandType = FormatBrandType<'iri-reference'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'uuid'`.
@@ -669,7 +669,7 @@ export type IriReferenceBrandInterface = FormatBrandType<'iri-reference'> & stri
  *
  * @example
  * ```ts
- * const id: UuidBrandInterface = coerce(schema, value);
+ * const id: UuidBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
@@ -677,7 +677,7 @@ export type IriReferenceBrandInterface = FormatBrandType<'iri-reference'> & stri
  * @see {@link FormatBrandType}
  * @group Constraint Brands
  */
-export type UuidBrandInterface = FormatBrandType<'uuid'> & string;
+export type UuidBrandType = FormatBrandType<'uuid'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'date'`.
@@ -688,15 +688,15 @@ export type UuidBrandInterface = FormatBrandType<'uuid'> & string;
  *
  * @example
  * ```ts
- * const d: DateBrandInterface = coerce(schema, value);
+ * const d: DateBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link DateTimeBrandInterface}
+ * @see {@link DateTimeBrandType}
  * @group Constraint Brands
  */
-export type DateBrandInterface = FormatBrandType<'date'> & string;
+export type DateBrandType = FormatBrandType<'date'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'date-time'`.
@@ -707,15 +707,15 @@ export type DateBrandInterface = FormatBrandType<'date'> & string;
  *
  * @example
  * ```ts
- * const ts: DateTimeBrandInterface = coerce(schema, value);
+ * const ts: DateTimeBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link DateBrandInterface}
+ * @see {@link DateBrandType}
  * @group Constraint Brands
  */
-export type DateTimeBrandInterface = FormatBrandType<'date-time'> & string;
+export type DateTimeBrandType = FormatBrandType<'date-time'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'time'`.
@@ -726,15 +726,15 @@ export type DateTimeBrandInterface = FormatBrandType<'date-time'> & string;
  *
  * @example
  * ```ts
- * const t: TimeBrandInterface = coerce(schema, value);
+ * const t: TimeBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link DateTimeBrandInterface}
+ * @see {@link DateTimeBrandType}
  * @group Constraint Brands
  */
-export type TimeBrandInterface = FormatBrandType<'time'> & string;
+export type TimeBrandType = FormatBrandType<'time'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'duration'`.
@@ -745,15 +745,15 @@ export type TimeBrandInterface = FormatBrandType<'time'> & string;
  *
  * @example
  * ```ts
- * const dur: DurationBrandInterface = coerce(schema, value);
+ * const dur: DurationBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link DateTimeBrandInterface}
+ * @see {@link DateTimeBrandType}
  * @group Constraint Brands
  */
-export type DurationBrandInterface = FormatBrandType<'duration'> & string;
+export type DurationBrandType = FormatBrandType<'duration'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'hostname'`.
@@ -764,15 +764,15 @@ export type DurationBrandInterface = FormatBrandType<'duration'> & string;
  *
  * @example
  * ```ts
- * const host: HostnameBrandInterface = coerce(schema, value);
+ * const host: HostnameBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link IdnHostnameBrandInterface}
+ * @see {@link IdnHostnameBrandType}
  * @group Constraint Brands
  */
-export type HostnameBrandInterface = FormatBrandType<'hostname'> & string;
+export type HostnameBrandType = FormatBrandType<'hostname'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'idn-hostname'`.
@@ -783,15 +783,15 @@ export type HostnameBrandInterface = FormatBrandType<'hostname'> & string;
  *
  * @example
  * ```ts
- * const host: IdnHostnameBrandInterface = coerce(schema, value);
+ * const host: IdnHostnameBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link HostnameBrandInterface}
+ * @see {@link HostnameBrandType}
  * @group Constraint Brands
  */
-export type IdnHostnameBrandInterface = FormatBrandType<'idn-hostname'> & string;
+export type IdnHostnameBrandType = FormatBrandType<'idn-hostname'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'ipv4'`.
@@ -802,15 +802,15 @@ export type IdnHostnameBrandInterface = FormatBrandType<'idn-hostname'> & string
  *
  * @example
  * ```ts
- * const addr: Ipv4BrandInterface = coerce(schema, value);
+ * const addr: Ipv4BrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link Ipv6BrandInterface}
+ * @see {@link Ipv6BrandType}
  * @group Constraint Brands
  */
-export type Ipv4BrandInterface = FormatBrandType<'ipv4'> & string;
+export type Ipv4BrandType = FormatBrandType<'ipv4'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'ipv6'`.
@@ -821,15 +821,15 @@ export type Ipv4BrandInterface = FormatBrandType<'ipv4'> & string;
  *
  * @example
  * ```ts
- * const addr: Ipv6BrandInterface = coerce(schema, value);
+ * const addr: Ipv6BrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link Ipv4BrandInterface}
+ * @see {@link Ipv4BrandType}
  * @group Constraint Brands
  */
-export type Ipv6BrandInterface = FormatBrandType<'ipv6'> & string;
+export type Ipv6BrandType = FormatBrandType<'ipv6'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'regex'`.
@@ -840,7 +840,7 @@ export type Ipv6BrandInterface = FormatBrandType<'ipv6'> & string;
  *
  * @example
  * ```ts
- * const re: RegexBrandInterface = coerce(schema, value);
+ * const re: RegexBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
@@ -848,7 +848,7 @@ export type Ipv6BrandInterface = FormatBrandType<'ipv6'> & string;
  * @see {@link PatternBrandType}
  * @group Constraint Brands
  */
-export type RegexBrandInterface = FormatBrandType<'regex'> & string;
+export type RegexBrandType = FormatBrandType<'regex'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'json-pointer'`.
@@ -859,15 +859,15 @@ export type RegexBrandInterface = FormatBrandType<'regex'> & string;
  *
  * @example
  * ```ts
- * const ptr: JsonPointerBrandInterface = coerce(schema, value);
+ * const ptr: JsonPointerBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link RelativeJsonPointerBrandInterface}
+ * @see {@link RelativeJsonPointerBrandType}
  * @group Constraint Brands
  */
-export type JsonPointerBrandInterface = FormatBrandType<'json-pointer'> & string;
+export type JsonPointerBrandType = FormatBrandType<'json-pointer'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'relative-json-pointer'`.
@@ -878,15 +878,15 @@ export type JsonPointerBrandInterface = FormatBrandType<'json-pointer'> & string
  *
  * @example
  * ```ts
- * const rel: RelativeJsonPointerBrandInterface = coerce(schema, value);
+ * const rel: RelativeJsonPointerBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link JsonPointerBrandInterface}
+ * @see {@link JsonPointerBrandType}
  * @group Constraint Brands
  */
-export type RelativeJsonPointerBrandInterface = FormatBrandType<'relative-json-pointer'> & string;
+export type RelativeJsonPointerBrandType = FormatBrandType<'relative-json-pointer'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'binary'`.
@@ -897,15 +897,15 @@ export type RelativeJsonPointerBrandInterface = FormatBrandType<'relative-json-p
  *
  * @example
  * ```ts
- * const bin: BinaryBrandInterface = coerce(schema, value);
+ * const bin: BinaryBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link ByteBrandInterface}
+ * @see {@link ByteBrandType}
  * @group Constraint Brands
  */
-export type BinaryBrandInterface = FormatBrandType<'binary'> & string;
+export type BinaryBrandType = FormatBrandType<'binary'> & string;
 
 /**
  * Brand alias for strings validated as `format: 'byte'`.
@@ -916,15 +916,15 @@ export type BinaryBrandInterface = FormatBrandType<'binary'> & string;
  *
  * @example
  * ```ts
- * const b: ByteBrandInterface = coerce(schema, value);
+ * const b: ByteBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link BinaryBrandInterface}
+ * @see {@link BinaryBrandType}
  * @group Constraint Brands
  */
-export type ByteBrandInterface = FormatBrandType<'byte'> & string;
+export type ByteBrandType = FormatBrandType<'byte'> & string;
 
 /**
  * Brand alias for numbers validated as `format: 'int32'`.
@@ -935,15 +935,15 @@ export type ByteBrandInterface = FormatBrandType<'byte'> & string;
  *
  * @example
  * ```ts
- * const n: Int32BrandInterface = coerce(schema, value);
+ * const n: Int32BrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link Int64BrandInterface}
+ * @see {@link Int64BrandType}
  * @group Constraint Brands
  */
-export type Int32BrandInterface = FormatBrandType<'int32'> & number;
+export type Int32BrandType = FormatBrandType<'int32'> & number;
 
 /**
  * Brand alias for numbers validated as `format: 'int64'`.
@@ -954,15 +954,15 @@ export type Int32BrandInterface = FormatBrandType<'int32'> & number;
  *
  * @example
  * ```ts
- * const n: Int64BrandInterface = coerce(schema, value);
+ * const n: Int64BrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link Int32BrandInterface}
+ * @see {@link Int32BrandType}
  * @group Constraint Brands
  */
-export type Int64BrandInterface = FormatBrandType<'int64'> & number;
+export type Int64BrandType = FormatBrandType<'int64'> & number;
 
 /**
  * Brand alias for numbers validated as `format: 'float'`.
@@ -973,15 +973,15 @@ export type Int64BrandInterface = FormatBrandType<'int64'> & number;
  *
  * @example
  * ```ts
- * const n: FloatBrandInterface = coerce(schema, value);
+ * const n: FloatBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link DoubleBrandInterface}
+ * @see {@link DoubleBrandType}
  * @group Constraint Brands
  */
-export type FloatBrandInterface = FormatBrandType<'float'> & number;
+export type FloatBrandType = FormatBrandType<'float'> & number;
 
 /**
  * Brand alias for numbers validated as `format: 'double'`.
@@ -992,12 +992,12 @@ export type FloatBrandInterface = FormatBrandType<'float'> & number;
  *
  * @example
  * ```ts
- * const n: DoubleBrandInterface = coerce(schema, value);
+ * const n: DoubleBrandType = coerce(schema, value);
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link FloatBrandInterface}
+ * @see {@link FloatBrandType}
  * @group Constraint Brands
  */
-export type DoubleBrandInterface = FormatBrandType<'double'> & number;
+export type DoubleBrandType = FormatBrandType<'double'> & number;

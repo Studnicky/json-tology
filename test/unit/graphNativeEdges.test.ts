@@ -414,7 +414,6 @@ void describe('SchemaGraph.embeddedNode — $id coverage at all schema positions
         '$id': 'https://x.test/Condition',
         'type': 'string'
       },
-      // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
       'then': { 'minLength': 1 }
     };
     const graph = new SchemaGraph(schema);
@@ -428,7 +427,6 @@ void describe('SchemaGraph.embeddedNode — $id coverage at all schema positions
     const schema = {
       '$id': 'https://x.test/Root',
       'if': { 'type': 'string' },
-      // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
       'then': {
         '$id': 'https://x.test/ThenBranch',
         'minLength': 1

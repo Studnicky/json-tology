@@ -18,6 +18,7 @@ import type { Quad } from '@rdfjs/types';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import type {
   QuadFactoryEmitOptsType,
   QuadFactoryIriOptsType,
@@ -56,7 +57,7 @@ function assertAbsolutePredicate(predicate: string): void {
   }
 
   throw new GraphError(
-    'INVALID_PREDICATE_IRI',
+    GraphErrorCode.INVALID_PREDICATE_IRI,
     `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`
   );
 }

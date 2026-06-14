@@ -21,10 +21,13 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContextType, OwlImportFragmentType
+  OwlImportContextType,
+  OwlImportFragmentType
 } from '../../../types/OwlImport.js';
 import type { RecordCharacteristicOptionsType } from '../../../types/RecordCharacteristicOptionsType.js';
-import { RDF } from '../../../constants/IRI.js';
+import {
+  OWL, RDF
+} from '../../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
 // OWL 2 IRI prefix for characteristic class URIs.
@@ -32,9 +35,6 @@ import { RDF } from '../../../constants/IRI.js';
 // compacts named-node targets via the active prefix map, but raw inputs
 // may still carry the full IRI form when no matching prefix exists.
 // ---------------------------------------------------------------------------
-
-/** OWL 2 vocabulary IRI prefix. */
-const OWL_VOCAB_PREFIX = 'http://www.w3.org/2002/07/owl#';
 
 const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
   [
@@ -66,31 +66,31 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
     'Transitive'
   ],
   [
-    `${OWL_VOCAB_PREFIX}AsymmetricProperty`,
+    OWL.AsymmetricProperty,
     'Asymmetric'
   ],
   [
-    `${OWL_VOCAB_PREFIX}FunctionalProperty`,
+    OWL.FunctionalProperty,
     'Functional'
   ],
   [
-    `${OWL_VOCAB_PREFIX}InverseFunctionalProperty`,
+    OWL.InverseFunctionalProperty,
     'InverseFunctional'
   ],
   [
-    `${OWL_VOCAB_PREFIX}IrreflexiveProperty`,
+    OWL.IrreflexiveProperty,
     'Irreflexive'
   ],
   [
-    `${OWL_VOCAB_PREFIX}ReflexiveProperty`,
+    OWL.ReflexiveProperty,
     'Reflexive'
   ],
   [
-    `${OWL_VOCAB_PREFIX}SymmetricProperty`,
+    OWL.SymmetricProperty,
     'Symmetric'
   ],
   [
-    `${OWL_VOCAB_PREFIX}TransitiveProperty`,
+    OWL.TransitiveProperty,
     'Transitive'
   ]
 ]);

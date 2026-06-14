@@ -14,6 +14,7 @@ import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js
 import jsonld from 'jsonld';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { RDFS } from '../../constants/IRI.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { SHACL_ARRAY_KEYS } from '../../constants/SHACL.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
 import { JsonLdFormatter } from '../rdf/JsonLdFormatter.js';
@@ -143,7 +144,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
   public shaclObject(): Record<string, unknown> {
     const shaclPrefixes = {
       ...this.prefixes,
-      'sh': 'http://www.w3.org/ns/shacl#'
+      'sh': STANDARD_PREFIXES.sh
     };
     const nodes = JsonLdFormatter.fromQuads(this.shaclStore);
 

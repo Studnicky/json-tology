@@ -3,6 +3,7 @@ import type {
   SchemaGraphSemanticsType, StructureWarningType
 } from '../../types/SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { RDFS } from '../../constants/IRI.js';
 import { ALLOF_EXTENSION_RE } from '../../constants/GRAPH_REGEXES.js';
 import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
@@ -68,7 +69,7 @@ function normalizeLanguageTag(rawLang: unknown): NormalizedLanguageTagType {
 
   if (!BCP47_TAG_RE.test(rawLang)) {
     throw new GraphError(
-      'INVALID_LANGUAGE_TAG',
+      GraphErrorCode.INVALID_LANGUAGE_TAG,
       `${BCP47_INVALID_TAG_PREFIX}${JSON.stringify(rawLang)}`
     );
   }

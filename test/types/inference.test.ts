@@ -603,7 +603,9 @@ assert<AssertEqual<PropertyNamesResult, Record<string, unknown>>>();
  * the way back to unknown. The inferred type is the union of the possible
  * branch outputs merged with the non-conditional base schema.
  */
-// JSON Schema conditional — 'then' keyword requires JSON.parse for unicorn/no-thenable
+// JSON Schema conditional — JSON.parse + explicit cast preserves the literal-typed interface
+// for InferType. Converting to an object literal would widen typeof to a structural type
+// and break the type assertion below.
 interface IfThenElseType {
   readonly 'else': { readonly 'properties': { readonly 'kind': { readonly 'const': 'b' };
     readonly 'value': { readonly 'type': 'number' } };

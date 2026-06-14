@@ -73,14 +73,6 @@ import { Lists } from '../rdf/Lists.js';
 import { QuadFactory } from '../rdf/QuadFactory.js';
 import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
 
-// ---------------------------------------------------------------------------
-// OWL term IRIs (full form) — used in normaliseIri expansion
-// ---------------------------------------------------------------------------
-
-const OWL_NS = 'http://www.w3.org/2002/07/owl#';
-const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-const RDFS_NS = 'http://www.w3.org/2000/01/rdf-schema#';
-
 // OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
 
 function buildPredicateIndex(subjectIndex: SubjectIndexType): PredicateIndexType {
@@ -124,7 +116,7 @@ function buildNodeMap(
     predicateMap
   ] of predicateIndex) {
     // Only create a node when the subject has a recognised OWL type assertion.
-    const typeQuads = predicateMap.get(`${RDF_NS}type`) ?? predicateMap.get(RDF.type) ?? [];
+    const typeQuads = predicateMap.get(RDF.type) ?? [];
     const hasOWLType = typeQuads.some((typeQuad: QuadInterface): boolean => {
       return typeQuad.object.termType === 'NamedNode'
         && (OWL_NODE_TYPE_IRIS.has(typeQuad.object.value) || OWL_NODE_TYPE_IRIS.has(curie.compact(typeQuad.object.value)));
@@ -277,7 +269,7 @@ function buildRelations(opts: BuildRelationsOptionsType): SchemaGraphRelationTyp
       // Only triggered for named-class subjects; bnode-sourced subClassOf is
       // emitted via the generic branch below so its sibling predicates remain
       // walkable via relationsForSubject().
-      if (isNamedSubject && (predicate === RDFS.subClassOf || rawPredicate === `${RDFS_NS}subClassOf`)) {
+      if (isNamedSubject && (predicate === RDFS.subClassOf || rawPredicate === RDFS.subClassOf)) {
         for (const quad of quads) {
           if (quad.object.termType === 'BlankNode') {
             // Attempt to resolve the restriction blank node.
@@ -359,10 +351,10 @@ function resolveRestrictionBnode(opts: ResolveRestrictionOptionsType): OptionalR
   }
 
   // Check it's typed as owl:Restriction
-  const typeQuads = bnodePredicateMap.get(`${RDF_NS}type`) ?? bnodePredicateMap.get(RDF.type) ?? [];
+  const typeQuads = bnodePredicateMap.get(RDF.type) ?? [];
   const isRestriction = typeQuads.some((typeQuad) => {
     return typeQuad.object.termType === 'NamedNode'
-      && (typeQuad.object.value === `${OWL_NS}Restriction` || typeQuad.object.value === OWL.Restriction);
+      && typeQuad.object.value === OWL.Restriction;
   });
 
   if (!isRestriction) {
@@ -370,7 +362,7 @@ function resolveRestrictionBnode(opts: ResolveRestrictionOptionsType): OptionalR
   }
 
   // Extract owl:onProperty
-  const onPropertyQuads = bnodePredicateMap.get(`${OWL_NS}onProperty`) ?? bnodePredicateMap.get(OWL.onProperty) ?? [];
+  const onPropertyQuads = bnodePredicateMap.get(OWL.onProperty) ?? [];
 
   if (onPropertyQuads.length === 0) {
     return undefined;

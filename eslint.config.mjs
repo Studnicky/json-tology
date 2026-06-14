@@ -395,7 +395,10 @@ const unicornPluginRules = {
   'unicorn/no-new-buffer': 'error',
   'unicorn/no-object-as-default-parameter': 'error',
   'unicorn/no-single-promise-in-promise-methods': 'error',
-  'unicorn/no-thenable': 'error',
+  // 'unicorn/no-thenable' is intentionally omitted: json-tology authors JSON
+  // Schema, where `then` is a first-class conditional keyword (if/then/else).
+  // The rule (which guards against accidental Promise-like objects) produces
+  // only false positives against schema literals across the test suite.
   'unicorn/no-typeof-undefined': 'error',
   'unicorn/no-unnecessary-await': 'error',
   'unicorn/no-unnecessary-polyfills': ['error', { targets: 'node >= 18' }],

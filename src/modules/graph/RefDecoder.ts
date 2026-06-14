@@ -149,6 +149,20 @@ export class RefDecoder {
       current = RefDecoder.walk(graph, branch, current, registry, visited);
     }
 
+    // Walk if/then/else conditional branches. Decoding is value-shaping, not
+    // validation, so walking both then and else is correct — mirror how
+    // EffectiveProperties walks both conditional branches.
+    if (semantics.thenNode !== undefined) {
+      current = RefDecoder.walk(graph, semantics.thenNode, current, registry, visited);
+    }
+    if (semantics.elseNode !== undefined) {
+      current = RefDecoder.walk(graph, semantics.elseNode, current, registry, visited);
+    }
+    // Walk the complement (not) branch.
+    if (semantics.complementNode !== undefined) {
+      current = RefDecoder.walk(graph, semantics.complementNode, current, registry, visited);
+    }
+
     return current;
   }
 

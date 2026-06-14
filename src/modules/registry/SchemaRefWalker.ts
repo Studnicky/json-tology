@@ -9,6 +9,7 @@
 import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.js';
 
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 
@@ -40,7 +41,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
 
       if (!knownIds(resolved) && !knownIds(refIri) && !embeddedIds.has(refIri)) {
         throw new GraphError(
-          'REF_UNRESOLVED',
+          GraphErrorCode.REF_UNRESOLVED,
           `unresolved $ref: ${ref} (referenced from ${parentSchemaId})`,
           { 'pointer': ref }
         );

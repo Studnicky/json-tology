@@ -121,10 +121,10 @@ export class Scalars {
     const pre = errors.length;
 
     if (minLength !== undefined && !Predicates.satisfiesMinLength(value, minLength)) {
-      errors.push(BaseError.validationError(path, 'minLength', `must be at least ${minLength} characters`));
+      errors.push(BaseError.validationError(path, 'minLength', `must NOT have fewer than ${minLength} characters`));
     }
     if (maxLength !== undefined && !Predicates.satisfiesMaxLength(value, maxLength)) {
-      errors.push(BaseError.validationError(path, 'maxLength', `must be at most ${maxLength} characters`));
+      errors.push(BaseError.validationError(path, 'maxLength', `must NOT have more than ${maxLength} characters`));
     }
     if (patternRegex !== undefined && !Predicates.satisfiesPattern(value, patternRegex)) {
       errors.push(BaseError.validationError(path, 'pattern', `must match pattern "${pattern}"`));

@@ -222,6 +222,56 @@ export class Composition {
     return false;
   }
 
+  /**
+   * Value-producing anyOf: runs full validators on cloned candidates, picks the first
+   * winner's output value (matching VisitComposition.anyOf semantics).
+   */
+  static validateAnyOfWithValues(
+    path: string,
+    workingValue: unknown,
+    anyOfValidators: ValidateWithErrorsFnType[],
+    errors: ValidationErrorType[],
+    collectErrors: boolean,
+    applyDefaults: boolean,
+    doCoerce: boolean,
+    stripUnknown: boolean,
+    cloneCandidate: <T>(v: T) => T
+  ): { 'earlyExit': boolean;
+    'valid': boolean;
+    'value': unknown } {
+    const branchErrors: ValidationErrorType[] = [];
+    let winnerValue: unknown;
+    let found = false;
+
+    for (const validator of anyOfValidators) {
+      const candidate = cloneCandidate(workingValue);
+      const result = validator(candidate, path, branchErrors, true, applyDefaults, doCoerce, stripUnknown);
+
+      if (result.valid && !found) {
+        winnerValue = result.value;
+        found = true;
+      }
+    }
+
+    if (found) {
+      return {
+        'earlyExit': false,
+        'valid': true,
+        'value': winnerValue
+      };
+    }
+
+    if (collectErrors) {
+      errors.push(BaseError.validationError(path, 'anyOf', 'must match at least one schema in anyOf'));
+    }
+
+    return {
+      'earlyExit': !collectErrors,
+      'valid': false,
+      'value': workingValue
+    };
+  }
+
   static validateCustomKeywords(
     path: string,
     value: unknown,
@@ -388,5 +438,60 @@ export class Composition {
     errors.push(BaseError.validationError(path, 'oneOf', msg, { 'matchCount': count }));
 
     return false;
+  }
+
+  /**
+   * Value-producing oneOf: runs full validators on cloned candidates, ensures exactly
+   * one wins, propagates that winner's output value (matching VisitComposition.oneOf semantics).
+   */
+  static validateOneOfWithValues(
+    path: string,
+    workingValue: unknown,
+    oneOfValidators: ValidateWithErrorsFnType[],
+    errors: ValidationErrorType[],
+    collectErrors: boolean,
+    applyDefaults: boolean,
+    doCoerce: boolean,
+    stripUnknown: boolean,
+    cloneCandidate: <T>(v: T) => T
+  ): { 'earlyExit': boolean;
+    'valid': boolean;
+    'value': unknown } {
+    let matches = 0;
+    let winnerValue: unknown = workingValue;
+
+    for (const validator of oneOfValidators) {
+      const candidate = cloneCandidate(workingValue);
+      const result = validator(candidate, path, [], true, applyDefaults, doCoerce, stripUnknown);
+
+      if (result.valid) {
+        matches++;
+        if (matches === 1) {
+          winnerValue = result.value;
+        }
+      }
+    }
+
+    if (matches === 1) {
+      return {
+        'earlyExit': false,
+        'valid': true,
+        'value': winnerValue
+      };
+    }
+
+    const msg = matches === 0
+      ? 'must match exactly one schema in oneOf (matched none)'
+      : 'must match exactly one schema in oneOf (matched multiple)';
+
+    if (collectErrors) {
+      errors.push(BaseError.validationError(path, 'oneOf', msg, { 'matchCount': matches }));
+    }
+
+    return {
+      'earlyExit': !collectErrors,
+      'valid': false,
+      'value': workingValue
+    };
   }
 }

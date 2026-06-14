@@ -48,7 +48,7 @@ function visitRangeValue(
  *
  * @category Graph
  * @since 0.1.0
- * @see {@link UnevaluatedInterface}
+ * @see {@link Unevaluated}
  * @group Graph
  */
 export class Unevaluated {
@@ -149,20 +149,21 @@ export class Unevaluated {
     }
 
     refStack.add(rangeRefKey);
-
-    if (isRecord(workingValue)) {
-      visitRangeValue(context, rangeSchema, workingValue, path, options, refStack, depth, visitNode, pushErrors);
-    } else if (Array.isArray(workingValue)) {
-      for (const [
-        i,
-        item
-      ] of workingValue.entries()) {
-        if (isRecord(item) || Array.isArray(item)) {
-          visitRangeValue(context, rangeSchema, item, `${path}/${i}`, options, refStack, depth, visitNode, pushErrors);
+    try {
+      if (isRecord(workingValue)) {
+        visitRangeValue(context, rangeSchema, workingValue, path, options, refStack, depth, visitNode, pushErrors);
+      } else if (Array.isArray(workingValue)) {
+        for (const [
+          i,
+          item
+        ] of workingValue.entries()) {
+          if (isRecord(item) || Array.isArray(item)) {
+            visitRangeValue(context, rangeSchema, item, `${path}/${i}`, options, refStack, depth, visitNode, pushErrors);
+          }
         }
       }
+    } finally {
+      refStack.delete(rangeRefKey);
     }
-
-    refStack.delete(rangeRefKey);
   }
 }

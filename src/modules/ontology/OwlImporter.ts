@@ -31,7 +31,7 @@ import { Curie } from '../rdf/Curie.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import {
-  OWL, RDF, RDFS
+  OWL, RDF, RDFS, XSD
 } from '../../constants/IRI.js';
 import { SUPPORTED_XSD_DATATYPES } from '../../constants/XSD_REVERSE_MAPS.js';
 import { OwlImportError } from '../../errors/OwlImportError.js';
@@ -50,24 +50,6 @@ import { importIndividuals } from './importDispatch/Individuals.js';
 import { importProperties } from './importDispatch/Properties.js';
 import { importPropertyRestrictions } from './importDispatch/PropertyRestrictions.js';
 
-// ---------------------------------------------------------------------------
-// IRI constants — derive from STANDARD_PREFIXES to avoid embedded literal values
-// ---------------------------------------------------------------------------
-
-const OWL_NS = STANDARD_PREFIXES.owl;
-const RDFS_NS_IRI = STANDARD_PREFIXES.rdfs;
-const RDF_NS_IRI = STANDARD_PREFIXES.rdf;
-
-/** Full-IRI forms of owl:Class and rdfs:Class. */
-const OWL_CLASS_IRI = `${OWL_NS}Class`;
-const RDFS_CLASS_IRI = `${RDFS_NS_IRI}Class`;
-
-/** Full-IRI form of rdf:Property. */
-const RDF_PROPERTY_IRI = `${RDF_NS_IRI}Property`;
-
-/** Full-IRI forms of OWL property types. */
-const OWL_OBJECT_PROPERTY_IRI = `${OWL_NS}ObjectProperty`;
-const OWL_DATATYPE_PROPERTY_IRI = `${OWL_NS}DatatypeProperty`;
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -154,9 +136,8 @@ function collectClassIris(quads: QuadInterface[]): ReadonlySet<string> {
   const CLASS_TYPES = new Set([
     OWL.Class,
     'owl:Class',
-    OWL_CLASS_IRI,
-    'rdfs:Class',
-    RDFS_CLASS_IRI
+    RDFS.Class,
+    'rdfs:Class'
   ]);
   const TYPE_PREDICATES = new Set([
     RDF.type,
@@ -187,10 +168,8 @@ function collectPropertyIris(quads: QuadInterface[]): ReadonlySet<string> {
     OWL.ObjectProperty,
     'owl:DatatypeProperty',
     'owl:ObjectProperty',
-    OWL_DATATYPE_PROPERTY_IRI,
-    OWL_OBJECT_PROPERTY_IRI,
-    'rdf:Property',
-    RDF_PROPERTY_IRI
+    RDF.Property,
+    'rdf:Property'
   ]);
   const TYPE_PREDICATES = new Set([
     RDF.type,
@@ -217,7 +196,6 @@ function collectPropertyIris(quads: QuadInterface[]): ReadonlySet<string> {
 function collectDatatypeIris(quads: QuadInterface[]): ReadonlySet<string> {
   const datatypeIris = new Set<string>();
   const DATATYPE_TYPES = new Set([
-    `${RDFS_NS_IRI}Datatype`,
     RDFS.Datatype,
     'rdfs:Datatype'
   ]);
@@ -284,9 +262,14 @@ function buildQuadFromExternal(quad: ExternalRdfJsQuadType): QuadInterface {
   let objectTerm: QuadObjectType;
 
   if (obj.termType === 'Literal') {
+    const datatypeIri = obj.datatype?.value !== undefined && obj.datatype.value !== ''
+      ? obj.datatype.value
+      : XSD.string;
+    const language = obj.language !== undefined && obj.language !== '' ? obj.language : undefined;
+
     objectTerm = Terms.literal(obj.value, {
-      'datatype': Terms.iri(obj.datatype?.value ?? ''),
-      'language': obj.language ?? ''
+      'datatype': Terms.iri(datatypeIri),
+      ...(language === undefined ? {} : { language })
     });
   } else if (obj.termType === 'BlankNode') {
     objectTerm = Terms.blank(obj.value);

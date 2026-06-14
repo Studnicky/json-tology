@@ -26,6 +26,7 @@ import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import type { SchemaRegistryForEachCallback } from '../../types/SchemaRegistryForEachCallback.js';
+import type { SetEntryType } from '../../types/SetEntryType.js';
 
 import { CoercionError } from '../../errors/CoercionError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
@@ -48,6 +49,7 @@ import { RefDecoder } from '../graph/RefDecoder.js';
 import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
+import { SchemaErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Transform } from '../transform/Transform.js';
@@ -363,7 +365,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const message = `Duplicate schema shapes detected: ${dupMsg}`;
 
     if (this.enableStrictGraph) {
-      throw new SchemaError('SCHEMA_DUPLICATE_SHAPE', message, { schemaId });
+      throw new SchemaError(SchemaErrorCode.DUPLICATE_SHAPE, message, { schemaId });
     }
     this.logger.warn(message);
   }
@@ -486,7 +488,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (existing.hash !== hash) {
       throw new SchemaError(
-        'SCHEMA_DUPLICATE_ID',
+        SchemaErrorCode.DUPLICATE_ID,
         `Schema "${schemaId}" is already registered with different content. Unregister first or use the same schema object.`,
         { schemaId }
       );
@@ -1213,15 +1215,13 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       | Record<string, unknown>,
     second?: string
   ): this {
-    type SetEntry = readonly [Record<string, unknown>, string] | Record<string, unknown>;
-
     if (Array.isArray(first)) {
-      for (const entry of first as readonly SetEntry[]) {
+      for (const entry of first as readonly SetEntryType[]) {
         if (Array.isArray(entry)) {
           const [
             schema,
             iri
-          ] = entry as readonly [Record<string, unknown>, string];
+          ] = entry as unknown as readonly [Record<string, unknown>, string];
 
           this.setKeyed(iri, schema);
         } else {

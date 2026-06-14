@@ -157,6 +157,17 @@ function walkEffectiveProperties(
     walkEffectiveProperties(currentGraph, member, resolveGraph, collected, visited);
   }
 
+  // Recurse into anyOf/oneOf union members.
+  // Both branches are walked because projection only emits a property when its
+  // value is present in data — including inactive union members does not fabricate
+  // output, only ensures each member's properties are reachable.
+  for (const member of sem.anyOf) {
+    walkEffectiveProperties(currentGraph, member, resolveGraph, collected, visited);
+  }
+  for (const member of sem.oneOf) {
+    walkEffectiveProperties(currentGraph, member, resolveGraph, collected, visited);
+  }
+
   // Recurse into if/then/else conditional branches.
   // Both branches are walked because projection only emits a property when its
   // value is present in data — including the inactive branch does not fabricate

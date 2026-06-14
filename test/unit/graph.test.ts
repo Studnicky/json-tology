@@ -2243,7 +2243,6 @@ function expandCurie(value: string): string {
       'kind',
       'primary'
     ],
-    // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
     'then': {
       'properties': { 'flag': { 'type': 'boolean' } },
       'type': 'object'
@@ -3107,7 +3106,6 @@ function expandCurie(value: string): string {
         '$id': 'urn:test:if-then-else',
         'else': { '$ref': 'urn:test:ite-else' },
         'if': { '$ref': 'urn:test:ite-if' },
-        // eslint-disable-next-line unicorn/no-thenable
         'then': { '$ref': 'urn:test:ite-then' },
         'type': 'object'
       } as const;
@@ -3117,7 +3115,6 @@ function expandCurie(value: string): string {
         'if': { 'properties': { 'type': { 'const': 'admin' } } },
         'properties': { 'type': { 'type': 'string' } },
         'required': ['type'],
-        // eslint-disable-next-line unicorn/no-thenable
         'then': {
           'properties': { 'level': { 'type': 'number' } },
           'required': ['level']
@@ -3705,7 +3702,6 @@ function expandCurie(value: string): string {
         'if': { 'properties': { 'kind': { 'const': 'a' } } },
         'properties': { 'kind': { 'type': 'string' } },
         'required': ['kind'],
-        // eslint-disable-next-line unicorn/no-thenable
         'then': { 'properties': { 'aValue': { 'type': 'number' } } },
         'type': 'object',
         'unevaluatedProperties': false

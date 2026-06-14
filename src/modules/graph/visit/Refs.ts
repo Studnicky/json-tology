@@ -32,22 +32,23 @@ export class Refs {
     }
 
     refStack.add(refKey);
-    const resolved = context.resolveDynamicRef(dynamicRef, graph, dynScope);
-    const result = visitNode(
-      context,
-      resolved.node,
-      resolved.graph,
-      workingValue,
-      path,
-      options,
-      refStack,
-      dynScope,
-      depth + 1
-    );
+    try {
+      const resolved = context.resolveDynamicRef(dynamicRef, graph, dynScope);
 
-    refStack.delete(refKey);
-
-    return result;
+      return visitNode(
+        context,
+        resolved.node,
+        resolved.graph,
+        workingValue,
+        path,
+        options,
+        refStack,
+        dynScope,
+        depth + 1
+      );
+    } finally {
+      refStack.delete(refKey);
+    }
   }
 
   static resolveRef(
@@ -75,21 +76,22 @@ export class Refs {
     }
 
     refStack.add(refKey);
-    const resolved = context.resolveRef(ref, graph);
-    const result = visitNode(
-      context,
-      resolved.node,
-      resolved.graph,
-      workingValue,
-      path,
-      options,
-      refStack,
-      dynScope,
-      depth + 1
-    );
+    try {
+      const resolved = context.resolveRef(ref, graph);
 
-    refStack.delete(refKey);
-
-    return result;
+      return visitNode(
+        context,
+        resolved.node,
+        resolved.graph,
+        workingValue,
+        path,
+        options,
+        refStack,
+        dynScope,
+        depth + 1
+      );
+    } finally {
+      refStack.delete(refKey);
+    }
   }
 }

@@ -134,7 +134,7 @@ function pushMultipleOfError(
   errors: ValidationErrorType[]
 ): void {
   if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
-    errors.push(BaseError.validationError(path, 'multipleOf', `must be multiple of ${multipleOf}`, { multipleOf }));
+    errors.push(BaseError.validationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`, { multipleOf }));
   }
 }
 

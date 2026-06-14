@@ -16,7 +16,6 @@ export type * from './Ontology.js';
 export type * from './Projection.js';
 export type * from './Quad.js';
 export type * from './RefDecoder.js';
-export type * from './Refs.js';
 export type * from './Result.js';
 export type * from './SameAsStore.js';
 export type * from './SchemaCompilerImpl.js';
@@ -25,9 +24,7 @@ export type * from './SchemaGraphImpl.js';
 export type * from './SchemaIri.js';
 export type * from './SchemaRegistry.js';
 export type * from './Serializer.js';
-export type * from './Unevaluated.js';
 export type * from './ValueImpl.js';
-export type * from './VisitComposition.js';
 export type * from './VocabularyPlugin.js';
 
 // Intentionally unexported — internal implementation details not part of the public callable surface:
