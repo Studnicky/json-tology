@@ -1369,7 +1369,7 @@ export function tryCompileFlatObjectCheck(
       context,
       formatRegistry,
       graph,
-      ...(lookupSchema === undefined ? {} : { lookupSchema })
+      ...(!(lookupSchema === undefined) && { lookupSchema })
     },
     sem
   );

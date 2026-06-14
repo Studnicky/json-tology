@@ -269,7 +269,7 @@ function buildQuadFromExternal(quad: ExternalRdfJsQuadType): QuadInterface {
 
     objectTerm = Terms.literal(obj.value, {
       'datatype': Terms.iri(datatypeIri),
-      ...(language === undefined ? {} : { language })
+      ...(!(language === undefined) && { language })
     });
   } else if (obj.termType === 'BlankNode') {
     objectTerm = Terms.blank(obj.value);
@@ -554,11 +554,13 @@ export class OwlImporter {
 
         if (jsonLdModule === null) {
           throw new OwlImportError(
-            'OWL_IMPORT_NOT_IMPLEMENTED',
             'importAsync() with non-quad JSON-LD input requires the optional `jsonld` peerDependency. '
             + 'Install it with: npm install jsonld',
-            'https://www.w3.org/TR/json-ld/',
-            null
+            {
+              'axiomIri': 'https://www.w3.org/TR/json-ld/',
+              'code': 'OWL_IMPORT_NOT_IMPLEMENTED',
+              'subjectIri': null
+            }
           );
         }
 

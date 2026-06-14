@@ -26,8 +26,8 @@ function assertSingleFragment(iri: string): void {
   // when two or more are present.
   if (iri.indexOf('#') !== iri.lastIndexOf('#')) {
     throw new GraphError(
-      GraphErrorCode.INVALID_PREDICATE_IRI,
-      `Predicate IRI has more than one '#' fragment (invalid per RFC 3987): ${JSON.stringify(iri)}`
+      `Predicate IRI has more than one '#' fragment (invalid per RFC 3987): ${JSON.stringify(iri)}`,
+      { 'code': GraphErrorCode.INVALID_PREDICATE_IRI }
     );
   }
 }
@@ -46,8 +46,8 @@ function assertPredicateIriSafe(iri: string): void {
 
     if (code <= CONTROL_CHAR_MAX || (code >= DEL_CODEPOINT && code <= C1_CONTROL_MAX)) {
       throw new GraphError(
-        GraphErrorCode.INVALID_PREDICATE_IRI,
-        `Predicate IRI contains a control character or space (codepoint 0x${code.toString(HEX_RADIX)}): ${JSON.stringify(iri)}`
+        `Predicate IRI contains a control character or space (codepoint 0x${code.toString(HEX_RADIX)}): ${JSON.stringify(iri)}`,
+        { 'code': GraphErrorCode.INVALID_PREDICATE_IRI }
       );
     }
   }
@@ -107,9 +107,11 @@ function resolveViaCallback(
     });
   } catch (error) {
     throw new GraphError(
-      GraphErrorCode.INVALID_PREDICATE_IRI,
       `predicateFor callback threw for property "${propertyName}" on class "${classId}"`,
-      { 'cause': error instanceof Error ? error : new Error(String(error)) }
+      {
+        'cause': error instanceof Error ? error : new Error(String(error)),
+        'code': GraphErrorCode.INVALID_PREDICATE_IRI
+      }
     );
   }
 

@@ -14,7 +14,7 @@ const synthetic = new CoercionError([{
   'message': 'must be >= 0',
   'params': {},
   'path': '/total/amount'
-}]);
+}], { 'code': 'COERCION_FAILED' });
 
 if (synthetic instanceof CoercionError) {
   console.assert(synthetic.code === 'COERCION_FAILED');

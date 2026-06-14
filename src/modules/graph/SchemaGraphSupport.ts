@@ -69,8 +69,8 @@ function normalizeLanguageTag(rawLang: unknown): NormalizedLanguageTagType {
 
   if (!BCP47_TAG_RE.test(rawLang)) {
     throw new GraphError(
-      GraphErrorCode.INVALID_LANGUAGE_TAG,
-      `${BCP47_INVALID_TAG_PREFIX}${JSON.stringify(rawLang)}`
+      `${BCP47_INVALID_TAG_PREFIX}${JSON.stringify(rawLang)}`,
+      { 'code': GraphErrorCode.INVALID_LANGUAGE_TAG }
     );
   }
 
@@ -669,7 +669,10 @@ export const SchemaGraphSupport = {
       return rootSchema;
     }
     if (!pointer.startsWith('/')) {
-      throw new GraphError('POINTER_INVALID', `Invalid JSON Pointer: ${pointer}`, { pointer });
+      throw new GraphError(`Invalid JSON Pointer: ${pointer}`, {
+        'code': 'POINTER_INVALID',
+        pointer
+      });
     }
 
     let current: unknown = rootSchema;
@@ -681,12 +684,18 @@ export const SchemaGraphSupport = {
 
     for (const segment of segments) {
       if (!isRecord(current) && !Array.isArray(current)) {
-        throw new GraphError('POINTER_NOT_FOUND', `Pointer not found: ${pointer}`, { pointer });
+        throw new GraphError(`Pointer not found: ${pointer}`, {
+          'code': 'POINTER_NOT_FOUND',
+          pointer
+        });
       }
       current = (current as Record<string, unknown>)[segment];
     }
     if (typeof current !== 'boolean' && !isRecord(current)) {
-      throw new GraphError('POINTER_NOT_SCHEMA', `Pointer does not resolve to a schema: ${pointer}`, { pointer });
+      throw new GraphError(`Pointer does not resolve to a schema: ${pointer}`, {
+        'code': 'POINTER_NOT_SCHEMA',
+        pointer
+      });
     }
 
     return current;

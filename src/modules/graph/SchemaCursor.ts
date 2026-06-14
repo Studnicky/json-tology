@@ -51,8 +51,8 @@ export class SchemaCursor implements SchemaCursorInterface {
   public one(): unknown {
     if (this.iriList.length !== 1) {
       throw new GraphError(
-        'CURSOR_CARDINALITY',
-        `SchemaCursor.one() requires exactly one class, found ${this.iriList.length}`
+        `SchemaCursor.one() requires exactly one class, found ${this.iriList.length}`,
+        { 'code': 'CURSOR_CARDINALITY' }
       );
     }
 

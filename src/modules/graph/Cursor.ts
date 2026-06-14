@@ -153,8 +153,8 @@ export class Cursor implements CursorInterface {
   public one(): unknown {
     if (this.iriList.length !== 1) {
       throw new GraphError(
-        'CURSOR_CARDINALITY',
-        `Cursor.one() requires exactly one resource, found ${this.iriList.length}`
+        `Cursor.one() requires exactly one resource, found ${this.iriList.length}`,
+        { 'code': 'CURSOR_CARDINALITY' }
       );
     }
 

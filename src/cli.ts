@@ -149,8 +149,8 @@ function resolveBaseIRI(
 
   if (typeof firstSchemaId !== 'string' || firstSchemaId === '') {
     throw new SchemaError(
-      'SCHEMA_MISSING_ID',
-      'Unable to derive base IRI from registered schemas. Pass --base-iri explicitly.'
+      'Unable to derive base IRI from registered schemas. Pass --base-iri explicitly.',
+      { 'code': 'SCHEMA_MISSING_ID' }
     );
   }
 
@@ -424,7 +424,7 @@ async function runOwlGen(
   if (isDirectoryMode) {
     const outDir = resolve(outPath);
     const fileResult = writeRegistryDirectory({
-      ...(opts.baseIri === undefined ? {} : { 'baseIRI': opts.baseIri }),
+      ...(!(opts.baseIri === undefined) && { 'baseIRI': opts.baseIri }),
       'input': parsed,
       'name': inferredName,
       'outDir': outDir,
@@ -434,7 +434,7 @@ async function runOwlGen(
     writer.out(`Generated registry directory (${fileResult.entityFiles.length} entities + index.ts) → ${outPath}`);
   } else {
     writeFromTbox({
-      ...(opts.baseIri === undefined ? {} : { 'baseIRI': opts.baseIri }),
+      ...(!(opts.baseIri === undefined) && { 'baseIRI': opts.baseIri }),
       'input': parsed,
       'name': inferredName,
       'output': resolve(outPath),

@@ -1,22 +1,73 @@
 /**
  * Error constructor option bags.
  *
- * Required args remain positional on each error class. Optional / override
- * fields are folded into a single options object passed as the last
- * parameter so the constructor surface stays stable as fields evolve.
+ * `code` is now a required field on every options type. This satisfies the
+ * standard JavaScript `Error(message, options)` shape and the
+ * `unicorn/custom-error-definition` ESLint rule.
+ *
+ * Object-type aliases live here per the repo convention. Each subclass options
+ * type composes from {@link BaseErrorOptionsType} via `&` intersection and
+ * narrows `code` to that class's own code-union.
  */
 
+import type {
+  CoercionErrorCodeType,
+  GraphErrorCodeType,
+  InstantiationErrorCodeType,
+  MaterializationErrorCodeType,
+  OwlImportErrorCodeType,
+  SchemaErrorCodeType,
+  TransformErrorCodeType
+} from './ErrorCodes.js';
+import type { TransformDirectionType } from './TransformDirection.js';
+
 export type BaseErrorOptionsType = {
-  'cause'?: Error;
-  'retryable'?: boolean;
+  readonly 'cause'?: Error;
+  readonly 'code': string;
+  readonly 'retryable'?: boolean;
 };
 
-export type SchemaErrorOptionsType = {
-  'cause'?: Error;
-  'schemaId'?: string;
-};
+export type CoercionErrorOptionsType
+  = Omit<BaseErrorOptionsType, 'code'> & {
+    readonly 'code': CoercionErrorCodeType;
+  };
 
-export type GraphErrorOptionsType = {
-  'cause'?: Error;
-  'pointer'?: string;
-};
+export type GraphErrorOptionsType
+  = Omit<BaseErrorOptionsType, 'code'> & {
+    readonly 'code': GraphErrorCodeType;
+    readonly 'pointer'?: string;
+  };
+
+export type InstantiationErrorOptionsType
+  = Omit<BaseErrorOptionsType, 'code'> & {
+    readonly 'code': InstantiationErrorCodeType;
+    readonly 'message'?: string;
+  };
+
+export type MaterializationErrorOptionsType
+  = Omit<BaseErrorOptionsType, 'code'> & {
+    readonly 'code': MaterializationErrorCodeType;
+    readonly 'message'?: string;
+    readonly 'validationErrors': string[];
+  };
+
+export type OwlImportErrorOptionsType
+  = Omit<BaseErrorOptionsType, 'code'> & {
+    readonly 'axiomIri': string;
+    readonly 'code': OwlImportErrorCodeType;
+    readonly 'subjectIri': null | string;
+  };
+
+export type SchemaErrorOptionsType
+  = Omit<BaseErrorOptionsType, 'code'> & {
+    readonly 'code': SchemaErrorCodeType;
+    readonly 'schemaId'?: string;
+  };
+
+export type TransformErrorOptionsType
+  = Omit<BaseErrorOptionsType, 'code'> & {
+    readonly 'code': TransformErrorCodeType;
+    readonly 'direction': TransformDirectionType;
+    readonly 'path'?: string;
+    readonly 'schemaId'?: string;
+  };

@@ -8,6 +8,7 @@
  * propagates it with `schemaId`/`path` filled in.
  */
 
+import type { TransformErrorOptionsType } from '../types/ErrorOptions.js';
 import { TransformError } from './TransformError.js';
 
 export class DecodeError extends TransformError {
@@ -15,21 +16,11 @@ export class DecodeError extends TransformError {
    * Create a DecodeError describing a failed decode transform.
    *
    * @param message - Human-readable description of the failure
-   * @param options - Optional schemaId, JSON Pointer path, cause, and retryable flag
+   * @param options - Options bag with required `code` and `direction`, plus optional `schemaId`,
+   *   `path`, `cause`, and `retryable`
    */
-  public constructor(
-    message: string,
-    options?: {
-      'cause'?: Error;
-      'path'?: string;
-      'retryable'?: boolean;
-      'schemaId'?: string;
-    }
-  ) {
-    super('TRANSFORM_DECODE_FAILED', message, {
-      'direction': 'decode',
-      ...options
-    });
+  public constructor(message: string, options: TransformErrorOptionsType) {
+    super(message, options);
     this.name = 'DecodeError';
   }
 }

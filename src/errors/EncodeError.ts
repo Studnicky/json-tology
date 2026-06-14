@@ -8,6 +8,7 @@
  * the library propagates it with `schemaId`/`path` filled in.
  */
 
+import type { TransformErrorOptionsType } from '../types/ErrorOptions.js';
 import { TransformError } from './TransformError.js';
 
 export class EncodeError extends TransformError {
@@ -15,21 +16,11 @@ export class EncodeError extends TransformError {
    * Create an EncodeError describing a failed encode transform.
    *
    * @param message - Human-readable description of the failure
-   * @param options - Optional schemaId, JSON Pointer path, cause, and retryable flag
+   * @param options - Options bag with required `code` and `direction`, plus optional `schemaId`,
+   *   `path`, `cause`, and `retryable`
    */
-  public constructor(
-    message: string,
-    options?: {
-      'cause'?: Error;
-      'path'?: string;
-      'retryable'?: boolean;
-      'schemaId'?: string;
-    }
-  ) {
-    super('TRANSFORM_ENCODE_FAILED', message, {
-      'direction': 'encode',
-      ...options
-    });
+  public constructor(message: string, options: TransformErrorOptionsType) {
+    super(message, options);
     this.name = 'EncodeError';
   }
 }

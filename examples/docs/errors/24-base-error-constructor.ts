@@ -1,19 +1,23 @@
 /**
- * BaseError constructor — the options-bag argument convention.
+ * BaseError constructor — the standard Error(message, options) convention.
  *
- * `code` and `message` are required positionals. Everything optional
- * (`cause`, `retryable`) travels in a single trailing options bag.
- * `retryable` defaults to `false` when the bag is omitted.
+ * `message` is the required positional. `code` and all optional fields
+ * (`cause`, `retryable`) travel in the required options bag.
+ * `retryable` defaults to `false` when omitted from options.
  */
 
 import { BaseError } from '../../../src/index.js';
 
 const ioFailure = new Error('socket closed');
 
-const bare = new BaseError('SOMETHING_FAILED', 'human description');
-const retryable = new BaseError('SOMETHING_FAILED', 'human description', { 'retryable': true });
-const chained = new BaseError('SOMETHING_FAILED', 'human description', {
+const bare = new BaseError('human description', { 'code': 'SOMETHING_FAILED' });
+const retryable = new BaseError('human description', {
+  'code': 'SOMETHING_FAILED',
+  'retryable': true
+});
+const chained = new BaseError('human description', {
   'cause': ioFailure,
+  'code': 'SOMETHING_FAILED',
   'retryable': true
 });
 

@@ -552,8 +552,8 @@ export class Compose {
 
     if (isRecord(parentConfig) || isRecord(childConfig)) {
       additionsSchema['jt:config'] = {
-        ...(isRecord(parentConfig) ? parentConfig : {}),
-        ...(isRecord(childConfig) ? childConfig : {})
+        ...(isRecord(parentConfig) && parentConfig),
+        ...(isRecord(childConfig) && childConfig)
       };
     }
   }

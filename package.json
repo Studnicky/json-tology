@@ -135,7 +135,7 @@
     "eslint": "^10.4.0",
     "eslint-plugin-perfectionist": "^5.9.0",
     "eslint-plugin-regexp": "^3.1.0",
-    "eslint-plugin-unicorn": "^64.0.0",
+    "eslint-plugin-unicorn": "^66.0.0",
     "eslint-plugin-yml": "^3.3.2",
     "eyereasoner": "^21.1.9",
     "fp-ts": "^2.16.11",
@@ -158,7 +158,7 @@
   "sideEffects": false,
   "dependencies": {
     "@rdfjs/types": "^2.0.1",
-    "commander": "^14.0.3",
+    "commander": "^15.0.0",
     "jsonld": "^9.0.0"
   },
   "peerDependencies": {
@@ -168,10 +168,6 @@
     "eyereasoner": {
       "optional": true
     }
-  },
-  "overrides": {
-    "vite": "^6.4.2",
-    "esbuild": "^0.25.0"
   },
   "json-tology": {
     "seo": {

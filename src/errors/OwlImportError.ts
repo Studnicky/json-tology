@@ -5,7 +5,7 @@
  * references, unsupported datatypes, and not-yet-implemented dispatcher stubs.
  */
 
-import type { OwlImportErrorCodeType } from '../types/ErrorCodes.js';
+import type { OwlImportErrorOptionsType } from '../types/ErrorOptions.js';
 import { BaseError } from './BaseError.js';
 
 export class OwlImportError extends BaseError {
@@ -18,23 +18,15 @@ export class OwlImportError extends BaseError {
   /**
    * Create an OwlImportError.
    *
-   * @param code - OWL-import-specific error code
    * @param message - Human-readable description
-   * @param axiomIri - The predicate or axiom IRI that triggered the error
-   * @param subjectIri - The subject node IRI, or null when not applicable
-   * @param options - Optional cause for error chaining
+   * @param options - Options bag containing `options.code`, `options.axiomIri`,
+   *   `options.subjectIri`, and optional `options.cause` for error chaining
    */
-  public constructor(
-    code: OwlImportErrorCodeType,
-    message: string,
-    axiomIri: string,
-    subjectIri: null | string,
-    options?: { 'cause'?: Error }
-  ) {
-    super(code, message, options);
+  public constructor(message: string, options: OwlImportErrorOptionsType) {
+    super(message, options);
     this.name = 'OwlImportError';
-    this.axiomIri = axiomIri;
-    this.subjectIri = subjectIri;
+    this.axiomIri = options.axiomIri;
+    this.subjectIri = options.subjectIri;
   }
 
   /**
@@ -44,7 +36,7 @@ export class OwlImportError extends BaseError {
     return {
       ...super.toJson(),
       'axiomIri': this.axiomIri,
-      ...(this.subjectIri === null ? {} : { 'subjectIri': this.subjectIri })
+      ...(!(this.subjectIri === null) && { 'subjectIri': this.subjectIri })
     };
   }
 }

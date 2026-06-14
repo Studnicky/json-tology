@@ -335,10 +335,12 @@ void describe('OntologyBuilder.addShaclFromJsonLd() failure paths', () => {
 void describe('OwlImportError .code assertions', { 'concurrency': true }, () => {
   void it('OWL_IMPORT_NOT_IMPLEMENTED: OwlImportError carries correct code', () => {
     const err = new OwlImportError(
-      'OWL_IMPORT_NOT_IMPLEMENTED',
       'addFromJsonLd() requires the optional jsonld peerDependency',
-      'https://www.w3.org/TR/json-ld/',
-      null
+      {
+        'axiomIri': 'https://www.w3.org/TR/json-ld/',
+        'code': 'OWL_IMPORT_NOT_IMPLEMENTED',
+        'subjectIri': null
+      }
     );
 
     assert.ok(err instanceof OwlImportError, 'instanceof OwlImportError');

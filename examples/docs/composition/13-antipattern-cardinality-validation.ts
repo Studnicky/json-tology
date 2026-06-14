@@ -40,4 +40,17 @@ const StrictBook2Schema = {
   'type': 'object'
 } as const;
 
-console.log('maxItems/minItems enforce at validate time:', StrictBook2Schema.$id);
+const jt2 = JsonTology.create({
+  'baseIRI': 'https://bookstore.example',
+  'schemas': [StrictBook2Schema] as const
+});
+
+const cardinalityResult = jt2.validate('https://bookstore.example/StrictBook2', {
+  'authors': [
+    'A',
+    'B'
+  ]
+});
+
+// Fails — maxItems is a JSON Schema keyword checked at validate time
+console.log('maxItems/minItems enforce at validate time:', cardinalityResult.ok, '(rejects 2 authors)');

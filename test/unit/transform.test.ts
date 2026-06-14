@@ -654,7 +654,11 @@ void describe('Transform error taxonomy — new contract coverage', () => {
 
     const transformed = Transform.create(CustomDecodeSchema, {
       'decode': (_: string) => {
-        throw new DecodeError('custom decode msg', { 'path': '/x' });
+        throw new DecodeError('custom decode msg', {
+          'code': 'TRANSFORM_DECODE_FAILED',
+          'direction': 'decode',
+          'path': '/x'
+        });
       },
       'encode': (val: string) => {
         return val;
@@ -692,7 +696,10 @@ void describe('Transform error taxonomy — new contract coverage', () => {
         return raw;
       },
       'encode': (_: string) => {
-        throw new EncodeError('custom encode msg');
+        throw new EncodeError('custom encode msg', {
+          'code': 'TRANSFORM_ENCODE_FAILED',
+          'direction': 'encode'
+        });
       }
     });
 
@@ -716,13 +723,19 @@ void describe('Transform error taxonomy — new contract coverage', () => {
 
   // D. instanceof chain: DecodeError → TransformError → BaseError; EncodeError → TransformError → BaseError
   void it('D: DecodeError and EncodeError satisfy full instanceof chain', () => {
-    const decodeErr = new DecodeError('x');
+    const decodeErr = new DecodeError('x', {
+      'code': 'TRANSFORM_DECODE_FAILED',
+      'direction': 'decode'
+    });
 
     assert.ok(decodeErr instanceof DecodeError);
     assert.ok(decodeErr instanceof TransformError);
     assert.ok(decodeErr instanceof BaseError);
 
-    const encodeErr = new EncodeError('y');
+    const encodeErr = new EncodeError('y', {
+      'code': 'TRANSFORM_ENCODE_FAILED',
+      'direction': 'encode'
+    });
 
     assert.ok(encodeErr instanceof EncodeError);
     assert.ok(encodeErr instanceof TransformError);

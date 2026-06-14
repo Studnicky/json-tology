@@ -376,7 +376,7 @@ const unicornPluginRules = {
   'unicorn/new-for-builtins': 'error',
   'unicorn/no-abusive-eslint-disable': 'error',
   'unicorn/no-array-callback-reference': 'error',
-  'unicorn/no-array-for-each': 'error',
+  'unicorn/no-for-each': 'error',
   'unicorn/no-array-method-this-argument': 'error',
   'unicorn/no-array-push-push': 'error',
   'unicorn/no-await-expression-member': 'error',

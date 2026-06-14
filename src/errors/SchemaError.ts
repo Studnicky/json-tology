@@ -2,7 +2,6 @@
  * SchemaError — thrown for schema registration and structure issues
  */
 
-import type { SchemaErrorCodeType } from '../types/ErrorCodes.js';
 import type { SchemaErrorOptionsType } from '../types/ErrorOptions.js';
 import { BaseError } from './BaseError.js';
 
@@ -12,14 +11,14 @@ export class SchemaError extends BaseError {
   /**
    * Create a SchemaError for schema registration or structure issues.
    *
-   * @param code - Schema-specific error code
    * @param message - Human-readable error description
-   * @param options - Optional schemaId and cause for error chaining
+   * @param options - Options bag containing `options.code` (schema-specific error code),
+   *   optional `options.schemaId`, and optional `options.cause` for error chaining
    */
-  public constructor(code: SchemaErrorCodeType, message: string, options?: SchemaErrorOptionsType) {
-    super(code, message, options?.cause === undefined ? undefined : { 'cause': options.cause });
+  public constructor(message: string, options: SchemaErrorOptionsType) {
+    super(message, options);
     this.name = 'SchemaError';
-    this.schemaId = options?.schemaId;
+    this.schemaId = options.schemaId;
   }
 
   /**
@@ -30,7 +29,7 @@ export class SchemaError extends BaseError {
   public override toJson() {
     return {
       ...super.toJson(),
-      ...(this.schemaId === undefined ? {} : { 'schemaId': this.schemaId })
+      ...(!(this.schemaId === undefined) && { 'schemaId': this.schemaId })
     };
   }
 }

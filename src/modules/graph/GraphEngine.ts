@@ -554,8 +554,7 @@ export class GraphEngine implements GraphEngineInterface {
     return this.refCache.get(cacheKey);
   }
 
-  private resolveRefGraph(ref: string, parsed: { 'fragment': string;
-    'id': string }): SchemaGraphInterface {
+  private resolveRefGraph(ref: string, parsed: { 'id': string }): SchemaGraphInterface {
     const lookedUp = this.options.lookupSchema?.(parsed.id);
 
     if (lookedUp !== undefined) {
@@ -578,7 +577,10 @@ export class GraphEngine implements GraphEngineInterface {
       return this.graphFor(embeddedGraphNode.schema);
     }
 
-    throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Unresolved schema reference: ${ref}`, { 'pointer': ref });
+    throw new GraphError(`Unresolved schema reference: ${ref}`, {
+      'code': GraphErrorCode.REF_UNRESOLVED,
+      'pointer': ref
+    });
   }
 
   public rootSchemaId(): string | undefined {

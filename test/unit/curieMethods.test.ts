@@ -31,7 +31,7 @@ function makeJt(extraPrefixes?: Record<string, string>): ReturnType<typeof JsonT
   return JsonTology.create({
     'baseIRI': 'https://test.example',
     'enableStrictGraph': false,
-    ...(extraPrefixes === undefined ? {} : { 'prefixes': extraPrefixes }),
+    ...(!(extraPrefixes === undefined) && { 'prefixes': extraPrefixes }),
     'schemas': [MarkerSchema] as const
   });
 }

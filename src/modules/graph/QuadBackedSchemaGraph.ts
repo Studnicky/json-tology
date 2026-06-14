@@ -685,7 +685,10 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     const node = this.nodeMap.get(fragment);
 
     if (node === undefined) {
-      throw new GraphError('ANCHOR_NOT_FOUND', `Unknown fragment in quad-backed graph: #${fragment}`, { 'pointer': fragment });
+      throw new GraphError(`Unknown fragment in quad-backed graph: #${fragment}`, {
+        'code': 'ANCHOR_NOT_FOUND',
+        'pointer': fragment
+      });
     }
 
     return node;
@@ -695,7 +698,10 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     const node = this.nodeMap.get(pointer);
 
     if (node === undefined) {
-      throw new GraphError('POINTER_NOT_FOUND', `Node not found for pointer in quad-backed graph: ${pointer}`, { pointer });
+      throw new GraphError(`Node not found for pointer in quad-backed graph: ${pointer}`, {
+        'code': 'POINTER_NOT_FOUND',
+        pointer
+      });
     }
 
     return node;

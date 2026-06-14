@@ -31,7 +31,10 @@ export const GraphEngineVisit = {
     depth = 0
   ): InternalExecutionResultType {
     if (depth > options.maxSchemaDepth) {
-      throw new GraphError('RECURSION_LIMIT', `Maximum schema recursion depth (${options.maxSchemaDepth}) exceeded at path: ${path}`, { 'pointer': path });
+      throw new GraphError(`Maximum schema recursion depth (${options.maxSchemaDepth}) exceeded at path: ${path}`, {
+        'code': 'RECURSION_LIMIT',
+        'pointer': path
+      });
     }
 
     if (typeof node.schema === 'boolean') {

@@ -41,9 +41,11 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
 
       if (!knownIds(resolved) && !knownIds(refIri) && !embeddedIds.has(refIri)) {
         throw new GraphError(
-          GraphErrorCode.REF_UNRESOLVED,
           `unresolved $ref: ${ref} (referenced from ${parentSchemaId})`,
-          { 'pointer': ref }
+          {
+            'code': GraphErrorCode.REF_UNRESOLVED,
+            'pointer': ref
+          }
         );
       }
     }

@@ -362,7 +362,7 @@ import {
           const opts: Parameters<typeof JsonTology.create>[0] = {
             'baseIRI': 'urn:test:',
             ...rOpts,
-            ...(mOpts ? { 'materializer': mOpts } : {})
+            ...(mOpts && { 'materializer': mOpts })
           };
           const tology = JsonTology.create(opts);
           const result = tology.materialize(sch as typeof sch & { '$id': string }, inp) as Record<string, unknown>;
@@ -1179,7 +1179,7 @@ import {
         const tology = JsonTology.create({
           'baseIRI': 'urn:test:',
           'enableStrictGraph': false,
-          ...(scenario.options ? { 'materializer': scenario.options } : {})
+          ...(scenario.options && { 'materializer': scenario.options })
         });
 
         assert.throws(

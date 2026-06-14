@@ -109,9 +109,7 @@ const STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
 export const BLANK_NODE_IRI_FOR = 'blank-node';
 
 function rootIriOnly(iri: string): SkolemizeFnType {
-  return (ctx: { 'depth': number;
-    'path': string;
-    'value': unknown }): string | undefined => {
+  return (ctx): string | undefined => {
     return ctx.depth === 0 ? iri : undefined;
   };
 }
@@ -262,7 +260,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    */
   private static asNamedSchema(schema: JsonSchemaDocumentType): Record<string, unknown> & { '$id': string } {
     if (typeof schema === 'boolean' || typeof (schema as Record<string, unknown>).$id !== 'string') {
-      throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must be an object with a string $id');
+      throw new SchemaError('Schema must be an object with a string $id', { 'code': 'SCHEMA_MISSING_ID' });
     }
 
     return schema as Record<string, unknown> & { '$id': string };
@@ -459,7 +457,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   ): OwlImportResultType {
     const importer = new OwlImporter({
       'baseIRI': options?.baseIRI ?? STATIC_BASE_IRI,
-      ...(options?.prefixes === undefined ? {} : { 'prefixes': options.prefixes })
+      ...(!(options?.prefixes === undefined) && { 'prefixes': options.prefixes })
     });
 
     return importer.import(jsonLd);
@@ -1041,7 +1039,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     options?: DumpOptionsType
   ): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+      throw new SchemaError('schema must not be null or undefined', { 'code': 'SCHEMA_INVALID_INPUT' });
     }
 
     const schemaId = typeof schema === 'string' ? schema : schema.$id;
@@ -1074,7 +1072,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     options?: Omit<DumpOptionsType, 'mode'>
   ): string {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+      throw new SchemaError('schema must not be null or undefined', { 'code': 'SCHEMA_INVALID_INPUT' });
     }
 
     const schemaId = typeof schema === 'string' ? schema : schema.$id;
@@ -1117,6 +1115,8 @@ export class JsonTology<TRefs = Record<never, never>> {
         `transform encoder failed at root: ${causeError.message}`,
         {
           'cause': causeError,
+          'code': 'TRANSFORM_ENCODE_FAILED',
+          'direction': 'encode',
           'path': '',
           'schemaId': schemaId
         }
@@ -1184,9 +1184,11 @@ export class JsonTology<TRefs = Record<never, never>> {
 
     if (this.registry.get(schemaId) === undefined) {
       throw new SchemaError(
-        'SCHEMA_NOT_REGISTERED',
         `Schema not registered: ${schemaId}. Register it first.`,
-        { schemaId }
+        {
+          'code': 'SCHEMA_NOT_REGISTERED',
+          schemaId
+        }
       );
     }
 
@@ -1278,7 +1280,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   ): ParseOutputType<TSchema, TRefs>;
   public instantiate(schema: SchemaRefType<TRefs>, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+      throw new SchemaError('schema must not be null or undefined', { 'code': 'SCHEMA_INVALID_INPUT' });
     }
 
     const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
@@ -1302,7 +1304,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public is<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(schema: TSchema, data: unknown): data is ParseOutputType<TSchema, TRefs>;
   public is(schema: SchemaRefType<TRefs>, data: unknown): boolean {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+      throw new SchemaError('schema must not be null or undefined', { 'code': 'SCHEMA_INVALID_INPUT' });
     }
 
     const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
@@ -1344,7 +1346,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     options?: { 'enablePartial'?: boolean }
   ): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+      throw new SchemaError('schema must not be null or undefined', { 'code': 'SCHEMA_INVALID_INPUT' });
     }
 
     // The Materializer operates on the schema document, not an identifier;
@@ -1356,9 +1358,11 @@ export class JsonTology<TRefs = Record<never, never>> {
 
       if (resolved === undefined) {
         throw new SchemaError(
-          'SCHEMA_NOT_REGISTERED',
           `Schema not registered: ${schema}. Register it first.`,
-          { 'schemaId': schema }
+          {
+            'code': 'SCHEMA_NOT_REGISTERED',
+            'schemaId': schema
+          }
         );
       }
 
@@ -1539,7 +1543,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     pointer: string
   ): Record<string, unknown> & { '$id': string } {
     if ((schemaRef as unknown) === null || (schemaRef as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+      throw new SchemaError('schema must not be null or undefined', { 'code': 'SCHEMA_INVALID_INPUT' });
     }
 
     const parentId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
@@ -1687,7 +1691,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public validate<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(schema: TSchema, data: unknown): ValidationErrors;
   public validate(schema: SchemaRefType<TRefs>, data: unknown): ValidationErrors {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+      throw new SchemaError('schema must not be null or undefined', { 'code': 'SCHEMA_INVALID_INPUT' });
     }
 
     const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;

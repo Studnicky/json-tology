@@ -4,7 +4,6 @@
  * Covers pointer resolution, anchor lookup, ref resolution, and dialect issues.
  */
 
-import type { GraphErrorCodeType } from '../types/ErrorCodes.js';
 import type { GraphErrorOptionsType } from '../types/ErrorOptions.js';
 import { BaseError } from './BaseError.js';
 
@@ -14,14 +13,14 @@ export class GraphError extends BaseError {
   /**
    * Create a GraphError for graph resolution failures such as pointer, anchor, or ref resolution.
    *
-   * @param code - Graph-specific error code
    * @param message - Human-readable error description
-   * @param options - Optional pointer and cause for error chaining
+   * @param options - Options bag containing `options.code` (graph-specific error code),
+   *   optional `options.pointer`, and optional `options.cause` for error chaining
    */
-  public constructor(code: GraphErrorCodeType, message: string, options?: GraphErrorOptionsType) {
-    super(code, message, options?.cause === undefined ? undefined : { 'cause': options.cause });
+  public constructor(message: string, options: GraphErrorOptionsType) {
+    super(message, options);
     this.name = 'GraphError';
-    this.pointer = options?.pointer;
+    this.pointer = options.pointer;
   }
 
   /**
@@ -32,7 +31,7 @@ export class GraphError extends BaseError {
   public override toJson() {
     return {
       ...super.toJson(),
-      ...(this.pointer === undefined ? {} : { 'pointer': this.pointer })
+      ...(!(this.pointer === undefined) && { 'pointer': this.pointer })
     };
   }
 }

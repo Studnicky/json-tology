@@ -53,10 +53,14 @@ export class RefDecoder {
         schemaId === undefined
           ? {
             'cause': causeError,
+            'code': 'TRANSFORM_DECODE_FAILED',
+            'direction': 'decode',
             'path': ''
           }
           : {
             'cause': causeError,
+            'code': 'TRANSFORM_DECODE_FAILED',
+            'direction': 'decode',
             'path': '',
             'schemaId': schemaId
           }

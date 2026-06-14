@@ -67,9 +67,11 @@ export class ComputedStore implements ComputedStoreInterface {
 
       if (!registered) {
         throw new SchemaError(
-          'COMPUTED_FN_MISSING',
           `Schema "${schemaId}" has jt:computed property "${propName}" but no compute function is registered. Call addComputed() before or provide computeds at construction time.`,
-          { schemaId }
+          {
+            'code': 'COMPUTED_FN_MISSING',
+            schemaId
+          }
         );
       }
     }

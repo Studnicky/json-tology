@@ -73,7 +73,11 @@ const AnnotatedDateSchema = Transform.create(
   {
     'decode': (raw: string) => {
       if (!raw.startsWith('19') && !raw.startsWith('20')) {
-        throw new DecodeError('Year out of antiquariat range', { 'path': '/placedAt' });
+        throw new DecodeError('Year out of antiquariat range', {
+          'code': 'TRANSFORM_DECODE_FAILED',
+          'direction': 'decode',
+          'path': '/placedAt'
+        });
       }
 
       return new Date(raw).toISOString();

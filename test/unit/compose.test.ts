@@ -1185,7 +1185,10 @@ import { Result } from '../../src/modules/data/Result.js';
     }> = [
       {
         'check': () => {
-          const simple = new BaseError('TEST_CODE', 'simple message', { 'retryable': true });
+          const simple = new BaseError('simple message', {
+            'code': 'TEST_CODE',
+            'retryable': true
+          });
           const json = simple.toJson();
 
           assert.equal(json.code, 'TEST_CODE');
@@ -1197,8 +1200,11 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const inner = new BaseError('INNER', 'inner error');
-          const outer = new BaseError('OUTER', 'outer error', { 'cause': inner });
+          const inner = new BaseError('inner error', { 'code': 'INNER' });
+          const outer = new BaseError('outer error', {
+            'cause': inner,
+            'code': 'OUTER'
+          });
           const outerJson = outer.toJson();
 
           assert.notStrictEqual(outerJson.cause, undefined);
@@ -1212,7 +1218,10 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const plain = new BaseError('WRAP', 'wrapped', { 'cause': new Error('plain') });
+          const plain = new BaseError('wrapped', {
+            'cause': new Error('plain'),
+            'code': 'WRAP'
+          });
           const plainJson = plain.toJson();
 
           assert.notStrictEqual(plainJson.cause, undefined);
@@ -1226,7 +1235,13 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const deep = new BaseError('L1', 'level 1', { 'cause': new BaseError('L2', 'level 2', { 'cause': new BaseError('L3', 'level 3') }) });
+          const deep = new BaseError('level 1', {
+            'cause': new BaseError('level 2', {
+              'cause': new BaseError('level 3', { 'code': 'L3' }),
+              'code': 'L2'
+            }),
+            'code': 'L1'
+          });
           const chain = deep.flatten();
 
           assert.equal(chain.length, 3);
@@ -1266,7 +1281,7 @@ import { Result } from '../../src/modules/data/Result.js';
               'path': '/age'
             }
           ];
-          const err = new InstantiationError(items);
+          const err = new InstantiationError(items, { 'code': 'INSTANTIATION_FAILED' });
           const flat = err.flatten();
 
           assert.equal(flat.length, 3);
@@ -1293,7 +1308,7 @@ import { Result } from '../../src/modules/data/Result.js';
               'path': '/age'
             }
           ];
-          const err = new InstantiationError(items);
+          const err = new InstantiationError(items, { 'code': 'INSTANTIATION_FAILED' });
           const json = err.toJson();
 
           assert.equal(json.code, 'INSTANTIATION_FAILED');
