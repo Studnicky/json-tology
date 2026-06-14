@@ -1,7 +1,7 @@
 /**
  * Direct unit tests for buildNodePlan (SchemaCompilerPlan).
  *
- * buildNodePlan produces a CompiledNodeValidationPlanInterface by reading
+ * buildNodePlan produces a CompiledNodeValidationPlanType by reading
  * graph semantics for a given node. Tests drive it with real SchemaGraph
  * instances and a minimal-but-functional SchemaCompilerValidatePlanContext.
  *
@@ -16,7 +16,7 @@ import {
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { buildNodePlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
 import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistry.js';
-import type { SchemaCompilerValidatePlanContextInterface } from '../../src/interfaces/SchemaCompilerValidatePlanContext.js';
+import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContext.js';
 import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
 import type { CheckFnType } from '../../src/types/Validation.js';
 
@@ -47,7 +47,7 @@ const stubFormatRegistry: FormatRegistryInterface = {
   }
 };
 
-function makeContext(): SchemaCompilerValidatePlanContextInterface {
+function makeContext(): SchemaCompilerValidatePlanContextType {
   return {
     'activeCustomKeywords': [],
     'appliesFormatAssertions': (_) => {

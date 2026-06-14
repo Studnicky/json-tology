@@ -25,12 +25,6 @@ export interface SchemaRefWalkerInterface {
   ): void;
 
   /**
-   * Recursively collect all $id strings embedded in a schema tree.
-   * The ids Set is mutated in place.
-   */
-  collectEmbeddedIds(node: unknown, ids: Set<string>): void;
-
-  /**
    * Walk a schema node and collect all non-fragment cross-schema $ref IRIs
    * that are not yet registered. Appends unresolved IRIs into `out`.
    *
@@ -50,15 +44,18 @@ export interface SchemaRefWalkerInterface {
 
   /**
    * Collect all non-fragment cross-schema $ref IRIs reachable from the given
-   * schema that are not yet registered. Convenience wrapper over
-   * collectEmbeddedIds + collectRefsInNode.
+   * schema that are not yet registered. The caller supplies the embedded-$id
+   * set derived from the canonical graph (`SchemaGraph.embeddedSchemaIds`) so
+   * the walker never performs its own embedded-id collection.
    *
    * @param schema - top-level schema record
+   * @param embeddedIds - embedded $id values (graph-derived) to exclude from unresolved
    * @param knownIds - membership test against the registry store
    * @param resolve - CURIE expansion callback
    */
   collectUnresolved(
     schema: Record<string, unknown>,
+    embeddedIds: Set<string>,
     knownIds: (id: string) => boolean,
     resolve: (id: string) => string
   ): ReadonlySet<string>;

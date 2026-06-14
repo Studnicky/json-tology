@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Compile-time `$ref` resolution is now uniform and graph-native, and the inline
+type surface has been consolidated into a canonical taxonomy.
+
+### Added
+
+- **Graph-native `$ref` resolution.** A `$ref` to a resource embedded under the
+  schema's own `$defs` (a bundled compound document) resolves standalone, with no
+  references map.
+- **Global references registry.** A consumer-augmentable
+  `JsonTologyReferencesInterface` is the default references map for `InferType`,
+  `CanonicalShapeType`, `MaterializedSchemaType`, `ParseOutputType`, and
+  `Transform.create`. After one `declare module 'json-tology/types'`
+  augmentation, standalone types resolve cross-schema `$ref`s with no per-call
+  map.
+- **Registry-derived type helpers.** `RegistryReferencesType`,
+  `RegisteredCanonicalType`, `RegisteredMaterializedType`, and
+  `RegisteredOutputType` read a registered schema's resolved type straight off a
+  `JsonTology` instance type — no hand-rolled `SchemaReferencesMapType`.
+- Schema-valued `additionalProperties` on an object without declared
+  `properties` now types the index signature (resolving `$ref` values) instead
+  of collapsing to `Record<string, unknown>`.
+
+### Changed
+
+- **BREAKING (type-level) — uniform `$ref` resolution.** An unresolvable `$ref`
+  now resolves to a `RefNotFoundInterface` / `AnchorNotFoundInterface` brand
+  rather than silently widening to `unknown`. This applies uniformly to bare
+  absolute IRIs, fragment refs, and missing local `$defs` keys, named anchors,
+  and JSON pointers. Consumers that relied on the silent `unknown` fallback will
+  see the brand instead; thread references (global augmentation, a registry
+  instance, or embedded `$defs`) to resolve, or handle the brand.
+- **BREAKING (type-level) — format brand type names.** The named format-brand
+  types use the `*BrandType` suffix (`EmailBrandType`, `UuidBrandType`,
+  `DateTimeBrandType`, `Ipv4BrandType`, …), aligning with the convention that a
+  `type` is the data substrate and `*Interface` is reserved for behavioral
+  contracts.
+- Error codes thrown as raw strings route through their `*ErrorCode` constants;
+  `SCHEMA_DUPLICATE_ID`, `SCHEMA_DUPLICATE_SHAPE`, `INVALID_LANGUAGE_TAG`,
+  `INVALID_PREDICATE_IRI`, `INVALID_IRI_VALUE`, `NON_FINITE_NUMBER`, and
+  `MISSING_GRAPH_IRI` have named constants.
+
+### Removed
+
+- **BREAKING — unused `./types` exports.** `ArrayResultType`,
+  `ObjectResultType`, `ScalarResultType`, and `ValidateCallOptionsType` are
+  removed (no consumers).
+- Dead error codes `GRAPH_INVALID_RESTRICTION` and the `GraphError`
+  `NOT_IMPLEMENTED`; unused schema constants `SetOpSchema`, `DelOpSchema`, and
+  `DiffOpSchema`; and the unconsumed `RefsInterface`,
+  `VisitCompositionInterface`, and `UnevaluatedInterface`.
+
+### Fixed
+
+- **Hash-namespace `$id` projection.** A class whose `$id` carries a fragment
+  (e.g. `http://www.w3.org/2004/02/skos/core#Concept`) resolves its property
+  schemas, so OWL and SHACL output carries that class's predicate bindings,
+  annotations, and ranges.
+- **Engine ref-stack isolation.** A recursion-limit error during validation
+  leaves no stale entries in the engine's reused ref-stack, so later validations
+  on the same engine evaluate `$ref`s rather than treating them as cycles.
+- **Union effective properties.** Properties declared only inside `anyOf` /
+  `oneOf` members are visible to materialization and ABox projection.
+- **SHACL array ranges.** An array property whose items `$ref` a class (or carry
+  a primitive type) emits its `sh:node` / `sh:class` / `sh:datatype` on the
+  property shape itself, with no phantom `#items` shape.
+- **Conditional decoders.** Transform decoders attached inside `if` / `then` /
+  `else` and `not` branches are applied.
+- **Compiled/interpreted parity.** The compiled validation path applies defaults
+  and coercion for `anyOf` / `oneOf` members and emits constraint messages
+  identical to the interpreted path.
+- ABox projection raises `GraphError('REF_UNRESOLVED')` on an unresolvable
+  `$ref`, invalid JSON pointers surface instead of being swallowed, and external
+  RDF literals without a datatype default to `xsd:string`.
+- Zero-value synthesis returns a value for `anyOf` / `oneOf` schemas.
+
+### Internal
+
+- Deduplicated logic into canonical `noun.verb()` class methods
+  (`SchemaIri.parseRef`, `Curie.expandIfNeeded`/`compact`,
+  `QuadFactory.indexBySubject`, `Frozen.deepFreeze`); centralized predicate-IRI
+  constants into `src/constants`; extracted all inline interfaces and type
+  aliases into `src/interfaces` and `src/types`.
+- Replaced hardcoded namespace IRIs with `OWL` / `RDF` / `RDFS` /
+  `STANDARD_PREFIXES` constants; removed pass-through wrapper helpers;
+  de-duplicated `findAnnotatedEdgeStructure` into `ProjectionHelpers`; dropped
+  the `unicorn/no-thenable` lint rule (a false positive against the JSON Schema
+  `then` keyword); synced `CLAUDE.md`, `docs/architecture.md`, and
+  `docs/errors/classes.md` to the current code.
+
 ## [0.21.0] - 2026-06-13
 
 Transforms are redefined as **normalize transforms**. `decode` turns a raw wire

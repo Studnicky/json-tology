@@ -12,7 +12,7 @@
  *
  * Demonstrates:
  *   - prefixItems → readonly fixed-length tuple inference
- *   - uniqueItems: true on a tuple → UniqueItemsBrandInterface applied
+ *   - uniqueItems: true on a tuple → UniqueItemsBrandType applied
  *   - Compile-time pairwise check (literal const slots would collapse to never on dupe)
  *   - Named-primitive $ref for each tuple slot (strict-graph compliant)
  *

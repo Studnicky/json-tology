@@ -14,22 +14,18 @@ import { RDF } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { Lists } from './Lists.js';
 import { decodeLiteral } from './Terms.js';
-
-const RDF_NS_FULL = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-const RDF_FIRST_FULL = `${RDF_NS_FULL}first`;
-const RDF_REST_FULL = `${RDF_NS_FULL}rest`;
-const RDF_NIL_FULL = `${RDF_NS_FULL}nil`;
+import { QuadFactory } from './QuadFactory.js';
 
 function isRdfFirst(value: string): boolean {
-  return value === RDF.first || value === RDF_FIRST_FULL;
+  return value === RDF.first;
 }
 
 function isRdfRest(value: string): boolean {
-  return value === RDF.rest || value === RDF_REST_FULL;
+  return value === RDF.rest;
 }
 
 function isRdfNil(value: string): boolean {
-  return value === RDF.nil || value === RDF_NIL_FULL;
+  return value === RDF.nil;
 }
 
 /**
@@ -97,19 +93,7 @@ function buildSubjectIndex(quads: QuadInterface[]): {
   'listSegmentIds': ReadonlySet<string>;
   'subjectQuads': ReadonlyMap<string, QuadInterface[]>;
 } {
-  const subjectQuads = new Map<string, QuadInterface[]>();
-
-  for (const entry of quads) {
-    const key = entry.subject.value;
-    let list = subjectQuads.get(key);
-
-    if (list === undefined) {
-      list = [];
-      subjectQuads.set(key, list);
-    }
-    list.push(entry);
-  }
-
+  const subjectQuads = QuadFactory.indexBySubject(quads);
   const listSegmentIds = new Set<string>();
 
   for (const [

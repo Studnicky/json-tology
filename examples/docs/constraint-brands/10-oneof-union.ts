@@ -16,7 +16,7 @@ const IdSchema = {
 } as const;
 
 type Id = InferType<typeof IdSchema>;
-// (string & FormatBrandInterface<'uuid'>) | (number & MinimumBrandInterface<1>)
+// (string & FormatBrandType<'uuid'>) | (number & MinimumBrandType<1>)
 
 const jt = JsonTology.create({
   'baseIRI': 'urn:brands:',

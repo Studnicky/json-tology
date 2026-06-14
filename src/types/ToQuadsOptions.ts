@@ -13,7 +13,7 @@ import type { SkolemizeFnType } from './Skolemize.js';
  * `graphIRI` — when set, every emitted quad has its `graph` field stamped
  * with this IRI.
  */
-export interface ToQuadsOptionsType {
+export type ToQuadsOptionsType = {
   readonly 'graphIRI'?: string | undefined;
   readonly 'iriFor'?: SkolemizeFnType | string | undefined;
-}
+};

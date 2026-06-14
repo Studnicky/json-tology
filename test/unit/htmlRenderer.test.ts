@@ -10,14 +10,14 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import type { VizPayloadInterface } from '../../src/interfaces/Viz.js';
+import type { VizPayloadType } from '../../src/types/Viz.js';
 import { HtmlRenderer } from '../../src/modules/viz/HtmlRenderer.js';
 
 // ---------------------------------------------------------------------------
 // Shared fixture helpers
 // ---------------------------------------------------------------------------
 
-function makePayload(overrides?: Partial<VizPayloadInterface>): VizPayloadInterface {
+function makePayload(overrides?: Partial<VizPayloadType>): VizPayloadType {
   return {
     'edges': [],
     'nodes': [],

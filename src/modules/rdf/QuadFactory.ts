@@ -17,16 +17,19 @@
 import type { Quad } from '@rdfjs/types';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import type {
-  QuadFactoryEmitOptsInterface,
-  QuadFactoryIriOptsInterface,
-  QuadFactoryLiteralOptsInterface,
-  QuadFactoryQuadOptsInterface
-} from '../../interfaces/QuadFactoryOpts.js';
-import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+  QuadFactoryEmitOptsType,
+  QuadFactoryIriOptsType,
+  QuadFactoryLiteralOptsType,
+  QuadFactoryQuadOptsType
+} from '../../types/QuadFactoryOpts.js';
+import type { RelationIndexType } from '../../types/RelationIndex.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
+import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
+
+export type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
 import { Lists } from './Lists.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import { Terms } from './Terms.js';
@@ -35,77 +38,10 @@ import {
 } from '../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
-// jsonld dataset quad shape — the object shape emitted by jsonld.toRDF()
-// ---------------------------------------------------------------------------
-
-interface DatasetTerm {
-  'termType': string;
-  'value': string;
-}
-
-interface DatasetLiteralTerm extends DatasetTerm {
-  'datatype'?: DatasetTerm;
-  'language'?: string;
-}
-
-/**
- * Shape of a single quad as emitted by `jsonld.toRDF()` dataset iteration.
- *
- * @remarks
- * Each property holds a `DatasetTerm` with a `termType` discriminator and a
- * `value` string. The `object` additionally carries an optional `datatype`
- * and `language` for RDF literals. This interface is used exclusively by
- * {@link QuadFactory.fromDatasetQuad} to convert jsonld dataset quads into
- * the project-canonical `QuadInterface` representation.
- *
- * @example
- * ```ts
- * const quad = QuadFactory.fromDatasetQuad(datasetQuad);
- * ```
- *
- * @category RDF
- * @since 0.1.0
- * @see {@link QuadFactory}
- * @group QuadFactory
- */
-export interface JsonLdDatasetQuad {
-  'graph': DatasetTerm;
-  'object': DatasetLiteralTerm;
-  'predicate': DatasetTerm;
-  'subject': DatasetTerm;
-}
-
-// ---------------------------------------------------------------------------
 // Module-level fallback bnode counter — used when no issuer is supplied.
 // ---------------------------------------------------------------------------
 
 let bnodeCounter = 0;
-
-// ---------------------------------------------------------------------------
-// CURIE expansion helper
-// ---------------------------------------------------------------------------
-
-/**
- * Safely expand CURIE strings (prefix:local) to full IRIs.
- * Passes through full IRIs unchanged. Blank nodes unchanged.
- */
-function expandCurieIfNeeded(value: string, curie: CurieInterface): string {
-  // Blank nodes pass through unchanged
-  if (value.startsWith('_:')) {
-    return value;
-  }
-  // Full IRIs pass through unchanged
-  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:')) {
-    return value;
-  }
-  // Try to expand as CURIE (prefix:local format)
-  try {
-    return curie.expand(value);
-  } catch {
-    // If expansion fails, return the value as-is (may be a fragment or local reference)
-    return value;
-  }
-}
 
 /**
  * Validate that a finalized predicate IRI is absolute. A predicate that is
@@ -121,7 +57,7 @@ function assertAbsolutePredicate(predicate: string): void {
   }
 
   throw new GraphError(
-    'INVALID_PREDICATE_IRI',
+    GraphErrorCode.INVALID_PREDICATE_IRI,
     `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`
   );
 }
@@ -168,12 +104,12 @@ export class QuadFactory {
     tripleTerm: Quad,
     annotationPredicate: string,
     annotationValue: QuadObjectType,
-    options?: QuadFactoryQuadOptsInterface
+    options?: QuadFactoryQuadOptsType
   ): QuadInterface {
     const {
       curie, graph
     } = options ?? {};
-    const expandedPredicate = curie ? expandCurieIfNeeded(annotationPredicate, curie) : annotationPredicate;
+    const expandedPredicate = curie ? curie.expandIfNeeded(annotationPredicate) : annotationPredicate;
 
     assertAbsolutePredicate(expandedPredicate);
 
@@ -189,11 +125,11 @@ export class QuadFactory {
    */
   static emitConstraintLiteral(
     subject: string,
-    entry: RelationIndexInterface,
+    entry: RelationIndexType,
     predicate: string,
     datatype: string,
     quads: QuadInterface[],
-    options?: QuadFactoryEmitOptsInterface
+    options?: QuadFactoryEmitOptsType
   ): void {
     const rels = entry.byPredicate.get(predicate) ?? [];
 
@@ -210,11 +146,11 @@ export class QuadFactory {
    */
   static emitLiterals(
     subject: string,
-    entry: RelationIndexInterface,
+    entry: RelationIndexType,
     predicate: string,
     outputPredicate: string,
     quads: QuadInterface[],
-    options?: QuadFactoryEmitOptsInterface
+    options?: QuadFactoryEmitOptsType
   ): void {
     const rels = entry.byPredicate.get(predicate);
 
@@ -232,7 +168,7 @@ export class QuadFactory {
   /**
    * Construct a `QuadInterface` from a jsonld dataset quad object.
    */
-  static fromDatasetQuad(datasetQuad: JsonLdDatasetQuad): QuadInterface {
+  static fromDatasetQuad(datasetQuad: JsonLdDatasetQuadType): QuadInterface {
     const subject = datasetQuad.subject.termType === 'BlankNode'
       ? Terms.blank(datasetQuad.subject.value)
       : Terms.iri(datasetQuad.subject.value);
@@ -270,12 +206,35 @@ export class QuadFactory {
   }
 
   /**
+   * Group quads by subject value into a `Map<string, QuadInterface[]>`.
+   *
+   * Each key is `quad.subject.value` (an IRI string or blank-node identifier).
+   * Insertion order within each bucket preserves the iteration order of `quads`.
+   */
+  static indexBySubject(quads: readonly QuadInterface[]): Map<string, QuadInterface[]> {
+    const index = new Map<string, QuadInterface[]>();
+
+    for (const quad of quads) {
+      const key = quad.subject.value;
+      let list = index.get(key);
+
+      if (list === undefined) {
+        list = [];
+        index.set(key, list);
+      }
+      list.push(quad);
+    }
+
+    return index;
+  }
+
+  /**
    * Build an IRI term. When `options.curie` is provided, compact CURIEs
    * (`prefix:local`) are expanded against the shared `Curie` instance.
    */
-  static iri(value: string, options?: QuadFactoryIriOptsInterface): QuadObjectType {
+  static iri(value: string, options?: QuadFactoryIriOptsType): QuadObjectType {
     const curie = options?.curie;
-    const expandedValue = curie === undefined ? value : expandCurieIfNeeded(value, curie);
+    const expandedValue = curie === undefined ? value : curie.expandIfNeeded(value);
 
     return Terms.iri(expandedValue);
   }
@@ -284,7 +243,7 @@ export class QuadFactory {
    * Build a typed literal term. `datatype` is expanded from compact CURIE
    * form when `options.curie` is provided.
    */
-  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptsInterface): QuadObjectType {
+  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptsType): QuadObjectType {
     const curie = options?.curie;
     const language = options?.language;
 
@@ -295,7 +254,7 @@ export class QuadFactory {
       });
     }
 
-    const expandedDatatype = curie === undefined ? datatype : expandCurieIfNeeded(datatype, curie);
+    const expandedDatatype = curie === undefined ? datatype : curie.expandIfNeeded(datatype);
 
     return Terms.literal(value, { 'datatype': Terms.iri(expandedDatatype) });
   }
@@ -331,13 +290,13 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptsInterface
+    options?: QuadFactoryQuadOptsType
   ): QuadInterface {
     const {
       curie, graph
     } = options ?? {};
-    const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
-    const expandedSubject = curie ? expandCurieIfNeeded(subject, curie) : subject;
+    const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
+    const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
 
     assertAbsolutePredicate(expandedPredicate);
 
@@ -395,11 +354,11 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptsInterface
+    options?: QuadFactoryQuadOptsType
   ): Quad {
     const { curie } = options ?? {};
-    const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
-    const expandedSubject = curie ? expandCurieIfNeeded(subject, curie) : subject;
+    const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
+    const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
 
     assertAbsolutePredicate(expandedPredicate);
 

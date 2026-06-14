@@ -12,60 +12,57 @@
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type {
-  SchemaGraphNodeInterface,
-  SchemaGraphRelationInterface
-} from '../../interfaces/SchemaGraph.js';
+import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type {
-  DefaultGraphTermType, IriTermType
-} from '../../types/Quad.js';
-import type { IriMinterInterface } from '../../interfaces/Projection.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import type { SkolemizeFnType } from '../../types/Skolemize.js';
-import type { SpecialHandlerFn } from '../../types/SpecialHandlerFn.js';
-import type { AnnotatedEdgeStructure } from '../../types/AnnotatedEdgeStructure.js';
-import type {
-  ProjectInstanceArgs, ProjectPropertyArgs
-} from '../../interfaces/Projection.js';
-import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { QuadFactoryQuadOptsInterface } from '../../interfaces/QuadFactoryOpts.js';
+import type { ProjectInstanceArgsType } from '../../types/ProjectInstanceArgsType.js';
+import type { ProjectPropertyArgsType } from '../../types/ProjectPropertyArgsType.js';
+import type { RefTargetType } from '../../types/RefTarget.js';
+import type { LookupGraphFn } from '../../types/LookupGraphFn.js';
+import type { ProjectInstancePropertyArgsType } from '../../types/ProjectInstancePropertyArgs.js';
+import type { ProjectAnnotatedEdgeArgsType } from '../../types/ProjectAnnotatedEdgeArgs.js';
+import type { ResolveEdgeTargetIriArgsType } from '../../types/ResolveEdgeTargetIriArgs.js';
+import type { EmitAnnotationQuadsArgsType } from '../../types/EmitAnnotationQuadsArgs.js';
+import type { ProjectScalarValueArgsType } from '../../types/ProjectScalarValueArgs.js';
+import type { ProjectAboxArgsType } from '../../types/ProjectAboxArgs.js';
+import { collectEffectiveProperties } from '../graph/EffectiveProperties.js';
 import { Terms } from './Terms.js';
+import { Curie } from './Curie.js';
 
 import {
-  JT, OWL, RDF, RDFS, SH, XSD
+  RDF, XSD
 } from '../../constants/IRI.js';
-import {
-  IRI_PREDICATES, SIMPLE_LITERAL_PREDICATES
-} from '../../constants/ONTOLOGY_PREDICATES.js';
-import { JSONLD } from '../../constants/JSONLD.js';
 import { XsdTypes } from './XsdTypes.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
+import { GraphError } from '../../errors/GraphError.js';
+import {
+  GraphErrorCode, MaterializationErrorCode
+} from '../../constants/ERROR_CODES.js';
 import {
   hasCycle, isRecord
 } from '../data/DataTypes.js';
 import { PredicateResolver } from '../graph/PredicateResolver.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Hash } from '../hash/Hash.js';
-import { Lists } from './Lists.js';
 import { QuadFactory } from './QuadFactory.js';
-import { IdentifierIssuer } from './IdentifierIssuer.js';
+import { findAnnotatedEdgeStructure } from './ProjectionHelpers.js';
 
 // ---------------------------------------------------------------------------
 // TBox projection — purely relation-driven
 // ---------------------------------------------------------------------------
 
 /**
- * Projects SchemaGraph relations into RDF quads and JSON-LD nodes.
+ * ABox projection — projects validated instance data into RDF quads.
  *
  * @remarks
- * TBox projection (`graph`) is purely relation-driven: iterates `graph.allRelations()` and
- * maps each relation to one or more quads. ABox projection (`abox`) reads `graph.semantics()`
- * for property enumeration because it maps validated instance data to quads, not schema structure.
+ * ABox projection (`abox`) reads `graph.semantics()` for property enumeration
+ * because it maps validated instance data to quads, not schema structure.
+ * TBox projection is owned by `OwlProjection`; quad-to-JSON-LD conversion is
+ * owned by `JsonLdFormatter`.
  *
  * @example
  * ```ts
- * const tboxQuads = Projection.graph(graph, { curie });
  * const aboxQuads = Projection.abox(graph, data, baseIRI, { curie });
  * ```
  *
@@ -81,7 +78,7 @@ export const Projection = {
     data: unknown,
     baseIRI: string,
     options?: { 'curie'?: CurieInterface | undefined;
-      'entryNode'?: SchemaGraphNodeInterface | undefined;
+      'entryNode'?: SchemaGraphNodeType | undefined;
       'graphIRI'?: string | undefined;
       'iriFor'?: SkolemizeFnType | undefined;
       'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
@@ -98,223 +95,8 @@ export const Projection = {
       'lookupGraph': options?.lookupGraph,
       'predicateResolver': options?.predicateResolver
     });
-  },
-
-  graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined }): QuadInterface[] {
-    const { curie } = options ?? {};
-    const issuer = new IdentifierIssuer();
-    const quads: QuadInterface[] = [];
-
-    const allRelations = graph.allRelations();
-
-    for (const relation of allRelations) {
-      projectRelation({
-        curie,
-        issuer,
-        quads,
-        relation
-      });
-    }
-
-    return quads;
-  },
-
-  toJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknown>> {
-    return quadsToJsonLdNodes(quads);
   }
 } as const;
-
-// ---------------------------------------------------------------------------
-// Special predicate handlers (non-trivial emit logic)
-// ---------------------------------------------------------------------------
-
-function handleDependentRequired(
-  subject: string,
-  _predicate: string,
-  _targetId: string,
-  relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  _issuer: IdentifierIssuerInterface
-): void {
-  const metadata = relation.metadata ?? {};
-  const trigger = typeof metadata.trigger === 'string' ? metadata.trigger : '';
-  const required = Array.isArray(metadata.required) ? metadata.required as string[] : [];
-
-  quads.push(QuadFactory.quad(subject, JT.dependentRequired, QuadFactory.literal(
-    JSON.stringify({
-      required,
-      trigger
-    }),
-    XSD.string
-  ), { curie }));
-}
-
-function handleRestriction(
-  subject: string,
-  _predicate: string,
-  _targetId: string,
-  relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  issuer: IdentifierIssuerInterface
-): void {
-  const rBnode = QuadFactory.nextBnode(issuer);
-  const metadata = relation.metadata ?? {};
-  const onProperty = typeof metadata.onProperty === 'string' ? metadata.onProperty : '';
-  const minCard = typeof metadata.minCardinality === 'number' ? metadata.minCardinality : 1;
-
-  quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
-  quads.push(QuadFactory.quad(rBnode, RDF.type, QuadFactory.iri(OWL.Restriction), { curie }));
-  quads.push(QuadFactory.quad(rBnode, OWL.onProperty, QuadFactory.iri(onProperty), { curie }));
-  const minCardLit = QuadFactory.literal(minCard, XSD.nonNegativeInteger);
-
-  quads.push(QuadFactory.quad(rBnode, OWL.minCardinality, minCardLit, { curie }));
-}
-
-function handlePattern(
-  subject: string,
-  predicate: string,
-  targetId: string,
-  relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  _issuer: IdentifierIssuerInterface
-): void {
-  if (relation.metadata?.patternProperty === true && typeof relation.metadata.pattern === 'string') {
-    const patternLit = QuadFactory.literal(relation.metadata.pattern, XSD.string);
-
-    quads.push(QuadFactory.quad(subject, SH.pattern, patternLit, { curie }));
-  } else {
-    const targetLit = QuadFactory.literal(targetId, XSD.string);
-
-    quads.push(QuadFactory.quad(subject, predicate, targetLit, { curie }));
-  }
-}
-
-const SPECIAL_HANDLERS = new Map<string, SpecialHandlerFn>([
-  [
-    JT.dependentRequired,
-    handleDependentRequired
-  ],
-  [
-    OWL.Restriction,
-    handleRestriction
-  ],
-  [
-    SH.pattern,
-    handlePattern
-  ]
-]);
-
-// ---------------------------------------------------------------------------
-// Relation → quad mapping
-// ---------------------------------------------------------------------------
-
-interface ProjectRelationArgs {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'issuer': IdentifierIssuerInterface;
-  readonly 'quads': QuadInterface[];
-  readonly 'relation': SchemaGraphRelationInterface;
-}
-
-function projectRelation(args: ProjectRelationArgs): void {
-  const {
-    curie, issuer, quads, relation
-  } = args;
-
-  if (relation.structure !== undefined) {
-    projectStructuredRelation({
-      curie,
-      issuer,
-      quads,
-      relation
-    });
-
-    return;
-  }
-
-  const subject = relation.source.id;
-  const predicate = relation.predicate;
-  const targetId = typeof relation.target === 'string' ? relation.target : relation.target.id;
-
-  const special = SPECIAL_HANDLERS.get(predicate);
-
-  if (special !== undefined) {
-    special(subject, predicate, targetId, relation, quads, curie, issuer);
-
-    return;
-  }
-
-  if (IRI_PREDICATES.has(predicate)) {
-    quads.push(QuadFactory.quad(subject, predicate, QuadFactory.iri(targetId), { curie }));
-
-    return;
-  }
-
-  const literalEntry = SIMPLE_LITERAL_PREDICATES.get(predicate);
-
-  if (literalEntry !== undefined) {
-    const value = literalEntry.coerce === undefined ? targetId : literalEntry.coerce(targetId);
-
-    quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(value, literalEntry.datatype), { curie }));
-  }
-}
-
-function projectStructuredRelation(args: ProjectRelationArgs): void {
-  const {
-    curie, issuer, quads, relation
-  } = args;
-  const subject = relation.source.id;
-  const structure = relation.structure;
-
-  if (structure === undefined) {
-    return;
-  }
-
-  switch (structure.kind) {
-    case 'annotatedEdge':
-      // Annotated edges are ABox triple-term emissions, projected separately via
-      // findAnnotatedEdgeStructure/projectAnnotatedEdge — not a TBox structure here.
-      break;
-    case 'conditional': {
-      const condBnode = QuadFactory.nextBnode(issuer);
-
-      quads.push(QuadFactory.quad(subject, OWL.unionOf, QuadFactory.bnode(condBnode), { curie }));
-      quads.push(QuadFactory.quad(condBnode, RDF.type, QuadFactory.iri(OWL.Class), { curie }));
-      quads.push(QuadFactory.quad(condBnode, JT.if, QuadFactory.iri(structure.ifRef), { curie }));
-      if (structure.thenRef !== undefined) {
-        quads.push(QuadFactory.quad(condBnode, JT.thenBranch, QuadFactory.iri(structure.thenRef), { curie }));
-      }
-      if (structure.elseRef !== undefined) {
-        quads.push(QuadFactory.quad(condBnode, JT.else, QuadFactory.iri(structure.elseRef), { curie }));
-      }
-      break;
-    }
-    case 'list': {
-      const items = structure.members.map((member: string): ReturnType<typeof QuadFactory.iri> => {
-        return QuadFactory.iri(member);
-      });
-      const list = Lists.build(items, issuer);
-
-      quads.push(QuadFactory.quad(subject, relation.predicate, list.head, { curie }));
-      quads.push(...list.triples);
-      break;
-    }
-    case 'restriction': {
-      const restrictionBnode = QuadFactory.nextBnode(issuer);
-      const onPropertyIri = QuadFactory.iri(structure.onProperty);
-      const constraintIri = QuadFactory.iri(String(structure.value));
-      const constraintPredicate = String(structure.constraint);
-
-      quads.push(QuadFactory.quad(subject, relation.predicate, QuadFactory.bnode(restrictionBnode), { curie }));
-      quads.push(QuadFactory.quad(restrictionBnode, RDF.type, QuadFactory.iri(OWL.Restriction), { curie }));
-      quads.push(QuadFactory.quad(restrictionBnode, OWL.onProperty, onPropertyIri, { curie }));
-      quads.push(QuadFactory.quad(restrictionBnode, constraintPredicate, constraintIri, { curie }));
-      break;
-    }
-  }
-}
 
 // ---------------------------------------------------------------------------
 // ABox projection
@@ -362,19 +144,7 @@ class IriMinter {
   }
 }
 
-interface ProjectAboxArgs {
-  readonly 'baseIRI': string;
-  readonly 'curie'?: CurieInterface | undefined;
-  readonly 'data': unknown;
-  readonly 'entryNode'?: SchemaGraphNodeInterface | undefined;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'graphIRI'?: string | undefined;
-  readonly 'iriFor'?: SkolemizeFnType | undefined;
-  readonly 'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'predicateResolver'?: PredicateResolverFnType | undefined;
-}
-
-function projectAbox(args: ProjectAboxArgs): QuadInterface[] {
+function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
   const {
     baseIRI, curie, data, entryNode, graph, graphIRI, iriFor, lookupGraph, predicateResolver
   } = args;
@@ -437,9 +207,9 @@ function defaultInstanceIri(baseIRI: string, classId: string, data: unknown): st
 
 function resolveNode(
   graph: SchemaGraphInterface,
-  node: SchemaGraphNodeInterface,
+  node: SchemaGraphNodeType,
   lookupGraph?: ((schemaId: string) => SchemaGraphInterface | undefined)
-): ResolvedNodeInterface {
+): RefTargetType {
   const nodeSemantics = graph.semantics(node);
 
   if (nodeSemantics.ref === undefined) {
@@ -485,10 +255,11 @@ function resolveNode(
     };
   }
 
-  return {
-    graph,
-    node
-  };
+  throw new GraphError(
+    GraphErrorCode.REF_UNRESOLVED,
+    `Unresolved schema reference in projection: ${nodeSemantics.ref}`,
+    { 'pointer': nodeSemantics.ref }
+  );
 }
 
 /**
@@ -499,7 +270,7 @@ function resolveNode(
 function findNodeById(
   graph: SchemaGraphInterface,
   id: string
-): SchemaGraphNodeInterface | undefined {
+): SchemaGraphNodeType | undefined {
   for (const candidate of graph.nodes()) {
     if (candidate.id === id) {
       return candidate;
@@ -509,17 +280,12 @@ function findNodeById(
   return undefined;
 }
 
-interface ResolvedNodeInterface {
-  'graph': SchemaGraphInterface;
-  'node': SchemaGraphNodeInterface;
-}
-
 /**
  * Test whether a member node is a bare `{ "type": "null" }` schema (the typical
  * nullable union sentinel) so it can be ignored when looking for the single
  * meaningful `$ref` member of an `anyOf`/`oneOf` wrapper.
  */
-function isNullTypeNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface): boolean {
+function isNullTypeNode(graph: SchemaGraphInterface, node: SchemaGraphNodeType): boolean {
   const sem = graph.semantics(node);
 
   return sem.ref === undefined
@@ -548,9 +314,9 @@ function isNullTypeNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterf
  */
 function unwrapSingleRef(
   graph: SchemaGraphInterface,
-  node: SchemaGraphNodeInterface,
+  node: SchemaGraphNodeType,
   lookupGraph?: ((schemaId: string) => SchemaGraphInterface | undefined)
-): ResolvedNodeInterface {
+): RefTargetType {
   const semantics = graph.semantics(node);
 
   // A direct `$ref` is already resolved by resolveNode; only union/allOf
@@ -566,7 +332,7 @@ function unwrapSingleRef(
   const union = semantics.anyOf.length > 0 ? semantics.anyOf : oneOfOrUndefined;
 
   if (union !== undefined) {
-    const meaningful = union.filter((member: SchemaGraphNodeInterface): boolean => {
+    const meaningful = union.filter((member: SchemaGraphNodeType): boolean => {
       return !isNullTypeNode(graph, member);
     });
 
@@ -620,94 +386,31 @@ function unwrapSingleRef(
  * First declaration wins (own properties shadow inherited ones).
  */
 // Per-node cache for collectProjectionProperties. The collected property map is
-// node-identity-stable for a given (node, lookupGraph) pair, so memoizing it
+// node-identity-stable for a given (node, resolveGraph) pair, so memoizing it
 // avoids re-walking allOf/then/else chains on every projected instance. The
 // inner Map is keyed by the lookupGraph closure (or a sentinel for the
 // no-lookupGraph case) because cross-graph resolution depends on which registry
 // the closure consults — caching across distinct closures would be unsafe.
-type LookupGraphFn = (schemaId: string) => SchemaGraphInterface | undefined;
-
 const NO_LOOKUP_GRAPH = Symbol('no-lookup-graph');
 const collectProjectionPropertiesCache = new WeakMap<
-  SchemaGraphNodeInterface,
-  Map<LookupGraphFn | typeof NO_LOOKUP_GRAPH, Map<string, ResolvedNodeInterface>>
+  SchemaGraphNodeType,
+  Map<LookupGraphFn | typeof NO_LOOKUP_GRAPH, Map<string, RefTargetType>>
 >();
 
-interface WalkProjectionPropertiesArgs {
-  readonly 'collected': Map<string, ResolvedNodeInterface>;
-  readonly 'current': SchemaGraphNodeInterface;
-  readonly 'currentGraph': SchemaGraphInterface;
-  readonly 'lookupGraph': LookupGraphFn | undefined;
-  readonly 'visited': Set<SchemaGraphNodeInterface>;
-}
-
 /**
- * Recursively walk `current` collecting all effective properties into `collected`,
- * following `allOf`, `then`, and `else` members.
+ * Collect every property an instance node effectively carries for ABox projection:
+ * own `properties` plus those reachable through `allOf` members and if/then/else
+ * conditional branches, resolving cross-graph `$ref` members via `lookupGraph`.
+ *
+ * Delegates to the canonical `collectEffectiveProperties` walker. The per-node,
+ * per-lookupGraph two-level cache is preserved so that a large quad stream with
+ * repeated instances does not re-walk the allOf/then/else chains on every call.
  */
-function walkProjectionProperties(args: WalkProjectionPropertiesArgs): void {
-  const {
-    collected, current, currentGraph, lookupGraph, visited
-  } = args;
-
-  if (visited.has(current)) {
-    return;
-  }
-  visited.add(current);
-
-  const resolved = resolveNode(currentGraph, current, lookupGraph);
-
-  // A $ref hop lands on resolved.node; mark it visited too so a later sibling
-  // edge that resolves to the same node does not re-walk its members.
-  visited.add(resolved.node);
-  const semantics = resolved.graph.semantics(resolved.node);
-
-  for (const [
-    name,
-    propNode
-  ] of semantics.properties) {
-    if (!collected.has(name)) {
-      collected.set(name, {
-        'graph': resolved.graph,
-        'node': propNode
-      });
-    }
-  }
-
-  // Shared sub-args builder for recursive steps — same graph, lookup, collected, visited.
-  const step = (node: SchemaGraphNodeInterface): void => {
-    walkProjectionProperties({
-      collected,
-      'current': node,
-      'currentGraph': resolved.graph,
-      lookupGraph,
-      visited
-    });
-  };
-
-  for (const member of semantics.allOf) {
-    step(member);
-  }
-
-  // if/then/else conditional-branch properties (e.g. EBook requires
-  // epubVersion when fileFormat === 'epub') are real properties of the
-  // instance. Walk both branches: projection only emits a property when its
-  // value is actually present in `data`, so including the inactive branch's
-  // keys here cannot fabricate quads — it only ensures the active branch's
-  // value is projected (and thus survives the fromQuads round-trip).
-  if (semantics.thenNode !== undefined) {
-    step(semantics.thenNode);
-  }
-  if (semantics.elseNode !== undefined) {
-    step(semantics.elseNode);
-  }
-}
-
 function collectProjectionProperties(
   graph: SchemaGraphInterface,
-  node: SchemaGraphNodeInterface,
+  node: SchemaGraphNodeType,
   lookupGraph?: LookupGraphFn
-): Map<string, ResolvedNodeInterface> {
+): Map<string, RefTargetType> {
   const cacheKey = lookupGraph ?? NO_LOOKUP_GRAPH;
   let byLookup = collectProjectionPropertiesCache.get(node);
 
@@ -722,30 +425,39 @@ function collectProjectionProperties(
     }
   }
 
-  const collected = new Map<string, ResolvedNodeInterface>();
-  const visited = new Set<SchemaGraphNodeInterface>();
+  // Build a resolveGraph that tries lookupGraph first, then falls back to
+  // scanning the current graph for an embedded-$id node — matching the
+  // two-path resolution in resolveNode().
+  const resolveGraph = lookupGraph === undefined
+    ? undefined
+    : (refId: string): SchemaGraphInterface | undefined => {
+      const found = lookupGraph(refId);
 
-  walkProjectionProperties({
-    collected,
-    'current': node,
-    'currentGraph': graph,
-    lookupGraph,
-    visited
-  });
+      if (found !== undefined) {
+        return found;
+      }
+
+      // Embedded-$id fallback: a $ref to an $id declared inside this graph's
+      // $defs is not a separately-registered schema, so lookupGraph misses it.
+      // Scan the current graph's nodes for a node whose id matches refId.
+      // If found, wrap it in a synthetic single-node view — but since the
+      // canonical walker always starts at rootNode of the returned graph,
+      // we return undefined here so the walker skips the cross-graph hop
+      // and relies on resolveNode() at the property-value level instead.
+      // Property-collection only needs to follow allOf/then/else for subClassOf
+      // inheritance; embedded-$id refs appear as property VALUES (not allOf
+      // members), so this path is not exercised during property-name collection.
+      return undefined;
+    };
+
+  const collected = collectEffectiveProperties(graph, node, resolveGraph);
+
   byLookup.set(cacheKey, collected);
 
   return collected;
 }
 
-interface ProjectInstancePropertyArgs {
-  readonly 'baseArgs': ProjectInstanceArgs;
-  readonly 'instIRI': string;
-  readonly 'nodeId': string;
-  readonly 'propertyEntry': ResolvedNodeInterface;
-  readonly 'propertyName': string;
-}
-
-function projectInstanceProperty(args: ProjectInstancePropertyArgs): void {
+function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
   const {
     baseArgs, instIRI, nodeId, propertyEntry, propertyName
   } = args;
@@ -809,7 +521,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgs): void {
   });
 }
 
-function projectInstance(args: ProjectInstanceArgs): string {
+function projectInstance(args: ProjectInstanceArgsType): string {
   const {
     data, depth, graph, lookupGraph, minter, node, path, quadOpts, quads, visited
   } = args;
@@ -866,37 +578,6 @@ function projectInstance(args: ProjectInstanceArgs): string {
 // Annotated edge (RDF 1.2 triple-term) projection
 // ---------------------------------------------------------------------------
 
-interface ProjectAnnotatedEdgeArgs {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'depth': number;
-  readonly 'edge': AnnotatedEdgeStructure;
-  readonly 'graphTerm': DefaultGraphTermType | IriTermType;
-  readonly 'instanceIri': string;
-  readonly 'minter': IriMinterInterface;
-  readonly 'path': string;
-  readonly 'predicateResolver': PredicateResolverFnType;
-  readonly 'quadOpts': QuadFactoryQuadOptsInterface;
-  readonly 'quads': QuadInterface[];
-  readonly 'sourceId': string;
-  readonly 'value': unknown;
-}
-
-/**
- * Find the `annotatedEdge` structure relation attached to a property node, if any.
- */
-function findAnnotatedEdgeStructure(
-  graph: SchemaGraphInterface,
-  propertyNode: SchemaGraphNodeInterface
-): AnnotatedEdgeStructure | undefined {
-  for (const relation of graph.relations(propertyNode)) {
-    if (relation.structure?.kind === 'annotatedEdge') {
-      return relation.structure;
-    }
-  }
-
-  return undefined;
-}
-
 /**
  * Resolve the target term IRI for an annotated edge value.
  *
@@ -905,15 +586,7 @@ function findAnnotatedEdgeStructure(
  * - an object carrying an `@id` / `id` IRI, or
  * - a nested instance object — minted via the IRI minter.
  */
-interface ResolveEdgeTargetIriArgs {
-  readonly 'depth': number;
-  readonly 'edge': AnnotatedEdgeStructure;
-  readonly 'minter': IriMinterInterface;
-  readonly 'path': string;
-  readonly 'target': unknown;
-}
-
-function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgs): string {
+function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgsType): string {
   const {
     depth, edge, minter, path, target
   } = args;
@@ -942,7 +615,7 @@ function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgs): string {
  * annotation range resolves to a class IRI.
  */
 function annotationValueTerm(value: unknown, rangeRef: string): QuadObjectType {
-  if (typeof value === 'string' && isIriReference(value) && isClassRange(rangeRef)) {
+  if (typeof value === 'string' && Curie.isAbsolute(value) && isClassRange(rangeRef)) {
     return Terms.iri(value);
   }
 
@@ -968,10 +641,6 @@ function annotationValueTerm(value: unknown, rangeRef: string): QuadObjectType {
   }
 
   return Terms.literal(String(value), { 'datatype': Terms.iri(XSD.string) });
-}
-
-function isIriReference(value: string): boolean {
-  return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:');
 }
 
 // Allowed absolute-IRI schemes for x-jt-iriRef property values. Rejects
@@ -1001,7 +670,7 @@ function isAbsoluteIri(value: string): boolean {
 }
 
 function isClassRange(rangeRef: string): boolean {
-  return isIriReference(rangeRef);
+  return Curie.isAbsolute(rangeRef);
 }
 
 /**
@@ -1015,18 +684,8 @@ function isClassRange(rangeRef: string): boolean {
  * Raises a MaterializationError when no `graphIRI` was supplied (the default
  * graph is not a valid home for an annotated edge).
  */
-interface EmitAnnotationQuadsArgs {
-  readonly 'annotationValues': Record<string, unknown>;
-  readonly 'classId': string;
-  readonly 'edge': AnnotatedEdgeStructure;
-  readonly 'predicateResolver': PredicateResolverFnType;
-  readonly 'quadOpts': QuadFactoryQuadOptsInterface;
-  readonly 'quads': QuadInterface[];
-  readonly 'tripleTerm': ReturnType<typeof QuadFactory.tripleTerm>;
-}
-
 /** Emit one annotation quad per annotation on the edge. */
-function emitAnnotationQuads(args: EmitAnnotationQuadsArgs): void {
+function emitAnnotationQuads(args: EmitAnnotationQuadsArgsType): void {
   const {
     annotationValues, classId, edge, predicateResolver, quadOpts, quads, tripleTerm
   } = args;
@@ -1048,7 +707,7 @@ function emitAnnotationQuads(args: EmitAnnotationQuadsArgs): void {
   }
 }
 
-function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
+function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
   const {
     curie, depth, edge, graphTerm, instanceIri, minter, path, predicateResolver, quadOpts, quads, sourceId, value
   } = args;
@@ -1058,7 +717,7 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
       sourceId,
       [`annotated edge ${edge.edgePredicate} requires an explicit graphIRI`],
       {
-        'code': 'MISSING_GRAPH_IRI',
+        'code': MaterializationErrorCode.MISSING_GRAPH_IRI,
         'message': `Annotated edge ${edge.edgePredicate} at ${path} requires a graphIRI: a triple term carries no graph membership, so the base triple and its annotations must share one named graph. Pass { graphIRI } to toQuads.`
       }
     );
@@ -1103,7 +762,7 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
   });
 }
 
-function projectPropertyValue(args: ProjectPropertyArgs): void {
+function projectPropertyValue(args: ProjectPropertyArgsType): void {
   const {
     path, value
   } = args;
@@ -1151,17 +810,7 @@ function numericDatatype(value: number, schemaTypes: readonly string[], format: 
   return XsdTypes.resolveSingle(declaredNumericType, formatOption) ?? runtimeFallback;
 }
 
-interface ProjectScalarValueArgs {
-  readonly 'instanceIri': string;
-  readonly 'path': string;
-  readonly 'propertyIRI': string;
-  readonly 'propertyNode': SchemaGraphNodeInterface;
-  readonly 'propertySemantics': ProjectPropertyArgs['propertySemantics'];
-  readonly 'quadOpts': QuadFactoryQuadOptsInterface;
-  readonly 'quads': QuadInterface[];
-}
-
-function projectStringValue(value: string, ctx: ProjectScalarValueArgs): void {
+function projectStringValue(value: string, ctx: ProjectScalarValueArgsType): void {
   const {
     instanceIri, path, propertyIRI, propertyNode, propertySemantics, quadOpts, quads
   } = ctx;
@@ -1176,7 +825,7 @@ function projectStringValue(value: string, ctx: ProjectScalarValueArgs): void {
         propertyNode.id,
         [`invalid IRI value at ${path}: ${value}`],
         {
-          'code': 'INVALID_IRI_VALUE',
+          'code': MaterializationErrorCode.INVALID_IRI_VALUE,
           'message': `Property ${propertyIRI} (x-jt-iriRef) received an invalid IRI: "${value}". Expected an absolute IRI with an allowed scheme (http/https/urn/ftp/file) and no control characters or spaces.`
         }
       );
@@ -1202,7 +851,7 @@ function projectStringValue(value: string, ctx: ProjectScalarValueArgs): void {
   quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, xsdDatatype), quadOpts));
 }
 
-function projectNumberValue(value: number, ctx: ProjectScalarValueArgs): void {
+function projectNumberValue(value: number, ctx: ProjectScalarValueArgsType): void {
   const {
     instanceIri, path, propertyIRI, propertyNode, propertySemantics, quadOpts, quads
   } = ctx;
@@ -1215,7 +864,7 @@ function projectNumberValue(value: number, ctx: ProjectScalarValueArgs): void {
       propertyNode.id,
       [`non-finite numeric value at ${path}`],
       {
-        'code': 'NON_FINITE_NUMBER',
+        'code': MaterializationErrorCode.NON_FINITE_NUMBER,
         'message': `Non-finite numeric value (${String(value)}) at ${path} cannot be serialized as an RDF literal. Supply a finite number.`
       }
     );
@@ -1229,7 +878,7 @@ function projectNumberValue(value: number, ctx: ProjectScalarValueArgs): void {
   quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, datatype), quadOpts));
 }
 
-function projectObjectValue(args: ProjectPropertyArgs, path: string, value: Record<string, unknown>): void {
+function projectObjectValue(args: ProjectPropertyArgsType, path: string, value: Record<string, unknown>): void {
   const {
     curie, depth, graph, graphTerm, instanceIri, lookupGraph, minter,
     predicateResolver, propertyIRI, propertyNode, propertySemantics, quadOpts, quads, visited
@@ -1279,7 +928,7 @@ function projectObjectValue(args: ProjectPropertyArgs, path: string, value: Reco
   quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.iri(nestedIRI), quadOpts));
 }
 
-function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unknown): void {
+function projectSingleValue(args: ProjectPropertyArgsType, path: string, value: unknown): void {
   const {
     instanceIri, propertyIRI, propertyNode, propertySemantics, quadOpts, quads
   } = args;
@@ -1288,7 +937,7 @@ function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unkn
     return;
   }
 
-  const scalarCtx: ProjectScalarValueArgs = {
+  const scalarCtx: ProjectScalarValueArgsType = {
     instanceIri,
     path,
     propertyIRI,
@@ -1322,53 +971,3 @@ function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unkn
   }
 }
 
-// ---------------------------------------------------------------------------
-// Quad → JSON-LD node conversion
-// ---------------------------------------------------------------------------
-
-function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknown>> {
-  const subjects = new Map<string, Record<string, unknown>>();
-
-  for (const entry of quads) {
-    const subjectValue = entry.subject.value;
-    let node = subjects.get(subjectValue);
-
-    if (!node) {
-      node = { [JSONLD.id]: subjectValue };
-      subjects.set(subjectValue, node);
-    }
-
-    const narrowed = Lists.asQuadObject(entry.object);
-
-    if (narrowed === undefined) {
-      continue;
-    }
-    const value = quadObjectToJsonLd(narrowed);
-    const predicateValue = entry.predicate.value;
-
-    if (predicateValue === RDF.type) {
-      node[JSONLD.type] = value;
-    } else if (node[predicateValue] === undefined) {
-      node[predicateValue] = value;
-    } else {
-      if (Array.isArray(node[predicateValue])) {
-        (node[predicateValue] as unknown[]).push(value);
-      } else {
-        node[predicateValue] = [
-          node[predicateValue],
-          value
-        ];
-      }
-    }
-  }
-
-  return [...subjects.values()];
-}
-
-function quadObjectToJsonLd(quadObject: QuadObjectType): unknown {
-  if (quadObject.termType === 'BlankNode' || quadObject.termType === 'NamedNode') {
-    return { [JSONLD.id]: quadObject.value };
-  }
-
-  return quadObject.value;
-}

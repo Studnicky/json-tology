@@ -37,18 +37,19 @@ import { brand } from '../../types/Brand.js';
 import type {
   CanonicalShapeType
 } from '../../types/Infer.js';
-import type { TransformFnsInterface } from '../../interfaces/TransformFns.js';
+import type { JsonTologyReferencesInterface } from '../../types/SchemaReferences.js';
+import type { TransformFnsType } from '../../types/TransformFns.js';
 import type {
-  AnyTransformStageInterface,
-  TransformStageInterface
-} from '../../interfaces/TransformStage.js';
+  AnyTransformStageType,
+  TransformStageType
+} from '../../types/TransformStage.js';
 
 
 // ---------------------------------------------------------------------------
 // Internal registry — never mutates schema objects
 // ---------------------------------------------------------------------------
 
-const transformRegistry = new WeakMap<object, TransformFnsInterface>();
+const transformRegistry = new WeakMap<object, TransformFnsType>();
 
 // ---------------------------------------------------------------------------
 // Transform class
@@ -83,7 +84,7 @@ const transformRegistry = new WeakMap<object, TransformFnsInterface>();
  *
  * @category Transform
  * @since 0.1.0
- * @see {@link TransformFnsInterface}
+ * @see {@link TransformFnsType}
  * @group Transform
  */
 export class Transform {
@@ -109,26 +110,26 @@ export class Transform {
    * Pairwise chain compatibility is enforced at compile time:
    *   - the first stage's `decode` input must accept the schema's wire type,
    *   - each stage N's `decode` output must match stage N+1's `decode` input.
-   * Mismatches surface as a `ChainMismatchInterface` brand at the
+   * Mismatches surface as a `ChainMismatchType` brand at the
    * offending tuple position, which is not assignable from the user's
    * literal stage object — so the call site is rejected.
    */
   public static chain<
     TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
-    TStages extends readonly AnyTransformStageInterface[]
+    TStages extends readonly AnyTransformStageType[]
   >(
     schema: TSchema,
     transforms: TStages & ValidateChainType<TStages, CanonicalShapeType<TSchema>>
   ): TransformedType<TSchema, ChainWireType<TStages>> {
-    const stages = transforms as ReadonlyArray<TransformStageInterface<unknown, unknown>>;
-    const composed: TransformFnsInterface = {
+    const stages = transforms as ReadonlyArray<TransformStageType<unknown, unknown>>;
+    const composed: TransformFnsType = {
       'decode': (value: unknown): unknown => {
-        return stages.reduce<unknown>((accumulator: unknown, transform: TransformStageInterface<unknown, unknown>): unknown => {
+        return stages.reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
           return transform.decode(accumulator);
         }, value);
       },
       'encode': (value: unknown): unknown => {
-        return [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageInterface<unknown, unknown>): unknown => {
+        return [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
           return transform.encode(accumulator);
         }, value);
       }
@@ -151,7 +152,7 @@ export class Transform {
   public static create<
     TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
     TWire = unknown,
-    TReferences = Record<never, never>
+    TReferences = JsonTologyReferencesInterface
   >(
     schema: TSchema,
     fns: {
@@ -160,10 +161,12 @@ export class Transform {
       // canonical, branded form. `encode` is the inverse. The schema describes
       // `decode`'s OUTPUT, so validation runs on the decoded result.
       //
-      // `TReferences` is the optional ref-resolving canonical path: supply a
-      // schema-references map so a `$ref`-bearing (or composed) schema resolves
-      // its canonical output type instead of degrading to `RefNotFound`. It
-      // defaults to the empty map, preserving the standalone behaviour.
+      // `TReferences` is the ref-resolving canonical path: a `$ref`-bearing (or
+      // composed) schema resolves its canonical output type instead of degrading
+      // to `RefNotFound`. It defaults to the global, consumer-augmentable
+      // `JsonTologyReferencesInterface`, so a transform authored against
+      // registered schemas resolves cross-refs auto-magically — the same default
+      // as `CanonicalShapeType`/`InferType`. Pass an explicit map to override.
       //
       // Both sides speak the brand-free structural canonical (`CanonicalShapeType`):
       // `decode` produces plain values (no per-leaf `brand()`), and `validate`
@@ -172,7 +175,7 @@ export class Transform {
       'encode': (value: CanonicalShapeType<TSchema, TReferences>) => TWire;
     }
   ): TransformedType<TSchema, TWire> {
-    Transform.register(schema, fns as TransformFnsInterface);
+    Transform.register(schema, fns as TransformFnsType);
 
     return brand<TransformedType<TSchema, TWire>>(schema);
   }
@@ -183,7 +186,7 @@ export class Transform {
    * @param schema - The schema object to look up.
    * @returns The registered decode/encode pair, or `undefined` if none.
    */
-  public static getDecoder(schema: JsonSchemaDocumentObjectType): TransformFnsInterface | undefined {
+  public static getDecoder(schema: JsonSchemaDocumentObjectType): TransformFnsType | undefined {
     return transformRegistry.get(schema);
   }
 
@@ -192,12 +195,12 @@ export class Transform {
    *
    * The single type-erasure boundary for transforms: typed public callers
    * ({@link create}, `JsonTology.addTransform`) keep their precise lambda types
-   * and pass the erased {@link TransformFnsInterface} here.
+   * and pass the erased {@link TransformFnsType} here.
    *
    * @param schema - The schema object the decode/encode pair is keyed against.
    * @param fns - The decode/encode functions to store.
    */
-  public static register(schema: JsonSchemaDocumentObjectType, fns: TransformFnsInterface): void {
+  public static register(schema: JsonSchemaDocumentObjectType, fns: TransformFnsType): void {
     transformRegistry.set(schema, fns);
   }
 }

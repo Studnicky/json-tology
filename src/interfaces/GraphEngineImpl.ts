@@ -1,8 +1,8 @@
 import type { ValidationErrorType } from '../types/Validation.js';
 import type {
-  GraphEngineOptionsInterface, GraphExecutionResultInterface,
-  KeywordDefinitionInterface
-} from './GraphEngine.js';
+  GraphEngineOptionsType, GraphExecutionResultType,
+  KeywordDefinitionType
+} from '../types/GraphEngine.js';
 import type { FormatRegistryInterface } from './FormatRegistry.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type { JsonSchemaDocumentType } from '../types/Schema.js';
@@ -12,13 +12,13 @@ export interface GraphEngineInterface {
   errors(value: unknown, options?: { 'pointer'?: string }): ValidationErrorType[];
   execute(
     value: unknown,
-    options?: { 'overrides'?: Partial<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'lookupSchema'>>
+    options?: { 'overrides'?: Partial<Omit<GraphEngineOptionsType, 'formatRegistry' | 'lookupSchema'>>
       'pointer'?: string; }
-  ): GraphExecutionResultInterface;
+  ): GraphExecutionResultType;
   readonly 'formatRegistry': FormatRegistryInterface;
   graphLookup(): ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
   hasRegisteredCustomKeywords(): boolean;
-  keywords(): KeywordDefinitionInterface[];
+  keywords(): KeywordDefinitionType[];
   readonly 'rootSchema': JsonSchemaDocumentType;
   rootSchemaId(): string | undefined;
   schemaLookup(): ((schemaId: string) => Record<string, unknown> | undefined) | undefined;

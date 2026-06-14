@@ -17,9 +17,9 @@ import type {
   ValidateSchemaType
 } from '../../src/types/SchemaValidation.js';
 import type {
-  DependentRequiredKeyNotInPropertiesInterface,
-  IfDiscriminatorNotInPropertiesInterface,
-  RequiredKeyNotInPropertiesInterface
+  DependentRequiredKeyNotInPropertiesType,
+  IfDiscriminatorNotInPropertiesType,
+  RequiredKeyNotInPropertiesType
 } from '../../src/types/TypeErrors.js';
 
 // ---------------------------------------------------------------------------
@@ -76,11 +76,11 @@ type BadRequiredErrors = SchemaValidationErrorsType<typeof _BadRequiredSchema>;
 
 assertType<AssertExtendsType<
   BadRequiredErrors,
-  RequiredKeyNotInPropertiesInterface<'nme', 'age' | 'name'>
+  RequiredKeyNotInPropertiesType<'nme', 'age' | 'name'>
 >>();
 
 // The validator's IDE hover surfaces the brand:
-type BadRequiredHasBrand = BadRequiredErrors extends RequiredKeyNotInPropertiesInterface<'nme', infer TActual>
+type BadRequiredHasBrand = BadRequiredErrors extends RequiredKeyNotInPropertiesType<'nme', infer TActual>
   ? TActual extends ('age' | 'name') ? true : false
   : false;
 assertType<AssertExtendsType<BadRequiredHasBrand, true>>();
@@ -117,7 +117,7 @@ void _BadDepReqKeySchema;
 type BadDepReqKeyErrors = SchemaValidationErrorsType<typeof _BadDepReqKeySchema>;
 assertType<AssertExtendsType<
   BadDepReqKeyErrors,
-  DependentRequiredKeyNotInPropertiesInterface<'wrongKey'>
+  DependentRequiredKeyNotInPropertiesType<'wrongKey'>
 >>();
 
 // Negative case B: bad value-array entry
@@ -135,7 +135,7 @@ void _BadDepReqDepSchema;
 type BadDepReqDepErrors = SchemaValidationErrorsType<typeof _BadDepReqDepSchema>;
 assertType<AssertExtendsType<
   BadDepReqDepErrors,
-  DependentRequiredKeyNotInPropertiesInterface<'nope'>
+  DependentRequiredKeyNotInPropertiesType<'nope'>
 >>();
 
 // ===========================================================================
@@ -169,7 +169,7 @@ void _BadIfSchema;
 type BadIfErrors = SchemaValidationErrorsType<typeof _BadIfSchema>;
 assertType<AssertExtendsType<
   BadIfErrors,
-  IfDiscriminatorNotInPropertiesInterface<'mistype'>
+  IfDiscriminatorNotInPropertiesType<'mistype'>
 >>();
 
 // ===========================================================================

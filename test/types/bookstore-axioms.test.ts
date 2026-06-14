@@ -40,7 +40,7 @@ assert<AssertEqualType<PrintStatus, 'inPrint' | 'limitedRun' | 'outOfPrint'>>();
 
 // ---------------------------------------------------------------------------
 // Customer.customerId carries the inverseFunctional brand and is required.
-// customerId resolves to FormatBrandInterface<'uuid'> & string via BookstoreRefs.
+// customerId resolves to FormatBrandType<'uuid'> & string via BookstoreRefs.
 // ---------------------------------------------------------------------------
 
 type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;

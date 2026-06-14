@@ -3,23 +3,27 @@
  *
  * Findings 15 / 16: when an `InferType<S, TReferences>` walks a `$ref` whose
  * IRI is not present in the references map, the inferred type is the named
- * brand `RefNotFoundInterface<...>` rather than `unknown`. Likewise for
+ * brand `RefNotFoundType<...>` rather than `unknown`. Likewise for
  * fragment refs whose anchor portion is missing — the result is
- * `AnchorNotFoundInterface<...>`.
+ * `AnchorNotFoundType<...>`.
  *
- * Absolute-IRI refs (no fragment): an unresolved `$ref` always yields
- * `RefNotFoundInterface<TRef>` — even without a references map. A missing or
- * misspelled cross-schema `$ref` is always a compile error.
+ * Resolution fails uniformly. An unresolved `$ref` always yields a named error
+ * brand — never a silent `unknown` — whether or not a references map is
+ * present, and whether the ref is a bare absolute IRI or carries a fragment:
  *
- * Fragment refs (e.g. `schema#anchor`): the base-URI fallback still yields
- * `unknown` when no references map is present and the base does not match the
- * root schema's `$id`, preserving usability for schemas with no registry.
+ * - bare absolute IRI with an unreachable base → `RefNotFoundType<TRef>`;
+ * - fragment ref whose base is unreachable → `RefNotFoundType<Base>`
+ *   (the brand surfaces from base resolution and propagates);
+ * - fragment ref whose base IS reachable but whose anchor / pointer is missing
+ *   → `AnchorNotFoundType<Base, Fragment>`.
+ *
+ * A missing or misspelled cross-schema `$ref` is always a compile error.
  */
 
 import type { InferType } from '../../src/types/Schema.js';
 import type {
-  AnchorNotFoundInterface,
-  RefNotFoundInterface
+  AnchorNotFoundType,
+  RefNotFoundType
 } from '../../src/types/TypeErrors.js';
 
 // ---------------------------------------------------------------------------
@@ -68,14 +72,14 @@ void _UnknownRefSchema;
 type UnknownRefWithMap = InferType<typeof _UnknownRefSchema, ReferencesMap>;
 assert<AssertAssignable<
   UnknownRefWithMap,
-  { readonly 'ext'?: RefNotFoundInterface<'https://example.com/Missing'> }
+  { readonly 'ext'?: RefNotFoundType<'https://example.com/Missing'> }
 >>();
 
 // Without a references map, an absolute-IRI $ref yields RefNotFound (compile error brand)
 type UnknownRefWithoutMap = InferType<typeof _UnknownRefSchema>;
 assert<AssertAssignable<
   UnknownRefWithoutMap,
-  { readonly 'ext'?: RefNotFoundInterface<'https://example.com/Missing'> }
+  { readonly 'ext'?: RefNotFoundType<'https://example.com/Missing'> }
 >>();
 
 // Positive: a known IRI in the same registry resolves to the inferred type
@@ -108,7 +112,7 @@ type UnknownAnchorWithMap = InferType<typeof _UnknownAnchorRefSchema, References
 // `ResolveRefBaseSchemaType` and propagates through the fragment lookup.
 assert<AssertAssignable<
   UnknownAnchorWithMap,
-  { readonly 'ext'?: RefNotFoundInterface<'https://example.com/Missing'> }
+  { readonly 'ext'?: RefNotFoundType<'https://example.com/Missing'> }
 >>();
 
 // ---------------------------------------------------------------------------
@@ -125,7 +129,7 @@ void _MissingAnchorRefSchema;
 type MissingAnchorResult = InferType<typeof _MissingAnchorRefSchema, ReferencesMap>;
 assert<AssertAssignable<
   MissingAnchorResult,
-  { readonly 'ext'?: AnchorNotFoundInterface<'https://example.com/Known', 'noSuchAnchor'> }
+  { readonly 'ext'?: AnchorNotFoundType<'https://example.com/Known', 'noSuchAnchor'> }
 >>();
 
 // Positive: a known anchor on a known schema resolves to its target
@@ -156,23 +160,30 @@ void _MissingPointerRefSchema;
 type MissingPointerResult = InferType<typeof _MissingPointerRefSchema, ReferencesMap>;
 assert<AssertAssignable<
   MissingPointerResult,
-  { readonly 'ext'?: AnchorNotFoundInterface<'https://example.com/Known', '/$defs/Nope'> }
+  { readonly 'ext'?: AnchorNotFoundType<'https://example.com/Known', '/$defs/Nope'> }
 >>();
 
 // ---------------------------------------------------------------------------
-// Fragment refs — base-URI fallback without TReferences
+// Fragment refs — base resolution without TReferences fails uniformly
 // ---------------------------------------------------------------------------
 //
-// Fragment refs (schema#anchor) go through ResolveRefBaseSchemaType which still
-// returns `unknown` when no references map is present and the base URI does not
-// match the root's $id. These stay `unknown` — the strictness change applies
-// only to bare absolute-IRI refs (no fragment), not to fragment refs.
+// Fragment refs (schema#anchor) resolve their base through
+// ResolveRefBaseSchemaType. When the base is unreachable — not in a references
+// map, not the root's $id, not embedded under the root's $defs — base
+// resolution yields RefNotFoundType<Base>, which propagates as the ref
+// result. This is uniform with bare absolute-IRI refs: no silent unknown.
 
 type AnchorWithoutMap = InferType<typeof _MissingAnchorRefSchema>;
-assert<AssertAssignable<AnchorWithoutMap, { readonly 'ext'?: unknown }>>();
+assert<AssertAssignable<
+  AnchorWithoutMap,
+  { readonly 'ext'?: RefNotFoundType<'https://example.com/Known'> }
+>>();
 
 type AnchorBaseWithoutMap = InferType<typeof _UnknownAnchorRefSchema>;
-assert<AssertAssignable<AnchorBaseWithoutMap, { readonly 'ext'?: unknown }>>();
+assert<AssertAssignable<
+  AnchorBaseWithoutMap,
+  { readonly 'ext'?: RefNotFoundType<'https://example.com/Missing'> }
+>>();
 
 // Sanity check the local-anchor path is unaffected (anchors are resolved
 // against the root schema, not the references map, so the "no references"

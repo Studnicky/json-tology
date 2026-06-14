@@ -27,29 +27,17 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContext,
-  OwlImportFragment
-} from '../../../interfaces/OwlImport.js';
-import type { RelationStructure } from '../../../types/SchemaGraph.js';
-import type { InvariantInterface } from '../../../interfaces/Invariant.js';
+  OwlImportContextType,
+  OwlImportFragmentType
+} from '../../../types/OwlImport.js';
+import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
+import type { RestrictionStructure } from '../../../types/RestrictionStructure.js';
+import type { MutablePropertySchemaType } from '../../../types/MutablePropertySchemaType.js';
 import {
   OWL,
   RDFS
 } from '../../../constants/IRI.js';
-
-// ---------------------------------------------------------------------------
-// Internal types
-// ---------------------------------------------------------------------------
-
-type RestrictionStructure = Extract<RelationStructure, { 'kind': 'restriction' }>;
-
-interface MutablePropertySchema {
-  'const'?: unknown;
-  'items'?: { '$ref': string };
-  'maxItems'?: number;
-  'minItems'?: number;
-}
 
 // ---------------------------------------------------------------------------
 // Property name extraction
@@ -100,7 +88,7 @@ function propertyNameFromIri(propIri: string): string {
 function mergePropertyPatch(
   delta: Partial<JsonSchemaDocumentObjectType>,
   propName: string,
-  patch: MutablePropertySchema
+  patch: MutablePropertySchemaType
 ): Partial<JsonSchemaDocumentObjectType> {
   const existing = delta.properties ?? {};
   const existingProp = existing[propName];
@@ -141,7 +129,7 @@ function mergePropertyPatch(
 function structuralPatch(
   constraint: string,
   value: unknown
-): MutablePropertySchema | null {
+): MutablePropertySchemaType | null {
   switch (constraint) {
     case OWL.allValuesFrom:
       if (typeof value !== 'string' || value === '') {
@@ -230,7 +218,7 @@ function structuralPatch(
 function buildSomeValuesFromInvariant(
   propName: string,
   classIri: string
-): InvariantInterface {
+): InvariantType {
   const name = `owl:someValuesFrom(${propName}, ${classIri})`;
 
   return {
@@ -274,12 +262,12 @@ function buildSomeValuesFromInvariant(
  *
  * @param _quads - All quads from the input graph (unused; graph is traversed via ctx).
  * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with schemaDeltas and invariants populated.
+ * @returns OwlImportFragmentType with schemaDeltas and invariants populated.
  */
-export function importPropertyRestrictions(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importPropertyRestrictions(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
   const invariants: Array<{
-    'invariant': InvariantInterface;
+    'invariant': InvariantType;
     'schemaId': string;
   }> = [];
 

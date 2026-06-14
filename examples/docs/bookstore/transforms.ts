@@ -8,10 +8,10 @@
  * ----------------------
  * `Transform.chain` enforces at compile time that stage N's `decode` return
  * type is assignable to stage N+1's `decode` parameter type.  A mismatch
- * surfaces a `ChainMismatchInterface` brand at the offending tuple
+ * surfaces a `ChainMismatchType` brand at the offending tuple
  * position so the call is rejected before runtime.  The validator also checks
  * that the first stage's input accepts the schema's wire type — a first-stage
- * mismatch surfaces a `ChainSchemaMismatchInterface` brand.
+ * mismatch surfaces a `ChainSchemaMismatchType` brand.
  *
  * Transform.create vs Transform.chain
  * ------------------------------------
@@ -86,7 +86,7 @@ export const stripHyphensSchema = Transform.create(RawIsbnSchema, {
 // ---------------------------------------------------------------------------
 // Transform.chain — multi-stage chain bound to IsbnSchema
 //
-// Stage declarations as standalone TransformStageInterface objects so they
+// Stage declarations as standalone TransformStageType objects so they
 // can be unit-tested or reused in other chains independently.
 // ---------------------------------------------------------------------------
 
@@ -109,7 +109,7 @@ export const stripHyphensSchema = Transform.create(RawIsbnSchema, {
  *   • parseIsbnSegments.decode   : string → ParsedIsbnInterface (matches validateIsbnLength output)
  *
  * Swapping the order (parseIsbnSegments before validateIsbnLength) would produce a
- * `ChainMismatchInterface` brand error because `ParsedIsbnInterface` is not
+ * `ChainMismatchType` brand error because `ParsedIsbnInterface` is not
  * assignable to validateIsbnLength's `string` parameter.
  */
 // In the normalize model, the schema describes the CANONICAL OUTPUT form, not the wire.

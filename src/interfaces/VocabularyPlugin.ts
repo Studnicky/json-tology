@@ -12,10 +12,10 @@
 
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type {
-  SchemaGraphNodeInterface,
-  SchemaGraphRelationInterface,
-  SchemaGraphSemanticsInterface
-} from './SchemaGraph.js';
+  SchemaGraphNodeType,
+  SchemaGraphRelationType,
+  SchemaGraphSemanticsType
+} from '../types/SchemaGraph.js';
 import type { QuadInterface } from './Quad.js';
 
 export interface VocabularyPluginInterface {
@@ -26,10 +26,10 @@ export interface VocabularyPluginInterface {
    * Returns additional relations to add to the graph.
    */
   extractRelations?(
-    node: SchemaGraphNodeInterface,
-    semantics: SchemaGraphSemanticsInterface,
+    node: SchemaGraphNodeType,
+    semantics: SchemaGraphSemanticsType,
     graph: SchemaGraphInterface
-  ): SchemaGraphRelationInterface[];
+  ): SchemaGraphRelationType[];
 
   /** Prefix → base IRI mappings. Merged into active Curie instance. */
   'prefixes': Record<string, string>;
@@ -40,7 +40,7 @@ export interface VocabularyPluginInterface {
    * Must call emit() for each quad to be included in the output.
    */
   project?(
-    relation: SchemaGraphRelationInterface,
+    relation: SchemaGraphRelationType,
     emit: (quad: QuadInterface) => void
   ): void;
 }

@@ -10,6 +10,7 @@ import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js
 import type { LoaderType } from '../../types/Loader.js';
 
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 
 export class RefResolutionLoader implements RefResolutionLoaderInterface {
   private readonly registry: SchemaRegistryInterface;
@@ -34,7 +35,7 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
       const loaded = await loader(iri);
 
       if (loaded === null) {
-        throw new GraphError('REF_UNRESOLVED', `loader returned null for IRI: ${iri}`, { 'pointer': iri });
+        throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `loader returned null for IRI: ${iri}`, { 'pointer': iri });
       }
 
       if (typeof loaded !== 'boolean') {
@@ -77,7 +78,7 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
 
         if (loaded === null) {
           throw new GraphError(
-            'REF_UNRESOLVED',
+            GraphErrorCode.REF_UNRESOLVED,
             `loader returned null for IRI: ${iri}`,
             { 'pointer': iri }
           );

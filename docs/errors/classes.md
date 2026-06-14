@@ -58,8 +58,8 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 | `SchemaErrorCode.VALIDATOR_MISSING`     | `SCHEMA_VALIDATOR_MISSING`     | |
 | `SchemaErrorCode.COMPUTED_FN_MISSING`   | `COMPUTED_FN_MISSING`          | |
 | `SchemaErrorCode.COMPUTED_INPUT_FORBIDDEN` | `COMPUTED_INPUT_FORBIDDEN`  | |
-| _(direct string)_                       | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `set()` with `enableDuplicateDetection` enabled. See `src/types/ErrorCodes.ts`. |
-| _(direct string)_                       | `SCHEMA_DUPLICATE_SHAPE`       | Thrown by `SchemaRegistry` when a schema with a duplicate canonical shape (same structural hash) is registered. See `src/types/ErrorCodes.ts`. |
+| `SchemaErrorCode.DUPLICATE_ID`          | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `set()` with `enableDuplicateDetection` enabled. |
+| `SchemaErrorCode.DUPLICATE_SHAPE`       | `SCHEMA_DUPLICATE_SHAPE`       | Thrown by `SchemaRegistry` when a schema with a duplicate canonical shape (same structural hash) is registered. |
 
 <RunnableExample src="examples/docs/errors/16-schema-error" />
 
@@ -87,7 +87,9 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 | `GraphErrorCode.VOCABULARY_UNSUPPORTED` | `VOCABULARY_UNSUPPORTED`  | |
 | `GraphErrorCode.ARTIFACT_INVALID`     | `ARTIFACT_INVALID`          | |
 | `GraphErrorCode.ARTIFACT_STALE`       | `ARTIFACT_STALE`            | |
-| _(direct string)_                     | `GRAPH_INVALID_RESTRICTION` | Thrown by `OwlProjection` when a restriction entry is missing a required `kind`, `onProperty`, or `value` field. See `src/types/ErrorCodes.ts`. |
+| `GraphErrorCode.CURSOR_CARDINALITY`   | `CURSOR_CARDINALITY`        | Thrown by `Cursor` and `SchemaCursor` when a selection that expects exactly one result contains multiple items. |
+| `GraphErrorCode.INVALID_LANGUAGE_TAG` | `INVALID_LANGUAGE_TAG`      | Thrown by `SchemaGraphSupport` when a language tag does not conform to BCP 47 syntax. |
+| `GraphErrorCode.INVALID_PREDICATE_IRI` | `INVALID_PREDICATE_IRI`   | Thrown by `PredicateResolver` and `QuadFactory` when a predicate IRI contains invalid characters or is malformed. |
 
 <RunnableExample src="examples/docs/errors/17-graph-error" />
 
@@ -176,10 +178,13 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 **Codes.**
 
-| Value | When thrown |
-|-------|-------------|
-| `MATERIALIZATION_FAILED` | Default materialization failure |
-| `CYCLIC_DATA` | Circular reference detected during ABox projection (`toQuads`). Thrown by `Projection` when a data object contains a cycle that would loop indefinitely during RDF quad emission. See `src/types/ErrorCodes.ts`. |
+| Constant | Value | When thrown |
+|----------|-------|-------------|
+| `MaterializationErrorCode.MATERIALIZATION_FAILED` | `MATERIALIZATION_FAILED` | Default materialization failure. |
+| `MaterializationErrorCode.CYCLIC_DATA`            | `CYCLIC_DATA`            | Circular reference detected during ABox projection (`toQuads`). Thrown by `Projection` when a data object contains a cycle that would loop indefinitely during RDF quad emission. |
+| `MaterializationErrorCode.INVALID_IRI_VALUE`      | `INVALID_IRI_VALUE`      | Thrown when a value that must be an IRI is not a valid IRI. |
+| `MaterializationErrorCode.NON_FINITE_NUMBER`      | `NON_FINITE_NUMBER`      | Thrown when a numeric value is `Infinity` or `NaN`, which cannot be represented in RDF. |
+| `MaterializationErrorCode.MISSING_GRAPH_IRI`      | `MISSING_GRAPH_IRI`      | Thrown when a required named-graph IRI is absent during ABox projection. |
 
 <RunnableExample src="examples/docs/errors/21-materialization-error" />
 

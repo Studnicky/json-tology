@@ -1,4 +1,4 @@
-import type { ErrorJsonInterface } from '../interfaces/Error.js';
+import type { ErrorJsonType } from '../types/Error.js';
 import type { InstantiationErrorCodeType } from '../types/ErrorCodes.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 import { ValidationErrors } from './ValidationErrors.js';
@@ -65,10 +65,10 @@ export class InstantiationError extends BaseError {
    *
    * @returns Flat array of error JSON objects including per-field validation details
    */
-  public override flatten(): ErrorJsonInterface[] {
+  public override flatten(): ErrorJsonType[] {
     return [
       ...super.flatten(),
-      ...this.errors.items.map((item: ValidationErrorType): ErrorJsonInterface => {
+      ...this.errors.items.map((item: ValidationErrorType): ErrorJsonType => {
         return {
           'code': item.keyword,
           'message': `${item.path || 'root'}: ${item.message}`,

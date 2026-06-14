@@ -248,7 +248,7 @@ void describe('Transform.brand()', () => {
 
         assert.equal(tooShortErrors.length, 1);
         assert.equal(tooShortErrors.items[0]?.keyword, 'minLength');
-        assert.match(tooShortErrors.items[0]?.message ?? '', /at least 3 characters/u);
+        assert.match(tooShortErrors.items[0]?.message ?? '', /NOT have fewer than 3 characters/u);
       },
       'name': 'edge: brand preserves validation constraints from base schema'
     }

@@ -18,10 +18,10 @@ import {
 import { Transform } from '../../src/modules/transform/Transform.js';
 import type { ValidateChainType } from '../../src/types/Transform.js';
 import type {
-  ChainMismatchInterface,
-  ChainSchemaMismatchInterface
+  ChainMismatchType,
+  ChainSchemaMismatchType
 } from '../../src/types/TypeErrors.js';
-import type { TransformStageInterface } from '../../src/interfaces/TransformStage.js';
+import type { TransformStageType } from '../../src/types/TransformStage.js';
 
 // ---------------------------------------------------------------------------
 // Bidirectional equality helper
@@ -43,7 +43,7 @@ const StringSchema = {
   'type': 'string'
 } as const;
 
-const stringToNumber: TransformStageInterface<string, number> = {
+const stringToNumber: TransformStageType<string, number> = {
   'decode': (raw: string) => {
     return raw.length;
   },
@@ -52,7 +52,7 @@ const stringToNumber: TransformStageInterface<string, number> = {
   }
 };
 
-const numberToDate: TransformStageInterface<number, Date> = {
+const numberToDate: TransformStageType<number, Date> = {
   'decode': (timestamp: number) => {
     return new Date(timestamp);
   },
@@ -61,12 +61,12 @@ const numberToDate: TransformStageInterface<number, Date> = {
   }
 };
 
-const numberToString: TransformStageInterface<number, string> = {
+const numberToString: TransformStageType<number, string> = {
   'decode': String,
   'encode': Number
 };
 
-const stringToString: TransformStageInterface<string, string> = {
+const stringToString: TransformStageType<string, string> = {
   'decode': (raw: string) => {
     return raw.trim();
   },
@@ -76,17 +76,17 @@ const stringToString: TransformStageInterface<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Brand B1: ChainMismatchInterface — stage output ≠ next stage input
+// Brand B1: ChainMismatchType — stage output ≠ next stage input
 // ---------------------------------------------------------------------------
 
 // Brand structural identity: carries kind, stageIndex, producedByPriorStage, expectedByThisStage
-assert<AssertEqualType<ChainMismatchInterface<0, string, number>['kind'], 'ChainMismatch'>>();
+assert<AssertEqualType<ChainMismatchType<0, string, number>['kind'], 'ChainMismatch'>>();
 
-assert<AssertEqualType<ChainMismatchInterface<0, string, number>['stageIndex'], 0>>();
+assert<AssertEqualType<ChainMismatchType<0, string, number>['stageIndex'], 0>>();
 
-assert<AssertEqualType<ChainMismatchInterface<0, string, number>['producedByPriorStage'], string>>();
+assert<AssertEqualType<ChainMismatchType<0, string, number>['producedByPriorStage'], string>>();
 
-assert<AssertEqualType<ChainMismatchInterface<0, string, number>['expectedByThisStage'], number>>();
+assert<AssertEqualType<ChainMismatchType<0, string, number>['expectedByThisStage'], number>>();
 
 // Positive: well-typed chain — decodes string → number → string (canonical).
 const _okChain = Transform.chain(StringSchema, [
@@ -97,26 +97,26 @@ const _okChain = Transform.chain(StringSchema, [
 void _okChain;
 
 // Negative: stage 0 produces number, stage 1 expects string. The validator
-// inserts ChainMismatchInterface<0, number, string> at the broken position —
+// inserts ChainMismatchType<0, number, string> at the broken position —
 // assert that exact brand, not merely that the chain fails to compile.
 type TwoStageInteriorMismatch = ValidateChainType<readonly [typeof stringToNumber, typeof stringToString], string>;
-assert<AssertEqualType<TwoStageInteriorMismatch[1], ChainMismatchInterface<0, number, string>>>();
+assert<AssertEqualType<TwoStageInteriorMismatch[1], ChainMismatchType<0, number, string>>>();
 
 // Negative: three-stage chain — mismatch at index 1 (stage 1 produces number,
 // stage 2 expects string).
 type ThreeStageInteriorMismatch = ValidateChainType<readonly [typeof stringToString, typeof stringToNumber, typeof stringToString], string>;
-assert<AssertEqualType<ThreeStageInteriorMismatch[2], ChainMismatchInterface<1, number, string>>>();
+assert<AssertEqualType<ThreeStageInteriorMismatch[2], ChainMismatchType<1, number, string>>>();
 
 // ---------------------------------------------------------------------------
-// Brand B2: ChainSchemaMismatchInterface — last stage output ≠ schema canonical type
+// Brand B2: ChainSchemaMismatchType — last stage output ≠ schema canonical type
 // ---------------------------------------------------------------------------
 
 // Brand structural identity: carries kind, schemaCanonicalType, lastStageDecodeOutput
-assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['kind'], 'ChainSchemaMismatch'>>();
+assert<AssertEqualType<ChainSchemaMismatchType<string, number>['kind'], 'ChainSchemaMismatch'>>();
 
-assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['schemaCanonicalType'], string>>();
+assert<AssertEqualType<ChainSchemaMismatchType<string, number>['schemaCanonicalType'], string>>();
 
-assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['lastStageDecodeOutput'], number>>();
+assert<AssertEqualType<ChainSchemaMismatchType<string, number>['lastStageDecodeOutput'], number>>();
 
 // Positive: last stage output matches the schema's canonical type (string).
 const _schemaMismatchOk = Transform.chain(StringSchema, [stringToString] as const);
@@ -124,14 +124,14 @@ const _schemaMismatchOk = Transform.chain(StringSchema, [stringToString] as cons
 void _schemaMismatchOk;
 
 // Negative: last stage produces number, canonical is string. The validator
-// replaces the tail with ChainSchemaMismatchInterface<string, number> — assert it.
+// replaces the tail with ChainSchemaMismatchType<string, number> — assert it.
 type TailNumberMismatch = ValidateChainType<readonly [typeof stringToNumber], string>;
-assert<AssertEqualType<TailNumberMismatch[0], ChainSchemaMismatchInterface<string, number>>>();
+assert<AssertEqualType<TailNumberMismatch[0], ChainSchemaMismatchType<string, number>>>();
 
 // Negative: last stage produces Date, canonical is string —
-// ChainSchemaMismatchInterface<string, Date>.
+// ChainSchemaMismatchType<string, Date>.
 type TailDateMismatch = ValidateChainType<readonly [typeof numberToDate], string>;
-assert<AssertEqualType<TailDateMismatch[0], ChainSchemaMismatchInterface<string, Date>>>();
+assert<AssertEqualType<TailDateMismatch[0], ChainSchemaMismatchType<string, Date>>>();
 
 // ---------------------------------------------------------------------------
 // Suppress unused warnings

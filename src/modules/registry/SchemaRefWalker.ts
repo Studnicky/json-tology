@@ -9,7 +9,9 @@
 import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.js';
 
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { isRecord } from '../data/DataTypes.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
 
 export class SchemaRefWalker implements SchemaRefWalkerInterface {
   public assertResolvable(
@@ -34,13 +36,12 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
     const ref = node.$ref;
 
     if (typeof ref === 'string' && !ref.startsWith('#')) {
-      const hashIndex = ref.indexOf('#');
-      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+      const refIri = SchemaIri.parseRef(ref).id;
       const resolved = resolve(refIri);
 
       if (!knownIds(resolved) && !knownIds(refIri) && !embeddedIds.has(refIri)) {
         throw new GraphError(
-          'REF_UNRESOLVED',
+          GraphErrorCode.REF_UNRESOLVED,
           `unresolved $ref: ${ref} (referenced from ${parentSchemaId})`,
           { 'pointer': ref }
         );
@@ -49,28 +50,6 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
 
     for (const value of Object.values(node)) {
       this.assertResolvable(value, parentSchemaId, embeddedIds, knownIds, resolve);
-    }
-  }
-
-  public collectEmbeddedIds(node: unknown, ids: Set<string>): void {
-    if (Array.isArray(node)) {
-      for (const item of node) {
-        this.collectEmbeddedIds(item, ids);
-      }
-
-      return;
-    }
-
-    if (!isRecord(node)) {
-      return;
-    }
-
-    if (typeof node.$id === 'string' && node.$id !== '') {
-      ids.add(node.$id);
-    }
-
-    for (const value of Object.values(node)) {
-      this.collectEmbeddedIds(value, ids);
     }
   }
 
@@ -96,8 +75,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
     const ref = node.$ref;
 
     if (typeof ref === 'string' && !ref.startsWith('#')) {
-      const hashIndex = ref.indexOf('#');
-      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+      const refIri = SchemaIri.parseRef(ref).id;
       const resolved = resolve(refIri);
 
       if (!knownIds(resolved) && !knownIds(refIri) && !embeddedIds.has(refIri)) {
@@ -112,13 +90,12 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
 
   public collectUnresolved(
     schema: Record<string, unknown>,
+    embeddedIds: Set<string>,
     knownIds: (id: string) => boolean,
     resolve: (id: string) => string
   ): ReadonlySet<string> {
     const unresolved = new Set<string>();
-    const embeddedIds = new Set<string>();
 
-    this.collectEmbeddedIds(schema, embeddedIds);
     this.collectRefsInNode(schema, embeddedIds, unresolved, knownIds, resolve);
 
     return unresolved;

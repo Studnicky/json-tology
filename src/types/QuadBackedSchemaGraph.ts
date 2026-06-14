@@ -11,33 +11,10 @@
 
 import type {
   ListItemType,
-  SchemaGraphNodeInterface,
-  SchemaGraphRelationInterface
-} from '../interfaces/SchemaGraph.js';
+  SchemaGraphNodeType,
+  SchemaGraphRelationType
+} from './SchemaGraph.js';
 import type { QuadInterface } from '../interfaces/Quad.js';
-import type { SubjectIndexType } from '../interfaces/OwlImport.js';
-
-
-/**
- * Named return type for {@link buildExpansionMap}.
- *
- * Maps full-IRI prefixes to their `prefix:` compact form, used for IRI
- * compaction throughout the quad-backed graph.
- *
- * @remarks
- * Built once from `STANDARD_PREFIXES` merged with caller-supplied prefixes.
- *
- * @example
- * ```ts
- * const map: ExpansionMapType = buildExpansionMap(prefixes);
- * ```
- *
- * @category Graph
- * @since 0.18.0
- * @see {@link QuadBackedSchemaGraph}
- * @group Graph
- */
-export type ExpansionMapType = Map<string, string>;
 
 /**
  * Named return type for {@link buildPredicateIndex}.
@@ -63,7 +40,7 @@ export type PredicateIndexType = Map<string, Map<string, QuadInterface[]>>;
 /**
  * Named return type for {@link buildNodeMap}.
  *
- * Maps subject IRIs to their corresponding stub `SchemaGraphNodeInterface`
+ * Maps subject IRIs to their corresponding stub `SchemaGraphNodeType`
  * objects for all recognised OWL-typed subjects.
  *
  * @remarks
@@ -73,7 +50,7 @@ export type PredicateIndexType = Map<string, Map<string, QuadInterface[]>>;
  *
  * @example
  * ```ts
- * const nodes: NodeMapType = buildNodeMap(subjectIndex, predicateIndex, expansionMap);
+ * const nodes: NodeMapType = buildNodeMap(subjectIndex, predicateIndex, curie);
  * ```
  *
  * @category Graph
@@ -81,7 +58,7 @@ export type PredicateIndexType = Map<string, Map<string, QuadInterface[]>>;
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type NodeMapType = Map<string, SchemaGraphNodeInterface>;
+export type NodeMapType = Map<string, SchemaGraphNodeType>;
 
 /**
  * Named return type for {@link literalTagsForQuad}.
@@ -105,11 +82,11 @@ export type NodeMapType = Map<string, SchemaGraphNodeInterface>;
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export interface LiteralTagsType {
+export type LiteralTagsType = {
   readonly 'datatype'?: string;
   readonly 'language'?: string;
   readonly 'termType'?: 'BlankNode' | 'Literal' | 'NamedNode';
-}
+};
 
 /**
  * Named return type for the optional result of {@link resolveRestrictionBnode}.
@@ -137,7 +114,7 @@ export type OptionalRestrictionType = RestrictionResultType | undefined;
 /**
  * Named return type for the `child` method and similar optional-node lookups.
  *
- * Either a resolved `SchemaGraphNodeInterface` or undefined when no such
+ * Either a resolved `SchemaGraphNodeType` or undefined when no such
  * child exists.
  *
  * @remarks
@@ -154,7 +131,7 @@ export type OptionalRestrictionType = RestrictionResultType | undefined;
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type OptionalChildNodeType = SchemaGraphNodeInterface | undefined;
+export type OptionalChildNodeType = SchemaGraphNodeType | undefined;
 
 /**
  * Named return type for {@link resolveRestrictionBnode}.
@@ -176,7 +153,7 @@ export type OptionalChildNodeType = SchemaGraphNodeInterface | undefined;
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export interface RestrictionResultType {
+export type RestrictionResultType = {
   readonly 'metadata': Record<string, unknown>;
   readonly 'structure': {
     readonly 'constraint': string;
@@ -185,7 +162,7 @@ export interface RestrictionResultType {
     readonly 'value': unknown;
   };
   readonly 'targetIri': string;
-}
+};
 
 /**
  * Named return type for {@link collectList} (the public class method).
@@ -212,7 +189,7 @@ export type CollectedListType = readonly ListItemType[];
 /**
  * Named return type for {@link entries} (the public class method).
  *
- * An ordered array of `[key, SchemaGraphNodeInterface]` pairs for a given
+ * An ordered array of `[key, SchemaGraphNodeType]` pairs for a given
  * schema node and keyword.
  *
  * @remarks
@@ -229,12 +206,12 @@ export type CollectedListType = readonly ListItemType[];
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type NodeEntriesType = Array<[string, SchemaGraphNodeInterface]>;
+export type NodeEntriesType = Array<[string, SchemaGraphNodeType]>;
 
 /**
  * Named return type for {@link node} (the public class method).
  *
- * The `SchemaGraphNodeInterface` whose schema carries the given `$id`, or
+ * The `SchemaGraphNodeType` whose schema carries the given `$id`, or
  * undefined when no such node exists in the graph.
  *
  * @remarks
@@ -250,7 +227,7 @@ export type NodeEntriesType = Array<[string, SchemaGraphNodeInterface]>;
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type OptionalNodeType = SchemaGraphNodeInterface | undefined;
+export type OptionalNodeType = SchemaGraphNodeType | undefined;
 
 /**
  * Named return type for {@link relationsForSubject}.
@@ -270,7 +247,7 @@ export type OptionalNodeType = SchemaGraphNodeInterface | undefined;
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type SubjectRelationsType = readonly SchemaGraphRelationInterface[];
+export type SubjectRelationsType = readonly SchemaGraphRelationType[];
 
 /**
  * Named return type for {@link rootSchema} (the getter).
@@ -293,52 +270,7 @@ export type SubjectRelationsType = readonly SchemaGraphRelationInterface[];
  */
 export type RootSchemaRecordType = Record<string, unknown>;
 
-/**
- * Options for {@link buildRelations}.
- *
- * @remarks
- * Bundles the parameters needed to build the full relation list from a
- * predicate index, satisfying the 3-parameter limit.
- *
- * @example
- * ```ts
- * buildRelations({ nodeMap, predicateIndex, subjectIndex, expansionMap, stubMap });
- * ```
- *
- * @category Graph
- * @since 0.18.0
- * @see {@link QuadBackedSchemaGraph}
- * @group Graph
- */
-export interface BuildRelationsOptionsInterface {
-  readonly 'expansionMap': ExpansionMapType;
-  readonly 'nodeMap': Map<string, SchemaGraphNodeInterface>;
-  readonly 'predicateIndex': PredicateIndexType;
-  readonly 'stubMap': Map<string, SchemaGraphNodeInterface>;
-  readonly 'subjectIndex': SubjectIndexType;
-}
+export type { BuildRelationsOptionsType } from '../types/BuildRelationsOptions.js';
+export { type SubjectIndexType } from '../types/OwlImport.js';
 
-/**
- * Options for {@link resolveRestrictionBnode}.
- *
- * @remarks
- * Bundles the parameters needed to resolve a restriction blank node, satisfying
- * the 3-parameter limit.
- *
- * @example
- * ```ts
- * resolveRestrictionBnode({ bnodeId, bnodePredicateMap, expansionMap });
- * ```
- *
- * @category Graph
- * @since 0.18.0
- * @see {@link QuadBackedSchemaGraph}
- * @group Graph
- */
-export interface ResolveRestrictionOptionsInterface {
-  readonly 'bnodeId': string;
-  readonly 'bnodePredicateMap': Map<string, QuadInterface[]> | undefined;
-  readonly 'expansionMap': ExpansionMapType;
-}
-
-export { type SubjectIndexType } from '../interfaces/OwlImport.js';
+export type { ResolveRestrictionOptionsType } from '../types/ResolveRestrictionOptions.js';

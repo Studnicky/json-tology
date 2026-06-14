@@ -8,9 +8,9 @@
 
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { LoaderType } from '../../types/Loader.js';
-import type { FetchLoaderOptionsInterface } from '../../interfaces/FetchLoaderOptions.js';
+import type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptions.js';
 
-export type { FetchLoaderOptionsInterface } from '../../interfaces/FetchLoaderOptions.js';
+export type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptions.js';
 
 /**
  * Namespace of universal schema-loading helpers.
@@ -102,7 +102,7 @@ export const Loaders = {
    *
    * @param options - Optional base URL and RequestInit overrides.
    */
-  fetch(options?: FetchLoaderOptionsInterface): LoaderType {
+  fetch(options?: FetchLoaderOptionsType): LoaderType {
     const base = options?.base;
     const init = options?.init;
 

@@ -1,39 +1,37 @@
 /**
- * Compile-time assertions proving deep cross-schema `$ref` resolution
- * through the registered-bundle path, and documenting the fundamental
- * limit of standalone `InferType<S>` without a references map.
+ * Compile-time assertions for cross-schema `$ref` resolution. `$ref`
+ * resolution reads the reference graph reachable at the type level, through
+ * three paths, and fails uniformly when the graph does not reach the target.
  *
- * ## What is automatic (bundle path)
+ * ## Graph-native paths (no references argument)
+ *
+ * A `$ref` whose IRI matches a resource embedded under the schema's own
+ * `$defs` (a self-contained / bundled compound document) resolves against that
+ * embedded graph with no references map. A `$ref` equal to the root schema's
+ * own `$id` resolves to the root (self-reference). Both work standalone.
+ *
+ * ## Registry-bound path (references threaded automatically)
  *
  * `SchemaReferencesMapType<typeof tuple>` builds a `{ [$id]: schema }` map
- * from the tuple in O(1) depth (mapped type over the element union). When
- * passed to `InferType<TSchema, TRefs>`, every cross-schema `$ref` resolves
- * transitively — no depth limit other than TypeScript's own instantiation
- * cap (TS2589). This map can be constructed from ANY tuple the consumer
- * already has; it does not require a running `JsonTology` instance.
+ * from a tuple in O(1) depth (a mapped type over the element union). Passed as
+ * `TReferences` to `InferType<TSchema, TRefs>`, every cross-schema `$ref`
+ * resolves transitively, bounded only by TypeScript's instantiation cap
+ * (TS2589). `SchemaMapFromTupleType<typeof tuple>` (used internally by
+ * `JsonTology.create({ schemas })`) threads the same map through
+ * `ParseOutputType` for every registered schema, so `jt.instantiate(id, data)`
+ * return types resolve deeply without the consumer constructing anything.
  *
- * `SchemaMapFromTupleType<typeof tuple>` (used internally by `JsonTology`)
- * threads the same map through `ParseOutputType` for every registered schema,
- * so `jt.instantiate(id, data)` return types also resolve deeply.
+ * ## Unreachable refs fail uniformly
  *
- * ## What is fundamentally impossible at compile time
- *
- * TypeScript cannot connect a string literal (e.g. `'urn:bookstore:Money'`)
- * to a schema object that is NOT in the current type's scope. A standalone
- * `InferType<typeof BookSchema>` with no `TReferences` argument has no map
- * to look up — `BookSchema` only carries the string `$ref`, not the target
- * schema object. The fallback is `unknown` (not an error; `unknown` is the
- * honest "I cannot resolve this at compile time" answer). This is intentional:
- * flooding standalone consumers with `RefNotFoundInterface` noise would break
- * existing usage where cross-ref resolution is simply not relevant.
- *
- * The solution for consumers who want deep resolution:
- *   1. Collect all schemas in a `const` tuple.
- *   2. Derive `SchemaReferencesMapType<typeof tuple>` once (one line).
- *   3. Pass it as `TReferences` to `InferType<TSchema, TRefs>`.
- *
- * This is the ONLY pattern that works. TypeScript cannot do it for you
- * automatically because schema resolution is a runtime registry concept.
+ * A `$ref` the reference graph does not reach resolves to
+ * `RefNotFoundType<TRef>` (or `AnchorNotFoundType` for a fragment
+ * whose anchor is missing on a reachable base) — the same brand whether or not
+ * a references map is present. Resolution never degrades to a silent `unknown`:
+ * an unresolved cross-schema `$ref` is a compile-time error brand, surfaced in
+ * editor diagnostics. The structural limit is narrow and explicit — a bare IRI
+ * string can only resolve when its target is reachable as one of the three
+ * paths above; when it is not, the brand says so rather than widening to
+ * `unknown`.
  */
 
 import type {
@@ -41,6 +39,7 @@ import type {
   SchemaReferencesMapType
 } from '../../src/types/index.js';
 import type { SchemaMapFromTupleType } from '../../src/types/Registry.js';
+import type { RefNotFoundType } from '../../src/types/TypeErrors.js';
 
 // ---------------------------------------------------------------------------
 // Bidirectional assignability helpers (same style as other type tests)
@@ -187,7 +186,7 @@ assert<AssertAssignableType<
 type MoneyType = InferType<typeof MoneySchema, TestRefs>;
 
 // AmountSchema carries `minimum: 0`, so the inferred type is
-// `MinimumBrandInterface<0> & number` — a subtype of number, not equal.
+// `MinimumBrandType<0> & number` — a subtype of number, not equal.
 // Use AssertAssignableType (covariant check) rather than AssertEqualType.
 assert<AssertAssignableType<MoneyType['amount'], number>>();
 assert<AssertEqualType<MoneyType['currency'], 'EUR' | 'GBP' | 'USD'>>();
@@ -204,27 +203,106 @@ assert<AssertAssignableType<
 assert<AssertAssignableType<OrderType, { readonly 'orderId': string }>>();
 
 // ---------------------------------------------------------------------------
-// 2. Standalone limit — without TReferences, cross-schema $ref → unknown
-//
-// This is intentional. `unknown` is the honest answer: TypeScript cannot
-// resolve a string IRI to an out-of-scope schema object. Consumers who need
-// deep resolution must use the refs-map pattern above.
+// 2. Unreachable refs fail uniformly — without a references map and without
+// embedding, a cross-schema $ref resolves to RefNotFoundType, NOT a
+// silent unknown. The brand surfaces the unresolved IRI at compile time.
 // ---------------------------------------------------------------------------
 
 type StandaloneOrder = InferType<typeof OrderSchema>;
 
-// customer is present in the shape (object property) but its type is unknown
-// because 'urn:test:Customer' is not resolvable without a refs map.
+// 'urn:test:Customer' is neither embedded in OrderSchema's $defs nor threaded
+// via a references map → the brand names the unresolved IRI.
 assert<AssertAssignableType<
-  StandaloneOrder,
-  { readonly 'customer'?: unknown }
+  StandaloneOrder['customer'],
+  RefNotFoundType<'urn:test:Customer'>
 >>();
 
-// Standalone Money: properties with cross-schema $refs → unknown
+// Standalone Money: each cross-schema $ref is unreachable → its own brand.
 type StandaloneMoney = InferType<typeof MoneySchema>;
 
-assert<AssertAssignableType<StandaloneMoney, { readonly 'amount'?: unknown }>>();
-assert<AssertAssignableType<StandaloneMoney, { readonly 'currency'?: unknown }>>();
+assert<AssertAssignableType<
+  StandaloneMoney['amount'],
+  RefNotFoundType<'urn:test:Amount'>
+>>();
+assert<AssertAssignableType<
+  StandaloneMoney['currency'],
+  RefNotFoundType<'urn:test:CurrencyCode'>
+>>();
+
+// ---------------------------------------------------------------------------
+// 2b. Graph-native embedded resolution — a self-contained (bundled) schema
+// carries its referenced resources under `$defs`, keyed by `$id`. A $ref to an
+// embedded `$id` resolves against the document's own graph with NO references
+// map and NO registry instance.
+// ---------------------------------------------------------------------------
+
+const BundledOrderSchema = {
+  '$defs': {
+    'CurrencyCode': {
+      '$id': 'urn:test:CurrencyCode',
+      'enum': [
+        'USD',
+        'EUR',
+        'GBP'
+      ] as const,
+      'type': 'string'
+    },
+    'Customer': {
+      '$id': 'urn:test:Customer',
+      'properties': {
+        'email': { 'type': 'string' },
+        'name': { 'type': 'string' }
+      },
+      'required': ['name'],
+      'type': 'object'
+    },
+    'Money': {
+      '$id': 'urn:test:Money',
+      'properties': {
+        // sibling embedded resource — resolved against the original root's $defs
+        'amount': { 'type': 'number' },
+        'currency': { '$ref': 'urn:test:CurrencyCode' }
+      },
+      'required': [
+        'amount',
+        'currency'
+      ],
+      'type': 'object'
+    }
+  },
+  '$id': 'urn:test:BundledOrder',
+  'properties': {
+    'customer': { '$ref': 'urn:test:Customer' },
+    'price': { '$ref': 'urn:test:Money' }
+  },
+  'required': [
+    'customer',
+    'price'
+  ],
+  'type': 'object'
+} as const;
+
+void BundledOrderSchema;
+
+// Standalone inference (no references map) resolves the embedded $refs.
+type BundledOrderType = InferType<typeof BundledOrderSchema>;
+
+assert<AssertAssignableType<
+  BundledOrderType['customer'],
+  { readonly 'name': string }
+>>();
+
+// Sibling resolution: price → Money, and Money.currency → CurrencyCode, both
+// embedded — proves the embedded schema is inferred against the original root
+// so sibling resources stay reachable.
+assert<AssertAssignableType<
+  BundledOrderType['price'],
+  { readonly 'amount': number }
+>>();
+assert<AssertEqualType<
+  BundledOrderType['price']['currency'],
+  'EUR' | 'GBP' | 'USD'
+>>();
 
 // ---------------------------------------------------------------------------
 // 3. JsonTology instantiate return type resolves deeply (bundle path proof)

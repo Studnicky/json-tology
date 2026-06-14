@@ -3,7 +3,7 @@
  *
  * With `numericBrands: true` (the default), a schema with `minimum: 0`
  * and `maximum: 100` resolves to
- * `number & MinimumBrandInterface<0> & MaximumBrandInterface<100>`.
+ * `number & MinimumBrandType<0> & MaximumBrandType<100>`.
  * A plain `number` is not assignable to `Score` without passing through
  * the validation API.
  */

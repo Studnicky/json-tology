@@ -31,7 +31,7 @@ function assert<T extends true>(_proof?: T): void {
 // BookstoreRefs resolves $ref fields to their named datatype types.
 type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;
 type CustomerId = Customer extends { readonly 'id': infer I } ? I : never;
-// CustomerId: string & InverseFunctionalBrandInterface
+// CustomerId: string & InverseFunctionalBrandType
 // (compile-time phantom brand, validated at instantiation)
 
 assert<AssertEqualType<CustomerId extends string ? true : false, true>>();

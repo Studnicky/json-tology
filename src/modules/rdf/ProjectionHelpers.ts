@@ -6,9 +6,12 @@
  */
 
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
+import type { OptionalAnnotatedEdgeType } from '../../types/OptionalAnnotatedEdgeType.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { isRecord } from '../data/DataTypes.js';
+import { GraphError } from '../../errors/GraphError.js';
 
 /**
  * Build the property subject IRI for `propertyName` on the class `classId`.
@@ -47,8 +50,12 @@ export function resolvePropertySchema(graph: SchemaGraphInterface, subject: stri
     const node = graph.resolvePointer(fragment);
 
     return isRecord(node.schema) ? node.schema : {};
-  } catch {
-    return {};
+  } catch (error) {
+    if (error instanceof GraphError && error.code === 'POINTER_NOT_FOUND') {
+      return {};
+    }
+
+    throw error;
   }
 }
 
@@ -93,4 +100,24 @@ export function resolveRestrictionOnProperty(
     'propertyName': fragment,
     'propertySchema': propertySchema
   });
+}
+
+/**
+ * Find the `annotatedEdge` structure relation attached to a property node, if any.
+ *
+ * Iterates `graph.relations(propertyNode)` and returns the first relation whose
+ * `structure.kind` is `'annotatedEdge'`. Returns `undefined` when no such
+ * relation is present.
+ */
+export function findAnnotatedEdgeStructure(
+  graph: SchemaGraphInterface,
+  propertyNode: SchemaGraphNodeType
+): OptionalAnnotatedEdgeType {
+  for (const relation of graph.relations(propertyNode)) {
+    if (relation.structure?.kind === 'annotatedEdge') {
+      return relation.structure;
+    }
+  }
+
+  return undefined;
 }

@@ -7,9 +7,9 @@ import type { QuadInterface } from '../../src/interfaces/Quad.js';
 // QuadObjectType is the project's narrow quad-object union (IRI | blank | literal),
 // matching what Terms.iri/Terms.literal return and what Terms.quad/listQuad accept.
 import type { QuadObjectType } from '../../src/types/Quad.js';
-// RelationStructure/SchemaGraphRelationInterface are graph-internal shapes used by projection tests.
+// RelationStructure/SchemaGraphRelationType are graph-internal shapes used by projection tests.
 import type { RelationStructure } from '../../src/types/SchemaGraph.js';
-import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
+import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 // ProjectionIndex helpers are projection internals.
 import { ProjectionIndex } from '../../src/modules/rdf/ProjectionIndex.js';
 import {
@@ -304,7 +304,7 @@ import {
     target: string | { 'id': string;
       'pointer': string;
       'schema': Record<string, unknown> }
-  ): SchemaGraphRelationInterface {
+  ): SchemaGraphRelationType {
     return {
       'predicate': predicate,
       'source': {

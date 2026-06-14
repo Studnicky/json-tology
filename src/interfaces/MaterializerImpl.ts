@@ -1,4 +1,4 @@
-import type { MaterializationResultInterface } from './Materializer.js';
+import type { MaterializationResultType } from '../types/Materializer.js';
 import type { QuadInterface } from './Quad.js';
 import type { InferSchemaType } from '../types/Infer.js';
 
@@ -12,7 +12,7 @@ export interface MaterializerInterface {
     data?: unknown,
     options?: { 'baseIRI'?: string;
       'synthesizeDefaults'?: boolean }
-  ): MaterializationResultInterface;
+  ): MaterializationResultType;
   materialize<TSchema extends JsonSchemaDocumentType & { readonly '$id': string }>(
     schema: TSchema,
     partial?: Partial<InferSchemaType<TSchema>>,

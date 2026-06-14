@@ -24,7 +24,7 @@ import {
 import { JsonTology } from '../../src/index.js';
 import { brand } from '../../src/types/Brand.js';
 import type {
-  MinimumBrandInterface, MinLengthBrandInterface
+  MinimumBrandType, MinLengthBrandType
 } from '../../src/types/ConstraintBrands.js';
 
 const NameSchema = {
@@ -91,9 +91,9 @@ void describe('addTransform decode output resolves registered $refs to readable 
 
         return {
           'active': raw['is_active'] as boolean,
-          'price': brand<MinimumBrandInterface<0> & number>(raw['sticker_price']),
-          'title': brand<MinLengthBrandInterface<1> & string>(raw['wire_title']),
-          'vendor': { 'vendorName': brand<MinLengthBrandInterface<1> & string>(seller['seller_name']) }
+          'price': brand<MinimumBrandType<0> & number>(raw['sticker_price']),
+          'title': brand<MinLengthBrandType<1> & string>(raw['wire_title']),
+          'vendor': { 'vendorName': brand<MinLengthBrandType<1> & string>(seller['seller_name']) }
         };
       },
       // encode writes the wire keys through the dynamic accessor — they belong

@@ -1,5 +1,10 @@
-import type { DuplicateSchemaIdInterface } from './TypeErrors.js';
+import type { DuplicateSchemaIdType } from './TypeErrors.js';
 import type { ParseOutputType } from './Transform.js';
+import type { FormatRegistryInterface } from '../interfaces/FormatRegistry.js';
+import type { InvariantType } from './Invariant.js';
+import type { KeywordDefinitionType } from './GraphEngine.js';
+import type { LoggerInterface } from '../interfaces/Logger.js';
+import type { VocabularyPluginInterface } from '../interfaces/VocabularyPlugin.js';
 
 /** Build a cross-schema references map: `{ [$id]: SchemaType }` for $ref resolution.
  *
@@ -103,13 +108,13 @@ type HasDuplicateIdsType<T extends readonly unknown[]>
 /** Homomorphic projection: brand positions whose `$id` is a duplicate. */
 type BrandedDuplicatesType<T extends readonly unknown[]>
   = { readonly [I in keyof T]: T[I] extends { readonly '$id': infer Id extends string }
-    ? Id extends DuplicateIdsType<T> ? DuplicateSchemaIdInterface<Id> : T[I]
+    ? Id extends DuplicateIdsType<T> ? DuplicateSchemaIdType<Id> : T[I]
     : T[I]
   };
 
 /** Enforces unique `$id` values across a schema tuple at compile time.
  *
- *  Positions sharing a `$id` are branded with `DuplicateSchemaIdInterface<TId>`,
+ *  Positions sharing a `$id` are branded with `DuplicateSchemaIdType<TId>`,
  *  making the tuple incompatible with the expected parameter type and surfacing
  *  the offending IRI in editor diagnostics. Detection uses the chunked fold in
  *  {@link DuplicateIdsType}, so it scales to large registries. Dispatch is a
@@ -120,3 +125,53 @@ export type UniqueSchemaIdsType<T extends readonly unknown[]>
     'false': T;
     'true': BrandedDuplicatesType<T>;
   }[`${HasDuplicateIdsType<T>}`];
+
+export type RegistryOptionsType = {
+  'enableDebug'?: boolean;
+  'enableDefaults'?: boolean;
+  /**
+   * When true, the registry scans all registered schemas after each
+   * `register()` call and raises an error or warning when two distinct
+   * schema pointers produce structurally equivalent shapes. When
+   * `enableStrictGraph` is also true (the default), duplicate shapes cause
+   * `SchemaError('SCHEMA_DUPLICATE_SHAPE')` at registration time; otherwise
+   * a `logger.warn` is emitted. Setting `enableStrictGraph` to `true`
+   * forces this flag on regardless of the value passed here.
+   *
+   * @default true
+   */
+  'enableDuplicateDetection'?: boolean;
+  /**
+   * When true, registering a schema with inline primitive constraints
+   * (e.g. `{ type: 'number', minimum: 0 }` embedded in a property instead
+   * of a `$ref` to a named primitive) emits a `logger.warn`. When combined
+   * with `enableStrictGraph` (the default), the same condition throws
+   * `SchemaError('SCHEMA_STRUCTURE_INVALID')` at registration time.
+   * Setting `enableStrictGraph` to `true` forces this flag on regardless
+   * of the value passed here.
+   *
+   * @default true
+   */
+  'enableInlineWarnings'?: boolean;
+  /**
+   * Master graph-integrity gate. When true (the default), both
+   * `enableInlineWarnings` and `enableDuplicateDetection` are forced on,
+   * and any violation they detect is thrown as a `SchemaError` rather than
+   * logged as a warning. Set to `false` to downgrade all graph-integrity
+   * violations to `logger.warn` — the individual flags then control which
+   * checks run at all. Consumers that need the historical permissive
+   * behaviour should pass `enableStrictGraph: false` explicitly.
+   *
+   * @default true
+   */
+  'enableStrictGraph'?: boolean;
+  'enableStrictTypes'?: boolean;
+  'enableTypeCast'?: boolean;
+  'formatRegistry'?: FormatRegistryInterface;
+  'invariants'?: Record<string, readonly InvariantType[]>;
+  'keywords'?: KeywordDefinitionType[];
+  'logger'?: LoggerInterface;
+  'maxSchemaDepth'?: number;
+  'prefixes'?: Record<string, string>;
+  'vocabularies'?: readonly VocabularyPluginInterface[];
+};

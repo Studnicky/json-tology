@@ -1,6 +1,6 @@
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraph.js';
+import type { SchemaGraphSemanticsType } from '../../types/SchemaGraph.js';
 import { Predicates } from '../validation/Predicates.js';
 import { BaseError } from '../../errors/BaseError.js';
 
@@ -50,7 +50,7 @@ export const GraphEngineScalars = {
   validateNumberConstraints(
     path: string,
     value: number,
-    sem: SchemaGraphSemanticsInterface,
+    sem: SchemaGraphSemanticsType,
     formatRegistry: FormatRegistryInterface,
     formatAssertions: boolean
   ): ValidationErrorType[] {
@@ -65,7 +65,7 @@ export const GraphEngineScalars = {
   validateStringConstraints(
     path: string,
     value: string,
-    sem: SchemaGraphSemanticsInterface,
+    sem: SchemaGraphSemanticsType,
     regexFor: (pattern: string) => RegExp,
     formatRegistry: FormatRegistryInterface,
     formatAssertions: boolean
@@ -105,7 +105,7 @@ function coerceContainerFallback(schemaTypes: string[], coerced: unknown): unkno
 function pushNumberRangeErrors(
   path: string,
   value: number,
-  sem: SchemaGraphSemanticsInterface,
+  sem: SchemaGraphSemanticsType,
   errors: ValidationErrorType[]
 ): void {
   const {
@@ -134,7 +134,7 @@ function pushMultipleOfError(
   errors: ValidationErrorType[]
 ): void {
   if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
-    errors.push(BaseError.validationError(path, 'multipleOf', `must be multiple of ${multipleOf}`, { multipleOf }));
+    errors.push(BaseError.validationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`, { multipleOf }));
   }
 }
 
@@ -159,7 +159,7 @@ function pushNumberFormatError(
 function pushStringLengthErrors(
   path: string,
   value: string,
-  sem: SchemaGraphSemanticsInterface,
+  sem: SchemaGraphSemanticsType,
   errors: ValidationErrorType[]
 ): void {
   const minimum = sem.minLength;

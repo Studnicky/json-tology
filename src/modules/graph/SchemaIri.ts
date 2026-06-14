@@ -35,13 +35,30 @@ export class SchemaIri {
     return segments.at(-1) ?? '';
   }
 
+  static parseRef(ref: string): { 'fragment': string;
+    'id': string } {
+    const hashIndex = ref.indexOf('#');
+    const id = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+    const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
+
+    return {
+      fragment,
+      id
+    };
+  }
+
   static propertyIri(classId: string, propertyName: string): string {
     return `${classId}#${propertyName}`;
   }
 
   static splitSubject(subject: string): { 'base': string;
     'fragment': null | string } {
-    const hashIdx = subject.indexOf('#');
+    // Split at the LAST `#` so a hash-namespace `$id` (e.g.
+    // `http://www.w3.org/2004/02/skos/core#Concept`) is preserved in `base`
+    // and only the JSON-pointer/anchor fragment that follows the final `#`
+    // (e.g. `/properties/skos:prefLabel`) is returned as `fragment`. For
+    // single-hash subjects this is identical to splitting at the first `#`.
+    const hashIdx = subject.lastIndexOf('#');
 
     if (hashIdx === -1) {
       return {

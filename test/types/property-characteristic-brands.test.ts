@@ -15,7 +15,7 @@ import {
 } from 'node:test';
 
 import type {
-  PropertyCharacteristicConflictInterface,
+  PropertyCharacteristicConflictType,
   ValidatePropertyCharacteristicsType
 } from '../../src/types/TypeErrors.js';
 
@@ -31,21 +31,21 @@ function assert<T extends true>(): void {
 }
 
 // ---------------------------------------------------------------------------
-// Brand F: PropertyCharacteristicConflictInterface — structural identity
+// Brand F: PropertyCharacteristicConflictType — structural identity
 // ---------------------------------------------------------------------------
 
 assert<AssertEqualType<
-  PropertyCharacteristicConflictInterface<'relates', readonly ['symmetric', 'asymmetric']>['kind'],
+  PropertyCharacteristicConflictType<'relates', readonly ['symmetric', 'asymmetric']>['kind'],
   'PropertyCharacteristicConflict'
 >>();
 
 assert<AssertEqualType<
-  PropertyCharacteristicConflictInterface<'relates', readonly ['symmetric', 'asymmetric']>['property'],
+  PropertyCharacteristicConflictType<'relates', readonly ['symmetric', 'asymmetric']>['property'],
   'relates'
 >>();
 
 assert<AssertEqualType<
-  PropertyCharacteristicConflictInterface<'relates', readonly ['symmetric', 'asymmetric']>['conflicts'],
+  PropertyCharacteristicConflictType<'relates', readonly ['symmetric', 'asymmetric']>['conflicts'],
   readonly ['symmetric', 'asymmetric']
 >>();
 
@@ -180,7 +180,7 @@ void _ok10;
 // Negative: Conflict 1 — symmetric + asymmetric
 // ---------------------------------------------------------------------------
 
-// @ts-expect-error — 'relates' sets symmetric:true and asymmetric:true (PropertyCharacteristicConflictInterface)
+// @ts-expect-error — 'relates' sets symmetric:true and asymmetric:true (PropertyCharacteristicConflictType)
 const _badSymAsym: ValidatePropertyCharacteristicsType<{
   readonly '$id': 'urn:test:Bad1';
   readonly 'properties': {
@@ -205,7 +205,7 @@ void _badSymAsym;
 // Negative: Conflict 2 — reflexive + irreflexive
 // ---------------------------------------------------------------------------
 
-// @ts-expect-error — 'rel' sets reflexive:true and irreflexive:true (PropertyCharacteristicConflictInterface)
+// @ts-expect-error — 'rel' sets reflexive:true and irreflexive:true (PropertyCharacteristicConflictType)
 const _badReflIrr: ValidatePropertyCharacteristicsType<{
   readonly '$id': 'urn:test:Bad2';
   readonly 'properties': {
@@ -230,7 +230,7 @@ void _badReflIrr;
 // Negative: Conflict 3 — asymmetric + reflexive
 // ---------------------------------------------------------------------------
 
-// @ts-expect-error — 'edge' sets asymmetric:true and reflexive:true (PropertyCharacteristicConflictInterface)
+// @ts-expect-error — 'edge' sets asymmetric:true and reflexive:true (PropertyCharacteristicConflictType)
 const _badAsymRefl: ValidatePropertyCharacteristicsType<{
   readonly '$id': 'urn:test:Bad3';
   readonly 'properties': {

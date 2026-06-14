@@ -28,74 +28,20 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../../interfaces/OwlImport.js';
-import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
-import { STANDARD_PREFIXES } from '../../../constants/STANDARD_PREFIXES.js';
-
-// ---------------------------------------------------------------------------
-// IRI constants — derived from STANDARD_PREFIXES to avoid embedded literals
-// ---------------------------------------------------------------------------
-
-const RDFS_NS = STANDARD_PREFIXES.rdfs;
-const OWL_NS = STANDARD_PREFIXES.owl;
-const SKOS_NS = STANDARD_PREFIXES.skos;
-
-// ---------------------------------------------------------------------------
-// Predicate IRI sets (compact and full-IRI forms accepted)
-// ---------------------------------------------------------------------------
-
-// Predicates that map to `title` (last one wins if both present; English preferred)
-const LABEL_PREDICATES = new Set<string>([
-  `${RDFS_NS}label`,
-  `${SKOS_NS}prefLabel`,
-  'rdfs:label',
-  'skos:prefLabel'
-]);
-
-// Predicates that map to `description`
-const COMMENT_PREDICATES = new Set<string>([
-  `${RDFS_NS}comment`,
-  `${SKOS_NS}definition`,
-  'rdfs:comment',
-  'skos:definition'
-]);
-
-// Predicate for `deprecated`
-const DEPRECATED_PREDICATES = new Set<string>([
-  `${OWL_NS}deprecated`,
-  'owl:deprecated'
-]);
-
-// Predicate for `owl:versionInfo` → $comment "version: ..."
-const VERSION_INFO_PREDICATES = new Set<string>([
-  `${OWL_NS}versionInfo`,
-  'owl:versionInfo'
-]);
-
-// Predicate for `rdfs:isDefinedBy` → $comment "definedBy: <iri>"
-const IS_DEFINED_BY_PREDICATES = new Set<string>([
-  `${RDFS_NS}isDefinedBy`,
-  'rdfs:isDefinedBy'
-]);
-
-// Predicate for `rdfs:seeAlso` → $comment "seeAlso: <iri>"
-const SEE_ALSO_PREDICATES = new Set<string>([
-  `${RDFS_NS}seeAlso`,
-  'rdfs:seeAlso'
-]);
-
-// skos:altLabel — record as metadata only (no direct schema field)
-const ALT_LABEL_PREDICATES = new Set<string>([
-  `${SKOS_NS}altLabel`,
-  'skos:altLabel'
-]);
-
-// owl:AnnotationProperty declarations — silently accepted
-const ANNOTATION_PROPERTY_PREDICATES = new Set<string>([
-  `${OWL_NS}AnnotationProperty`,
-  'owl:AnnotationProperty'
-]);
+  OwlImportContextType, OwlImportFragmentType
+} from '../../../types/OwlImport.js';
+import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
+import type { AnnotationAccumulatorType } from '../../../types/AnnotationAccumulatorType.js';
+import {
+  ALT_LABEL_PREDICATES,
+  ANNOTATION_PROPERTY_PREDICATES,
+  COMMENT_PREDICATES,
+  DEPRECATED_PREDICATES,
+  IS_DEFINED_BY_PREDICATES,
+  LABEL_PREDICATES,
+  SEE_ALSO_PREDICATES,
+  VERSION_INFO_PREDICATES
+} from '../../../constants/ONTOLOGY_PREDICATES.js';
 
 // ---------------------------------------------------------------------------
 // Relation-target extraction helpers — read from graph relations
@@ -105,7 +51,7 @@ const ANNOTATION_PROPERTY_PREDICATES = new Set<string>([
  * Extract the string value of a Literal-typed relation target.
  * Returns null when the relation does not carry a Literal target.
  */
-function literalString(relation: SchemaGraphRelationInterface): null | string {
+function literalString(relation: SchemaGraphRelationType): null | string {
   if (relation.termType !== 'Literal') {
     return null;
   }
@@ -119,7 +65,7 @@ function literalString(relation: SchemaGraphRelationInterface): null | string {
  * Extract the language tag of a Literal-typed relation target.
  * Returns the empty string for untagged literals or non-literal targets.
  */
-function literalLanguage(relation: SchemaGraphRelationInterface): string {
+function literalLanguage(relation: SchemaGraphRelationType): string {
   if (relation.termType !== 'Literal') {
     return '';
   }
@@ -131,7 +77,7 @@ function literalLanguage(relation: SchemaGraphRelationInterface): string {
  * Extract the IRI of a NamedNode-typed relation target.
  * Returns null when the relation does not carry a NamedNode target.
  */
-function namedNodeIri(relation: SchemaGraphRelationInterface): null | string {
+function namedNodeIri(relation: SchemaGraphRelationType): null | string {
   if (relation.termType !== 'NamedNode') {
     return null;
   }
@@ -142,28 +88,10 @@ function namedNodeIri(relation: SchemaGraphRelationInterface): null | string {
 }
 
 // ---------------------------------------------------------------------------
-// Accumulator shapes
+// Accumulator factory
 // ---------------------------------------------------------------------------
 
-/** Per-entity annotation accumulator before it is written into schemaDeltas. */
-interface AnnotationAccumulator {
-  /** Language-tagged alt labels: lang → string[]. */
-  'altLabels': Map<string, string[]>;
-  /** Language-tagged comments: lang → string[]. */
-  'comments': Map<string, string[]>;
-  /** `deprecated` flag, set when any owl:deprecated true literal is found. */
-  'deprecated': boolean;
-  /** rdfs:isDefinedBy IRI values. */
-  'isDefinedBy': string[];
-  /** Language-tagged labels: lang → string[]. */
-  'labels': Map<string, string[]>;
-  /** rdfs:seeAlso IRI values. */
-  'seeAlso': string[];
-  /** owl:versionInfo string values. */
-  'versionInfo': string[];
-}
-
-function makeAccumulator(): AnnotationAccumulator {
+function makeAccumulator(): AnnotationAccumulatorType {
   return {
     'altLabels': new Map(),
     'comments': new Map(),
@@ -263,7 +191,7 @@ function buildI18nRecord(map: Map<string, string[]>): null | Record<string, stri
 // ---------------------------------------------------------------------------
 
 /** Apply title and description fields to a delta record from accumulators. */
-function applyLabelFields(delta: Record<string, unknown>, acc: AnnotationAccumulator): void {
+function applyLabelFields(delta: Record<string, unknown>, acc: AnnotationAccumulatorType): void {
   const title = resolveLangValue(acc.labels);
 
   if (title !== null) {
@@ -282,7 +210,7 @@ function applyLabelFields(delta: Record<string, unknown>, acc: AnnotationAccumul
 }
 
 /** Build the $comment string from versionInfo, isDefinedBy, and seeAlso arrays. */
-function buildCommentString(acc: AnnotationAccumulator): string {
+function buildCommentString(acc: AnnotationAccumulatorType): string {
   const commentParts: string[] = [];
 
   for (const versionStr of acc.versionInfo) {
@@ -299,7 +227,7 @@ function buildCommentString(acc: AnnotationAccumulator): string {
 }
 
 /** Apply i18n label and description records to a delta. */
-function applyI18nFields(delta: Record<string, unknown>, acc: AnnotationAccumulator): void {
+function applyI18nFields(delta: Record<string, unknown>, acc: AnnotationAccumulatorType): void {
   const labelI18n = buildI18nRecord(acc.labels);
 
   if (labelI18n !== null) {
@@ -326,9 +254,9 @@ function applyI18nFields(delta: Record<string, unknown>, acc: AnnotationAccumula
 // ---------------------------------------------------------------------------
 
 /**
- * Convert an AnnotationAccumulator into a partial schema delta.
+ * Convert an AnnotationAccumulatorType into a partial schema delta.
  */
-function buildDelta(acc: AnnotationAccumulator): Record<string, unknown> {
+function buildDelta(acc: AnnotationAccumulatorType): Record<string, unknown> {
   const delta: Record<string, unknown> = {};
 
   applyLabelFields(delta, acc);
@@ -348,11 +276,11 @@ function buildDelta(acc: AnnotationAccumulator): Record<string, unknown> {
 // importAnnotations — relation processing helpers
 // ---------------------------------------------------------------------------
 
-/** Get or create an AnnotationAccumulator for a subject IRI. */
+/** Get or create an AnnotationAccumulatorType for a subject IRI. */
 function getOrCreateAccumulator(
-  accumulators: Map<string, AnnotationAccumulator>,
+  accumulators: Map<string, AnnotationAccumulatorType>,
   subjectIri: string
-): AnnotationAccumulator {
+): AnnotationAccumulatorType {
   const existing = accumulators.get(subjectIri);
 
   if (existing !== undefined) {
@@ -367,8 +295,8 @@ function getOrCreateAccumulator(
 
 /** Process a single label relation and append to the accumulator. */
 function processLabelRelation(
-  relation: SchemaGraphRelationInterface,
-  acc: AnnotationAccumulator
+  relation: SchemaGraphRelationType,
+  acc: AnnotationAccumulatorType
 ): void {
   const value = literalString(relation);
 
@@ -379,8 +307,8 @@ function processLabelRelation(
 
 /** Process a single comment relation and append to the accumulator. */
 function processCommentRelation(
-  relation: SchemaGraphRelationInterface,
-  acc: AnnotationAccumulator
+  relation: SchemaGraphRelationType,
+  acc: AnnotationAccumulatorType
 ): void {
   const value = literalString(relation);
 
@@ -391,9 +319,9 @@ function processCommentRelation(
 
 /** Dispatch one relation to the appropriate accumulator update based on predicate sets. */
 function dispatchLiteralRelation(
-  relation: SchemaGraphRelationInterface,
+  relation: SchemaGraphRelationType,
   predicateIri: string,
-  acc: AnnotationAccumulator
+  acc: AnnotationAccumulatorType
 ): void {
   if (LABEL_PREDICATES.has(predicateIri)) {
     processLabelRelation(relation, acc);
@@ -425,9 +353,9 @@ function dispatchLiteralRelation(
 
 /** Dispatch one relation to accumulate IRI-typed annotation values. */
 function dispatchIriRelation(
-  relation: SchemaGraphRelationInterface,
+  relation: SchemaGraphRelationType,
   predicateIri: string,
-  acc: AnnotationAccumulator
+  acc: AnnotationAccumulatorType
 ): void {
   if (IS_DEFINED_BY_PREDICATES.has(predicateIri)) {
     const iri = namedNodeIri(relation) ?? literalString(relation);
@@ -458,8 +386,8 @@ function dispatchIriRelation(
 
 /** Dispatch one graph relation to the matching accumulator update. */
 function dispatchRelation(
-  relation: SchemaGraphRelationInterface,
-  accumulators: Map<string, AnnotationAccumulator>
+  relation: SchemaGraphRelationType,
+  accumulators: Map<string, AnnotationAccumulatorType>
 ): void {
   const predicateIri = relation.predicate;
 
@@ -477,8 +405,8 @@ function dispatchRelation(
 
 /** Process all graph relations and populate the accumulator map. */
 function collectAnnotations(
-  ctx: OwlImportContext,
-  accumulators: Map<string, AnnotationAccumulator>
+  ctx: OwlImportContextType,
+  accumulators: Map<string, AnnotationAccumulatorType>
 ): void {
   for (const relation of ctx.graph.allRelations()) {
     dispatchRelation(relation, accumulators);
@@ -486,7 +414,7 @@ function collectAnnotations(
 }
 
 /** Build the schemaDeltas map from populated accumulators. */
-function buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulator>): Map<string, Record<string, unknown>> {
+function buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulatorType>): Map<string, Record<string, unknown>> {
   const schemaDeltas = new Map<string, Record<string, unknown>>();
 
   for (const [
@@ -525,15 +453,15 @@ function buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulator>): Ma
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with schemaDeltas patched for title/description/deprecated.
+ * @returns OwlImportFragmentType with schemaDeltas patched for title/description/deprecated.
  *
  * @category OWL Import
  * @since 0.18.0
- * @see {@link OwlImportFragment}
+ * @see {@link OwlImportFragmentType}
  * @group OWL Import
  */
-export function importAnnotations(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
-  const accumulators = new Map<string, AnnotationAccumulator>();
+export function importAnnotations(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+  const accumulators = new Map<string, AnnotationAccumulatorType>();
 
   collectAnnotations(ctx, accumulators);
 

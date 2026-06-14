@@ -23,9 +23,9 @@ import {
 import { importPropertyRestrictions } from '../../src/modules/ontology/importDispatch/PropertyRestrictions.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 import type {
-  OwlImportContext,
-  OwlImportFragment
-} from '../../src/interfaces/OwlImport.js';
+  OwlImportContextType,
+  OwlImportFragmentType
+} from '../../src/types/OwlImport.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
@@ -42,9 +42,9 @@ const PROP_IRI = `${CLASS_IRI}#items`;
 const RANGE_IRI = 'urn:example:Item';
 
 /**
- * Build a minimal OwlImportContext from a SchemaGraph backed by the given quads.
+ * Build a minimal OwlImportContextType from a SchemaGraph backed by the given quads.
  */
-function makeCtx(quads: QuadInterface[]): OwlImportContext {
+function makeCtx(quads: QuadInterface[]): OwlImportContextType {
   const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:example' });
   const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{
@@ -87,7 +87,7 @@ function makeCtx(quads: QuadInterface[]): OwlImportContext {
  * Build quads + context for a schema that carries jt:restrictions via Compose.
  */
 function quadsForSchema(schema: Record<string, unknown>): {
-  'ctx': OwlImportContext;
+  'ctx': OwlImportContextType;
   'quads': QuadInterface[];
 } {
   const graph = new SchemaGraph(schema);
@@ -102,7 +102,7 @@ function quadsForSchema(schema: Record<string, unknown>): {
 /**
  * Run importPropertyRestrictions against a schema and return the fragment.
  */
-function importFromSchema(schema: Record<string, unknown>): OwlImportFragment {
+function importFromSchema(schema: Record<string, unknown>): OwlImportFragmentType {
   const {
     ctx,
     quads
@@ -115,7 +115,7 @@ function importFromSchema(schema: Record<string, unknown>): OwlImportFragment {
  * Get the properties delta for a class IRI from the fragment.
  */
 function getProps(
-  fragment: OwlImportFragment,
+  fragment: OwlImportFragmentType,
   classIri: string
 ): Record<string, unknown> {
   const delta = fragment.schemaDeltas.get(classIri);

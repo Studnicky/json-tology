@@ -14,12 +14,17 @@
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
+import type { TokenParseResultType } from '../../types/TokenParseResultType.js';
+import type { NQuadLineResultType } from '../../types/NQuadLineResultType.js';
+import type { ParsedLiteralType } from '../../types/ParsedLiteral.js';
+import type { ConversionContextType } from '../../types/ConversionContext.js';
 import {
   RDF, XSD
 } from '../../constants/IRI.js';
 import { Lists } from './Lists.js';
 import { Terms } from './Terms.js';
 import { IdentifierIssuer } from './IdentifierIssuer.js';
+import { Curie } from './Curie.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -30,44 +35,6 @@ const NQUAD_MIN_TOKENS = 3;
 
 /** Number of characters consumed by the `^^<` datatype prefix in N-Quads. */
 const NQUAD_DATATYPE_PREFIX_LENGTH = 3;
-
-/** Result of a single N-Quad token parse: the extracted token and the next position. */
-type TokenParseResultType = [token: string, nextPos: number];
-
-/** A parsed N-Quad line result — a single RDF quad, or undefined for empty/comment lines. */
-type NQuadLineResultType = QuadInterface | undefined;
-
-// ---------------------------------------------------------------------------
-// Internal return type for parseLiteralToken
-// ---------------------------------------------------------------------------
-
-interface ParsedLiteralInterface {
-  readonly 'datatype': string;
-  readonly 'language': string;
-  readonly 'value': string;
-}
-
-// ---------------------------------------------------------------------------
-// IRI expansion
-// ---------------------------------------------------------------------------
-
-function expandIri(value: string, context: Record<string, string>): string {
-  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:')) {
-    return value;
-  }
-  if (value.startsWith('_:')) {
-    return value;
-  }
-  const colonIndex = value.indexOf(':');
-
-  if (colonIndex === -1) {
-    return value;
-  }
-  const prefix = value.slice(0, colonIndex);
-  const local = value.slice(colonIndex + 1);
-
-  return prefix in context ? `${context[prefix]}${local}` : value;
-}
 
 /**
  * Return true when a plain JSON string value should be treated as a literal
@@ -103,14 +70,7 @@ function isLiteralString(value: string, context: Record<string, string>): boolea
 // passing 4–5 arguments through every recursive call.
 // ---------------------------------------------------------------------------
 
-interface ConversionContextInterface {
-  readonly 'allQuads': QuadInterface[];
-  readonly 'bnodeMap': Map<Record<string, unknown>, string>;
-  readonly 'context': Record<string, string>;
-  readonly 'counter': IdentifierIssuer;
-}
-
-function makeConversionContext(context: Record<string, string>): ConversionContextInterface {
+function makeConversionContext(context: Record<string, string>): ConversionContextType {
   return {
     'allQuads': [],
     'bnodeMap': new Map(),
@@ -126,7 +86,7 @@ function makeConversionContext(context: Record<string, string>): ConversionConte
 function convertIdObject(
   obj: Record<string, unknown>,
   iriValue: string,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): QuadObjectType {
   if (iriValue.startsWith('_:')) {
     return Terms.blank(iriValue.slice(2));
@@ -139,12 +99,12 @@ function convertIdObject(
     return Terms.blank(bnodeId.slice(2));
   }
 
-  return Terms.iri(expandIri(iriValue, ctx.context));
+  return Terms.iri(Curie.expandWithContext(iriValue, ctx.context));
 }
 
 function convertRdfList(
   rawList: unknown[],
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): QuadObjectType {
   const items: QuadObjectType[] = [];
 
@@ -169,7 +129,7 @@ function convertRdfList(
 
 function convertInlinedBnode(
   obj: Record<string, unknown>,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): string {
   const existingId = ctx.bnodeMap.get(obj);
   const bnodeId = existingId ?? ctx.counter.getId();
@@ -182,18 +142,18 @@ function convertInlinedBnode(
   return bnodeId;
 }
 
-function convertStringValue(value: string, ctx: ConversionContextInterface): QuadObjectType {
+function convertStringValue(value: string, ctx: ConversionContextType): QuadObjectType {
   if (isLiteralString(value, ctx.context)) {
     return Terms.literal(value);
   }
 
-  return Terms.iri(expandIri(value, ctx.context));
+  return Terms.iri(Curie.expandWithContext(value, ctx.context));
 }
 
 function convertObjectValue(
   obj: Record<string, unknown>,
   originalValue: unknown,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): null | QuadObjectType {
   if ('@list' in obj && Array.isArray(obj['@list'])) {
     return convertRdfList(obj['@list'] as unknown[], ctx);
@@ -216,7 +176,7 @@ function convertObjectValue(
 
 function jsonLdValueToTerm(
   value: unknown,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): null | QuadObjectType {
   if (typeof value === 'string') {
     return convertStringValue(value, ctx);
@@ -240,7 +200,7 @@ function jsonLdValueToTerm(
 function emitTypeQuads(
   subjectTerm: ReturnType<typeof Terms.blank> | ReturnType<typeof Terms.iri>,
   types: unknown[],
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): void {
   for (const typeValue of types) {
     if (typeof typeValue !== 'string') {
@@ -249,7 +209,7 @@ function emitTypeQuads(
     ctx.allQuads.push(Terms.quad(
       subjectTerm,
       Terms.iri(RDF.type),
-      Terms.iri(expandIri(typeValue, ctx.context)),
+      Terms.iri(Curie.expandWithContext(typeValue, ctx.context)),
       Terms.defaultGraph()
     ));
   }
@@ -258,7 +218,7 @@ function emitTypeQuads(
 function emitNodeQuads(
   subjectId: string,
   node: Record<string, unknown>,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): void {
   const subjectTerm = subjectId.startsWith('_:')
     ? Terms.blank(subjectId.slice(2))
@@ -278,7 +238,7 @@ function emitNodeQuads(
       continue;
     }
 
-    const predicateIri = expandIri(key, ctx.context);
+    const predicateIri = Curie.expandWithContext(key, ctx.context);
     const predicateTerm = Terms.iri(predicateIri);
     const values = Array.isArray(rawValue) ? rawValue : [rawValue];
 
@@ -338,7 +298,7 @@ export function jsonLdNodesToQuads(
     if (typeof subjectRaw !== 'string') {
       continue;
     }
-    const subjectId = expandIri(subjectRaw, ctx.context);
+    const subjectId = Curie.expandWithContext(subjectRaw, ctx.context);
 
     emitNodeQuads(subjectId, node, ctx);
   }
@@ -564,7 +524,7 @@ function tokenizeNQuadLine(line: string): string[] {
   return tokens;
 }
 
-function parseLiteralToken(token: string): ParsedLiteralInterface {
+function parseLiteralToken(token: string): ParsedLiteralType {
   const closingQuote = token.lastIndexOf('"');
 
   if (closingQuote <= 0) {

@@ -13,7 +13,7 @@ import {
 } from 'node:test';
 
 import type {
-  MaximumBrandInterface, MinimumBrandInterface
+  MaximumBrandType, MinimumBrandType
 } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
@@ -103,7 +103,7 @@ const _MinOnlySchema = {
 } as const;
 
 void _MinOnlySchema;
-assert<AssertEqualType<InferType<typeof _MinOnlySchema>, MinimumBrandInterface<1> & number>>();
+assert<AssertEqualType<InferType<typeof _MinOnlySchema>, MinimumBrandType<1> & number>>();
 
 const _MaxOnlySchema = {
   'maximum': 5,
@@ -111,7 +111,7 @@ const _MaxOnlySchema = {
 } as const;
 
 void _MaxOnlySchema;
-assert<AssertEqualType<InferType<typeof _MaxOnlySchema>, MaximumBrandInterface<5> & number>>();
+assert<AssertEqualType<InferType<typeof _MaxOnlySchema>, MaximumBrandType<5> & number>>();
 
 void describe('IntegerRange auto-application (Finding 21)', () => {
   void it('compiles - all assertions are static', () => {

@@ -24,80 +24,27 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../../interfaces/OwlImport.js';
-import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
+  OwlImportContextType, OwlImportFragmentType
+} from '../../../types/OwlImport.js';
+import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
 import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
-import type { InvariantInterface } from '../../../interfaces/Invariant.js';
+import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-
-// ---------------------------------------------------------------------------
-// OWL / RDF IRI constants (full and prefixed forms)
-// ---------------------------------------------------------------------------
-
-const OWL_NS = 'http://www.w3.org/2002/07/owl#';
-const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-
-const NAMED_INDIVIDUAL_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}NamedIndividual`,
-  'owl:NamedIndividual'
-]);
-
-const SAME_AS_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}sameAs`,
-  'owl:sameAs'
-]);
-
-const DIFFERENT_FROM_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}differentFrom`,
-  'owl:differentFrom'
-]);
-
-const ALL_DIFFERENT_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}AllDifferent`,
-  'owl:AllDifferent'
-]);
-
-const DISTINCT_MEMBERS_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}distinctMembers`,
-  'owl:distinctMembers'
-]);
-
-const NEGATIVE_PROPERTY_ASSERTION_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}NegativePropertyAssertion`,
-  'owl:NegativePropertyAssertion'
-]);
-
-const SOURCE_INDIVIDUAL_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}sourceIndividual`,
-  'owl:sourceIndividual'
-]);
-
-const ASSERTION_PROPERTY_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}assertionProperty`,
-  'owl:assertionProperty'
-]);
-
-const TARGET_INDIVIDUAL_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}targetIndividual`,
-  'owl:targetIndividual'
-]);
-
-const TARGET_VALUE_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}targetValue`,
-  'owl:targetValue'
-]);
-
-const HAS_KEY_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}hasKey`,
-  'owl:hasKey'
-]);
-
-const TYPE_PREDICATES: ReadonlySet<string> = new Set([
-  `${RDF_NS}type`,
-  'rdf:type'
-]);
+import {
+  ALL_DIFFERENT_IRIS,
+  ASSERTION_PROPERTY_IRIS,
+  DIFFERENT_FROM_IRIS,
+  DISTINCT_MEMBERS_IRIS,
+  HAS_KEY_IRIS,
+  NAMED_INDIVIDUAL_IRIS,
+  NEGATIVE_PROPERTY_ASSERTION_IRIS,
+  RDF_TYPE_PREDICATES,
+  SAME_AS_IRIS,
+  SOURCE_INDIVIDUAL_IRIS,
+  TARGET_INDIVIDUAL_IRIS,
+  TARGET_VALUE_IRIS
+} from '../../../constants/ONTOLOGY_PREDICATES.js';
 
 // ---------------------------------------------------------------------------
 // Helpers — read from graph relations
@@ -106,7 +53,7 @@ const TYPE_PREDICATES: ReadonlySet<string> = new Set([
 /**
  * Returns true when the relation's predicate matches any IRI in the set.
  */
-function predicateIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<string>): boolean {
+function predicateIn(relation: SchemaGraphRelationType, set: ReadonlySet<string>): boolean {
   return set.has(relation.predicate);
 }
 
@@ -114,7 +61,7 @@ function predicateIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<st
  * Returns true when the relation's target is a NamedNode IRI in the set.
  * Accepts both string and node-shape targets.
  */
-function targetIriIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<string>): boolean {
+function targetIriIn(relation: SchemaGraphRelationType, set: ReadonlySet<string>): boolean {
   if (relation.termType !== 'NamedNode') {
     return false;
   }
@@ -127,7 +74,7 @@ function targetIriIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<st
 /**
  * Extract the IRI string of a NamedNode relation target, or null.
  */
-function namedNodeTarget(relation: SchemaGraphRelationInterface): null | string {
+function namedNodeTarget(relation: SchemaGraphRelationType): null | string {
   if (relation.termType !== 'NamedNode') {
     return null;
   }
@@ -141,7 +88,7 @@ function namedNodeTarget(relation: SchemaGraphRelationInterface): null | string 
  * decodes via the canonical `decodeLiteral` helper, returning a number /
  * boolean / Date / string per the XSD datatype.
  */
-function literalTarget(relation: SchemaGraphRelationInterface): unknown {
+function literalTarget(relation: SchemaGraphRelationType): unknown {
   if (relation.termType === 'Literal') {
     const rawValue = typeof relation.target === 'string' ? relation.target : relation.target.id;
     const literalTerm = Terms.literal(rawValue, {
@@ -158,7 +105,7 @@ function literalTarget(relation: SchemaGraphRelationInterface): unknown {
 /**
  * Resolve the IRI/bnode-id form of a relation target regardless of shape.
  */
-function targetValue(relation: SchemaGraphRelationInterface): string {
+function targetValue(relation: SchemaGraphRelationType): string {
   return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
@@ -175,7 +122,7 @@ function targetValue(relation: SchemaGraphRelationInterface): string {
 function differentFromInvariant(
   iriA: string,
   iriB: string
-): InvariantInterface {
+): InvariantType {
   return {
     'fn': () => {
       // Runtime check — at materialise time the registry sameAs store would
@@ -198,7 +145,7 @@ function negativePropertyAssertionInvariant(
   sourceIri: string,
   propertyIri: string,
   assertionValue: unknown
-): InvariantInterface {
+): InvariantType {
   return {
     'fn': () => {
       // Encodes the negative assertion as a named invariant.
@@ -217,7 +164,7 @@ function negativePropertyAssertionInvariant(
  * Build a registry-level invariant for composite key uniqueness on class C
  * over the given property IRIs.
  */
-function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantInterface {
+function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantType {
   const key = propertyIris.join(',');
 
   return {
@@ -253,12 +200,12 @@ function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantInt
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with individuals, sameAs, invariants, and schemaDeltas populated.
+ * @returns OwlImportFragmentType with individuals, sameAs, invariants, and schemaDeltas populated.
  */
-export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
   const sameAs: Array<readonly [string, string]> = [];
   const invariants: Array<{
-    'invariant': InvariantInterface;
+    'invariant': InvariantType;
     'schemaId': string;
   }> = [];
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
@@ -270,7 +217,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
   const namedIndividualIris = new Set<string>();
 
   for (const relation of allRelations) {
-    if (predicateIn(relation, TYPE_PREDICATES) && targetIriIn(relation, NAMED_INDIVIDUAL_IRIS)) {
+    if (predicateIn(relation, RDF_TYPE_PREDICATES) && targetIriIn(relation, NAMED_INDIVIDUAL_IRIS)) {
       const subject = relation.source.id;
 
       if (!subject.startsWith('_:')) {
@@ -293,7 +240,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
     const properties: Record<string, unknown> = {};
 
     for (const relation of subjectRelations) {
-      if (predicateIn(relation, TYPE_PREDICATES)) {
+      if (predicateIn(relation, RDF_TYPE_PREDICATES)) {
         const objectIri = namedNodeTarget(relation);
 
         if (objectIri === null || NAMED_INDIVIDUAL_IRIS.has(objectIri)) {
@@ -389,7 +336,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
   // ---- owl:AllDifferent + owl:distinctMembers (RDF list) ------------------
 
   for (const relation of allRelations) {
-    if (!predicateIn(relation, TYPE_PREDICATES) || !targetIriIn(relation, ALL_DIFFERENT_IRIS)) {
+    if (!predicateIn(relation, RDF_TYPE_PREDICATES) || !targetIriIn(relation, ALL_DIFFERENT_IRIS)) {
       continue;
     }
 
@@ -432,7 +379,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
   // ---- owl:NegativePropertyAssertion (blank-node sibling predicates) ------
 
   for (const relation of allRelations) {
-    if (!predicateIn(relation, TYPE_PREDICATES) || !targetIriIn(relation, NEGATIVE_PROPERTY_ASSERTION_IRIS)) {
+    if (!predicateIn(relation, RDF_TYPE_PREDICATES) || !targetIriIn(relation, NEGATIVE_PROPERTY_ASSERTION_IRIS)) {
       continue;
     }
 

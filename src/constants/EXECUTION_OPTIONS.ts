@@ -109,3 +109,29 @@ export const CONVERT_OPTIONS = Object.freeze({
  * @defaultValue `{ collectErrors: true }`
  */
 export const COLLECT_ERRORS_OPTIONS = Object.freeze({ 'collectErrors': true });
+
+/**
+ * EMPTY_EVALUATED_ITEMS — shared empty Set sentinel for evaluated array item indices.
+ *
+ * @remarks
+ * Module-level singleton used in `GraphEngine` as a zero-allocation default for
+ * boundary results. Never mutated — callers must not modify this set.
+ *
+ * @category Constants
+ * @since 0.21.0
+ * @group ExecutionOptions
+ */
+export const EMPTY_EVALUATED_ITEMS: Set<number> = new Set<number>();
+
+/**
+ * EMPTY_EVALUATED_PROPERTIES — shared empty Set sentinel for evaluated property names.
+ *
+ * @remarks
+ * Module-level singleton used in `GraphEngine` as a zero-allocation default for
+ * boundary results. Never mutated — callers must not modify this set.
+ *
+ * @category Constants
+ * @since 0.21.0
+ * @group ExecutionOptions
+ */
+export const EMPTY_EVALUATED_PROPERTIES: Set<string> = new Set<string>();

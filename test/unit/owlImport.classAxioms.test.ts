@@ -19,7 +19,7 @@ import {
   describe, it
 } from 'node:test';
 import { importClassAxioms } from '../../src/modules/ontology/importDispatch/ClassAxioms.js';
-import type { OwlImportContext } from '../../src/interfaces/OwlImport.js';
+import type { OwlImportContextType } from '../../src/types/OwlImport.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
@@ -67,10 +67,10 @@ function namedQuad(subjectIri: string, predicateIri: string, objectIri: string):
 }
 
 /**
- * Build a minimal OwlImportContext backed by the given quads.
+ * Build a minimal OwlImportContextType backed by the given quads.
  * Derives allClassIris by scanning rdf:type owl:Class quads.
  */
-function makeCtx(quads: QuadInterface[]): OwlImportContext {
+function makeCtx(quads: QuadInterface[]): OwlImportContextType {
   const allClassIris = new Set<string>();
 
   for (const quad of quads) {

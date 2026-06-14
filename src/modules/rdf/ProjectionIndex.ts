@@ -6,9 +6,9 @@
  * Subject IRI classification helpers live in `src/modules/graph/SchemaIri.ts`.
  */
 
-import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraph.js';
+import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
 import type { RelationStructure } from '../../types/SchemaGraph.js';
-import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+import type { RelationIndexType } from '../../types/RelationIndex.js';
 
 import { RDF } from '../../constants/IRI.js';
 
@@ -17,8 +17,8 @@ import { RDF } from '../../constants/IRI.js';
 // ---------------------------------------------------------------------------
 
 export const ProjectionIndex = {
-  build(allRelations: SchemaGraphRelationInterface[]): Map<string, RelationIndexInterface> {
-    const index = new Map<string, RelationIndexInterface>();
+  build(allRelations: SchemaGraphRelationType[]): Map<string, RelationIndexType> {
+    const index = new Map<string, RelationIndexType>();
 
     for (const relation of allRelations) {
       const sourceId = relation.source.id;
@@ -67,7 +67,7 @@ export const ProjectionIndex = {
     return structure?.kind === 'restriction';
   },
 
-  relationTargetId(relation: SchemaGraphRelationInterface): string {
+  relationTargetId(relation: SchemaGraphRelationType): string {
     return typeof relation.target === 'string' ? relation.target : relation.target.id;
   }
 } as const;

@@ -1,29 +1,22 @@
 import type {
-  SchemaGraphNodeInterface,
-  SchemaGraphSemanticsInterface
-} from '../../interfaces/SchemaGraph.js';
+  SchemaGraphNodeType,
+  SchemaGraphSemanticsType
+} from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
-import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
-import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
+import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
+import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContext.js';
 import { MAX_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
+import type { DefaultResolutionStateType } from '../../types/DefaultResolutionState.js';
 
-/** Shared context threaded through recursive default-resolution calls. */
-interface DefaultResolutionStateInterface {
-  readonly 'context': DefaultResolutionContextInterface;
-  readonly 'dynamicScope': DynamicScopeEntryInterface[];
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'visited': Set<string>;
-}
-
-function propertiesFromSemantics(sem: SchemaGraphSemanticsInterface): ReadonlyMap<string, SchemaGraphNodeInterface> {
+function propertiesFromSemantics(sem: SchemaGraphSemanticsType): ReadonlyMap<string, SchemaGraphNodeType> {
   return sem.properties;
 }
 
 /** Build an implicit default from a node's property tree, if any properties yield values. */
 function buildImplicitObjectDefault(
-  state: DefaultResolutionStateInterface,
-  node: SchemaGraphNodeInterface,
+  state: DefaultResolutionStateType,
+  node: SchemaGraphNodeType,
   depth: number
 ): Record<string, unknown> | undefined {
   const sem = state.graph.semantics(node);
@@ -46,8 +39,8 @@ function buildImplicitObjectDefault(
 }
 
 function createImplicitDefaultValueInternal(
-  state: DefaultResolutionStateInterface,
-  node: SchemaGraphNodeInterface,
+  state: DefaultResolutionStateType,
+  node: SchemaGraphNodeType,
   depth: number
 ): unknown {
   if (depth > MAX_DEFAULT_DEPTH) {
@@ -127,8 +120,8 @@ function synthesizePrimitiveZeroValue(types: readonly string[]): unknown {
 
 /** Merge allOf member zero-values into a single object, or return null when no object members. */
 function synthesizeAllOfZeroValue(
-  state: DefaultResolutionStateInterface,
-  allOf: readonly SchemaGraphNodeInterface[],
+  state: DefaultResolutionStateType,
+  allOf: readonly SchemaGraphNodeType[],
   depth: number
 ): null | Record<string, unknown> {
   const merged: Record<string, unknown> = {};
@@ -153,8 +146,8 @@ function synthesizeAllOfZeroValue(
 }
 
 function synthesizeZeroValueInternal(
-  state: DefaultResolutionStateInterface,
-  node: SchemaGraphNodeInterface,
+  state: DefaultResolutionStateType,
+  node: SchemaGraphNodeType,
   depth: number
 ): unknown {
   if (depth > MAX_DEFAULT_DEPTH) {
@@ -222,6 +215,29 @@ function synthesizeZeroValueInternal(
     return synthesizeAllOfZeroValue(state, sem.allOf, depth);
   }
 
+  // anyOf/oneOf: synthesize from the first member that yields a non-null value.
+  // The same logic as allOf synthesis but we stop at the first viable member
+  // because union members are alternatives, not additive constraints.
+  if (sem.anyOf.length > 0) {
+    for (const memberNode of sem.anyOf) {
+      const memberValue = synthesizeZeroValueInternal(state, memberNode, depth + 1);
+
+      if (memberValue !== null && memberValue !== undefined) {
+        return memberValue;
+      }
+    }
+  }
+
+  if (sem.oneOf.length > 0) {
+    for (const memberNode of sem.oneOf) {
+      const memberValue = synthesizeZeroValueInternal(state, memberNode, depth + 1);
+
+      if (memberValue !== null && memberValue !== undefined) {
+        return memberValue;
+      }
+    }
+  }
+
   return null;
 }
 
@@ -248,10 +264,10 @@ function synthesizeZeroValueInternal(
  */
 export const GraphEngineDefaults = {
   createImplicitDefaultValue(
-    context: DefaultResolutionContextInterface,
-    node: SchemaGraphNodeInterface,
+    context: DefaultResolutionContextType,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryType[]
   ): unknown {
     return createImplicitDefaultValueInternal({
       context,
@@ -262,10 +278,10 @@ export const GraphEngineDefaults = {
   },
 
   createImplicitDefaultValueSeeded(
-    context: DefaultResolutionContextInterface,
-    node: SchemaGraphNodeInterface,
+    context: DefaultResolutionContextType,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     visited: Set<string>
   ): unknown {
     return createImplicitDefaultValueInternal({
@@ -277,10 +293,10 @@ export const GraphEngineDefaults = {
   },
 
   synthesizeZeroValue(
-    context: DefaultResolutionContextInterface,
-    node: SchemaGraphNodeInterface,
+    context: DefaultResolutionContextType,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryType[]
   ): unknown {
     return synthesizeZeroValueInternal({
       context,

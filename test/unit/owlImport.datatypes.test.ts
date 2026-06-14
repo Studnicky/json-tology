@@ -36,7 +36,7 @@ import { listQuad } from '../helpers/listQuad.js';
 import type { JsonSchemaDocumentObjectType } from '../../src/types/Schema.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import type { QuadObjectType } from '../../src/types/Quad.js';
-import type { OwlImportContext } from '../../src/interfaces/OwlImport.js';
+import type { OwlImportContextType } from '../../src/types/OwlImport.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
 // ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ const XSD_ENUMERATION = 'http://www.w3.org/2001/XMLSchema#enumeration';
 
 const curie = new Curie(STANDARD_PREFIXES);
 
-function makeCtx(quads: QuadInterface[] = []): OwlImportContext & {
+function makeCtx(quads: QuadInterface[] = []): OwlImportContextType & {
   'unsupportedLog': Array<{ 'axiomIri': string;
     'subjectIri': null | string }>
 } {

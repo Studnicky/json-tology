@@ -11,7 +11,7 @@
 import type { ValidatePropertyCharacteristicsType } from '../../../src/types/TypeErrors.js';
 
 // Bad 1 — symmetric + asymmetric are mutually exclusive.
-// @ts-expect-error — PropertyCharacteristicConflictInterface<'relates', ['symmetric', 'asymmetric']>
+// @ts-expect-error — PropertyCharacteristicConflictType<'relates', ['symmetric', 'asymmetric']>
 const _bad1: ValidatePropertyCharacteristicsType<{
   readonly '$id': 'urn:test:Bad1';
   readonly 'properties': {
@@ -31,7 +31,7 @@ const _bad1: ValidatePropertyCharacteristicsType<{
 } as const;
 
 // Bad 2 — reflexive + irreflexive are mutually exclusive.
-// @ts-expect-error — PropertyCharacteristicConflictInterface<'rel', ['reflexive', 'irreflexive']>
+// @ts-expect-error — PropertyCharacteristicConflictType<'rel', ['reflexive', 'irreflexive']>
 const _bad2: ValidatePropertyCharacteristicsType<{
   readonly '$id': 'urn:test:Bad2';
   readonly 'properties': {
@@ -51,7 +51,7 @@ const _bad2: ValidatePropertyCharacteristicsType<{
 } as const;
 
 // Bad 3 — asymmetric implies irreflexive; explicit reflexive contradicts it.
-// @ts-expect-error — PropertyCharacteristicConflictInterface<'edge', ['asymmetric', 'reflexive']>
+// @ts-expect-error — PropertyCharacteristicConflictType<'edge', ['asymmetric', 'reflexive']>
 const _bad3: ValidatePropertyCharacteristicsType<{
   readonly '$id': 'urn:test:Bad3';
   readonly 'properties': {

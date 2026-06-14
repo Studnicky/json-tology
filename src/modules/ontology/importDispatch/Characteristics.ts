@@ -21,9 +21,13 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../../interfaces/OwlImport.js';
-import { RDF } from '../../../constants/IRI.js';
+  OwlImportContextType,
+  OwlImportFragmentType
+} from '../../../types/OwlImport.js';
+import type { RecordCharacteristicOptionsType } from '../../../types/RecordCharacteristicOptionsType.js';
+import {
+  OWL, RDF
+} from '../../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
 // OWL 2 IRI prefix for characteristic class URIs.
@@ -31,9 +35,6 @@ import { RDF } from '../../../constants/IRI.js';
 // compacts named-node targets via the active prefix map, but raw inputs
 // may still carry the full IRI form when no matching prefix exists.
 // ---------------------------------------------------------------------------
-
-/** OWL 2 vocabulary IRI prefix. */
-const OWL_VOCAB_PREFIX = 'http://www.w3.org/2002/07/owl#';
 
 const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
   [
@@ -65,31 +66,31 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
     'Transitive'
   ],
   [
-    `${OWL_VOCAB_PREFIX}AsymmetricProperty`,
+    OWL.AsymmetricProperty,
     'Asymmetric'
   ],
   [
-    `${OWL_VOCAB_PREFIX}FunctionalProperty`,
+    OWL.FunctionalProperty,
     'Functional'
   ],
   [
-    `${OWL_VOCAB_PREFIX}InverseFunctionalProperty`,
+    OWL.InverseFunctionalProperty,
     'InverseFunctional'
   ],
   [
-    `${OWL_VOCAB_PREFIX}IrreflexiveProperty`,
+    OWL.IrreflexiveProperty,
     'Irreflexive'
   ],
   [
-    `${OWL_VOCAB_PREFIX}ReflexiveProperty`,
+    OWL.ReflexiveProperty,
     'Reflexive'
   ],
   [
-    `${OWL_VOCAB_PREFIX}SymmetricProperty`,
+    OWL.SymmetricProperty,
     'Symmetric'
   ],
   [
-    `${OWL_VOCAB_PREFIX}TransitiveProperty`,
+    OWL.TransitiveProperty,
     'Transitive'
   ]
 ]);
@@ -98,7 +99,7 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
 // Empty fragment factory
 // ---------------------------------------------------------------------------
 
-function emptyFragment(): OwlImportFragment {
+function emptyFragment(): OwlImportFragmentType {
   return {
     'characteristics': [],
     'individuals': [],
@@ -106,20 +107,6 @@ function emptyFragment(): OwlImportFragment {
     'sameAs': [],
     'schemaDeltas': new Map()
   };
-}
-
-// ---------------------------------------------------------------------------
-// Options interfaces
-// ---------------------------------------------------------------------------
-
-/** Options for recording one characteristic tuple into the fragment. */
-interface RecordCharacteristicOptions {
-  readonly 'characteristicName': string;
-  readonly 'characteristicTarget': string;
-  readonly 'ctx': OwlImportContext;
-  readonly 'fragment': OwlImportFragment;
-  readonly 'propertyIri': string;
-  readonly 'seen': Set<string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -131,7 +118,7 @@ interface RecordCharacteristicOptions {
  * Skips when the source IRI is not a known property subject (even after
  * curie compaction), reporting it as unsupported.
  */
-function recordCharacteristic(options: RecordCharacteristicOptions): void {
+function recordCharacteristic(options: RecordCharacteristicOptionsType): void {
   const {
     characteristicName,
     characteristicTarget,
@@ -184,7 +171,7 @@ function recordCharacteristic(options: RecordCharacteristicOptions): void {
  *
  * @param _quads - All quads from the input graph (unused; graph is traversed via ctx).
  * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with characteristics populated.
+ * @returns OwlImportFragmentType with characteristics populated.
  *
  * @remarks
  * Implements OWL 2 §9.2.1–9.2.8. The seven characteristic class IRIs are
@@ -201,10 +188,10 @@ function recordCharacteristic(options: RecordCharacteristicOptions): void {
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContext
+ * @see OwlImportContextType
  * @group importDispatch
  */
-export function importCharacteristics(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importCharacteristics(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
   const fragment = emptyFragment();
   const seen = new Set<string>();
 

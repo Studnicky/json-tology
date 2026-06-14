@@ -1,32 +1,31 @@
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import type { VisitFnType } from '../../../types/VisitFn.js';
 import type { EffectiveOptionsType } from '../../../types/EffectiveOptions.js';
-import type { SchemaGraphNodeInterface } from '../../../interfaces/SchemaGraph.js';
+import type { SchemaGraphNodeType } from '../../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
-import type { CompositionAccumulatorInterface } from '../../../interfaces/CompositionAccumulator.js';
-import type { DynamicScopeEntryInterface } from '../../../interfaces/DynamicScopeEntry.js';
-import type { InternalExecutionResultInterface } from '../../../interfaces/InternalExecutionResult.js';
-import type { VisitContextInterface } from '../../../interfaces/VisitContext.js';
+import type { CompositionAccumulatorType } from '../../../types/CompositionAccumulator.js';
+import type { DynamicScopeEntryType } from '../../../types/DynamicScopeEntry.js';
+import type { InternalExecutionResultType } from '../../../types/InternalExecutionResult.js';
+import type { VisitContextType } from '../../../types/VisitContext.js';
 import { GraphEngineSupport } from '../GraphEngineSupport.js';
+import type { VariantEntryType } from '../../../types/VariantEntry.js';
 
-interface VariantEntry { 'node': SchemaGraphNodeInterface;
-  'sem': ReturnType<SchemaGraphInterface['semantics']> }
-const oneOfVariantCache = new WeakMap<SchemaGraphNodeInterface[], VariantEntry[]>();
+const oneOfVariantCache = new WeakMap<SchemaGraphNodeType[], VariantEntryType[]>();
 
 export class VisitComposition {
   static allOf(
-    context: VisitContextInterface,
-    allOf: SchemaGraphNodeInterface[],
+    context: VisitContextType,
+    allOf: SchemaGraphNodeType[],
     graph: SchemaGraphInterface,
-    acc: CompositionAccumulatorInterface,
+    acc: CompositionAccumulatorType,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
     pushErrors: (errors: ValidationErrorType[]) => void
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     // Pre-pass: collect explicit property defaults from all branches before any
     // branch's required check runs. A required field in branch N whose default
     // lives in branch N+1 would otherwise fail — the pre-pass pre-populates the
@@ -73,25 +72,25 @@ export class VisitComposition {
   }
 
   static anyOf(
-    context: VisitContextInterface,
-    anyOf: SchemaGraphNodeInterface[],
+    context: VisitContextType,
+    anyOf: SchemaGraphNodeType[],
     graph: SchemaGraphInterface,
-    acc: CompositionAccumulatorInterface,
+    acc: CompositionAccumulatorType,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
-    invalid: (error: ValidationErrorType) => InternalExecutionResultInterface
-  ): InternalExecutionResultInterface | undefined {
+    invalid: (error: ValidationErrorType) => InternalExecutionResultType
+  ): InternalExecutionResultType | undefined {
     const collectErrorsOptions: EffectiveOptionsType = options.collectErrors
       ? options
       : {
         ...options,
         'collectErrors': true
       };
-    let successfulResults: InternalExecutionResultInterface[] | undefined;
+    let successfulResults: InternalExecutionResultType[] | undefined;
 
     for (const childNode of anyOf) {
       const candidate = visitNode(
@@ -133,20 +132,20 @@ export class VisitComposition {
   }
 
   static ifThenElse(
-    context: VisitContextInterface,
-    ifNode: SchemaGraphNodeInterface,
-    thenNode: SchemaGraphNodeInterface | undefined,
-    elseNode: SchemaGraphNodeInterface | undefined,
+    context: VisitContextType,
+    ifNode: SchemaGraphNodeType,
+    thenNode: SchemaGraphNodeType | undefined,
+    elseNode: SchemaGraphNodeType | undefined,
     graph: SchemaGraphInterface,
-    acc: CompositionAccumulatorInterface,
+    acc: CompositionAccumulatorType,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
     pushErrors: (errors: ValidationErrorType[]) => void
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     const collectErrorsOptions: EffectiveOptionsType = options.collectErrors
       ? options
       : {
@@ -201,18 +200,18 @@ export class VisitComposition {
   }
 
   static not(
-    context: VisitContextInterface,
-    complementNode: SchemaGraphNodeInterface,
+    context: VisitContextType,
+    complementNode: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
     workingValue: unknown,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
-    invalid: (error: ValidationErrorType) => InternalExecutionResultInterface
-  ): InternalExecutionResultInterface | undefined {
+    invalid: (error: ValidationErrorType) => InternalExecutionResultType
+  ): InternalExecutionResultType | undefined {
     const collectErrorsOptions: EffectiveOptionsType = options.collectErrors
       ? options
       : {
@@ -239,22 +238,22 @@ export class VisitComposition {
   }
 
   static oneOf(
-    context: VisitContextInterface,
-    oneOf: SchemaGraphNodeInterface[],
+    context: VisitContextType,
+    oneOf: SchemaGraphNodeType[],
     graph: SchemaGraphInterface,
-    acc: CompositionAccumulatorInterface,
+    acc: CompositionAccumulatorType,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynScope: DynamicScopeEntryInterface[],
+    dynScope: DynamicScopeEntryType[],
     depth: number,
     visitNode: VisitFnType,
-    invalid: (error: ValidationErrorType) => InternalExecutionResultInterface,
+    invalid: (error: ValidationErrorType) => InternalExecutionResultType,
     discriminatorPropertyName: string | undefined,
     discriminatorMapping: Record<string, string> | undefined
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     let matches = 0;
-    let matchedResult: InternalExecutionResultInterface | undefined;
+    let matchedResult: InternalExecutionResultType | undefined;
 
     const collectErrorsOptions: EffectiveOptionsType = options.collectErrors
       ? options

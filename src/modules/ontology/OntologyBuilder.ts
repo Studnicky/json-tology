@@ -6,16 +6,15 @@
  * an internal rdf/js quad store. Every output derives from that store.
  */
 
-import type {
-  JsonLdDocInput,
-  OntologyBuilderInterface,
-  OntologyBuilderOptionsInterface
-} from '../../interfaces/Ontology.js';
+import type { OntologyBuilderInterface } from '../../interfaces/Ontology.js';
+import type { JsonLdDocInput } from '../../types/JsonLdDocInput.js';
+import type { OntologyBuilderOptionsType } from '../../types/OntologyBuilderOptionsType.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { JsonLdDatasetQuad } from '../rdf/QuadFactory.js';
+import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
 import jsonld from 'jsonld';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { RDFS } from '../../constants/IRI.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { SHACL_ARRAY_KEYS } from '../../constants/SHACL.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
 import { JsonLdFormatter } from '../rdf/JsonLdFormatter.js';
@@ -38,7 +37,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Create an OntologyBuilder with base IRI and prefix map.
    * Graph data enters through `addFromQuads` / `addFromJsonLd` and their SHACL variants.
    */
-  public constructor(config: Readonly<OntologyBuilderOptionsInterface>) {
+  public constructor(config: Readonly<OntologyBuilderOptionsType>) {
     this.baseIRI = config.baseIRI;
     this.prefixes = config.prefixes;
   }
@@ -48,7 +47,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * them to the canonical ontology store.
    */
   public async addFromJsonLd(doc: JsonLdDocInput): Promise<this> {
-    const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuad[];
+    const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
     const quads = dataset.map((datasetQuad) => {
       return QuadFactory.fromDatasetQuad(datasetQuad);
     });
@@ -72,7 +71,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * them to the SHACL store.
    */
   public async addShaclFromJsonLd(doc: JsonLdDocInput): Promise<this> {
-    const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuad[];
+    const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
     const quads = dataset.map((datasetQuad) => {
       return QuadFactory.fromDatasetQuad(datasetQuad);
     });
@@ -145,7 +144,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
   public shaclObject(): Record<string, unknown> {
     const shaclPrefixes = {
       ...this.prefixes,
-      'sh': 'http://www.w3.org/ns/shacl#'
+      'sh': STANDARD_PREFIXES.sh
     };
     const nodes = JsonLdFormatter.fromQuads(this.shaclStore);
 

@@ -3,7 +3,7 @@
  *
  * Every trigger key and every entry in the dependent key arrays in
  * `dependentRequired` must appear in `properties`. Violations surface a
- * `DependentRequiredKeyNotInPropertiesInterface` brand error.
+ * `DependentRequiredKeyNotInPropertiesType` brand error.
  *
  * This example demonstrates the valid case — a payment schema where
  * `billing_address` is required when `credit_card` is present, and both
