@@ -12,7 +12,7 @@
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+import type { RelationIndexType } from '../../types/RelationIndex.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
@@ -126,7 +126,7 @@ export abstract class VocabProjection {
   ): QuadObjectType;
 
   processConditionals(
-    entry: RelationIndexInterface,
+    entry: RelationIndexType,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
@@ -166,7 +166,7 @@ export abstract class VocabProjection {
 
   processDependentRequired(
     subject: string,
-    entry: RelationIndexInterface,
+    entry: RelationIndexType,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface,
@@ -198,7 +198,7 @@ export abstract class VocabProjection {
 
   processDependentSchemas(
     subject: string,
-    entry: RelationIndexInterface,
+    entry: RelationIndexType,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface

@@ -48,7 +48,6 @@ const _SingleConstSchema = {
     'radius': { 'type': 'number' },
     'width': { 'type': 'number' }
   },
-  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema keyword
   'then': { 'required': ['radius'] },
   'type': 'object'
 } as const;
@@ -100,7 +99,6 @@ const _MultiConstSchema = {
     'kind': { 'type': 'string' },
     'radius': { 'type': 'number' }
   },
-  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema keyword
   'then': { 'required': ['radius'] },
   'type': 'object'
 } as const;
@@ -154,7 +152,6 @@ const _EnumDiscriminatorSchema = {
     'permissions': { 'type': 'string' },
     'role': { 'type': 'string' }
   },
-  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema keyword
   'then': { 'required': ['permissions'] },
   'type': 'object'
 } as const;
@@ -201,7 +198,6 @@ const _TypeOnlyDiscriminatorSchema = {
     'count': {},
     'label': { 'type': 'string' }
   },
-  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema keyword
   'then': { 'required': ['label'] },
   'type': 'object'
 } as const;

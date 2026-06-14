@@ -38,6 +38,49 @@ type surface has been consolidated into a canonical taxonomy.
   and JSON pointers. Consumers that relied on the silent `unknown` fallback will
   see the brand instead; thread references (global augmentation, a registry
   instance, or embedded `$defs`) to resolve, or handle the brand.
+- **BREAKING (type-level) — format brand type names.** The named format-brand
+  types use the `*BrandType` suffix (`EmailBrandType`, `UuidBrandType`,
+  `DateTimeBrandType`, `Ipv4BrandType`, …), aligning with the convention that a
+  `type` is the data substrate and `*Interface` is reserved for behavioral
+  contracts.
+- Error codes thrown as raw strings route through their `*ErrorCode` constants;
+  `SCHEMA_DUPLICATE_ID`, `SCHEMA_DUPLICATE_SHAPE`, `INVALID_LANGUAGE_TAG`,
+  `INVALID_PREDICATE_IRI`, `INVALID_IRI_VALUE`, `NON_FINITE_NUMBER`, and
+  `MISSING_GRAPH_IRI` have named constants.
+
+### Removed
+
+- **BREAKING — unused `./types` exports.** `ArrayResultType`,
+  `ObjectResultType`, `ScalarResultType`, and `ValidateCallOptionsType` are
+  removed (no consumers).
+- Dead error codes `GRAPH_INVALID_RESTRICTION` and the `GraphError`
+  `NOT_IMPLEMENTED`; unused schema constants `SetOpSchema`, `DelOpSchema`, and
+  `DiffOpSchema`; and the unconsumed `RefsInterface`,
+  `VisitCompositionInterface`, and `UnevaluatedInterface`.
+
+### Fixed
+
+- **Hash-namespace `$id` projection.** A class whose `$id` carries a fragment
+  (e.g. `http://www.w3.org/2004/02/skos/core#Concept`) resolves its property
+  schemas, so OWL and SHACL output carries that class's predicate bindings,
+  annotations, and ranges.
+- **Engine ref-stack isolation.** A recursion-limit error during validation
+  leaves no stale entries in the engine's reused ref-stack, so later validations
+  on the same engine evaluate `$ref`s rather than treating them as cycles.
+- **Union effective properties.** Properties declared only inside `anyOf` /
+  `oneOf` members are visible to materialization and ABox projection.
+- **SHACL array ranges.** An array property whose items `$ref` a class (or carry
+  a primitive type) emits its `sh:node` / `sh:class` / `sh:datatype` on the
+  property shape itself, with no phantom `#items` shape.
+- **Conditional decoders.** Transform decoders attached inside `if` / `then` /
+  `else` and `not` branches are applied.
+- **Compiled/interpreted parity.** The compiled validation path applies defaults
+  and coercion for `anyOf` / `oneOf` members and emits constraint messages
+  identical to the interpreted path.
+- ABox projection raises `GraphError('REF_UNRESOLVED')` on an unresolvable
+  `$ref`, invalid JSON pointers surface instead of being swallowed, and external
+  RDF literals without a datatype default to `xsd:string`.
+- Zero-value synthesis returns a value for `anyOf` / `oneOf` schemas.
 
 ### Internal
 
@@ -46,6 +89,12 @@ type surface has been consolidated into a canonical taxonomy.
   `QuadFactory.indexBySubject`, `Frozen.deepFreeze`); centralized predicate-IRI
   constants into `src/constants`; extracted all inline interfaces and type
   aliases into `src/interfaces` and `src/types`.
+- Replaced hardcoded namespace IRIs with `OWL` / `RDF` / `RDFS` /
+  `STANDARD_PREFIXES` constants; removed pass-through wrapper helpers;
+  de-duplicated `findAnnotatedEdgeStructure` into `ProjectionHelpers`; dropped
+  the `unicorn/no-thenable` lint rule (a false positive against the JSON Schema
+  `then` keyword); synced `CLAUDE.md`, `docs/architecture.md`, and
+  `docs/errors/classes.md` to the current code.
 
 ## [0.21.0] - 2026-06-13
 

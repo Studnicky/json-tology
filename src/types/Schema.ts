@@ -2,8 +2,8 @@ import type { InferSchemaType } from './Infer.js';
 import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
 import type {
   ApplyRestrictionsType,
-  ComplementOfBrandInterface,
-  DisjointWithBrandInterface,
+  ComplementOfBrandType,
+  DisjointWithBrandType,
   ExtractRestrictionsType
 } from './RestrictionInfer.js';
 
@@ -19,16 +19,16 @@ import type {
 type ApplyDisjointBrandType<TSchema, TInferred>
   = TSchema extends { readonly 'disjointWith': infer TDisjoint }
     ? TDisjoint extends string
-      ? DisjointWithBrandInterface<TDisjoint> & TInferred
+      ? DisjointWithBrandType<TDisjoint> & TInferred
       : TDisjoint extends ReadonlyArray<infer TElem extends string>
-        ? DisjointWithBrandInterface<TElem> & TInferred
+        ? DisjointWithBrandType<TElem> & TInferred
         : TInferred
     : TInferred;
 
 type ApplyComplementBrandType<TSchema, TInferred>
   = TSchema extends { readonly 'not': { readonly '$ref': infer TRef } }
     ? TRef extends string
-      ? ComplementOfBrandInterface<TRef> & TInferred
+      ? ComplementOfBrandType<TRef> & TInferred
       : TInferred
     : TInferred;
 
@@ -193,7 +193,7 @@ export type JsonSchemaTypeNameType
  * @see {@link JsonSchemaDocumentType}
  * @group Schema Utilities
  */
-export interface JsonSchemaDocumentObjectType {
+export type JsonSchemaDocumentObjectType = {
   readonly '$anchor'?: string;
   readonly '$comment'?: string;
   readonly '$defs'?: Readonly<Record<string, JsonSchemaDocumentType>>;
@@ -309,7 +309,7 @@ export interface JsonSchemaDocumentObjectType {
   readonly 'unevaluatedProperties'?: JsonSchemaDocumentType;
   readonly 'uniqueItems'?: boolean;
   readonly 'writeOnly'?: boolean;
-}
+};
 
 /**
  * A JSON Schema document — either the structural object or one of the boolean shortcuts.

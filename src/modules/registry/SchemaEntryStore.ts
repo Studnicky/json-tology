@@ -6,10 +6,9 @@
  * entry CRUD through it.
  */
 
-import type {
-  DuplicateReportEntryType, SchemaEntryStoreInterface
-} from '../../interfaces/SchemaEntryStore.js';
-import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
+import type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryType.js';
+import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStore.js';
+import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntry.js';
 
 import { isRecord } from '../data/DataTypes.js';
 import { StructuralHash } from '../data/StructuralHash.js';
@@ -34,20 +33,20 @@ const PLAIN_SUFFIX = ':p';
  * collide in the duplicate-detection cache with a plain `{ type: 'string' }`
  * schema that happens to share the same JSON body.
  */
-function nominalAwareHash(entry: SchemaRegistryEntryInterface): string {
+function nominalAwareHash(entry: SchemaRegistryEntryType): string {
   const base = StructuralHash.of(entry.schema);
 
   return entry.hasTransform ? base + TRANSFORM_SUFFIX : base + PLAIN_SUFFIX;
 }
 
 export class SchemaEntryStore implements SchemaEntryStoreInterface {
-  private readonly byId = new Map<string, SchemaRegistryEntryInterface>();
+  private readonly byId = new Map<string, SchemaRegistryEntryType>();
   private readonly hashes = new Map<string, string>();
   private rev = 0;
   /** Cached top-level hash → schemaId map for findDuplicates(). Invalidated on mutation. */
   private topLevelHashCache: Map<string, string> | undefined = undefined;
 
-  public add(schemaId: string, entry: SchemaRegistryEntryInterface): void {
+  public add(schemaId: string, entry: SchemaRegistryEntryType): void {
     this.byId.set(schemaId, entry);
     this.hashes.set(entry.hash, schemaId);
     this.topLevelHashCache = undefined;
@@ -80,7 +79,7 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
     return true;
   }
 
-  public entries(): IterableIterator<[string, SchemaRegistryEntryInterface]> {
+  public entries(): IterableIterator<[string, SchemaRegistryEntryType]> {
     return this.byId.entries();
   }
 
@@ -143,7 +142,7 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
     return results;
   }
 
-  public get(schemaId: string): SchemaRegistryEntryInterface | undefined {
+  public get(schemaId: string): SchemaRegistryEntryType | undefined {
     return this.byId.get(schemaId);
   }
 
@@ -171,7 +170,7 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
     return this.byId.size;
   }
 
-  public values(): IterableIterator<SchemaRegistryEntryInterface> {
+  public values(): IterableIterator<SchemaRegistryEntryType> {
     return this.byId.values();
   }
 

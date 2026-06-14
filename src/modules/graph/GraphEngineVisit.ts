@@ -1,5 +1,5 @@
 import type { ValidationErrorType } from '../../types/Validation.js';
-import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
+import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
   isRecord
@@ -7,9 +7,9 @@ import {
 import { Predicates } from '../validation/Predicates.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
 import type { EffectiveOptionsType } from '../../types/EffectiveOptions.js';
-import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
-import type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
-import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
+import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
+import type { InternalExecutionResultType } from '../../types/InternalExecutionResult.js';
+import type { VisitContextType } from '../../types/VisitContext.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { Refs } from './visit/Refs.js';
 import { VisitComposition } from './visit/VisitComposition.js';
@@ -20,16 +20,16 @@ const EMPTY_SET_NUMBER: Set<number> = Object.freeze(new Set<number>());
 
 export const GraphEngineVisit = {
   visit(
-    context: VisitContextInterface,
-    node: SchemaGraphNodeInterface,
+    context: VisitContextType,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
     value: unknown,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     depth = 0
-  ): InternalExecutionResultInterface {
+  ): InternalExecutionResultType {
     if (depth > options.maxSchemaDepth) {
       throw new GraphError('RECURSION_LIMIT', `Maximum schema recursion depth (${options.maxSchemaDepth}) exceeded at path: ${path}`, { 'pointer': path });
     }
@@ -179,7 +179,7 @@ export const GraphEngineVisit = {
       }
     };
 
-    const invalid = (error: ValidationErrorType): InternalExecutionResultInterface => {
+    const invalid = (error: ValidationErrorType): InternalExecutionResultType => {
       if (options.collectErrors) {
         errors.push(error);
       }

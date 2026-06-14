@@ -17,7 +17,7 @@ import {
   SH, XSD
 } from './IRI.js';
 import { STANDARD_PREFIXES } from './STANDARD_PREFIXES.js';
-import type { FacetEntryInterface } from '../interfaces/FacetEntry.js';
+import type { FacetEntryType } from '../types/FacetEntry.js';
 
 const XSD_NS = STANDARD_PREFIXES.xsd;
 
@@ -25,7 +25,7 @@ const XSD_NS = STANDARD_PREFIXES.xsd;
 // Canonical facet table — one row per logical facet
 // ---------------------------------------------------------------------------
 
-const FACET_ENTRIES: readonly FacetEntryInterface[] = [
+const FACET_ENTRIES: readonly FacetEntryType[] = [
   // --- numeric bounds ---
   {
     'facetFull': `${XSD_NS}maxExclusive`,
@@ -161,10 +161,10 @@ const FACET_ENTRIES: readonly FacetEntryInterface[] = [
  * @defaultValue Derived from `FACET_ENTRIES` where `shaclPredicate !== null`
  */
 export const SHACL_TO_XSD_FACET: ReadonlyMap<string, string> = new Map(FACET_ENTRIES
-  .filter((entry: FacetEntryInterface): boolean => {
+  .filter((entry: FacetEntryType): boolean => {
     return entry.shaclPredicate !== null;
   })
-  .map((entry: FacetEntryInterface): [string, string] => {
+  .map((entry: FacetEntryType): [string, string] => {
     return [
       entry.shaclPredicate as string,
       entry.facetPrefixed
@@ -191,7 +191,7 @@ export const SHACL_TO_XSD_FACET: ReadonlyMap<string, string> = new Map(FACET_ENT
  * @group XsdFacets
  * @defaultValue Derived from all `FACET_ENTRIES`
  */
-export const XSD_FACET_DATATYPE: ReadonlyMap<string, string> = new Map(FACET_ENTRIES.map((entry: FacetEntryInterface): [string, string] => {
+export const XSD_FACET_DATATYPE: ReadonlyMap<string, string> = new Map(FACET_ENTRIES.map((entry: FacetEntryType): [string, string] => {
   return [
     entry.facetPrefixed,
     entry.facetValueDatatype
@@ -219,7 +219,7 @@ export const XSD_FACET_DATATYPE: ReadonlyMap<string, string> = new Map(FACET_ENT
  * @group XsdFacets
  * @defaultValue Derived from all `FACET_ENTRIES` (prefixed + full IRI forms)
  */
-export const FACET_MAP: ReadonlyMap<string, FacetDescriptorType> = new Map(FACET_ENTRIES.flatMap((entry: FacetEntryInterface): Array<[string, FacetDescriptorType]> => {
+export const FACET_MAP: ReadonlyMap<string, FacetDescriptorType> = new Map(FACET_ENTRIES.flatMap((entry: FacetEntryType): Array<[string, FacetDescriptorType]> => {
   return [
     [
       entry.facetPrefixed,

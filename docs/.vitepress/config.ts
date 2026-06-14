@@ -216,6 +216,23 @@ const sidebar = [
       { link: '/migration-0.4.3', text: 'Migration to 0.4.3' },
       { link: '/migration-0.6.0', text: 'Migration to 0.6.0' }
     ]
+  },
+  {
+    text: 'Architecture',
+    items: [
+      { link: '/architecture', text: 'Architecture overview' }
+    ]
+  },
+  {
+    text: 'Design Decisions',
+    items: [
+      { link: '/design/0001-typed-ref', text: '0001 — Typed $ref paths' },
+      { link: '/design/0002-total-compile-time-enforcement', text: '0002 — Compile-time enforcement' },
+      { link: '/design/0003-async-schema-typing', text: '0003 — Async schema federation types' },
+      { link: '/design/0004-downstream-friction-points', text: '0004 — Downstream friction points' },
+      { link: '/design/0005-downstream-friction-response', text: '0005 — Friction response plan' },
+      { link: '/design/0006-precise-method-surface', text: '0006 — Precise method surface' }
+    ]
   }
 ];
 
@@ -526,17 +543,18 @@ export default defineConfig({
     writeFileSync(resolve(siteConfig.outDir, 'feed.xml'), feed);
   },
   appearance: themeConfig.appearance,
-  // Internal planning documents — excluded from the published site.
-  // These files contain <LIST>, <your test files> and similar template
-  // placeholders that the Vue compiler in VitePress treats as unclosed HTML
-  // tags, causing build failures. Plans are development artifacts; they are
-  // not user documentation and must not appear on the published site.
-  srcExclude: ['plans/**/*.md'],
+  // Development artifacts — excluded from the published site.
+  // proposals/ contains future-work plans and session analysis files.
+  // design/ contains dated decision records that ARE in the sidebar.
+  // These proposal files may contain template placeholders that the Vue
+  // compiler treats as unclosed HTML tags, causing build failures.
+  srcExclude: ['proposals/**/*.md'],
   srcDir: '.',
   themeConfig: {
     ...themeConfig,
     nav: [
       { link: '/getting-started', text: 'Docs' },
+      { link: '/architecture', text: 'Architecture' },
       { link: SITE_REPO, text: 'GitHub' }
     ],
     sidebar,

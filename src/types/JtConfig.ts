@@ -1,7 +1,7 @@
 export type JtExtraType = 'allow' | 'forbid' | 'ignore';
 
-export interface JtConfigType {
+export type JtConfigType = {
   'extra'?: JtExtraType;
   'frozen'?: boolean;
   'strict'?: boolean;
-}
+};

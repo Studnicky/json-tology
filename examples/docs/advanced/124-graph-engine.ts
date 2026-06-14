@@ -12,7 +12,7 @@
  *   - `rootSchemaId()` — returns the `$id` of the root schema (or undefined)
  */
 
-import type { KeywordContextInterface } from '../../../src/interfaces/GraphEngine.js';
+import type { KeywordContextType } from '../../../src/types/GraphEngine.js';
 import { GraphEngine } from '../../../src/index.js';
 
 // ── Schema under test ────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ const customEngine = new GraphEngine(BookSchema, {
   'keywords': [{
     'keyword': 'x-example-tag',
     'type': 'string',
-    'validate': (_schema: unknown, _data: unknown, _ctx: KeywordContextInterface): boolean => {
+    'validate': (_schema: unknown, _data: unknown, _ctx: KeywordContextType): boolean => {
       return true;
     }
   }]

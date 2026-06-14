@@ -65,11 +65,11 @@ export type RestrictionKindType
  * @see {@link RestrictionRefType}
  * @group Schema Utilities
  */
-export interface RestrictionDescriptorType {
+export type RestrictionDescriptorType = {
   readonly 'kind': RestrictionKindType;
   readonly 'onProperty': string;
   readonly 'value': boolean | number | string;
-}
+};
 
 /**
  * Phantom-tagged wrapper that marks a schema as carrying an OWL 2 restriction.

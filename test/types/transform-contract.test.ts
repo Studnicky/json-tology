@@ -5,9 +5,9 @@ import type {
   ParseOutputType, ValidateChainType
 } from '../../src/types/Transform.js';
 import type {
-  ChainMismatchInterface, ChainSchemaMismatchInterface
+  ChainMismatchType, ChainSchemaMismatchType
 } from '../../src/types/TypeErrors.js';
-import type { TransformStageInterface } from '../../src/interfaces/TransformStage.js';
+import type { TransformStageType } from '../../src/types/TransformStage.js';
 
 // Bidirectional type-equality assertion: surfaces a compile error unless the
 // two types are mutually assignable.
@@ -89,7 +89,7 @@ const PipeBase = {
   'type': 'string'
 } as const;
 
-const trimStage: TransformStageInterface<string, string> = {
+const trimStage: TransformStageType<string, string> = {
   'decode': (raw: string) => {
     return raw.trim();
   },
@@ -98,7 +98,7 @@ const trimStage: TransformStageInterface<string, string> = {
   }
 };
 
-const upperStage: TransformStageInterface<string, string> = {
+const upperStage: TransformStageType<string, string> = {
   'decode': (value: string) => {
     return value.toUpperCase();
   },
@@ -107,7 +107,7 @@ const upperStage: TransformStageInterface<string, string> = {
   }
 };
 
-const stringToNumberStage: TransformStageInterface<string, number> = {
+const stringToNumberStage: TransformStageType<string, number> = {
   'decode': (value: string) => {
     return value.length;
   },
@@ -116,7 +116,7 @@ const stringToNumberStage: TransformStageInterface<string, number> = {
   }
 };
 
-const numberToDateStage: TransformStageInterface<number, Date> = {
+const numberToDateStage: TransformStageType<number, Date> = {
   'decode': (value: number) => {
     return new Date(value);
   },
@@ -125,7 +125,7 @@ const numberToDateStage: TransformStageInterface<number, Date> = {
   }
 };
 
-const numberToStringStage: TransformStageInterface<number, string> = {
+const numberToStringStage: TransformStageType<number, string> = {
   'decode': String,
   'encode': Number
 };
@@ -159,20 +159,20 @@ const _singleStageChainOutput: SingleStageChainOutput = 'value';
 // would, even if the chain broke for an unrelated reason).
 
 // Interior mismatch: stage 0 produces number, stage 1 expects string →
-// ChainMismatchInterface<0, number, string> at the broken position.
+// ChainMismatchType<0, number, string> at the broken position.
 type InteriorMismatch = ValidateChainType<readonly [typeof stringToNumberStage, typeof upperStage], string>;
-assert<AssertEqualType<InteriorMismatch[1], ChainMismatchInterface<0, number, string>>>();
+assert<AssertEqualType<InteriorMismatch[1], ChainMismatchType<0, number, string>>>();
 
 // Tail mismatch: chain terminates in number, canonical type is string →
-// ChainSchemaMismatchInterface<string, number>.
+// ChainSchemaMismatchType<string, number>.
 type TailNumberMismatch = ValidateChainType<readonly [typeof stringToNumberStage], string>;
-assert<AssertEqualType<TailNumberMismatch[0], ChainSchemaMismatchInterface<string, number>>>();
+assert<AssertEqualType<TailNumberMismatch[0], ChainSchemaMismatchType<string, number>>>();
 
 // Tail mismatch: a pairwise-valid chain terminates in Date, canonical type is
-// string → ChainSchemaMismatchInterface<string, Date>. This isolates the
+// string → ChainSchemaMismatchType<string, Date>. This isolates the
 // tail-anchor rule (the chain is internally consistent).
 type TailDateMismatch = ValidateChainType<readonly [typeof stringToNumberStage, typeof numberToDateStage], string>;
-assert<AssertEqualType<TailDateMismatch[1], ChainSchemaMismatchInterface<string, Date>>>();
+assert<AssertEqualType<TailDateMismatch[1], ChainSchemaMismatchType<string, Date>>>();
 
 void [
   okChain,

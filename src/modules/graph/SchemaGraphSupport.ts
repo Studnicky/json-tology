@@ -1,10 +1,12 @@
 import type {
-  SchemaGraphNodeInterface,
-  SchemaGraphSemanticsInterface, StructureWarningInterface
-} from '../../interfaces/SchemaGraph.js';
+  SchemaGraphNodeType,
+  SchemaGraphSemanticsType, StructureWarningType
+} from '../../types/SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { RDFS } from '../../constants/IRI.js';
 import { ALLOF_EXTENSION_RE } from '../../constants/GRAPH_REGEXES.js';
+import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
 import {
   DEFS_POINTER_PARTS_LENGTH, KNOWN_SCHEMA_KEYWORDS,
   MIN_PROPERTY_POINTER_PARTS,
@@ -36,7 +38,7 @@ import type {
   PropertyMap,
   ScalarFieldsType,
   SchemaExtensionsType,
-  SemanticsBuildContextInterface,
+  SemanticsBuildContextType,
   SemanticsGraphPartType
 } from '../../types/SchemaGraphSupport.js';
 
@@ -67,7 +69,7 @@ function normalizeLanguageTag(rawLang: unknown): NormalizedLanguageTagType {
 
   if (!BCP47_TAG_RE.test(rawLang)) {
     throw new GraphError(
-      'INVALID_LANGUAGE_TAG',
+      GraphErrorCode.INVALID_LANGUAGE_TAG,
       `${BCP47_INVALID_TAG_PREFIX}${JSON.stringify(rawLang)}`
     );
   }
@@ -172,95 +174,6 @@ function propertiesMap(entries: PropertyEntry[]): PropertyMap {
   return entries.length === 0 ? EMPTY_MAP : new Map(entries);
 }
 
-const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
-  'additionalItemsNode': undefined,
-  'additionalPropertiesNode': undefined,
-  'aliases': [],
-  'allOf': [],
-  'annotatedEdge': undefined,
-  'anyOf': [],
-  'asymmetric': false,
-  'comment': undefined,
-  'complementNode': undefined,
-  'computed': false,
-  'constValue': undefined,
-  'containsNode': undefined,
-  'contentEncoding': undefined,
-  'contentMediaType': undefined,
-  'defaultValue': undefined,
-  'definitions': [],
-  'dependentRequired': {},
-  'dependentSchemaEntries': [],
-  'deprecated': false,
-  'description': undefined,
-  'discriminatorMapping': undefined,
-  'discriminatorPropertyName': undefined,
-  'disjointWith': undefined,
-  'dynamicAnchor': undefined,
-  'dynamicRef': undefined,
-  'elseNode': undefined,
-  'enumValues': undefined,
-  'equivalentTo': undefined,
-  'examples': undefined,
-  'exclusiveMaximum': undefined,
-  'exclusiveMinimum': undefined,
-  'extensions': {},
-  'format': undefined,
-  'functional': false,
-  'hasConst': false,
-  'hasDefault': false,
-  'ifNode': undefined,
-  'inverseFunctional': false,
-  'inverseOf': undefined,
-  'iriRef': false,
-  'irreflexive': false,
-  'itemsNode': undefined,
-  'jtConfig': undefined,
-  'jtFrozen': false,
-  'jtStrict': undefined,
-  'language': undefined,
-  'maxContains': undefined,
-  'maximum': undefined,
-  'maxItems': undefined,
-  'maxLength': undefined,
-  'maxProperties': undefined,
-  'minContains': undefined,
-  'minimum': undefined,
-  'minItems': undefined,
-  'minLength': undefined,
-  'minProperties': undefined,
-  'multipleOf': undefined,
-  'oneOf': [],
-  'pattern': undefined,
-  'patternPropertyEntries': [],
-  'prefixItems': [],
-  'properties': EMPTY_MAP,
-  'propertyNamesNode': undefined,
-  'rdfsDomain': undefined,
-  'rdfsRange': undefined,
-  'readOnly': false,
-  'recursiveAnchor': false,
-  'recursiveRef': undefined,
-  'ref': undefined,
-  'reflexive': false,
-  'refTargetNode': undefined,
-  'required': [],
-  'restrictions': [],
-  'schemaAnchor': undefined,
-  'schemaDialect': undefined,
-  'schemaId': undefined,
-  'schemaTypes': [],
-  'schemaVocabulary': undefined,
-  'symmetric': false,
-  'thenNode': undefined,
-  'title': undefined,
-  'transitive': false,
-  'unevaluatedItemsNode': undefined,
-  'unevaluatedPropertiesNode': undefined,
-  'uniqueItems': false,
-  'writeOnly': false
-});
-
 function normalizeSchemaTypes(schema: Record<string, unknown>): string[] {
   const rawType = schema.type;
 
@@ -326,8 +239,8 @@ function collectSchemaExtensions(schema: Record<string, unknown>): SchemaExtensi
 }
 
 function resolveAdditionalSchemaNode(
-  node: SchemaGraphNodeInterface,
-  child: (node: SchemaGraphNodeInterface, key: string) => SchemaGraphNodeInterface | undefined,
+  node: SchemaGraphNodeType,
+  child: (node: SchemaGraphNodeType, key: string) => SchemaGraphNodeType | undefined,
   key: 'additionalItems' | 'additionalProperties'
 ): AdditionalSchemaNodeType {
   if (!isRecord(node.schema) || !(key in node.schema)) {
@@ -385,13 +298,13 @@ function isInAllOfExtensionBlock(pointer: string): boolean {
 /** Resolve additional schema nodes (additionalItems and additionalProperties). */
 function resolveAdditionalNodes(
   graph: GraphAccessorInterface,
-  node: SchemaGraphNodeInterface
+  node: SchemaGraphNodeType
 ): AdditionalNodesResultType {
   return {
-    'additionalItemsNode': resolveAdditionalSchemaNode(node, (parent: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined => {
+    'additionalItemsNode': resolveAdditionalSchemaNode(node, (parent: SchemaGraphNodeType, key: string): SchemaGraphNodeType | undefined => {
       return graph.child(parent, key);
     }, 'additionalItems'),
-    'additionalPropertiesNode': resolveAdditionalSchemaNode(node, (parent: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined => {
+    'additionalPropertiesNode': resolveAdditionalSchemaNode(node, (parent: SchemaGraphNodeType, key: string): SchemaGraphNodeType | undefined => {
       return graph.child(parent, key);
     }, 'additionalProperties')
   };
@@ -498,7 +411,7 @@ function extractBooleanFlags(
 // ---------------------------------------------------------------------------
 
 /** Collect graph-traversal children and computed non-flag, non-scalar fields. */
-function buildSemanticsGraphPart(ctx: SemanticsBuildContextInterface): SemanticsGraphPartType {
+function buildSemanticsGraphPart(ctx: SemanticsBuildContextType): SemanticsGraphPartType {
   const {
     graph,
     node,
@@ -535,8 +448,8 @@ function buildSemanticsGraphPart(ctx: SemanticsBuildContextInterface): Semantics
   };
 }
 
-/** Build the full SchemaGraphSemanticsInterface from a validated schema record. */
-function buildSemantics(ctx: SemanticsBuildContextInterface): SchemaGraphSemanticsInterface {
+/** Build the full SchemaGraphSemanticsType from a validated schema record. */
+function buildSemantics(ctx: SemanticsBuildContextType): SchemaGraphSemanticsType {
   const {
     graph,
     node,
@@ -544,7 +457,7 @@ function buildSemantics(ctx: SemanticsBuildContextInterface): SchemaGraphSemanti
   } = ctx;
   const jtConfig = extractJtConfig(schema);
 
-  const semantics: SchemaGraphSemanticsInterface = {
+  const semantics: SchemaGraphSemanticsType = {
     ...resolveAdditionalNodes(graph, node),
     'aliases': normalizeAliases(schema),
     'annotatedEdge': extractAnnotatedEdgeDescriptor(schema),
@@ -574,7 +487,7 @@ function buildSemantics(ctx: SemanticsBuildContextInterface): SchemaGraphSemanti
 function checkInlineObject(
   schema: Record<string, unknown>,
   pointer: string,
-  warnings: StructureWarningInterface[]
+  warnings: StructureWarningType[]
 ): void {
   const rawType = schema.type;
   const hasObjectType = rawType === 'object'
@@ -593,7 +506,7 @@ function checkInlineObject(
 function checkInlinePrimitive(
   schema: Record<string, unknown>,
   pointer: string,
-  warnings: StructureWarningInterface[]
+  warnings: StructureWarningType[]
 ): void {
   const rawType = schema.type;
   const isPrimitive = typeof rawType === 'string' && PRIMITIVE_TYPES.has(rawType);
@@ -617,7 +530,7 @@ function checkInlinePrimitive(
 function checkInlineArrayItems(
   schema: Record<string, unknown>,
   pointer: string,
-  warnings: StructureWarningInterface[]
+  warnings: StructureWarningType[]
 ): void {
   if (schema.type !== 'array' || !isRecord(schema.items)) {
     return;
@@ -642,8 +555,8 @@ function checkInlineArrayItems(
 
 /** Validate a single node and append any warnings. */
 function validateNode(
-  node: SchemaGraphNodeInterface,
-  warnings: StructureWarningInterface[]
+  node: SchemaGraphNodeType,
+  warnings: StructureWarningType[]
 ): void {
   if (node.pointer === '' || !isRecord(node.schema)) {
     return;
@@ -670,7 +583,7 @@ function validateNode(
  * @remarks
  * Provides pure functions for normalizing schema keywords, extracting
  * semantics from schema nodes, and validating graph structure. All functions
- * operate on `SchemaGraphNodeInterface` objects and the plain schema records
+ * operate on `SchemaGraphNodeType` objects and the plain schema records
  * they carry.
  *
  * @example
@@ -681,7 +594,7 @@ function validateNode(
  * @defaultValue Exported as a frozen `as const` object.
  * @category Graph
  * @since 0.1.0
- * @see {@link SchemaGraphNodeInterface}
+ * @see {@link SchemaGraphNodeType}
  * @group Graph
  */
 export const SchemaGraphSupport = {
@@ -691,9 +604,9 @@ export const SchemaGraphSupport = {
 
   extractSemantics(
     graph: GraphAccessorInterface,
-    node: SchemaGraphNodeInterface,
-    resolveLocalRef: (ref: string) => SchemaGraphNodeInterface
-  ): SchemaGraphSemanticsInterface {
+    node: SchemaGraphNodeType,
+    resolveLocalRef: (ref: string) => SchemaGraphNodeType
+  ): SchemaGraphSemanticsType {
     if (!isRecord(node.schema)) {
       return EMPTY_SEMANTICS;
     }
@@ -779,8 +692,8 @@ export const SchemaGraphSupport = {
     return current;
   },
 
-  validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeInterface>): StructureWarningInterface[] {
-    const warnings: StructureWarningInterface[] = [];
+  validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeType>): StructureWarningType[] {
+    const warnings: StructureWarningType[] = [];
 
     for (const node of nodeMap.values()) {
       validateNode(node, warnings);

@@ -9,16 +9,16 @@
 
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type {
-  CompiledValidateOptionsInterface, CompiledValidationResultInterface, CompiledValidatorInterface
-} from '../../interfaces/Compiler.js';
+  CompiledValidateOptionsType, CompiledValidationResultType, CompiledValidatorType
+} from '../../types/Compiler.js';
 import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js';
+import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
 import type {
-  SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
-} from '../../interfaces/SchemaGraph.js';
+  SchemaGraphNodeType, SchemaGraphSemanticsType
+} from '../../types/SchemaGraph.js';
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { BaseError } from '../../errors/BaseError.js';
@@ -33,7 +33,7 @@ import {
 } from '../../constants/DIALECT.js';
 import type { LoggerInterface } from '../../interfaces/Logger.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlan.js';
+import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
 import { Arrays } from './exec/Arrays.js';
 import { Composition } from './exec/Composition.js';
 import { Objects } from './exec/Objects.js';
@@ -53,15 +53,15 @@ import {
 // Internal types
 // ---------------------------------------------------------------------------
 
-import type { SchemaCompilerCheckExecutionContextInterface } from '../../interfaces/SchemaCompilerCheckExecutionContext.js';
-import type { SchemaCompilerGraphContextInterface } from '../../interfaces/SchemaCompilerGraphContext.js';
-import type { SchemaCompilerValidatePlanContextInterface } from '../../interfaces/SchemaCompilerValidatePlanContext.js';
-import type { ArrayValidationOptionsType } from '../../interfaces/ArrayValidationOptionsType.js';
-import type { DepSchemaEntryType } from '../../interfaces/DepSchemaEntryType.js';
-import type { ExtensionEntryType } from '../../interfaces/ExtensionEntryType.js';
-import type { NodeCheckBuildContextType } from '../../interfaces/NodeCheckBuildContextType.js';
-import type { ObjectValidationOptionsType } from '../../interfaces/ObjectValidationOptionsType.js';
-import type { ValidationRunOptionsType } from '../../interfaces/ValidationRunOptionsType.js';
+import type { SchemaCompilerCheckExecutionContextType } from '../../types/SchemaCompilerCheckExecutionContext.js';
+import type { SchemaCompilerGraphContextType } from '../../types/SchemaCompilerGraphContext.js';
+import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContext.js';
+import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
+import type { DepSchemaEntryType } from '../../types/DepSchemaEntryType.js';
+import type { ExtensionEntryType } from '../../types/ExtensionEntryType.js';
+import type { NodeCheckBuildContextType } from '../../types/NodeCheckBuildContextType.js';
+import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
+import type { ValidationRunOptionsType } from '../../types/ValidationRunOptionsType.js';
 
 // ---------------------------------------------------------------------------
 // Local constants
@@ -113,16 +113,16 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     return true;
   }
-  private activeCustomKeywords: KeywordDefinitionInterface[] = [];
+  private activeCustomKeywords: KeywordDefinitionType[] = [];
   private activeLookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  private readonly checkExecContext: SchemaCompilerCheckExecutionContextInterface;
-  private readonly compilingNodes = new Set<SchemaGraphNodeInterface>();
-  private readonly graphContext: SchemaCompilerGraphContextInterface;
+  private readonly checkExecContext: SchemaCompilerCheckExecutionContextType;
+  private readonly compilingNodes = new Set<SchemaGraphNodeType>();
+  private readonly graphContext: SchemaCompilerGraphContextType;
   private readonly logger: LoggerInterface;
-  public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorInterface | undefined) | undefined;
+  public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorType | undefined) | undefined;
   private readonly regexCache = new Map<string, RegExp>();
 
-  private readonly validatePlanContext: SchemaCompilerValidatePlanContextInterface;
+  private readonly validatePlanContext: SchemaCompilerValidatePlanContextType;
 
   /**
    * Create a SchemaCompiler with an optional cross-schema lookup for compiled validators.
@@ -131,7 +131,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
    */
   public constructor(options?: {
     'logger'?: LoggerInterface;
-    'lookupCompiled'?: (schemaId: string) => CompiledValidatorInterface | undefined;
+    'lookupCompiled'?: (schemaId: string) => CompiledValidatorType | undefined;
   }) {
     this.lookupCompiled = options?.lookupCompiled;
     this.logger = options?.logger ?? SILENT_LOGGER;
@@ -140,7 +140,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     this.validatePlanContext = this.buildValidatePlanContext();
   }
 
-  private appliesFormatAssertions(sem: SchemaGraphSemanticsInterface): boolean {
+  private appliesFormatAssertions(sem: SchemaGraphSemanticsType): boolean {
     const rootVocabulary = sem.schemaVocabulary;
 
     if (isRecord(rootVocabulary)) {
@@ -160,7 +160,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private applyPlanDefaults(
     initialValue: unknown,
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     runOpts: ValidationRunOptionsType
   ): unknown {
     const {
@@ -181,7 +181,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private applyRootCoercionAndDefaults(
     data: unknown,
-    options: CompiledValidateOptionsInterface | undefined,
+    options: CompiledValidateOptionsType | undefined,
     rootTypes: string[],
     rootHasDefault: boolean,
     rootDefaultValue: unknown
@@ -221,8 +221,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildArrayStructureChecks(
     buildCtx: NodeCheckBuildContextType,
-    graphNode: SchemaGraphNodeInterface,
-    sem: SchemaGraphSemanticsInterface
+    graphNode: SchemaGraphNodeType,
+    sem: SchemaGraphSemanticsType
   ): CheckFnType[] {
     const {
       context, formatRegistry, graph, lookupSchema
@@ -240,7 +240,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildBoolLogicChecks(
     buildCtx: NodeCheckBuildContextType,
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsType
   ): CheckFnType[] {
     const {
       context, formatRegistry, graph, lookupSchema
@@ -248,7 +248,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const checks: CheckFnType[] = [];
 
     if (sem.allOf.length > 0) {
-      const allOfChecks = sem.allOf.map((node: SchemaGraphNodeInterface): CheckFnType => {
+      const allOfChecks = sem.allOf.map((node: SchemaGraphNodeType): CheckFnType => {
         return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
       });
 
@@ -256,7 +256,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     if (sem.anyOf.length > 0) {
-      const anyOfChecks = sem.anyOf.map((node: SchemaGraphNodeInterface): CheckFnType => {
+      const anyOfChecks = sem.anyOf.map((node: SchemaGraphNodeType): CheckFnType => {
         return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
       });
 
@@ -264,7 +264,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     if (sem.oneOf.length > 0) {
-      const oneOfChecks = sem.oneOf.map((node: SchemaGraphNodeInterface): CheckFnType => {
+      const oneOfChecks = sem.oneOf.map((node: SchemaGraphNodeType): CheckFnType => {
         return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
       });
 
@@ -274,8 +274,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return checks;
   }
 
-  private buildCheckExecContext(): SchemaCompilerCheckExecutionContextInterface {
-    const ctx: SchemaCompilerCheckExecutionContextInterface = {
+  private buildCheckExecContext(): SchemaCompilerCheckExecutionContextType {
+    const ctx: SchemaCompilerCheckExecutionContextType = {
       'activeCustomKeywords': this.activeCustomKeywords,
       ...this.buildCheckExecNodePart(),
       ...this.buildCheckExecScalarPart()
@@ -283,7 +283,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     Object.defineProperty(ctx, 'activeCustomKeywords', {
       'enumerable': true,
-      'get': (): KeywordDefinitionInterface[] => {
+      'get': (): KeywordDefinitionType[] => {
         return this.activeCustomKeywords;
       }
     });
@@ -292,13 +292,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private buildCheckExecNodePart(): Pick<
-    SchemaCompilerCheckExecutionContextInterface,
+    SchemaCompilerCheckExecutionContextType,
     'compileNodeArrayCheck' | 'compileNodeCheck' | 'compileNodeObjectCheck'
     | 'compileNodeOrBooleanCheck' | 'tryCompileNodeFlatObjectCheck'
   > {
     return {
       'compileNodeArrayCheck': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         fmtReg: FormatRegistryInterface,
         graph: SchemaGraphInterface,
         lookup?: (id: string) => Record<string, unknown> | undefined
@@ -306,7 +306,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return compileArrayCheck(this.graphContext, node, fmtReg, graph, lookup);
       },
       'compileNodeCheck': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         fmtReg: FormatRegistryInterface,
         graph: SchemaGraphInterface,
         lookup?: (id: string) => Record<string, unknown> | undefined
@@ -314,7 +314,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return this.compileNodeCheck(node, fmtReg, graph, lookup);
       },
       'compileNodeObjectCheck': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         fmtReg: FormatRegistryInterface,
         graph: SchemaGraphInterface,
         lookup?: (id: string) => Record<string, unknown> | undefined
@@ -322,7 +322,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return compileObjectCheck(this.graphContext, node, fmtReg, graph, lookup);
       },
       'compileNodeOrBooleanCheck': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         fmtReg: FormatRegistryInterface,
         graph: SchemaGraphInterface,
         lookup?: (id: string) => Record<string, unknown> | undefined
@@ -330,7 +330,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return this.compileNodeOrBooleanCheck(node, fmtReg, graph, lookup);
       },
       'tryCompileNodeFlatObjectCheck': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         fmtReg: FormatRegistryInterface,
         graph: SchemaGraphInterface,
         lookup?: (id: string) => Record<string, unknown> | undefined
@@ -341,7 +341,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private buildCheckExecScalarPart(): Pick<
-    SchemaCompilerCheckExecutionContextInterface,
+    SchemaCompilerCheckExecutionContextType,
     'compileNumberCheck' | 'compileRefCheck' | 'compileStringCheck' | 'compileTypeCheck'
   > {
     return {
@@ -370,7 +370,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         pat: string | undefined,
         fmt: string | undefined,
         fmtReg: FormatRegistryInterface,
-        sem: SchemaGraphSemanticsInterface
+        sem: SchemaGraphSemanticsType
       ): CheckFnType | undefined => {
         return this.compileStringCheck(minLen, maxLen, pat, fmt, fmtReg, sem);
       },
@@ -409,7 +409,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildCompositionChecks(
     buildCtx: NodeCheckBuildContextType,
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsType
   ): CheckFnType[] {
     return [
       ...this.buildBoolLogicChecks(buildCtx, sem),
@@ -491,11 +491,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  private buildGraphContext(): SchemaCompilerGraphContextInterface {
-    const ctx: SchemaCompilerGraphContextInterface = {
+  private buildGraphContext(): SchemaCompilerGraphContextType {
+    const ctx: SchemaCompilerGraphContextType = {
       'activeCustomKeywords': this.activeCustomKeywords,
       'compileNodeCheck': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         fmt: FormatRegistryInterface,
         graph: SchemaGraphInterface,
         lookup?: (id: string) => Record<string, unknown> | undefined
@@ -503,7 +503,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return this.compileNodeCheck(node, fmt, graph, lookup);
       },
       'compileNodeOrBooleanCheck': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         fmt: FormatRegistryInterface,
         graph: SchemaGraphInterface,
         lookup?: (id: string) => Record<string, unknown> | undefined
@@ -516,7 +516,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     Object.defineProperty(ctx, 'activeCustomKeywords', {
       'enumerable': true,
-      'get': (): KeywordDefinitionInterface[] => {
+      'get': (): KeywordDefinitionType[] => {
         return this.activeCustomKeywords;
       }
     });
@@ -539,8 +539,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private buildNodeCheckExecution(
-    context: SchemaCompilerCheckExecutionContextInterface,
-    graphNode: SchemaGraphNodeInterface,
+    context: SchemaCompilerCheckExecutionContextType,
+    graphNode: SchemaGraphNodeType,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
@@ -588,7 +588,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildNotAndIfChecks(
     buildCtx: NodeCheckBuildContextType,
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsType
   ): CheckFnType[] {
     const {
       context, formatRegistry, graph, lookupSchema
@@ -622,8 +622,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private buildNumberCheckFromSem(
-    context: SchemaCompilerCheckExecutionContextInterface,
-    sem: SchemaGraphSemanticsInterface
+    context: SchemaCompilerCheckExecutionContextType,
+    sem: SchemaGraphSemanticsType
   ): CheckFnType | undefined {
     const hasNumberConstraint = sem.minimum !== undefined || sem.maximum !== undefined
       || sem.exclusiveMinimum !== undefined || sem.exclusiveMaximum !== undefined
@@ -682,8 +682,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildObjectStructureChecks(
     buildCtx: NodeCheckBuildContextType,
-    graphNode: SchemaGraphNodeInterface,
-    sem: SchemaGraphSemanticsInterface
+    graphNode: SchemaGraphNodeType,
+    sem: SchemaGraphSemanticsType
   ): CheckFnType[] {
     const {
       context, formatRegistry, graph, lookupSchema
@@ -754,8 +754,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private buildScalarChecks(
-    context: SchemaCompilerCheckExecutionContextInterface,
-    sem: SchemaGraphSemanticsInterface,
+    context: SchemaCompilerCheckExecutionContextType,
+    sem: SchemaGraphSemanticsType,
     formatRegistry: FormatRegistryInterface
   ): CheckFnType[] {
     return [
@@ -786,8 +786,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private buildStringCheckFromSem(
-    context: SchemaCompilerCheckExecutionContextInterface,
-    sem: SchemaGraphSemanticsInterface,
+    context: SchemaCompilerCheckExecutionContextType,
+    sem: SchemaGraphSemanticsType,
     formatRegistry: FormatRegistryInterface
   ): CheckFnType | undefined {
     const hasStringConstraint = sem.minLength !== undefined || sem.maxLength !== undefined
@@ -840,8 +840,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private buildStringNumberChecks(
-    context: SchemaCompilerCheckExecutionContextInterface,
-    sem: SchemaGraphSemanticsInterface,
+    context: SchemaCompilerCheckExecutionContextType,
+    sem: SchemaGraphSemanticsType,
     formatRegistry: FormatRegistryInterface
   ): CheckFnType[] {
     const checks: CheckFnType[] = [];
@@ -862,8 +862,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildStructureChecks(
     buildCtx: NodeCheckBuildContextType,
-    graphNode: SchemaGraphNodeInterface,
-    sem: SchemaGraphSemanticsInterface
+    graphNode: SchemaGraphNodeType,
+    sem: SchemaGraphSemanticsType
   ): CheckFnType[] {
     const {
       context, formatRegistry, graph, lookupSchema
@@ -886,8 +886,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private buildTypeEnumConstChecks(
-    context: SchemaCompilerCheckExecutionContextInterface,
-    sem: SchemaGraphSemanticsInterface
+    context: SchemaCompilerCheckExecutionContextType,
+    sem: SchemaGraphSemanticsType
   ): CheckFnType[] {
     const checks: CheckFnType[] = [];
     const types = sem.schemaTypes;
@@ -907,14 +907,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return checks;
   }
 
-  private buildValidatePlanContext(): SchemaCompilerValidatePlanContextInterface {
-    const ctx: SchemaCompilerValidatePlanContextInterface = {
+  private buildValidatePlanContext(): SchemaCompilerValidatePlanContextType {
+    const ctx: SchemaCompilerValidatePlanContextType = {
       'activeCustomKeywords': this.activeCustomKeywords,
-      'appliesFormatAssertions': (semantics: SchemaGraphSemanticsInterface): boolean => {
+      'appliesFormatAssertions': (semantics: SchemaGraphSemanticsType): boolean => {
         return this.appliesFormatAssertions(semantics);
       },
       'compileNodeCheck': (
-        targetNode: SchemaGraphNodeInterface,
+        targetNode: SchemaGraphNodeType,
         fmtReg: FormatRegistryInterface,
         schemaGraph: SchemaGraphInterface,
         schemaLookup?: (id: string) => Record<string, unknown> | undefined
@@ -922,7 +922,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return this.compileNodeCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
       },
       'compileNodeOrBooleanCheck': (
-        targetNode: SchemaGraphNodeInterface,
+        targetNode: SchemaGraphNodeType,
         fmtReg: FormatRegistryInterface,
         schemaGraph: SchemaGraphInterface,
         schemaLookup?: (id: string) => Record<string, unknown> | undefined
@@ -930,7 +930,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return this.compileNodeOrBooleanCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
       },
       'compileNodeOrBooleanValidateWithErrors': (
-        targetNode: SchemaGraphNodeInterface,
+        targetNode: SchemaGraphNodeType,
         fmtReg: FormatRegistryInterface,
         schemaGraph: SchemaGraphInterface,
         schemaLookup?: (id: string) => Record<string, unknown> | undefined
@@ -938,7 +938,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return this.compileNodeOrBooleanValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
       },
       'compileNodeValidateWithErrors': (
-        targetNode: SchemaGraphNodeInterface,
+        targetNode: SchemaGraphNodeType,
         fmtReg: FormatRegistryInterface,
         schemaGraph: SchemaGraphInterface,
         schemaLookup?: (id: string) => Record<string, unknown> | undefined
@@ -946,7 +946,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return this.compileNodeValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
       },
       'resolveImplicitDefault': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         graph: SchemaGraphInterface,
         lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,
         visited: Set<unknown>
@@ -959,7 +959,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     Object.defineProperty(ctx, 'activeCustomKeywords', {
       'enumerable': true,
-      'get': (): KeywordDefinitionInterface[] => {
+      'get': (): KeywordDefinitionType[] => {
         return this.activeCustomKeywords;
       }
     });
@@ -967,7 +967,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return ctx;
   }
 
-  private buildValidateWithErrorsExecution(plan: CompiledNodeValidationPlanInterface): ValidateWithErrorsFnType {
+  private buildValidateWithErrorsExecution(plan: CompiledNodeValidationPlanType): ValidateWithErrorsFnType {
     const {
       allOfValidators, anyOfChecks, complementCheck, ifCheck, oneOfChecks
     } = plan;
@@ -1023,7 +1023,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
    * @param graph - Pre-built schema graph for the engine's root schema
    * @returns Compiled validator with check and validate functions
    */
-  public compile(engine: GraphEngineInterface, graph: SchemaGraphInterface): CompiledValidatorInterface {
+  public compile(engine: GraphEngineInterface, graph: SchemaGraphInterface): CompiledValidatorType {
     const rootSchema = engine.rootSchema;
 
     if (typeof rootSchema === 'boolean') {
@@ -1057,7 +1057,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       return {
         'check': checkFn,
         'compiled': true,
-        'validate': (data: unknown, options?: CompiledValidateOptionsInterface): CompiledValidationResultInterface => {
+        'validate': (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
           return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn);
         }
       };
@@ -1071,14 +1071,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
   }
 
-  private compileBooleanSchema(schema: boolean): CompiledValidatorInterface {
+  private compileBooleanSchema(schema: boolean): CompiledValidatorType {
     if (schema) {
       return {
         'check': (_data: unknown): boolean => {
           return true;
         },
         'compiled': true,
-        'validate': (data: unknown): CompiledValidationResultInterface => {
+        'validate': (data: unknown): CompiledValidationResultType => {
           return {
             'errors': [],
             'valid': true,
@@ -1093,7 +1093,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return false;
       },
       'compiled': true,
-      'validate': (data: unknown): CompiledValidationResultInterface => {
+      'validate': (data: unknown): CompiledValidationResultType => {
         return {
           'errors': [BaseError.validationError('', 'falseSchema', 'must not match false schema')],
           'valid': false,
@@ -1130,7 +1130,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private compileDependentSchemaChecks(
     buildCtx: NodeCheckBuildContextType,
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsType
   ): DepSchemaEntryType[] {
     const {
       context, formatRegistry, graph, lookupSchema
@@ -1164,10 +1164,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   /**
-   * Node-native check compilation. Accepts a SchemaGraphNodeInterface directly.
+   * Node-native check compilation. Accepts a SchemaGraphNodeType directly.
    */
   private compileNodeCheck(
-    graphNode: SchemaGraphNodeInterface,
+    graphNode: SchemaGraphNodeType,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
@@ -1188,7 +1188,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private compileNodeOrBooleanCheck(
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
@@ -1207,7 +1207,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private compileNodeOrBooleanValidateWithErrors(
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
@@ -1241,10 +1241,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   /**
-   * Node-native validate-with-errors compilation. Accepts a SchemaGraphNodeInterface directly.
+   * Node-native validate-with-errors compilation. Accepts a SchemaGraphNodeType directly.
    */
   private compileNodeValidateWithErrors(
-    graphNode: SchemaGraphNodeInterface,
+    graphNode: SchemaGraphNodeType,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
@@ -1258,7 +1258,33 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       this.activeLookupGraph
     );
 
-    return this.buildValidateWithErrorsExecution(plan);
+    // Compile value-producing validators for anyOf/oneOf members so that
+    // defaults and coercion applied inside a branch are propagated forward,
+    // matching the interpreted path (VisitComposition.anyOf/oneOf) semantics.
+    const sem = graph.semantics(graphNode);
+    let anyOfValidators: undefined | ValidateWithErrorsFnType[];
+
+    if (sem.anyOf.length > 0) {
+      anyOfValidators = sem.anyOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
+        return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+      });
+    }
+
+    let oneOfValidators: undefined | ValidateWithErrorsFnType[];
+
+    if (sem.oneOf.length > 0) {
+      oneOfValidators = sem.oneOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
+        return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+      });
+    }
+
+    const baseExecutor = this.buildValidateWithErrorsExecution(plan);
+
+    if (anyOfValidators === undefined && oneOfValidators === undefined) {
+      return baseExecutor;
+    }
+
+    return this.wrapWithValueProducingComposition(baseExecutor, anyOfValidators, oneOfValidators);
   }
 
   private compileNumberCheck(
@@ -1295,7 +1321,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     pattern: string | undefined,
     format: string | undefined,
     formatRegistry: FormatRegistryInterface,
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsType
   ): CheckFnType | undefined {
     const checks = this.buildStringLengthPatternChecks(minLength, maxLength, pattern);
     const formatCheck = this.resolveFormatCheck(format, formatRegistry, sem);
@@ -1330,14 +1356,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     graph: SchemaGraphInterface,
     validateWithErrors: ValidateWithErrorsFnType,
     checkFn: CheckFnType
-  ): (data: unknown, options?: CompiledValidateOptionsInterface) => CompiledValidationResultInterface {
+  ): (data: unknown, options?: CompiledValidateOptionsType) => CompiledValidationResultType {
     const graphNode = graph.node(schema);
     const rootSem = graphNode === undefined ? undefined : graph.semantics(graphNode);
     const rootTypes = rootSem === undefined ? [] : rootSem.schemaTypes;
     const rootHasDefault = rootSem === undefined ? false : rootSem.hasDefault;
     const rootDefaultValue = rootSem === undefined ? undefined : rootSem.defaultValue;
 
-    return (data: unknown, options?: CompiledValidateOptionsInterface): CompiledValidationResultInterface => {
+    return (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
       return this.executeMutatingValidate(
         data,
         options,
@@ -1376,11 +1402,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private dispatchValidate(
     data: unknown,
-    options: CompiledValidateOptionsInterface | undefined,
-    validateFn: (data: unknown, options?: CompiledValidateOptionsInterface) => CompiledValidationResultInterface,
+    options: CompiledValidateOptionsType | undefined,
+    validateFn: (data: unknown, options?: CompiledValidateOptionsType) => CompiledValidationResultType,
     checkFn: CheckFnType,
     validateWithErrorsFn: ValidateWithErrorsFnType
-  ): CompiledValidationResultInterface {
+  ): CompiledValidationResultType {
     if (options?.applyDefaults === true || options?.castTypes === true
       || options?.enforceSchemaProperties === true || options?.removeAdditionalProperties === true) {
       return validateFn(data, options);
@@ -1404,13 +1430,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  private engineFallback(engine: GraphEngineInterface): CompiledValidatorInterface {
+  private engineFallback(engine: GraphEngineInterface): CompiledValidatorType {
     return {
       'check': (data: unknown): boolean => {
         return engine.execute(data, { 'overrides': { 'collectErrors': false } }).valid;
       },
       'compiled': false,
-      'validate': (data: unknown, options?: CompiledValidateOptionsInterface): CompiledValidationResultInterface => {
+      'validate': (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
         const result = engine.execute(data, {
           'overrides': {
             'applyDefaults': options?.applyDefaults ?? false,
@@ -1431,7 +1457,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private executeComposedAllOf(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1449,7 +1475,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private executeComposedAnyOneNot(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1482,7 +1508,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private executeComposedBoolLogic(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     initialValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1516,7 +1542,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private executeComposedIfThenElse(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1558,9 +1584,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private executeMutatingFullValidation(
     workingValue: unknown,
-    options: CompiledValidateOptionsInterface,
+    options: CompiledValidateOptionsType,
     validateWithErrors: ValidateWithErrorsFnType
-  ): CompiledValidationResultInterface {
+  ): CompiledValidationResultType {
     const errors: ValidationErrorType[] = [];
     const stripUnk = (options.enforceSchemaProperties ?? false) || (options.removeAdditionalProperties ?? false);
     const result = validateWithErrors(workingValue, '', errors, options.collectErrors ?? true, options.applyDefaults ?? false, options.castTypes ?? false, stripUnk);
@@ -1574,13 +1600,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private executeMutatingValidate(
     data: unknown,
-    options: CompiledValidateOptionsInterface | undefined,
+    options: CompiledValidateOptionsType | undefined,
     validateWithErrors: ValidateWithErrorsFnType,
     checkFn: CheckFnType,
     rootTypes: string[],
     rootHasDefault: boolean,
     rootDefaultValue: unknown
-  ): CompiledValidationResultInterface {
+  ): CompiledValidationResultType {
     const workingValue = this.applyRootCoercionAndDefaults(data, options, rootTypes, rootHasDefault, rootDefaultValue);
 
     if (options !== undefined
@@ -1608,7 +1634,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private executeValidateComposed(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     value: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1638,7 +1664,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private executeValidateSimple(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     value: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1673,7 +1699,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private resolveFormatCheck(
     format: string | undefined,
     formatRegistry: FormatRegistryInterface,
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsType
   ): CheckFnType | undefined {
     if (format === undefined) {
       return undefined;
@@ -1693,7 +1719,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
    * earlyExit signals callers to return immediately with `valid: false`.
    */
   private runPlanRefAndScalars(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1727,7 +1753,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private runPlanRefValidator(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1765,12 +1791,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // validate() compilation — with errors and mutation support
-  // ---------------------------------------------------------------------------
-
   private runPlanStructure(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1813,8 +1835,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // validate() compilation — with errors and mutation support
+  // ---------------------------------------------------------------------------
+
   private runPlanStructureAndTail(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -1967,7 +1993,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private validateArrayPlan(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     arr: unknown[],
     path: string,
     errors: ValidationErrorType[],
@@ -2134,7 +2160,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private validateObjectPlan(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     obj: Record<string, unknown>,
     path: string,
     errors: ValidationErrorType[],
@@ -2210,7 +2236,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   /** Runs ref + scalar checks, then structure + tail checks, returning an early-exit result. */
   private validatePlanBase(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     initialValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -2228,13 +2254,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return this.runPlanStructureAndTail(plan, earlyResult.value, path, errors, runOpts, earlyResult.valid);
   }
 
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
   private validatePlanDependent(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -2286,8 +2307,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
   private validatePlanPropNamesAndKeywords(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -2327,7 +2353,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private validatePlanScalars(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -2353,7 +2379,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }
 
   private validatePlanTail(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     initialValue: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -2384,12 +2410,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Check execution (inlined from SchemaCompilerCheckExec)
-  // ---------------------------------------------------------------------------
-
   private validateStringNumberFormat(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     value: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -2429,8 +2451,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // Check execution (inlined from SchemaCompilerCheckExec)
+  // ---------------------------------------------------------------------------
+
   private validateStringPart(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     value: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -2476,12 +2502,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Validate execution (inlined from SchemaCompilerValidateExec)
-  // ---------------------------------------------------------------------------
-
   private validateTypeEnumConst(
-    plan: CompiledNodeValidationPlanInterface,
+    plan: CompiledNodeValidationPlanType,
     value: unknown,
     path: string,
     errors: ValidationErrorType[],
@@ -2526,6 +2548,99 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return {
       'earlyExit': false,
       valid
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Validate execution (inlined from SchemaCompilerValidateExec)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Wraps a base validator with value-producing anyOf/oneOf composition logic.
+   * Replaces the boolean-only anyOf/oneOf check path with full validators that
+   * propagate the winning branch's mutated value (defaults, coercion).
+   */
+  private wrapWithValueProducingComposition(
+    baseExecutor: ValidateWithErrorsFnType,
+    anyOfValidators: undefined | ValidateWithErrorsFnType[],
+    oneOfValidators: undefined | ValidateWithErrorsFnType[]
+  ): ValidateWithErrorsFnType {
+    return (
+      value: unknown,
+      path: string,
+      errors: ValidationErrorType[],
+      collectErrors: boolean,
+      applyDefaults: boolean,
+      doCoerce: boolean,
+      stripUnknown: boolean
+    ): ValidateWithErrorsResultType => {
+      const baseResult = baseExecutor(value, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+
+      // Run value-producing anyOf — this replaces the boolean anyOf check in the base executor.
+      // The base executor already validated and returned any anyOf errors; here we re-run
+      // with full validators to propagate the winner's value when applyDefaults or doCoerce is active.
+      if (!applyDefaults && !doCoerce) {
+        return baseResult;
+      }
+
+      if (!baseResult.valid) {
+        return baseResult;
+      }
+
+      let workingValue = baseResult.value;
+
+      if (anyOfValidators !== undefined) {
+        const anyResult = Composition.validateAnyOfWithValues(
+          path,
+          workingValue,
+          anyOfValidators,
+          errors,
+          collectErrors,
+          applyDefaults,
+          doCoerce,
+          stripUnknown,
+          <T>(candidate: T): T => {
+            return GraphEngineSupport.cloneCandidate(candidate);
+          }
+        );
+
+        if (!anyResult.valid) {
+          return {
+            'valid': false,
+            'value': anyResult.value
+          };
+        }
+        workingValue = anyResult.value;
+      }
+
+      if (oneOfValidators !== undefined) {
+        const oneResult = Composition.validateOneOfWithValues(
+          path,
+          workingValue,
+          oneOfValidators,
+          errors,
+          collectErrors,
+          applyDefaults,
+          doCoerce,
+          stripUnknown,
+          <T>(candidate: T): T => {
+            return GraphEngineSupport.cloneCandidate(candidate);
+          }
+        );
+
+        if (!oneResult.valid) {
+          return {
+            'valid': false,
+            'value': oneResult.value
+          };
+        }
+        workingValue = oneResult.value;
+      }
+
+      return {
+        'valid': true,
+        'value': workingValue
+      };
     };
   }
 }

@@ -2,8 +2,8 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
-// SchemaGraphSemanticsInterface is graph-internal type structure not surfaced by the public API.
-import type { SchemaGraphSemanticsInterface } from '../../src/interfaces/SchemaGraph.js';
+// SchemaGraphSemanticsType is graph-internal type structure not surfaced by the public API.
+import type { SchemaGraphSemanticsType } from '../../src/types/SchemaGraph.js';
 // DataTypes guards/equality helpers are pure utilities used internally; no public surface.
 import {
   deepEqual,
@@ -842,11 +842,11 @@ import {
 // Source: xsdMaps.test.ts
 // ===========================================================================
 {
-  function semantics(schemaTypes: string[], format?: string): SchemaGraphSemanticsInterface {
+  function semantics(schemaTypes: string[], format?: string): SchemaGraphSemanticsType {
     return {
       format,
       schemaTypes
-    } as unknown as SchemaGraphSemanticsInterface;
+    } as unknown as SchemaGraphSemanticsType;
   }
 
   void describe('XsdTypes.resolveSingle / XsdTypes.resolve — Good/Bad/Ugly', { 'concurrency': true }, () => {

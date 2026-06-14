@@ -10,7 +10,7 @@ const PasswordSchema = {
 } as const;
 
 type Password = InferType<typeof PasswordSchema>;
-// string & MinLengthBrandInterface<8> & MaxLengthBrandInterface<128> & PatternBrandInterface<'^(?=.*[A-Z])(?=.*[0-9])'>
+// string & MinLengthBrandType<8> & MaxLengthBrandType<128> & PatternBrandType<'^(?=.*[A-Z])(?=.*[0-9])'>
 
 const jt = JsonTology.create({
   'baseIRI': 'urn:brands:',

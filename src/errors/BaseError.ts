@@ -6,14 +6,14 @@
  * and flatten() for structured consumption.
  */
 
-import type { ErrorJsonInterface } from '../interfaces/Error.js';
+import type { ErrorJsonType } from '../types/Error.js';
 import type { BaseErrorOptionsType } from '../types/ErrorOptions.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 
 export class BaseError extends Error {
   private static readonly EMPTY_PARAMS: Record<string, unknown> = Object.freeze({});
 
-  private static errorToJson(error: Error): ErrorJsonInterface {
+  private static errorToJson(error: Error): ErrorJsonType {
     if (error instanceof BaseError) {
       return {
         'code': error.code,
@@ -82,8 +82,8 @@ export class BaseError extends Error {
    * Walk the cause chain and return a flat array of error JSON objects,
    * root-first.
    */
-  public flatten(): ErrorJsonInterface[] {
-    const chain: ErrorJsonInterface[] = [BaseError.errorToJson(this)];
+  public flatten(): ErrorJsonType[] {
+    const chain: ErrorJsonType[] = [BaseError.errorToJson(this)];
     let cursor: Error | undefined = this.cause instanceof Error ? this.cause : undefined;
 
     while (cursor !== undefined) {
@@ -97,8 +97,8 @@ export class BaseError extends Error {
   /**
    * Serialize to a plain JSON-safe object, including the cause chain.
    */
-  public toJson(): ErrorJsonInterface {
-    const json: ErrorJsonInterface = {
+  public toJson(): ErrorJsonType {
+    const json: ErrorJsonType = {
       'code': this.code,
       'message': this.message,
       'retryable': this.retryable

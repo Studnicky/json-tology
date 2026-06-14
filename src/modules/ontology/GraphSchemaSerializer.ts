@@ -1,7 +1,7 @@
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type {
-  SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
-} from '../../interfaces/SchemaGraph.js';
+  SchemaGraphNodeType, SchemaGraphSemanticsType
+} from '../../types/SchemaGraph.js';
 import type { GraphSchemaSerializerInterface } from '../../interfaces/Serializer.js';
 
 
@@ -34,7 +34,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyAnnotationFlags(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.deprecated) {
       result.deprecated = true;
@@ -56,7 +56,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
   private applyArrayConstraints(
     graph: SchemaGraphInterface,
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.minItems !== undefined) {
       result.minItems = semantics.minItems;
@@ -98,22 +98,22 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
   private applyCompositionKeywords(
     graph: SchemaGraphInterface,
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.allOf.length > 0) {
-      result.allOf = semantics.allOf.map((n: SchemaGraphNodeInterface): boolean | Record<string, unknown> => {
+      result.allOf = semantics.allOf.map((n: SchemaGraphNodeType): boolean | Record<string, unknown> => {
         return this.serializeNode(graph, n);
       });
     }
 
     if (semantics.anyOf.length > 0) {
-      result.anyOf = semantics.anyOf.map((n: SchemaGraphNodeInterface): boolean | Record<string, unknown> => {
+      result.anyOf = semantics.anyOf.map((n: SchemaGraphNodeType): boolean | Record<string, unknown> => {
         return this.serializeNode(graph, n);
       });
     }
 
     if (semantics.oneOf.length > 0) {
-      result.oneOf = semantics.oneOf.map((n: SchemaGraphNodeInterface): boolean | Record<string, unknown> => {
+      result.oneOf = semantics.oneOf.map((n: SchemaGraphNodeType): boolean | Record<string, unknown> => {
         return this.serializeNode(graph, n);
       });
     }
@@ -126,7 +126,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
   private applyConditionalKeywords(
     graph: SchemaGraphInterface,
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.ifNode) {
       result.if = this.serializeNode(graph, semantics.ifNode);
@@ -143,7 +143,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyDescriptiveMetadata(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     GraphSchemaSerializer.copyIfPresent(result, 'title', semantics.title);
     GraphSchemaSerializer.copyIfPresent(result, 'description', semantics.description);
@@ -160,7 +160,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyDiscriminatorAndExtensions(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.discriminatorPropertyName !== undefined && semantics.discriminatorPropertyName !== '') {
       const disc: Record<string, unknown> = { 'propertyName': semantics.discriminatorPropertyName };
@@ -184,7 +184,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
   private applyDraft07Definitions(
     graph: SchemaGraphInterface,
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.definitions.length === 0) {
       return;
@@ -203,7 +203,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyDynamicKeywords(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.dynamicAnchor !== undefined && semantics.dynamicAnchor !== '') {
       result.$dynamicAnchor = semantics.dynamicAnchor;
@@ -216,8 +216,8 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyIdentityKeywords(
     result: Record<string, unknown>,
-    node: SchemaGraphNodeInterface,
-    semantics: SchemaGraphSemanticsInterface
+    node: SchemaGraphNodeType,
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.schemaId !== undefined) {
       result.$id = semantics.schemaId;
@@ -243,7 +243,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
   private applyJsonSchemaDefs(
     graph: SchemaGraphInterface,
     result: Record<string, unknown>,
-    node: SchemaGraphNodeInterface
+    node: SchemaGraphNodeType
   ): void {
     const defsEntries = graph.entries(node, '$defs');
 
@@ -264,7 +264,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyMetadataKeywords(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     this.applyDescriptiveMetadata(result, semantics);
     this.applyAnnotationFlags(result, semantics);
@@ -273,7 +273,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyNumericConstraints(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.minimum !== undefined) {
       result.minimum = semantics.minimum;
@@ -299,7 +299,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
   private applyObjectConstraints(
     graph: SchemaGraphInterface,
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.minProperties !== undefined) {
       result.minProperties = semantics.minProperties;
@@ -348,7 +348,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyOntologyKeywords(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     GraphSchemaSerializer.copyIfPresent(result, 'rdfs:domain', semantics.rdfsDomain);
     GraphSchemaSerializer.copyIfPresent(result, 'rdfs:range', semantics.rdfsRange);
@@ -360,7 +360,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyOntologyPropertyCharacteristics(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.transitive) {
       result.transitive = true;
@@ -393,7 +393,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyStringConstraints(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.minLength !== undefined) {
       result.minLength = semantics.minLength;
@@ -411,7 +411,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
   private applyTypeAndProperties(
     graph: SchemaGraphInterface,
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.schemaTypes.length === 1) {
       result.type = semantics.schemaTypes[0];
@@ -440,7 +440,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
     }
 
     if (semantics.prefixItems.length > 0) {
-      result.prefixItems = semantics.prefixItems.map((n: SchemaGraphNodeInterface): boolean | Record<string, unknown> => {
+      result.prefixItems = semantics.prefixItems.map((n: SchemaGraphNodeType): boolean | Record<string, unknown> => {
         return this.serializeNode(graph, n);
       });
     }
@@ -456,7 +456,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private applyValueKeywords(
     result: Record<string, unknown>,
-    semantics: SchemaGraphSemanticsInterface
+    semantics: SchemaGraphSemanticsType
   ): void {
     if (semantics.hasDefault) {
       result.default = semantics.defaultValue;
@@ -483,13 +483,13 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
   private serializeNode(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface
+    node: SchemaGraphNodeType
   ): boolean | Record<string, unknown> {
     if (typeof node.schema === 'boolean') {
       return node.schema;
     }
 
-    const semantics: SchemaGraphSemanticsInterface = graph.semantics(node);
+    const semantics: SchemaGraphSemanticsType = graph.semantics(node);
     const result: Record<string, unknown> = {};
 
     this.applyIdentityKeywords(result, node, semantics);

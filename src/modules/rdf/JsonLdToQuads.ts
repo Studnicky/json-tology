@@ -16,8 +16,8 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { TokenParseResultType } from '../../types/TokenParseResultType.js';
 import type { NQuadLineResultType } from '../../types/NQuadLineResultType.js';
-import type { ParsedLiteralInterface } from '../../interfaces/ParsedLiteral.js';
-import type { ConversionContextInterface } from '../../interfaces/ConversionContext.js';
+import type { ParsedLiteralType } from '../../types/ParsedLiteral.js';
+import type { ConversionContextType } from '../../types/ConversionContext.js';
 import {
   RDF, XSD
 } from '../../constants/IRI.js';
@@ -70,7 +70,7 @@ function isLiteralString(value: string, context: Record<string, string>): boolea
 // passing 4–5 arguments through every recursive call.
 // ---------------------------------------------------------------------------
 
-function makeConversionContext(context: Record<string, string>): ConversionContextInterface {
+function makeConversionContext(context: Record<string, string>): ConversionContextType {
   return {
     'allQuads': [],
     'bnodeMap': new Map(),
@@ -86,7 +86,7 @@ function makeConversionContext(context: Record<string, string>): ConversionConte
 function convertIdObject(
   obj: Record<string, unknown>,
   iriValue: string,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): QuadObjectType {
   if (iriValue.startsWith('_:')) {
     return Terms.blank(iriValue.slice(2));
@@ -104,7 +104,7 @@ function convertIdObject(
 
 function convertRdfList(
   rawList: unknown[],
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): QuadObjectType {
   const items: QuadObjectType[] = [];
 
@@ -129,7 +129,7 @@ function convertRdfList(
 
 function convertInlinedBnode(
   obj: Record<string, unknown>,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): string {
   const existingId = ctx.bnodeMap.get(obj);
   const bnodeId = existingId ?? ctx.counter.getId();
@@ -142,7 +142,7 @@ function convertInlinedBnode(
   return bnodeId;
 }
 
-function convertStringValue(value: string, ctx: ConversionContextInterface): QuadObjectType {
+function convertStringValue(value: string, ctx: ConversionContextType): QuadObjectType {
   if (isLiteralString(value, ctx.context)) {
     return Terms.literal(value);
   }
@@ -153,7 +153,7 @@ function convertStringValue(value: string, ctx: ConversionContextInterface): Qua
 function convertObjectValue(
   obj: Record<string, unknown>,
   originalValue: unknown,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): null | QuadObjectType {
   if ('@list' in obj && Array.isArray(obj['@list'])) {
     return convertRdfList(obj['@list'] as unknown[], ctx);
@@ -176,7 +176,7 @@ function convertObjectValue(
 
 function jsonLdValueToTerm(
   value: unknown,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): null | QuadObjectType {
   if (typeof value === 'string') {
     return convertStringValue(value, ctx);
@@ -200,7 +200,7 @@ function jsonLdValueToTerm(
 function emitTypeQuads(
   subjectTerm: ReturnType<typeof Terms.blank> | ReturnType<typeof Terms.iri>,
   types: unknown[],
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): void {
   for (const typeValue of types) {
     if (typeof typeValue !== 'string') {
@@ -218,7 +218,7 @@ function emitTypeQuads(
 function emitNodeQuads(
   subjectId: string,
   node: Record<string, unknown>,
-  ctx: ConversionContextInterface
+  ctx: ConversionContextType
 ): void {
   const subjectTerm = subjectId.startsWith('_:')
     ? Terms.blank(subjectId.slice(2))
@@ -524,7 +524,7 @@ function tokenizeNQuadLine(line: string): string[] {
   return tokens;
 }
 
-function parseLiteralToken(token: string): ParsedLiteralInterface {
+function parseLiteralToken(token: string): ParsedLiteralType {
   const closingQuote = token.lastIndexOf('"');
 
   if (closingQuote <= 0) {

@@ -23,8 +23,8 @@
  */
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { ShaclValidationReportInterface } from '../../interfaces/ShaclValidationReportInterface.js';
-import type { ShaclValidationResultInterface } from '../../interfaces/ShaclValidationResultInterface.js';
+import type { ShaclValidationReportType } from '../../types/ShaclValidationReportType.js';
+import type { ShaclValidationResultType } from '../../types/ShaclValidationResultType.js';
 import {
   RDF, SH, XSD
 } from '../../constants/IRI.js';
@@ -190,20 +190,20 @@ function buildDatatypeIndex(quads: readonly QuadInterface[]): DatatypeIndex {
 // ---------------------------------------------------------------------------
 
 /** A parsed property shape. */
-interface PropertyShapeIndex {
+type PropertyShapeIndexType = {
   readonly 'bnodeId': string;
   readonly 'constraints': PredicateIndex;
   readonly 'isDeactivated': boolean;
   readonly 'path': string;
-}
+};
 
 /** A parsed node shape. */
-interface NodeShapeIndex {
+type NodeShapeIndexType = {
   readonly 'constraints': PredicateIndex;
   readonly 'isDeactivated': boolean;
-  readonly 'propertyShapes': PropertyShapeIndex[];
+  readonly 'propertyShapes': PropertyShapeIndexType[];
   readonly 'shapeIri': string;
-}
+};
 
 /**
  * Determine whether a blank node is marked sh:deactivated true.
@@ -232,7 +232,7 @@ function extractConstraints(id: string, shapeIndex: SubjectPredicateIndex): Pred
  * anonymous blank-node shape used as an `sh:and`/`sh:or`/`sh:not`/`sh:node`
  * member. Returns `undefined` when the subject carries no shape content.
  */
-function buildShapeView(shapeId: string, shapeIndex: SubjectPredicateIndex): NodeShapeIndex | undefined {
+function buildShapeView(shapeId: string, shapeIndex: SubjectPredicateIndex): NodeShapeIndexType | undefined {
   const pmap = shapeIndex.get(shapeId);
 
   if (pmap === undefined) {
@@ -240,7 +240,7 @@ function buildShapeView(shapeId: string, shapeIndex: SubjectPredicateIndex): Nod
   }
 
   const propertyBnodeIds = pmap.get(SH.property) ?? [];
-  const propertyShapes: PropertyShapeIndex[] = [];
+  const propertyShapes: PropertyShapeIndexType[] = [];
 
   for (const bnodeId of propertyBnodeIds) {
     const psNode = shapeIndex.get(bnodeId);
@@ -275,8 +275,8 @@ function buildShapeView(shapeId: string, shapeIndex: SubjectPredicateIndex): Nod
  * Parse all named (non-blank-node) NodeShape IRIs. These are the top-level
  * shapes whose focus nodes are selected by implicit class target (rdf:type).
  */
-function buildNodeShapes(shapeIndex: SubjectPredicateIndex): NodeShapeIndex[] {
-  const shapes: NodeShapeIndex[] = [];
+function buildNodeShapes(shapeIndex: SubjectPredicateIndex): NodeShapeIndexType[] {
+  const shapes: NodeShapeIndexType[] = [];
 
   for (const [
     subject,
@@ -307,32 +307,32 @@ function buildNodeShapes(shapeIndex: SubjectPredicateIndex): NodeShapeIndex[] {
  * `sh:not` recursion against cyclic data so a self-referential graph cannot
  * overflow the stack.
  */
-interface ValidationContextInterface {
+type ValidationContextType = {
   readonly 'dataIndex': SubjectPredicateIndex;
   readonly 'datatypeBySubjectPredicate': DatatypeIndex;
   readonly 'dataTypeIndex': TypeIndex;
-  readonly 'resolveShape': (shapeId: string) => NodeShapeIndex | undefined;
+  readonly 'resolveShape': (shapeId: string) => NodeShapeIndexType | undefined;
   readonly 'shapeIndex': SubjectPredicateIndex;
   readonly 'visited': Set<string>;
-}
+};
 
 /**
  * Build a memoised shape resolver over the named shapes plus on-demand
  * blank-node member shapes.
  */
 function makeShapeResolver(
-  namedShapes: NodeShapeIndex[],
+  namedShapes: NodeShapeIndexType[],
   shapeIndex: SubjectPredicateIndex
-): (shapeId: string) => NodeShapeIndex | undefined {
-  const byIri = new Map<string, NodeShapeIndex>();
+): (shapeId: string) => NodeShapeIndexType | undefined {
+  const byIri = new Map<string, NodeShapeIndexType>();
 
   for (const shape of namedShapes) {
     byIri.set(shape.shapeIri, shape);
   }
 
-  const cache = new Map<string, NodeShapeIndex | undefined>();
+  const cache = new Map<string, NodeShapeIndexType | undefined>();
 
-  return (shapeId: string): NodeShapeIndex | undefined => {
+  return (shapeId: string): NodeShapeIndexType | undefined => {
     const named = byIri.get(shapeId);
 
     if (named !== undefined) {
@@ -394,7 +394,7 @@ function parseNumeric(value: string): number {
 // ---------------------------------------------------------------------------
 
 /** Arguments shared across all constraint evaluators. */
-interface EvalArgsInterface {
+type EvalArgsType = {
   readonly 'constraints': PredicateIndex;
   readonly 'dataIndex': SubjectPredicateIndex;
   readonly 'datatypeBySubjectPredicate': DatatypeIndex;
@@ -405,7 +405,7 @@ interface EvalArgsInterface {
   readonly 'shapeIndex': SubjectPredicateIndex;
   readonly 'valueCount': number;
   readonly 'values': string[];
-}
+};
 
 /**
  * Build a single violation result. A node-level constraint (no property path)
@@ -419,7 +419,7 @@ function violation(
   message: string,
   value: string | undefined,
   sourceShape: string | undefined
-): ShaclValidationResultInterface {
+): ShaclValidationResultType {
   return {
     'focusNode': focusNode,
     'resultMessage': message,
@@ -432,7 +432,7 @@ function violation(
 }
 
 /** Evaluate sh:minCount constraint. */
-function evalMinCount(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalMinCount(args: EvalArgsType): ShaclValidationResultType[] {
   const minCountArr = args.constraints.get(SH.minCount);
 
   if (minCountArr === undefined || minCountArr.length === 0) {
@@ -456,7 +456,7 @@ function evalMinCount(args: EvalArgsInterface): ShaclValidationResultInterface[]
 }
 
 /** Evaluate sh:maxCount constraint. */
-function evalMaxCount(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalMaxCount(args: EvalArgsType): ShaclValidationResultType[] {
   const maxCountArr = args.constraints.get(SH.maxCount);
 
   if (maxCountArr === undefined || maxCountArr.length === 0) {
@@ -480,7 +480,7 @@ function evalMaxCount(args: EvalArgsInterface): ShaclValidationResultInterface[]
 }
 
 /** Evaluate sh:datatype constraint against each value node. */
-function evalDatatype(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalDatatype(args: EvalArgsType): ShaclValidationResultType[] {
   const datatypeArr = args.constraints.get(SH.datatype);
 
   if (datatypeArr === undefined || datatypeArr.length === 0) {
@@ -488,7 +488,7 @@ function evalDatatype(args: EvalArgsInterface): ShaclValidationResultInterface[]
   }
 
   const expectedDatatype = datatypeArr[0];
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
   const actualDatatypes = args.datatypeBySubjectPredicate.get(args.focusNode)?.get(args.path) ?? [];
 
   for (let idx = 0; idx < args.values.length; idx++) {
@@ -510,14 +510,14 @@ function evalDatatype(args: EvalArgsInterface): ShaclValidationResultInterface[]
 }
 
 /** Evaluate sh:pattern constraint against each value node. */
-function evalPattern(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalPattern(args: EvalArgsType): ShaclValidationResultType[] {
   const patternArr = args.constraints.get(SH.pattern);
 
   if (patternArr === undefined || patternArr.length === 0) {
     return [];
   }
 
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     for (const pattern of patternArr) {
@@ -547,7 +547,7 @@ function evalPattern(args: EvalArgsInterface): ShaclValidationResultInterface[] 
 }
 
 /** Evaluate sh:minLength constraint. */
-function evalMinLength(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalMinLength(args: EvalArgsType): ShaclValidationResultType[] {
   const minLenArr = args.constraints.get(SH.minLength);
 
   if (minLenArr === undefined || minLenArr.length === 0) {
@@ -555,7 +555,7 @@ function evalMinLength(args: EvalArgsInterface): ShaclValidationResultInterface[
   }
 
   const min = parseNumeric(minLenArr[0]);
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     if (value.length < min) {
@@ -574,7 +574,7 @@ function evalMinLength(args: EvalArgsInterface): ShaclValidationResultInterface[
 }
 
 /** Evaluate sh:maxLength constraint. */
-function evalMaxLength(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalMaxLength(args: EvalArgsType): ShaclValidationResultType[] {
   const maxLenArr = args.constraints.get(SH.maxLength);
 
   if (maxLenArr === undefined || maxLenArr.length === 0) {
@@ -582,7 +582,7 @@ function evalMaxLength(args: EvalArgsInterface): ShaclValidationResultInterface[
   }
 
   const max = parseNumeric(maxLenArr[0]);
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     if (value.length > max) {
@@ -601,7 +601,7 @@ function evalMaxLength(args: EvalArgsInterface): ShaclValidationResultInterface[
 }
 
 /** Evaluate sh:minInclusive constraint. */
-function evalMinInclusive(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalMinInclusive(args: EvalArgsType): ShaclValidationResultType[] {
   const minArr = args.constraints.get(SH.minInclusive);
 
   if (minArr === undefined || minArr.length === 0) {
@@ -609,7 +609,7 @@ function evalMinInclusive(args: EvalArgsInterface): ShaclValidationResultInterfa
   }
 
   const min = parseNumeric(minArr[0]);
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     const num = parseNumeric(value);
@@ -630,7 +630,7 @@ function evalMinInclusive(args: EvalArgsInterface): ShaclValidationResultInterfa
 }
 
 /** Evaluate sh:maxInclusive constraint. */
-function evalMaxInclusive(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalMaxInclusive(args: EvalArgsType): ShaclValidationResultType[] {
   const maxArr = args.constraints.get(SH.maxInclusive);
 
   if (maxArr === undefined || maxArr.length === 0) {
@@ -638,7 +638,7 @@ function evalMaxInclusive(args: EvalArgsInterface): ShaclValidationResultInterfa
   }
 
   const max = parseNumeric(maxArr[0]);
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     const num = parseNumeric(value);
@@ -659,7 +659,7 @@ function evalMaxInclusive(args: EvalArgsInterface): ShaclValidationResultInterfa
 }
 
 /** Evaluate sh:minExclusive constraint. */
-function evalMinExclusive(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalMinExclusive(args: EvalArgsType): ShaclValidationResultType[] {
   const minArr = args.constraints.get(SH.minExclusive);
 
   if (minArr === undefined || minArr.length === 0) {
@@ -667,7 +667,7 @@ function evalMinExclusive(args: EvalArgsInterface): ShaclValidationResultInterfa
   }
 
   const min = parseNumeric(minArr[0]);
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     const num = parseNumeric(value);
@@ -688,7 +688,7 @@ function evalMinExclusive(args: EvalArgsInterface): ShaclValidationResultInterfa
 }
 
 /** Evaluate sh:maxExclusive constraint. */
-function evalMaxExclusive(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalMaxExclusive(args: EvalArgsType): ShaclValidationResultType[] {
   const maxArr = args.constraints.get(SH.maxExclusive);
 
   if (maxArr === undefined || maxArr.length === 0) {
@@ -696,7 +696,7 @@ function evalMaxExclusive(args: EvalArgsInterface): ShaclValidationResultInterfa
   }
 
   const max = parseNumeric(maxArr[0]);
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     const num = parseNumeric(value);
@@ -717,14 +717,14 @@ function evalMaxExclusive(args: EvalArgsInterface): ShaclValidationResultInterfa
 }
 
 /** Evaluate sh:hasValue constraint. */
-function evalHasValue(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalHasValue(args: EvalArgsType): ShaclValidationResultType[] {
   const hasValueArr = args.constraints.get(SH.hasValue);
 
   if (hasValueArr === undefined || hasValueArr.length === 0) {
     return [];
   }
 
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const required of hasValueArr) {
     if (!args.values.includes(required)) {
@@ -743,7 +743,7 @@ function evalHasValue(args: EvalArgsInterface): ShaclValidationResultInterface[]
 }
 
 /** Evaluate sh:in constraint against a list head bnode. */
-function evalIn(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalIn(args: EvalArgsType): ShaclValidationResultType[] {
   const inArr = args.constraints.get(SH.in);
 
   if (inArr === undefined || inArr.length === 0) {
@@ -757,7 +757,7 @@ function evalIn(args: EvalArgsInterface): ShaclValidationResultInterface[] {
     return [];
   }
 
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     if (!allowed.includes(value)) {
@@ -776,14 +776,14 @@ function evalIn(args: EvalArgsInterface): ShaclValidationResultInterface[] {
 }
 
 /** Evaluate sh:class constraint — value nodes must have the required rdf:type. */
-function evalClass(args: EvalArgsInterface): ShaclValidationResultInterface[] {
+function evalClass(args: EvalArgsType): ShaclValidationResultType[] {
   const classArr = args.constraints.get(SH.class);
 
   if (classArr === undefined || classArr.length === 0) {
     return [];
   }
 
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     for (const requiredClass of classArr) {
@@ -812,16 +812,16 @@ function evalClass(args: EvalArgsInterface): ShaclValidationResultInterface[] {
 
 /** Evaluate sh:node — each value node must conform to the referenced shape. */
 function evalNode(
-  args: EvalArgsInterface,
-  ctx: ValidationContextInterface
-): ShaclValidationResultInterface[] {
+  args: EvalArgsType,
+  ctx: ValidationContextType
+): ShaclValidationResultType[] {
   const nodeArr = args.constraints.get(SH.node);
 
   if (nodeArr === undefined || nodeArr.length === 0) {
     return [];
   }
 
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
     for (const nodeShapeIri of nodeArr) {
@@ -855,9 +855,9 @@ function evalNode(
  */
 function evalClosed(
   focusNode: string,
-  shape: NodeShapeIndex,
+  shape: NodeShapeIndexType,
   dataIndex: SubjectPredicateIndex
-): ShaclValidationResultInterface[] {
+): ShaclValidationResultType[] {
   const closedArr = shape.constraints.get(SH.closed);
 
   if (closedArr?.includes('true') !== true) {
@@ -876,7 +876,7 @@ function evalClosed(
     return [];
   }
 
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const [predicate] of focusPredicates) {
     if (predicate === RDF.type) {
@@ -904,9 +904,9 @@ function evalClosed(
 
 /** Evaluate qualified value shape cardinality constraints. */
 function evalQualifiedValueShape(
-  args: EvalArgsInterface,
-  ctx: ValidationContextInterface
-): ShaclValidationResultInterface[] {
+  args: EvalArgsType,
+  ctx: ValidationContextType
+): ShaclValidationResultType[] {
   const qvsArr = args.constraints.get(SH.qualifiedValueShape);
 
   if (qvsArr === undefined || qvsArr.length === 0) {
@@ -924,7 +924,7 @@ function evalQualifiedValueShape(
     && !innerShape.constraints.has(SH.node);
   const expectedDt = datatypeOnly ? innerShape.constraints.get(SH.datatype)?.[0] : undefined;
   const actualDts = args.datatypeBySubjectPredicate.get(args.focusNode)?.get(args.path) ?? [];
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
   let qualifiedCount = 0;
 
   for (const value of args.values) {
@@ -982,9 +982,9 @@ function evalQualifiedValueShape(
 function evalAnd(
   focusNode: string,
   shapeConstraints: PredicateIndex,
-  ctx: ValidationContextInterface,
+  ctx: ValidationContextType,
   shapeIri: string
-): ShaclValidationResultInterface[] {
+): ShaclValidationResultType[] {
   const andArr = shapeConstraints.get(SH.and);
 
   if (andArr === undefined || andArr.length === 0) {
@@ -992,7 +992,7 @@ function evalAnd(
   }
 
   const memberIris = collectRdfListValues(andArr[0], ctx.shapeIndex);
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const memberIri of memberIris) {
     if (validateShape(focusNode, memberIri, ctx).length > 0) {
@@ -1014,9 +1014,9 @@ function evalAnd(
 function evalOr(
   focusNode: string,
   shapeConstraints: PredicateIndex,
-  ctx: ValidationContextInterface,
+  ctx: ValidationContextType,
   shapeIri: string
-): ShaclValidationResultInterface[] {
+): ShaclValidationResultType[] {
   const orArr = shapeConstraints.get(SH.or);
 
   if (orArr === undefined || orArr.length === 0) {
@@ -1049,16 +1049,16 @@ function evalOr(
 function evalNot(
   focusNode: string,
   shapeConstraints: PredicateIndex,
-  ctx: ValidationContextInterface,
+  ctx: ValidationContextType,
   shapeIri: string
-): ShaclValidationResultInterface[] {
+): ShaclValidationResultType[] {
   const notArr = shapeConstraints.get(SH.not);
 
   if (notArr === undefined || notArr.length === 0) {
     return [];
   }
 
-  const results: ShaclValidationResultInterface[] = [];
+  const results: ShaclValidationResultType[] = [];
 
   for (const notRef of notArr) {
     if (validateShape(focusNode, notRef, ctx).length === 0) {
@@ -1087,8 +1087,8 @@ function buildEvalArgs(
   shapeId: string,
   constraints: PredicateIndex,
   values: string[],
-  ctx: ValidationContextInterface
-): EvalArgsInterface {
+  ctx: ValidationContextType
+): EvalArgsType {
   return {
     constraints,
     'dataIndex': ctx.dataIndex,
@@ -1113,9 +1113,9 @@ function buildEvalArgs(
  */
 function evalNodeLevelConstraints(
   focusNode: string,
-  shape: NodeShapeIndex,
-  ctx: ValidationContextInterface
-): ShaclValidationResultInterface[] {
+  shape: NodeShapeIndexType,
+  ctx: ValidationContextType
+): ShaclValidationResultType[] {
   const args = buildEvalArgs(focusNode, '', shape.shapeIri, shape.constraints, [focusNode], ctx);
 
   return [
@@ -1135,8 +1135,8 @@ function evalNodeLevelConstraints(
 function validateShape(
   focusNode: string,
   shapeId: string,
-  ctx: ValidationContextInterface
-): ShaclValidationResultInterface[] {
+  ctx: ValidationContextType
+): ShaclValidationResultType[] {
   const visitKey = `${focusNode} ${shapeId}`;
 
   if (ctx.visited.has(visitKey)) {
@@ -1153,7 +1153,7 @@ function validateShape(
     }
 
     const focusPredicates = ctx.dataIndex.get(focusNode);
-    const results: ShaclValidationResultInterface[] = [];
+    const results: ShaclValidationResultType[] = [];
 
     results.push(...evalNodeLevelConstraints(focusNode, shape, ctx));
 
@@ -1222,14 +1222,14 @@ export const ShaclValidator = {
   validate(
     shapes: readonly QuadInterface[],
     data: readonly QuadInterface[]
-  ): ShaclValidationReportInterface {
+  ): ShaclValidationReportType {
     const shapeIndex = buildSubjectIndex(shapes);
     const dataIndex = buildSubjectIndex(data);
     const dataTypeIndex = buildTypeIndex(data);
     const datatypeBySubjectPredicate = buildDatatypeIndex(data);
 
     const allNodeShapes = buildNodeShapes(shapeIndex);
-    const ctx: ValidationContextInterface = {
+    const ctx: ValidationContextType = {
       dataIndex,
       datatypeBySubjectPredicate,
       dataTypeIndex,
@@ -1237,7 +1237,7 @@ export const ShaclValidator = {
       shapeIndex,
       'visited': new Set<string>()
     };
-    const results: ShaclValidationResultInterface[] = [];
+    const results: ShaclValidationResultType[] = [];
 
     for (const shape of allNodeShapes) {
       if (shape.isDeactivated) {

@@ -6,17 +6,17 @@
  * parameter so the constructor surface stays stable as fields evolve.
  */
 
-export interface BaseErrorOptionsType {
+export type BaseErrorOptionsType = {
   'cause'?: Error;
   'retryable'?: boolean;
-}
+};
 
-export interface SchemaErrorOptionsType {
+export type SchemaErrorOptionsType = {
   'cause'?: Error;
   'schemaId'?: string;
-}
+};
 
-export interface GraphErrorOptionsType {
+export type GraphErrorOptionsType = {
   'cause'?: Error;
   'pointer'?: string;
-}
+};

@@ -1,6 +1,6 @@
 /**
  * `uniqueItems` array brand — homogeneous arrays with `uniqueItems: true`
- * carry `UniqueItemsBrandInterface`.
+ * carry `UniqueItemsBrandType`.
  *
  * A plain `string[]` is not assignable to the branded type. Values must
  * pass through the validation API which enforces uniqueness at runtime.

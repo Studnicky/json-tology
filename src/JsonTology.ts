@@ -19,20 +19,20 @@
 
 import type { JsonSchemaDocumentType } from './types/Schema.js';
 
-import type { OwlImportResult } from './interfaces/OwlImport.js';
-import type { DumpOptionsInterface } from './interfaces/Dump.js';
-import type { InvariantInterface } from './interfaces/Invariant.js';
+import type { OwlImportResultType } from './types/OwlImport.js';
+import type { DumpOptionsType } from './types/Dump.js';
+import type { InvariantType } from './types/Invariant.js';
 import type { ComputedFnType } from './types/Computed.js';
-import type { JsonTologyOptionsInterface } from './interfaces/Config.js';
+import type { JsonTologyOptionsType } from './types/Config.js';
 import type { JsonSchemaType } from './types/Schema.js';
 import type { LoaderType } from './types/Loader.js';
 import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
-import type { PrefetchOptionsInterface } from './interfaces/Prefetch.js';
+import type { PrefetchOptionsType } from './types/Prefetch.js';
 import type { QuadInterface } from './interfaces/Quad.js';
-import type { RegistryOptionsInterface } from './interfaces/Registry.js';
+import type { RegistryOptionsType } from './types/Registry.js';
 import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
-import type { SnapshotInterface } from './interfaces/Snapshot.js';
-import type { TransformFnsInterface } from './interfaces/TransformFns.js';
+import type { SnapshotType } from './types/Snapshot.js';
+import type { TransformFnsType } from './types/TransformFns.js';
 import type { ValueInterface } from './interfaces/ValueImpl.js';
 import type { ValidationErrors } from './errors/ValidationErrors.js';
 import type {
@@ -41,7 +41,7 @@ import type {
 import type {
   ParseOutputType, TransformedType
 } from './types/Transform.js';
-import type { ComputedExtensionBrandInterface } from './interfaces/ComputedExtension.js';
+import type { ComputedExtensionBrandType } from './types/ComputedExtension.js';
 import type {
   SchemaReferencesMapType, UniqueSchemaIdsType
 } from './types/Registry.js';
@@ -74,13 +74,13 @@ import { EncodeError } from './errors/EncodeError.js';
 import { TransformError } from './errors/TransformError.js';
 import { PredicateResolver } from './modules/graph/PredicateResolver.js';
 import { SchemaError } from './errors/SchemaError.js';
-import type { DuplicateReportEntryType } from './interfaces/SchemaEntryStore.js';
+import type { DuplicateReportEntryType } from './types/DuplicateReportEntryType.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
 import { brand } from './types/Brand.js';
 import { Value } from './modules/data/Value.js';
 import { ShaclValidator } from './modules/validation/ShaclValidator.js';
-import type { ShaclValidationReportInterface } from './interfaces/ShaclValidationReportInterface.js';
+import type { ShaclValidationReportType } from './types/ShaclValidationReportType.js';
 
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 
@@ -272,8 +272,8 @@ export class JsonTology<TRefs = Record<never, never>> {
    * Assign non-boolean fields that are defined in the options onto an existing partial.
    */
   private static assignDefinedRegistryFields(
-    partial: Partial<RegistryOptionsInterface>,
-    options: JsonTologyOptionsInterface
+    partial: Partial<RegistryOptionsType>,
+    options: JsonTologyOptionsType
   ): void {
     if (options.prefixes !== undefined) {
       partial.prefixes = options.prefixes;
@@ -298,7 +298,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   /**
    * Build a `FormatRegistry` with the built-in formats plus any user-supplied validators.
    */
-  private static buildFormatRegistry(formats: JsonTologyOptionsInterface['formats']): FormatRegistry {
+  private static buildFormatRegistry(formats: JsonTologyOptionsType['formats']): FormatRegistry {
     const registry = FormatRegistry.builtin();
 
     if (formats !== undefined) {
@@ -318,15 +318,15 @@ export class JsonTology<TRefs = Record<never, never>> {
   // ---------------------------------------------------------------------------
 
   /**
-   * Build the `RegistryOptionsInterface` object from the public `JsonTologyOptionsInterface`.
+   * Build the `RegistryOptionsType` object from the public `JsonTologyOptionsType`.
    * Only defined options are forwarded; undefined values are omitted so `SchemaRegistry`
    * defaults are applied naturally.
    */
   private static buildRegistryOptions(
-    options: JsonTologyOptionsInterface,
+    options: JsonTologyOptionsType,
     formatRegistry: FormatRegistry
-  ): RegistryOptionsInterface {
-    const base: RegistryOptionsInterface = { 'formatRegistry': formatRegistry };
+  ): RegistryOptionsType {
+    const base: RegistryOptionsType = { 'formatRegistry': formatRegistry };
     const partial = JsonTology.pickDefinedRegistryFlags(options);
 
     JsonTology.assignDefinedRegistryFields(partial, options);
@@ -344,7 +344,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param options - `baseIRI`, optional `schemas`, optional `prefetched`, prefixes, dialect.
    */
-  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsInterface<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaReferencesMapType<TSchemas>> {
+  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsType<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaReferencesMapType<TSchemas>> {
     const jt = new JsonTology(options);
 
     if (options.schemas) {
@@ -384,7 +384,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public static dump<TSchema extends Record<string, unknown> & { readonly '$id': string }>(
     schema: TSchema,
     value: InferSchemaType<TSchema>,
-    options?: DumpOptionsInterface
+    options?: DumpOptionsType
   ): unknown {
     const jt = JsonTology.ephemeral(schema);
 
@@ -402,7 +402,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public static dumpJson(
     schema: Record<string, unknown> & { readonly '$id': string },
     value: unknown,
-    options?: Omit<DumpOptionsInterface, 'mode'>
+    options?: Omit<DumpOptionsType, 'mode'>
   ): string {
     const jt = JsonTology.ephemeral(schema);
 
@@ -449,14 +449,14 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param jsonLd - The OWL 2 TBox input as a QuadInterface array, a JSON-LD
    *   object, or a JSON-LD string.
    * @param options - Optional baseIRI and prefix overrides for the import session.
-   * @returns OwlImportResult with reconstructed schemas, invariants,
+   * @returns OwlImportResultType with reconstructed schemas, invariants,
    *   characteristics, sameAs pairs, individuals, and unsupported axiom log.
    */
   public static fromTbox(
     jsonLd: object | QuadInterface[] | string,
     options?: { 'baseIRI'?: string;
       'prefixes'?: Record<string, string> }
-  ): OwlImportResult {
+  ): OwlImportResultType {
     const importer = new OwlImporter({
       'baseIRI': options?.baseIRI ?? STATIC_BASE_IRI,
       ...(options?.prefixes === undefined ? {} : { 'prefixes': options.prefixes })
@@ -531,10 +531,10 @@ export class JsonTology<TRefs = Record<never, never>> {
   }
 
   /**
-   * Pick defined boolean flags from the options into a `Partial<RegistryOptionsInterface>`.
+   * Pick defined boolean flags from the options into a `Partial<RegistryOptionsType>`.
    */
-  private static pickDefinedRegistryFlags(options: JsonTologyOptionsInterface): Partial<RegistryOptionsInterface> {
-    const partial: Partial<RegistryOptionsInterface> = {};
+  private static pickDefinedRegistryFlags(options: JsonTologyOptionsType): Partial<RegistryOptionsType> {
+    const partial: Partial<RegistryOptionsType> = {};
 
     if (options.enableTypeCast !== undefined) {
       partial.enableTypeCast = options.enableTypeCast;
@@ -559,7 +559,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   }
 
   /**
-   * Walks transitive `$ref` IRIs via the loader and returns a {@link SnapshotInterface}.
+   * Walks transitive `$ref` IRIs via the loader and returns a {@link SnapshotType}.
    *
    * Seeds the walk from `rootIds` (loaded directly) and `schemas` (followed for their
    * refs). Recurses until every cross-schema `$ref` resolves. Throws
@@ -570,7 +570,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param options - `loader`, optional `rootIds`, optional `schemas`, optional `baseIRI`.
    */
-  public static async prefetch(options: PrefetchOptionsInterface): Promise<SnapshotInterface> {
+  public static async prefetch(options: PrefetchOptionsType): Promise<SnapshotType> {
     const baseIRI = options.baseIRI ?? STATIC_BASE_IRI;
     const tmp = new JsonTology({ 'baseIRI': baseIRI });
 
@@ -708,7 +708,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   private static wireComputedFields(
     registry: SchemaRegistryInterface,
     curie: CurieInterface,
-    computeds: JsonTologyOptionsInterface['computeds']
+    computeds: JsonTologyOptionsType['computeds']
   ): void {
     if (computeds === undefined) {
       return;
@@ -783,7 +783,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param options - Configuration including `baseIRI`, prefixes, format validators, `enableTypeCast`, `enableStrictTypes`, and logger.
    */
-  private constructor(options: JsonTologyOptionsInterface) {
+  private constructor(options: JsonTologyOptionsType) {
     let baseIRI = options.baseIRI;
 
     while (baseIRI.endsWith('/')) {
@@ -881,7 +881,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     schemaId: K,
     name: TName,
     fn: (data: ParseOutputType<TRefs[K], TRefs>) => TValue
-  ): JsonTology<Omit<TRefs, K> & Record<K, ComputedExtensionBrandInterface<Readonly<Record<TName, TValue>> & (TRefs[K] extends ComputedExtensionBrandInterface<infer Prev> ? Prev : unknown)> & TRefs[K]>>;
+  ): JsonTology<Omit<TRefs, K> & Record<K, ComputedExtensionBrandType<Readonly<Record<TName, TValue>> & (TRefs[K] extends ComputedExtensionBrandType<infer Prev> ? Prev : unknown)> & TRefs[K]>>;
   // Implementation signature — must be wider than the typed overload. Returns the
   // default `JsonTology` (TRefs = Record<never, never>), the widest instance shape,
   // so the overload's augmented-TRefs return is assignable to it regardless of how
@@ -897,7 +897,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     // surface to the erased store is the one boundary that needs an assertion.
     this.registry.computedStore.add(this.curie.expand(schemaId), name, fn as ComputedFnType);
 
-    // The typed overload augments TRefs[K] with ComputedExtensionBrandInterface so
+    // The typed overload augments TRefs[K] with ComputedExtensionBrandType so
     // ParseOutputType<TRefs[K], TRefs> intersects the new field on the output type.
     // The runtime instance is unchanged (computed values are produced at instantiate
     // time), so the impl returns `this` cast to the erased impl return type.
@@ -911,8 +911,8 @@ export class JsonTology<TRefs = Record<never, never>> {
    *   of the typed schema map; unregistered IRIs are rejected at compile time.
    * @param invariant - The invariant to add. Runs after structural validation succeeds.
    */
-  public addInvariant<T extends object>(schemaId: keyof TRefs & string, invariant: InvariantInterface<T>): void {
-    this.registry.addInvariant(schemaId, invariant as InvariantInterface);
+  public addInvariant<T extends object>(schemaId: keyof TRefs & string, invariant: InvariantType<T>): void {
+    this.registry.addInvariant(schemaId, invariant as InvariantType);
   }
   /**
    * Attach a decode/encode pair to a registered schema. Registry-aware
@@ -941,7 +941,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     // resolved through this instance's TRefs); `encode` is the inverse. The
     // single cast is the type-erasure boundary into the transform registry
     // (identical to Transform.create), not a widening.
-    Transform.register(schema, fns as TransformFnsInterface);
+    Transform.register(schema, fns as TransformFnsType);
 
     return brand<TransformedType<TSchema, TWire>>(schema);
   }
@@ -1001,7 +1001,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   /**
    * Build the OWL TBox serializer with the current curie and predicateResolver.
    */
-  private buildOntologySerializer(vocabularies: JsonTologyOptionsInterface['vocabularies']): GraphOntologySerializer {
+  private buildOntologySerializer(vocabularies: JsonTologyOptionsType['vocabularies']): GraphOntologySerializer {
     return new GraphOntologySerializer({
       'curie': this.curie,
       'predicateResolver': this.predicateResolver,
@@ -1011,7 +1011,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   /**
    * Build the SHACL serializer with the current curie and predicateResolver.
    */
-  private buildShaclSerializer(vocabularies: JsonTologyOptionsInterface['vocabularies']): GraphShaclSerializer {
+  private buildShaclSerializer(vocabularies: JsonTologyOptionsType['vocabularies']): GraphShaclSerializer {
     return new GraphShaclSerializer({
       'curie': this.curie,
       'predicateResolver': this.predicateResolver,
@@ -1029,16 +1029,16 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param options - Filtering and mode options.
    * @returns Wire-form representation of the value.
    */
-  public dump<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: DumpOptionsInterface): ParseOutputType<TRefs[K], TRefs>;
+  public dump<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: DumpOptionsType): ParseOutputType<TRefs[K], TRefs>;
   public dump<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
     value: ParseOutputType<TSchema, TRefs>,
-    options?: DumpOptionsInterface
+    options?: DumpOptionsType
   ): ParseOutputType<TSchema, TRefs>;
   public dump(
     schema: (keyof TRefs & string) | (Record<string, unknown> & { '$id': string; }),
     value: unknown,
-    options?: DumpOptionsInterface
+    options?: DumpOptionsType
   ): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
@@ -1062,16 +1062,16 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param options - Filtering and mode options (mode is forced to `'json'`).
    * @returns JSON string.
    */
-  public dumpJson<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: Omit<DumpOptionsInterface, 'mode'>): string;
+  public dumpJson<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: Omit<DumpOptionsType, 'mode'>): string;
   public dumpJson<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
     value: ParseOutputType<TSchema, TRefs>,
-    options?: Omit<DumpOptionsInterface, 'mode'>
+    options?: Omit<DumpOptionsType, 'mode'>
   ): string;
   public dumpJson(
     schema: (keyof TRefs & string) | (Record<string, unknown> & { '$id': string; }),
     value: unknown,
-    options?: Omit<DumpOptionsInterface, 'mode'>
+    options?: Omit<DumpOptionsType, 'mode'>
   ): string {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
@@ -1214,14 +1214,14 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param jsonLd - The OWL 2 TBox input as a QuadInterface array, a JSON-LD
    *   object, or a JSON-LD string.
    * @param options - Optional per-call overrides.
-   * @returns OwlImportResult (same shape as the static variant).
+   * @returns OwlImportResultType (same shape as the static variant).
    * @throws {OwlImportError} code OWL_IMPORT_NOT_IMPLEMENTED when an axiom group has no dispatcher.
    * @throws {GraphError} code DIALECT_UNSUPPORTED when the input contains an unsupported JSON Schema dialect.
    */
   public fromTbox(
     jsonLd: object | QuadInterface[] | string,
     options?: { 'register'?: boolean }
-  ): OwlImportResult {
+  ): OwlImportResultType {
     const register = options?.register !== false;
     const importer = new OwlImporter({
       'baseIRI': this.baseIRI,
@@ -1719,7 +1719,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param shapes - SHACL shape quads or an {@link OntologyBuilder} produced by
    *   `toShacl()`. When an `OntologyBuilder` is passed its `.shaclQuads()` are used.
    * @param data - ABox instance data quads to validate against the shapes.
-   * @returns A {@link ShaclValidationReportInterface} with `conforms: true` when
+   * @returns A {@link ShaclValidationReportType} with `conforms: true` when
    *   no violations are found, or `conforms: false` with a populated `results` array.
    *
    * @example
@@ -1742,7 +1742,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public validateWithShacl(
     shapes: OntologyBuilder | readonly QuadInterface[],
     data: readonly QuadInterface[]
-  ): ShaclValidationReportInterface {
+  ): ShaclValidationReportType {
     const shapeQuads = shapes instanceof OntologyBuilder
       ? shapes.shaclQuads()
       : shapes;
@@ -1752,65 +1752,13 @@ export class JsonTology<TRefs = Record<never, never>> {
 }
 
 // ---------------------------------------------------------------------------
-// Registry-derived type helpers
-//
-// A `JsonTology` instance created via `JsonTology.create({ schemas })` carries
-// its references map as the `TRefs` type parameter, so `typeof jt` already
-// holds every registered schema keyed by `$id`. These helpers read the
-// resolved type back out of that instance type — consumers name a registered
-// schema by `$id` instead of hand-rolling `SchemaReferencesMapType<typeof
-// tuple>`. Cross-schema `$ref`s resolve against the registry's own references.
+// Registry-derived type helpers — canonical definitions live in
+// src/types/RegisteredTypes.ts; re-exported here for the public surface.
 // ---------------------------------------------------------------------------
+export type {
+  RegisteredCanonicalType,
+  RegisteredMaterializedType,
+  RegisteredOutputType,
+  RegistryReferencesType
+} from './types/RegisteredTypes.js';
 
-/**
- * The references map (`{ [$id]: schema }`) carried by a `JsonTology` instance
- * type. `RegistryReferencesType<typeof jt>` recovers the map that
- * `JsonTology.create({ schemas })` accumulated, with no tuple to reconstruct.
- *
- * @typeParam TJt - A `JsonTology<...>` instance type (usually `typeof jt`).
- */
-export type RegistryReferencesType<TJt>
-  = TJt extends JsonTology<infer TRefs> ? TRefs : never;
-
-/**
- * The canonical (brand-free, decoded) shape of a registered schema, selected
- * by `$id` from a `JsonTology` instance type. Equivalent to the value `decode`
- * produces — cross-schema `$ref`s resolved through the registry's references,
- * no references map passed by hand.
- *
- * @example
- * ```ts
- * const jt = JsonTology.create({ schemas: [ChannelSchema, ChatMessageSchema] });
- * type ChatMessage = RegisteredCanonicalType<typeof jt, 'urn:slack:ChatMessage'>;
- * //   channel / sender resolve to their schema shapes, not RefNotFound
- * ```
- *
- * @typeParam TJt - A `JsonTology<...>` instance type (usually `typeof jt`).
- * @typeParam K - A registered schema `$id`.
- */
-export type RegisteredCanonicalType<TJt, K extends keyof RegistryReferencesType<TJt> & string>
-  = CanonicalShapeType<RegistryReferencesType<TJt>[K], RegistryReferencesType<TJt>>;
-
-/**
- * The materialized shape of a registered schema, selected by `$id` — required
- * and defaulted properties are non-optional. Matches `materialize()` output.
- *
- * @typeParam TJt - A `JsonTology<...>` instance type (usually `typeof jt`).
- * @typeParam K - A registered schema `$id`.
- */
-export type RegisteredMaterializedType<TJt, K extends keyof RegistryReferencesType<TJt> & string>
-  = MaterializedSchemaType<
-    RegistryReferencesType<TJt>[K],
-    RegistryReferencesType<TJt>[K],
-    RegistryReferencesType<TJt>
-  >;
-
-/**
- * The parse / wire output type of a registered schema, selected by `$id` —
- * matches the return type of `instantiate()`, `parse()`, and `dump()`.
- *
- * @typeParam TJt - A `JsonTology<...>` instance type (usually `typeof jt`).
- * @typeParam K - A registered schema `$id`.
- */
-export type RegisteredOutputType<TJt, K extends keyof RegistryReferencesType<TJt> & string>
-  = ParseOutputType<RegistryReferencesType<TJt>[K], RegistryReferencesType<TJt>>;

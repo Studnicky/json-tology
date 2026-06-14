@@ -1,4 +1,4 @@
-import type { PlanPreludeInterface } from '../interfaces/PlanPrelude.js';
+import type { PlanPreludeType } from '../types/PlanPrelude.js';
 
 /** Compile the additional-properties, complement, and property-names validators. */
-export type ConstraintValidatorsResult = Pick<PlanPreludeInterface, 'additionalValidator' | 'complementCheck' | 'propertyNamesValidator'>;
+export type ConstraintValidatorsResult = Pick<PlanPreludeType, 'additionalValidator' | 'complementCheck' | 'propertyNamesValidator'>;

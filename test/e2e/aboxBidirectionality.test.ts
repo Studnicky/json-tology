@@ -76,7 +76,7 @@ const XSD_INTEGER = 'http://www.w3.org/2001/XMLSchema#integer';
 // The embedded `$id` ref is resolved at runtime by the same-graph node scan
 // (B-14), but compile-time InferType cannot follow a `$ref` to an embedded
 // `$defs` `$id` (a separate, pre-existing type-derivation limitation), so a
-// lifted variant statically types as RefNotFoundInterface. Read its runtime
+// lifted variant statically types as RefNotFoundType. Read its runtime
 // fields through this narrowing guard rather than a cast.
 function readVariant(variant: unknown): { 'kind': unknown;
   'variantPrice': unknown } {

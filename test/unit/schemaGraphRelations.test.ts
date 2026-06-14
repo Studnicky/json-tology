@@ -2,7 +2,7 @@
  * Direct unit tests for SchemaGraphRelations.extractRelations().
  *
  * extractRelations() maps a single SchemaGraph node + its siblings into an
- * array of SchemaGraphRelationInterface objects. We verify the relation
+ * array of SchemaGraphRelationType objects. We verify the relation
  * predicates and targets for the behaviorally significant cases.
  *
  * Approach: build a real SchemaGraph and drive allRelations() which calls
@@ -17,13 +17,13 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import {
   OWL, RDF, RDFS, SH
 } from '../../src/constants/IRI.js';
-import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
+import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-type RelationArray = SchemaGraphRelationInterface[];
+type RelationArray = SchemaGraphRelationType[];
 
 /**
  * Build a SchemaGraph and collect the full relation set via allRelations().
@@ -45,7 +45,7 @@ function filterByPredicate(relations: RelationArray, predicate: string): Relatio
 /**
  * Find the target id string for a relation (handles string and node targets).
  */
-function resolveTargetId(rel: SchemaGraphRelationInterface): string {
+function resolveTargetId(rel: SchemaGraphRelationType): string {
   if (typeof rel.target === 'string') {
     return rel.target;
   }

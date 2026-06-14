@@ -27,14 +27,14 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../../interfaces/OwlImport.js';
+  OwlImportContextType, OwlImportFragmentType
+} from '../../../types/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-import type { XsdJsonSchemaPrimitiveInterface } from '../../../interfaces/XsdJsonSchemaPrimitiveInterface.js';
-import type { PropIndexEntry } from '../../../interfaces/PropIndexEntry.js';
-import type { PropertyCollectionMaps } from '../../../interfaces/PropertyCollectionMaps.js';
-import type { ApplyPropertyArgs } from '../../../interfaces/ApplyPropertyArgs.js';
-import type { PropertyIndexValue } from '../../../interfaces/PropertyIndexValue.js';
+import type { XsdJsonSchemaPrimitiveType } from '../../../types/XsdJsonSchemaPrimitiveType.js';
+import type { PropIndexEntryType } from '../../../types/PropIndexEntryType.js';
+import type { PropertyCollectionMapsType } from '../../../types/PropertyCollectionMapsType.js';
+import type { ApplyPropertyArgsType } from '../../../types/ApplyPropertyArgsType.js';
+import type { PropertyIndexValueType } from '../../../types/PropertyIndexValueType.js';
 import { RDF } from '../../../constants/IRI.js';
 import { XSD_TO_JSON_SCHEMA } from '../../../constants/XSD_REVERSE_MAPS.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
@@ -55,7 +55,7 @@ import {
  * Resolve an XSD datatype IRI (full or prefixed) to its JSON Schema primitive.
  * Returns null when the IRI is not a recognised XSD primitive.
  */
-function xsdToJsonSchema(iri: string): null | XsdJsonSchemaPrimitiveInterface {
+function xsdToJsonSchema(iri: string): null | XsdJsonSchemaPrimitiveType {
   return XSD_TO_JSON_SCHEMA.get(iri) ?? null;
 }
 
@@ -111,7 +111,7 @@ function pushUnique(map: Map<string, string[]>, key: string, value: string): voi
 
 /** Record an object-property type declaration in the property index. */
 function indexPropertyType(
-  propertyIndex: Map<string, PropertyIndexValue>,
+  propertyIndex: Map<string, PropertyIndexValueType>,
   subjectIri: string,
   propType: 'datatype' | 'object'
 ): void {
@@ -128,7 +128,7 @@ function indexPropertyType(
 
 /** Handle an rdf:type relation — record object or datatype property declarations. */
 function handleTypeRelation(
-  propertyIndex: Map<string, PropertyIndexValue>,
+  propertyIndex: Map<string, PropertyIndexValueType>,
   subjectIri: string,
   targetIri: string
 ): void {
@@ -144,8 +144,8 @@ function handleTypeRelation(
  * type declarations, domain, range, subPropertyOf, and inverseOf axioms into
  * separate maps for later merging.
  */
-function collectPropertyDeclarations(ctx: OwlImportContext): PropertyCollectionMaps {
-  const propertyIndex = new Map<string, PropertyIndexValue>();
+function collectPropertyDeclarations(ctx: OwlImportContextType): PropertyCollectionMapsType {
+  const propertyIndex = new Map<string, PropertyIndexValueType>();
   const domainsByProperty = new Map<string, string[]>();
   const rangeByProperty = new Map<string, string>();
   const subPropertyOf = new Map<string, string[]>();
@@ -196,18 +196,18 @@ function collectPropertyDeclarations(ctx: OwlImportContext): PropertyCollectionM
 }
 
 // ---------------------------------------------------------------------------
-// Phase 2: merge collection maps into PropIndexEntry records
+// Phase 2: merge collection maps into PropIndexEntryType records
 // ---------------------------------------------------------------------------
 
 /**
- * Merge the per-predicate collection maps into a unified `PropIndexEntry` map,
+ * Merge the per-predicate collection maps into a unified `PropIndexEntryType` map,
  * including properties that appear via `rdfs:domain` without an explicit
  * `rdf:type` declaration.
  */
 function buildPropertyEntries(
-  maps: PropertyCollectionMaps,
-  ctx: OwlImportContext
-): Map<string, PropIndexEntry> {
+  maps: PropertyCollectionMapsType,
+  ctx: OwlImportContextType
+): Map<string, PropIndexEntryType> {
   const {
     domainsByProperty, inverseOf, propertyIndex, rangeByProperty, subPropertyOf
   } = maps;
@@ -223,7 +223,7 @@ function buildPropertyEntries(
     allPropertyIris.add(domainPropIri);
   }
 
-  const entries = new Map<string, PropIndexEntry>();
+  const entries = new Map<string, PropIndexEntryType>();
 
   for (const propIri of allPropertyIris) {
     const existing = propertyIndex.get(propIri);
@@ -247,7 +247,7 @@ function buildPropertyEntries(
 // ---------------------------------------------------------------------------
 
 /** Build a JSON Schema shape from an XSD primitive descriptor. */
-function xsdPrimitiveShape(primitive: XsdJsonSchemaPrimitiveInterface): Record<string, unknown> {
+function xsdPrimitiveShape(primitive: XsdJsonSchemaPrimitiveType): Record<string, unknown> {
   return primitive.format === undefined
     ? { 'type': primitive.type }
     : {
@@ -263,7 +263,7 @@ function xsdPrimitiveShape(primitive: XsdJsonSchemaPrimitiveInterface): Record<s
 function resolvePropertyShape(
   range: string,
   propertyIri: string,
-  ctx: OwlImportContext
+  ctx: OwlImportContextType
 ): null | Record<string, unknown> {
   if (range === RDF_LIST_CURIE || range === RDF.List) {
     // rdf:List signals an array (no-maxCount path in OwlProjection); no
@@ -303,7 +303,7 @@ function resolvePropertyShape(
 /**
  * Update `schemaDeltas` for each class in `domains` with the property shape.
  */
-function applyPropertyToDomains(args: ApplyPropertyArgs): void {
+function applyPropertyToDomains(args: ApplyPropertyArgsType): void {
   const {
     domains, propertyIri, propShape, schemaDeltas
   } = args;
@@ -347,9 +347,9 @@ function applyPropertyToDomains(args: ApplyPropertyArgs): void {
  * `characteristics` arrays that make up the returned fragment.
  */
 function buildFragmentFromEntries(
-  entries: Map<string, PropIndexEntry>,
-  ctx: OwlImportContext
-): Pick<OwlImportFragment, 'characteristics' | 'schemaDeltas'> {
+  entries: Map<string, PropIndexEntryType>,
+  ctx: OwlImportContextType
+): Pick<OwlImportFragmentType, 'characteristics' | 'schemaDeltas'> {
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
   const characteristics: Array<{ 'characteristic': string;
     'propertyIri': string }> = [];
@@ -399,12 +399,12 @@ function buildFragmentFromEntries(
  *
  * @param _quads - All quads from the input graph (unused; graph drives traversal via ctx).
  * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with schemaDeltas and characteristics populated.
+ * @returns OwlImportFragmentType with schemaDeltas and characteristics populated.
  *
  * @remarks
  * Performs a three-phase operation: (1) single-pass collection of property
  * declarations from `ctx.graph.allRelations()`; (2) merging of per-predicate
- * maps into unified `PropIndexEntry` records; (3) derivation of schema deltas
+ * maps into unified `PropIndexEntryType` records; (3) derivation of schema deltas
  * and OWL characteristics from the merged entries.
  *
  * Properties that appear via `rdfs:domain` without an explicit `rdf:type`
@@ -421,10 +421,10 @@ function buildFragmentFromEntries(
  *
  * @category OWL Import
  * @since 0.18.0
- * @see {@link OwlImportFragment}
+ * @see {@link OwlImportFragmentType}
  * @group Dispatchers
  */
-export function importProperties(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importProperties(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
   const maps = collectPropertyDeclarations(ctx);
   const entries = buildPropertyEntries(maps, ctx);
   const {

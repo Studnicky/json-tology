@@ -28,25 +28,25 @@ function assert<T extends true>(_proof?: T): void {
 
 // IsbnSchema carries a pattern brand for ISBN-13: ^\\d{13}$
 type Isbn = InferType<typeof IsbnSchema>;
-// Resolves to: string & PatternBrandInterface<'^\\d{13}$'>
+// Resolves to: string & PatternBrandType<'^\\d{13}$'>
 
 // EmailSchema carries a format brand for email
 type Email = InferType<typeof EmailSchema>;
-// Resolves to: string & FormatBrandInterface<'email'>
+// Resolves to: string & FormatBrandType<'email'>
 
 // When IsbnSchema is referenced within BookSchema via $ref,
 // the inferred book.isbn property narrows to the branded type.
 // BookstoreRefs resolves $ref fields to their named datatype types.
 type Book = InferType<typeof BookSchema, BookstoreRefs>;
 type BookIsbn = Book extends { readonly 'isbn': infer I } ? I : never;
-// BookIsbn carries the same PatternBrandInterface<'^\\d{13}$'>
+// BookIsbn carries the same PatternBrandType<'^\\d{13}$'>
 
 assert<AssertEqualType<BookIsbn extends string ? true : false, true>>();
 
 // Similarly, CustomerSchema.$ref EmailSchema produces a branded email type
 type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;
 type CustomerEmail = Customer extends { readonly 'email': infer E } ? E : never;
-// CustomerEmail carries FormatBrandInterface<'email'>
+// CustomerEmail carries FormatBrandType<'email'>
 
 assert<AssertEqualType<CustomerEmail extends string ? true : false, true>>();
 

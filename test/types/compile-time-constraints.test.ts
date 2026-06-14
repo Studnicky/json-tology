@@ -21,21 +21,21 @@ import { JsonTology } from '../../src/JsonTology.js';
 import { Transform } from '../../src/modules/transform/Transform.js';
 import { brand } from '../../src/types/Brand.js';
 import type {
-  ContainsBrandInterface,
-  ContentEncodingBrandInterface,
-  ContentMediaTypeBrandInterface,
-  DialectBrandInterface,
-  FormatBrandInterface,
-  MaxItemsBrandInterface,
-  MaxLengthBrandInterface,
-  MaxPropertiesBrandInterface,
-  MinimumBrandInterface,
-  MinItemsBrandInterface,
-  MinLengthBrandInterface,
-  MinPropertiesBrandInterface,
-  MultipleOfBrandInterface,
-  SchemaIdBrandInterface,
-  UniqueItemsBrandInterface
+  ContainsBrandType,
+  ContentEncodingBrandType,
+  ContentMediaTypeBrandType,
+  DialectBrandType,
+  FormatBrandType,
+  MaxItemsBrandType,
+  MaxLengthBrandType,
+  MaxPropertiesBrandType,
+  MinimumBrandType,
+  MinItemsBrandType,
+  MinLengthBrandType,
+  MinPropertiesBrandType,
+  MultipleOfBrandType,
+  SchemaIdBrandType,
+  UniqueItemsBrandType
 } from '../../src/types/ConstraintBrands.js';
 import type {
   DeepPropertyPathsType,
@@ -463,7 +463,7 @@ type FixedArray = InferType<typeof _FixedArraySchema>;
 // type level rather than by a literal assignment.
 assert<AssertEqualType<
   FixedArray,
-  MaxItemsBrandInterface<3> & MinItemsBrandInterface<3> & readonly [string, string, string]
+  MaxItemsBrandType<3> & MinItemsBrandType<3> & readonly [string, string, string]
 >>();
 
 const _MinArraySchema = {
@@ -479,7 +479,7 @@ type MinArray = InferType<typeof _MinArraySchema>;
 // Min-length tuple: at least 2 numbers, then rest — carries the minItems brand.
 assert<AssertEqualType<
   MinArray,
-  MinItemsBrandInterface<2> & readonly [number, number, ...number[]]
+  MinItemsBrandType<2> & readonly [number, number, ...number[]]
 >>();
 
 // ---------------------------------------------------------------------------
@@ -662,7 +662,7 @@ if (false as boolean) {
 }
 
 // FormatBrand is intersected onto the string type
-type EmailHasFormatBrand = Email extends FormatBrandInterface<'email'> & string ? true : false;
+type EmailHasFormatBrand = Email extends FormatBrandType<'email'> & string ? true : false;
 const _emailBrandCheck: EmailHasFormatBrand = true;
 
 void _emailBrandCheck;
@@ -688,8 +688,8 @@ const _csBad: ConstrainedString = 'hello' as string;
 void _csBad;
 
 // Branded type carries all three brands
-type HasMinLength = ConstrainedString extends MinLengthBrandInterface<5> ? true : false;
-type HasMaxLength = ConstrainedString extends MaxLengthBrandInterface<100> ? true : false;
+type HasMinLength = ConstrainedString extends MinLengthBrandType<5> ? true : false;
+type HasMaxLength = ConstrainedString extends MaxLengthBrandType<100> ? true : false;
 const _csMinCheck: HasMinLength = true;
 const _csMaxCheck: HasMaxLength = true;
 
@@ -715,8 +715,8 @@ const _cnBad: ConstrainedNum = 42 as number;
 
 void _cnBad;
 
-type NumHasMinimum = ConstrainedNum extends MinimumBrandInterface<0> ? true : false;
-type NumHasMultipleOf = ConstrainedNum extends MultipleOfBrandInterface<5> ? true : false;
+type NumHasMinimum = ConstrainedNum extends MinimumBrandType<0> ? true : false;
+type NumHasMultipleOf = ConstrainedNum extends MultipleOfBrandType<5> ? true : false;
 const _cnMinCheck: NumHasMinimum = true;
 const _cnMulCheck: NumHasMultipleOf = true;
 
@@ -756,7 +756,7 @@ void _UniqueArraySchema;
 
 type UniqueArray = InferType<typeof _UniqueArraySchema>;
 
-type HasUniqueItems = UniqueArray extends UniqueItemsBrandInterface ? true : false;
+type HasUniqueItems = UniqueArray extends UniqueItemsBrandType ? true : false;
 const _uaCheck: HasUniqueItems = true;
 
 void _uaCheck;
@@ -781,7 +781,7 @@ const _containsElCheck: ContainsElement = true;
 void _containsElCheck;
 
 // Contains brand is present
-type HasContains = ContainsArr extends ContainsBrandInterface<number> ? true : false;
+type HasContains = ContainsArr extends ContainsBrandType<number> ? true : false;
 const _containsBrandCheck: HasContains = true;
 
 void _containsBrandCheck;
@@ -919,8 +919,8 @@ void _AllOfBrandSchema;
 
 type AllOfBranded = InferType<typeof _AllOfBrandSchema>;
 
-type AllOfHasFormat = AllOfBranded extends FormatBrandInterface<'email'> ? true : false;
-type AllOfHasMinLen = AllOfBranded extends MinLengthBrandInterface<5> ? true : false;
+type AllOfHasFormat = AllOfBranded extends FormatBrandType<'email'> ? true : false;
+type AllOfHasMinLen = AllOfBranded extends MinLengthBrandType<5> ? true : false;
 const _allOfFormatCheck: AllOfHasFormat = true;
 const _allOfMinLenCheck: AllOfHasMinLen = true;
 
@@ -947,8 +947,8 @@ const _contentBad: ContentStr = 'abc' as string;
 void _contentBad;
 
 // Branded type carries both content brands
-type HasContentEncoding = ContentStr extends ContentEncodingBrandInterface<'base64'> ? true : false;
-type HasContentMediaType = ContentStr extends ContentMediaTypeBrandInterface<'image/png'> ? true : false;
+type HasContentEncoding = ContentStr extends ContentEncodingBrandType<'base64'> ? true : false;
+type HasContentMediaType = ContentStr extends ContentMediaTypeBrandType<'image/png'> ? true : false;
 const _ceCheck: HasContentEncoding = true;
 const _cmtCheck: HasContentMediaType = true;
 
@@ -990,8 +990,8 @@ void _BoundedObjSchema;
 type BoundedObj = InferType<typeof _BoundedObjSchema>;
 
 // Branded type carries both object brands
-type HasMinProps = BoundedObj extends MinPropertiesBrandInterface<1> ? true : false;
-type HasMaxProps = BoundedObj extends MaxPropertiesBrandInterface<5> ? true : false;
+type HasMinProps = BoundedObj extends MinPropertiesBrandType<1> ? true : false;
+type HasMaxProps = BoundedObj extends MaxPropertiesBrandType<5> ? true : false;
 const _minPropCheck: HasMinProps = true;
 const _maxPropCheck: HasMaxProps = true;
 
@@ -1042,7 +1042,7 @@ type NominalPerson = NominalSchemaType<typeof _PersonSchema>;
 type NominalRobot = NominalSchemaType<typeof _RobotSchema>;
 
 // NominalSchemaType carries the $id brand
-type PersonHasSchemaId = NominalPerson extends SchemaIdBrandInterface<'https://example.io/Person'> ? true : false;
+type PersonHasSchemaId = NominalPerson extends SchemaIdBrandType<'https://example.io/Person'> ? true : false;
 const _personIdCheck: PersonHasSchemaId = true;
 
 void _personIdCheck;
@@ -1080,7 +1080,7 @@ void _Draft2020Schema;
 type NominalDraft7 = NominalSchemaType<typeof _Draft7Schema>;
 type NominalDraft2020 = NominalSchemaType<typeof _Draft2020Schema>;
 
-type HasDialect7 = NominalDraft7 extends DialectBrandInterface<'http://json-schema.org/draft-07/schema#'> ? true : false;
+type HasDialect7 = NominalDraft7 extends DialectBrandType<'http://json-schema.org/draft-07/schema#'> ? true : false;
 const _dialect7Check: HasDialect7 = true;
 
 void _dialect7Check;
@@ -1109,7 +1109,7 @@ void _BrandedPatternSchema;
 
 type BrandedPattern = InferType<typeof _BrandedPatternSchema>;
 
-type PatternHasMinProps = BrandedPattern extends MinPropertiesBrandInterface<1> ? true : false;
+type PatternHasMinProps = BrandedPattern extends MinPropertiesBrandType<1> ? true : false;
 const _patternMinCheck: PatternHasMinProps = true;
 
 void _patternMinCheck;
@@ -1123,7 +1123,7 @@ void _BareObjBrandSchema;
 
 type BareObjBranded = InferType<typeof _BareObjBrandSchema>;
 
-type BareHasMinProps = BareObjBranded extends MinPropertiesBrandInterface<3> ? true : false;
+type BareHasMinProps = BareObjBranded extends MinPropertiesBrandType<3> ? true : false;
 const _bareMinCheck: BareHasMinProps = true;
 
 void _bareMinCheck;
@@ -1504,7 +1504,7 @@ const _nfBad: NoFive = 5;
 void _nfBad;
 
 // ---------------------------------------------------------------------------
-// 40. Array brands — minItems produces MinItemsBrandInterface
+// 40. Array brands — minItems produces MinItemsBrandType
 // ---------------------------------------------------------------------------
 
 const _MinItemsArraySchema = {
@@ -1517,14 +1517,14 @@ void _MinItemsArraySchema;
 
 type MinItemsArr = InferType<typeof _MinItemsArraySchema>;
 
-// interop: MinItemsBrandInterface carries a phantom brand key; null cannot
+// interop: MinItemsBrandType carries a phantom brand key; null cannot
 // be assigned to the branded type without the unknown intermediate.
-const _mia: MinItemsBrandInterface<2> = null as unknown as MinItemsArr;
+const _mia: MinItemsBrandType<2> = null as unknown as MinItemsArr;
 
 void _mia;
 
 // ---------------------------------------------------------------------------
-// 41. Array brands — maxItems produces MaxItemsBrandInterface, different values incompatible
+// 41. Array brands — maxItems produces MaxItemsBrandType, different values incompatible
 // ---------------------------------------------------------------------------
 
 const _MaxItemsArraySchema = {
@@ -1537,9 +1537,9 @@ void _MaxItemsArraySchema;
 
 type MaxItemsArr = InferType<typeof _MaxItemsArraySchema>;
 
-// interop: MaxItemsBrandInterface carries a phantom brand key; null cannot
+// interop: MaxItemsBrandType carries a phantom brand key; null cannot
 // be assigned to the branded type without the unknown intermediate.
-const _mxa: MaxItemsBrandInterface<5> = null as unknown as MaxItemsArr;
+const _mxa: MaxItemsBrandType<5> = null as unknown as MaxItemsArr;
 
 void _mxa;
 
@@ -1555,7 +1555,7 @@ type OtherMaxArr = InferType<typeof _OtherMaxItemsSchema>;
 
 // interop: phantom brand key; unknown intermediate required for the negative brand test.
 // @ts-expect-error — maxItems: 5 vs maxItems: 10 are incompatible brands
-const _mxBad: MaxItemsBrandInterface<5> = null as unknown as OtherMaxArr;
+const _mxBad: MaxItemsBrandType<5> = null as unknown as OtherMaxArr;
 
 void _mxBad;
 
@@ -1744,7 +1744,6 @@ const _ShapeSchema = {
     'radius': { 'type': 'number' },
     'width': { 'type': 'number' }
   },
-  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema keyword, not a Promise
   'then': { 'required': ['radius'] },
   'type': 'object'
 } as const;
@@ -1788,7 +1787,6 @@ const _IfThenOnlySchema = {
     'expires': { 'type': 'string' },
     'status': { 'type': 'string' }
   },
-  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema keyword, not a Promise
   'then': { 'required': ['expires'] },
   'type': 'object'
 } as const;

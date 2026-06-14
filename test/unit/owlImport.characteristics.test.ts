@@ -20,7 +20,7 @@ import { Curie } from '../../src/modules/rdf/Curie.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
-import type { OwlImportContext } from '../../src/interfaces/OwlImport.js';
+import type { OwlImportContextType } from '../../src/types/OwlImport.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
 // ---------------------------------------------------------------------------
@@ -53,7 +53,7 @@ const OWL_IRREFLEXIVE_CURIE = 'owl:IrreflexiveProperty';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeCtx(allPropertyIris?: ReadonlySet<string>, quads: QuadInterface[] = []): OwlImportContext {
+function makeCtx(allPropertyIris?: ReadonlySet<string>, quads: QuadInterface[] = []): OwlImportContextType {
   const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{
     'axiomIri': string;
@@ -253,7 +253,7 @@ void describe('importCharacteristics — unknown property IRI', () => {
       'subjectIri': null | string;
     }> = [];
     const quads: QuadInterface[] = [typeQuad(unknownProp, OWL_FUNCTIONAL)];
-    const ctx: OwlImportContext = {
+    const ctx: OwlImportContextType = {
       ...makeCtx(new Set<string>(), quads),
       'reportUnsupported': (axiomIri, subjectIri) => {
         collectedUnsupported.push({

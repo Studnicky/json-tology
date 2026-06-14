@@ -1,6 +1,6 @@
 import type { SkolemizeFnType } from './Skolemize.js';
 
-export interface NormalizedToQuadsOptionsType {
+export type NormalizedToQuadsOptionsType = {
   readonly 'graphIRI'?: string | undefined;
   readonly 'iriFor'?: SkolemizeFnType | undefined;
-}
+};

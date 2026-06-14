@@ -16,21 +16,16 @@ import { Lists } from './Lists.js';
 import { decodeLiteral } from './Terms.js';
 import { QuadFactory } from './QuadFactory.js';
 
-const RDF_NS_FULL = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-const RDF_FIRST_FULL = `${RDF_NS_FULL}first`;
-const RDF_REST_FULL = `${RDF_NS_FULL}rest`;
-const RDF_NIL_FULL = `${RDF_NS_FULL}nil`;
-
 function isRdfFirst(value: string): boolean {
-  return value === RDF.first || value === RDF_FIRST_FULL;
+  return value === RDF.first;
 }
 
 function isRdfRest(value: string): boolean {
-  return value === RDF.rest || value === RDF_REST_FULL;
+  return value === RDF.rest;
 }
 
 function isRdfNil(value: string): boolean {
-  return value === RDF.nil || value === RDF_NIL_FULL;
+  return value === RDF.nil;
 }
 
 /**

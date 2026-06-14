@@ -1,7 +1,7 @@
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type {
-  VizEdgeInterface, VizNodeInterface, VizPayloadInterface, VizSchemaDataInterface
-} from '../../interfaces/Viz.js';
+  VizEdgeType, VizNodeType, VizPayloadType, VizSchemaDataType
+} from '../../types/Viz.js';
 import { GraphOntologySerializer } from '../ontology/GraphOntologySerializer.js';
 import { GraphSchemaSerializer } from '../ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from '../ontology/GraphShaclSerializer.js';
@@ -11,7 +11,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 
 /**
  * Collects visualization data — nodes, edges, and per-schema serializations — from a
- * registered schema set and projects them into a {@link VizPayloadInterface}.
+ * registered schema set and projects them into a {@link VizPayloadType}.
  *
  * @remarks
  * Each registered graph becomes one node in the visualization. Cross-schema `$ref`
@@ -27,7 +27,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
  *
  * @category Viz
  * @since 0.16.0
- * @see {@link VizPayloadInterface}
+ * @see {@link VizPayloadType}
  * @group Classes
  */
 export class VizDataCollector {
@@ -37,15 +37,15 @@ export class VizDataCollector {
     this.registry = registry;
   }
 
-  public collect(): VizPayloadInterface {
+  public collect(): VizPayloadType {
     const graphs = this.registry.listGraphs();
     const registeredIds = new Set(this.registry.list().map((schema: Record<string, unknown>): string => {
       return schema.$id as string;
     }));
 
-    const nodes: VizNodeInterface[] = [];
-    const edges: VizEdgeInterface[] = [];
-    const schemas: VizSchemaDataInterface[] = [];
+    const nodes: VizNodeType[] = [];
+    const edges: VizEdgeType[] = [];
+    const schemas: VizSchemaDataType[] = [];
 
     const { curie } = this.registry;
 
@@ -81,8 +81,8 @@ function collectEdges(
   graph: SchemaGraphInterface,
   schemaId: string,
   registeredIds: Set<string>
-): VizEdgeInterface[] {
-  const result: VizEdgeInterface[] = [];
+): VizEdgeType[] {
+  const result: VizEdgeType[] = [];
 
   for (const rel of graph.allRelations()) {
     if (rel.predicate !== RDFS.range) {
@@ -116,7 +116,7 @@ function resolveEdgeLabel(pointer: string): string {
   return isArrayKeyword ? (parts.at(-2) ?? last) : last;
 }
 
-function collectSchemaData(graph: SchemaGraphInterface, schemaId: string): VizSchemaDataInterface {
+function collectSchemaData(graph: SchemaGraphInterface, schemaId: string): VizSchemaDataType {
   const emitter = new TypeStringEmitter(graph);
   const schemaSerializer = new GraphSchemaSerializer();
   const owlSerializer = new GraphOntologySerializer();

@@ -4,9 +4,21 @@
 
 import type { InferType } from './Schema.js';
 import type { ValidationErrorSchema } from '../constants/SCHEMAS.js';
-import type { CustomKeywordEntryInterface } from '../interfaces/CustomKeywordEntry.js';
-import type { SchemaGraphNodeInterface } from '../interfaces/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
+import type { CustomKeywordEntryType } from '../types/CustomKeywordEntry.js';
+
+import type { PatternPropCheckEntryType } from '../types/PatternPropCheckEntry.js';
+import type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntry.js';
+import type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntry.js';
+import type { RefTargetType } from '../types/RefTarget.js';
+
+export type { AllowedKeysResultType } from '../types/AllowedKeysResult.js';
+export type { CompositionValidatorsResultType } from '../types/CompositionValidatorsResult.js';
+export type { ConditionalValidatorsResultType } from '../types/ConditionalValidatorsResult.js';
+export type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntry.js';
+export type { KeyPatternCheckResultType } from '../types/KeyPatternCheckResult.js';
+export type { PatternPropCheckEntryType } from '../types/PatternPropCheckEntry.js';
+export type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntry.js';
+export type { PlanArrayValidatorsType } from '../types/PlanArrayValidators.js';
 
 /**
  * A predicate function that tests a single value for schema compliance.
@@ -109,7 +121,7 @@ export type OptionalCheckFnType = CheckFnType | undefined;
  * @see {@link OptionalCheckFnType}
  * @group Validation
  */
-export type CustomKeywordEntriesResultType = CustomKeywordEntryInterface[] | undefined;
+export type CustomKeywordEntriesResultType = CustomKeywordEntryType[] | undefined;
 
 /**
  * A single error entry in an RFC 7807 Problem Details response.
@@ -134,12 +146,12 @@ export type CustomKeywordEntriesResultType = CustomKeywordEntryInterface[] | und
  * @see {@link ProblemDetailsType}
  * @group Validation
  */
-export interface ProblemDetailsErrorEntryType {
+export type ProblemDetailsErrorEntryType = {
   'keyword': string;
   'message': string;
   'params': Record<string, unknown>;
   'path': string;
-}
+};
 
 
 /**
@@ -165,11 +177,11 @@ export interface ProblemDetailsErrorEntryType {
  * @see {@link ProblemDetailsType}
  * @group Validation
  */
-export interface AggregateViewType {
+export type AggregateViewType = {
   'count': number;
   'keywords': string[];
   'paths': string[];
-}
+};
 
 /**
  * RFC 7807 Problem Details response shape for validation failures.
@@ -197,14 +209,14 @@ export interface AggregateViewType {
  * @see {@link ProblemDetailsErrorEntryType}
  * @group Validation
  */
-export interface ProblemDetailsType {
+export type ProblemDetailsType = {
   'detail': string;
   'errors': ProblemDetailsErrorEntryType[];
   'instance'?: string;
   'status': number;
   'title': string;
   'type': string;
-}
+};
 
 /**
  * The TypeScript type inferred from `ValidationErrorSchema`.
@@ -252,10 +264,10 @@ export type ValidationErrorType = InferType<typeof ValidationErrorSchema>;
  * @see {@link ValidateWithErrorsFnType}
  * @group Validation
  */
-export interface ValidateWithErrorsResultType {
+export type ValidateWithErrorsResultType = {
   'valid': boolean;
   'value': unknown;
-}
+};
 
 /**
  * The compiled validator function signature used throughout the validation engine.
@@ -436,33 +448,6 @@ export type ConditionalPropertyKeySetType = Set<string>;
 export type ObjectPropValidatorsMapType = Map<string, CheckFnType>;
 
 /**
- * A pattern-property entry pairing a compiled check with its compiled regex.
- *
- * @remarks
- * Produced during compilation of `patternProperties` schema keywords. The
- * `regex` is compiled once from the pattern string and reused across all
- * validation calls. The `check` is the fast-path predicate for values whose
- * key matches the pattern.
- *
- * @example
- * ```ts
- * const entry: PatternPropCheckEntryInterface = {
- *   regex: /^x-/,
- *   check: isString,
- * };
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link PatternPropChecksResultType}
- * @group Validation
- */
-export interface PatternPropCheckEntryInterface {
-  readonly 'check': CheckFnType;
-  readonly 'regex': RegExp;
-}
-
-/**
  * An optional list of pattern-property check entries.
  *
  * @remarks
@@ -479,10 +464,10 @@ export interface PatternPropCheckEntryInterface {
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link PatternPropCheckEntryInterface}
+ * @see {@link PatternPropCheckEntryType}
  * @group Validation
  */
-export type PatternPropChecksResultType = PatternPropCheckEntryInterface[] | undefined;
+export type PatternPropChecksResultType = PatternPropCheckEntryType[] | undefined;
 
 /**
  * The set of primitive enum values compiled to a `Set` for O(1) membership testing.
@@ -506,33 +491,6 @@ export type PatternPropChecksResultType = PatternPropCheckEntryInterface[] | und
 export type EnumPrimitiveSetType = Set<boolean | null | number | string> | undefined;
 
 /**
- * A pattern-property entry pairing a validate-with-errors function with its compiled regex.
- *
- * @remarks
- * Produced during compilation of `patternProperties` schema keywords for the
- * full validation path (with error collection). The `regex` is compiled once
- * from the pattern string; the `validator` collects structured errors for each
- * failing value whose key matches the pattern.
- *
- * @example
- * ```ts
- * const entry: PatternPropValidatorEntryInterface = {
- *   regex: /^x-/,
- *   validator: compiledValidator,
- * };
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link PatternPropValidatorsResultType}
- * @group Validation
- */
-export interface PatternPropValidatorEntryInterface {
-  readonly 'regex': RegExp;
-  readonly 'validator': ValidateWithErrorsFnType;
-}
-
-/**
  * An optional list of pattern-property validator entries.
  *
  * @remarks
@@ -549,95 +507,10 @@ export interface PatternPropValidatorEntryInterface {
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link PatternPropValidatorEntryInterface}
+ * @see {@link PatternPropValidatorEntryType}
  * @group Validation
  */
-export type PatternPropValidatorsResultType = PatternPropValidatorEntryInterface[] | undefined;
-
-/**
- * Composition validators compiled from `allOf`, `anyOf`, and `oneOf` schema keywords.
- *
- * @remarks
- * Produced once per schema node during compilation. `allOfValidators` collects
- * full validators for error reporting; `anyOfChecks` and `oneOfChecks` use the
- * fast-path predicate form. All three fields are `undefined` when the
- * corresponding keyword is absent from the schema.
- *
- * @example
- * ```ts
- * const comp: CompositionValidatorsResultInterface = {
- *   allOfValidators: [validateA, validateB],
- *   anyOfChecks: [checkX, checkY],
- *   oneOfChecks: undefined,
- * };
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link ConditionalValidatorsResultInterface}
- * @group Validation
- */
-export interface CompositionValidatorsResultInterface {
-  readonly 'allOfValidators': undefined | ValidateWithErrorsFnType[];
-  readonly 'anyOfChecks': CheckFnType[] | undefined;
-  readonly 'oneOfChecks': CheckFnType[] | undefined;
-}
-
-/**
- * Conditional validators compiled from `if`, `then`, and `else` schema keywords.
- *
- * @remarks
- * Produced once per schema node during compilation. `ifCheck` is the fast-path
- * predicate for the condition; `thenValidator` and `elseValidator` are the full
- * validators for each branch. All three fields are `undefined` when the
- * corresponding keyword is absent.
- *
- * @example
- * ```ts
- * const cond: ConditionalValidatorsResultInterface = {
- *   ifCheck: checkKind,
- *   thenValidator: validateCircle,
- *   elseValidator: undefined,
- * };
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link CompositionValidatorsResultInterface}
- * @group Validation
- */
-export interface ConditionalValidatorsResultInterface {
-  readonly 'elseValidator': OptionalValidateWithErrorsFnType;
-  readonly 'ifCheck': OptionalCheckFnType;
-  readonly 'thenValidator': OptionalValidateWithErrorsFnType;
-}
-
-/**
- * A dependent-schema trigger entry pairing a property name with its validator.
- *
- * @remarks
- * Produced during compilation of `dependentSchemas` keywords. When the
- * `trigger` property is present on the validated object, the associated
- * `validator` is invoked against the whole object to enforce the dependent
- * schema constraints.
- *
- * @example
- * ```ts
- * const entry: DependentSchemaValidatorEntryInterface = {
- *   trigger: 'creditCard',
- *   validator: validateBillingAddress,
- * };
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link DependentSchemaValidatorsResultType}
- * @group Validation
- */
-export interface DependentSchemaValidatorEntryInterface {
-  readonly 'trigger': string;
-  readonly 'validator': ValidateWithErrorsFnType;
-}
+export type PatternPropValidatorsResultType = PatternPropValidatorEntryType[] | undefined;
 
 /**
  * An optional list of dependent-schema validator entries.
@@ -655,68 +528,10 @@ export interface DependentSchemaValidatorEntryInterface {
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link DependentSchemaValidatorEntryInterface}
+ * @see {@link DependentSchemaValidatorEntryType}
  * @group Validation
  */
-export type DependentSchemaValidatorsResultType = DependentSchemaValidatorEntryInterface[] | undefined;
-
-/**
- * Allowed-key sets and property-alias map compiled from a schema node.
- *
- * @remarks
- * Used by the object validator to enforce `additionalProperties` and
- * `unevaluatedProperties` constraints and to apply property aliases.
- * `allowedKeys` is the full set of keys permitted (including inherited and
- * conditional); `allowedKeysForStrip` is the subset used when `stripUnknown`
- * is enabled; `propertyAliases` maps alias names to their canonical property
- * names for normalisation.
- *
- * @example
- * ```ts
- * const keys: AllowedKeysResultInterface = {
- *   allowedKeys: new Set(['id', 'name']),
- *   allowedKeysForStrip: new Set(['id', 'name']),
- *   propertyAliases: new Map([['userId', 'id']]),
- * };
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link InheritedPropertyKeySetType}
- * @group Validation
- */
-export interface AllowedKeysResultInterface {
-  readonly 'allowedKeys': Set<string> | undefined;
-  readonly 'allowedKeysForStrip': Set<string> | undefined;
-  readonly 'propertyAliases': Map<string, string>;
-}
-
-/**
- * Result of resolving a branch `$ref` — the target graph and node, or `undefined` if unresolvable.
- *
- * @remarks
- * Returned by the reference resolver when a `$ref` is encountered during
- * compilation. Carries both the owning `SchemaGraphInterface` (which may
- * differ from the compiling graph for cross-schema references) and the
- * resolved `SchemaGraphNodeInterface`.
- *
- * @example
- * ```ts
- * const ref: BranchRefResultInterface = {
- *   graph: registry.getGraph('https://example.com/User'),
- *   node: graph.getNode('/properties/address'),
- * };
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link BranchRefResultType}
- * @group Validation
- */
-export interface BranchRefResultInterface {
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'node': SchemaGraphNodeInterface;
-}
+export type DependentSchemaValidatorsResultType = DependentSchemaValidatorEntryType[] | undefined;
 
 /**
  * Optional branch ref result — `undefined` when the `$ref` cannot be resolved.
@@ -734,65 +549,10 @@ export interface BranchRefResultInterface {
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link BranchRefResultInterface}
+ * @see {@link BranchRefResultType}
  * @group Validation
  */
-export type BranchRefResultType = BranchRefResultInterface | undefined;
-
-/**
- * Result of checking a key against pattern-property validators — matched/valid flags.
- *
- * @remarks
- * Returned by the pattern-property key checker. `matched` indicates whether
- * at least one pattern regex matched the key; `valid` indicates whether all
- * matching validators passed. Both flags are needed to correctly implement
- * `additionalProperties` (which only fires for unmatched keys) alongside
- * pattern property validation.
- *
- * @example
- * ```ts
- * const result: KeyPatternCheckResultInterface = { matched: true, valid: false };
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link PatternPropValidatorEntryInterface}
- * @group Validation
- */
-export interface KeyPatternCheckResultInterface {
-  readonly 'matched': boolean;
-  readonly 'valid': boolean;
-}
-
-/**
- * Array-related validators compiled for a validation plan node.
- *
- * @remarks
- * Produced once per array schema node during compilation. `itemValidator`
- * applies to every element; `prefixValidators` applies positionally to tuple
- * items; `containsCheck` tests whether at least one element satisfies the
- * `contains` sub-schema. All fields are `undefined` when the corresponding
- * keyword is absent.
- *
- * @example
- * ```ts
- * const arrayVals: PlanArrayValidatorsInterface = {
- *   itemValidator: validateString,
- *   prefixValidators: [validateId, validateName],
- *   containsCheck: isNonEmpty,
- * };
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link CompositionValidatorsResultInterface}
- * @group Validation
- */
-export interface PlanArrayValidatorsInterface {
-  readonly 'containsCheck': OptionalCheckFnType;
-  readonly 'itemValidator': OptionalValidateWithErrorsFnType;
-  readonly 'prefixValidators': undefined | ValidateWithErrorsFnType[];
-}
+export type BranchRefResultType = RefTargetType | undefined;
 
 /**
  * Filtered `dependentRequired` entries — only those with non-empty value arrays.

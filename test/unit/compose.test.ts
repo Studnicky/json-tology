@@ -234,8 +234,8 @@ import { Result } from '../../src/modules/data/Result.js';
       void it(scenarioName, () => {
         const result = Compose.intersection(schemaList, id);
 
-        // interop: IntersectionSchemaInterface lacks index signature; no direct widening to Record.
-        checkFn(result as unknown as Record<string, unknown>);
+        // interop: IntersectionSchemaType lacks index signature; no direct widening to Record.
+        checkFn(result);
       });
     }
   });
@@ -1708,7 +1708,7 @@ import { Result } from '../../src/modules/data/Result.js';
   void describe('Compose.intersection() edge cases', { 'concurrency': true }, () => {
     for (const scenario of intersectionScenarios) {
       void it(scenario.name, () => {
-        // interop: IntersectionSchemaInterface lacks index signature; unknown intermediate required.
+        // interop: IntersectionSchemaType lacks index signature; unknown intermediate required.
         const result = Compose.intersection(
           scenario.schemas,
           scenario.newId

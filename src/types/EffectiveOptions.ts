@@ -1,3 +1,3 @@
-import type { GraphEngineOptionsInterface } from '../interfaces/GraphEngine.js';
+import type { GraphEngineOptionsType } from '../types/GraphEngine.js';
 
-export type EffectiveOptionsType = Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>;
+export type EffectiveOptionsType = Pick<GraphEngineOptionsType, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsType, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>;

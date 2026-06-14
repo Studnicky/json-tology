@@ -44,7 +44,6 @@ export const EBookSchema = Compose.subClassOf(BookSchema, {
     'fileFormat',
     'downloadUrl'
   ],
-  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
   'then': {
     'properties': { 'epubVersion': { 'type': 'string' } },
     'required': ['epubVersion'],

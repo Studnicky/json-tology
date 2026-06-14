@@ -24,12 +24,12 @@
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../../interfaces/OwlImport.js';
-import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
+  OwlImportContextType, OwlImportFragmentType
+} from '../../../types/OwlImport.js';
+import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
 import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
-import type { InvariantInterface } from '../../../interfaces/Invariant.js';
+import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import {
   ALL_DIFFERENT_IRIS,
@@ -53,7 +53,7 @@ import {
 /**
  * Returns true when the relation's predicate matches any IRI in the set.
  */
-function predicateIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<string>): boolean {
+function predicateIn(relation: SchemaGraphRelationType, set: ReadonlySet<string>): boolean {
   return set.has(relation.predicate);
 }
 
@@ -61,7 +61,7 @@ function predicateIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<st
  * Returns true when the relation's target is a NamedNode IRI in the set.
  * Accepts both string and node-shape targets.
  */
-function targetIriIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<string>): boolean {
+function targetIriIn(relation: SchemaGraphRelationType, set: ReadonlySet<string>): boolean {
   if (relation.termType !== 'NamedNode') {
     return false;
   }
@@ -74,7 +74,7 @@ function targetIriIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<st
 /**
  * Extract the IRI string of a NamedNode relation target, or null.
  */
-function namedNodeTarget(relation: SchemaGraphRelationInterface): null | string {
+function namedNodeTarget(relation: SchemaGraphRelationType): null | string {
   if (relation.termType !== 'NamedNode') {
     return null;
   }
@@ -88,7 +88,7 @@ function namedNodeTarget(relation: SchemaGraphRelationInterface): null | string 
  * decodes via the canonical `decodeLiteral` helper, returning a number /
  * boolean / Date / string per the XSD datatype.
  */
-function literalTarget(relation: SchemaGraphRelationInterface): unknown {
+function literalTarget(relation: SchemaGraphRelationType): unknown {
   if (relation.termType === 'Literal') {
     const rawValue = typeof relation.target === 'string' ? relation.target : relation.target.id;
     const literalTerm = Terms.literal(rawValue, {
@@ -105,7 +105,7 @@ function literalTarget(relation: SchemaGraphRelationInterface): unknown {
 /**
  * Resolve the IRI/bnode-id form of a relation target regardless of shape.
  */
-function targetValue(relation: SchemaGraphRelationInterface): string {
+function targetValue(relation: SchemaGraphRelationType): string {
   return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
@@ -122,7 +122,7 @@ function targetValue(relation: SchemaGraphRelationInterface): string {
 function differentFromInvariant(
   iriA: string,
   iriB: string
-): InvariantInterface {
+): InvariantType {
   return {
     'fn': () => {
       // Runtime check — at materialise time the registry sameAs store would
@@ -145,7 +145,7 @@ function negativePropertyAssertionInvariant(
   sourceIri: string,
   propertyIri: string,
   assertionValue: unknown
-): InvariantInterface {
+): InvariantType {
   return {
     'fn': () => {
       // Encodes the negative assertion as a named invariant.
@@ -164,7 +164,7 @@ function negativePropertyAssertionInvariant(
  * Build a registry-level invariant for composite key uniqueness on class C
  * over the given property IRIs.
  */
-function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantInterface {
+function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantType {
   const key = propertyIris.join(',');
 
   return {
@@ -200,12 +200,12 @@ function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantInt
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with individuals, sameAs, invariants, and schemaDeltas populated.
+ * @returns OwlImportFragmentType with individuals, sameAs, invariants, and schemaDeltas populated.
  */
-export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
   const sameAs: Array<readonly [string, string]> = [];
   const invariants: Array<{
-    'invariant': InvariantInterface;
+    'invariant': InvariantType;
     'schemaId': string;
   }> = [];
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();

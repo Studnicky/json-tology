@@ -28,8 +28,8 @@ import { Terms } from '../../src/modules/rdf/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../src/interfaces/OwlImport.js';
+  OwlImportContextType, OwlImportFragmentType
+} from '../../src/types/OwlImport.js';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -37,7 +37,7 @@ import type {
 
 const curie = new Curie(STANDARD_PREFIXES);
 
-function makeCtx(quads: QuadInterface[] = []): OwlImportContext & { 'unsupportedLog': Array<{ 'axiomIri': string;
+function makeCtx(quads: QuadInterface[] = []): OwlImportContextType & { 'unsupportedLog': Array<{ 'axiomIri': string;
   'subjectIri': null | string }> } {
   const unsupportedLog: Array<{ 'axiomIri': string;
     'subjectIri': null | string }> = [];
@@ -66,7 +66,7 @@ function makeCtx(quads: QuadInterface[] = []): OwlImportContext & { 'unsupported
 }
 
 /** Run the Annotations dispatcher with a graph derived from the same quads. */
-function runAnnotations(quads: QuadInterface[]): OwlImportFragment {
+function runAnnotations(quads: QuadInterface[]): OwlImportFragmentType {
   return importAnnotations(quads, makeCtx(quads));
 }
 

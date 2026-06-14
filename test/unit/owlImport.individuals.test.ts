@@ -17,8 +17,8 @@ import {
 } from 'node:test';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment
-} from '../../src/interfaces/OwlImport.js';
+  OwlImportContextType, OwlImportFragmentType
+} from '../../src/types/OwlImport.js';
 import { importIndividuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
@@ -79,14 +79,14 @@ function normalizePair(pair: readonly [string, string]): readonly [string, strin
 }
 
 // ---------------------------------------------------------------------------
-// OwlImportContext factory backed by a real quad-derived SchemaGraph
+// OwlImportContextType factory backed by a real quad-derived SchemaGraph
 // ---------------------------------------------------------------------------
 
 function makeCtx(
   allClassIris: string[] = [],
   allPropertyIris: string[] = [],
   reportUnsupported: (axiomIri: string, subjectIri: null | string) => void = () => { /* no-op */ }
-): OwlImportContext {
+): OwlImportContextType {
   return {
     'allClassIris': new Set(allClassIris),
     'allPropertyIris': new Set(allPropertyIris),
@@ -121,9 +121,9 @@ function runIndividuals(
   allClassIris: string[] = [],
   allPropertyIris: string[] = [],
   reportUnsupported: (axiomIri: string, subjectIri: null | string) => void = () => { /* no-op */ }
-): OwlImportFragment {
+): OwlImportFragmentType {
   const ctx = makeCtx(allClassIris, allPropertyIris, reportUnsupported);
-  const withGraph: OwlImportContext = {
+  const withGraph: OwlImportContextType = {
     ...ctx,
     'graph': SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' })
   };
@@ -137,7 +137,7 @@ function runIndividuals(
 
 void describe('importIndividuals — empty input', () => {
   void it('returns a valid empty fragment for no quads', () => {
-    const result: OwlImportFragment = runIndividuals([]);
+    const result: OwlImportFragmentType = runIndividuals([]);
 
     assert.equal(result.individuals.length, 0);
     assert.equal(result.sameAs.length, 0);

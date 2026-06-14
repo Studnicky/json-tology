@@ -38,26 +38,22 @@
 
 import { JsonTology } from './JsonTology.js';
 import type {
-  GenerateFromTboxOptions,
-  GenerateRegistryDirectoryOptions,
-  GenerateRegistryDirectoryResult
-} from './interfaces/OwlGen.js';
+  GenerateFromTboxOptionsType,
+  GenerateRegistryDirectoryOptionsType,
+  GenerateRegistryDirectoryResultType
+} from './types/OwlGen.js';
 import type {
-  OwlCodegenOptions,
-  OwlRegistryDirOptions
-} from './interfaces/OwlCodegen.js';
+  OwlCodegenOptionsType,
+  OwlRegistryDirOptionsType
+} from './types/OwlCodegen.js';
 import {
   generateRegistryFiles,
   generateTypeScript
 } from './modules/codegen/OwlCodegen.js';
 
 export type {
-  GenerateFromTboxOptions,
-  GenerateRegistryDirectoryEntityFile,
-  GenerateRegistryDirectoryOptions,
-  GenerateRegistryDirectoryResult,
-  WrittenEntityFile
-} from './interfaces/OwlGen.js';
+  OwlCodegenOptionsType, OwlRegistryDirOptionsType
+} from './modules/codegen/OwlCodegen.js';
 
 /**
  * Generate TypeScript source from an OWL 2 TBox.
@@ -72,7 +68,7 @@ export type {
  * const source = generateFromTbox({ input: myJsonLd, name: 'acl' });
  * fs.writeFileSync('src/acl-registry.ts', source);
  */
-export function generateFromTbox(options: GenerateFromTboxOptions): string {
+export function generateFromTbox(options: GenerateFromTboxOptionsType): string {
   const {
     baseIRI,
     header,
@@ -85,7 +81,7 @@ export function generateFromTbox(options: GenerateFromTboxOptions): string {
 
   const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
 
-  const codegenOptions: OwlCodegenOptions = {
+  const codegenOptions: OwlCodegenOptionsType = {
     ...(baseIRI === undefined ? {} : { 'baseIRI': baseIRI }),
     ...(header === undefined ? {} : { 'header': header }),
     ...(name === undefined ? {} : { 'registryConstName': name }),
@@ -122,7 +118,7 @@ export function generateFromTbox(options: GenerateFromTboxOptions): string {
  * }
  * fs.writeFileSync(join(outDir, 'index.ts'), result.indexSource, 'utf8');
  */
-export function generateRegistryDirectory(options: GenerateRegistryDirectoryOptions): GenerateRegistryDirectoryResult {
+export function generateRegistryDirectory(options: GenerateRegistryDirectoryOptionsType): GenerateRegistryDirectoryResultType {
   const {
     baseIRI,
     header,
@@ -135,7 +131,7 @@ export function generateRegistryDirectory(options: GenerateRegistryDirectoryOpti
 
   const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
 
-  const codegenOptions: OwlRegistryDirOptions = {
+  const codegenOptions: OwlRegistryDirOptionsType = {
     ...(baseIRI === undefined ? {} : { 'baseIRI': baseIRI }),
     ...(header === undefined ? {} : { 'header': header }),
     ...(name === undefined ? {} : { 'registryConstName': name }),
@@ -146,5 +142,9 @@ export function generateRegistryDirectory(options: GenerateRegistryDirectoryOpti
 }
 
 export type {
-  OwlCodegenOptions, OwlRegistryDirOptions
-} from './modules/codegen/OwlCodegen.js';
+  GenerateFromTboxOptionsType,
+  GenerateRegistryDirectoryEntityFileType,
+  GenerateRegistryDirectoryOptionsType,
+  GenerateRegistryDirectoryResultType,
+  WrittenEntityFileType
+} from './types/OwlGen.js';

@@ -186,7 +186,7 @@ const IsbnTypeSchema = {
 
 type IsbnType = InferType<typeof IsbnTypeSchema>;
 
-// IsbnType carries a PatternBrandInterface brand; a plain string literal cannot
+// IsbnType carries a PatternBrandType brand; a plain string literal cannot
 // satisfy the brand on its own — a branded value is produced by instantiate(),
 // which validates the wire string and returns the narrowed branded type.
 const isbnRegistry = JsonTology.create({

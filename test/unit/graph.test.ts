@@ -4,9 +4,9 @@
 import assert from 'node:assert/strict';
 // Graph-node identity tests are inherently white-box — interfaces and internal classes below
 // are not surfaced by the public API, but the tests need them to assert graph structure.
-import type { GraphArtifactInterface } from '../../src/interfaces/GraphArtifact.js';
-import type { NormIRInterface } from '../../src/interfaces/SchemaGraph.js';
-import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
+import type { GraphArtifactType } from '../../src/types/GraphArtifact.js';
+import type { NormIRType } from '../../src/types/SchemaGraph.js';
+import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 import {
   describe, it
 } from 'node:test';
@@ -840,13 +840,13 @@ function expandCurie(value: string): string {
 // Source: relations.test.ts
 // ===========================================================================
 {
-  function graphRelations(schema: Record<string, unknown>): SchemaGraphRelationInterface[] {
+  function graphRelations(schema: Record<string, unknown>): SchemaGraphRelationType[] {
     const graph = new SchemaGraph(schema);
 
     return graph.allRelations();
   }
 
-  function nodeRelations(schema: Record<string, unknown>, pointer = ''): SchemaGraphRelationInterface[] {
+  function nodeRelations(schema: Record<string, unknown>, pointer = ''): SchemaGraphRelationType[] {
     const graph = new SchemaGraph(schema);
     const node = pointer === '' ? graph.rootNode : graph.resolvePointer(pointer);
 
@@ -854,9 +854,9 @@ function expandCurie(value: string): string {
   }
 
   function findRelations(
-    rels: SchemaGraphRelationInterface[],
+    rels: SchemaGraphRelationType[],
     predicate: string
-  ): SchemaGraphRelationInterface[] {
+  ): SchemaGraphRelationType[] {
     return rels.filter((rel) => {
       return rel.predicate === predicate;
     });
@@ -1539,7 +1539,7 @@ function expandCurie(value: string): string {
 
     void it('handles edge-case schemas with no properties, boolean subschema, and empty oneOf', () => {
       const edgeScenarios: Array<{
-        'assertions': (rels: SchemaGraphRelationInterface[]) => void;
+        'assertions': (rels: SchemaGraphRelationType[]) => void;
         'name': string;
         'schema': Record<string, unknown>;
       }> = [
@@ -2243,7 +2243,6 @@ function expandCurie(value: string): string {
       'kind',
       'primary'
     ],
-    // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
     'then': {
       'properties': { 'flag': { 'type': 'boolean' } },
       'type': 'object'
@@ -2291,7 +2290,7 @@ function expandCurie(value: string): string {
   void describe('GraphArtifact', { 'concurrency': true }, () => {
     void describe('toArtifact', { 'concurrency': true }, () => {
       const toArtifactScenarios: Array<{
-        'check': (artifact: GraphArtifactInterface) => void;
+        'check': (artifact: GraphArtifactType) => void;
         'name': string;
         'schema': Record<string, unknown>;
       }> = [
@@ -2568,7 +2567,7 @@ function expandCurie(value: string): string {
 
     void describe('NormIR', { 'concurrency': true }, () => {
       const normIRScenarios: Array<{
-        'check': (normIR: NormIRInterface, fromConstructor: SchemaGraph) => void;
+        'check': (normIR: NormIRType, fromConstructor: SchemaGraph) => void;
         'name': string;
         'schema': Record<string, unknown>;
       }> = [
@@ -2589,7 +2588,7 @@ function expandCurie(value: string): string {
 
             // JSON-serializable
             const json = JSON.stringify(normIR);
-            const deserialized = JSON.parse(json) as NormIRInterface;
+            const deserialized = JSON.parse(json) as NormIRType;
             const graph = SchemaGraph.fromNormIR(deserialized);
 
             assert.equal(graph.nodes().length, fromConstructor.nodes().length);
@@ -3107,7 +3106,6 @@ function expandCurie(value: string): string {
         '$id': 'urn:test:if-then-else',
         'else': { '$ref': 'urn:test:ite-else' },
         'if': { '$ref': 'urn:test:ite-if' },
-        // eslint-disable-next-line unicorn/no-thenable
         'then': { '$ref': 'urn:test:ite-then' },
         'type': 'object'
       } as const;
@@ -3117,7 +3115,6 @@ function expandCurie(value: string): string {
         'if': { 'properties': { 'type': { 'const': 'admin' } } },
         'properties': { 'type': { 'type': 'string' } },
         'required': ['type'],
-        // eslint-disable-next-line unicorn/no-thenable
         'then': {
           'properties': { 'level': { 'type': 'number' } },
           'required': ['level']
@@ -3705,7 +3702,6 @@ function expandCurie(value: string): string {
         'if': { 'properties': { 'kind': { 'const': 'a' } } },
         'properties': { 'kind': { 'type': 'string' } },
         'required': ['kind'],
-        // eslint-disable-next-line unicorn/no-thenable
         'then': { 'properties': { 'aValue': { 'type': 'number' } } },
         'type': 'object',
         'unevaluatedProperties': false

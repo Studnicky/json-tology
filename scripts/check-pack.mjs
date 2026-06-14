@@ -18,7 +18,6 @@ const REQUIRED_PATHS = [
   'package.json'
 ];
 const FORBIDDEN_PREFIXES = [
-  'ARCHITECTURE.md',
   '.claude/',
   '.flame/',
   'check_',

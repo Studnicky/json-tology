@@ -1,3 +1,3 @@
-import type { JsonSchemaObject } from '../interfaces/JsonSchemaObject.js';
+import type { JsonSchemaObjectType } from '../types/JsonSchemaObjectType.js';
 
-export type JsonSchema = boolean | JsonSchemaObject;
+export type JsonSchema = boolean | JsonSchemaObjectType;

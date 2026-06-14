@@ -2,10 +2,10 @@ import type { ValidationErrorType } from '../../../types/Validation.js';
 import type { VisitFnType } from '../../../types/VisitFn.js';
 import type { EffectiveOptionsType } from '../../../types/EffectiveOptions.js';
 import type {
-  KeywordContextInterface, KeywordDefinitionInterface
-} from '../../../interfaces/GraphEngine.js';
-import type { VisitContextInterface } from '../../../interfaces/VisitContext.js';
-import type { InternalExecutionResultInterface } from '../../../interfaces/InternalExecutionResult.js';
+  KeywordContextType, KeywordDefinitionType
+} from '../../../types/GraphEngine.js';
+import type { VisitContextType } from '../../../types/VisitContext.js';
+import type { InternalExecutionResultType } from '../../../types/InternalExecutionResult.js';
 import {
   isRecord
 } from '../../data/DataTypes.js';
@@ -15,7 +15,7 @@ import { Predicates } from '../../validation/Predicates.js';
  * Visit a value against a range schema and push any errors via the callback.
  */
 function visitRangeValue(
-  context: VisitContextInterface,
+  context: VisitContextType,
   rangeSchema: Record<string, unknown>,
   item: unknown,
   itemPath: string,
@@ -48,13 +48,13 @@ function visitRangeValue(
  *
  * @category Graph
  * @since 0.1.0
- * @see {@link UnevaluatedInterface}
+ * @see {@link Unevaluated}
  * @group Graph
  */
 export class Unevaluated {
   static customKeywords(
-    context: VisitContextInterface,
-    customKeywords: KeywordDefinitionInterface[],
+    context: VisitContextType,
+    customKeywords: KeywordDefinitionType[],
     extensions: Record<string, unknown>,
     workingValue: unknown,
     path: string,
@@ -62,7 +62,7 @@ export class Unevaluated {
     errors: ValidationErrorType[],
     evaluatedItems: Set<number> | undefined,
     evaluatedProperties: Set<string> | undefined
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     if (customKeywords.length === 0) {
       return undefined;
     }
@@ -81,7 +81,7 @@ export class Unevaluated {
         }
       }
 
-      const kwContext: KeywordContextInterface = {
+      const kwContext: KeywordContextType = {
         'parentData': undefined,
         'parentKey': '',
         'path': path,
@@ -122,7 +122,7 @@ export class Unevaluated {
   }
 
   static rdfsRange(
-    context: VisitContextInterface,
+    context: VisitContextType,
     rdfsRange: string,
     workingValue: unknown,
     path: string,
@@ -149,20 +149,21 @@ export class Unevaluated {
     }
 
     refStack.add(rangeRefKey);
-
-    if (isRecord(workingValue)) {
-      visitRangeValue(context, rangeSchema, workingValue, path, options, refStack, depth, visitNode, pushErrors);
-    } else if (Array.isArray(workingValue)) {
-      for (const [
-        i,
-        item
-      ] of workingValue.entries()) {
-        if (isRecord(item) || Array.isArray(item)) {
-          visitRangeValue(context, rangeSchema, item, `${path}/${i}`, options, refStack, depth, visitNode, pushErrors);
+    try {
+      if (isRecord(workingValue)) {
+        visitRangeValue(context, rangeSchema, workingValue, path, options, refStack, depth, visitNode, pushErrors);
+      } else if (Array.isArray(workingValue)) {
+        for (const [
+          i,
+          item
+        ] of workingValue.entries()) {
+          if (isRecord(item) || Array.isArray(item)) {
+            visitRangeValue(context, rangeSchema, item, `${path}/${i}`, options, refStack, depth, visitNode, pushErrors);
+          }
         }
       }
+    } finally {
+      refStack.delete(rangeRefKey);
     }
-
-    refStack.delete(rangeRefKey);
   }
 }

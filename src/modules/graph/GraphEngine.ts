@@ -1,12 +1,12 @@
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type {
-  GraphEngineOptionsInterface, GraphExecutionResultInterface,
-  KeywordDefinitionInterface
-} from '../../interfaces/GraphEngine.js';
+  GraphEngineOptionsType, GraphExecutionResultType,
+  KeywordDefinitionType
+} from '../../types/GraphEngine.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type {
-  SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
-} from '../../interfaces/SchemaGraph.js';
+  SchemaGraphNodeType, SchemaGraphSemanticsType
+} from '../../types/SchemaGraph.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { EffectiveOptionsType } from '../../types/EffectiveOptions.js';
@@ -17,6 +17,7 @@ import {
 import { FormatRegistry } from '../format/FormatRegistry.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
 import {
   EMPTY_EVALUATED_ITEMS, EMPTY_EVALUATED_PROPERTIES
@@ -24,22 +25,17 @@ import {
 import { GraphEngineSupport } from './GraphEngineSupport.js';
 import { SchemaIri } from './SchemaIri.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
-import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
-import type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
-import type { RefTargetInterface } from '../../interfaces/RefTarget.js';
-import type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
+import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
+import type { InternalExecutionResultType } from '../../types/InternalExecutionResult.js';
+import type { RefTargetType } from '../../types/RefTarget.js';
+import type { RootDialectPlanType } from '../../types/RootDialectPlan.js';
 import { GraphEngineScalars } from './GraphEngineScalars.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphEngineDefaults } from './GraphEngineDefaults.js';
-import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
+import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContext.js';
 import { GraphEngineVisit } from './GraphEngineVisit.js';
-import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
-
+import type { VisitContextType } from '../../types/VisitContext.js';
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
-
-const escape = (segment: string): string => {
-  return SchemaGraphSupport.escapeJsonPointerSegment(segment);
-};
 
 // EMPTY_EVALUATED_ITEMS and EMPTY_EVALUATED_PROPERTIES imported from EXECUTION_OPTIONS
 
@@ -56,7 +52,7 @@ const escape = (segment: string): string => {
  * the compiled graph, regex patterns, and ref resolutions internally so repeated
  * `execute` / `check` / `errors` calls on the same schema are cheap.
  *
- * Customise behaviour via `GraphEngineOptionsInterface`: plug in a custom
+ * Customise behaviour via `GraphEngineOptionsType`: plug in a custom
  * `FormatRegistry`, register additional keywords, enable coercion, control
  * default application, and supply cross-schema lookup callbacks.
  *
@@ -72,27 +68,26 @@ const escape = (segment: string): string => {
  * @group Graph
  */
 export class GraphEngine implements GraphEngineInterface {
-  private readonly cachedDefaultResolutionContext: DefaultResolutionContextInterface;
-  private readonly cachedVisitContext: VisitContextInterface;
-  private readonly customKeywords: KeywordDefinitionInterface[];
-  private readonly dialectPlan: RootDialectPlanInterface;
-  private readonly embeddedSchemas: Map<string, JsonSchemaDocumentType>;
+  private readonly cachedDefaultResolutionContext: DefaultResolutionContextType;
+  private readonly cachedVisitContext: VisitContextType;
+  private readonly customKeywords: KeywordDefinitionType[];
+  private readonly dialectPlan: RootDialectPlanType;
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
   private readonly options: EffectiveOptionsType;
-  private readonly patternEntryCache = new WeakMap<SchemaGraphNodeInterface, Array<{ 'node': SchemaGraphNodeInterface;
+  private readonly patternEntryCache = new WeakMap<SchemaGraphNodeType, Array<{ 'node': SchemaGraphNodeType;
     'pattern': string;
     'regex': RegExp }>>();
-  private readonly refCache = new Map<string, RefTargetInterface>();
-  private readonly refCacheOwn = new Map<string, RefTargetInterface>();
+  private readonly refCache = new Map<string, RefTargetType>();
+  private readonly refCacheOwn = new Map<string, RefTargetType>();
   private readonly regexCache = new Map<string, RegExp>();
   /** Reusable per-engine dynamicScope — guaranteed empty at execute() entry; always reset before use. */
-  private readonly reusableDynamicScope: DynamicScopeEntryInterface[] = [];
+  private readonly reusableDynamicScope: DynamicScopeEntryType[] = [];
   /** Reusable per-engine refStack — guaranteed empty at execute() entry; add/delete are balanced. */
   private readonly reusableRefStack = new Set<string>();
   private readonly rootId: string | undefined;
 
-  public constructor(public readonly rootSchema: JsonSchemaDocumentType, options: GraphEngineOptionsInterface = {}) {
+  public constructor(public readonly rootSchema: JsonSchemaDocumentType, options: GraphEngineOptionsType = {}) {
     const {
       formatRegistry, keywords, ...rest
     } = options;
@@ -104,8 +99,6 @@ export class GraphEngine implements GraphEngineInterface {
       ...rest
     };
     this.dialectPlan = GraphEngineSupport.buildRootDialectPlan(rootSchema);
-    this.embeddedSchemas = new Map<string, JsonSchemaDocumentType>();
-    GraphEngineSupport.collectEmbeddedSchemas(rootSchema, this.embeddedSchemas, true);
     this.rootId = GraphEngineSupport.schemaId(rootSchema);
     this.cachedDefaultResolutionContext = this.defaultResolutionContext();
     this.cachedVisitContext = this.visitContext();
@@ -113,13 +106,13 @@ export class GraphEngine implements GraphEngineInterface {
 
   private applyAdditionalProperty(
     key: string,
-    additionalPropertiesNode: boolean | SchemaGraphNodeInterface | undefined,
+    additionalPropertiesNode: boolean | SchemaGraphNodeType | undefined,
     graph: SchemaGraphInterface,
     workingValue: Record<string, unknown>,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     evaluatedProperties: Set<string>,
     errors: ValidationErrorType[],
     depth: number
@@ -131,7 +124,7 @@ export class GraphEngine implements GraphEngineInterface {
       if (options.removeAdditionalProperties) {
         delete workingValue[key];
       } else {
-        errors.push(this.createError(`${path}/${escape(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
+        errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
       }
 
       return;
@@ -143,7 +136,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       return;
     }
-    const child = this.visit(additionalPropertiesNode, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+    const child = this.visit(additionalPropertiesNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
     if (child.valid) {
       workingValue[key] = child.value;
@@ -154,10 +147,10 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private applyPropertyDefaults(
-    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeInterface>,
+    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeType>,
     workingValue: Record<string, unknown>,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryType[]
   ): void {
     for (const [
       key,
@@ -176,10 +169,10 @@ export class GraphEngine implements GraphEngineInterface {
 
   private applyRequiredDefaults(
     required: readonly string[],
-    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeInterface>,
+    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeType>,
     workingValue: Record<string, unknown>,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     options: EffectiveOptionsType,
     errors: ValidationErrorType[],
     path: string
@@ -212,16 +205,16 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private applyUnevaluatedItems(
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     alreadyEvaluated: Set<number>,
     depth: number
-  ): InternalExecutionResultInterface {
+  ): InternalExecutionResultType {
     const errors: ValidationErrorType[] = [];
     const evaluatedItems = new Set<number>();
     const workingValue = value;
@@ -263,16 +256,16 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private applyUnevaluatedProperties(
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     alreadyEvaluated: Set<string>,
     depth: number
-  ): InternalExecutionResultInterface {
+  ): InternalExecutionResultType {
     const errors: ValidationErrorType[] = [];
     const evaluatedProperties = new Set<string>();
     const workingValue = value;
@@ -290,11 +283,11 @@ export class GraphEngine implements GraphEngineInterface {
 
       if (typeof unevaluatedPropertiesNode.schema === 'boolean') {
         if (!unevaluatedPropertiesNode.schema) {
-          errors.push(this.createError(`${path}/${escape(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
+          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
         }
         continue;
       }
-      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -313,7 +306,7 @@ export class GraphEngine implements GraphEngineInterface {
     };
   }
 
-  private buildPatternPropertyEntries(node: SchemaGraphNodeInterface, sem: SchemaGraphSemanticsInterface): Array<{ 'node': SchemaGraphNodeInterface;
+  private buildPatternPropertyEntries(node: SchemaGraphNodeType, sem: SchemaGraphSemanticsType): Array<{ 'node': SchemaGraphNodeType;
     'pattern': string;
     'regex': RegExp }> {
     let patternPropertyEntries = this.patternEntryCache.get(node);
@@ -322,8 +315,8 @@ export class GraphEngine implements GraphEngineInterface {
       patternPropertyEntries = sem.patternPropertyEntries.map(([
         pattern,
         patternNode
-      ]: readonly [string, SchemaGraphNodeInterface
-      ]): { 'node': SchemaGraphNodeInterface;
+      ]: readonly [string, SchemaGraphNodeType
+      ]): { 'node': SchemaGraphNodeType;
         'pattern': string;
         'regex': RegExp } => {
         return {
@@ -345,10 +338,6 @@ export class GraphEngine implements GraphEngineInterface {
     }).valid;
   }
 
-  private coerceValue(schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown {
-    return GraphEngineScalars.coerceGraphValue(schemaTypes, value, materializeContainers);
-  }
-
   private createError(
     path: string,
     keyword: string,
@@ -359,21 +348,21 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private createImplicitDefault(
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryType[]
   ): unknown {
     const ctx = this.cachedDefaultResolutionContext;
 
     return GraphEngineDefaults.createImplicitDefaultValue(ctx, node, graph, dynamicScope);
   }
 
-  private defaultResolutionContext(): DefaultResolutionContextInterface {
+  private defaultResolutionContext(): DefaultResolutionContextType {
     return {
-      'resolveDynamicRef': (ref: string, currentGraph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryInterface[]): RefTargetInterface => {
+      'resolveDynamicRef': (ref: string, currentGraph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryType[]): RefTargetType => {
         return this.resolveDynamicRef(ref, currentGraph, dynamicScope);
       },
-      'resolveRef': (ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface => {
+      'resolveRef': (ref: string, currentGraph: SchemaGraphInterface): RefTargetType => {
         return this.resolveRef(ref, currentGraph);
       }
     };
@@ -388,9 +377,9 @@ export class GraphEngine implements GraphEngineInterface {
 
   public execute(
     value: unknown,
-    options?: { 'overrides'?: Partial<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'lookupSchema'>>
+    options?: { 'overrides'?: Partial<Omit<GraphEngineOptionsType, 'formatRegistry' | 'lookupSchema'>>
       'pointer'?: string; }
-  ): GraphExecutionResultInterface {
+  ): GraphExecutionResultType {
     const {
       overrides, pointer
     } = options ?? {};
@@ -418,7 +407,7 @@ export class GraphEngine implements GraphEngineInterface {
 
   private graphFor(rootSchema: JsonSchemaDocumentType): SchemaGraphInterface {
     if (!isRecord(rootSchema)) {
-      return new SchemaGraph(rootSchema as boolean);
+      return new SchemaGraph(rootSchema);
     }
 
     const cached = this.graphCache.get(rootSchema);
@@ -442,12 +431,8 @@ export class GraphEngine implements GraphEngineInterface {
     return this.customKeywords.length > 0;
   }
 
-  public keywords(): KeywordDefinitionInterface[] {
+  public keywords(): KeywordDefinitionType[] {
     return this.customKeywords;
-  }
-
-  private matchesType(schemaTypes: string[], value: unknown): boolean {
-    return GraphEngineScalars.matchesSchemaTypes(schemaTypes, value);
   }
 
   private regexFor(pattern: string): RegExp {
@@ -465,7 +450,7 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private resolveAliases(
-    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeInterface>,
+    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeType>,
     workingValue: Record<string, unknown>,
     graph: SchemaGraphInterface
   ): void {
@@ -490,8 +475,8 @@ export class GraphEngine implements GraphEngineInterface {
   private resolveDynamicRef(
     ref: string,
     currentGraph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[]
-  ): RefTargetInterface {
+    dynamicScope: DynamicScopeEntryType[]
+  ): RefTargetType {
     if (ref === '#') {
       for (let index = dynamicScope.length - 1; index >= 0; index--) {
         if (dynamicScope[index].anchor === '') {
@@ -524,7 +509,7 @@ export class GraphEngine implements GraphEngineInterface {
     return resolved;
   }
 
-  private resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface {
+  private resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetType {
     const isOwnRoot = currentGraph.rootSchema === this.rootSchema;
     const cached = this.resolveRefFromCache(ref, isOwnRoot, currentGraph);
 
@@ -559,7 +544,7 @@ export class GraphEngine implements GraphEngineInterface {
     ref: string,
     isOwnRoot: boolean,
     currentGraph: SchemaGraphInterface
-  ): RefTargetInterface | undefined {
+  ): RefTargetType | undefined {
     if (isOwnRoot) {
       return this.refCacheOwn.get(ref);
     }
@@ -579,13 +564,21 @@ export class GraphEngine implements GraphEngineInterface {
     if (this.rootId !== undefined && parsed.id === this.rootId) {
       return this.graphFor(this.rootSchema);
     }
-    const embedded = this.embeddedSchemas.get(parsed.id);
 
-    if (embedded === undefined) {
-      throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
+    // Resolve embedded $ids exclusively through the graph-owned index built
+    // during lower(). The root graph is retrieved from graphCache (keyed by
+    // rootSchema object identity) so this lookup is O(1) after the first
+    // execute() call. Every legal schema position that can carry a $id is
+    // node-ified by lower(), so the index is a strict superset of what the
+    // former raw-walk collected for schema positions.
+    const rootGraph = this.graphFor(this.rootSchema);
+    const embeddedGraphNode = rootGraph.embeddedNode(parsed.id);
+
+    if (embeddedGraphNode !== undefined && isRecord(embeddedGraphNode.schema)) {
+      return this.graphFor(embeddedGraphNode.schema);
     }
 
-    return this.graphFor(embedded);
+    throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Unresolved schema reference: ${ref}`, { 'pointer': ref });
   }
 
   public rootSchemaId(): string | undefined {
@@ -600,7 +593,7 @@ export class GraphEngine implements GraphEngineInterface {
     ref: string,
     isOwnRoot: boolean,
     currentGraph: SchemaGraphInterface,
-    target: RefTargetInterface
+    target: RefTargetType
   ): void {
     if (isOwnRoot) {
       this.refCacheOwn.set(ref, target);
@@ -614,9 +607,9 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private synthesizeZeroValue(
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryType[]
   ): unknown {
     return GraphEngineDefaults.synthesizeZeroValue(this.cachedDefaultResolutionContext, node, graph, dynamicScope);
   }
@@ -627,10 +620,10 @@ export class GraphEngine implements GraphEngineInterface {
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
-    sem: SchemaGraphSemanticsInterface,
+    dynamicScope: DynamicScopeEntryType[],
+    sem: SchemaGraphSemanticsType,
     depth: number
-  ): InternalExecutionResultInterface {
+  ): InternalExecutionResultType {
     const errors: ValidationErrorType[] = [];
     const evaluatedItems = new Set<number>();
     const workingValue = value;
@@ -723,8 +716,8 @@ export class GraphEngine implements GraphEngineInterface {
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
-    sem: SchemaGraphSemanticsInterface,
+    dynamicScope: DynamicScopeEntryType[],
+    sem: SchemaGraphSemanticsType,
     workingValue: unknown[],
     evaluatedItems: Set<number>,
     errors: ValidationErrorType[],
@@ -770,13 +763,13 @@ export class GraphEngine implements GraphEngineInterface {
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
-    itemsNode: SchemaGraphNodeInterface | undefined,
+    dynamicScope: DynamicScopeEntryType[],
+    itemsNode: SchemaGraphNodeType | undefined,
     workingValue: unknown[],
     evaluatedItems: Set<number>,
     errors: ValidationErrorType[],
     depth: number
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     if (itemsNode === undefined) {
       return undefined;
     }
@@ -799,13 +792,13 @@ export class GraphEngine implements GraphEngineInterface {
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
-    sem: SchemaGraphSemanticsInterface,
+    dynamicScope: DynamicScopeEntryType[],
+    sem: SchemaGraphSemanticsType,
     workingValue: unknown[],
     evaluatedItems: Set<number>,
     errors: ValidationErrorType[],
     depth: number
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     const {
       itemsNode, 'prefixItems': prefixItemNodes
     } = sem;
@@ -896,17 +889,17 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private validateDependentSchemas(
-    dependentSchemaEntries: ReadonlyArray<readonly [string, SchemaGraphNodeInterface]>,
+    dependentSchemaEntries: ReadonlyArray<readonly [string, SchemaGraphNodeType]>,
     workingValue: Record<string, unknown>,
     graph: SchemaGraphInterface,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     evaluatedProperties: Set<string>,
     errors: ValidationErrorType[],
     depth: number
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     if (dependentSchemaEntries.length === 0) {
       return undefined;
     }
@@ -938,14 +931,14 @@ export class GraphEngine implements GraphEngineInterface {
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
-    itemsNode: SchemaGraphNodeInterface | undefined,
+    dynamicScope: DynamicScopeEntryType[],
+    itemsNode: SchemaGraphNodeType | undefined,
     extraStart: number,
     workingValue: unknown[],
     evaluatedItems: Set<number>,
     errors: ValidationErrorType[],
     depth: number
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     if (itemsNode?.schema === false && workingValue.length > extraStart) {
       errors.push(this.createError(path, 'items', 'must NOT have items beyond prefixItems'));
 
@@ -971,7 +964,7 @@ export class GraphEngine implements GraphEngineInterface {
   private validateNumber(
     path: string,
     value: number,
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsType
   ): ValidationErrorType[] {
     const { formatAssertions } = this.dialectPlan;
 
@@ -979,15 +972,15 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private validateObject(
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     depth: number
-  ): InternalExecutionResultInterface {
+  ): InternalExecutionResultType {
     const errors: ValidationErrorType[] = [];
     const evaluatedProperties = new Set<string>();
     const sem = graph.semantics(node);
@@ -1065,21 +1058,21 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private validateObjectConstraints(
-    sem: SchemaGraphSemanticsInterface,
+    sem: SchemaGraphSemanticsType,
     graph: SchemaGraphInterface,
     workingValue: Record<string, unknown>,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     evaluatedProperties: Set<string>,
     errors: ValidationErrorType[],
     iterKeys: string[],
-    patternPropertyEntries: Array<{ 'node': SchemaGraphNodeInterface;
+    patternPropertyEntries: Array<{ 'node': SchemaGraphNodeType;
       'pattern': string;
       'regex': RegExp }>,
     depth: number
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     const {
       dependentRequired,
       dependentSchemaEntries,
@@ -1123,21 +1116,21 @@ export class GraphEngine implements GraphEngineInterface {
 
   private validateObjectProperties(
     iterKeys: string[],
-    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeInterface>,
-    patternPropertyEntries: Array<{ 'node': SchemaGraphNodeInterface;
+    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeType>,
+    patternPropertyEntries: Array<{ 'node': SchemaGraphNodeType;
       'pattern': string;
       'regex': RegExp }>,
-    propertyNamesNode: SchemaGraphNodeInterface | undefined,
+    propertyNamesNode: SchemaGraphNodeType | undefined,
     graph: SchemaGraphInterface,
     workingValue: Record<string, unknown>,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     evaluatedProperties: Set<string>,
     errors: ValidationErrorType[],
     depth: number
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     for (const key of iterKeys) {
       const nameCheckResult = this.validatePropertyKey(
         key,
@@ -1158,7 +1151,7 @@ export class GraphEngine implements GraphEngineInterface {
       const propNode = propertyNodeMap.get(key);
 
       if (propNode !== undefined) {
-        const child = this.visit(propNode, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+        const child = this.visit(propNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -1192,7 +1185,7 @@ export class GraphEngine implements GraphEngineInterface {
 
   private validatePatternProperties(
     key: string,
-    patternPropertyEntries: Array<{ 'node': SchemaGraphNodeInterface;
+    patternPropertyEntries: Array<{ 'node': SchemaGraphNodeType;
       'pattern': string;
       'regex': RegExp }>,
     graph: SchemaGraphInterface,
@@ -1200,16 +1193,16 @@ export class GraphEngine implements GraphEngineInterface {
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     evaluatedProperties: Set<string>,
     errors: ValidationErrorType[],
     depth: number
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     for (const patternEntry of patternPropertyEntries) {
       if (!patternEntry.regex.test(key)) {
         continue;
       }
-      const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+      const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -1224,15 +1217,15 @@ export class GraphEngine implements GraphEngineInterface {
 
   private validatePropertyKey(
     key: string,
-    propertyNamesNode: SchemaGraphNodeInterface | undefined,
+    propertyNamesNode: SchemaGraphNodeType | undefined,
     graph: SchemaGraphInterface,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     errors: ValidationErrorType[],
     depth: number
-  ): InternalExecutionResultInterface | undefined {
+  ): InternalExecutionResultType | undefined {
     if (propertyNamesNode === undefined) {
       return undefined;
     }
@@ -1248,7 +1241,7 @@ export class GraphEngine implements GraphEngineInterface {
     errors.push(...propertyNameResult.errors.map((error: ValidationErrorType): ValidationErrorType => {
       return {
         ...error,
-        'path': `${path}/${escape(key)}`
+        'path': `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`
       };
     }));
 
@@ -1258,7 +1251,7 @@ export class GraphEngine implements GraphEngineInterface {
   private validateString(
     path: string,
     value: string,
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsType
   ): ValidationErrorType[] {
     return GraphEngineScalars.validateStringConstraints(
       path,
@@ -1273,21 +1266,21 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private visit(
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
     value: unknown,
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntryType[],
     depth = 0
-  ): InternalExecutionResultInterface {
+  ): InternalExecutionResultType {
     const ctx = this.cachedVisitContext;
 
     return GraphEngineVisit.visit(ctx, node, graph, value, path, options, refStack, dynamicScope, depth);
   }
 
-  private visitContext(): VisitContextInterface {
+  private visitContext(): VisitContextType {
     return {
       ...this.visitContextResolution(),
       ...this.visitContextUnevaluated(),
@@ -1295,10 +1288,10 @@ export class GraphEngine implements GraphEngineInterface {
     };
   }
 
-  private visitContextResolution(): Pick<VisitContextInterface, 'coerceValue' | 'createError' | 'customKeywords' | 'graphFor' | 'matchesType' | 'resolveDynamicRef' | 'resolveRef' | 'synthesizeZeroValue'> {
+  private visitContextResolution(): Pick<VisitContextType, 'coerceValue' | 'createError' | 'customKeywords' | 'graphFor' | 'matchesType' | 'resolveDynamicRef' | 'resolveRef' | 'synthesizeZeroValue'> {
     return {
       'coerceValue': (schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown => {
-        return this.coerceValue(schemaTypes, value, materializeContainers);
+        return GraphEngineScalars.coerceGraphValue(schemaTypes, value, materializeContainers);
       },
       'createError': (path: string, keyword: string, message: string, params?: Record<string, unknown>): ValidationErrorType => {
         return this.createError(path, keyword, message, params);
@@ -1308,33 +1301,33 @@ export class GraphEngine implements GraphEngineInterface {
         return this.graphFor(rootSchema);
       },
       'matchesType': (schemaTypes: string[], value: unknown): boolean => {
-        return this.matchesType(schemaTypes, value);
+        return GraphEngineScalars.matchesSchemaTypes(schemaTypes, value);
       },
-      'resolveDynamicRef': (ref: string, currentGraph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryInterface[]): RefTargetInterface => {
+      'resolveDynamicRef': (ref: string, currentGraph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryType[]): RefTargetType => {
         return this.resolveDynamicRef(ref, currentGraph, dynamicScope);
       },
-      'resolveRef': (ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface => {
+      'resolveRef': (ref: string, currentGraph: SchemaGraphInterface): RefTargetType => {
         return this.resolveRef(ref, currentGraph);
       },
-      'synthesizeZeroValue': (node: SchemaGraphNodeInterface, graph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryInterface[]): unknown => {
+      'synthesizeZeroValue': (node: SchemaGraphNodeType, graph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryType[]): unknown => {
         return this.synthesizeZeroValue(node, graph, dynamicScope);
       }
     };
   }
 
-  private visitContextUnevaluated(): Pick<VisitContextInterface, 'applyUnevaluatedItems' | 'applyUnevaluatedProperties'> {
+  private visitContextUnevaluated(): Pick<VisitContextType, 'applyUnevaluatedItems' | 'applyUnevaluatedProperties'> {
     return {
       'applyUnevaluatedItems': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         graph: SchemaGraphInterface,
         value: unknown[],
         path: string,
         options: EffectiveOptionsType,
         refStack: Set<string>,
-        dynamicScope: DynamicScopeEntryInterface[],
+        dynamicScope: DynamicScopeEntryType[],
         alreadyEvaluated: Set<number>,
         depth: number
-      ): InternalExecutionResultInterface => {
+      ): InternalExecutionResultType => {
         return this.applyUnevaluatedItems(
           node,
           graph,
@@ -1348,22 +1341,22 @@ export class GraphEngine implements GraphEngineInterface {
         );
       },
       'applyUnevaluatedProperties': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         graph: SchemaGraphInterface,
         value: Record<string, unknown>,
         path: string,
         opts: EffectiveOptionsType,
         refStack: Set<string>,
-        dynScope: DynamicScopeEntryInterface[],
+        dynScope: DynamicScopeEntryType[],
         evaluated: Set<string>,
         depth: number
-      ): InternalExecutionResultInterface => {
+      ): InternalExecutionResultType => {
         return this.applyUnevaluatedProperties(node, graph, value, path, opts, refStack, dynScope, evaluated, depth);
       }
     };
   }
 
-  private visitContextValidators(): Pick<VisitContextInterface, 'validateArray' | 'validateNumber' | 'validateObject' | 'validateString'> {
+  private visitContextValidators(): Pick<VisitContextType, 'validateArray' | 'validateNumber' | 'validateObject' | 'validateString'> {
     return {
       'validateArray': (
         graph: SchemaGraphInterface,
@@ -1371,28 +1364,28 @@ export class GraphEngine implements GraphEngineInterface {
         path: string,
         options: EffectiveOptionsType,
         refStack: Set<string>,
-        dynamicScope: DynamicScopeEntryInterface[],
-        sem: SchemaGraphSemanticsInterface,
+        dynamicScope: DynamicScopeEntryType[],
+        sem: SchemaGraphSemanticsType,
         depth: number
-      ): InternalExecutionResultInterface => {
+      ): InternalExecutionResultType => {
         return this.validateArray(graph, value, path, options, refStack, dynamicScope, sem, depth);
       },
-      'validateNumber': (path: string, value: number, sem: SchemaGraphSemanticsInterface): ValidationErrorType[] => {
+      'validateNumber': (path: string, value: number, sem: SchemaGraphSemanticsType): ValidationErrorType[] => {
         return this.validateNumber(path, value, sem);
       },
       'validateObject': (
-        node: SchemaGraphNodeInterface,
+        node: SchemaGraphNodeType,
         graph: SchemaGraphInterface,
         value: Record<string, unknown>,
         path: string,
         options: EffectiveOptionsType,
         refStack: Set<string>,
-        dynamicScope: DynamicScopeEntryInterface[],
+        dynamicScope: DynamicScopeEntryType[],
         depth: number
-      ): InternalExecutionResultInterface => {
+      ): InternalExecutionResultType => {
         return this.validateObject(node, graph, value, path, options, refStack, dynamicScope, depth);
       },
-      'validateString': (path: string, value: string, sem: SchemaGraphSemanticsInterface): ValidationErrorType[] => {
+      'validateString': (path: string, value: string, sem: SchemaGraphSemanticsType): ValidationErrorType[] => {
         return this.validateString(path, value, sem);
       }
     };

@@ -1,5 +1,5 @@
 import type {
-  EmailBrandInterface, UuidBrandInterface
+  EmailBrandType, UuidBrandType
 } from '../../../src/types/index.js';
 import { JsonTology } from '../../../src/index.js';
 
@@ -24,8 +24,8 @@ const jt = JsonTology.create({
 });
 
 // Only values produced by the validation API carry the named format brand.
-const email: EmailBrandInterface = jt.instantiate(EmailSchema.$id, 'bastian@bookstore.example');
-const uuid: UuidBrandInterface = jt.instantiate(UuidSchema.$id, '550e8400-e29b-41d4-a716-446655440000');
+const email: EmailBrandType = jt.instantiate(EmailSchema.$id, 'bastian@bookstore.example');
+const uuid: UuidBrandType = jt.instantiate(UuidSchema.$id, '550e8400-e29b-41d4-a716-446655440000');
 
-console.log('EmailBrandInterface value:', email);
-console.log('UuidBrandInterface value:', uuid);
+console.log('EmailBrandType value:', email);
+console.log('UuidBrandType value:', uuid);

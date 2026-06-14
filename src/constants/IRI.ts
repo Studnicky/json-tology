@@ -110,6 +110,7 @@ export const RDF = {
   'langString': `${RDF_NS}langString`,
   'List': `${RDF_NS}List`,
   'nil': `${RDF_NS}nil`,
+  'Property': `${RDF_NS}Property`,
   'rest': `${RDF_NS}rest`,
   'type': `${RDF_NS}type`
 } as const;

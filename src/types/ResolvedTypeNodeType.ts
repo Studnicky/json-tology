@@ -1,4 +1,4 @@
-import type { ResolvedRefInterface } from '../interfaces/ResolvedRef.js';
+import type { RefTargetType } from '../types/RefTarget.js';
 
 /** A type IRI resolved to its graph and node, or undefined when unknown. */
-export type ResolvedTypeNodeType = ResolvedRefInterface | undefined;
+export type ResolvedTypeNodeType = RefTargetType | undefined;

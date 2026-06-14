@@ -9,7 +9,7 @@
 import type { ValidatePropertyCharacteristicsType } from '../../../src/types/TypeErrors.js';
 
 // @ts-expect-error — 'edge' sets asymmetric:true and reflexive:true
-//                     (PropertyCharacteristicConflictInterface)
+//                     (PropertyCharacteristicConflictType)
 const _bad: ValidatePropertyCharacteristicsType<{
   readonly '$id': 'urn:test:Bad';
   readonly 'properties': {
@@ -32,4 +32,4 @@ void _bad;
 
 // The @ts-expect-error above confirms the brand fires at the definition site.
 // At runtime the object is structurally valid; the conflict is a compile-time guarantee.
-console.log('asymmetric+reflexive conflict detected at compile time (PropertyCharacteristicConflictInterface)');
+console.log('asymmetric+reflexive conflict detected at compile time (PropertyCharacteristicConflictType)');

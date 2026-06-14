@@ -1,5 +1,3 @@
-import type { JsonSchemaDocumentObjectType } from './Schema.js';
-
 /**
  * Return types for the OwlCodegen code-generation pipeline.
  *
@@ -12,33 +10,16 @@ import type { JsonSchemaDocumentObjectType } from './Schema.js';
  * @group OWL Codegen
  */
 
-/**
- * Named return type for {@link buildNameMap}.
- *
- * `nameMap` is an IRI-to-PascalCase-name map.  `collisions` is the set of
- * base names for which at least two IRIs produced the same local name — those
- * entries are suffixed with `_2`, `_3`, etc. in `nameMap`.
- *
- * @remarks
- * Used internally by `generateTypeScript` and `generateRegistryFiles` to
- * ensure every OWL class gets a unique TypeScript identifier.
- *
- * @example
- * ```ts
- * const { nameMap, collisions } = buildNameMap(iris);
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateTypeScript}
- * @group OWL Codegen
- */
-export interface BuildNameMapResultInterface {
-  /** Set of base names that collided (used for banner warnings). */
-  readonly 'collisions': Set<string>;
-  /** Map from IRI to its assigned PascalCase identifier. */
-  readonly 'nameMap': Map<string, string>;
-}
+export type { BuildEntityFileOptionsType } from '../types/BuildEntityFileOptions.js';
+export type { BuildIndexSourceOptionsType } from '../types/BuildIndexSourceOptions.js';
+export type { BuildNameMapResultType } from '../types/BuildNameMapResult.js';
+export type { EmitBannerOptionsType } from '../types/EmitBannerOptions.js';
+export type { EmitRegistryOptionsType } from '../types/EmitRegistryOptions.js';
+export type { EmitSchemaConstantsOptionsType } from '../types/EmitSchemaConstantsOptions.js';
+export type { KahnStepOptionsType } from '../types/KahnStepOptions.js';
+export type { RegistryDirContextType } from '../types/RegistryDirContext.js';
+export type { SerializeContextType } from '../types/SerializeContext.js';
+export type { SingleFileBodyOptionsType } from '../types/SingleFileBodyOptions.js';
 
 /**
  * Named return type for {@link buildDepsMap}.
@@ -84,265 +65,99 @@ export type BuildDepsMapType = Map<string, Set<string>>;
 export type BuildInDegreeMapType = Map<string, number>;
 
 /**
- * Options object for the {@link emitBanner} helper.
+ * OWL codegen interfaces.
  *
- * @remarks
- * Bundles the parameters needed to emit the auto-generated banner comment
- * block into a single options shape, satisfying the parameter-count limit.
+ * Options and result contracts for the OWL 2 TBox → TypeScript code generator.
  *
- * @example
- * ```ts
- * emitBanner(lines, { ts, sourceLabel, collisions, header });
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateTypeScript}
- * @group OWL Codegen
+ * @experimental This surface is subject to change before 1.0. Generated code
+ * shapes and option names may evolve as the codegen path matures.
  */
-export interface EmitBannerOptionsInterface {
-  /** Set of IRI base names that collided during name generation. */
-  readonly 'collisions': Set<string>;
-  /** Extra comment lines to append after the standard banner. */
-  readonly 'header': readonly string[];
-  /** Human-readable source label (file path or IRI), or empty string. */
-  readonly 'sourceLabel': string;
-  /** ISO-8601 timestamp string. */
-  readonly 'ts': string;
-}
 
 /**
- * Options object for the {@link emitSchemaConstants} helper.
- *
- * @remarks
- * Bundles the parameters needed to emit per-class schema constants into a
- * single options shape, satisfying the parameter-count limit.
- *
- * @example
- * ```ts
- * emitSchemaConstants(lines, { sortedIris, nameMap, schemas });
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateTypeScript}
- * @group OWL Codegen
+ * Options controlling the shape of the generated TypeScript source.
  */
-export interface EmitSchemaConstantsOptionsInterface {
-  /** Map from IRI to PascalCase identifier. */
-  readonly 'nameMap': Map<string, string>;
-  /** All consumer-facing schemas. */
-  readonly 'schemas': JsonSchemaDocumentObjectType[];
-  /** IRIs in emission order. */
-  readonly 'sortedIris': string[];
-}
+export type OwlCodegenOptionsType = {
+  /**
+   * Base IRI used in the `JsonTology.create` call. Defaults to empty string,
+   * which causes the generator to derive it from the first schema $id.
+   */
+  readonly 'baseIRI'?: string | undefined;
+
+  /**
+   * Extra comment lines inserted immediately after the auto-generated banner.
+   * Each element is emitted as a separate `// ` comment line.
+   */
+  readonly 'header'?: readonly string[] | undefined;
+
+  /**
+   * Import path for `InferType`. Defaults to `'json-tology/types'`.
+   */
+  readonly 'inferTypeImportPath'?: string | undefined;
+
+  /**
+   * Name of the exported registry array constant and registry instance.
+   * E.g. `'foaf'` → `foafSchemas`, `foaf`.
+   * Defaults to `'registry'`.
+   */
+  readonly 'registryConstName'?: string | undefined;
+
+  /**
+   * Human-readable label for the source (file path or IRI) emitted in the
+   * auto-generated banner.
+   */
+  readonly 'sourceLabel'?: string | undefined;
+};
 
 /**
- * Options object for the {@link emitRegistryConstruction} helper.
- *
- * @remarks
- * Bundles the parameters needed to emit the registry array and
- * `JsonTology.create()` call into a single options shape.
- *
- * @example
- * ```ts
- * emitRegistryConstruction(lines, { schemasConst, registryConstName, schemaNames, effectiveBaseIRI });
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateTypeScript}
- * @group OWL Codegen
+ * Describes one entity file produced by {@link generateRegistryFiles}.
  */
-export interface EmitRegistryOptionsInterface {
-  /** Effective base IRI for `JsonTology.create`. */
-  readonly 'effectiveBaseIRI': string;
-  /** Name of the exported registry constant. */
-  readonly 'registryConstName': string;
-  /** Ordered list of PascalCase schema identifiers. */
-  readonly 'schemaNames': string[];
-  /** Name of the exported schemas array constant. */
-  readonly 'schemasConst': string;
-}
-
-/**
- * Options object for the {@link buildEntityFileSource} helper.
- *
- * @remarks
- * Bundles the parameters needed to build a single entity file source string
- * into a single options shape, satisfying the parameter-count limit.
- *
- * @example
- * ```ts
- * buildEntityFileSource({ iri, name, schema, ts, sourceLabel });
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateRegistryFiles}
- * @group OWL Codegen
- */
-export interface BuildEntityFileOptionsInterface {
-  /** Full IRI of the OWL class. */
+export type RegistryFileEntryType = {
+  /** Full IRI of the OWL class this file represents. */
   readonly 'iri': string;
-  /** PascalCase identifier for this class. */
+  /** PascalCase identifier (without `Schema` suffix), e.g. `Person`. */
   readonly 'name': string;
-  /** Name of the schema-set reference-map type exported by `index.ts`. */
-  readonly 'refsName': string;
-  /** The JSON Schema object for this class. */
-  readonly 'schema': JsonSchemaDocumentObjectType;
-  /** Human-readable source label (file path or IRI), or empty string. */
-  readonly 'sourceLabel': string;
-  /** ISO-8601 timestamp string. */
-  readonly 'ts': string;
-}
+  /** Relative path inside the output directory, e.g. `entities/Person.ts`. */
+  readonly 'path': string;
+  /** The TypeScript source content of this entity file. */
+  readonly 'source': string;
+};
 
 /**
- * Serialization context for the literal-serializer helpers.
- *
- * @remarks
- * Bundles the pad and innerPad strings with the current indent depth so
- * the array and object serializer helpers do not need separate parameters.
- *
- * @example
- * ```ts
- * const ctx: SerializeContextType = { pad, innerPad, indent };
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateTypeScript}
- * @group OWL Codegen
+ * Result returned by {@link generateRegistryFiles}.
  */
-export interface SerializeContextInterface {
-  /** Current indentation depth (number of spaces). */
-  readonly 'indent': number;
-  /** Inner padding string for one level deeper. */
-  readonly 'innerPad': string;
-  /** Outer padding string for the current level. */
-  readonly 'pad': string;
-}
+export type RegistryFilesResultType = {
+  /** Metadata + source for each generated `entities/<Name>.ts` file. */
+  readonly 'entityFiles': readonly RegistryFileEntryType[];
+  /** Source content for the generated `index.ts` file. */
+  readonly 'indexSource': string;
+};
 
 /**
- * Options object for {@link buildEntityFiles} and {@link buildIndexSource}.
- *
- * @remarks
- * Bundles the common registry-directory context into a single shape so
- * helpers with many parameters can accept a single options object.
- *
- * @example
- * ```ts
- * buildEntityFiles({ sortedIris, nameMap, schemas, ts, sourceLabel });
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateRegistryFiles}
- * @group OWL Codegen
+ * Options controlling registry-directory-mode code generation.
  */
-export interface RegistryDirContextInterface {
-  /** Map from IRI to PascalCase identifier. */
-  readonly 'nameMap': Map<string, string>;
-  /** Name of the schema-set reference-map type exported by `index.ts`. */
-  readonly 'refsName': string;
-  /** All consumer-facing schemas. */
-  readonly 'schemas': JsonSchemaDocumentObjectType[];
-  /** Sorted IRIs in emission order. */
-  readonly 'sortedIris': string[];
-  /** Human-readable source label, or empty string. */
-  readonly 'sourceLabel': string;
-  /** ISO-8601 timestamp string. */
-  readonly 'ts': string;
-}
+export type OwlRegistryDirOptionsType = {
+  /**
+   * Base IRI used in the `JsonTology.create` call.
+   * Defaults to an IRI derived from the first schema `$id`.
+   */
+  readonly 'baseIRI'?: string | undefined;
 
-/**
- * Options object for {@link buildIndexSource}.
- *
- * @remarks
- * Bundles all parameters needed to generate the index.ts content for
- * registry-directory mode into a single options shape.
- *
- * @example
- * ```ts
- * buildIndexSource({ ctx, collisions, header, schemasConst, registryConstName, effectiveBaseIRI, result });
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateRegistryFiles}
- * @group OWL Codegen
- */
-export interface BuildIndexSourceOptionsInterface {
-  /** Set of IRI base names that collided during name generation. */
-  readonly 'collisions': Set<string>;
-  /** Effective base IRI for `JsonTology.create`. */
-  readonly 'effectiveBaseIRI': string;
-  /** Extra comment lines for the banner. */
-  readonly 'header': readonly string[];
-  /** Name of the exported registry constant. */
-  readonly 'registryConstName': string;
-  /** Name of the schemas array constant. */
-  readonly 'schemasConst': string;
-}
+  /**
+   * Extra comment lines inserted after the auto-generated banner in the
+   * `index.ts` file. Each element is emitted as a `// ` comment line.
+   */
+  readonly 'header'?: readonly string[] | undefined;
 
-/**
- * Options object for {@link processKahnStep}.
- *
- * @remarks
- * Bundles the mutable state for a single Kahn's algorithm processing step
- * into a single options shape, satisfying the parameter-count limit.
- *
- * @example
- * ```ts
- * processKahnStep({ current, deps, fwdInDegree, visited, queue });
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateTypeScript}
- * @group OWL Codegen
- */
-export interface KahnStepOptionsInterface {
-  /** The IRI currently being processed. */
-  readonly 'current': string;
-  /** Forward dependency map. */
-  readonly 'deps': BuildDepsMapType;
-  /** Mutable in-degree map (updated in-place). */
-  readonly 'fwdInDegree': BuildInDegreeMapType;
-  /** Queue of IRIs ready to emit (appended in-place). */
-  readonly 'queue': string[];
-  /** Set of already-visited IRIs. */
-  readonly 'visited': Set<string>;
-}
+  /**
+   * Name of the exported registry constant and schemas array.
+   * E.g. `'foaf'` → `foafSchemas`, `foaf`.
+   * Defaults to `'registry'`.
+   */
+  readonly 'registryConstName'?: string | undefined;
 
-/**
- * Options object for {@link buildSingleFileBody}.
- *
- * @remarks
- * Bundles the computed context for single-file mode TypeScript emission
- * so that `generateTypeScript` stays within the 50-line limit.
- *
- * @example
- * ```ts
- * buildSingleFileBody({ sortedIris, nameMap, schemas, effectiveBaseIRI, inferTypeImportPath, registryConstName });
- * ```
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateTypeScript}
- * @group OWL Codegen
- */
-export interface SingleFileBodyOptionsInterface {
-  /** Effective base IRI for `JsonTology.create`. */
-  readonly 'effectiveBaseIRI': string;
-  /** Import path for `InferType`. */
-  readonly 'inferTypeImportPath': string;
-  /** Map from IRI to PascalCase identifier. */
-  readonly 'nameMap': Map<string, string>;
-  /** Name of the exported registry constant. */
-  readonly 'registryConstName': string;
-  /** All consumer-facing schemas. */
-  readonly 'schemas': JsonSchemaDocumentObjectType[];
-  /** Sorted IRIs in emission order. */
-  readonly 'sortedIris': string[];
-}
+  /**
+   * Human-readable label for the source (file path or IRI) emitted in the
+   * auto-generated banner.
+   */
+  readonly 'sourceLabel'?: string | undefined;
+};

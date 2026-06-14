@@ -14,7 +14,7 @@
  */
 
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { IdentifierIssuerOptsInterface } from '../../interfaces/IdentifierIssuerOpts.js';
+import type { IdentifierIssuerOptsType } from '../../types/IdentifierIssuerOpts.js';
 
 export class IdentifierIssuer implements IdentifierIssuerInterface {
   private counter: number;
@@ -34,13 +34,13 @@ export class IdentifierIssuer implements IdentifierIssuerInterface {
    * `existingMap` and `counter` are primarily used by `clone()` to fork
    * an issuer with the same prefix, issued history, and counter position.
    *
-   * @param options - Optional bag typed as {@link IdentifierIssuerOptsInterface}:
+   * @param options - Optional bag typed as {@link IdentifierIssuerOptsType}:
    *   - `prefix` — string prepended to every issued identifier (default `'_:b'`).
    *   - `counter` — starting counter value (default `0`); used by `clone()`.
    *   - `existingMap` — seed mapping from existing identifiers to issued ids;
    *     used by `clone()` to preserve issuance history.
    */
-  constructor(options?: IdentifierIssuerOptsInterface) {
+  constructor(options?: IdentifierIssuerOptsType) {
     this.prefix = options?.prefix ?? '_:b';
     this.counter = options?.counter ?? 0;
     this.issued = options?.existingMap

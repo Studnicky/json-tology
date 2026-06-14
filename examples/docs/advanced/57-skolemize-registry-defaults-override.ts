@@ -10,14 +10,14 @@
  */
 
 import { Skolemize } from '../../../src/index.js';
-import type { JsonTologyOptionsInterface } from '../../../src/interfaces/Config.js';
+import type { JsonTologyOptionsType } from '../../../src/types/Config.js';
 import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
 // Type-level proof: the same options shape applies at create() time.
 const registryDefaults: Pick<
-  JsonTologyOptionsInterface,
+  JsonTologyOptionsType,
   'defaultDeskolemize' | 'defaultGraphIRI' | 'iriFor'
 > = {
   'defaultDeskolemize': true,

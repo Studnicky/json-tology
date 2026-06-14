@@ -1,6 +1,6 @@
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
-import type { RefDecoderRegistryInterface } from '../../interfaces/RefDecoderRegistry.js';
+import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
+import type { RefDecoderRegistryType } from '../../types/RefDecoderRegistry.js';
 
 import { DecodeError } from '../../errors/DecodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
@@ -8,7 +8,7 @@ import { Transform } from '../transform/Transform.js';
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from './SchemaIri.js';
 
-export type { RefDecoderRegistryInterface } from '../../interfaces/RefDecoderRegistry.js';
+export type { RefDecoderRegistryType } from '../../types/RefDecoderRegistry.js';
 
 /**
  * RefDecoder — walks a schema graph and applies Transform decoders at every `$ref` boundary.
@@ -69,7 +69,7 @@ export class RefDecoder {
   public static run(
     graph: SchemaGraphInterface,
     value: unknown,
-    registry: RefDecoderRegistryInterface
+    registry: RefDecoderRegistryType
   ): unknown {
     if (value === null || value === undefined) {
       return value;
@@ -80,10 +80,10 @@ export class RefDecoder {
 
   private static walk(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     value: unknown,
-    registry: RefDecoderRegistryInterface,
-    visited: Set<SchemaGraphNodeInterface>
+    registry: RefDecoderRegistryType,
+    visited: Set<SchemaGraphNodeType>
   ): unknown {
     if (value === null || value === undefined) {
       return value;
@@ -101,10 +101,10 @@ export class RefDecoder {
 
   private static walkAdditionalProperties(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     value: unknown,
-    registry: RefDecoderRegistryInterface,
-    visited: Set<SchemaGraphNodeInterface>
+    registry: RefDecoderRegistryType,
+    visited: Set<SchemaGraphNodeType>
   ): unknown {
     if (!isRecord(value)) {
       return value;
@@ -131,10 +131,10 @@ export class RefDecoder {
 
   private static walkComposition(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     value: unknown,
-    registry: RefDecoderRegistryInterface,
-    visited: Set<SchemaGraphNodeInterface>
+    registry: RefDecoderRegistryType,
+    visited: Set<SchemaGraphNodeType>
   ): unknown {
     let current = value;
     const semantics = graph.semantics(node);
@@ -149,15 +149,29 @@ export class RefDecoder {
       current = RefDecoder.walk(graph, branch, current, registry, visited);
     }
 
+    // Walk if/then/else conditional branches. Decoding is value-shaping, not
+    // validation, so walking both then and else is correct — mirror how
+    // EffectiveProperties walks both conditional branches.
+    if (semantics.thenNode !== undefined) {
+      current = RefDecoder.walk(graph, semantics.thenNode, current, registry, visited);
+    }
+    if (semantics.elseNode !== undefined) {
+      current = RefDecoder.walk(graph, semantics.elseNode, current, registry, visited);
+    }
+    // Walk the complement (not) branch.
+    if (semantics.complementNode !== undefined) {
+      current = RefDecoder.walk(graph, semantics.complementNode, current, registry, visited);
+    }
+
     return current;
   }
 
   private static walkInner(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     value: unknown,
-    registry: RefDecoderRegistryInterface,
-    visited: Set<SchemaGraphNodeInterface>
+    registry: RefDecoderRegistryType,
+    visited: Set<SchemaGraphNodeType>
   ): unknown {
     const semantics = graph.semantics(node);
     const refTarget = semantics.ref;
@@ -177,10 +191,10 @@ export class RefDecoder {
 
   private static walkItems(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     value: unknown,
-    registry: RefDecoderRegistryInterface,
-    visited: Set<SchemaGraphNodeInterface>
+    registry: RefDecoderRegistryType,
+    visited: Set<SchemaGraphNodeType>
   ): unknown {
     if (!Array.isArray(value)) {
       return value;
@@ -225,10 +239,10 @@ export class RefDecoder {
 
   private static walkProperties(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     value: unknown,
-    registry: RefDecoderRegistryInterface,
-    visited: Set<SchemaGraphNodeInterface>
+    registry: RefDecoderRegistryType,
+    visited: Set<SchemaGraphNodeType>
   ): unknown {
     if (!isRecord(value)) {
       return value;
@@ -254,11 +268,11 @@ export class RefDecoder {
 
   private static walkRef(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeType,
     refTarget: string,
     value: unknown,
-    registry: RefDecoderRegistryInterface,
-    visited: Set<SchemaGraphNodeInterface>
+    registry: RefDecoderRegistryType,
+    visited: Set<SchemaGraphNodeType>
   ): unknown {
     // Local fragment ref — keep walking on the same graph beneath the
     // resolved fragment node. No cross-schema decoder applies here, but

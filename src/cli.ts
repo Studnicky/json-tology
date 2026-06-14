@@ -30,9 +30,9 @@ import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { VizDataCollector } from './modules/viz/VizDataCollector.js';
 import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
-import type { BuildOptionsInterface } from './interfaces/BuildOptions.js';
-import type { VizOptionsInterface } from './interfaces/VizOptions.js';
-import type { BuildOutputOptionsInterface } from './interfaces/BuildOutputOptions.js';
+import type { BuildOptionsType } from './types/BuildOptions.js';
+import type { VizOptionsType } from './types/VizOptions.js';
+import type { BuildOutputOptionsType } from './types/BuildOutputOptions.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
@@ -246,7 +246,7 @@ function openBrowser(filePath: string): void {
 // Build command
 // ---------------------------------------------------------------------------
 
-function buildOntologyOutput(opts: BuildOutputOptionsInterface): void {
+function buildOntologyOutput(opts: BuildOutputOptionsType): void {
   const {
     baseIRI, graphs, output, outputFile
   } = opts;
@@ -262,7 +262,7 @@ function buildOntologyOutput(opts: BuildOutputOptionsInterface): void {
   writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
 }
 
-function buildShaclOutput(opts: BuildOutputOptionsInterface): void {
+function buildShaclOutput(opts: BuildOutputOptionsType): void {
   const {
     baseIRI, graphs, output, outputFile
   } = opts;
@@ -312,7 +312,7 @@ function buildGraphOutput(
   writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
 }
 
-async function runBuild(options: BuildOptionsInterface): Promise<void> {
+async function runBuild(options: BuildOptionsType): Promise<void> {
   const {
     'baseIri': configuredBaseIRI, format, output, outputFile, 'schema': schemaGlob
   } = options;
@@ -325,7 +325,7 @@ async function runBuild(options: BuildOptionsInterface): Promise<void> {
   const graphs = registry.listGraphs();
   const baseIRI = resolveBaseIRI(graphs, configuredBaseIRI);
 
-  const buildOpts: BuildOutputOptionsInterface = {
+  const buildOpts: BuildOutputOptionsType = {
     baseIRI,
     graphs,
     output,
@@ -345,7 +345,7 @@ async function runBuild(options: BuildOptionsInterface): Promise<void> {
 // Viz command
 // ---------------------------------------------------------------------------
 
-async function runViz(options: VizOptionsInterface): Promise<void> {
+async function runViz(options: VizOptionsType): Promise<void> {
   const {
     noOpen, output, 'schema': schemaGlob
   } = options;

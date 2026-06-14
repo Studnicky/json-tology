@@ -35,16 +35,15 @@ The project contract is:
 ### Module Direction
 
 - **`src/modules/graph/`** — canonical graph construction, engine execution
-  - `SchemaGraph.ts` should evolve toward the canonical semantic graph rather than remaining a validation-only helper
-  - `GraphEngine.ts` should consume graph node kinds and relations directly
+  - `SchemaGraph.ts` is the canonical semantic graph; `GraphEngine.ts` consumes graph node kinds and relations directly
 
 - **`src/modules/registry/`** — schema registration, loading
 - **`src/modules/validation/`** — compiled validation (SchemaCompiler)
 - **`src/modules/materialization/`** — materialization and ABox projection
-  - `Materializer.ts` should project normalized graph execution into JS values and ABox nodes without a second semantic walker
+  - `Materializer.ts` projects normalized graph execution into JS values and ABox nodes
 
 - **`src/modules/ontology/`** — serialization and graph-facing ontology utilities
-  - ontology output must be a serialization of the canonical graph, not a separate semantic derivation path
+  - ontology output is a serialization of the canonical graph, not a separate semantic derivation path
 
 - **`src/modules/data/`** — shared data utilities (DataTypes, Value, Changeset, operations)
 - **`src/errors/`** — all error classes (see Code Organization Patterns)
@@ -58,7 +57,7 @@ The project contract is:
 - Do not add features that require validation to bypass the canonical graph.
 - Domain and range must be explicit graph relations produced during translation from authored schema into the canonical graph.
 - `$ref`, `$defs`, anchors, pointers, composition, and conditionals must all be representable in the canonical graph.
-- When code and docs disagree, prefer the graph-native architecture described here and in `docs/architecture-plan.md`.
+- When code and docs disagree, prefer the graph-native architecture described here and in `docs/architecture.md`.
 
 ### Code Organization Patterns
 
@@ -66,27 +65,34 @@ The project contract is:
 Every definition lives in exactly one file. Package entry points (`src/index.ts`, `src/schema.ts`, etc.) re-export the public API for consumer convenience, but definitions themselves are never duplicated. Internal imports should reference the defining file directly, not a barrel.
 
 **Interfaces over classes**
-Core runtime classes with complex contracts have corresponding interfaces in `src/interfaces/` (e.g. `GraphEngine` → `GraphEngineInterface`, `SchemaRegistry` → `SchemaRegistryInterface`, `Materializer` → `MaterializerInterface`, `Value` → `ValueInterface`, `Curie` → `CurieInterface`). For these, consumers depend on the interface, not the class. Use `FooInterface` for type annotations (parameters, fields, return types). Use the class only for `new Foo()` or static methods. Classes carry `implements FooInterface` clauses. Static-method-only classes (Compose, Transform, Hash) and the top-level facade (JsonTology) do not require separate interfaces.
+Core runtime classes with complex contracts have corresponding interfaces in `src/interfaces/` (e.g. `GraphEngine` → `GraphEngineInterface`, `SchemaRegistry` → `SchemaRegistryInterface`, `Materializer` → `MaterializerInterface`, `Value` → `ValueInterface`, `Curie` → `CurieInterface`). For these, consumers depend on the interface, not the class. Use `FooInterface` for the class's annotations (parameters, fields, return types) and the class only for `new Foo()` or static methods. Classes carry `implements FooInterface` clauses. Static-method-only classes (Compose, Transform, Hash) and the top-level facade (JsonTology) do not require separate interfaces.
 
 **Constants live in `src/constants/`**
 Error codes, XSD maps, dialect configuration, known keywords, format validators, default prefixes, and schema literals all live here. Import constants from `src/constants/`, not from the module that originally defined them.
 
-**Types live in `src/types/`, interfaces in `src/interfaces/`**
-Type aliases (`FooType`) go in `src/types/`. Interface declarations (`FooInterface`) go in `src/interfaces/`. Do not define types or interfaces inline in module files — extract them to the canonical location.
+**`type` is the data substrate; `interface` is only for behavioral contracts**
+`type` and `interface` are semantically distinct and are never interchanged. `type` is the default: every data shape — object literals, unions, intersections, function signatures, options/args/result/context field-bags, primitives — is a `type` alias (`FooType`) in `src/types/`, and the substrate composes from base types via `&` intersection (find the commonality, define a base `*Type`, extend it). `interface` (`FooInterface`, in `src/interfaces/`) is reserved for what a type cannot express: a behavioral/class contract (method-bearing, `class X implements YInterface`) or declaration-merged augmentation. A field that merely holds a function (`fn: (x) => R`) is data, not a method. Two ESLint rules enforce this on every commit: `interface-must-be-contract` (a method-less, non-allowlisted interface is an error) and a location rule (interfaces only in `src/interfaces/`, object-type aliases only in `src/types/`). Do not define types or interfaces inline in module files — extract them to the canonical location.
 
 **Errors live in `src/errors/`**
 All error classes and ValidationErrors are defined in `src/errors/`. Import each error directly from its file (e.g. `from '../errors/SchemaError.js'`), not from a barrel. Every error extends `BaseError`, which carries `code` (machine-readable string), `message`, `retryable` flag, optional `cause` chain, `toJson()`, and `flatten()`. Never throw bare `new Error()` — use the appropriate subclass:
-- `SchemaError` — registration, missing $id, structure validation
-- `GraphError` — pointer resolution, anchor lookup, ref resolution, dialect issues
-- `LoadError` — file loading failures
-- `MaterializationError` — materialization/ABox validation failures
-- `CoercionError` — coercion validation failures (carries `ValidationErrors` collection)
+- `SchemaError` — registration, missing `$id`, structure validation; codes in `SchemaErrorCode`
+- `GraphError` — pointer resolution, anchor lookup, ref resolution, dialect issues; codes in `GraphErrorCode`
+- `MaterializationError` — materialization and ABox projection failures; codes in `MaterializationErrorCode`
+- `InstantiationError` — schema instantiation failures; codes: `INSTANTIATION_FAILED`, `EXTRA_FORBIDDEN`
+- `CoercionError` — coercion validation failures; carries `ValidationErrors` collection; code: `COERCION_FAILED`
+- `TransformError` — base class for directional transform failures; not thrown directly
+- `DecodeError` — failure inside a `decode` transform function; extends `TransformError`
+- `EncodeError` — failure inside an `encode` transform function; extends `TransformError`
+- `OwlImportError` — OWL import fatal conditions; code: `OWL_IMPORT_NOT_IMPLEMENTED`
+- `ValidationErrors` — collection class for accumulated validation errors (not a thrown error subclass)
+
+Loader failures use `SchemaLoadErrorType` in `src/types/Loader.ts` — a discriminated-union type, not an error class.
 
 **Shared utilities in `src/modules/data/DataTypes.ts`**
 Type guards (`isRecord`, `isPlainObject`), `deepEqual`, and XSD type maps/resolvers live here. Do not duplicate these — import from DataTypes. Graph-identity helpers live on `SchemaIri` (`propertyIri`, `parseRef`, `splitSubject`); deep freezing on `Frozen.deepFreeze`; CURIE expansion/compaction on `Curie`.
 
-**Serializers are thin wrappers over projection + formatting**
-`GraphOntologySerializer` and `GraphShaclSerializer` delegate to `src/modules/rdf/OwlProjection.ts` and `src/modules/rdf/ShaclProjection.ts` respectively. Projections read `graph.allRelations()` and emit vocabulary-specific quads. `src/modules/rdf/JsonLdFormatter.ts` converts quads to JSON-LD nodes. Serializers only add post-processing normalization (e.g. `ensureArray`, `normalizeArrays`).
+**Serializers are thin wrappers over projection**
+`GraphOntologySerializer` and `GraphShaclSerializer` extend `BaseGraphSerializer` and delegate to `src/modules/rdf/OwlProjection.ts` and `src/modules/rdf/ShaclProjection.ts` respectively. Projections read `graph.allRelations()` and emit vocabulary-specific quads. `BaseGraphSerializer` owns `serializeQuads` orchestration, `ensureArray`, and `normalizeArrays` utilities. `src/modules/rdf/JsonLdFormatter.ts` converts quads to JSON-LD nodes; it is called by `OntologyBuilder`, not by the serializer classes directly.
 
 ### Working Assumptions
 
@@ -115,7 +121,7 @@ Validation, parsing, materialization, and ontology serialization should all read
 ### Package Exports
 
 ```json
-{ ".": "high-level entry", "./value": "Value, Changeset, Hash", "./schema": "schema/runtime internals", "./ontology": "ontology utilities", "./types": "type aliases and branded types", "./interfaces": "interface contracts", "./viz": "HTML renderer and visualization" }
+{ ".": "high-level entry", "./value": "Value, Changeset, Hash", "./schema": "schema/runtime internals", "./ontology": "ontology utilities", "./owl-gen": "OWL TBox codegen (browser-safe, returns source strings)", "./owl-gen-node": "OWL TBox codegen (Node.js, writes to disk)", "./types": "type aliases and branded types", "./interfaces": "interface contracts", "./viz": "HTML renderer and visualization" }
 ```
 
 Output goes to `dist/` (NodeNext modules, ES2022 target, declaration maps + source maps).

@@ -2,8 +2,8 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
-// KeywordDefinitionInterface is the contract for custom keyword shapes; not surfaced via the public API.
-import type { KeywordDefinitionInterface } from '../../src/interfaces/GraphEngine.js';
+// KeywordDefinitionType is the contract for custom keyword shapes; not surfaced via the public API.
+import type { KeywordDefinitionType } from '../../src/types/GraphEngine.js';
 // ValidationErrorType is the per-error structural type used by ValidationErrors; not re-exported publicly.
 import type { ValidationErrorType } from '../../src/types/Validation.js';
 import {
@@ -174,7 +174,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('pick() carries jt:config from source schema', () => {
-      // jt:config is a runtime-carried directive not modelled on PickSchemaInterface;
+      // jt:config is a runtime-carried directive not modelled on PickSchemaType;
       // read it through a widened view to assert it survives the pick.
       const PickedSchema = Compose.pick(
         BaseSchema,
@@ -188,7 +188,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('omit() carries jt:config from source schema', () => {
-      // jt:config is a runtime-carried directive not modelled on OmitSchemaInterface;
+      // jt:config is a runtime-carried directive not modelled on OmitSchemaType;
       // read it through a widened view to assert it survives the omit.
       const OmittedSchema = Compose.omit(
         BaseSchema,
@@ -593,7 +593,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 // Shared keywords
 // ---------------------------------------------------------------------------
 
-  const evenNumberKeyword: KeywordDefinitionInterface = {
+  const evenNumberKeyword: KeywordDefinitionType = {
     'keyword': 'evenNumber',
     'validate': (schema, data) => {
       if (schema !== true) {
@@ -607,7 +607,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     }
   };
 
-  const numberOnlyKeyword: KeywordDefinitionInterface = {
+  const numberOnlyKeyword: KeywordDefinitionType = {
     'keyword': 'evenNumber',
     'type': 'number',
     'validate': (schemaValue, data) => {
@@ -615,7 +615,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     }
   };
 
-  const rangeKeyword: KeywordDefinitionInterface = {
+  const rangeKeyword: KeywordDefinitionType = {
     'keyword': 'customRange',
     'type': 'number',
     'validate': (schemaValue, data, context): ValidationErrorType[] => {
@@ -652,7 +652,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   void describe('Custom keyword validation', () => {
     const validationScenarios: Array<{
       'data': unknown;
-      'keyword': KeywordDefinitionInterface;
+      'keyword': KeywordDefinitionType;
       'name': string;
       'schema': Record<string, unknown>;
       'valid': boolean;
