@@ -41,6 +41,9 @@ yarn-debug.log*
 yarn-error.log*
 .enginseer/
 
+# Local audit docs (kept out of repo; use git history for past audits)
+.audits/
+
 # Prototype/iteration artifacts (kept out of repo)
 *.zip
 preview-jst-*.svg
