@@ -62,6 +62,7 @@ import type { ExtensionEntryType } from '../../types/ExtensionEntryType.js';
 import type { NodeCheckBuildContextType } from '../../types/NodeCheckBuildContextType.js';
 import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
 import type { ValidationRunOptionsType } from '../../types/ValidationRunOptionsType.js';
+import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 
 // ---------------------------------------------------------------------------
 // Local constants
@@ -1054,11 +1055,26 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       const validateWithErrorsFn = this.compileValidateWithErrors(schema, formatRegistry, resolvedGraph, lookupSchema);
       const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn);
 
+      const fallback = this.engineFallback(engine);
+
       return {
         'check': checkFn,
         'compiled': true,
         'validate': (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
-          return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn);
+          try {
+            return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn);
+          } catch (error) {
+            if (!(error instanceof RangeError)) {
+              throw error;
+            }
+
+            // Cyclic data fed to a recursive schema causes the compiled closures
+            // to overflow (no refStack equivalent). The interpreter has a refStack
+            // that terminates schema-level recursion; delegate to it so all callers
+            // (registry.validate/cast/convert/instantiate and Materializer) get
+            // cyclic-data protection from one place.
+            return fallback.validate(data, options);
+          }
         }
       };
     } catch (error: unknown) {
@@ -1095,7 +1111,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       'compiled': true,
       'validate': (data: unknown): CompiledValidationResultType => {
         return {
-          'errors': [BaseError.validationError('', 'falseSchema', 'must not match false schema')],
+          'errors': [BaseError.validationError('', 'falseSchema', VALIDATION_MESSAGES.falseSchema)],
           'valid': false,
           'value': data
         };
@@ -1227,7 +1243,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           collect: boolean
         ): ValidateWithErrorsResultType => {
           if (collect) {
-            errors.push(BaseError.validationError(path, 'falseSchema', 'must not match false schema'));
+            errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
           }
 
           return {
@@ -2038,7 +2054,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
             'valid': false
           };
         }
-        errors.push(BaseError.validationError(childPath, 'EXTRA_FORBIDDEN', `must NOT have additional property '${key}'`));
+        errors.push(BaseError.validationError(childPath, 'EXTRA_FORBIDDEN', VALIDATION_MESSAGES.additionalProperties(key)));
         valid = false;
       }
     }

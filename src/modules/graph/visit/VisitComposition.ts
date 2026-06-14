@@ -9,6 +9,7 @@ import type { InternalExecutionResultType } from '../../../types/InternalExecuti
 import type { VisitContextType } from '../../../types/VisitContext.js';
 import { GraphEngineSupport } from '../GraphEngineSupport.js';
 import type { VariantEntryType } from '../../../types/VariantEntry.js';
+import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 const oneOfVariantCache = new WeakMap<SchemaGraphNodeType[], VariantEntryType[]>();
 
@@ -111,7 +112,7 @@ export class VisitComposition {
     }
 
     if (successfulResults === undefined) {
-      return invalid(context.createError(path, 'anyOf', 'must match at least one schema'));
+      return invalid(context.createError(path, 'anyOf', VALIDATION_MESSAGES.anyOf));
     }
 
     acc.value = successfulResults[0].value;
@@ -231,7 +232,7 @@ export class VisitComposition {
     );
 
     if (notResult.valid) {
-      return invalid(context.createError(path, 'not', 'must not match schema'));
+      return invalid(context.createError(path, 'not', VALIDATION_MESSAGES.not));
     }
 
     return undefined;
@@ -372,7 +373,7 @@ export class VisitComposition {
     }
 
     if (matches !== 1) {
-      return invalid(context.createError(path, 'oneOf', 'must match exactly one schema'));
+      return invalid(context.createError(path, 'oneOf', VALIDATION_MESSAGES.oneOf));
     }
     if (matchedResult !== undefined) {
       acc.value = matchedResult.value;

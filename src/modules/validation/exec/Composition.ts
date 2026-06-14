@@ -9,6 +9,7 @@ import {
   isRecord
 } from '../../data/DataTypes.js';
 import { Predicates } from '../Predicates.js';
+import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**
  * Composition — validation helpers for JSON Schema composition keywords.
@@ -163,9 +164,9 @@ export class Composition {
     let current = workingValue;
 
     // Pre-pass: collect explicit property defaults from all branches before any
-    // branch's required check runs. Mirrors the VisitComposition.allOf fix for
-    // the graph engine path: a required field in branch N whose default lives in
-    // branch N+1 would otherwise fail the required check in the compiled path.
+    // branch's required check runs. A required field in branch N whose default
+    // lives in branch N+1 would otherwise fail the required check.
+    // exec/* is the compiled backend; visit/* (VisitComposition) is the interpreter fallback.
     if (applyDefaults) {
       const preErrors: ValidationErrorType[] = [];
 
@@ -217,7 +218,7 @@ export class Composition {
       return true;
     }
 
-    errors.push(BaseError.validationError(path, 'anyOf', 'must match at least one schema in anyOf'));
+    errors.push(BaseError.validationError(path, 'anyOf', VALIDATION_MESSAGES.anyOf));
 
     return false;
   }
@@ -262,7 +263,7 @@ export class Composition {
     }
 
     if (collectErrors) {
-      errors.push(BaseError.validationError(path, 'anyOf', 'must match at least one schema in anyOf'));
+      errors.push(BaseError.validationError(path, 'anyOf', VALIDATION_MESSAGES.anyOf));
     }
 
     return {
@@ -299,7 +300,7 @@ export class Composition {
       const kwResult = entry.validate(entry.schemaValue, value, ctx);
 
       if (kwResult === false) {
-        errors.push(BaseError.validationError(path, entry.keyword, `must pass "${entry.keyword}" validation`));
+        errors.push(BaseError.validationError(path, entry.keyword, VALIDATION_MESSAGES.keyword(entry.keyword)));
       } else if (Array.isArray(kwResult) && kwResult.length > 0) {
         errors.push(...kwResult);
       }
@@ -401,7 +402,7 @@ export class Composition {
       return true;
     }
 
-    errors.push(BaseError.validationError(path, 'not', 'must not match schema'));
+    errors.push(BaseError.validationError(path, 'not', VALIDATION_MESSAGES.not));
 
     return false;
   }
@@ -431,11 +432,7 @@ export class Composition {
       return true;
     }
 
-    const msg = count === 0
-      ? 'must match exactly one schema in oneOf (matched none)'
-      : 'must match exactly one schema in oneOf (matched multiple)';
-
-    errors.push(BaseError.validationError(path, 'oneOf', msg, { 'matchCount': count }));
+    errors.push(BaseError.validationError(path, 'oneOf', VALIDATION_MESSAGES.oneOf, { 'matchCount': count }));
 
     return false;
   }
@@ -480,12 +477,8 @@ export class Composition {
       };
     }
 
-    const msg = matches === 0
-      ? 'must match exactly one schema in oneOf (matched none)'
-      : 'must match exactly one schema in oneOf (matched multiple)';
-
     if (collectErrors) {
-      errors.push(BaseError.validationError(path, 'oneOf', msg, { 'matchCount': matches }));
+      errors.push(BaseError.validationError(path, 'oneOf', VALIDATION_MESSAGES.oneOf, { 'matchCount': matches }));
     }
 
     return {

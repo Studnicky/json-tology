@@ -81,6 +81,7 @@ import { Predicates } from './Predicates.js';
 import { RefResolver } from './RefResolver.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
+import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 
 // ---------------------------------------------------------------------------
 // Module-scope singletons — boolean schema fast paths (A.1)
@@ -108,7 +109,7 @@ const FALSE_VALIDATOR: ValidateWithErrorsFnType = (
   collectErrors: boolean
 ): ValidateWithErrorsResultType => {
   if (collectErrors) {
-    errors.push(BaseError.validationError(path, 'falseSchema', 'must not match false schema'));
+    errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
   }
 
   return {

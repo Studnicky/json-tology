@@ -1,6 +1,7 @@
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../Predicates.js';
+import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**
  * Compiled scalar-keyword validators used by the hot-path schema executor.
@@ -35,7 +36,7 @@ export class Scalars {
       return true;
     }
 
-    errors.push(BaseError.validationError(path, 'const', `must be ${JSON.stringify(constVal)}`));
+    errors.push(BaseError.validationError(path, 'const', VALIDATION_MESSAGES.const(constVal)));
 
     return false;
   }
@@ -59,7 +60,7 @@ export class Scalars {
       return true;
     }
 
-    errors.push(BaseError.validationError(path, 'enum', 'must be one of the allowed values'));
+    errors.push(BaseError.validationError(path, 'enum', VALIDATION_MESSAGES.enum));
 
     return false;
   }
@@ -83,7 +84,7 @@ export class Scalars {
       // user-supplied validator threw — treat as format failure
     }
 
-    errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`));
+    errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format ?? '')));
 
     return false;
   }
@@ -103,7 +104,7 @@ export class Scalars {
     pushNumberBoundErrors(path, value, minimum, maximum, exclusiveMinimum, exclusiveMaximum, errors);
 
     if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
-      errors.push(BaseError.validationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`));
+      errors.push(BaseError.validationError(path, 'multipleOf', VALIDATION_MESSAGES.multipleOf(multipleOf)));
     }
 
     return errors.length === pre;
@@ -121,13 +122,13 @@ export class Scalars {
     const pre = errors.length;
 
     if (minLength !== undefined && !Predicates.satisfiesMinLength(value, minLength)) {
-      errors.push(BaseError.validationError(path, 'minLength', `must NOT have fewer than ${minLength} characters`));
+      errors.push(BaseError.validationError(path, 'minLength', VALIDATION_MESSAGES.minLength(minLength)));
     }
     if (maxLength !== undefined && !Predicates.satisfiesMaxLength(value, maxLength)) {
-      errors.push(BaseError.validationError(path, 'maxLength', `must NOT have more than ${maxLength} characters`));
+      errors.push(BaseError.validationError(path, 'maxLength', VALIDATION_MESSAGES.maxLength(maxLength)));
     }
     if (patternRegex !== undefined && !Predicates.satisfiesPattern(value, patternRegex)) {
-      errors.push(BaseError.validationError(path, 'pattern', `must match pattern "${pattern}"`));
+      errors.push(BaseError.validationError(path, 'pattern', VALIDATION_MESSAGES.pattern(pattern ?? '')));
     }
 
     return errors.length === pre;
@@ -152,7 +153,7 @@ export class Scalars {
     errors.push(BaseError.validationError(
       path,
       'type',
-      types.length === 1 ? `must be ${types[0]}` : `must be one of: ${types.join(', ')}`,
+      VALIDATION_MESSAGES.type(types),
       { 'type': types }
     ));
 
@@ -170,15 +171,15 @@ function pushNumberBoundErrors(
   errors: ValidationErrorType[]
 ): void {
   if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
-    errors.push(BaseError.validationError(path, 'minimum', `must be >= ${minimum}`));
+    errors.push(BaseError.validationError(path, 'minimum', VALIDATION_MESSAGES.minimum(minimum)));
   }
   if (maximum !== undefined && !Predicates.satisfiesMaximum(value, maximum)) {
-    errors.push(BaseError.validationError(path, 'maximum', `must be <= ${maximum}`));
+    errors.push(BaseError.validationError(path, 'maximum', VALIDATION_MESSAGES.maximum(maximum)));
   }
   if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(value, exclusiveMinimum)) {
-    errors.push(BaseError.validationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`));
+    errors.push(BaseError.validationError(path, 'exclusiveMinimum', VALIDATION_MESSAGES.exclusiveMinimum(exclusiveMinimum)));
   }
   if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(value, exclusiveMaximum)) {
-    errors.push(BaseError.validationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`));
+    errors.push(BaseError.validationError(path, 'exclusiveMaximum', VALIDATION_MESSAGES.exclusiveMaximum(exclusiveMaximum)));
   }
 }

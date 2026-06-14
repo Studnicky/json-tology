@@ -30,6 +30,7 @@ import type { RootDialectPlanType } from '../../types/RootDialectPlan.js';
 import { GraphEngineScalars } from './GraphEngineScalars.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphEngineDefaults } from './GraphEngineDefaults.js';
+import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContext.js';
 import { GraphEngineVisit } from './GraphEngineVisit.js';
 import type { VisitContextType } from '../../types/VisitContext.js';
@@ -122,7 +123,7 @@ export class GraphEngine implements GraphEngineInterface {
       if (options.removeAdditionalProperties) {
         delete workingValue[key];
       } else {
-        errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
+        errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'additionalProperties', VALIDATION_MESSAGES.additionalProperties(key), { 'additionalProperty': key }));
       }
 
       return;
@@ -196,7 +197,7 @@ export class GraphEngine implements GraphEngineInterface {
 
           workingValue[key] = zeroValue;
         } else {
-          errors.push(this.createError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
+          errors.push(this.createError(path, 'required', VALIDATION_MESSAGES.required(key), { 'missingProperty': key }));
         }
       }
     }
@@ -230,7 +231,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       if (typeof unevaluatedItemsNode.schema === 'boolean') {
         if (!unevaluatedItemsNode.schema) {
-          errors.push(this.createError(`${path}/${index}`, 'unevaluatedItems', 'must NOT have unevaluated items'));
+          errors.push(this.createError(`${path}/${index}`, 'unevaluatedItems', VALIDATION_MESSAGES.unevaluatedItems));
         }
         continue;
       }
@@ -281,7 +282,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       if (typeof unevaluatedPropertiesNode.schema === 'boolean') {
         if (!unevaluatedPropertiesNode.schema) {
-          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
+          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'unevaluatedProperties', VALIDATION_MESSAGES.unevaluatedProperties, { 'unevaluatedProperty': key }));
         }
         continue;
       }
@@ -669,10 +670,10 @@ export class GraphEngine implements GraphEngineInterface {
     errors: ValidationErrorType[]
   ): void {
     if (typeof minItems === 'number' && workingValue.length < minItems) {
-      errors.push(this.createError(path, 'minItems', `must have at least ${minItems} items`, { 'limit': minItems }));
+      errors.push(this.createError(path, 'minItems', VALIDATION_MESSAGES.minItems(minItems), { 'limit': minItems }));
     }
     if (typeof maxItems === 'number' && workingValue.length > maxItems) {
-      errors.push(this.createError(path, 'maxItems', `must have at most ${maxItems} items`, { 'limit': maxItems }));
+      errors.push(this.createError(path, 'maxItems', VALIDATION_MESSAGES.maxItems(maxItems), { 'limit': maxItems }));
     }
   }
 
@@ -716,10 +717,10 @@ export class GraphEngine implements GraphEngineInterface {
     const maximumContains = typeof maxContains === 'number' ? maxContains : undefined;
 
     if (matches < minimumContains) {
-      errors.push(this.createError(path, 'contains', 'must contain required matching items', { 'minContains': minimumContains }));
+      errors.push(this.createError(path, 'contains', VALIDATION_MESSAGES.contains(minimumContains), { 'minContains': minimumContains }));
     }
     if (maximumContains !== undefined && matches > maximumContains) {
-      errors.push(this.createError(path, 'maxContains', 'must not contain too many matching items', { 'maxContains': maximumContains }));
+      errors.push(this.createError(path, 'maxContains', VALIDATION_MESSAGES.maxContains(maximumContains), { 'maxContains': maximumContains }));
     }
   }
 
@@ -818,7 +819,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       for (let j = index + 1; j < workingValue.length; j++) {
         if (deepEqual(item, workingValue[j])) {
-          errors.push(this.createError(path, 'uniqueItems', 'must NOT have duplicate items'));
+          errors.push(this.createError(path, 'uniqueItems', VALIDATION_MESSAGES.uniqueItems));
 
           break outer;
         }
@@ -844,7 +845,7 @@ export class GraphEngine implements GraphEngineInterface {
       }
       for (const dependency of dependencies) {
         if (!(dependency in workingValue)) {
-          errors.push(this.createError(path, 'dependentRequired', `must have property '${dependency}' when '${key}' is present`, {
+          errors.push(this.createError(path, 'dependentRequired', VALIDATION_MESSAGES.dependentRequired(dependency, key), {
             dependency,
             key
           }));
@@ -905,7 +906,7 @@ export class GraphEngine implements GraphEngineInterface {
     depth: number
   ): InternalExecutionResultType | undefined {
     if (itemsNode?.schema === false && workingValue.length > extraStart) {
-      errors.push(this.createError(path, 'items', 'must NOT have items beyond prefixItems'));
+      errors.push(this.createError(path, 'items', VALIDATION_MESSAGES.items));
 
       return undefined;
     }
@@ -1015,10 +1016,10 @@ export class GraphEngine implements GraphEngineInterface {
     errors: ValidationErrorType[]
   ): void {
     if (typeof minProperties === 'number' && objectKeys.length < minProperties) {
-      errors.push(this.createError(path, 'minProperties', `must NOT have fewer than ${minProperties} properties`, { 'limit': minProperties }));
+      errors.push(this.createError(path, 'minProperties', VALIDATION_MESSAGES.minProperties(minProperties), { 'limit': minProperties }));
     }
     if (typeof maxProperties === 'number' && objectKeys.length > maxProperties) {
-      errors.push(this.createError(path, 'maxProperties', `must NOT have more than ${maxProperties} properties`, { 'limit': maxProperties }));
+      errors.push(this.createError(path, 'maxProperties', VALIDATION_MESSAGES.maxProperties(maxProperties), { 'limit': maxProperties }));
     }
   }
 

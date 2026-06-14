@@ -5,6 +5,7 @@ import {
   isRecord
 } from '../../data/DataTypes.js';
 import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
+import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 export class Objects {
   static applyAliases(
@@ -70,7 +71,7 @@ export class Objects {
                 'valid': false
               };
             }
-            errors.push(BaseError.validationError(path, 'dependentRequired', `property '${trigger}' requires property '${dep}'`, {
+            errors.push(BaseError.validationError(path, 'dependentRequired', VALIDATION_MESSAGES.dependentRequired(dep, trigger), {
               'missingProperty': dep,
               'property': trigger
             }));
@@ -252,10 +253,10 @@ export class Objects {
     const pre = errors.length;
 
     if (minProperties !== undefined && count < minProperties) {
-      errors.push(BaseError.validationError(path, 'minProperties', `must have at least ${minProperties} properties`));
+      errors.push(BaseError.validationError(path, 'minProperties', VALIDATION_MESSAGES.minProperties(minProperties)));
     }
     if (maxProperties !== undefined && count > maxProperties) {
-      errors.push(BaseError.validationError(path, 'maxProperties', `must have at most ${maxProperties} properties`));
+      errors.push(BaseError.validationError(path, 'maxProperties', VALIDATION_MESSAGES.maxProperties(maxProperties)));
     }
 
     return errors.length === pre;
@@ -313,7 +314,7 @@ export class Objects {
 
     for (const key of required) {
       if (!(key in obj)) {
-        errors.push(BaseError.validationError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
+        errors.push(BaseError.validationError(path, 'required', VALIDATION_MESSAGES.required(key), { 'missingProperty': key }));
       }
     }
 
@@ -389,7 +390,7 @@ export class Objects {
             'valid': false
           };
         }
-        errors.push(BaseError.validationError(childPath, 'additionalProperties', `must NOT have additional property '${key}'`));
+        errors.push(BaseError.validationError(childPath, 'additionalProperties', VALIDATION_MESSAGES.additionalProperties(key)));
         valid = false;
       } else if (additionalValidator !== undefined) {
         const addResult = additionalValidator(

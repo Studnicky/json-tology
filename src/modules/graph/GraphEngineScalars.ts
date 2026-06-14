@@ -3,6 +3,7 @@ import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js
 import type { SchemaGraphSemanticsType } from '../../types/SchemaGraph.js';
 import { Predicates } from '../validation/Predicates.js';
 import { BaseError } from '../../errors/BaseError.js';
+import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 
 /**
  * Scalar and numeric validation helpers used by the graph execution engine.
@@ -113,16 +114,16 @@ function pushNumberRangeErrors(
   } = sem;
 
   if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
-    errors.push(BaseError.validationError(path, 'minimum', `must be >= ${minimum}`, { 'limit': minimum }));
+    errors.push(BaseError.validationError(path, 'minimum', VALIDATION_MESSAGES.minimum(minimum), { 'limit': minimum }));
   }
   if (maximum !== undefined && !Predicates.satisfiesMaximum(value, maximum)) {
-    errors.push(BaseError.validationError(path, 'maximum', `must be <= ${maximum}`, { 'limit': maximum }));
+    errors.push(BaseError.validationError(path, 'maximum', VALIDATION_MESSAGES.maximum(maximum), { 'limit': maximum }));
   }
   if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(value, exclusiveMinimum)) {
-    errors.push(BaseError.validationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`, { 'limit': exclusiveMinimum }));
+    errors.push(BaseError.validationError(path, 'exclusiveMinimum', VALIDATION_MESSAGES.exclusiveMinimum(exclusiveMinimum), { 'limit': exclusiveMinimum }));
   }
   if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(value, exclusiveMaximum)) {
-    errors.push(BaseError.validationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`, { 'limit': exclusiveMaximum }));
+    errors.push(BaseError.validationError(path, 'exclusiveMaximum', VALIDATION_MESSAGES.exclusiveMaximum(exclusiveMaximum), { 'limit': exclusiveMaximum }));
   }
   pushMultipleOfError(path, value, multipleOf, errors);
 }
@@ -134,7 +135,7 @@ function pushMultipleOfError(
   errors: ValidationErrorType[]
 ): void {
   if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
-    errors.push(BaseError.validationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`, { multipleOf }));
+    errors.push(BaseError.validationError(path, 'multipleOf', VALIDATION_MESSAGES.multipleOf(multipleOf), { multipleOf }));
   }
 }
 
@@ -152,7 +153,7 @@ function pushNumberFormatError(
   const validator = formatRegistry.get(format);
 
   if (validator !== undefined && formatAssertions && !validator(value)) {
-    errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`, { format }));
+    errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format), { format }));
   }
 }
 
@@ -166,10 +167,10 @@ function pushStringLengthErrors(
   const maximum = sem.maxLength;
 
   if (minimum !== undefined && !Predicates.satisfiesMinLength(value, minimum)) {
-    errors.push(BaseError.validationError(path, 'minLength', `must NOT have fewer than ${minimum} characters`, { 'limit': minimum }));
+    errors.push(BaseError.validationError(path, 'minLength', VALIDATION_MESSAGES.minLength(minimum), { 'limit': minimum }));
   }
   if (maximum !== undefined && !Predicates.satisfiesMaxLength(value, maximum)) {
-    errors.push(BaseError.validationError(path, 'maxLength', `must NOT have more than ${maximum} characters`, { 'limit': maximum }));
+    errors.push(BaseError.validationError(path, 'maxLength', VALIDATION_MESSAGES.maxLength(maximum), { 'limit': maximum }));
   }
 }
 
@@ -181,7 +182,7 @@ function pushStringPatternError(
   errors: ValidationErrorType[]
 ): void {
   if (pattern !== undefined && !Predicates.satisfiesPattern(value, regexFor(pattern))) {
-    errors.push(BaseError.validationError(path, 'pattern', 'must match pattern', { pattern }));
+    errors.push(BaseError.validationError(path, 'pattern', VALIDATION_MESSAGES.pattern(pattern), { pattern }));
   }
 }
 
@@ -199,6 +200,6 @@ function pushStringFormatError(
   const validator = formatRegistry.get(format);
 
   if (validator !== undefined && formatAssertions && !validator(value)) {
-    errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`, { format }));
+    errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format), { format }));
   }
 }
