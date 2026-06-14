@@ -14,6 +14,9 @@ export type CompiledNodeValidationPlanType = {
   readonly 'complementCheck': CheckFnType | undefined;
   readonly 'constVal': unknown;
   readonly 'containsCheck': CheckFnType | undefined;
+  readonly 'contentAssertionsEnabled': boolean;
+  readonly 'contentEncoding': string | undefined;
+  readonly 'contentMediaType': string | undefined;
   readonly 'customKeywordEntries': CustomKeywordEntryType[] | undefined;
   readonly 'defaultValue': unknown;
   readonly 'depRequiredEntries': Array<[string, string[]]>;

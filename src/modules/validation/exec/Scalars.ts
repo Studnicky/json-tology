@@ -41,6 +41,45 @@ export class Scalars {
     return false;
   }
 
+  static validateContentEncoding(
+    path: string,
+    value: string,
+    contentEncoding: string | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
+    if (contentEncoding === undefined) {
+      return true;
+    }
+
+    if (Predicates.satisfiesContentEncoding(value, contentEncoding)) {
+      return true;
+    }
+
+    errors.push(BaseError.validationError(path, 'contentEncoding', VALIDATION_MESSAGES.contentEncoding(contentEncoding), { 'contentEncoding': contentEncoding }));
+
+    return false;
+  }
+
+  static validateContentMediaType(
+    path: string,
+    value: string,
+    contentMediaType: string | undefined,
+    contentEncoding: string | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
+    if (contentMediaType === undefined) {
+      return true;
+    }
+
+    if (Predicates.satisfiesContentMediaType(value, contentMediaType, contentEncoding)) {
+      return true;
+    }
+
+    errors.push(BaseError.validationError(path, 'contentMediaType', VALIDATION_MESSAGES.contentMediaType(contentMediaType), { 'contentMediaType': contentMediaType }));
+
+    return false;
+  }
+
   static validateEnum(
     path: string,
     value: unknown,

@@ -69,13 +69,16 @@ export const GraphEngineScalars = {
     sem: SchemaGraphSemanticsType,
     regexFor: (pattern: string) => RegExp,
     formatRegistry: FormatRegistryInterface,
-    formatAssertions: boolean
+    formatAssertions: boolean,
+    contentAssertions: boolean
   ): ValidationErrorType[] {
     const errors: ValidationErrorType[] = [];
 
     pushStringLengthErrors(path, value, sem, errors);
     pushStringPatternError(path, value, sem.pattern, regexFor, errors);
     pushStringFormatError(path, value, sem.format, formatRegistry, formatAssertions, errors);
+    pushContentEncodingError(path, value, sem.contentEncoding, contentAssertions, errors);
+    pushContentMediaTypeError(path, value, sem.contentMediaType, sem.contentEncoding, contentAssertions, errors);
 
     return errors;
   }
@@ -201,5 +204,38 @@ function pushStringFormatError(
 
   if (validator !== undefined && formatAssertions && !validator(value)) {
     errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format), { format }));
+  }
+}
+
+function pushContentEncodingError(
+  path: string,
+  value: string,
+  contentEncoding: string | undefined,
+  contentAssertions: boolean,
+  errors: ValidationErrorType[]
+): void {
+  if (contentEncoding === undefined || !contentAssertions) {
+    return;
+  }
+
+  if (!Predicates.satisfiesContentEncoding(value, contentEncoding)) {
+    errors.push(BaseError.validationError(path, 'contentEncoding', VALIDATION_MESSAGES.contentEncoding(contentEncoding), { 'contentEncoding': contentEncoding }));
+  }
+}
+
+function pushContentMediaTypeError(
+  path: string,
+  value: string,
+  contentMediaType: string | undefined,
+  contentEncoding: string | undefined,
+  contentAssertions: boolean,
+  errors: ValidationErrorType[]
+): void {
+  if (contentMediaType === undefined || !contentAssertions) {
+    return;
+  }
+
+  if (!Predicates.satisfiesContentMediaType(value, contentMediaType, contentEncoding)) {
+    errors.push(BaseError.validationError(path, 'contentMediaType', VALIDATION_MESSAGES.contentMediaType(contentMediaType), { 'contentMediaType': contentMediaType }));
   }
 }

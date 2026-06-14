@@ -405,4 +405,93 @@ void describe('cross-engine message parity', () => {
 
     assertMessageParity(jt, 'urn:msg-parity:Enum', scenarios);
   });
+
+  // ---------------------------------------------------------------------------
+  // format (strict-by-default)
+  // ---------------------------------------------------------------------------
+
+  void it('keyword: format strict-by-default — both engines agree on message', () => {
+    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+
+    jt.set({
+      '$id': 'urn:msg-parity:Format',
+      'format': 'email',
+      'type': 'string'
+    });
+
+    const scenarios: Scenario[] = [
+      {
+        'data': 'alice@example.com',
+        'description': 'valid email — passes',
+        'valid': true
+      },
+      {
+        'data': 'not-an-email',
+        'description': 'invalid email — fails with format message',
+        'valid': false
+      }
+    ];
+
+    assertMessageParity(jt, 'urn:msg-parity:Format', scenarios);
+  });
+
+  // ---------------------------------------------------------------------------
+  // contentEncoding (strict-by-default)
+  // ---------------------------------------------------------------------------
+
+  void it('keyword: contentEncoding strict-by-default — both engines agree on message', () => {
+    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+
+    jt.set({
+      '$id': 'urn:msg-parity:ContentEncoding',
+      'contentEncoding': 'base64',
+      'type': 'string'
+    });
+
+    const scenarios: Scenario[] = [
+      {
+        'data': 'aGVsbG8=',
+        'description': 'valid base64 string — passes',
+        'valid': true
+      },
+      {
+        'data': 'not valid base64!!!',
+        'description': 'invalid base64 string — fails with contentEncoding message',
+        'valid': false
+      }
+    ];
+
+    assertMessageParity(jt, 'urn:msg-parity:ContentEncoding', scenarios);
+  });
+
+  // ---------------------------------------------------------------------------
+  // contentMediaType (strict-by-default)
+  // ---------------------------------------------------------------------------
+
+  void it('keyword: contentMediaType strict-by-default — both engines agree on message', () => {
+    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+
+    jt.set({
+      '$id': 'urn:msg-parity:ContentMediaType',
+      'contentEncoding': 'base64',
+      'contentMediaType': 'application/json',
+      'type': 'string'
+    });
+
+    // {"key":"value"} base64-encoded = eyJrZXkiOiJ2YWx1ZSJ9
+    const scenarios: Scenario[] = [
+      {
+        'data': 'eyJrZXkiOiJ2YWx1ZSJ9',
+        'description': 'valid base64-encoded JSON — passes',
+        'valid': true
+      },
+      {
+        'data': 'bm90IGpzb24=',
+        'description': 'valid base64 but not JSON content — fails with contentMediaType message',
+        'valid': false
+      }
+    ];
+
+    assertMessageParity(jt, 'urn:msg-parity:ContentMediaType', scenarios);
+  });
 });

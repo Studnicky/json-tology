@@ -1,7 +1,5 @@
 import {
   CURRENT_DIALECT_PREFIX,
-  DEFAULT_DIALECT_URI,
-
   SUPPORTED_VOCABULARIES,
   VOCABULARY_FORMAT_ASSERTION
 } from '../../constants/DIALECT.js';
@@ -14,7 +12,10 @@ import type { RootDialectPlanType } from '../../types/RootDialectPlan.js';
 export const GraphEngineSupport = {
   buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanType {
     if (!isRecord(rootSchema)) {
-      return { 'formatAssertions': true };
+      return {
+        'contentAssertions': true,
+        'formatAssertions': true
+      };
     }
 
     const schemaUri = typeof rootSchema.$schema === 'string' ? rootSchema.$schema : undefined;
@@ -26,7 +27,12 @@ export const GraphEngineSupport = {
     const rawVocabulary = isRecord(rootSchema.$vocabulary)
       ? rootSchema.$vocabulary
       : undefined;
-    let formatAssertions = schemaUri === undefined;
+
+    // Default: both format and content assertions are ON (strict-by-default).
+    // Opt-out: $vocabulary with format-assertion: false disables format checking.
+    // Content assertions follow the same opt-out vocabulary key.
+    let formatAssertions = true;
+    let contentAssertions = true;
 
     if (rawVocabulary !== undefined) {
       for (const [
@@ -38,14 +44,18 @@ export const GraphEngineSupport = {
         }
       }
 
-      if (typeof rawVocabulary[VOCABULARY_FORMAT_ASSERTION] === 'boolean') {
-        formatAssertions = rawVocabulary[VOCABULARY_FORMAT_ASSERTION];
+      const formatAssertionValue = rawVocabulary[VOCABULARY_FORMAT_ASSERTION];
+
+      if (typeof formatAssertionValue === 'boolean') {
+        formatAssertions = formatAssertionValue;
+        contentAssertions = formatAssertionValue;
       }
-    } else if (schemaUri === DEFAULT_DIALECT_URI) {
-      formatAssertions = false;
     }
 
-    return { 'formatAssertions': formatAssertions };
+    return {
+      contentAssertions,
+      formatAssertions
+    };
   },
 
   cloneCandidate<T>(value: T): T {

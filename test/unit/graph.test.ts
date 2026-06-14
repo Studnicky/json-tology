@@ -3414,11 +3414,32 @@ function expandCurie(value: string): string {
       }> = [
         {
           'data': 'not-an-email',
-          'expected': true,
-          'name': 'format as annotation-only allows invalid format',
+          'expected': false,
+          'name': 'format assertions are ON by default — invalid email fails',
           'schema': {
             '$id': 'urn:test:format-annotation',
             '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            'format': 'email',
+            'type': 'string'
+          }
+        },
+        {
+          'data': 'not-an-email',
+          'expected': true,
+          'name': 'format opt-out: $vocabulary format-assertion false disables checking',
+          'schema': {
+            '$id': 'urn:test:format-opt-out',
+            '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            '$vocabulary': {
+              'https://json-schema.org/draft/2020-12/vocab/applicator': true,
+              'https://json-schema.org/draft/2020-12/vocab/content': true,
+              'https://json-schema.org/draft/2020-12/vocab/core': true,
+              'https://json-schema.org/draft/2020-12/vocab/format-annotation': true,
+              'https://json-schema.org/draft/2020-12/vocab/format-assertion': false,
+              'https://json-schema.org/draft/2020-12/vocab/meta-data': true,
+              'https://json-schema.org/draft/2020-12/vocab/unevaluated': true,
+              'https://json-schema.org/draft/2020-12/vocab/validation': true
+            },
             'format': 'email',
             'type': 'string'
           }
@@ -3467,14 +3488,36 @@ function expandCurie(value: string): string {
         },
         {
           'data': 'definitely not base64 or json',
-          'expected': true,
-          'name': 'content keywords are annotation-only, not assertions',
+          'expected': false,
+          'name': 'content assertions are ON by default — invalid base64 fails',
           'schema': {
             '$id': 'urn:test:content-annotations',
             '$schema': 'https://json-schema.org/draft/2020-12/schema',
             'contentEncoding': 'base64',
             'contentMediaType': 'application/json',
             'contentSchema': { '$ref': 'urn:test:content-inner' },
+            'type': 'string'
+          }
+        },
+        {
+          'data': 'definitely not base64 or json',
+          'expected': true,
+          'name': 'content opt-out: $vocabulary format-assertion false disables content checking',
+          'schema': {
+            '$id': 'urn:test:content-opt-out',
+            '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            '$vocabulary': {
+              'https://json-schema.org/draft/2020-12/vocab/applicator': true,
+              'https://json-schema.org/draft/2020-12/vocab/content': true,
+              'https://json-schema.org/draft/2020-12/vocab/core': true,
+              'https://json-schema.org/draft/2020-12/vocab/format-annotation': true,
+              'https://json-schema.org/draft/2020-12/vocab/format-assertion': false,
+              'https://json-schema.org/draft/2020-12/vocab/meta-data': true,
+              'https://json-schema.org/draft/2020-12/vocab/unevaluated': true,
+              'https://json-schema.org/draft/2020-12/vocab/validation': true
+            },
+            'contentEncoding': 'base64',
+            'contentMediaType': 'application/json',
             'type': 'string'
           }
         }

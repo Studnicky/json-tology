@@ -1227,7 +1227,8 @@ export class GraphEngine implements GraphEngineInterface {
         return this.regexFor(pattern);
       },
       this.formatRegistry,
-      this.dialectPlan.formatAssertions
+      this.dialectPlan.formatAssertions,
+      this.dialectPlan.contentAssertions
     );
   }
 

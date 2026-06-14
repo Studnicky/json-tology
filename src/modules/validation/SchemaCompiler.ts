@@ -28,9 +28,7 @@ import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import type {
   CheckFnType, ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../types/Validation.js';
-import {
-  DEFAULT_DIALECT_URI, VOCABULARY_FORMAT_ASSERTION
-} from '../../constants/DIALECT.js';
+import { VOCABULARY_FORMAT_ASSERTION } from '../../constants/DIALECT.js';
 import type { LoggerInterface } from '../../interfaces/Logger.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
@@ -143,20 +141,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private appliesFormatAssertions(sem: SchemaGraphSemanticsType): boolean {
     const rootVocabulary = sem.schemaVocabulary;
+    const formatAssertionValue = isRecord(rootVocabulary) ? rootVocabulary[VOCABULARY_FORMAT_ASSERTION] : undefined;
 
-    if (isRecord(rootVocabulary)) {
-      return rootVocabulary[VOCABULARY_FORMAT_ASSERTION] === true;
-    }
-
-    const schemaUri = sem.schemaDialect;
-
-    // 2020-12 without explicit format-assertion vocabulary → annotation only
-    if (schemaUri === DEFAULT_DIALECT_URI) {
-      return false;
-    }
-
-    // No $schema or other dialect → default to enabled
-    return true;
+    // Explicit opt-out: $vocabulary with format-assertion: false disables checking.
+    // Default: format assertions ON (strict-by-default posture).
+    return typeof formatAssertionValue === 'boolean' ? formatAssertionValue : true;
   }
 
   private applyPlanDefaults(
@@ -767,7 +756,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildStringCheckClosure(
     checks: Array<(str: string) => boolean>,
-    formatCheck: CheckFnType | undefined
+    formatCheck: CheckFnType | undefined,
+    contentEncoding?: string,
+    contentMediaType?: string
   ): CheckFnType {
     return (value: unknown): boolean => {
       if (typeof value === 'string') {
@@ -775,6 +766,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           if (!check(value)) {
             return false;
           }
+        }
+
+        if (contentEncoding !== undefined && !Predicates.satisfiesContentEncoding(value, contentEncoding)) {
+          return false;
+        }
+
+        if (contentMediaType !== undefined && !Predicates.satisfiesContentMediaType(value, contentMediaType, contentEncoding)) {
+          return false;
         }
       }
 
@@ -791,8 +790,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     sem: SchemaGraphSemanticsType,
     formatRegistry: FormatRegistryInterface
   ): CheckFnType | undefined {
+    const contentEnabled = this.appliesFormatAssertions(sem);
     const hasStringConstraint = sem.minLength !== undefined || sem.maxLength !== undefined
-      || sem.pattern !== undefined || sem.format !== undefined;
+      || sem.pattern !== undefined || sem.format !== undefined
+      || (contentEnabled && (sem.contentEncoding !== undefined || sem.contentMediaType !== undefined));
 
     if (!hasStringConstraint) {
       return undefined;
@@ -1341,16 +1342,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): CheckFnType | undefined {
     const checks = this.buildStringLengthPatternChecks(minLength, maxLength, pattern);
     const formatCheck = this.resolveFormatCheck(format, formatRegistry, sem);
+    const contentAssertionsEnabled = this.appliesFormatAssertions(sem);
+    const contentEncoding = contentAssertionsEnabled ? sem.contentEncoding : undefined;
+    const contentMediaType = contentAssertionsEnabled ? sem.contentMediaType : undefined;
 
-    if (checks.length === 0 && formatCheck === undefined) {
+    if (checks.length === 0 && formatCheck === undefined && contentEncoding === undefined && contentMediaType === undefined) {
       return undefined;
     }
 
-    if (checks.length === 0 && formatCheck !== undefined) {
-      return formatCheck;
-    }
-
-    return this.buildStringCheckClosure(checks, formatCheck);
+    return this.buildStringCheckClosure(checks, formatCheck, contentEncoding, contentMediaType);
   }
 
   private compileTypeCheck(types: string[]): CheckFnType {
@@ -2480,6 +2480,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     const {
+      contentAssertionsEnabled, contentEncoding, contentMediaType,
       format, formatValidator, maxLength, minLength, pattern, patternRegex
     } = plan;
 
@@ -2510,6 +2511,36 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         'earlyExit': false,
         'valid': false
       };
+    }
+
+    if (contentAssertionsEnabled && typeof value === 'string') {
+      if (!Scalars.validateContentEncoding(path, value, contentEncoding, errors)) {
+        if (!collectErrors) {
+          return {
+            'earlyExit': true,
+            'valid': false
+          };
+        }
+
+        return {
+          'earlyExit': false,
+          'valid': false
+        };
+      }
+
+      if (!Scalars.validateContentMediaType(path, value, contentMediaType, contentEncoding, errors)) {
+        if (!collectErrors) {
+          return {
+            'earlyExit': true,
+            'valid': false
+          };
+        }
+
+        return {
+          'earlyExit': false,
+          'valid': false
+        };
+      }
     }
 
     return {

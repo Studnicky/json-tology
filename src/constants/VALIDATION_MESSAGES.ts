@@ -49,6 +49,16 @@ export const VALIDATION_MESSAGES = {
   /** `contains` — no items matched and neither minContains nor maxContains is set. */
   'containsOne': 'must contain at least one matching item',
 
+  /** `contentEncoding` — string did not decode under the named encoding. */
+  'contentEncoding': (encoding: string): string => {
+    return `must be valid ${encoding}-encoded content`;
+  },
+
+  /** `contentMediaType` — decoded content did not parse as the named media type. */
+  'contentMediaType': (mediaType: string): string => {
+    return `must be valid ${mediaType} content`;
+  },
+
   /** `dependentRequired` — a dependency property is missing. */
   'dependentRequired': (dependency: string, key: string): string => {
     return `must have property '${dependency}' when '${key}' is present`;
