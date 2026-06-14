@@ -40,9 +40,10 @@ void describe('Projection — unresolvable $ref throws REF_UNRESOLVED', () => {
       (err: unknown) => {
         assert.ok(err instanceof GraphError, `expected GraphError, got ${String(err)}`);
         assert.equal(err.code, 'REF_UNRESOLVED');
-        assert.ok(
-          err.message.includes('https://example.com/Missing'),
-          `message should name the unresolved ref; got: ${err.message}`
+        assert.equal(
+          err.pointer,
+          'https://example.com/Missing',
+          `pointer should name the unresolved ref; got: ${String(err.pointer)}`
         );
 
         return true;
