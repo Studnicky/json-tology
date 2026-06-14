@@ -32,7 +32,7 @@ function isIsbn10(value: unknown): boolean {
     }
     sum += digit * (10 - index);
   }
-  const last = value[9];
+  const last = value.at(9);
   const lastCode = value.codePointAt(9);
 
   if (lastCode === undefined) {

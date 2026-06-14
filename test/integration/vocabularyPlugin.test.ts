@@ -418,7 +418,7 @@ void describe('VocabularyPlugin', () => {
           assert.ok(graphs.length > 0);
 
           const serializer = new GraphOntologySerializer({
-            ...(registry.curie === undefined ? {} : { 'curie': registry.curie }),
+            ...(!(registry.curie === undefined) && { 'curie': registry.curie }),
             'vocabularies': [plugin]
           });
           const nodes = serializer.serializeQuads(graphs);

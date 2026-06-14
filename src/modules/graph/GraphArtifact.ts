@@ -30,29 +30,29 @@ export class GraphArtifact {
   public static fromArtifact(artifact: unknown): SchemaGraphInterface {
     if (!isRecord(artifact)) {
       throw new GraphError(
-        'ARTIFACT_INVALID',
-        'Artifact must be an object. Regenerate the artifact.'
+        'Artifact must be an object. Regenerate the artifact.',
+        { 'code': 'ARTIFACT_INVALID' }
       );
     }
 
     if (!('metadata' in artifact)) {
       throw new GraphError(
-        'ARTIFACT_INVALID',
-        'Artifact is missing metadata. Regenerate the artifact.'
+        'Artifact is missing metadata. Regenerate the artifact.',
+        { 'code': 'ARTIFACT_INVALID' }
       );
     }
 
     if (!('normIR' in artifact) || !('semanticsHashes' in artifact)) {
       throw new GraphError(
-        'ARTIFACT_INVALID',
-        'Unsupported legacy artifact format. Regenerate the artifact.'
+        'Unsupported legacy artifact format. Regenerate the artifact.',
+        { 'code': 'ARTIFACT_INVALID' }
       );
     }
 
     if (!this.isArtifact(artifact)) {
       throw new GraphError(
-        'ARTIFACT_INVALID',
-        'Artifact shape is invalid. Regenerate the artifact.'
+        'Artifact shape is invalid. Regenerate the artifact.',
+        { 'code': 'ARTIFACT_INVALID' }
       );
     }
 
@@ -63,8 +63,8 @@ export class GraphArtifact {
 
     if (artifact.metadata.schemaHash !== actualSchemaHash) {
       throw new GraphError(
-        'ARTIFACT_STALE',
-        `Schema hash mismatch: artifact=${artifact.metadata.schemaHash}, actual=${actualSchemaHash}. Regenerate the artifact.`
+        `Schema hash mismatch: artifact=${artifact.metadata.schemaHash}, actual=${actualSchemaHash}. Regenerate the artifact.`,
+        { 'code': 'ARTIFACT_STALE' }
       );
     }
 
@@ -75,8 +75,8 @@ export class GraphArtifact {
 
       if (expected !== actual) {
         throw new GraphError(
-          'ARTIFACT_STALE',
-          `Semantics hash mismatch at ${node.pointer || '(root)'}: artifact=${expected}, rebuilt=${actual}. Regenerate the artifact.`
+          `Semantics hash mismatch at ${node.pointer || '(root)'}: artifact=${expected}, rebuilt=${actual}. Regenerate the artifact.`,
+          { 'code': 'ARTIFACT_STALE' }
         );
       }
     }

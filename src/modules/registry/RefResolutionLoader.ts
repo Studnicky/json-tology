@@ -35,7 +35,10 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
       const loaded = await loader(iri);
 
       if (loaded === null) {
-        throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `loader returned null for IRI: ${iri}`, { 'pointer': iri });
+        throw new GraphError(`loader returned null for IRI: ${iri}`, {
+          'code': GraphErrorCode.REF_UNRESOLVED,
+          'pointer': iri
+        });
       }
 
       if (typeof loaded !== 'boolean') {
@@ -78,9 +81,11 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
 
         if (loaded === null) {
           throw new GraphError(
-            GraphErrorCode.REF_UNRESOLVED,
             `loader returned null for IRI: ${iri}`,
-            { 'pointer': iri }
+            {
+              'code': GraphErrorCode.REF_UNRESOLVED,
+              'pointer': iri
+            }
           );
         }
 

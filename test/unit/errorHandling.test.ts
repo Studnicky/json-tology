@@ -128,7 +128,7 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
     }> = [
       {
         'assertions': () => {
-          const error = new SchemaError('SCHEMA_INVALID_INPUT', 'no cause');
+          const error = new SchemaError('no cause', { 'code': 'SCHEMA_INVALID_INPUT' });
 
           assert.equal(error.cause, undefined, 'edge: undefined cause — cause is undefined');
           const json = error.toJson();
@@ -139,9 +139,15 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
       },
       {
         'assertions': () => {
-          const root = new SchemaError('SCHEMA_MISSING_ID', 'root error');
-          const mid = new SchemaError('SCHEMA_DUPLICATE_ID', 'mid error', { 'cause': root });
-          const top = new SchemaError('SCHEMA_STRUCTURE_INVALID', 'top error', { 'cause': mid });
+          const root = new SchemaError('root error', { 'code': 'SCHEMA_MISSING_ID' });
+          const mid = new SchemaError('mid error', {
+            'cause': root,
+            'code': 'SCHEMA_DUPLICATE_ID'
+          });
+          const top = new SchemaError('top error', {
+            'cause': mid,
+            'code': 'SCHEMA_STRUCTURE_INVALID'
+          });
 
           const chain = top.flatten();
 
@@ -154,7 +160,7 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
       },
       {
         'assertions': () => {
-          const single = new SchemaError('SCHEMA_NOT_REGISTERED', 'single error');
+          const single = new SchemaError('single error', { 'code': 'SCHEMA_NOT_REGISTERED' });
           const chain = single.flatten();
 
           assert.equal(chain.length, 1, 'edge: single error flatten — length 1');

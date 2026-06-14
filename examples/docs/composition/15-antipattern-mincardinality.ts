@@ -1,4 +1,6 @@
-import { Compose } from '../../../src/index.js';
+import {
+  Compose, JsonTology
+} from '../../../src/index.js';
 
 // ✗ Don't do this — minCardinality on a multi-valued property is an OWL axiom;
 // it does NOT add a minItems constraint on the JSON Schema array
@@ -23,5 +25,13 @@ const AuthoredBook2Schema = {
   'type': 'object'
 } as const;
 
+const jt = JsonTology.create({
+  'baseIRI': 'https://bookstore.example',
+  'schemas': [AuthoredBook2Schema] as const
+});
+
+const minItemsResult = jt.validate('https://bookstore.example/AuthoredBook2', { 'authors': [] });
+
 console.log('anti-pattern — minCardinality does not add runtime enforcement (authoredBook.$id):', authoredBook.$id);
-console.log('minCardinality is TBox-only (OWL axiom) — for runtime use minItems:', AuthoredBook2Schema.$id);
+// Fails — minItems is a JSON Schema keyword checked at validate time
+console.log('minCardinality is TBox-only — minItems enforces at validate time:', minItemsResult.ok, '(rejects empty authors)');

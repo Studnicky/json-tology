@@ -608,7 +608,10 @@ export class SchemaGraph implements SchemaGraphInterface {
     const mapNode = this.nodeMap.get(pointer);
 
     if (mapNode === undefined) {
-      throw new GraphError('POINTER_NOT_FOUND', `Schema graph node not found for pointer: ${pointer}`, { pointer });
+      throw new GraphError(`Schema graph node not found for pointer: ${pointer}`, {
+        'code': 'POINTER_NOT_FOUND',
+        pointer
+      });
     }
 
     return mapNode;
@@ -649,7 +652,10 @@ export class SchemaGraph implements SchemaGraphInterface {
     const anchored = this.anchorMap.get(fragment);
 
     if (anchored === undefined) {
-      throw new GraphError('ANCHOR_NOT_FOUND', `Unknown schema anchor: #${fragment}`, { 'pointer': fragment });
+      throw new GraphError(`Unknown schema anchor: #${fragment}`, {
+        'code': 'ANCHOR_NOT_FOUND',
+        'pointer': fragment
+      });
     }
 
     return anchored;
@@ -671,13 +677,19 @@ export class SchemaGraph implements SchemaGraphInterface {
       return this.rootNode;
     }
     if (!pointer.startsWith('/')) {
-      throw new GraphError('POINTER_INVALID', `Invalid JSON Pointer: ${pointer}`, { pointer });
+      throw new GraphError(`Invalid JSON Pointer: ${pointer}`, {
+        'code': 'POINTER_INVALID',
+        pointer
+      });
     }
 
     const resolved = this.nodeMap.get(pointer);
 
     if (resolved === undefined) {
-      throw new GraphError('POINTER_NOT_FOUND', `Pointer not found: ${pointer}`, { pointer });
+      throw new GraphError(`Pointer not found: ${pointer}`, {
+        'code': 'POINTER_NOT_FOUND',
+        pointer
+      });
     }
 
     return resolved;

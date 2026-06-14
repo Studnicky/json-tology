@@ -337,10 +337,10 @@ const GoogleVolumeCodec = jt.addTransform(GoogleRecordSchema, {
 
     // Map only the values Google actually returned; omit the rest.
     return {
-      ...(info.authors === undefined ? {} : { 'authors': [...info.authors] as [string, ...string[]] }),
-      ...(isbn === undefined ? {} : { 'isbn': isbn }),
-      ...(publishedOn === undefined ? {} : { 'publishedOn': publishedOn }),
-      ...(info.title === undefined ? {} : { 'title': info.title })
+      ...(!(info.authors === undefined) && { 'authors': [...info.authors] as [string, ...string[]] }),
+      ...(!(isbn === undefined) && { 'isbn': isbn }),
+      ...(!(publishedOn === undefined) && { 'publishedOn': publishedOn }),
+      ...(!(info.title === undefined) && { 'title': info.title })
     };
   },
   // encode: record → Google-Books-shaped volume (best-effort; omits fields the
@@ -389,9 +389,9 @@ const OpenLibraryDocCodec = jt.addTransform(OpenLibraryRecordSchema, {
     // OpenLibrary only surfaces first_publish_year (a bare integer year), which
     // is not a full YYYY-MM-DD date, so publishedOn is omitted — not faked.
     return {
-      ...(authorName === undefined ? {} : { 'authors': [...authorName] as [string, ...string[]] }),
-      ...(isbn === undefined ? {} : { 'isbn': isbn }),
-      ...(title === undefined ? {} : { 'title': title })
+      ...(!(authorName === undefined) && { 'authors': [...authorName] as [string, ...string[]] }),
+      ...(!(isbn === undefined) && { 'isbn': isbn }),
+      ...(!(title === undefined) && { 'title': title })
     };
   },
   // encode: canonical record → OpenLibrary-shaped doc. Wire keys are written

@@ -8,39 +8,23 @@
  * filled in automatically.
  */
 
-import type { TransformErrorCodeType } from '../types/ErrorCodes.js';
-import type { TransformDirectionType } from '../types/TransformDirection.js';
+import type { TransformErrorOptionsType } from '../types/ErrorOptions.js';
 import { BaseError } from './BaseError.js';
 
 export class TransformError extends BaseError {
-  public readonly direction: TransformDirectionType;
+  public readonly direction: TransformErrorOptionsType['direction'];
   public readonly path?: string;
   public readonly schemaId?: string;
 
   /**
    * Create a TransformError with a direction, code, and optional context.
    *
-   * @param code - Machine-readable transform error code
    * @param message - Human-readable description of the failure
-   * @param options - Direction, optional schemaId/path, cause, and retryable flag
+   * @param options - Options bag containing `options.code`, `options.direction`,
+   *   optional `options.schemaId`, `options.path`, `options.cause`, and `options.retryable`
    */
-  public constructor(
-    code: TransformErrorCodeType,
-    message: string,
-    options: {
-      'cause'?: Error;
-      'direction': TransformDirectionType;
-      'path'?: string;
-      'retryable'?: boolean;
-      'schemaId'?: string;
-    }
-  ) {
-    super(code, message, options.cause === undefined
-      ? undefined
-      : {
-        'cause': options.cause,
-        ...(options.retryable === undefined ? {} : { 'retryable': options.retryable })
-      });
+  public constructor(message: string, options: TransformErrorOptionsType) {
+    super(message, options);
     this.name = 'TransformError';
     this.direction = options.direction;
     if (options.schemaId !== undefined) {

@@ -57,8 +57,8 @@ function assertAbsolutePredicate(predicate: string): void {
   }
 
   throw new GraphError(
-    GraphErrorCode.INVALID_PREDICATE_IRI,
-    `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`
+    `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`,
+    { 'code': GraphErrorCode.INVALID_PREDICATE_IRI }
   );
 }
 

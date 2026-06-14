@@ -81,7 +81,7 @@ export class Result<T> implements ResultInterface<T> {
    */
   unwrap(): T {
     if (!this.success) {
-      throw new InstantiationError(this.errors as ValidationErrors);
+      throw new InstantiationError(this.errors as ValidationErrors, { 'code': 'INSTANTIATION_FAILED' });
     }
 
     return this.data as T;

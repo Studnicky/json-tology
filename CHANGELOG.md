@@ -43,6 +43,14 @@ type surface has been consolidated into a canonical taxonomy.
   `DateTimeBrandType`, `Ipv4BrandType`, …), aligning with the convention that a
   `type` is the data substrate and `*Interface` is reserved for behavioral
   contracts.
+- **BREAKING — error constructors.** Error classes follow the standard
+  `new XError(message, options)` shape with the machine-readable `code` carried
+  in the options bag, e.g.
+  `new GraphError('Unresolved schema reference', { code: 'REF_UNRESOLVED', pointer })`
+  in place of `new GraphError('REF_UNRESOLVED', 'Unresolved …', { pointer })`.
+  `BaseError`, `SchemaError`, `GraphError`, `TransformError`, and
+  `OwlImportError` change their public constructor signatures; `code` is required
+  in the options object and narrowed to each class's code union.
 - Error codes thrown as raw strings route through their `*ErrorCode` constants;
   `SCHEMA_DUPLICATE_ID`, `SCHEMA_DUPLICATE_SHAPE`, `INVALID_LANGUAGE_TAG`,
   `INVALID_PREDICATE_IRI`, `INVALID_IRI_VALUE`, `NON_FINITE_NUMBER`, and
@@ -95,6 +103,13 @@ type surface has been consolidated into a canonical taxonomy.
   the `unicorn/no-thenable` lint rule (a false positive against the JSON Schema
   `then` keyword); synced `CLAUDE.md`, `docs/architecture.md`, and
   `docs/errors/classes.md` to the current code.
+- **Dependencies.** Dropped the `vite` / `esbuild` resolution overrides so the
+  docs toolchain resolves naturally (`tsx` now runs on the patched esbuild
+  0.28.1); bumped `commander` to 15, `eslint-plugin-unicorn` to 66 (renamed
+  `no-array-for-each` → `no-for-each`), and the remaining dev dependencies to
+  current. `shell-quote` is patched to 1.8.4. The residual esbuild and `0x`/`d3`
+  advisories are dev-server / profiling-only (not in the published package) and
+  have no upstream-released fix.
 
 ## [0.21.0] - 2026-06-13
 

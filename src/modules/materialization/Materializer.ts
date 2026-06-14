@@ -181,7 +181,10 @@ export class Materializer implements MaterializerInterface {
             'params': {},
             'path': `/${name}`
           }]),
-          { 'cause': causeError }
+          {
+            'cause': causeError,
+            'code': 'INSTANTIATION_FAILED'
+          }
         );
       }
     }
@@ -325,7 +328,10 @@ export class Materializer implements MaterializerInterface {
     const result = this.run(schema, partial ?? {});
 
     if (!result.valid) {
-      throw new MaterializationError(schema.$id, result.errors);
+      throw new MaterializationError(schema.$id, {
+        'code': 'MATERIALIZATION_FAILED',
+        'validationErrors': result.errors
+      });
     }
 
     const value = result.value;
@@ -373,7 +379,10 @@ export class Materializer implements MaterializerInterface {
     const result = this.run(schema, data, baseIRI, false, options);
 
     if (!result.valid) {
-      throw new MaterializationError(schema.$id, result.errors);
+      throw new MaterializationError(schema.$id, {
+        'code': 'MATERIALIZATION_FAILED',
+        'validationErrors': result.errors
+      });
     }
 
     return result.abox;
@@ -454,7 +463,10 @@ export class Materializer implements MaterializerInterface {
       }
     }
 
-    throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Unresolved schema reference: ${ref}`, { 'pointer': ref });
+    throw new GraphError(`Unresolved schema reference: ${ref}`, {
+      'code': GraphErrorCode.REF_UNRESOLVED,
+      'pointer': ref
+    });
   }
 
   private run(

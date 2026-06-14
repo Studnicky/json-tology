@@ -160,10 +160,10 @@ function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
   if (hasCycle(data)) {
     throw new MaterializationError(
       resolved.node.id,
-      ['cyclic data detected at root'],
       {
         'code': 'CYCLIC_DATA',
-        'message': `Cyclic data detected during projection of ${resolved.node.id}`
+        'message': `Cyclic data detected during projection of ${resolved.node.id}`,
+        'validationErrors': ['cyclic data detected at root']
       }
     );
   }
@@ -256,9 +256,11 @@ function resolveNode(
   }
 
   throw new GraphError(
-    GraphErrorCode.REF_UNRESOLVED,
     `Unresolved schema reference in projection: ${nodeSemantics.ref}`,
-    { 'pointer': nodeSemantics.ref }
+    {
+      'code': GraphErrorCode.REF_UNRESOLVED,
+      'pointer': nodeSemantics.ref
+    }
   );
 }
 
@@ -529,10 +531,10 @@ function projectInstance(args: ProjectInstanceArgsType): string {
   if (visited.has(data)) {
     throw new MaterializationError(
       node.id,
-      [`cyclic data detected at ${path === '' ? 'root' : path}`],
       {
         'code': 'CYCLIC_DATA',
-        'message': `Cyclic data detected during projection of ${node.id} at ${path === '' ? 'root' : path}`
+        'message': `Cyclic data detected during projection of ${node.id} at ${path === '' ? 'root' : path}`,
+        'validationErrors': [`cyclic data detected at ${path === '' ? 'root' : path}`]
       }
     );
   }
@@ -715,10 +717,10 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
   if (graphTerm.termType === 'DefaultGraph') {
     throw new MaterializationError(
       sourceId,
-      [`annotated edge ${edge.edgePredicate} requires an explicit graphIRI`],
       {
         'code': MaterializationErrorCode.MISSING_GRAPH_IRI,
-        'message': `Annotated edge ${edge.edgePredicate} at ${path} requires a graphIRI: a triple term carries no graph membership, so the base triple and its annotations must share one named graph. Pass { graphIRI } to toQuads.`
+        'message': `Annotated edge ${edge.edgePredicate} at ${path} requires a graphIRI: a triple term carries no graph membership, so the base triple and its annotations must share one named graph. Pass { graphIRI } to toQuads.`,
+        'validationErrors': [`annotated edge ${edge.edgePredicate} requires an explicit graphIRI`]
       }
     );
   }
@@ -726,10 +728,10 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
   if (!isRecord(value)) {
     throw new MaterializationError(
       sourceId,
-      [`annotated edge ${edge.edgePredicate} value must be an object with target + annotations`],
       {
         'code': 'MATERIALIZATION_FAILED',
-        'message': `Annotated edge ${edge.edgePredicate} at ${path} expects { target, annotations }, received ${typeof value}.`
+        'message': `Annotated edge ${edge.edgePredicate} at ${path} expects { target, annotations }, received ${typeof value}.`,
+        'validationErrors': [`annotated edge ${edge.edgePredicate} value must be an object with target + annotations`]
       }
     );
   }
@@ -823,10 +825,10 @@ function projectStringValue(value: string, ctx: ProjectScalarValueArgsType): voi
     if (!isAbsoluteIri(value)) {
       throw new MaterializationError(
         propertyNode.id,
-        [`invalid IRI value at ${path}: ${value}`],
         {
           'code': MaterializationErrorCode.INVALID_IRI_VALUE,
-          'message': `Property ${propertyIRI} (x-jt-iriRef) received an invalid IRI: "${value}". Expected an absolute IRI with an allowed scheme (http/https/urn/ftp/file) and no control characters or spaces.`
+          'message': `Property ${propertyIRI} (x-jt-iriRef) received an invalid IRI: "${value}". Expected an absolute IRI with an allowed scheme (http/https/urn/ftp/file) and no control characters or spaces.`,
+          'validationErrors': [`invalid IRI value at ${path}: ${value}`]
         }
       );
     }
@@ -862,10 +864,10 @@ function projectNumberValue(value: number, ctx: ProjectScalarValueArgsType): voi
   if (!Number.isFinite(value)) {
     throw new MaterializationError(
       propertyNode.id,
-      [`non-finite numeric value at ${path}`],
       {
         'code': MaterializationErrorCode.NON_FINITE_NUMBER,
-        'message': `Non-finite numeric value (${String(value)}) at ${path} cannot be serialized as an RDF literal. Supply a finite number.`
+        'message': `Non-finite numeric value (${String(value)}) at ${path} cannot be serialized as an RDF literal. Supply a finite number.`,
+        'validationErrors': [`non-finite numeric value at ${path}`]
       }
     );
   }

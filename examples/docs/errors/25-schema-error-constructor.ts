@@ -1,8 +1,8 @@
 /**
- * SchemaError constructor — the options-bag argument convention.
+ * SchemaError constructor — the standard Error(message, options) convention.
  *
- * `code` and `message` are required positionals; `schemaId` and `cause`
- * travel in the trailing options bag. The code values come from the
+ * `message` is the required positional. `code`, `schemaId`, and `cause`
+ * travel in the required options bag. The code values come from the
  * exported `SchemaErrorCode` map.
  */
 
@@ -13,10 +13,14 @@ import {
 const schemaId = 'urn:bookstore:Order';
 const cause = new Error('vocabulary not registered');
 
-const missingId = new SchemaError(SchemaErrorCode.MISSING_ID, 'schema is missing $id');
-const structure = new SchemaError(SchemaErrorCode.STRUCTURE_INVALID, 'invalid structure', { schemaId });
-const dialect = new SchemaError(SchemaErrorCode.DIALECT_UNSUPPORTED, 'unsupported dialect', {
+const missingId = new SchemaError('schema is missing $id', { 'code': SchemaErrorCode.MISSING_ID });
+const structure = new SchemaError('invalid structure', {
+  'code': SchemaErrorCode.STRUCTURE_INVALID,
+  schemaId
+});
+const dialect = new SchemaError('unsupported dialect', {
   cause,
+  'code': SchemaErrorCode.DIALECT_UNSUPPORTED,
   schemaId
 });
 

@@ -66,15 +66,15 @@ export class BaseError extends Error {
   /**
    * Create a BaseError with a machine-readable code, human message, and optional overrides.
    *
-   * @param code - Machine-readable error code string
    * @param message - Human-readable error description
-   * @param options - Optional retryable flag and cause for error chaining
+   * @param options - Options bag containing `options.code` (machine-readable error code),
+   *   optional `options.retryable` flag, and optional `options.cause` for error chaining
    */
-  public constructor(code: string, message: string, options?: BaseErrorOptionsType) {
-    super(message, options?.cause === undefined ? undefined : { 'cause': options.cause });
-    this.code = code;
-    this.retryable = options?.retryable ?? false;
-    this.cause = options?.cause;
+  public constructor(message: string, options: BaseErrorOptionsType) {
+    super(message, options);
+    this.code = options.code;
+    this.retryable = options.retryable ?? false;
+    this.cause = options.cause;
     Object.setPrototypeOf(this, new.target.prototype);
   }
 

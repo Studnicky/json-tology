@@ -70,20 +70,16 @@ export class Dumper {
 
       const causeError = error instanceof Error ? error : new Error(String(error));
       const schemaId = nodeSchema.$id as string | undefined;
-      const encOpts: { 'cause': Error;
-        'path': string;
-        'schemaId'?: string } = {
-        'cause': causeError,
-        'path': node.pointer
-      };
-
-      if (schemaId !== undefined) {
-        encOpts.schemaId = schemaId;
-      }
 
       throw new EncodeError(
         `transform encoder failed at ${node.pointer}: ${causeError.message}`,
-        encOpts
+        {
+          'cause': causeError,
+          'code': 'TRANSFORM_ENCODE_FAILED',
+          'direction': 'encode',
+          'path': node.pointer,
+          ...((schemaId !== undefined) && { 'schemaId': schemaId })
+        }
       );
     }
   }
@@ -134,7 +130,10 @@ export class Dumper {
     const entry = registry.graphEntry(schemaId);
 
     if (entry === undefined) {
-      throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Schema not registered: ${schemaId}`, { 'pointer': schemaId });
+      throw new GraphError(`Schema not registered: ${schemaId}`, {
+        'code': GraphErrorCode.REF_UNRESOLVED,
+        'pointer': schemaId
+      });
     }
 
     const {
@@ -193,7 +192,10 @@ export class Dumper {
     const entry = registry.graphEntry(schemaId);
 
     if (entry === undefined) {
-      throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Schema not registered: ${schemaId}`, { 'pointer': schemaId });
+      throw new GraphError(`Schema not registered: ${schemaId}`, {
+        'code': GraphErrorCode.REF_UNRESOLVED,
+        'pointer': schemaId
+      });
     }
 
     if (!graphHasTransforms(entry.graph) && !hasActiveFilterOptions(options)) {
@@ -387,7 +389,10 @@ export class Dumper {
     const lookedUp = registry.graphEntry(parsed.id);
 
     if (lookedUp === undefined) {
-      throw new GraphError(GraphErrorCode.REF_UNRESOLVED, `Unresolved schema reference: ${ref}`, { 'pointer': ref });
+      throw new GraphError(`Unresolved schema reference: ${ref}`, {
+        'code': GraphErrorCode.REF_UNRESOLVED,
+        'pointer': ref
+      });
     }
 
     const {

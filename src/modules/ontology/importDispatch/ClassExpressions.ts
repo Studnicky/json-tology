@@ -263,8 +263,7 @@ function detectDiscriminatorProperty(
   }
 
   const firstProp = memberDiscriminators[0]?.property;
-  const allSameProperty = memberDiscriminators.every((disc: { 'property': string;
-    'value': string }): boolean => {
+  const allSameProperty = memberDiscriminators.every((disc): boolean => {
     return disc.property === firstProp;
   });
 
@@ -272,8 +271,7 @@ function detectDiscriminatorProperty(
     return undefined;
   }
 
-  const values = memberDiscriminators.map((disc: { 'property': string;
-    'value': string }): string => {
+  const values = memberDiscriminators.map((disc): string => {
     return disc.value;
   });
   const valueSet = new Set(values);

@@ -425,9 +425,9 @@ function violation(
     'resultMessage': message,
     'resultSeverity': 'Violation',
     'sourceConstraintComponent': component,
-    ...(path === undefined || path === '' ? {} : { 'resultPath': path }),
-    ...(sourceShape === undefined ? {} : { 'sourceShape': sourceShape }),
-    ...(value === undefined ? {} : { 'value': value })
+    ...(!(path === undefined || path === '') && { 'resultPath': path }),
+    ...(!(sourceShape === undefined) && { 'sourceShape': sourceShape }),
+    ...(!(value === undefined) && { 'value': value })
   };
 }
 

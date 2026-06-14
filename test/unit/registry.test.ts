@@ -129,11 +129,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       assert.ok(!errs.ok);
 
-      const allErrors: ValidationErrorType[] = [];
-
-      for (const err of errs) {
-        allErrors.push(err);
-      }
+      const allErrors: ValidationErrorType[] = [...errs];
 
       assert.ok(allErrors.some((err) => {
         return err.keyword === 'EXTRA_FORBIDDEN';

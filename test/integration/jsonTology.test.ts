@@ -871,11 +871,7 @@ import {
 
     void it('is iterable over ValidationErrorType items', () => {
       const result = entities.validate(UserSchema.$id, { 'name': 'Alice' });
-      const collected = [];
-
-      for (const err of result) {
-        collected.push(err);
-      }
+      const collected = [...result];
 
       assert.equal(collected.length, result.length);
       assert.ok(typeof collected[0].keyword === 'string');

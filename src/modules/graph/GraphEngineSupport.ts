@@ -20,7 +20,7 @@ export const GraphEngineSupport = {
     const schemaUri = typeof rootSchema.$schema === 'string' ? rootSchema.$schema : undefined;
 
     if (schemaUri !== undefined && !schemaUri.startsWith(CURRENT_DIALECT_PREFIX)) {
-      throw new GraphError('DIALECT_UNSUPPORTED', `Unsupported JSON Schema dialect: ${schemaUri}`);
+      throw new GraphError(`Unsupported JSON Schema dialect: ${schemaUri}`, { 'code': 'DIALECT_UNSUPPORTED' });
     }
 
     const rawVocabulary = isRecord(rootSchema.$vocabulary)
@@ -34,7 +34,7 @@ export const GraphEngineSupport = {
         enabled
       ] of Object.entries(rawVocabulary)) {
         if (enabled && !SUPPORTED_VOCABULARIES.has(uri)) {
-          throw new GraphError('VOCABULARY_UNSUPPORTED', `Unsupported required JSON Schema vocabulary: ${uri}`);
+          throw new GraphError(`Unsupported required JSON Schema vocabulary: ${uri}`, { 'code': 'VOCABULARY_UNSUPPORTED' });
         }
       }
 

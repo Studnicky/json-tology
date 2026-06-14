@@ -1,6 +1,6 @@
 import type { ErrorJsonType } from '../types/Error.js';
+import type { CoercionErrorOptionsType } from '../types/ErrorOptions.js';
 import type { ValidationErrorType } from '../types/Validation.js';
-import { CoercionErrorCode } from '../constants/ERROR_CODES.js';
 import { ValidationErrors } from './ValidationErrors.js';
 import { BaseError } from './BaseError.js';
 
@@ -35,15 +35,15 @@ export class CoercionError extends BaseError {
    * Create a CoercionError from validation errors, joining their messages as the error message.
    *
    * @param errors - Validation errors as a collection or raw array
-   * @param options - Optional cause for error chaining
+   * @param options - Options bag with required `code` and optional `cause`
    */
-  public constructor(errors: ValidationErrors | ValidationErrorType[], options?: { 'cause'?: Error }) {
+  public constructor(errors: ValidationErrors | ValidationErrorType[], options: CoercionErrorOptionsType) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
-    const joinedMessages = validationErrors.items.map((err: ValidationErrorType): string => {
+    const message = validationErrors.items.map((err: ValidationErrorType): string => {
       return `${err.path || 'root'}: ${err.message}`;
     }).join('; ');
 
-    super(CoercionErrorCode.COERCION_FAILED, joinedMessages, options);
+    super(message, options);
     this.name = 'CoercionError';
     this.errors = validationErrors;
   }

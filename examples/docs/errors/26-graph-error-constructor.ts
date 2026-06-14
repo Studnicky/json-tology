@@ -1,8 +1,8 @@
 /**
- * GraphError constructor — the options-bag argument convention.
+ * GraphError constructor — the standard Error(message, options) convention.
  *
- * `code` and `message` are required positionals; `pointer` and `cause`
- * travel in the trailing options bag. The code values come from the
+ * `message` is the required positional. `code`, `pointer`, and `cause`
+ * travel in the required options bag. The code values come from the
  * exported `GraphErrorCode` map.
  */
 
@@ -13,9 +13,13 @@ import {
 const pointer = '/orderLines/0';
 const cause = new Error('referenced schema absent from registry');
 
-const notFound = new GraphError(GraphErrorCode.POINTER_NOT_FOUND, 'pointer did not resolve', { 'pointer': '/foo/0' });
-const refUnresolved = new GraphError(GraphErrorCode.REF_UNRESOLVED, 'cross-schema $ref unresolved', {
+const notFound = new GraphError('pointer did not resolve', {
+  'code': GraphErrorCode.POINTER_NOT_FOUND,
+  'pointer': '/foo/0'
+});
+const refUnresolved = new GraphError('cross-schema $ref unresolved', {
   cause,
+  'code': GraphErrorCode.REF_UNRESOLVED,
   pointer
 });
 
