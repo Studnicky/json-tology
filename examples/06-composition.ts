@@ -16,74 +16,75 @@ import {
 // Base schema
 // ---------------------------------------------------------------------------
 
-const EntitySchema = {
-  '$id': 'https://example.com/Entity',
+const BookSchema = {
+  '$id': 'https://bookstore.example/schema/Book',
   'properties': {
-    'createdAt': {
+    'addedAt': {
       'format': 'date-time',
       'type': 'string'
     },
-    'email': {
-      'format': 'email',
-      'type': 'string'
+    'isbn': { 'type': 'string' },
+    'price': {
+      'minimum': 0,
+      'type': 'number'
     },
-    'id': { 'type': 'string' },
-    'name': { 'type': 'string' }
+    'title': { 'type': 'string' }
   },
   'required': [
-    'id',
-    'name',
-    'email'
+    'isbn',
+    'title',
+    'price'
   ],
   'type': 'object'
 } as const;
 
 // ---------------------------------------------------------------------------
-// 1. Extend — add fields to create AdminUser
+// 1. Extend — add fields to create FeaturedBook
 // ---------------------------------------------------------------------------
 
-const AdminUserSchema = Compose.extend(
-  EntitySchema,
+const FeaturedBookSchema = Compose.extend(
+  BookSchema,
   {
-    'permissions': {
-      'items': { 'type': 'string' },
-      'type': 'array'
+    'featuredUntil': {
+      'format': 'date-time',
+      'type': 'string'
     },
-    'role': {
+    'placement': {
       'enum': [
-        'admin',
-        'superadmin'
+        'homepage',
+        'category-top',
+        'editor-pick'
       ],
       'type': 'string'
     }
   },
-  'https://example.com/AdminUser'
+  'https://bookstore.example/schema/FeaturedBook'
 );
 
 // Compose.extend composes via `allOf: [{ $ref: parent }, additions]` at runtime,
 // so the merged property view lives in the inferred TS type rather than as a flat
 // `properties` object on the value. Validation below proves the merge is in effect.
-console.log('--- Compose.extend (AdminUser) ---');
-console.log('$id:', AdminUserSchema.$id);
+console.log('--- Compose.extend (FeaturedBook) ---');
+console.log('$id:', FeaturedBookSchema.$id);
 console.log();
 
 // ---------------------------------------------------------------------------
 // 2. Pick — select a subset of fields
 // ---------------------------------------------------------------------------
 
-const EntitySummarySchema = Compose.pick(
-  EntitySchema,
+const BookSummarySchema = Compose.pick(
+  BookSchema,
   [
-    'id',
-    'name'
+    'isbn',
+    'title'
   ],
-  'https://example.com/EntitySummary'
+  'https://bookstore.example/schema/BookSummary'
 );
 
-console.log('--- Compose.pick (EntitySummary) ---');
-console.log('$id:', EntitySummarySchema.$id);
-console.log('Properties:', Object.keys(EntitySummarySchema.properties).join(', '));
-const summaryRequired = [...EntitySummarySchema.required];
+console.log('--- Compose.pick (BookSummary) ---');
+console.log('$id:', BookSummarySchema.$id);
+console.log('Properties:', Object.keys(BookSummarySchema.properties).join(', '));
+const summaryRequired = [...BookSummarySchema.required];
 
 console.log('Required:', summaryRequired.length > 0 ? summaryRequired.join(', ') : '(none)');
 console.log();
@@ -92,14 +93,14 @@ console.log();
 // 3. Partial — make all fields optional
 // ---------------------------------------------------------------------------
 
-const PatchEntitySchema = Compose.partial(
-  EntitySchema,
-  'https://example.com/PatchEntity'
+const PatchBookSchema = Compose.partial(
+  BookSchema,
+  'https://bookstore.example/schema/PatchBook'
 );
 
-console.log('--- Compose.partial (PatchEntity) ---');
-console.log('$id:', PatchEntitySchema.$id);
-console.log('Properties:', Object.keys(PatchEntitySchema.properties).join(', '));
+console.log('--- Compose.partial (PatchBook) ---');
+console.log('$id:', PatchBookSchema.$id);
+console.log('Properties:', Object.keys(PatchBookSchema.properties).join(', '));
 // Compose.partial drops the `required` array entirely — every field is optional.
 console.log('Required:', '(none — all optional)');
 console.log();
@@ -109,60 +110,56 @@ console.log();
 // ---------------------------------------------------------------------------
 
 // enableStrictGraph: false — self-contained demo with constrained primitives
-// (format, enum) kept inline for brevity rather than extracted to $ref'd schemas.
+// (format, enum, minimum) kept inline for brevity rather than extracted to $ref'd schemas.
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.com',
+  'baseIRI': 'https://bookstore.example',
   'enableStrictGraph': false,
-  'schemas': [EntitySchema]
+  'schemas': [BookSchema]
 });
 
 const jt2 = jt
-  .set(AdminUserSchema)
-  .set(EntitySummarySchema)
-  .set(PatchEntitySchema);
+  .set(FeaturedBookSchema)
+  .set(BookSummarySchema)
+  .set(PatchBookSchema);
 
-const fullEntity = {
-  'createdAt': '2026-01-01T00:00:00Z',
-  'email': 'alice@example.com',
-  'id': '1',
-  'name': 'Alice'
+const fullBook = {
+  'addedAt': '2026-01-01T00:00:00Z',
+  'isbn': '978-3-16-148410-0',
+  'price': 24.99,
+  'title': 'The Neverending Story'
 };
 
-const adminUser = {
-  ...fullEntity,
-  'permissions': [
-    'read',
-    'write',
-    'delete'
-  ],
-  'role': 'admin'
+const featuredBook = {
+  ...fullBook,
+  'featuredUntil': '2026-12-31T23:59:59Z',
+  'placement': 'homepage'
 };
 
 console.log('--- Validation results ---');
 
-const entityErrors = jt2.validate(EntitySchema.$id, fullEntity);
+const bookErrors = jt2.validate(BookSchema.$id, fullBook);
 
-console.log('Entity (valid):', entityErrors.length === 0 ? 'PASS' : entityErrors);
+console.log('Book (valid):', bookErrors.length === 0 ? 'PASS' : bookErrors);
 
-const adminErrors = jt2.validate(AdminUserSchema.$id, adminUser);
+const featuredErrors = jt2.validate(FeaturedBookSchema.$id, featuredBook);
 
-console.log('AdminUser (valid):', adminErrors.length === 0 ? 'PASS' : adminErrors);
+console.log('FeaturedBook (valid):', featuredErrors.length === 0 ? 'PASS' : featuredErrors);
 
-const summaryErrors = jt2.validate(EntitySummarySchema.$id, {
-  'id': '1',
-  'name': 'Alice'
+const summaryErrors = jt2.validate(BookSummarySchema.$id, {
+  'isbn': '978-3-16-148410-0',
+  'title': 'The Neverending Story'
 });
 
-console.log('EntitySummary (valid):', summaryErrors.length === 0 ? 'PASS' : summaryErrors);
+console.log('BookSummary (valid):', summaryErrors.length === 0 ? 'PASS' : summaryErrors);
 
-const patchErrors = jt2.validate(PatchEntitySchema.$id, { 'name': 'Bob' });
+const patchErrors = jt2.validate(PatchBookSchema.$id, { 'price': 19.99 });
 
-console.log('PatchEntity (partial):', patchErrors.length === 0 ? 'PASS' : patchErrors);
+console.log('PatchBook (partial):', patchErrors.length === 0 ? 'PASS' : patchErrors);
 
-const badAdmin = {
-  'id': '2',
-  'name': 'Eve'
+const badFeatured = {
+  'isbn': '978-3-16-148410-0',
+  'title': 'The Neverending Story'
 };
-const badAdminErrors = jt2.validate(AdminUserSchema.$id, badAdmin);
+const badFeaturedErrors = jt2.validate(FeaturedBookSchema.$id, badFeatured);
 
-console.log('AdminUser (missing email):', badAdminErrors.length > 0 ? 'FAIL as expected' : 'unexpected pass');
+console.log('FeaturedBook (missing price):', badFeaturedErrors.length > 0 ? 'FAIL as expected' : 'unexpected pass');

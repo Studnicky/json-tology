@@ -329,4 +329,4 @@ npm install
 npm run bench:report
 ```
 
-Bench numbers move with hardware. The values committed here came from the developer machine listed in Environment. CI runs are uploaded as workflow artifacts (see `.github/workflows/bench.yml`).
+Bench numbers move with hardware. The values committed here came from the developer machine listed in Environment. CI runs are uploaded as workflow artifacts (see `.github/workflows/bench-postmerge.yml`).

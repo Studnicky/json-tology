@@ -14,9 +14,9 @@ import { isRecord } from '../src/modules/data/DataTypes.js';
 // Schema with nested object
 // ---------------------------------------------------------------------------
 
-const EventSchema = {
+const OrderSchema = {
   '$defs': {
-    'Location': {
+    'ShippingAddress': {
       'properties': {
         'city': { 'type': 'string' },
         'country': { 'type': 'string' }
@@ -28,20 +28,20 @@ const EventSchema = {
       'type': 'object'
     }
   },
-  '$id': 'https://example.com/Event',
+  '$id': 'https://bookstore.example/schema/Order',
   'properties': {
-    'date': {
+    'orderId': { 'type': 'string' },
+    'placedAt': {
       'format': 'date-time',
       'type': 'string'
     },
-    'location': { '$ref': '#/$defs/Location' },
-    'title': { 'type': 'string' }
+    'shippingAddress': { '$ref': '#/$defs/ShippingAddress' }
   },
   'required': [
-    'title',
-    'date'
+    'orderId',
+    'placedAt'
   ],
-  'title': 'Event',
+  'title': 'Order',
   'type': 'object'
 } as const;
 
@@ -49,13 +49,13 @@ const EventSchema = {
 // Instance data
 // ---------------------------------------------------------------------------
 
-const event = {
-  'date': '2026-06-15T09:00:00Z',
-  'location': {
+const order = {
+  'orderId': 'ORD-20260614-0042',
+  'placedAt': '2026-06-14T09:00:00Z',
+  'shippingAddress': {
     'city': 'Berlin',
     'country': 'DE'
-  },
-  'title': 'JSON-LD Workshop'
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -65,13 +65,13 @@ const event = {
 // enableStrictGraph: false — self-contained demo with a nested inline $defs
 // shape kept inline for brevity rather than extracted to its own $ref'd schema.
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.com',
+  'baseIRI': 'https://bookstore.example',
   'enableStrictGraph': false,
-  'schemas': [EventSchema]
+  'schemas': [OrderSchema]
 });
 
-const validated = jt.instantiate(EventSchema, event);
-const abox = jt.toQuads(EventSchema, validated);
+const validated = jt.instantiate(OrderSchema, order);
+const abox = jt.toQuads(OrderSchema, validated);
 const aboxBuilder = jt.ontology().addFromQuads(abox);
 
 console.log('--- ABox Instance (JSON-LD) ---');
