@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Compile-time `$ref` resolution is now uniform and graph-native, and the inline
-type surface has been consolidated into a canonical taxonomy.
+## [0.22.0] - 2026-06-14
+
+Validation now executes on one path with two backends behind a single message
+table; `$ref` resolution and the inline type surface are uniform and
+graph-native; `format` and content assertions are enforced at runtime; and
+annotated edges project as RDF 1.2 triple-terms or flat triples on demand.
 
 ### Added
 
