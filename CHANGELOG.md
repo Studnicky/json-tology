@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [0.23.1] - 2026-06-15
+
+### Changed
+
+- **Validation tests assert the rejecting keyword.** Cases that were hidden inside
+  loop-based tests asserting only a valid/invalid boolean are now named per-case
+  tests that also assert which keyword produced the rejection, so a schema failing
+  for the wrong reason is caught rather than passing silently.
+- **Coverage is measured at the source and gated.** The coverage workflow now
+  measures `src/` coverage across unit and integration tests (excluding built
+  artifacts and test files, which previously deflated the reported figure) and
+  fails below lines 96% / branches 87% / functions 89%. Added table-driven
+  `FormatRegistry` tests covering the format-validator rejection branches.
+
 ## [0.23.0] - 2026-06-15
 
 Compile-time inference closes its remaining gaps with runtime validation, the
@@ -1882,6 +1896,7 @@ Docs and release-pipeline polish.
 ### Security
 
 [Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.4.0...HEAD
+[0.23.1]: https://github.com/Studnicky/json-tology/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/Studnicky/json-tology/compare/v0.22.0...v0.23.0
 [0.4.0]: https://github.com/Studnicky/json-tology/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Studnicky/json-tology/compare/v0.3.2...v0.3.3
