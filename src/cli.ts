@@ -36,6 +36,7 @@ import type { BuildOutputOptionsType } from './types/BuildOutputOptions.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
+import { SchemaIri } from './modules/graph/SchemaIri.js';
 
 const writer = CliWriter.default;
 
@@ -115,7 +116,8 @@ function normalizeBaseIRI(value: string): string {
 }
 
 function deriveBaseIRIFromSchemaId(schemaId: string): string {
-  const withoutHash = schemaId.split('#')[0] ?? schemaId;
+  // parseRef extracts the IRI base (before '#') in the canonical way.
+  const withoutHash = SchemaIri.parseRef(schemaId).id;
 
   try {
     const parsed = new URL(withoutHash);

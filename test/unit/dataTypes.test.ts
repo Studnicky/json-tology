@@ -193,9 +193,9 @@ import {
           'prefixes': standardPrefixes
         },
         {
-          'expected': 'urn:uuid',
+          'expected': 'urn:uuid:abc-123',
           'input': 'urn:uuid:abc-123',
-          'name': 'multiple colons splits on first only (urn prefix)',
+          'name': 'multiple colons splits on first only (urn prefix): full reference preserved',
           'prefixes': { 'urn': 'urn:' }
         },
         {

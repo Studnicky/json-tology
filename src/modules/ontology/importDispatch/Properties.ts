@@ -67,25 +67,11 @@ function xsdToJsonSchema(iri: string): null | XsdJsonSchemaPrimitiveType {
  * Derive the JSON Schema property key for a property IRI.
  *
  * The canonical form emitted by OwlProjection is `classId#localName`.
- * Extract the local name from the fragment (last segment after '/').
+ * Delegates to `SchemaIri.propertyName` which handles bare fragments,
+ * JSON-pointer `/properties/<name>` form, and plain path segments.
  */
 function localNameOf(propertyIri: string): string {
-  const { fragment } = SchemaIri.splitSubject(propertyIri);
-
-  if (fragment !== null) {
-    const segments = fragment.split('/');
-
-    return segments.at(-1) ?? fragment;
-  }
-
-  // No '#' — take everything after the last '/' or '#'
-  const slashIdx = propertyIri.lastIndexOf('/');
-
-  if (slashIdx !== -1) {
-    return propertyIri.slice(slashIdx + 1);
-  }
-
-  return propertyIri;
+  return SchemaIri.propertyName(propertyIri);
 }
 
 /** Compact form of the RDF List IRI. */

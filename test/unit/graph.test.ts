@@ -4555,6 +4555,89 @@ function expandCurie(value: string): string {
       assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/address/properties/street'), 'street');
       assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/'), '');
     });
+
+    void it('propertyName — JSON-pointer /properties/, bare fragment, and path segment forms', () => {
+      // JSON-pointer /properties/<name> form
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#/properties/email'),
+        'email',
+        'bare /properties/ fragment'
+      );
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#/properties/address/properties/city'),
+        'address',
+        'nested: first /properties/ segment after last occurrence'
+      );
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#/properties/name/nested'),
+        'name',
+        '/properties/<name>/<sub> stops at first /'
+      );
+
+      // Bare fragment (classId#propName)
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#email'),
+        'email',
+        'bare fragment no slash'
+      );
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#some/nested'),
+        'nested',
+        'bare fragment last slash segment'
+      );
+
+      // No '#' — last path segment
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/vocab/email'),
+        'email',
+        'no hash: last path segment'
+      );
+      assert.equal(
+        SchemaIri.propertyName('email'),
+        'email',
+        'no hash, no slash: whole string'
+      );
+    });
+
+    void it('splitAtProperties — splits fragment at last /properties/ boundary', () => {
+      // Basic case
+      const r1 = SchemaIri.splitAtProperties('/properties/name');
+
+      assert.ok(r1 !== undefined);
+      assert.equal(r1.parent, '');
+      assert.equal(r1.property, 'name');
+
+      // Nested: last /properties/
+      const r2 = SchemaIri.splitAtProperties('/properties/address/properties/city');
+
+      assert.ok(r2 !== undefined);
+      assert.equal(r2.parent, '/properties/address');
+      assert.equal(r2.property, 'city');
+
+      // allOf prefix before properties
+      const r3 = SchemaIri.splitAtProperties('/allOf/0/properties/tag');
+
+      assert.ok(r3 !== undefined);
+      assert.equal(r3.parent, '/allOf/0');
+      assert.equal(r3.property, 'tag');
+
+      // No /properties/ — returns undefined
+      const r4 = SchemaIri.splitAtProperties('/allOf/0');
+
+      assert.equal(r4, undefined);
+
+      // Empty fragment — returns undefined
+      const r5 = SchemaIri.splitAtProperties('');
+
+      assert.equal(r5, undefined);
+
+      // /properties/ with nested deeper path — property is just the immediate name
+      const r6 = SchemaIri.splitAtProperties('/properties/addr/sub/deeper');
+
+      assert.ok(r6 !== undefined);
+      assert.equal(r6.parent, '');
+      assert.equal(r6.property, 'addr');
+    });
   });
 }
 

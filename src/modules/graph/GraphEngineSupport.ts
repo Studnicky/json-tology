@@ -5,6 +5,7 @@ import {
 } from '../../constants/DIALECT.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/DataTypes.js';
+import { SchemaIri } from './SchemaIri.js';
 
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type { RootDialectPlanType } from '../../types/RootDialectPlan.js';
@@ -78,13 +79,10 @@ export const GraphEngineSupport = {
   },
 
   extractNamedFragment(ref: string): string | undefined {
-    if (!ref.includes('#')) {
-      return undefined;
-    }
+    // splitSubject returns fragment: null when no '#' is present.
+    const { fragment } = SchemaIri.splitSubject(ref);
 
-    const fragment = ref.slice(ref.indexOf('#') + 1);
-
-    if (fragment === '' || fragment.startsWith('/')) {
+    if (fragment === null || fragment === '' || fragment.startsWith('/')) {
       return undefined;
     }
 

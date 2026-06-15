@@ -27,6 +27,7 @@ import type { OwlImportResultType } from '../../types/OwlImport.js';
 import type {
   OwlCodegenOptionsType, OwlRegistryDirOptionsType, RegistryFileEntryType, RegistryFilesResultType
 } from '../../types/OwlCodegen.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
 import type { JsonSchemaDocumentObjectType } from '../../types/Schema.js';
 import type {
   BuildDepsMapType,
@@ -56,19 +57,18 @@ export type {
  *
  * Resolution priority:
  *   1. After '#' fragment identifier — `http://example.com/ns#Widget` → `Widget`
+ *      (via SchemaIri.splitSubject fragment extraction)
  *   2. After last '/' segment — `http://example.com/Widget` → `Widget`
  *   3. After last ':' (URN-style) — `urn:example:Widget` → `Widget`
  *   4. Fallback: PascalCase the whole IRI stripped of non-word chars.
  */
 function localName(iri: string): string {
-  const hashIdx = iri.indexOf('#');
+  // SchemaIri.splitSubject returns fragment: null when no '#' is present,
+  // distinguishing "no '#'" from "bare '#'" (empty fragment).
+  const parts = SchemaIri.splitSubject(iri);
 
-  if (hashIdx !== -1) {
-    const fragment = iri.slice(hashIdx + 1);
-
-    if (fragment.length > 0) {
-      return fragment.charAt(0).toUpperCase() + fragment.slice(1);
-    }
+  if (parts.fragment !== null && parts.fragment.length > 0) {
+    return parts.fragment.charAt(0).toUpperCase() + parts.fragment.slice(1);
   }
 
   const slashIdx = iri.lastIndexOf('/');
@@ -311,10 +311,13 @@ function topoSort(
  * Used to compute the default baseIRI when one is not specified.
  */
 function deriveBaseIRI(firstIri: string): string {
-  const hashIdx = firstIri.indexOf('#');
+  const { id } = SchemaIri.parseRef(firstIri);
 
-  if (hashIdx !== -1) {
-    return firstIri.slice(0, hashIdx);
+  // parseRef returns id = everything before '#' (or the whole IRI when no '#').
+  // When the whole IRI was returned (no '#'), strip the last path segment.
+  if (id !== firstIri) {
+    // Had a '#' — id is the base.
+    return id;
   }
 
   const lastSlash = firstIri.lastIndexOf('/');
