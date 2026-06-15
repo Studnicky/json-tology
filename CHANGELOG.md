@@ -39,6 +39,12 @@ type surface has been consolidated into a canonical taxonomy.
   bookstore objects to quads, encodes scalars into the typed literals an OWL/N3
   reasoner (EYE) consumes via Transform codecs, runs refund-eligibility and
   review-processing rules, and decodes the inferred verdicts back into TS values.
+- **`annotationEmitMode` projection option.** `toQuads`/ABox projection accepts
+  `annotationEmitMode: 'star-only' | 'flat-only' | 'both'` (default `'star-only'`)
+  to control how annotated-edge annotations serialize: as RDF 1.2 triple-terms,
+  as flat `<subject> <predicate> <value>` triples for RDF-star-unaware consumers,
+  or both. The reasoning example shows the same annotation driving a flat rule
+  and an RDF 1.2 triple-term (`<<( s p o )>>`) rule in EYE.
 
 ### Changed
 

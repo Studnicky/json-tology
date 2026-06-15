@@ -3,7 +3,8 @@
  *
  * Demonstrates json-tology's encode/decode Transform codecs as the bridge
  * between TypeScript bookstore objects and the typed literal syntax a real
- * OWL/N3 reasoner consumes.
+ * OWL/N3 reasoner consumes, and shows how `annotationEmitMode: 'both'` lets
+ * the SAME annotated-edge flag feed two distinct reasoning paths.
  *
  * The data flow is HONEST: every domain fact is projected from a real,
  * validated TypeScript object via `jt.toQuads(...)`. The ONLY codec-injected
@@ -30,12 +31,17 @@
  *   book (genuinely unverified) with rating <= 2 → flaggedForModeration. The
  *   inferred status IRI is decoded back to a TS verdict.
  *
- * On `verifiedPurchase` projection: ReviewSchema's `verifiedPurchase`
- * (`https://schema.org/verified`) does NOT project as a flat fact on the
- * review subject — it projects only as an RDF-star triple-term annotation
- * quad whose SUBJECT is the quoted `<< review reviews book >>` triple. A
- * plain N3 rule cannot key on a quoted-triple subject, so verified-purchaser
- * status is derived from purchased ∧ reviewed instead of a boolean flag.
+ * SCENARIO 3 — annotationEmitMode: 'both' (flat + star paths from one flag)
+ *   ReviewSchema's `reviewsBook` annotated edge carries `verifiedPurchase`
+ *   grounded to `https://schema.org/verified`. With `annotationEmitMode: 'both'`,
+ *   `toQuads` emits BOTH:
+ *     A) A flat triple `<review> <schema:verified> true` — usable by any N3
+ *        rule that cannot handle RDF-star (RDF-star-unaware tools, legacy SPARQL).
+ *        Rule: `{ ?r <schema:verified> true. ?r <rating> ?n. ?n >= 4. } => { ?r :featured true. }`
+ *     B) An RDF-star triple-term `<< review reviews book >> <schema:verified> true`
+ *        — usable by EYE reading RDF 1.2 triple-terms directly.
+ *        Rule: `{ << ?r <reviews> ?b >> <schema:verified> true. } => { ?r :verifiedReviewerOf ?b. }`
+ *   The same flag, the same projection call, two orthogonal reasoning paths.
  *
  * Prerequisites: npm run build
  * Run: tsx examples/e2e-reasoning.ts
@@ -45,7 +51,7 @@
  */
 
 import {
-  Parser, Writer
+  DataFactory, Parser, Writer
 } from 'n3';
 import {
   Lists, Transform
@@ -90,6 +96,36 @@ async function quadsToN3(quads: readonly QuadInterface[]): Promise<string> {
     const writer = new Writer({ 'format': 'N3' });
 
     writer.addQuads([...quads] as never);
+    writer.end((err: Error | null, result: string) => {
+      if (err !== null) {
+        reject(err);
+
+        return;
+      }
+      resolve(result);
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// quadsToN3DefaultGraph — strips named-graph context before EYE serialization.
+//
+// Annotated-edge projection requires graphIRI (triple-term quads carry no
+// default graph membership). EYE rules operate on the default graph: facts
+// inside `<g> { ... }` named-graph blocks are invisible to plain `{ ?s ?p ?o }`
+// rule antecedents. This helper re-projects every quad to the default graph
+// so EYE can match them. QuadInterface terms are compatible with n3's types
+// so no casts are needed.
+// ---------------------------------------------------------------------------
+
+async function quadsToN3DefaultGraph(quads: readonly QuadInterface[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const writer = new Writer({ 'format': 'N3' });
+    const defaultQuads = quads.map((quad) => {
+      return DataFactory.quad(quad.subject, quad.predicate, quad.object);
+    });
+
+    writer.addQuads(defaultQuads);
     writer.end((err: Error | null, result: string) => {
       if (err !== null) {
         reject(err);
@@ -517,3 +553,142 @@ console.log('  verified review featured     :', featuredQuad !== undefined);
 console.log('  unverified review flagged    :', flaggedQuad !== undefined);
 console.log('  decoded featured verdict     :', featuredVerdict);
 console.log('  decoded flagged verdict      :', flaggedVerdict);
+
+// ---------------------------------------------------------------------------
+// SCENARIO 3 — annotationEmitMode: 'both'
+//
+// The same ReviewSchema `reviewsBook` annotated edge (verifiedPurchase + ratingGiven)
+// projected with `annotationEmitMode: 'both'` feeds two orthogonal reasoning paths:
+//
+//   A) FLAT path — `<review> <schema:verified> true` is a plain N3 triple.
+//      Any N3/SPARQL rule that matches `?r <schema:verified> true` fires.
+//      No RDF-star support required in the consumer.
+//
+//   B) STAR path — `<< review reviews book >> <schema:verified> true` is the
+//      RDF 1.2 triple-term annotation quad. EYE's N3 engine matches the
+//      quoted-triple antecedent `<< ?r <reviews> ?b >> <schema:verified> true`
+//      and infers `?r :verifiedReviewerOf ?b` directly from the edge.
+// ---------------------------------------------------------------------------
+
+console.log('=== SCENARIO 3: annotationEmitMode \'both\' — flat + star paths ===');
+console.log();
+
+const REVIEW_GRAPH_IRI = 'urn:bookstore:graph:reviews';
+const PRED_SCHEMA_VERIFIED = 'https://schema.org/verified';
+const PRED_REVIEWS = 'https://bookstore.example/reviews';
+const PRED_FEATURED_REVIEW = 'urn:example:featuredReview3';
+const PRED_VERIFIED_REVIEWER_OF = 'urn:example:verifiedReviewerOf3';
+
+const ANNOTATED_REVIEW_ID = aboxFixtures.reviewWithAnnotatedEdge.reviewId;
+const ANNOTATED_BOOK_IRI = aboxFixtures.reviewWithAnnotatedEdge.reviewsBook.target;
+const ANNOTATED_REVIEW_IRI = `urn:bookstore:review:${ANNOTATED_REVIEW_ID}`;
+
+// Validate the review with the populated annotated edge.
+const annotatedReview = jt.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge);
+
+// Project with 'both': emits the base triple PLUS the flat triple PLUS the
+// RDF-star triple-term quad. fromQuads round-trips losslessly (star form present).
+const bothQuads = jt.toQuads(ReviewSchema, annotatedReview, {
+  'annotationEmitMode': 'both',
+  'graphIRI': REVIEW_GRAPH_IRI,
+  'iriFor': ANNOTATED_REVIEW_IRI
+});
+
+// Identify the flat quad (NamedNode subject) and the star quad (Quad subject).
+const flatVerifiedQuad = bothQuads.find((quad) => {
+  return quad.subject.termType === 'NamedNode'
+    && quad.subject.value === ANNOTATED_REVIEW_IRI
+    && quad.predicate.value === PRED_SCHEMA_VERIFIED;
+});
+
+const starVerifiedQuad = bothQuads.find((quad) => {
+  return quad.subject.termType === 'Quad'
+    && quad.predicate.value === PRED_SCHEMA_VERIFIED;
+});
+
+console.log('Flat quad  :', flatVerifiedQuad === undefined
+  ? 'NOT FOUND'
+  : `<${flatVerifiedQuad.subject.value}> <${flatVerifiedQuad.predicate.value}> ${flatVerifiedQuad.object.value}`);
+
+console.log('Star quad  :', starVerifiedQuad === undefined
+  ? 'NOT FOUND'
+  : `<< [${starVerifiedQuad.subject.termType}] >> <${starVerifiedQuad.predicate.value}> ${starVerifiedQuad.object.value}`);
+console.log();
+
+// SCENARIO 3A — flat rule keyed on `?r <schema:verified> true`.
+// Fires for any RDF-star-unaware tool; no quoted-triple needed.
+// Note: graphIRI is required by the projection layer for annotated edges.
+// We strip the named-graph wrapper (default-graph projection) before sending
+// to EYE — EYE rules operate on the default graph only.
+const bothAboxN3 = await quadsToN3DefaultGraph(bothQuads);
+
+const flatRuleN3 = `
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+{ ?r <${PRED_SCHEMA_VERIFIED}> true.
+  ?r <${PRED_RATING}> ?n.
+  ?n math:notLessThan 4.
+} => { ?r <${PRED_FEATURED_REVIEW}> true. }.
+`;
+
+const flatQueryN3 = `{ ?r <${PRED_FEATURED_REVIEW}> true } => { ?r <${PRED_FEATURED_REVIEW}> true }.`;
+
+console.log('Running EYE — SCENARIO 3A: flat schema:verified rule...');
+const flatResult = await n3reasoner(`${bothAboxN3}\n${flatRuleN3}`, flatQueryN3);
+const flatParser = new Parser({ 'format': 'N3' });
+const flatInferred = Lists.narrowExternalQuads(flatParser.parse(flatResult));
+
+const flatFeaturedHit = flatInferred.find((quad) => {
+  return quad.predicate.value === PRED_FEATURED_REVIEW && quad.subject.value === ANNOTATED_REVIEW_IRI;
+});
+
+console.log('3A inferred :', flatFeaturedHit === undefined
+  ? 'NOTHING INFERRED'
+  : `<${flatFeaturedHit.subject.value}> <${flatFeaturedHit.predicate.value}> ${flatFeaturedHit.object.value}`);
+console.log();
+
+console.assert(flatFeaturedHit !== undefined, 'SCENARIO 3A: flat rule must infer :featuredReview');
+
+console.log('SCENARIO 3A assertions:');
+console.log('  flat schema:verified present :', flatVerifiedQuad !== undefined);
+console.log('  flat rule fires → featured   :', flatFeaturedHit !== undefined);
+console.log();
+
+// SCENARIO 3B — star rule keyed on the RDF 1.2 triple-term antecedent.
+//
+// n3.js v2+ serializes triple-term subjects using the PARENTHESIZED notation:
+//   <<( <review> <reviews> <book> )>> <schema:verified> true .
+// (NOT the bare `<< s p o >>` form). EYE reasons over this `<<( )>>` form
+// directly. Rule antecedents MUST use the same parenthesized syntax — a bare
+// `<< >>` antecedent will silently not match the parenthesized data.
+// Rules go in the `data` argument of n3reasoner (not the `query` argument).
+const starRuleN3 = `
+{ <<( ?r <${PRED_REVIEWS}> ?b )>> <${PRED_SCHEMA_VERIFIED}> true.
+} => { ?r <${PRED_VERIFIED_REVIEWER_OF}> ?b. }.
+`;
+
+const starQueryN3 = `{ ?r <${PRED_VERIFIED_REVIEWER_OF}> ?b } => { ?r <${PRED_VERIFIED_REVIEWER_OF}> ?b }.`;
+
+console.log('Running EYE — SCENARIO 3B: star-antecedent schema:verified rule...');
+const starResult = await n3reasoner(`${bothAboxN3}\n${starRuleN3}`, starQueryN3);
+const starParser = new Parser({ 'format': 'N3' });
+const starInferred = Lists.narrowExternalQuads(starParser.parse(starResult));
+
+const starVerifiedReviewerHit = starInferred.find((quad) => {
+  return quad.predicate.value === PRED_VERIFIED_REVIEWER_OF
+    && quad.subject.value === ANNOTATED_REVIEW_IRI
+    && quad.object.value === ANNOTATED_BOOK_IRI;
+});
+
+console.log('3B inferred :', starVerifiedReviewerHit === undefined
+  ? 'NOTHING INFERRED'
+  : `<${starVerifiedReviewerHit.subject.value}> <${starVerifiedReviewerHit.predicate.value}> <${starVerifiedReviewerHit.object.value}>`);
+console.log();
+
+console.assert(starVerifiedReviewerHit !== undefined, 'SCENARIO 3B: star-antecedent rule must infer :verifiedReviewerOf');
+
+console.log('SCENARIO 3B assertions:');
+console.log('  star << >> schema:verified present :', starVerifiedQuad !== undefined);
+console.log('  star rule fires → verifiedReviewerOf:', starVerifiedReviewerHit !== undefined);
+console.log();
+
+console.log('=== Both reasoning paths resolved from a single annotationEmitMode: \'both\' projection ===');
