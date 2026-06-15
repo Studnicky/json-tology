@@ -404,6 +404,7 @@ export class Materializer implements MaterializerInterface {
     options?: AboxOptionsType
   ): QuadInterface[] {
     const quads = Projection.abox(graph, materialized, baseIRI, {
+      'annotationEmitMode': options?.annotationEmitMode,
       'curie': options?.curie,
       entryNode,
       'graphIRI': options?.graphIRI,

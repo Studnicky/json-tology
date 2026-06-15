@@ -208,18 +208,26 @@ function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): Norma
     return {};
   }
 
+  const annotationEmitMode = options.annotationEmitMode;
   const graphIRI = options.graphIRI;
   const iriFor = liftIriForOption(options.iriFor);
 
-  if (iriFor === undefined) {
-    return graphIRI === undefined ? {} : { graphIRI };
-  }
+  const base: NormalizedToQuadsOptionsType = graphIRI === undefined
+    ? {}
+    : { graphIRI };
 
-  return graphIRI === undefined
-    ? { iriFor }
+  const withIriFor: NormalizedToQuadsOptionsType = iriFor === undefined
+    ? base
     : {
-      graphIRI,
+      ...base,
       iriFor
+    };
+
+  return annotationEmitMode === undefined
+    ? withIriFor
+    : {
+      ...withIriFor,
+      annotationEmitMode
     };
 }
 
@@ -1600,6 +1608,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   ): QuadInterface[] {
     const normalized = normalizeToQuadsOptions(options);
     const effective = {
+      'annotationEmitMode': normalized.annotationEmitMode,
       'curie': this.curie,
       'graphIRI': normalized.graphIRI ?? this.defaultGraphIRI,
       'iriFor': normalized.iriFor ?? liftIriForOption(this.defaultIriForRaw),

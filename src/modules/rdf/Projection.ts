@@ -9,6 +9,7 @@
  * it maps validated instance data to quads, not schema structure.
  */
 
+import type { AnnotationEmitModeType } from '../../types/AnnotationEmitMode.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
@@ -24,6 +25,7 @@ import type { ProjectInstancePropertyArgsType } from '../../types/ProjectInstanc
 import type { ProjectAnnotatedEdgeArgsType } from '../../types/ProjectAnnotatedEdgeArgs.js';
 import type { ResolveEdgeTargetIriArgsType } from '../../types/ResolveEdgeTargetIriArgs.js';
 import type { EmitAnnotationQuadsArgsType } from '../../types/EmitAnnotationQuadsArgs.js';
+import type { EmitFlatAnnotationQuadsArgsType } from '../../types/EmitFlatAnnotationQuadsArgs.js';
 import type { ProjectScalarValueArgsType } from '../../types/ProjectScalarValueArgs.js';
 import type { ProjectAboxArgsType } from '../../types/ProjectAboxArgs.js';
 import { collectEffectiveProperties } from '../graph/EffectiveProperties.js';
@@ -75,7 +77,8 @@ export const Projection = {
     graph: SchemaGraphInterface,
     data: unknown,
     baseIRI: string,
-    options?: { 'curie'?: CurieInterface | undefined;
+    options?: { 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
+      'curie'?: CurieInterface | undefined;
       'entryNode'?: SchemaGraphNodeType | undefined;
       'graphIRI'?: string | undefined;
       'iriFor'?: SkolemizeFnType | undefined;
@@ -83,6 +86,7 @@ export const Projection = {
       'predicateResolver'?: PredicateResolverFnType | undefined }
   ): QuadInterface[] {
     return projectAbox({
+      'annotationEmitMode': options?.annotationEmitMode,
       baseIRI,
       'curie': options?.curie,
       data,
@@ -144,7 +148,7 @@ class IriMinter {
 
 function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
   const {
-    baseIRI, curie, data, entryNode, graph, graphIRI, iriFor, lookupGraph, predicateResolver
+    annotationEmitMode, baseIRI, curie, data, entryNode, graph, graphIRI, iriFor, lookupGraph, predicateResolver
   } = args;
 
   const quads: QuadInterface[] = [];
@@ -179,6 +183,7 @@ function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
   });
 
   projectInstance({
+    annotationEmitMode,
     curie,
     data,
     'depth': 0,
@@ -406,7 +411,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
     baseArgs, instIRI, nodeId, propertyEntry, propertyName
   } = args;
   const {
-    curie, data, depth, graphTerm, lookupGraph, minter, path, predicateResolver, quadOpts, quads, visited
+    annotationEmitMode, curie, data, depth, graphTerm, lookupGraph, minter, path, predicateResolver, quadOpts, quads, visited
   } = baseArgs;
   const propertyPath = `${path}/${propertyName}`;
   const propertyValue = data[propertyName];
@@ -416,6 +421,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
 
   if (annotatedEdge !== undefined) {
     projectAnnotatedEdge({
+      annotationEmitMode,
       curie,
       depth,
       'edge': annotatedEdge,
@@ -446,6 +452,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
   const resolved = unwrapSingleRef(directlyResolved.graph, directlyResolved.node, lookupGraph);
 
   projectPropertyValue({
+    annotationEmitMode,
     curie,
     'depth': depth + 1,
     'graph': resolved.graph,
@@ -651,9 +658,32 @@ function emitAnnotationQuads(args: EmitAnnotationQuadsArgsType): void {
   }
 }
 
+/** Emit flat `<instanceIri> <annotationPredicate> <value>` triples (no triple-term). */
+function emitFlatAnnotationQuads(args: EmitFlatAnnotationQuadsArgsType): void {
+  const {
+    annotationValues, classId, edge, instanceIri, predicateResolver, quadOpts, quads
+  } = args;
+
+  for (const annotation of edge.edgeAnnotations) {
+    const annotationValue = annotationValues[annotation.propertyName];
+
+    if (annotationValue === undefined || annotationValue === null) {
+      continue;
+    }
+    const annotationPredicate = predicateResolver({
+      'classId': classId,
+      'propertyName': annotation.propertyName,
+      'propertySchema': annotation.propertySchema
+    });
+    const annotationTerm = annotationValueTerm(annotationValue, annotation.rangeRef);
+
+    quads.push(QuadFactory.quad(instanceIri, annotationPredicate, annotationTerm, quadOpts));
+  }
+}
+
 function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
   const {
-    curie, depth, edge, graphTerm, instanceIri, minter, path, predicateResolver, quadOpts, quads, sourceId, value
+    annotationEmitMode = 'star-only', curie, depth, edge, graphTerm, instanceIri, minter, path, predicateResolver, quadOpts, quads, sourceId, value
   } = args;
 
   if (graphTerm.termType === 'DefaultGraph') {
@@ -691,19 +721,35 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
   // named graph) instead of rebuilding the bag per edge.
   quads.push(QuadFactory.quad(instanceIri, edge.edgePredicate, objectTerm, quadOpts));
 
-  // The triple term `<< s edgePredicate o >>` is loop-invariant across all
-  // annotations on this edge — build it once above the loop.
-  const tripleTerm = QuadFactory.tripleTerm(instanceIri, edge.edgePredicate, objectTerm, { curie });
+  const annotationValues = isRecord(value.annotations) ? value.annotations : {};
 
-  emitAnnotationQuads({
-    'annotationValues': isRecord(value.annotations) ? value.annotations : {},
-    'classId': sourceId,
-    edge,
-    predicateResolver,
-    quadOpts,
-    quads,
-    tripleTerm
-  });
+  if (annotationEmitMode === 'star-only' || annotationEmitMode === 'both') {
+    // The triple term `<< s edgePredicate o >>` is loop-invariant across all
+    // annotations on this edge — build it once above the loop.
+    const tripleTerm = QuadFactory.tripleTerm(instanceIri, edge.edgePredicate, objectTerm, { curie });
+
+    emitAnnotationQuads({
+      annotationValues,
+      'classId': sourceId,
+      edge,
+      predicateResolver,
+      quadOpts,
+      quads,
+      tripleTerm
+    });
+  }
+
+  if (annotationEmitMode === 'flat-only' || annotationEmitMode === 'both') {
+    emitFlatAnnotationQuads({
+      annotationValues,
+      'classId': sourceId,
+      edge,
+      'instanceIri': instanceIri,
+      predicateResolver,
+      quadOpts,
+      quads
+    });
+  }
 }
 
 function projectPropertyValue(args: ProjectPropertyArgsType): void {
@@ -824,7 +870,7 @@ function projectNumberValue(value: number, ctx: ProjectScalarValueArgsType): voi
 
 function projectObjectValue(args: ProjectPropertyArgsType, path: string, value: Record<string, unknown>): void {
   const {
-    curie, depth, graph, graphTerm, instanceIri, lookupGraph, minter,
+    annotationEmitMode, curie, depth, graph, graphTerm, instanceIri, lookupGraph, minter,
     predicateResolver, propertyIRI, propertyNode, propertySemantics, quadOpts, quads, visited
   } = args;
 
@@ -854,6 +900,7 @@ function projectObjectValue(args: ProjectPropertyArgsType, path: string, value: 
   }
 
   const nestedIRI = projectInstance({
+    annotationEmitMode,
     curie,
     'data': value,
     depth,

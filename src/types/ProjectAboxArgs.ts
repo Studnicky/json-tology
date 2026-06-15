@@ -1,5 +1,6 @@
 import type { CurieInterface } from '../interfaces/Curie.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
+import type { AnnotationEmitModeType } from './AnnotationEmitMode.js';
 import type { SchemaGraphNodeType } from './SchemaGraph.js';
 import type { LookupGraphFn } from '../types/LookupGraphFn.js';
 import type { PredicateResolverFnType } from '../types/PredicateResolverFn.js';
@@ -7,6 +8,7 @@ import type { SkolemizeFnType } from '../types/Skolemize.js';
 
 /** Arguments for the projectAbox function. */
 export type ProjectAboxArgsType = {
+  readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
   readonly 'baseIRI': string;
   readonly 'curie'?: CurieInterface | undefined;
   readonly 'data': unknown;
