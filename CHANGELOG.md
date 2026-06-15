@@ -35,6 +35,10 @@ type surface has been consolidated into a canonical taxonomy.
 - **Single validation message table.** Both validation backends emit error
   messages from one `VALIDATION_MESSAGES` source, guarded by a cross-engine
   message-parity test and a single-source scan so the two backends cannot drift.
+- **End-to-end reasoning example.** `examples/e2e-reasoning.ts` projects real
+  bookstore objects to quads, encodes scalars into the typed literals an OWL/N3
+  reasoner (EYE) consumes via Transform codecs, runs refund-eligibility and
+  review-processing rules, and decodes the inferred verdicts back into TS values.
 
 ### Changed
 
