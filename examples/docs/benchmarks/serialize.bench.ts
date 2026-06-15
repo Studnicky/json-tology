@@ -111,38 +111,38 @@ export function runSerializeBench(): BenchResult[] {
   section('serialize — dump Order (validated → wire), no transforms');
 
   results.push(bench('dump order', 'json-tology', () => {
-    jt.dump(OrderSchema, orderInstantiated);
+    return jt.dump(OrderSchema, orderInstantiated);
   }));
 
   results.push(bench('dump order', 'structuredClone', () => {
-    structuredClone(orderInstantiated);
+    return structuredClone(orderInstantiated);
   }));
 
   results.push(bench('dump order', 'typebox', () => {
-    Value.Encode(OrderSchemaTypebox, orderValid);
+    return Value.Encode(OrderSchemaTypebox, orderValid);
   }));
 
   section('serialize — dumpJson Order (validated → JSON string)');
 
   results.push(bench('dumpJson order', 'json-tology', () => {
-    jt.dumpJson(OrderSchema, orderInstantiated);
+    return jt.dumpJson(OrderSchema, orderInstantiated);
   }));
 
   results.push(bench('dumpJson order', 'JSON.stringify', () => {
-    JSON.stringify(orderValid);
+    return JSON.stringify(orderValid);
   }));
 
   section('serialize — encode canonical → wire (with transforms)');
 
   results.push(bench('encode event', 'json-tology', () => {
-    jt.encode(EventSchemaJt, canonicalEvent);
+    return jt.encode(EventSchemaJt, canonicalEvent);
   }));
 
   results.push(bench('encode event', 'typebox', () => {
     // interop: TypeBox's Transform Encode expects the statically-decoded shape.
     // canonicalEvent matches it structurally ({ at: string; name: string }), so it is
     // accepted directly — no cast needed.
-    Value.Encode(EventSchemaTb, canonicalEvent);
+    return Value.Encode(EventSchemaTb, canonicalEvent);
   }));
 
   return results;

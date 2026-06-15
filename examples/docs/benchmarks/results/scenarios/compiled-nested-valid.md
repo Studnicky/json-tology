@@ -1,5 +1,5 @@
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
 | json-tology | N/A | N/A | N/A |
-| compiled | 441,247 | 2266 | - |
-| interpreted | 45,446 | 22004 | - |
+| compiled | 274,644 | 3641 | - |
+| interpreted | 49,865 | 20054 | - |

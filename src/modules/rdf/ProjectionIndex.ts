@@ -10,7 +10,9 @@ import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
 import type { RelationStructure } from '../../types/SchemaGraph.js';
 import type { RelationIndexType } from '../../types/RelationIndex.js';
 
-import { RDF } from '../../constants/IRI.js';
+import {
+  OWL, RDF
+} from '../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
 // Relation index
@@ -55,13 +57,28 @@ export const ProjectionIndex = {
   // Target ID resolution
   // ---------------------------------------------------------------------------
 
-  isListStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'list' }> {
-    return structure?.kind === 'list';
+  /**
+   * Filter `relations` to only the `contains`-keyword restriction entries.
+   *
+   * A `contains` restriction uses `owl:someValuesFrom` as both its predicate and
+   * its `structure.constraint` value. This excludes user-declared restrictions,
+   * which use `rdfs:subClassOf` as the predicate, and any other restriction kinds.
+   */
+  filterContainsRestrictions(relations: readonly SchemaGraphRelationType[]): SchemaGraphRelationType[] {
+    return relations.filter((rel: SchemaGraphRelationType): boolean => {
+      return rel.predicate === OWL.someValuesFrom
+      && ProjectionIndex.isRestrictionStructure(rel.structure)
+      && rel.structure.constraint === OWL.someValuesFrom;
+    });
   },
 
   // ---------------------------------------------------------------------------
   // Structure type guards
   // ---------------------------------------------------------------------------
+
+  isListStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'list' }> {
+    return structure?.kind === 'list';
+  },
 
   isRestrictionStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'restriction' }> {
     return structure?.kind === 'restriction';

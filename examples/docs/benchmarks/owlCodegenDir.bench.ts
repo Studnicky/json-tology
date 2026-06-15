@@ -89,7 +89,7 @@ export function runOwlCodegenDirBench(): BenchResult[] {
     'owl-codegen-dir bookstore tbox',
     'json-tology',
     () => {
-      generateRegistryFiles(bookstoreImportResult, {
+      return generateRegistryFiles(bookstoreImportResult, {
         'registryConstName': 'bookstore',
         'sourceLabel': 'bookstore-tbox'
       });
@@ -106,7 +106,7 @@ export function runOwlCodegenDirBench(): BenchResult[] {
     'owl-codegen-dir minimal class',
     'json-tology',
     () => {
-      generateRegistryFiles(minimalImportResult, {
+      return generateRegistryFiles(minimalImportResult, {
         'registryConstName': 'minimal',
         'sourceLabel': 'minimal-tbox'
       });

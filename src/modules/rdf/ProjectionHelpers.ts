@@ -17,6 +17,21 @@ import { ProjectionIndex } from './ProjectionIndex.js';
 import { RDFS } from '../../constants/IRI.js';
 
 /**
+ * Parse `value` to a finite number, returning `undefined` when the result is
+ * `NaN`, `Infinity`, or `-Infinity`.
+ *
+ * Used by both OwlProjection and ShaclProjection to validate cardinality values
+ * before emitting typed literals. Callers are responsible for the surrounding
+ * emission — OWL emits `xsd:nonNegativeInteger`; SHACL emits `xsd:integer`
+ * and branches to `sh:minCount` / `sh:maxCount`.
+ */
+export function finiteNumber(value: unknown): number | undefined {
+  const n = typeof value === 'number' ? value : Number(value);
+
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
  * Build the property subject IRI for `propertyName` on the class `classId`.
  *
  * The canonical property subject is a JSON-pointer fragment under the class:

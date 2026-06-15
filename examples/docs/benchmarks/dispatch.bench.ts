@@ -229,7 +229,7 @@ section('Type dispatch: if/else vs switch vs table  (cycling all 7 types)');
 const ifelseResult = bench('if/else chain', 'pattern', () => {
   const schemaType = nextType();
 
-  dispatchIfElse(schemaType, nextValue(schemaType));
+  return dispatchIfElse(schemaType, nextValue(schemaType));
 });
 
 results.push(ifelseResult);
@@ -237,7 +237,7 @@ results.push(ifelseResult);
 const switchResult = bench('switch stmt  ', 'pattern', () => {
   const schemaType = nextType();
 
-  dispatchSwitch(schemaType, nextValue(schemaType));
+  return dispatchSwitch(schemaType, nextValue(schemaType));
 });
 
 results.push(switchResult);
@@ -245,7 +245,7 @@ results.push(switchResult);
 const tableResult = bench('dispatch table', 'pattern', () => {
   const schemaType = nextType();
 
-  dispatchTable(schemaType, nextValue(schemaType));
+  return dispatchTable(schemaType, nextValue(schemaType));
 });
 
 results.push(tableResult);
@@ -253,13 +253,13 @@ results.push(tableResult);
 section('Property checking: sequential ifs vs for-in + dispatch table');
 
 const seqResult = bench('sequential ifs', 'pattern', () => {
-  checkSequential(sampleObj);
+  return checkSequential(sampleObj);
 });
 
 results.push(seqResult);
 
 const dispResult = bench('dispatch table ', 'pattern', () => {
-  checkDispatch(sampleObj);
+  return checkDispatch(sampleObj);
 });
 
 results.push(dispResult);
@@ -268,19 +268,19 @@ results.push(dispResult);
 section('Monomorphic dispatch (always "number") — best case for each approach');
 
 const monoIfelseResult = bench('if/else mono  ', 'pattern', () => {
-  dispatchIfElse('number', 42);
+  return dispatchIfElse('number', 42);
 });
 
 results.push(monoIfelseResult);
 
 const monoSwitchResult = bench('switch mono   ', 'pattern', () => {
-  dispatchSwitch('number', 42);
+  return dispatchSwitch('number', 42);
 });
 
 results.push(monoSwitchResult);
 
 const monoTableResult = bench('table  mono   ', 'pattern', () => {
-  dispatchTable('number', 42);
+  return dispatchTable('number', 42);
 });
 
 results.push(monoTableResult);

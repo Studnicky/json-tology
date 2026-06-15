@@ -82,7 +82,7 @@ export function runOwlImportBench(): BenchResult[] {
     'owl-import bookstore tbox',
     'json-tology',
     () => {
-      JsonTology.fromTbox(bookstoreTboxJsonLd);
+      return JsonTology.fromTbox(bookstoreTboxJsonLd);
     },
     {
       'iterations': 500,
@@ -96,7 +96,7 @@ export function runOwlImportBench(): BenchResult[] {
     'owl-import minimal class',
     'json-tology',
     () => {
-      JsonTology.fromTbox(minimalTboxJsonLd);
+      return JsonTology.fromTbox(minimalTboxJsonLd);
     },
     {
       'iterations': 10_000,

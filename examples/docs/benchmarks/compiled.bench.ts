@@ -51,13 +51,13 @@ export function runCompiledBench(): BenchResult[] {
   section('Compiled vs Interpreted — Review (valid)');
 
   const compiledSimpleValid = bench('compiled simple valid', 'compiled', () => {
-    registry.validate(ReviewSchema.$id, reviewValid);
+    return registry.validate(ReviewSchema.$id, reviewValid);
   });
 
   results.push(compiledSimpleValid);
 
   const interpretedSimpleValid = bench('compiled simple valid', 'interpreted', () => {
-    reviewEngine.execute(reviewValid);
+    return reviewEngine.execute(reviewValid);
   });
 
   results.push(interpretedSimpleValid);
@@ -65,13 +65,13 @@ export function runCompiledBench(): BenchResult[] {
   section('Compiled vs Interpreted — Review (invalid)');
 
   const compiledSimpleInvalid = bench('compiled simple invalid', 'compiled', () => {
-    registry.validate(ReviewSchema.$id, reviewInvalid);
+    return registry.validate(ReviewSchema.$id, reviewInvalid);
   });
 
   results.push(compiledSimpleInvalid);
 
   const interpretedSimpleInvalid = bench('compiled simple invalid', 'interpreted', () => {
-    reviewEngine.execute(reviewInvalid);
+    return reviewEngine.execute(reviewInvalid);
   });
 
   results.push(interpretedSimpleInvalid);
@@ -79,13 +79,13 @@ export function runCompiledBench(): BenchResult[] {
   section('Compiled vs Interpreted — Order (valid)');
 
   const compiledNestedValid = bench('compiled nested valid', 'compiled', () => {
-    registry.validate(OrderSchema.$id, orderValid);
+    return registry.validate(OrderSchema.$id, orderValid);
   });
 
   results.push(compiledNestedValid);
 
   const interpretedNestedValid = bench('compiled nested valid', 'interpreted', () => {
-    orderEngine.execute(orderValid);
+    return orderEngine.execute(orderValid);
   });
 
   results.push(interpretedNestedValid);

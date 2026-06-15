@@ -39,13 +39,14 @@ export function runRegistryBench(): BenchResult[] {
     for (const schema of bookstoreBenchSchemas) {
       reg.set(schema as Record<string, unknown>);
     }
-    reg.validate(OrderSchema.$id, orderValid);
+
+    return reg.validate(OrderSchema.$id, orderValid);
   }, { 'iterations': 5000 }));
 
   results.push(bench('cold first validate', 'typebox', () => {
     const compiled = TypeCompiler.Compile(OrderSchemaTypebox);
 
-    compiled.Check(orderValid);
+    return compiled.Check(orderValid);
   }, { 'iterations': 5000 }));
 
   results.push(bench('cold first validate', 'zod', () => {
@@ -55,14 +56,14 @@ export function runRegistryBench(): BenchResult[] {
       'placedAt': z.string().datetime()
     });
 
-    fresh.safeParse({
+    return fresh.safeParse({
       'orderId': orderValid.orderId as string,
       'placedAt': orderValid.placedAt as string
     });
   }, { 'iterations': 5000 }));
 
   results.push(bench('cold first validate', 'valibot', () => {
-    safeParse(OrderSchemaValibot, orderValid);
+    return safeParse(OrderSchemaValibot, orderValid);
   }, { 'iterations': 5000 }));
 
   section('registry — warm: cached validate (steady state)');
@@ -82,19 +83,19 @@ export function runRegistryBench(): BenchResult[] {
   safeParse(OrderSchemaValibot, orderValid);
 
   results.push(bench('warm validate', 'json-tology', () => {
-    reg.validate(OrderSchema.$id, orderValid);
+    return reg.validate(OrderSchema.$id, orderValid);
   }));
 
   results.push(bench('warm validate', 'typebox', () => {
-    tbCompiled.Check(orderValid);
+    return tbCompiled.Check(orderValid);
   }));
 
   results.push(bench('warm validate', 'zod', () => {
-    OrderSchemaZod.safeParse(orderValid);
+    return OrderSchemaZod.safeParse(orderValid);
   }));
 
   results.push(bench('warm validate', 'valibot', () => {
-    safeParse(OrderSchemaValibot, orderValid);
+    return safeParse(OrderSchemaValibot, orderValid);
   }));
 
   return results;

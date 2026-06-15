@@ -66,25 +66,25 @@ export function runValueOpsBench(): BenchResult[] {
   section('clean — strip unknown properties');
 
   const cleanReviewResult = bench('clean review', 'json-tology', () => {
-    registry.clean(ReviewSchema.$id, dirtyReview);
+    return registry.clean(ReviewSchema.$id, dirtyReview);
   });
 
   results.push(cleanReviewResult);
 
   const cleanReviewTbResult = bench('clean review', 'typebox', () => {
-    void TypeBoxValue.clean(ReviewSchemaTypebox, structuredClone(dirtyReview));
+    return TypeBoxValue.clean(ReviewSchemaTypebox, structuredClone(dirtyReview));
   });
 
   results.push(cleanReviewTbResult);
 
   const cleanOrderResult = bench('clean order', 'json-tology', () => {
-    registry.clean(OrderSchema.$id, dirtyOrder);
+    return registry.clean(OrderSchema.$id, dirtyOrder);
   });
 
   results.push(cleanOrderResult);
 
   const cleanOrderTbResult = bench('clean order', 'typebox', () => {
-    void TypeBoxValue.clean(OrderSchemaTypebox, structuredClone(dirtyOrder));
+    return TypeBoxValue.clean(OrderSchemaTypebox, structuredClone(dirtyOrder));
   });
 
   results.push(cleanOrderTbResult);
@@ -93,13 +93,13 @@ export function runValueOpsBench(): BenchResult[] {
   section('convert — type coercion (no defaults)');
 
   const convertReviewResult = bench('convert review', 'json-tology', () => {
-    registry.convert(ReviewSchema.$id, reviewCoercible);
+    return registry.convert(ReviewSchema.$id, reviewCoercible);
   });
 
   results.push(convertReviewResult);
 
   const convertReviewTbResult = bench('convert review', 'typebox', () => {
-    void TypeBoxValue.convert(ReviewSchemaTypebox, reviewCoercible);
+    return TypeBoxValue.convert(ReviewSchemaTypebox, reviewCoercible);
   });
 
   results.push(convertReviewTbResult);
@@ -108,13 +108,13 @@ export function runValueOpsBench(): BenchResult[] {
   section('clone — deep clone');
 
   const cloneOrderResult = bench('clone order', 'json-tology', () => {
-    Operations.clone(orderValid);
+    return Operations.clone(orderValid);
   });
 
   results.push(cloneOrderResult);
 
   const cloneStructuredResult = bench('clone order', 'structuredClone', () => {
-    structuredClone(orderValid);
+    return structuredClone(orderValid);
   });
 
   results.push(cloneStructuredResult);
@@ -135,13 +135,13 @@ export function runValueOpsBench(): BenchResult[] {
   };
 
   const diffOrderResult = bench('diff order', 'json-tology', () => {
-    Value.diff(orderValid, orderModified);
+    return Value.diff(orderValid, orderModified);
   });
 
   results.push(diffOrderResult);
 
   const diffOrderTbResult = bench('diff order', 'typebox', () => {
-    void [...TypeBoxValue.diff(orderValid, orderModified)];
+    return [...TypeBoxValue.diff(orderValid, orderModified)];
   });
 
   results.push(diffOrderTbResult);
