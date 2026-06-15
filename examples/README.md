@@ -32,6 +32,7 @@ These TypeScript examples use a shared FOAF (Friend of a Friend) domain fixture 
 |------|-------------|
 | `e2e-types.ts` | Compile-time type inference, branded IDs, transforms, composition |
 | `e2e-validation.ts` | Runtime validation pipeline: validate, coerce, value ops, sub-schema checks |
+| `e2e-reasoning.ts` | Project real bookstore objects to quads, encode dates to epoch integers, run the EYE reasoner, decode inferred status IRIs back to TS — refund eligibility + review policy (verified-purchaser derived from purchased ∧ reviewed) |
 
 ## Run a single example
 
