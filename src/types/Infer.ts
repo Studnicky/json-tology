@@ -18,8 +18,15 @@
  * - `contains` — Inferred as `unknown[]`. Runtime validates at least one match;
  *   TypeScript cannot express "array with at least one element of type T".
  * - `propertyNames` — When `propertyNames: { enum: [...] }` is present, keys
- *   are narrowed to the enum union. Other `propertyNames` forms fall back to
+ *   are narrowed to the enum union. When `propertyNames: { pattern: P }` is
+ *   present with a recognised anchored pattern, keys are narrowed to the
+ *   corresponding template-literal type via `PatternToKeyType` (same rules as
+ *   `patternProperties`). Other `propertyNames` forms fall back to
  *   `Record<string, unknown>`.
+ * - `pattern` (on `type: 'string'`) — When `tightStringLengths` is enabled and
+ *   the pattern is a recognised anchored shape, the value type is additionally
+ *   narrowed via `PatternToKeyType` (same rules as `patternProperties`). Complex
+ *   or unanchored patterns leave the value type as plain `string`.
  * - `unevaluatedProperties` / `unevaluatedItems` — Treated identically to
  *   `additionalProperties` / `additionalItems`. The "unevaluated" scoping
  *   across subschemas is a runtime concern.
@@ -43,10 +50,12 @@ import type {
   ExclusiveMaximumBrandType,
   ExclusiveMinimumBrandType,
   FormatBrandType,
+  MaxContainsBrandType,
   MaximumBrandType,
   MaxItemsBrandType,
   MaxLengthBrandType,
   MaxPropertiesBrandType,
+  MinContainsBrandType,
   MinimumBrandType,
   MinItemsBrandType,
   MinLengthBrandType,
@@ -286,6 +295,24 @@ type BuildLengthRangeType<
       >
       : TResult;
 
+/**
+ * Narrow a string's value type by its `pattern` keyword, gated on the
+ * `tightStringLengths` flag (reuses the same flag — both are tight value
+ * narrowings for strings). Delegates to {@link PatternToKeyType}; unrecognised
+ * or unanchored patterns resolve to `string`, making the intersection a no-op.
+ *
+ * This is intentionally intersected with the brand + length types, not with
+ * `string` directly: the brand intersection preserves the phantom constraint
+ * markers while the value-space narrows to the template literal or literal
+ * union.
+ */
+type TightStringPatternType<T>
+  = IsEnabledType<'tightStringLengths'> extends true
+    ? T extends { readonly 'pattern': infer P extends string }
+      ? PatternToKeyType<P>
+      : unknown
+    : unknown;
+
 // ---------------------------------------------------------------------------
 // Bound normalization helpers (integer ranges)
 // ---------------------------------------------------------------------------
@@ -342,8 +369,12 @@ type InferArrayBrandsType<T, TRoot, TReferences>
     ? (T extends { readonly 'contains': infer C }
       ? ContainsBrandType<InferSchemaType<C, TRoot, TReferences>>
       : unknown)
+      & (T extends { readonly 'maxContains': infer N extends number }
+        ? MaxContainsBrandType<N> : unknown)
       & (T extends { readonly 'maxItems': infer N extends number }
         ? MaxItemsBrandType<N> : unknown)
+      & (T extends { readonly 'minContains': infer N extends number }
+        ? MinContainsBrandType<N> : unknown)
       & (T extends { readonly 'minItems': infer N extends number }
         ? MinItemsBrandType<N> : unknown)
       & (T extends { readonly 'uniqueItems': true }
@@ -367,7 +398,7 @@ type InferObjectBrandsType<T>
 // ---------------------------------------------------------------------------
 
 type InferPrimitiveType<T>
-  = T extends { readonly 'type': 'string' } ? InferStringBrandsType<T> & TightStringLengthType<T>
+  = T extends { readonly 'type': 'string' } ? InferStringBrandsType<T> & TightStringLengthType<T> & TightStringPatternType<T>
     : T extends { readonly 'type': 'integer' }
       // Guard against never bounds (no bound or Sub1(0))
       ? [NormalizeMinType<T>] extends [never] ? InferNumberBrandsType<T> & number
@@ -596,17 +627,28 @@ type InferObjectType<T, TRoot, TReferences>
           & (T extends { readonly 'additionalProperties': infer A }
             ? { readonly [P in K]?: InferSchemaType<A, TRoot, TReferences> }
             : { readonly [P in K]?: unknown })
+      // propertyNames: { pattern } — key type narrowed via PatternToKeyType.
+      // Unrecognised patterns resolve PatternToKeyType to `string`, keeping the
+      // fallback identical to the open-object catch-all.
+        : T extends {
+          readonly 'propertyNames': { readonly 'pattern': infer KP extends string };
+          readonly 'type': 'object';
+        }
+          ? InferObjectBrandsType<T>
+          & (T extends { readonly 'additionalProperties': infer A }
+            ? { readonly [P in PatternToKeyType<KP>]?: InferSchemaType<A, TRoot, TReferences> }
+            : { readonly [P in PatternToKeyType<KP>]?: unknown })
         // additionalProperties-only object (no declared properties): the value
         // schema still types the index signature, so a `$ref` here resolves
         // (and a miss brands) rather than collapsing to Record<string, unknown>.
         // Matches only a schema-valued additionalProperties; `false`/`true` fall
         // through to the open-object catch-all unchanged.
-        : T extends { readonly 'additionalProperties': Record<string, unknown>;
-          readonly 'type': 'object' }
-          ? InferAdditionalType<T, TRoot, TReferences> & InferObjectBrandsType<T>
-          : T extends { readonly 'type': 'object' }
-            ? InferObjectBrandsType<T> & Record<string, unknown>
-            : never;
+          : T extends { readonly 'additionalProperties': Record<string, unknown>;
+            readonly 'type': 'object' }
+            ? InferAdditionalType<T, TRoot, TReferences> & InferObjectBrandsType<T>
+            : T extends { readonly 'type': 'object' }
+              ? InferObjectBrandsType<T> & Record<string, unknown>
+              : never;
 
 // ---------------------------------------------------------------------------
 // Composition

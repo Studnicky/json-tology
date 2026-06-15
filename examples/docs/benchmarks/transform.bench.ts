@@ -116,35 +116,35 @@ export function runTransformBench(): BenchResult[] {
   section('transform — decode wire → canonical (string normalize)');
 
   results.push(bench('decode date', 'json-tology', () => {
-    jt.instantiate(DateSchemaJt, wireValue);
+    return jt.instantiate(DateSchemaJt, wireValue);
   }));
 
   results.push(bench('decode date', 'typebox', () => {
-    Value.Decode(DateSchemaTypebox, wireValue);
+    return Value.Decode(DateSchemaTypebox, wireValue);
   }));
 
   results.push(bench('decode date', 'zod', () => {
-    DateSchemaZod.parse(wireValue);
+    return DateSchemaZod.parse(wireValue);
   }));
 
   results.push(bench('decode date', 'io-ts', () => {
-    DateSchemaIoTs.decode(wireValue);
+    return DateSchemaIoTs.decode(wireValue);
   }));
 
   section('transform — encode canonical → wire (string reversal)');
 
   results.push(bench('encode date', 'json-tology', () => {
-    jt.encode(DateSchemaJt, canonicalValue);
+    return jt.encode(DateSchemaJt, canonicalValue);
   }));
 
   results.push(bench('encode date', 'typebox', () => {
     // interop: TypeBox's Transform Encode expects the statically-decoded shape.
     // canonicalValue is a `string`, which matches it, so it is accepted directly.
-    Value.Encode(DateSchemaTypebox, canonicalValue);
+    return Value.Encode(DateSchemaTypebox, canonicalValue);
   }));
 
   results.push(bench('encode date', 'io-ts', () => {
-    DateSchemaIoTs.encode(canonicalValue);
+    return DateSchemaIoTs.encode(canonicalValue);
   }));
 
   // Zod 4 supports .pipe back; using zod codec round-trip via toJSON would be

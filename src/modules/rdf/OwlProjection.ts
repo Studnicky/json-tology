@@ -40,6 +40,7 @@ import type { RelationIndexType } from '../../types/RelationIndex.js';
 import { IdentifierIssuer } from './IdentifierIssuer.js';
 import { VocabProjection } from './VocabProjection.js';
 import {
+  finiteNumber,
   propertySubjectIri,
   resolveCanonicalPropertyIri,
   resolvePropertySchema,
@@ -247,9 +248,9 @@ function isPrimitiveEntry(entry: RelationIndexType): boolean {
 // OWL_CARDINALITY_PREDICATE_IRIS imported from ONTOLOGY_PREDICATES
 
 function cardinalityConstraintValue(value: unknown, curie: CurieInterface | undefined): OptionalQuadObjectType {
-  const n = typeof value === 'number' ? value : Number(value);
+  const n = finiteNumber(value);
 
-  if (!Number.isFinite(n)) {
+  if (n === undefined) {
     return undefined;
   }
 
@@ -935,11 +936,7 @@ function emitContainsQuads(
   } = ctx;
   // Only pick up `contains` keyword restrictions (predicate = OWL.someValuesFrom),
   // not user-declared restrictions which use RDFS.subClassOf predicate.
-  const containsRels = entry.all.filter((rel: SchemaGraphRelationType): boolean => {
-    return rel.predicate === OWL.someValuesFrom
-      && ProjectionIndex.isRestrictionStructure(rel.structure)
-      && rel.structure.constraint === OWL.someValuesFrom;
-  });
+  const containsRels = ProjectionIndex.filterContainsRestrictions(entry.all);
 
   for (const rel of containsRels) {
     const structure = rel.structure;

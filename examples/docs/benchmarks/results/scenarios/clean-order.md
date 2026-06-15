@@ -1,5 +1,5 @@
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 196,447 | 5090 | - |
+| json-tology | 147,308 | 6788 | - |
 | structuredClone | N/A | N/A | N/A |
-| typebox | 332,273 | 3010 | 1.69x slower |
+| typebox | 339,407 | 2946 | 2.30x slower |

@@ -26,6 +26,8 @@ const forInResult = bench('for...in', 'native', () => {
   for (const key in obj) {
     sink += String(obj[key]).length > 0 ? 1 : 0;
   }
+
+  return sink;
 });
 
 results.push(forInResult);
@@ -37,6 +39,8 @@ const freshEntriesResult = bench('for...of Object.entries() (fresh)', 'native', 
   ] of Object.entries(obj)) {
     sink += String(value).length > 0 ? 1 : 0;
   }
+
+  return sink;
 });
 
 results.push(freshEntriesResult);
@@ -45,6 +49,8 @@ const freshKeysResult = bench('for...of Object.keys() (fresh)', 'native', () => 
   for (const key of Object.keys(obj)) {
     sink += String(obj[key]).length > 0 ? 1 : 0;
   }
+
+  return sink;
 });
 
 results.push(freshKeysResult);
@@ -55,6 +61,8 @@ const indexedFreshResult = bench('indexed Object.entries() (fresh)', 'native', (
   for (const element of freshEntries) {
     sink += String(element[1]).length > 0 ? 1 : 0;
   }
+
+  return sink;
 });
 
 results.push(indexedFreshResult);
@@ -63,6 +71,8 @@ const cachedEntriesResult = bench('indexed Object.entries() (cached)', 'native',
   for (const entry of entries) {
     sink += String(entry[1]).length > 0 ? 1 : 0;
   }
+
+  return sink;
 });
 
 results.push(cachedEntriesResult);
@@ -71,6 +81,8 @@ const cachedKeysResult = bench('indexed Object.keys() (cached)', 'native', () =>
   for (const key of keys) {
     sink += String(obj[key]).length > 0 ? 1 : 0;
   }
+
+  return sink;
 });
 
 results.push(cachedKeysResult);

@@ -142,7 +142,7 @@ export function runComposeBench(): BenchResult[] {
   section('compose — extend (build derived schema, no validation)');
 
   results.push(bench('extend build', 'json-tology', () => {
-    Compose.extend(
+    return Compose.extend(
       BaseBookJt,
       { 'properties': { 'pages': { 'type': 'integer' } } } as const,
       'urn:bench:ExtBook'
@@ -150,14 +150,14 @@ export function runComposeBench(): BenchResult[] {
   }));
 
   results.push(bench('extend build', 'typebox', () => {
-    Type.Composite([
+    return Type.Composite([
       BaseBookTb,
       Type.Object({ 'pages': Type.Integer() })
     ]);
   }));
 
   results.push(bench('extend build', 'zod', () => {
-    BaseBookZod.extend({ 'pages': z.number().int() });
+    return BaseBookZod.extend({ 'pages': z.number().int() });
   }));
 
   section('compose — extend + validate (warm, build outside loop)');
@@ -186,15 +186,15 @@ export function runComposeBench(): BenchResult[] {
   const extZodSchema = BaseBookZod.extend({ 'pages': z.number().int() });
 
   results.push(bench('extend + validate', 'json-tology', () => {
-    extReg.validate(extBookId, extBookValid);
+    return extReg.validate(extBookId, extBookValid);
   }));
 
   results.push(bench('extend + validate', 'typebox', () => {
-    extTbCompiled.Check(extBookValid);
+    return extTbCompiled.Check(extBookValid);
   }));
 
   results.push(bench('extend + validate', 'zod', () => {
-    extZodSchema.safeParse(extBookValid);
+    return extZodSchema.safeParse(extBookValid);
   }));
 
   section('compose — discriminatedUnion validation (warm)');
@@ -221,19 +221,19 @@ export function runComposeBench(): BenchResult[] {
   vSafeParse(ShapeVb, validCircle);
 
   results.push(bench('discriminated union', 'json-tology', () => {
-    reg.validate((ShapeJt as { '$id': string }).$id, validCircle);
+    return reg.validate((ShapeJt as { '$id': string }).$id, validCircle);
   }));
 
   results.push(bench('discriminated union', 'typebox', () => {
-    ShapeTbCompiled.Check(validCircle);
+    return ShapeTbCompiled.Check(validCircle);
   }));
 
   results.push(bench('discriminated union', 'zod', () => {
-    ShapeZod.safeParse(validCircle);
+    return ShapeZod.safeParse(validCircle);
   }));
 
   results.push(bench('discriminated union', 'valibot', () => {
-    vSafeParse(ShapeVb, validCircle);
+    return vSafeParse(ShapeVb, validCircle);
   }));
 
   section('compose — intersection (warm, build outside loop)');
@@ -280,15 +280,15 @@ export function runComposeBench(): BenchResult[] {
   const interZodSchema = z.intersection(BaseBookZod, TaggedZod);
 
   results.push(bench('intersection', 'json-tology', () => {
-    subReg.validate(bookTaggedId, bookTaggedValid);
+    return subReg.validate(bookTaggedId, bookTaggedValid);
   }));
 
   results.push(bench('intersection', 'typebox', () => {
-    interTbCompiled.Check(bookTaggedValid);
+    return interTbCompiled.Check(bookTaggedValid);
   }));
 
   results.push(bench('intersection', 'zod', () => {
-    interZodSchema.safeParse(bookTaggedValid);
+    return interZodSchema.safeParse(bookTaggedValid);
   }));
 
   return results;

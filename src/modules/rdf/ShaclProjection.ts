@@ -34,6 +34,7 @@ import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
 import {
+  finiteNumber,
   resolvePropertySchema,
   resolveRestrictionOnProperty
 } from './ProjectionHelpers.js';
@@ -562,9 +563,9 @@ function emitRestrictionPropertyShape(
   quads.push(QuadFactory.quad(psBnode, SH.path, QuadFactory.iri(flatOnProperty, { curie }), { curie }));
 
   if (OWL_CARDINALITY_PREDICATE_IRIS.has(constraint)) {
-    const n = typeof value === 'number' ? value : Number(value);
+    const n = finiteNumber(value);
 
-    if (!Number.isFinite(n)) {
+    if (n === undefined) {
       return undefined;
     }
 
@@ -932,11 +933,7 @@ function emitContainsPropertyShape(
   // Guard: only pick up `contains` keyword restrictions (predicate = OWL.someValuesFrom),
   // not user-declared restrictions which use RDFS.subClassOf predicate.
   // Without this guard SHACL would also match user restrictions and emit spurious shapes.
-  const containsRels = entry.all.filter((rel: SchemaGraphRelationType): boolean => {
-    return rel.predicate === OWL.someValuesFrom
-      && ProjectionIndex.isRestrictionStructure(rel.structure)
-      && rel.structure.constraint === OWL.someValuesFrom;
-  });
+  const containsRels = ProjectionIndex.filterContainsRestrictions(entry.all);
 
   if (containsRels.length === 0) {
     return;
