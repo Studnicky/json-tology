@@ -28,6 +28,13 @@ type surface has been consolidated into a canonical taxonomy.
 - Schema-valued `additionalProperties` on an object without declared
   `properties` now types the index signature (resolving `$ref` values) instead
   of collapsing to `Record<string, unknown>`.
+- **Runtime `format` and content assertions.** `format`, `contentEncoding`, and
+  `contentMediaType` are enforced at runtime (strict by default), so the
+  matching compile-time brands reflect a real guarantee. Disable via the
+  `format-assertion` vocabulary set to `false` for annotation-only behavior.
+- **Single validation message table.** Both validation backends emit error
+  messages from one `VALIDATION_MESSAGES` source, guarded by a cross-engine
+  message-parity test and a single-source scan so the two backends cannot drift.
 
 ### Changed
 
@@ -55,6 +62,20 @@ type surface has been consolidated into a canonical taxonomy.
   `SCHEMA_DUPLICATE_ID`, `SCHEMA_DUPLICATE_SHAPE`, `INVALID_LANGUAGE_TAG`,
   `INVALID_PREDICATE_IRI`, `INVALID_IRI_VALUE`, `NON_FINITE_NUMBER`, and
   `MISSING_GRAPH_IRI` have named constants.
+- **BREAKING — `format`/content enforced by default.** Schemas declaring the
+  2020-12 dialect now assert `format`, `contentEncoding`, and `contentMediaType`
+  rather than treating them as annotations. Data that was format- or
+  content-invalid but previously passed now fails; opt out via the
+  `format-assertion` vocabulary.
+- **Unified validation execution.** Validation runs one path with two backends —
+  the compiled validator is canonical, with the graph interpreter retained as its
+  fallback for un-compilable keywords (`$dynamicRef`, `unevaluated*`,
+  `rdfsRange`/`rdfsDomain`) and for cyclic data. Both backends share one `$ref`
+  resolver and one message table.
+- Unresolvable `$ref`s throw a typed `GraphError` (`REF_NOT_FOUND`, or
+  `ANCHOR_NOT_FOUND` for a missing anchor) uniformly across the validation,
+  projection, and materialization paths, rather than one path throwing and
+  another silently returning no target.
 
 ### Removed
 
@@ -85,10 +106,20 @@ type surface has been consolidated into a canonical taxonomy.
 - **Compiled/interpreted parity.** The compiled validation path applies defaults
   and coercion for `anyOf` / `oneOf` members and emits constraint messages
   identical to the interpreted path.
-- ABox projection raises `GraphError('REF_UNRESOLVED')` on an unresolvable
+- ABox projection raises `GraphError('REF_NOT_FOUND')` on an unresolvable
   `$ref`, invalid JSON pointers surface instead of being swallowed, and external
   RDF literals without a datatype default to `xsd:string`.
 - Zero-value synthesis returns a value for `anyOf` / `oneOf` schemas.
+- **Cyclic-data validation.** A recursive schema fed structurally-cyclic data no
+  longer overflows the stack on the compiled path; `validate` and `materialize`
+  terminate via the interpreter's recursion guard.
+- **SHACL restriction projection.** A user `someValuesFrom` restriction no longer
+  emits a spurious `sh:qualifiedValueShape`, and restriction-structured
+  `subClassOf` relations now project as `sh:PropertyShape` with
+  `sh:minCount`/`sh:maxCount` instead of being dropped.
+- **CURIE expansion.** A CURIE reference containing colons (e.g.
+  `urn:uuid:abc-123`) expands with the full reference preserved instead of being
+  truncated at the first colon.
 
 ### Internal
 
