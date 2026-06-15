@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.23.1] - 2026-06-15
+
 ### Changed
 
 - **Validation tests assert the rejecting keyword.** Cases that were hidden inside
@@ -1888,6 +1896,7 @@ Docs and release-pipeline polish.
 ### Security
 
 [Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.4.0...HEAD
+[0.23.1]: https://github.com/Studnicky/json-tology/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/Studnicky/json-tology/compare/v0.22.0...v0.23.0
 [0.4.0]: https://github.com/Studnicky/json-tology/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Studnicky/json-tology/compare/v0.3.2...v0.3.3
