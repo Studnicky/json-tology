@@ -29,10 +29,14 @@ import { IdentifierIssuer } from './IdentifierIssuer.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
+import { OWL_CARDINALITY_PREDICATE_IRIS } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
-import { resolvePropertySchema } from './ProjectionHelpers.js';
+import {
+  resolvePropertySchema,
+  resolveRestrictionOnProperty
+} from './ProjectionHelpers.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexType } from '../../types/RelationIndex.js';
 import { VocabProjection } from './VocabProjection.js';
@@ -148,6 +152,25 @@ function isSerializationCandidate(
   return parts.fragment === null || parts.fragment === '';
 }
 
+/**
+ * Emit an `sh:PropertyShape` bnode with `sh:path` and `sh:minCount 1`.
+ * Returns the bnode label so the caller can reference it.
+ */
+function emitMinCountOnePropertyShape(
+  pathIri: string,
+  quads: QuadInterface[],
+  curie: CurieInterface | undefined,
+  issuer: IdentifierIssuerInterface | undefined
+): string {
+  const psBnode = QuadFactory.nextBnode(issuer);
+
+  quads.push(QuadFactory.quad(psBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
+  quads.push(QuadFactory.quad(psBnode, SH.path, QuadFactory.iri(pathIri, { curie }), { curie }));
+  quads.push(QuadFactory.quad(psBnode, SH.minCount, QuadFactory.literal(1, XSD.integer, { curie }), { curie }));
+
+  return psBnode;
+}
+
 class ShaclVocabProjection extends VocabProjection {
   private readonly graph: SchemaGraphInterface;
   private readonly index: Map<string, RelationIndexType>;
@@ -233,15 +256,7 @@ class ShaclVocabProjection extends VocabProjection {
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const withoutPsBnode = QuadFactory.nextBnode(issuer);
-
-    const psTypeObj = QuadFactory.iri(SH.PropertyShape, { curie });
-    const ifPathObj = QuadFactory.iri(ifRef, { curie });
-    const minCountOne = QuadFactory.literal(1, XSD.integer, { curie });
-
-    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, psTypeObj, { curie }));
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, ifPathObj, { curie }));
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountOne, { curie }));
+    const withoutPsBnode = emitMinCountOnePropertyShape(ifRef, quads, curie, issuer);
 
     const withoutContainerBnode = QuadFactory.nextBnode(issuer);
 
@@ -315,15 +330,7 @@ class ShaclVocabProjection extends VocabProjection {
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const withoutPsBnode = QuadFactory.nextBnode(issuer);
-
-    const psTypeObj2 = QuadFactory.iri(SH.PropertyShape, { curie });
-    const triggerPathObj = QuadFactory.iri(triggerPropIri, { curie });
-    const minCountOne2 = QuadFactory.literal(1, XSD.integer, { curie });
-
-    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, psTypeObj2, { curie }));
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, triggerPathObj, { curie }));
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountOne2, { curie }));
+    const withoutPsBnode = emitMinCountOnePropertyShape(triggerPropIri, quads, curie, issuer);
 
     const innerBnode = QuadFactory.nextBnode(issuer);
     const complementBnode = QuadFactory.nextBnode(issuer);
@@ -347,11 +354,7 @@ class ShaclVocabProjection extends VocabProjection {
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const reqPsBnode = QuadFactory.nextBnode(issuer);
-
-    quads.push(QuadFactory.quad(reqPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
-    quads.push(QuadFactory.quad(reqPsBnode, SH.path, QuadFactory.iri(propIri, { curie }), { curie }));
-    quads.push(QuadFactory.quad(reqPsBnode, SH.minCount, QuadFactory.literal(1, XSD.integer, { curie }), { curie }));
+    const reqPsBnode = emitMinCountOnePropertyShape(propIri, quads, curie, issuer);
 
     return QuadFactory.bnode(reqPsBnode);
   }
@@ -523,6 +526,87 @@ function emitNodeShapeProperties(args: EmitNodeShapePropertiesArgsType): void {
   emitContainsPropertyShape(subject, entry, ctx);
 }
 
+/**
+ * Emit a SHACL property shape for a restriction-structured `rdfs:subClassOf` relation.
+ *
+ * OWL restriction structures carry `constraint` (e.g. `owl:minCardinality`),
+ * `onProperty`, and `value`. This function mirrors OWL's `emitClassSubClassRelations`
+ * handler but emits SHACL `sh:PropertyShape` constraints instead of `owl:Restriction`
+ * bnodes, so user-declared restrictions are not silently dropped by SHACL projection.
+ *
+ * Only cardinality and value restrictions are mapped; `owl:someValuesFrom` restrictions
+ * are already handled by `emitContainsPropertyShape` and are skipped here.
+ *
+ * Returns the property shape bnode label, or `undefined` when the constraint cannot
+ * be represented as a SHACL property shape.
+ */
+function emitRestrictionPropertyShape(
+  onProperty: string,
+  constraint: string,
+  value: unknown,
+  quads: QuadInterface[],
+  curie: CurieInterface | undefined,
+  issuer: IdentifierIssuerInterface | undefined,
+  graph: SchemaGraphInterface,
+  predicateResolver: PredicateResolverFnType | undefined
+): string | undefined {
+  // owl:someValuesFrom restrictions are handled in emitContainsPropertyShape — skip here.
+  if (constraint === OWL.someValuesFrom) {
+    return undefined;
+  }
+
+  const flatOnProperty = resolveRestrictionOnProperty(onProperty, graph, predicateResolver);
+  const psBnode = QuadFactory.nextBnode(issuer);
+
+  quads.push(QuadFactory.quad(psBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
+  quads.push(QuadFactory.quad(psBnode, SH.path, QuadFactory.iri(flatOnProperty, { curie }), { curie }));
+
+  if (OWL_CARDINALITY_PREDICATE_IRIS.has(constraint)) {
+    const n = typeof value === 'number' ? value : Number(value);
+
+    if (!Number.isFinite(n)) {
+      return undefined;
+    }
+
+    const countLit = QuadFactory.literal(n, XSD.integer, { curie });
+
+    if (constraint === OWL.minCardinality) {
+      quads.push(QuadFactory.quad(psBnode, SH.minCount, countLit, { curie }));
+    } else if (constraint === OWL.maxCardinality) {
+      quads.push(QuadFactory.quad(psBnode, SH.maxCount, countLit, { curie }));
+    } else {
+      // owl:cardinality → both minCount and maxCount
+      quads.push(QuadFactory.quad(psBnode, SH.minCount, countLit, { curie }));
+      quads.push(QuadFactory.quad(psBnode, SH.maxCount, countLit, { curie }));
+    }
+
+    return psBnode;
+  }
+
+  if (constraint === OWL.hasValue) {
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      const hasValueLit = QuadFactory.literal(String(value), XSD.string, { curie });
+
+      quads.push(QuadFactory.quad(psBnode, SH.hasValue, hasValueLit, { curie }));
+
+      return psBnode;
+    }
+
+    return undefined;
+  }
+
+  if (constraint === OWL.allValuesFrom && typeof value === 'string' && value !== '') {
+    const valueIri = QuadFactory.iri(value, { curie });
+    const rangePred = value.startsWith(XSD_IRI_PREFIX) ? SH.datatype : SH.node;
+
+    quads.push(QuadFactory.quad(psBnode, rangePred, valueIri, { curie }));
+
+    return psBnode;
+  }
+
+  return undefined;
+}
+
 function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsType): void {
   const {
     ctx, entry, shaclVocab, subject
@@ -534,7 +618,29 @@ function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsType): void 
   const subClassRels = entry.byPredicate.get(RDFS.subClassOf) ?? [];
 
   for (const rel of subClassRels) {
-    andItems.push(QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie }));
+    if (ProjectionIndex.isRestrictionStructure(rel.structure)) {
+      // Restriction-structured subClassOf: emit a SHACL property shape and include it in sh:and.
+      // OWL handles these as owl:Restriction bnodes; SHACL translates them to sh:PropertyShape.
+      const {
+        constraint, onProperty, value
+      } = rel.structure;
+      const psBnode = emitRestrictionPropertyShape(
+        onProperty,
+        constraint,
+        value,
+        quads,
+        curie,
+        issuer,
+        graph,
+        predicateResolver
+      );
+
+      if (psBnode !== undefined) {
+        andItems.push(QuadFactory.bnode(psBnode));
+      }
+    } else {
+      andItems.push(QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie }));
+    }
   }
 
   const depReqItems = shaclVocab.processDependentRequired(
@@ -823,8 +929,12 @@ function emitContainsPropertyShape(
   const {
     curie, issuer, quads
   } = ctx;
+  // Guard: only pick up `contains` keyword restrictions (predicate = OWL.someValuesFrom),
+  // not user-declared restrictions which use RDFS.subClassOf predicate.
+  // Without this guard SHACL would also match user restrictions and emit spurious shapes.
   const containsRels = entry.all.filter((rel: SchemaGraphRelationType): boolean => {
-    return ProjectionIndex.isRestrictionStructure(rel.structure)
+    return rel.predicate === OWL.someValuesFrom
+      && ProjectionIndex.isRestrictionStructure(rel.structure)
       && rel.structure.constraint === OWL.someValuesFrom;
   });
 
