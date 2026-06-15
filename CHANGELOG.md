@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.23.0] - 2026-06-15
+
 Compile-time inference closes its remaining gaps with runtime validation, the
 RDF projection layer drops its last duplicated logic, and the benchmark harness
 measures real work instead of optimizer-elided no-ops.
@@ -18,7 +26,14 @@ measures real work instead of optimizer-elided no-ops.
   those keywords — the last `contains`-family keyword that had no type-level
   trace.
 - **`pattern` value narrowing on `type: 'string'`.** A recognised anchored
-  pattern narrows the inferred value type via `PatternToKeyType`: `^(a|b|c)$` →
+  pattern narrows the inferred value type via `PatternToKeyType`: `^(a|b|c)# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+ →
   `'a' | 'b' | 'c'`, `^prefix` → `` `prefix${string}` ``. Complex or unanchored
   patterns stay `string`, so the change is invisible to existing schemas.
 - **`propertyNames: { pattern }` key narrowing.** Object key types narrow to the
@@ -1867,6 +1882,7 @@ Docs and release-pipeline polish.
 ### Security
 
 [Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.4.0...HEAD
+[0.23.0]: https://github.com/Studnicky/json-tology/compare/v0.22.0...v0.23.0
 [0.4.0]: https://github.com/Studnicky/json-tology/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Studnicky/json-tology/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Studnicky/json-tology/compare/v0.3.1...v0.3.2
