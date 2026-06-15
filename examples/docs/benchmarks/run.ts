@@ -330,7 +330,7 @@ function writeMarkdownReport(
   lines.push('npm run bench:report');
   lines.push('```');
   lines.push('');
-  lines.push('Bench numbers move with hardware. The values committed here came from the developer machine listed in Environment. CI runs are uploaded as workflow artifacts (see `.github/workflows/bench.yml`).');
+  lines.push('Bench numbers move with hardware. The values committed here came from the developer machine listed in Environment. CI runs are uploaded as workflow artifacts (see `.github/workflows/bench-postmerge.yml`).');
   lines.push('');
 
   writeFileSync(outPath, lines.join('\n'), 'utf8');

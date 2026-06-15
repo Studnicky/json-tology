@@ -20,6 +20,7 @@ import { decodeLiteral } from '../../src/modules/rdf/Terms.js';
 import {
   RDF, SH
 } from '../../src/constants/IRI.js';
+import { Compose } from '../../src/index.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 
 // ---------------------------------------------------------------------------
@@ -236,5 +237,107 @@ void describe('ShaclProjection.graph()', { 'concurrency': true }, () => {
     assert.doesNotThrow(() => {
       ShaclProjection.graph(graph);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Regression: user-declared restriction projection (Wave 5b correctness fixes)
+//
+// Both suites pin the CORRECTED SHACL output. They fail against the pre-fix
+// projection:
+//   - Fix 1 (someValuesFrom guard): the pre-fix `contains` filter matched any
+//     restriction structure whose constraint was owl:someValuesFrom, including
+//     USER restrictions carried on rdfs:subClassOf. That emitted a spurious
+//     sh:qualifiedValueShape. The guard `rel.predicate === OWL.someValuesFrom`
+//     restricts matching to the `contains` keyword path. Pre-fix: 1
+//     qualifiedValueShape quad; post-fix: 0.
+//   - Fix 2 (subClassOf restriction emission): the pre-fix sh:and walk pushed
+//     every subClassOf target as a plain IRI, silently dropping the
+//     restriction-structured relations (min/maxCardinality user restrictions).
+//     Post-fix they emit sh:PropertyShape bnodes with sh:minCount / sh:maxCount.
+//     Pre-fix: no sh:maxCount 5 / sh:minCount 1 from the restriction; post-fix:
+//     both present.
+// ---------------------------------------------------------------------------
+
+void describe('ShaclProjection.graph() — user restriction regression', { 'concurrency': true }, () => {
+  void it('emits NO sh:qualifiedValueShape for a user someValuesFrom restriction (Fix 1)', () => {
+    // A user-declared someValuesFrom restriction is carried on rdfs:subClassOf,
+    // NOT on the owl:someValuesFrom `contains` predicate. SHACL must not treat it
+    // as a `contains` qualified-value-shape. Pre-fix this emitted 1 spurious quad.
+    const schema = Compose.subClassOf(
+      Compose.someValuesFrom('urn:example:Shelf#books', 'urn:example:Book'),
+      {
+        '$id': 'urn:example:Shelf',
+        'properties': { 'books': { '$ref': 'urn:example:Book' } },
+        'type': 'object'
+      }
+    ) as Record<string, unknown>;
+
+    const quads = project(schema);
+    const qvsQuads = filterByPredicate(quads, SH.qualifiedValueShape);
+
+    assert.equal(
+      qvsQuads.length,
+      0,
+      'a user someValuesFrom restriction must not emit a sh:qualifiedValueShape'
+    );
+  });
+
+  void it('emits sh:PropertyShape with sh:minCount 1 and sh:maxCount 5 for user cardinality restrictions (Fix 2)', () => {
+    // Two stacked user restrictions: minCardinality 1 and maxCardinality 5 on the
+    // same property. Pre-fix these restriction-structured subClassOf relations were
+    // silently dropped from the sh:and walk; post-fix they become sh:PropertyShape
+    // constraints with sh:minCount / sh:maxCount.
+    const schema = Compose.subClassOf(
+      Compose.minCardinality('urn:example:Book#authors', 1),
+      Compose.subClassOf(
+        Compose.maxCardinality('urn:example:Book#authors', 5),
+        {
+          '$id': 'urn:example:Book',
+          'properties': { 'authors': { 'type': 'string' } },
+          'type': 'object'
+        }
+      )
+    ) as Record<string, unknown>;
+
+    const quads = project(schema);
+
+    // sh:and must be emitted to carry the restriction property shapes.
+    const andQuads = filterByPredicate(quads, SH.and);
+
+    assert.equal(andQuads.length, 1, 'the class node must carry one sh:and for its restrictions');
+
+    // The PropertyShapes emitted from the restrictions must carry sh:path on the
+    // restricted property and the correct min/max counts.
+    const restrictionPropertyShapes = quads.filter((quad) => {
+      return quad.predicate.value === SH.path
+        && objectNamedNodeValue(quad) === 'urn:example:Book#authors';
+    });
+
+    assert.ok(
+      restrictionPropertyShapes.length >= 2,
+      'min and max cardinality restrictions each produce a sh:path on the property'
+    );
+
+    // sh:minCount 1 from the minCardinality restriction.
+    const minCountValues = filterByPredicate(quads, SH.minCount).map((quad) => {
+      return objectLiteralValue(quad);
+    });
+
+    assert.ok(
+      minCountValues.includes(1),
+      'minCardinality 1 restriction must emit sh:minCount 1'
+    );
+
+    // sh:maxCount 5 from the maxCardinality restriction (distinct from the scalar
+    // property shape's sh:maxCount 1).
+    const maxCountValues = filterByPredicate(quads, SH.maxCount).map((quad) => {
+      return objectLiteralValue(quad);
+    });
+
+    assert.ok(
+      maxCountValues.includes(5),
+      'maxCardinality 5 restriction must emit sh:maxCount 5'
+    );
   });
 });

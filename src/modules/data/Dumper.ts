@@ -4,6 +4,7 @@ import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import { isRecord } from './DataTypes.js';
 import { Transform } from '../transform/Transform.js';
+import { BaseError } from '../../errors/BaseError.js';
 import { EncodeError } from '../../errors/EncodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { GraphError } from '../../errors/GraphError.js';
@@ -68,7 +69,7 @@ export class Dumper {
         throw error;
       }
 
-      const causeError = error instanceof Error ? error : new Error(String(error));
+      const causeError = BaseError.toCause(error);
       const schemaId = nodeSchema.$id as string | undefined;
 
       throw new EncodeError(

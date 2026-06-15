@@ -38,44 +38,7 @@ import {
   OWL,
   RDFS
 } from '../../../constants/IRI.js';
-
-// ---------------------------------------------------------------------------
-// Property name extraction
-// ---------------------------------------------------------------------------
-
-/**
- * Extract a short property name from a property IRI.
- *
- * Handles two conventions:
- * - `<classIri>#<propName>`          → propName (bare fragment)
- * - `<classIri>#/properties/<name>`  → name (JSON pointer segment)
- * - `<base>/<propName>`              → propName (last path segment)
- */
-function propertyNameFromIri(propIri: string): string {
-  const hashIdx = propIri.indexOf('#');
-
-  if (hashIdx !== -1) {
-    const fragment = propIri.slice(hashIdx + 1);
-    const propsIdx = fragment.indexOf('/properties/');
-
-    if (propsIdx !== -1) {
-      const afterProps = fragment.slice(propsIdx + '/properties/'.length);
-      const slashIdx = afterProps.indexOf('/');
-
-      return slashIdx === -1 ? afterProps : afterProps.slice(0, slashIdx);
-    }
-
-    // Bare fragment: ClassName#propName
-    const slashIdx = fragment.lastIndexOf('/');
-
-    return slashIdx === -1 ? fragment : fragment.slice(slashIdx + 1);
-  }
-
-  // No fragment — use last path segment
-  const slashIdx = propIri.lastIndexOf('/');
-
-  return slashIdx === -1 ? propIri : propIri.slice(slashIdx + 1);
-}
+import { SchemaIri } from '../../graph/SchemaIri.js';
 
 // ---------------------------------------------------------------------------
 // Schema delta helpers
@@ -301,7 +264,7 @@ export function importPropertyRestrictions(_quads: QuadInterface[], ctx: OwlImpo
       continue;
     }
 
-    const propName = propertyNameFromIri(propIri);
+    const propName = SchemaIri.propertyName(propIri);
 
     if (propName === '') {
       ctx.reportUnsupported(constraint, classIri);

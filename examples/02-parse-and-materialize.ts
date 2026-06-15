@@ -2,7 +2,7 @@
  * 02-parse-and-materialize — Parsing with defaults, materialization
  *
  * Demonstrates: parse (validate + apply defaults), materialize (build from partial).
- * parse() throws on invalid data; materialize() fills in all schema defaults.
+ * instantiate() throws on invalid data; materialize() fills in all schema defaults.
  *
  * Run: npm run build && npx tsx examples/02-parse-and-materialize.ts
  */
@@ -13,14 +13,14 @@ import { JsonTology } from '../src/index.js';
 // Schema with defaults
 // ---------------------------------------------------------------------------
 
-const ConfigSchema = {
-  '$id': 'https://example.com/Config',
+const CatalogSearchPreferencesSchema = {
+  '$id': 'https://bookstore.example/schema/CatalogSearchPreferences',
   'properties': {
-    'debug': {
+    'includeOutOfPrint': {
       'default': false,
       'type': 'boolean'
     },
-    'locale': {
+    'language': {
       'default': 'en',
       'type': 'string'
     },
@@ -28,8 +28,8 @@ const ConfigSchema = {
       'default': 25,
       'type': 'integer'
     },
-    'theme': {
-      'default': 'light',
+    'sortBy': {
+      'default': 'relevance',
       'type': 'string'
     }
   },
@@ -38,16 +38,16 @@ const ConfigSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.com',
-  'schemas': [ConfigSchema]
+  'baseIRI': 'https://bookstore.example',
+  'schemas': [CatalogSearchPreferencesSchema]
 });
 
 // ---------------------------------------------------------------------------
 // 1. Parse incoming data — missing fields get defaults
 // ---------------------------------------------------------------------------
 
-const incoming = { 'theme': 'dark' };
-const parsed = jt.instantiate(ConfigSchema, incoming);
+const incoming = { 'sortBy': 'price-asc' };
+const parsed = jt.instantiate(CatalogSearchPreferencesSchema, incoming);
 
 console.log('--- Parse with defaults ---');
 console.log('Input:', JSON.stringify(incoming));
@@ -60,7 +60,7 @@ console.log();
 
 console.log('--- Parse invalid data ---');
 try {
-  jt.instantiate(ConfigSchema, { 'pageSize': 'many' });
+  jt.instantiate(CatalogSearchPreferencesSchema, { 'pageSize': 'many' });
 } catch (error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
 
@@ -72,7 +72,7 @@ console.log();
 // 3. Materialize from empty — full object with all defaults
 // ---------------------------------------------------------------------------
 
-const fromEmpty = jt.materialize(ConfigSchema);
+const fromEmpty = jt.materialize(CatalogSearchPreferencesSchema);
 
 console.log('--- Materialize from empty ---');
 console.log('Result:', JSON.stringify(fromEmpty, null, 2));
@@ -82,14 +82,14 @@ console.log();
 // 4. Materialize from partial — merge provided values with defaults
 // ---------------------------------------------------------------------------
 
-const fromPartial = jt.materialize(ConfigSchema, {
-  'debug': true,
-  'locale': 'fr'
+const fromPartial = jt.materialize(CatalogSearchPreferencesSchema, {
+  'includeOutOfPrint': true,
+  'language': 'de'
 });
 
 console.log('--- Materialize from partial ---');
 console.log('Input:', JSON.stringify({
-  'debug': true,
-  'locale': 'fr'
+  'includeOutOfPrint': true,
+  'language': 'de'
 }));
 console.log('Result:', JSON.stringify(fromPartial, null, 2));

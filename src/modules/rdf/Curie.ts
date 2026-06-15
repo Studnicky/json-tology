@@ -5,6 +5,7 @@
  */
 
 import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { CurieSplitType } from '../../types/CurieSplit.js';
 
 export class Curie implements CurieInterface {
   /**
@@ -24,17 +25,15 @@ export class Curie implements CurieInterface {
       return value;
     }
 
-    const colonIndex = value.indexOf(':');
+    const split = Curie.splitCurie(value);
 
-    if (colonIndex === -1) {
+    if (split === null) {
       return value;
     }
 
-    const prefix = value.slice(0, colonIndex);
-    const local = value.slice(colonIndex + 1);
-
-    return prefix in context ? `${context[prefix]}${local}` : value;
+    return split.prefix in context ? `${context[split.prefix]}${split.reference}` : value;
   }
+
   /**
    * Returns true when `value` is an absolute IRI with an `http://`, `https://`,
    * or `urn:` scheme. Blank nodes and relative references return false.
@@ -45,6 +44,31 @@ export class Curie implements CurieInterface {
   public static isAbsolute(value: string): boolean {
     return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:');
   }
+
+  /**
+   * Splits a string on its first colon, returning the prefix and reference
+   * components. Returns null when the string contains no colon.
+   *
+   * Splitting on the first colon only is critical: a CURIE reference may
+   * itself contain colons (e.g. `ex:foo:bar`), and the entire suffix after
+   * the first colon belongs to the reference component.
+   *
+   * @param value - A CURIE or IRI string
+   * @returns The split result, or null when no colon is present
+   */
+  private static splitCurie(value: string): CurieSplitType | null {
+    const colonIndex = value.indexOf(':');
+
+    if (colonIndex === -1) {
+      return null;
+    }
+
+    return {
+      'prefix': value.slice(0, colonIndex),
+      'reference': value.slice(colonIndex + 1)
+    };
+  }
+
   private readonly compactCache = new Map<string, string>();
 
   private readonly expandCache = new Map<string, string>();
@@ -108,17 +132,15 @@ export class Curie implements CurieInterface {
       return cached;
     }
 
-    if (!value.includes(':')) {
+    const split = Curie.splitCurie(value);
+
+    if (split === null) {
       this.expandCache.set(value, value);
 
       return value;
     }
 
-    const [
-      prefix,
-      localPart
-    ] = value.split(':', 2) as [string, string];
-    const namespace = this.prefixes[prefix];
+    const namespace = this.prefixes[split.prefix];
 
     if (!namespace) {
       this.expandCache.set(value, value);
@@ -126,7 +148,7 @@ export class Curie implements CurieInterface {
       return value;
     }
 
-    const result = `${namespace}${localPart}`;
+    const result = `${namespace}${split.reference}`;
 
     this.expandCache.set(value, result);
 

@@ -28,9 +28,7 @@ import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import type {
   CheckFnType, ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../types/Validation.js';
-import {
-  DEFAULT_DIALECT_URI, VOCABULARY_FORMAT_ASSERTION
-} from '../../constants/DIALECT.js';
+import { VOCABULARY_FORMAT_ASSERTION } from '../../constants/DIALECT.js';
 import type { LoggerInterface } from '../../interfaces/Logger.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
@@ -62,6 +60,7 @@ import type { ExtensionEntryType } from '../../types/ExtensionEntryType.js';
 import type { NodeCheckBuildContextType } from '../../types/NodeCheckBuildContextType.js';
 import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
 import type { ValidationRunOptionsType } from '../../types/ValidationRunOptionsType.js';
+import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 
 // ---------------------------------------------------------------------------
 // Local constants
@@ -142,20 +141,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private appliesFormatAssertions(sem: SchemaGraphSemanticsType): boolean {
     const rootVocabulary = sem.schemaVocabulary;
+    const formatAssertionValue = isRecord(rootVocabulary) ? rootVocabulary[VOCABULARY_FORMAT_ASSERTION] : undefined;
 
-    if (isRecord(rootVocabulary)) {
-      return rootVocabulary[VOCABULARY_FORMAT_ASSERTION] === true;
-    }
-
-    const schemaUri = sem.schemaDialect;
-
-    // 2020-12 without explicit format-assertion vocabulary → annotation only
-    if (schemaUri === DEFAULT_DIALECT_URI) {
-      return false;
-    }
-
-    // No $schema or other dialect → default to enabled
-    return true;
+    // Explicit opt-out: $vocabulary with format-assertion: false disables checking.
+    // Default: format assertions ON (strict-by-default posture).
+    return typeof formatAssertionValue === 'boolean' ? formatAssertionValue : true;
   }
 
   private applyPlanDefaults(
@@ -766,7 +756,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildStringCheckClosure(
     checks: Array<(str: string) => boolean>,
-    formatCheck: CheckFnType | undefined
+    formatCheck: CheckFnType | undefined,
+    contentEncoding?: string,
+    contentMediaType?: string
   ): CheckFnType {
     return (value: unknown): boolean => {
       if (typeof value === 'string') {
@@ -774,6 +766,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           if (!check(value)) {
             return false;
           }
+        }
+
+        if (contentEncoding !== undefined && !Predicates.satisfiesContentEncoding(value, contentEncoding)) {
+          return false;
+        }
+
+        if (contentMediaType !== undefined && !Predicates.satisfiesContentMediaType(value, contentMediaType, contentEncoding)) {
+          return false;
         }
       }
 
@@ -790,8 +790,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     sem: SchemaGraphSemanticsType,
     formatRegistry: FormatRegistryInterface
   ): CheckFnType | undefined {
+    const contentEnabled = this.appliesFormatAssertions(sem);
     const hasStringConstraint = sem.minLength !== undefined || sem.maxLength !== undefined
-      || sem.pattern !== undefined || sem.format !== undefined;
+      || sem.pattern !== undefined || sem.format !== undefined
+      || (contentEnabled && (sem.contentEncoding !== undefined || sem.contentMediaType !== undefined));
 
     if (!hasStringConstraint) {
       return undefined;
@@ -1054,11 +1056,26 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       const validateWithErrorsFn = this.compileValidateWithErrors(schema, formatRegistry, resolvedGraph, lookupSchema);
       const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn);
 
+      const fallback = this.engineFallback(engine);
+
       return {
         'check': checkFn,
         'compiled': true,
         'validate': (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
-          return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn);
+          try {
+            return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn);
+          } catch (error) {
+            if (!(error instanceof RangeError)) {
+              throw error;
+            }
+
+            // Cyclic data fed to a recursive schema causes the compiled closures
+            // to overflow (no refStack equivalent). The interpreter has a refStack
+            // that terminates schema-level recursion; delegate to it so all callers
+            // (registry.validate/cast/convert/instantiate and Materializer) get
+            // cyclic-data protection from one place.
+            return fallback.validate(data, options);
+          }
         }
       };
     } catch (error: unknown) {
@@ -1095,7 +1112,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       'compiled': true,
       'validate': (data: unknown): CompiledValidationResultType => {
         return {
-          'errors': [BaseError.validationError('', 'falseSchema', 'must not match false schema')],
+          'errors': [BaseError.validationError('', 'falseSchema', VALIDATION_MESSAGES.falseSchema)],
           'valid': false,
           'value': data
         };
@@ -1227,7 +1244,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           collect: boolean
         ): ValidateWithErrorsResultType => {
           if (collect) {
-            errors.push(BaseError.validationError(path, 'falseSchema', 'must not match false schema'));
+            errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
           }
 
           return {
@@ -1325,16 +1342,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): CheckFnType | undefined {
     const checks = this.buildStringLengthPatternChecks(minLength, maxLength, pattern);
     const formatCheck = this.resolveFormatCheck(format, formatRegistry, sem);
+    const contentAssertionsEnabled = this.appliesFormatAssertions(sem);
+    const contentEncoding = contentAssertionsEnabled ? sem.contentEncoding : undefined;
+    const contentMediaType = contentAssertionsEnabled ? sem.contentMediaType : undefined;
 
-    if (checks.length === 0 && formatCheck === undefined) {
+    if (checks.length === 0 && formatCheck === undefined && contentEncoding === undefined && contentMediaType === undefined) {
       return undefined;
     }
 
-    if (checks.length === 0 && formatCheck !== undefined) {
-      return formatCheck;
-    }
-
-    return this.buildStringCheckClosure(checks, formatCheck);
+    return this.buildStringCheckClosure(checks, formatCheck, contentEncoding, contentMediaType);
   }
 
   private compileTypeCheck(types: string[]): CheckFnType {
@@ -2038,7 +2054,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
             'valid': false
           };
         }
-        errors.push(BaseError.validationError(childPath, 'EXTRA_FORBIDDEN', `must NOT have additional property '${key}'`));
+        errors.push(BaseError.validationError(childPath, 'EXTRA_FORBIDDEN', VALIDATION_MESSAGES.additionalProperties(key)));
         valid = false;
       }
     }
@@ -2464,6 +2480,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     const {
+      contentAssertionsEnabled, contentEncoding, contentMediaType,
       format, formatValidator, maxLength, minLength, pattern, patternRegex
     } = plan;
 
@@ -2494,6 +2511,36 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         'earlyExit': false,
         'valid': false
       };
+    }
+
+    if (contentAssertionsEnabled && typeof value === 'string') {
+      if (!Scalars.validateContentEncoding(path, value, contentEncoding, errors)) {
+        if (!collectErrors) {
+          return {
+            'earlyExit': true,
+            'valid': false
+          };
+        }
+
+        return {
+          'earlyExit': false,
+          'valid': false
+        };
+      }
+
+      if (!Scalars.validateContentMediaType(path, value, contentMediaType, contentEncoding, errors)) {
+        if (!collectErrors) {
+          return {
+            'earlyExit': true,
+            'valid': false
+          };
+        }
+
+        return {
+          'earlyExit': false,
+          'valid': false
+        };
+      }
     }
 
     return {

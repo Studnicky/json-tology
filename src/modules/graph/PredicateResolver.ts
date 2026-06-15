@@ -2,6 +2,7 @@ import type { JsonSchemaType } from '../../types/Schema.js';
 import type { PredicateForType } from '../../types/PredicateFor.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import { isRecord } from '../data/DataTypes.js';
+import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaIri } from './SchemaIri.js';
@@ -109,7 +110,7 @@ function resolveViaCallback(
     throw new GraphError(
       `predicateFor callback threw for property "${propertyName}" on class "${classId}"`,
       {
-        'cause': error instanceof Error ? error : new Error(String(error)),
+        'cause': BaseError.toCause(error),
         'code': GraphErrorCode.INVALID_PREDICATE_IRI
       }
     );

@@ -14,6 +14,7 @@ import { GraphError } from '../../errors/GraphError.js';
 import { Refs } from './visit/Refs.js';
 import { VisitComposition } from './visit/VisitComposition.js';
 import { Unevaluated } from './visit/Unevaluated.js';
+import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 
 const EMPTY_SET_STRING: Set<string> = Object.freeze(new Set<string>());
 const EMPTY_SET_NUMBER: Set<number> = Object.freeze(new Set<number>());
@@ -47,7 +48,7 @@ export const GraphEngineVisit = {
           value
         }
         : {
-          'errors': [context.createError(path, 'falseSchema', 'must not match false schema')],
+          'errors': [context.createError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema)],
           'evaluatedItems': undefined,
           'evaluatedProperties': undefined,
           'valid': false,
@@ -201,17 +202,17 @@ export const GraphEngineVisit = {
       return invalid(context.createError(
         path,
         'type',
-        schemaTypes.length === 1 ? `must be ${schemaTypes[0]}` : `must be one of: ${schemaTypes.join(', ')}`,
+        VALIDATION_MESSAGES.type(schemaTypes),
         { 'type': schemaTypes }
       ));
     }
 
     if (enumValues !== undefined && !Predicates.satisfiesEnum(workingValue, enumValues)) {
-      return invalid(context.createError(path, 'enum', 'must be one of the allowed values'));
+      return invalid(context.createError(path, 'enum', VALIDATION_MESSAGES.enum));
     }
 
     if (constValue !== undefined && !Predicates.satisfiesConst(workingValue, constValue)) {
-      return invalid(context.createError(path, 'const', `must be ${JSON.stringify(constValue)}`));
+      return invalid(context.createError(path, 'const', VALIDATION_MESSAGES.const(constValue)));
     }
 
     if (typeof workingValue === 'string') {

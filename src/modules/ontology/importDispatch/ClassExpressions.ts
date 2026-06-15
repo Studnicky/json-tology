@@ -39,6 +39,7 @@ import type { ResolveBnodeOptionsType } from '../../../types/ResolveBnodeOptions
 import type { ResolveListOptionsType } from '../../../types/ResolveListOptionsType.js';
 import type { ClassExprContextType } from '../../../types/ClassExprContextType.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
+import { SchemaIri } from '../../graph/SchemaIri.js';
 import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
 import {
@@ -309,9 +310,7 @@ function extractHasValueDiscriminator(
     return undefined;
   }
   const propertyIri = targetValue(propertyRel);
-  const localName = propertyIri.includes('#')
-    ? propertyIri.split('#').pop() ?? propertyIri
-    : propertyIri.split('/').pop() ?? propertyIri;
+  const localName = SchemaIri.propertyName(propertyIri);
 
   const valueRel = hasValueRelations[0];
 

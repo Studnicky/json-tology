@@ -1,7 +1,21 @@
+/**
+ * RefResolver — thin compatibility shim over the canonical `resolveRef` function.
+ *
+ * The validation compiler (SchemaCompilerPlan, SchemaCompilerDefaults) tolerates
+ * an unresolvable `$ref` by skipping the check rather than aborting compilation.
+ * The canonical `resolveRef` throws on miss, so this shim catches `GraphError` and
+ * maps it back to `undefined` to preserve the compiler's fallback contract.
+ *
+ * Call sites in SchemaCompilerDefaults treat `undefined` as "fall back to root node".
+ * Call sites in SchemaCompilerPlan treat `undefined` as "no validator for this ref".
+ * Both semantics are preserved here: the throw is caught and `undefined` is returned.
+ */
+
 import type { RefTargetType } from '../../types/RefTarget.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { SchemaIri } from '../graph/SchemaIri.js';
+import type { RefResolutionOptionsType } from '../../types/RefResolution.js';
+import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
+import { GraphError } from '../../errors/GraphError.js';
 
 export class RefResolver {
   static resolve(
@@ -10,45 +24,19 @@ export class RefResolver {
     lookupSchema?: (id: string) => Record<string, unknown> | undefined,
     lookupGraph?: (id: string) => SchemaGraphInterface | undefined
   ): RefTargetType | undefined {
-    if (ref.startsWith('#')) {
-      try {
-        return {
-          graph,
-          'node': graph.resolveFragment(ref.slice(1))
-        };
-      } catch {
-        return undefined;
-      }
-    }
-
-    const {
-      fragment, 'id': schemaId
-    } = SchemaIri.parseRef(ref);
-
-    const refGraph = lookupGraph?.(schemaId) ?? ((): SchemaGraphInterface | undefined => {
-      const refSchema = lookupSchema?.(schemaId);
-
-      return refSchema === undefined ? undefined : new SchemaGraph(refSchema);
-    })();
-
-    if (refGraph === undefined) {
-      return undefined;
-    }
-
-    if (fragment !== '' && fragment !== '/') {
-      try {
-        return {
-          'graph': refGraph,
-          'node': refGraph.resolveFragment(fragment)
-        };
-      } catch {
-        return undefined;
-      }
-    }
-
-    return {
-      'graph': refGraph,
-      'node': refGraph.rootNode
+    const opts: RefResolutionOptionsType = {
+      ...(lookupGraph !== undefined && { 'lookupGraph': lookupGraph }),
+      ...(lookupSchema !== undefined && { 'lookupSchema': lookupSchema })
     };
+
+    try {
+      return canonicalResolveRef(ref, graph, opts);
+    } catch (error) {
+      if (error instanceof GraphError) {
+        return undefined;
+      }
+
+      throw error;
+    }
   }
 }

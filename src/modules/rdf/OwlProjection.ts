@@ -22,7 +22,6 @@ import type { EmitQualifiedCardinalityRestrictionArgsType } from '../../types/Em
 import type { EmitRestrictionArgsType } from '../../types/EmitRestrictionArgs.js';
 import type { OptionalQuadObjectType } from '../../types/OptionalQuadObjectType.js';
 import type { TypedLiteralObjectType } from '../../types/TypedLiteralObjectType.js';
-import type { ResolveArrayPropertyCanonicalIdArgsType } from '../../types/ResolveArrayPropertyCanonicalIdArgs.js';
 import type { EmitPatternPropertyEntryArgsType } from '../../types/EmitPatternPropertyEntryArgs.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
@@ -42,6 +41,7 @@ import { IdentifierIssuer } from './IdentifierIssuer.js';
 import { VocabProjection } from './VocabProjection.js';
 import {
   propertySubjectIri,
+  resolveCanonicalPropertyIri,
   resolvePropertySchema,
   resolveRestrictionOnProperty
 } from './ProjectionHelpers.js';
@@ -57,6 +57,35 @@ function emitRestriction(args: EmitRestrictionArgsType): string {
   quads.push(QuadFactory.quad(rBnode, constraint, constraintValue, { curie }));
 
   return rBnode;
+}
+
+/** Emit an `owl:Restriction` with `owl:minCardinality 1` on `onProperty`. Returns the bnode label. */
+function emitMinCardinalityOneRestriction(
+  onProperty: string,
+  quads: QuadInterface[],
+  curie: CurieInterface | undefined,
+  issuer: IdentifierIssuerInterface | undefined
+): string {
+  const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, { curie });
+
+  return emitRestriction({
+    'constraint': OWL.minCardinality,
+    'constraintValue': minOne,
+    curie,
+    issuer,
+    onProperty,
+    quads
+  });
+}
+
+/** Map a `oneOf` relation list to typed-literal objects for `rdf:JSON`. */
+function enumLiteralsFromOneOf(
+  rels: SchemaGraphRelationType[],
+  curie: CurieInterface | undefined
+): Array<ReturnType<typeof QuadFactory.literal>> {
+  return rels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.literal> => {
+    return QuadFactory.literal(typedLiteralObject(ProjectionIndex.relationTargetId(rel)), RDF.JSON, { curie });
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -142,15 +171,7 @@ class OwlVocabProjection extends VocabProjection {
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, { curie });
-    const restrictionBnode = emitRestriction({
-      'constraint': OWL.minCardinality,
-      'constraintValue': minOne,
-      curie,
-      issuer,
-      'onProperty': ifRef,
-      quads
-    });
+    const restrictionBnode = emitMinCardinalityOneRestriction(ifRef, quads, curie, issuer);
 
     const withoutTriggerBnode = QuadFactory.nextBnode(issuer);
 
@@ -174,15 +195,7 @@ class OwlVocabProjection extends VocabProjection {
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, { curie });
-    const restrictionBnode = emitRestriction({
-      'constraint': OWL.minCardinality,
-      'constraintValue': minOne,
-      curie,
-      issuer,
-      'onProperty': triggerPropIri,
-      quads
-    });
+    const restrictionBnode = emitMinCardinalityOneRestriction(triggerPropIri, quads, curie, issuer);
 
     const withoutTriggerBnode = QuadFactory.nextBnode(issuer);
 
@@ -198,15 +211,7 @@ class OwlVocabProjection extends VocabProjection {
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, { curie });
-    const reqBnode = emitRestriction({
-      'constraint': OWL.minCardinality,
-      'constraintValue': minOne,
-      curie,
-      issuer,
-      'onProperty': propIri,
-      quads
-    });
+    const reqBnode = emitMinCardinalityOneRestriction(propIri, quads, curie, issuer);
 
     return QuadFactory.bnode(reqBnode);
   }
@@ -362,9 +367,7 @@ function emitDatatypeEnumeration(
   const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
 
   if (oneOfRels.length > 0) {
-    const enumLiterals = oneOfRels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.literal> => {
-      return QuadFactory.literal(typedLiteralObject(ProjectionIndex.relationTargetId(rel)), RDF.JSON, { curie });
-    });
+    const enumLiterals = enumLiteralsFromOneOf(oneOfRels, curie);
     const equivBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(subject, OWL.equivalentClass, QuadFactory.bnode(equivBnode), { curie }));
@@ -625,9 +628,7 @@ function emitClassEnumerations(
   const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
 
   if (oneOfRels.length > 0) {
-    const typedLiterals = oneOfRels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.literal> => {
-      return QuadFactory.literal(typedLiteralObject(ProjectionIndex.relationTargetId(rel)), RDF.JSON, { curie });
-    });
+    const typedLiterals = enumLiteralsFromOneOf(oneOfRels, curie);
 
     quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList(typedLiterals, quads, issuer), { curie }));
 
@@ -848,16 +849,14 @@ function emitPropertyQuads(
   const classId = domainRels.length > 0
     ? ProjectionIndex.relationTargetId(domainRels[0])
     : SchemaIri.structuralParent(subject);
-  const propName = SchemaIri.lastSegment(subject);
-  const propertySchema = resolvePropertySchema(graph, subject);
 
-  const canonicalId = predicateResolver === undefined
-    ? canonicalPropertyIri(subject)
-    : predicateResolver({
-      'classId': classId,
-      'propertyName': propName,
-      'propertySchema': propertySchema
-    });
+  const canonicalId = resolveCanonicalPropertyIri({
+    'fallback': canonicalPropertyIri,
+    graph,
+    predicateResolver,
+    'propEntry': entry,
+    'propSubject': subject
+  });
 
   emitPropertyCharacteristics(canonicalId, entry, ctx);
   quads.push(QuadFactory.quad(canonicalId, RDFS.domain, QuadFactory.iri(classId, { curie }), { curie }));
@@ -876,18 +875,20 @@ function canonicalPropertyIri(subject: string): string {
     return subject;
   }
 
-  const segments = parts.fragment.split('/');
-  const propName = segments.at(-1) ?? '';
-  const propsIdx = parts.fragment.lastIndexOf('/properties/');
+  const split = SchemaIri.splitAtProperties(parts.fragment);
 
-  if (propsIdx === -1) {
+  if (split === undefined) {
+    // No /properties/ segment — use last fragment segment as the property name.
+    const propName = parts.fragment.split('/').at(-1) ?? '';
+
     return SchemaIri.propertyIri(parts.base, propName);
   }
 
-  const parentPointer = parts.fragment.slice(0, propsIdx);
-  const parentId = parentPointer === '' ? parts.base : `${parts.base}#${parentPointer}`;
+  // Route through SchemaIri.structuralParent so the domain parent-stripping
+  // logic (allOf/N segments) is applied identically to the domain quad emission.
+  const parentId = SchemaIri.structuralParent(subject);
 
-  return SchemaIri.propertyIri(parentId, propName);
+  return SchemaIri.propertyIri(parentId, split.property);
 }
 
 // ---------------------------------------------------------------------------
@@ -1051,30 +1052,6 @@ function resolveItemTypeId(
   return itemsSubject;
 }
 
-/** Resolve the canonical predicate IRI for an array-item property. */
-function resolveArrayPropertyCanonicalId(args: ResolveArrayPropertyCanonicalIdArgsType): string {
-  const {
-    graph, predicateResolver, propEntry, propSubject
-  } = args;
-
-  if (predicateResolver === undefined) {
-    return canonicalPropertyIri(propSubject);
-  }
-
-  const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
-  const classId = domainRels.length > 0
-    ? ProjectionIndex.relationTargetId(domainRels[0])
-    : SchemaIri.structuralParent(propSubject);
-  const propName = SchemaIri.lastSegment(propSubject);
-  const propertySchema = resolvePropertySchema(graph, propSubject);
-
-  return predicateResolver({
-    'classId': classId,
-    'propertyName': propName,
-    'propertySchema': propertySchema
-  });
-}
-
 // Site 1 fix: resolve the property IRI via predicateResolver when available
 // so array-item restriction onProperty uses the flat canonical IRI rather than
 // the class-scoped form produced by canonicalPropertyIri().
@@ -1113,7 +1090,8 @@ function emitArrayItemQuads(
       continue;
     }
 
-    const canonicalId = resolveArrayPropertyCanonicalId({
+    const canonicalId = resolveCanonicalPropertyIri({
+      'fallback': canonicalPropertyIri,
       graph,
       predicateResolver,
       propEntry,

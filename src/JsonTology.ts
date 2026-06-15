@@ -70,6 +70,7 @@ import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js
 import { Lift } from './modules/rdf/Lift.js';
 import { Materializer } from './modules/materialization/Materializer.js';
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
+import { BaseError } from './errors/BaseError.js';
 import { EncodeError } from './errors/EncodeError.js';
 import { TransformError } from './errors/TransformError.js';
 import { PredicateResolver } from './modules/graph/PredicateResolver.js';
@@ -207,18 +208,26 @@ function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): Norma
     return {};
   }
 
+  const annotationEmitMode = options.annotationEmitMode;
   const graphIRI = options.graphIRI;
   const iriFor = liftIriForOption(options.iriFor);
 
-  if (iriFor === undefined) {
-    return graphIRI === undefined ? {} : { graphIRI };
-  }
+  const base: NormalizedToQuadsOptionsType = graphIRI === undefined
+    ? {}
+    : { graphIRI };
 
-  return graphIRI === undefined
-    ? { iriFor }
+  const withIriFor: NormalizedToQuadsOptionsType = iriFor === undefined
+    ? base
     : {
-      graphIRI,
+      ...base,
       iriFor
+    };
+
+  return annotationEmitMode === undefined
+    ? withIriFor
+    : {
+      ...withIriFor,
+      annotationEmitMode
     };
 }
 
@@ -1108,7 +1117,7 @@ export class JsonTology<TRefs = Record<never, never>> {
         throw error;
       }
 
-      const causeError = error instanceof Error ? error : new Error(String(error));
+      const causeError = BaseError.toCause(error);
       const schemaId = schema.$id;
 
       throw new EncodeError(
@@ -1599,6 +1608,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   ): QuadInterface[] {
     const normalized = normalizeToQuadsOptions(options);
     const effective = {
+      'annotationEmitMode': normalized.annotationEmitMode,
       'curie': this.curie,
       'graphIRI': normalized.graphIRI ?? this.defaultGraphIRI,
       'iriFor': normalized.iriFor ?? liftIriForOption(this.defaultIriForRaw),

@@ -14,6 +14,7 @@ import {
   PRIMITIVE_TYPES
 } from '../../constants/SCHEMA_KEYWORDS.js';
 import { isRecord } from '../data/DataTypes.js';
+import { SchemaIri } from './SchemaIri.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
 import type { JtConfigType } from '../../types/JtConfig.js';
@@ -645,13 +646,13 @@ export const SchemaGraphSupport = {
   },
 
   parentPropertiesPointer(pointer: string): OptionalStringType {
-    const idx = pointer.lastIndexOf('/properties/');
+    const result = SchemaIri.splitAtProperties(pointer);
 
-    if (idx === -1) {
+    if (result === undefined) {
       return undefined;
     }
 
-    return pointer.slice(0, idx) || '';
+    return result.parent || '';
   },
 
   propertyNameFromPointer(pointer: string): OptionalStringType {

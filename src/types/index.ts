@@ -7,6 +7,7 @@ export type * from './AboxGraph.js';
 export type * from './AboxLiftSubjectFn.js';
 export type * from './AllowedKeysResult.js';
 export type * from './AnnotatedEdgeDescriptorType.js';
+export type * from './AnnotationEmitMode.js';
 export * from './BaseTypes.js';
 export type * from './Brand.js';
 export type * from './BuildEntityFileOptions.js';

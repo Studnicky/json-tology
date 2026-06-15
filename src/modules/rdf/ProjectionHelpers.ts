@@ -7,11 +7,14 @@
 
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
+import type { RelationIndexType } from '../../types/RelationIndex.js';
 import type { OptionalAnnotatedEdgeType } from '../../types/OptionalAnnotatedEdgeType.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { ProjectionIndex } from './ProjectionIndex.js';
+import { RDFS } from '../../constants/IRI.js';
 
 /**
  * Build the property subject IRI for `propertyName` on the class `classId`.
@@ -120,4 +123,83 @@ export function findAnnotatedEdgeStructure(
   }
 
   return undefined;
+}
+
+/**
+ * Resolve the flat predicate IRI for `propertyName` anchored on `classId`.
+ *
+ * Builds the canonical property subject from `classId` + `propertyName`
+ * (`propertySubjectIri`), resolves the raw property schema (for `x-jt-predicate` /
+ * `$id` binding precedence), and invokes `predicateResolver`. When no resolver is
+ * supplied, falls back to the class-scoped form `SchemaIri.propertyIri(classId, propertyName)`.
+ *
+ * This is the canonical resolver-call path for callers that already hold a
+ * `(classId, propertyName)` pair — notably `VocabProjection.resolvePredicateIri`
+ * (dependent-required / conditional emission). The property-emission paths, which
+ * derive `classId` from `rdfs:domain` / structural parent and resolve the schema off
+ * the existing property-subject IRI, use `resolveCanonicalPropertyIri` instead.
+ */
+export function resolvePredicateIriForClass(
+  graph: SchemaGraphInterface | undefined,
+  classId: string,
+  propertyName: string,
+  predicateResolver: PredicateResolverFnType | undefined
+): string {
+  if (predicateResolver === undefined || graph === undefined) {
+    return SchemaIri.propertyIri(classId, propertyName);
+  }
+
+  const propSubject = propertySubjectIri(classId, propertyName);
+  const propertySchema = resolvePropertySchema(graph, propSubject);
+
+  return predicateResolver({
+    classId,
+    propertyName,
+    'propertySchema': propertySchema
+  });
+}
+
+/**
+ * Resolve the canonical property IRI for a property subject, with an optional fallback.
+ *
+ * When `predicateResolver` is provided, delegates to it (using the domain class ID,
+ * short property name, and resolved property schema). When no resolver is available,
+ * falls back to `fallback(propSubject)`.
+ *
+ * The domain class ID is taken from the first `rdfs:domain` relation on `propEntry`
+ * when present; otherwise it is derived via `SchemaIri.structuralParent`. The short
+ * property name is extracted via `SchemaIri.lastSegment`. The property schema is
+ * resolved off the incoming `propSubject` directly (a pointer fragment), which is why
+ * this path is distinct from `resolvePredicateIriForClass`.
+ *
+ * This function merges the copies that previously appeared in
+ * `OwlProjection.emitPropertyQuads` and `OwlProjection.resolveArrayPropertyCanonicalId`.
+ */
+export function resolveCanonicalPropertyIri(args: {
+  readonly 'fallback': (propSubject: string) => string;
+  readonly 'graph': SchemaGraphInterface;
+  readonly 'predicateResolver': PredicateResolverFnType | undefined;
+  readonly 'propEntry': RelationIndexType;
+  readonly 'propSubject': string;
+}): string {
+  const {
+    fallback, graph, predicateResolver, propEntry, propSubject
+  } = args;
+
+  if (predicateResolver === undefined) {
+    return fallback(propSubject);
+  }
+
+  const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
+  const classId = domainRels.length > 0
+    ? ProjectionIndex.relationTargetId(domainRels[0])
+    : SchemaIri.structuralParent(propSubject);
+  const propName = SchemaIri.lastSegment(propSubject);
+  const propertySchema = resolvePropertySchema(graph, propSubject);
+
+  return predicateResolver({
+    'classId': classId,
+    'propertyName': propName,
+    'propertySchema': propertySchema
+  });
 }

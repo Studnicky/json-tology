@@ -16,14 +16,12 @@ import {
 } from '../data/DataTypes.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
 import { SchemaGraph } from './SchemaGraph.js';
-import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
 import {
   EMPTY_EVALUATED_ITEMS, EMPTY_EVALUATED_PROPERTIES
 } from '../../constants/EXECUTION_OPTIONS.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
-import { SchemaIri } from './SchemaIri.js';
+import { resolveRef as canonicalResolveRef } from './RefResolution.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
 import type { InternalExecutionResultType } from '../../types/InternalExecutionResult.js';
@@ -32,6 +30,7 @@ import type { RootDialectPlanType } from '../../types/RootDialectPlan.js';
 import { GraphEngineScalars } from './GraphEngineScalars.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphEngineDefaults } from './GraphEngineDefaults.js';
+import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContext.js';
 import { GraphEngineVisit } from './GraphEngineVisit.js';
 import type { VisitContextType } from '../../types/VisitContext.js';
@@ -124,7 +123,7 @@ export class GraphEngine implements GraphEngineInterface {
       if (options.removeAdditionalProperties) {
         delete workingValue[key];
       } else {
-        errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
+        errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'additionalProperties', VALIDATION_MESSAGES.additionalProperties(key), { 'additionalProperty': key }));
       }
 
       return;
@@ -198,7 +197,7 @@ export class GraphEngine implements GraphEngineInterface {
 
           workingValue[key] = zeroValue;
         } else {
-          errors.push(this.createError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
+          errors.push(this.createError(path, 'required', VALIDATION_MESSAGES.required(key), { 'missingProperty': key }));
         }
       }
     }
@@ -232,7 +231,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       if (typeof unevaluatedItemsNode.schema === 'boolean') {
         if (!unevaluatedItemsNode.schema) {
-          errors.push(this.createError(`${path}/${index}`, 'unevaluatedItems', 'must NOT have unevaluated items'));
+          errors.push(this.createError(`${path}/${index}`, 'unevaluatedItems', VALIDATION_MESSAGES.unevaluatedItems));
         }
         continue;
       }
@@ -283,7 +282,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       if (typeof unevaluatedPropertiesNode.schema === 'boolean') {
         if (!unevaluatedPropertiesNode.schema) {
-          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
+          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'unevaluatedProperties', VALIDATION_MESSAGES.unevaluatedProperties, { 'unevaluatedProperty': key }));
         }
         continue;
       }
@@ -517,23 +516,17 @@ export class GraphEngine implements GraphEngineInterface {
       return cached;
     }
 
-    let graph = currentGraph;
-    let fragment: string;
-
-    if (ref.startsWith('#')) {
-      fragment = ref.slice(1);
-    } else {
-      const parsed = SchemaIri.parseRef(ref);
-
-      fragment = parsed.fragment;
-      graph = this.resolveRefGraph(ref, parsed);
-    }
-
-    const node = graph.resolveFragment(fragment);
-    const target = {
-      graph,
-      node
+    const graphFor = (schema: Record<string, unknown>): SchemaGraphInterface => {
+      return this.graphFor(schema);
     };
+    const rootSchema = isRecord(this.rootSchema) ? this.rootSchema : undefined;
+    const target = canonicalResolveRef(ref, currentGraph, {
+      'graphFor': graphFor,
+      ...(this.options.lookupGraph !== undefined && { 'lookupGraph': this.options.lookupGraph }),
+      ...(this.options.lookupSchema !== undefined && { 'lookupSchema': this.options.lookupSchema }),
+      ...(this.rootId !== undefined && { 'rootId': this.rootId }),
+      ...(rootSchema !== undefined && { 'rootSchema': rootSchema })
+    });
 
     this.storeRefInCache(ref, isOwnRoot, currentGraph, target);
 
@@ -552,35 +545,6 @@ export class GraphEngine implements GraphEngineInterface {
     const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
 
     return this.refCache.get(cacheKey);
-  }
-
-  private resolveRefGraph(ref: string, parsed: { 'id': string }): SchemaGraphInterface {
-    const lookedUp = this.options.lookupSchema?.(parsed.id);
-
-    if (lookedUp !== undefined) {
-      return this.graphFor(lookedUp);
-    }
-    if (this.rootId !== undefined && parsed.id === this.rootId) {
-      return this.graphFor(this.rootSchema);
-    }
-
-    // Resolve embedded $ids exclusively through the graph-owned index built
-    // during lower(). The root graph is retrieved from graphCache (keyed by
-    // rootSchema object identity) so this lookup is O(1) after the first
-    // execute() call. Every legal schema position that can carry a $id is
-    // node-ified by lower(), so the index is a strict superset of what the
-    // former raw-walk collected for schema positions.
-    const rootGraph = this.graphFor(this.rootSchema);
-    const embeddedGraphNode = rootGraph.embeddedNode(parsed.id);
-
-    if (embeddedGraphNode !== undefined && isRecord(embeddedGraphNode.schema)) {
-      return this.graphFor(embeddedGraphNode.schema);
-    }
-
-    throw new GraphError(`Unresolved schema reference: ${ref}`, {
-      'code': GraphErrorCode.REF_UNRESOLVED,
-      'pointer': ref
-    });
   }
 
   public rootSchemaId(): string | undefined {
@@ -706,10 +670,10 @@ export class GraphEngine implements GraphEngineInterface {
     errors: ValidationErrorType[]
   ): void {
     if (typeof minItems === 'number' && workingValue.length < minItems) {
-      errors.push(this.createError(path, 'minItems', `must have at least ${minItems} items`, { 'limit': minItems }));
+      errors.push(this.createError(path, 'minItems', VALIDATION_MESSAGES.minItems(minItems), { 'limit': minItems }));
     }
     if (typeof maxItems === 'number' && workingValue.length > maxItems) {
-      errors.push(this.createError(path, 'maxItems', `must have at most ${maxItems} items`, { 'limit': maxItems }));
+      errors.push(this.createError(path, 'maxItems', VALIDATION_MESSAGES.maxItems(maxItems), { 'limit': maxItems }));
     }
   }
 
@@ -753,10 +717,10 @@ export class GraphEngine implements GraphEngineInterface {
     const maximumContains = typeof maxContains === 'number' ? maxContains : undefined;
 
     if (matches < minimumContains) {
-      errors.push(this.createError(path, 'contains', 'must contain required matching items', { 'minContains': minimumContains }));
+      errors.push(this.createError(path, 'contains', VALIDATION_MESSAGES.contains(minimumContains), { 'minContains': minimumContains }));
     }
     if (maximumContains !== undefined && matches > maximumContains) {
-      errors.push(this.createError(path, 'maxContains', 'must not contain too many matching items', { 'maxContains': maximumContains }));
+      errors.push(this.createError(path, 'maxContains', VALIDATION_MESSAGES.maxContains(maximumContains), { 'maxContains': maximumContains }));
     }
   }
 
@@ -855,7 +819,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       for (let j = index + 1; j < workingValue.length; j++) {
         if (deepEqual(item, workingValue[j])) {
-          errors.push(this.createError(path, 'uniqueItems', 'must NOT have duplicate items'));
+          errors.push(this.createError(path, 'uniqueItems', VALIDATION_MESSAGES.uniqueItems));
 
           break outer;
         }
@@ -881,7 +845,7 @@ export class GraphEngine implements GraphEngineInterface {
       }
       for (const dependency of dependencies) {
         if (!(dependency in workingValue)) {
-          errors.push(this.createError(path, 'dependentRequired', `must have property '${dependency}' when '${key}' is present`, {
+          errors.push(this.createError(path, 'dependentRequired', VALIDATION_MESSAGES.dependentRequired(dependency, key), {
             dependency,
             key
           }));
@@ -942,7 +906,7 @@ export class GraphEngine implements GraphEngineInterface {
     depth: number
   ): InternalExecutionResultType | undefined {
     if (itemsNode?.schema === false && workingValue.length > extraStart) {
-      errors.push(this.createError(path, 'items', 'must NOT have items beyond prefixItems'));
+      errors.push(this.createError(path, 'items', VALIDATION_MESSAGES.items));
 
       return undefined;
     }
@@ -1052,10 +1016,10 @@ export class GraphEngine implements GraphEngineInterface {
     errors: ValidationErrorType[]
   ): void {
     if (typeof minProperties === 'number' && objectKeys.length < minProperties) {
-      errors.push(this.createError(path, 'minProperties', `must NOT have fewer than ${minProperties} properties`, { 'limit': minProperties }));
+      errors.push(this.createError(path, 'minProperties', VALIDATION_MESSAGES.minProperties(minProperties), { 'limit': minProperties }));
     }
     if (typeof maxProperties === 'number' && objectKeys.length > maxProperties) {
-      errors.push(this.createError(path, 'maxProperties', `must NOT have more than ${maxProperties} properties`, { 'limit': maxProperties }));
+      errors.push(this.createError(path, 'maxProperties', VALIDATION_MESSAGES.maxProperties(maxProperties), { 'limit': maxProperties }));
     }
   }
 
@@ -1263,7 +1227,8 @@ export class GraphEngine implements GraphEngineInterface {
         return this.regexFor(pattern);
       },
       this.formatRegistry,
-      this.dialectPlan.formatAssertions
+      this.dialectPlan.formatAssertions,
+      this.dialectPlan.contentAssertions
     );
   }
 

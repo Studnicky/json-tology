@@ -10,6 +10,7 @@ import {
   isRecord
 } from '../../data/DataTypes.js';
 import { Predicates } from '../../validation/Predicates.js';
+import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**
  * Visit a value against a range schema and push any errors via the callback.
@@ -90,7 +91,7 @@ export class Unevaluated {
       const kwResult = kw.validate(extensions[kw.keyword], workingValue, kwContext);
 
       if (kwResult === false) {
-        const kwError = context.createError(path, kw.keyword, `must pass "${kw.keyword}" validation`);
+        const kwError = context.createError(path, kw.keyword, VALIDATION_MESSAGES.keyword(kw.keyword));
 
         if (options.collectErrors) {
           errors.push(kwError);

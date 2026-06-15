@@ -4,6 +4,7 @@ import type {
 } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../Predicates.js';
+import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**
  * Compiled array-keyword validators used by the hot-path schema executor.
@@ -38,13 +39,13 @@ export class Arrays {
     const pre = errors.length;
 
     if (minItems !== undefined && arr.length < minItems) {
-      errors.push(BaseError.validationError(path, 'minItems', `must have at least ${minItems} items`));
+      errors.push(BaseError.validationError(path, 'minItems', VALIDATION_MESSAGES.minItems(minItems)));
     }
     if (maxItems !== undefined && arr.length > maxItems) {
-      errors.push(BaseError.validationError(path, 'maxItems', `must have at most ${maxItems} items`));
+      errors.push(BaseError.validationError(path, 'maxItems', VALIDATION_MESSAGES.maxItems(maxItems)));
     }
     if (uniqueItems && !Predicates.satisfiesUniqueItems(arr)) {
-      errors.push(BaseError.validationError(path, 'uniqueItems', 'must have unique items'));
+      errors.push(BaseError.validationError(path, 'uniqueItems', VALIDATION_MESSAGES.uniqueItems));
     }
 
     return errors.length === pre;
@@ -168,14 +169,15 @@ function resolveContainsError(
   minContains: number | undefined,
   maxContains: number | undefined
 ): string | undefined {
-  if (minContains !== undefined && count < minContains) {
-    return `must contain at least ${minContains} matching items`;
+  // Effective minimum: if minContains is absent, the default is 1 (JSON Schema spec).
+  // Use the same `contains(n)` path as the interpreter (GraphEngine) for parity.
+  const effectiveMin = minContains ?? 1;
+
+  if (count < effectiveMin) {
+    return VALIDATION_MESSAGES.contains(effectiveMin);
   }
   if (maxContains !== undefined && count > maxContains) {
-    return `must contain at most ${maxContains} matching items`;
-  }
-  if (minContains === undefined && maxContains === undefined && count === 0) {
-    return 'must contain at least one matching item';
+    return VALIDATION_MESSAGES.maxContains(maxContains);
   }
 
   return undefined;
