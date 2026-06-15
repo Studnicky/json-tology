@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
 ### Changed
 
-### Fixed
+- **Validation tests assert the rejecting keyword.** Cases that were hidden inside
+  loop-based tests asserting only a valid/invalid boolean are now named per-case
+  tests that also assert which keyword produced the rejection, so a schema failing
+  for the wrong reason is caught rather than passing silently.
+- **Coverage is measured at the source and gated.** The coverage workflow now
+  measures `src/` coverage across unit and integration tests (excluding built
+  artifacts and test files, which previously deflated the reported figure) and
+  fails below lines 96% / branches 87% / functions 89%. Added table-driven
+  `FormatRegistry` tests covering the format-validator rejection branches.
 
 ## [0.23.0] - 2026-06-15
 
