@@ -171,18 +171,22 @@ Owns: `SchemaCompiler.ts`, `SchemaCompilerPlan.ts`.
 - `supportsCompilationPath` must now return `true` for every node the test corpus
   exercises. Assert this with a corpus sweep test.
 
-### Wave 4 — Swap + delete interpreter (sequential, single agent)
+### Wave 4 — Swap + delete interpreter
 
-Owns: `SchemaCompiler.ts`, `src/modules/graph/GraphEngine.ts`,
-`src/modules/graph/GraphEngineVisit.ts`, `SchemaRegistry.ts`, `Materializer.ts`.
-- Remove `engineFallback` wiring from the validate path; the plan is canonical.
-- Delete `GraphEngineVisit` as a runtime executor; fold its remaining
-  compile-time helpers (semantics cache, dynamic-scope resolution) into the graph
-  builder / compiler. `GraphEngine` retains graph construction + `semantics()`.
-- Re-point `Materializer.run` (`Materializer.ts:449-520`) entirely at the plan.
-- Re-bench: `examples/docs/benchmarks/compiled.bench.ts` A/B should show the
-  former interpreter cases now on the compiled path; `npm run bench` validation
-  rows recover toward the pre-v0.16 baseline (issue #159 numbers).
+Audit (DONE): with `engineFallback` forced to throw, the full runtime suite (3108
+tests) passes and the fallback is hit 0 times; full bookstore (56 schemas) +
+conformance corpus compile with 0 fallback. The validation interpreter is dead.
+
+- **4a (DONE).** Removed `engineFallback`, the `supportsCompilationPath` gate, and
+  the compile-time try/catch from the validate path. Uncompilable schemas now
+  surface the precise error (e.g. `REF_NOT_FOUND`) instead of silently degrading.
+  `GraphEngineVisit`/`GraphEngine.execute` no longer reachable from validation.
+- **4b (BLOCKED — prerequisite).** `GraphEngine.execute` is still used by
+  `Materializer.run` (`Materializer.ts:471`) for `synthesizeDefaults` /
+  `createDefault()` — an interpreter-only capability with no compiled equivalent.
+  Deleting `GraphEngineVisit` requires first compiling zero-value synthesis
+  (`synthesizeDefaults`) into the plan, then re-pointing `Materializer` at it.
+  `GraphEngine` retains graph construction + `semantics()` regardless.
 
 ### Parallel stream — Conformance harness (independent agent, Wave 0–2)
 

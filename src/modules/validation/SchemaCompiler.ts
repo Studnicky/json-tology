@@ -30,8 +30,6 @@ import type {
   CheckFnType, ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../types/Validation.js';
 import { VOCABULARY_FORMAT_ASSERTION } from '../../constants/DIALECT.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
-import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
 import { Arrays } from './exec/Arrays.js';
 import { Composition } from './exec/Composition.js';
@@ -44,7 +42,6 @@ import {
   compileEnumCheck,
   compileObjectCheck,
   compileRefCheck,
-  nodeSupportsCompilation,
   tryCompileFlatObjectCheck
 } from './SchemaCompilerPlan.js';
 
@@ -119,7 +116,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private readonly compilingNodes = new Set<SchemaGraphNodeType>();
   private readonly compilingValidateNodes = new Map<SchemaGraphNodeType, ValidateWithErrorsFnType>();
   private readonly graphContext: SchemaCompilerGraphContextType;
-  private readonly logger: LoggerInterface;
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorType | undefined) | undefined;
   private readonly regexCache = new Map<string, RegExp>();
 
@@ -128,14 +124,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   /**
    * Create a SchemaCompiler with an optional cross-schema lookup for compiled validators.
    *
-   * @param options - Optional lookup function and logger for resolving already-compiled validators by schema ID
+   * @param options - Optional cross-schema lookup for resolving already-compiled validators by schema ID
    */
   public constructor(options?: {
-    'logger'?: LoggerInterface;
     'lookupCompiled'?: (schemaId: string) => CompiledValidatorType | undefined;
   }) {
     this.lookupCompiled = options?.lookupCompiled;
-    this.logger = options?.logger ?? SILENT_LOGGER;
     this.graphContext = this.buildGraphContext();
     this.checkExecContext = this.buildCheckExecContext();
     this.validatePlanContext = this.buildValidatePlanContext();
@@ -1208,39 +1202,22 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     this.activeCustomKeywords = engine.keywords();
     this.activeLookupGraph = engine.graphLookup();
 
-    // Check for unsupported features that require engine fallback
-    if (!this.supportsCompilationPath(resolvedGraph, lookupSchema)) {
-      this.activeCustomKeywords = [];
+    const validateWithErrorsFn = this.compileValidateWithErrors(schema, formatRegistry, resolvedGraph, lookupSchema);
+    const checkFn = this.buildCheckFromValidate(validateWithErrorsFn);
+    const treeHasUnevaluated = resolvedGraph.nodes().some((graphNode: SchemaGraphNodeType): boolean => {
+      const sem = resolvedGraph.semantics(graphNode);
 
-      return this.engineFallback(engine);
-    }
+      return sem.unevaluatedPropertiesNode !== undefined || sem.unevaluatedItemsNode !== undefined;
+    });
+    const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn, treeHasUnevaluated);
 
-    try {
-      const validateWithErrorsFn = this.compileValidateWithErrors(schema, formatRegistry, resolvedGraph, lookupSchema);
-
-      const checkFn = this.buildCheckFromValidate(validateWithErrorsFn);
-      const treeHasUnevaluated = resolvedGraph.nodes().some((graphNode: SchemaGraphNodeType): boolean => {
-        const sem = resolvedGraph.semantics(graphNode);
-
-        return sem.unevaluatedPropertiesNode !== undefined || sem.unevaluatedItemsNode !== undefined;
-      });
-      const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn, treeHasUnevaluated);
-
-      return {
-        'check': checkFn,
-        'compiled': true,
-        'validate': (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
-          return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn, treeHasUnevaluated);
-        }
-      };
-    } catch (error: unknown) {
-      this.logger.warn(
-        'SchemaCompiler',
-        `compilation failed, falling back to interpreter: ${error instanceof Error ? error.message : String(error)}`
-      );
-
-      return this.engineFallback(engine);
-    }
+    return {
+      'check': checkFn,
+      'compiled': true,
+      'validate': (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
+        return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn, treeHasUnevaluated);
+      }
+    };
   }
 
   private compileBooleanSchema(schema: boolean): CompiledValidatorType {
@@ -1624,32 +1601,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       errors,
       'valid': result.valid,
       'value': result.value
-    };
-  }
-
-  private engineFallback(engine: GraphEngineInterface): CompiledValidatorType {
-    return {
-      'check': (data: unknown): boolean => {
-        return engine.execute(data, { 'overrides': { 'collectErrors': false } }).valid;
-      },
-      'compiled': false,
-      'validate': (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
-        const result = engine.execute(data, {
-          'overrides': {
-            'applyDefaults': options?.applyDefaults ?? false,
-            'castTypes': options?.castTypes ?? false,
-            'collectErrors': options?.collectErrors ?? true,
-            'enforceSchemaProperties': options?.enforceSchemaProperties ?? false,
-            'removeAdditionalProperties': options?.removeAdditionalProperties ?? false
-          }
-        });
-
-        return {
-          'errors': result.errors,
-          'valid': result.valid,
-          'value': result.value
-        };
-      }
     };
   }
 
@@ -2359,19 +2310,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       'valid': valid && tailResult.valid,
       'value': tailResult.value
     };
-  }
-
-  private supportsCompilationPath(
-    graph: SchemaGraphInterface,
-    lookupSchema?: (id: string) => Record<string, unknown> | undefined
-  ): boolean {
-    return nodeSupportsCompilation(
-      graph.rootNode,
-      graph,
-      lookupSchema,
-      new Set(),
-      this.activeLookupGraph
-    );
   }
 
   private validateArrayFields(

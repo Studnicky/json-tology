@@ -200,7 +200,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return this.graph(id);
     };
     this.compiler = new SchemaCompiler({
-      'logger': this.logger,
       'lookupCompiled': (schemaId: string): CompiledValidatorType | undefined => {
         return this.store.has(schemaId)
           ? this.compiled(schemaId)
