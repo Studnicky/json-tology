@@ -1,7 +1,5 @@
 import type { CustomKeywordEntryType } from './CustomKeywordEntry.js';
-import type {
-  CheckFnType, ValidateWithErrorsFnType
-} from '../types/Validation.js';
+import type { ValidateWithErrorsFnType } from '../types/Validation.js';
 import type { JtExtraType } from '../types/JtConfig.js';
 import type { DynamicScopeEntryType } from './DynamicScopeEntry.js';
 
@@ -11,11 +9,10 @@ export type CompiledNodeValidationPlanType = {
   readonly 'allOfValidators': undefined | ValidateWithErrorsFnType[];
   readonly 'allowedKeys': Set<string> | undefined;
   readonly 'allowedKeysForStrip': Set<string> | undefined;
-  readonly 'anyOfChecks': CheckFnType[] | undefined;
   readonly 'anyOfValidators': undefined | ValidateWithErrorsFnType[];
-  readonly 'complementCheck': CheckFnType | undefined;
+  readonly 'complementValidator': undefined | ValidateWithErrorsFnType;
   readonly 'constVal': unknown;
-  readonly 'containsCheck': CheckFnType | undefined;
+  readonly 'containsValidator': undefined | ValidateWithErrorsFnType;
   readonly 'contentAssertionsEnabled': boolean;
   readonly 'contentEncoding': string | undefined;
   readonly 'contentMediaType': string | undefined;
@@ -37,7 +34,7 @@ export type CompiledNodeValidationPlanType = {
   readonly 'formatValidator': ((value: unknown) => boolean) | undefined;
   readonly 'hasConst': boolean;
   readonly 'hasDefault': boolean;
-  readonly 'ifCheck': CheckFnType | undefined;
+  readonly 'ifValidator': undefined | ValidateWithErrorsFnType;
   readonly 'itemValidator': undefined | ValidateWithErrorsFnType;
   readonly 'jtExtra': JtExtraType | undefined;
   readonly 'jtStrictPerField': Map<string, boolean> | undefined;
@@ -52,7 +49,6 @@ export type CompiledNodeValidationPlanType = {
   readonly 'minLength': number | undefined;
   readonly 'minProperties': number | undefined;
   readonly 'multipleOf': number | undefined;
-  readonly 'oneOfChecks': CheckFnType[] | undefined;
   readonly 'oneOfValidators': undefined | ValidateWithErrorsFnType[];
   readonly 'pattern': string | undefined;
   readonly 'patternPropValidators': Array<{ 'regex': RegExp;

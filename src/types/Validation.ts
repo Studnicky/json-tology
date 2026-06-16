@@ -9,7 +9,6 @@ import type { ExecContextType } from '../types/ExecContext.js';
 
 export type { AllowedKeysResultType } from '../types/AllowedKeysResult.js';
 
-import type { PatternPropCheckEntryType } from '../types/PatternPropCheckEntry.js';
 import type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntry.js';
 import type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntry.js';
 import type { RefTargetType } from '../types/RefTarget.js';
@@ -19,29 +18,8 @@ export type { ConditionalValidatorsResultType } from '../types/ConditionalValida
 export type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntry.js';
 export type { ExecContextType } from '../types/ExecContext.js';
 export type { KeyPatternCheckResultType } from '../types/KeyPatternCheckResult.js';
-export type { PatternPropCheckEntryType } from '../types/PatternPropCheckEntry.js';
 export type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntry.js';
 export type { PlanArrayValidatorsType } from '../types/PlanArrayValidators.js';
-
-/**
- * A predicate function that tests a single value for schema compliance.
- *
- * @remarks
- * Used throughout the validation engine as the fast-path check type.
- * Returns `true` when the value satisfies the compiled constraint and `false`
- * otherwise. Receives `unknown` so callers need not narrow before passing.
- *
- * @example
- * ```ts
- * const isString: CheckFnType = (value: unknown) => typeof value === 'string';
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link OptionalCheckFnType}
- * @group Validation
- */
-export type CheckFnType = (value: unknown) => boolean;
 
 /**
  * Result of a boolean coercion attempt — `undefined` when the value is unrecognised.
@@ -86,26 +64,6 @@ export type CoerceToBooleanResultType = boolean | undefined;
 export type CoerceToNumberResultType = number | undefined;
 
 /**
- * A check function or `undefined` when no check applies for the node.
- *
- * @remarks
- * Used in compiled validation plans to represent an optional fast-path predicate.
- * When `undefined`, the validation engine skips the corresponding fast-path branch
- * and falls through to the full validator.
- *
- * @example
- * ```ts
- * const check: OptionalCheckFnType = node.hasMinLength ? compiledCheck : undefined;
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link CheckFnType}
- * @group Validation
- */
-export type OptionalCheckFnType = CheckFnType | undefined;
-
-/**
  * Named result type for custom keyword entry collections.
  *
  * @remarks
@@ -121,7 +79,6 @@ export type OptionalCheckFnType = CheckFnType | undefined;
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link OptionalCheckFnType}
  * @group Validation
  */
 export type CustomKeywordEntriesResultType = CustomKeywordEntryType[] | undefined;
@@ -334,7 +291,6 @@ export type OptionalValidateWithErrorsFnType = undefined | ValidateWithErrorsFnT
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link ObjectPropValidatorsMapType}
  * @group Validation
  */
 export type PropValidatorsMapType = Map<string, ValidateWithErrorsFnType>;
@@ -427,48 +383,6 @@ export type InheritedPropertyKeySetType = Set<string>;
 export type ConditionalPropertyKeySetType = Set<string>;
 
 /**
- * A map from property name to its fast-path compiled check function.
- *
- * @remarks
- * The fast-path check is a lightweight boolean predicate that avoids allocating
- * an error array. Used when `collectErrors` is `false` and only a pass/fail
- * result is needed, improving throughput for high-frequency validation calls.
- *
- * @example
- * ```ts
- * const checks: ObjectPropValidatorsMapType = new Map([['id', isString]]);
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link PropValidatorsMapType}
- * @group Validation
- */
-export type ObjectPropValidatorsMapType = Map<string, CheckFnType>;
-
-/**
- * An optional list of pattern-property check entries.
- *
- * @remarks
- * `undefined` when the schema declares no `patternProperties`, allowing the
- * validation engine to skip the pattern-property fast-path branch entirely
- * without iterating an empty array.
- *
- * @example
- * ```ts
- * const checks: PatternPropChecksResultType = schema.patternProperties
- *   ? compilePatternChecks(schema.patternProperties)
- *   : undefined;
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link PatternPropCheckEntryType}
- * @group Validation
- */
-export type PatternPropChecksResultType = PatternPropCheckEntryType[] | undefined;
-
-/**
  * The set of primitive enum values compiled to a `Set` for O(1) membership testing.
  *
  * @remarks
@@ -484,7 +398,6 @@ export type PatternPropChecksResultType = PatternPropCheckEntryType[] | undefine
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link PatternPropChecksResultType}
  * @group Validation
  */
 export type EnumPrimitiveSetType = Set<boolean | null | number | string> | undefined;

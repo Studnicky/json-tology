@@ -2,9 +2,9 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
-// Validation type aliases (CheckFnType, ValidateWithErrorsFnType, ValidationErrorType) are internal contracts for the exec primitives below.
+// Validation type aliases (ValidateWithErrorsFnType, ValidationErrorType) are internal contracts for the exec primitives below.
 import type {
-  CheckFnType, ValidateWithErrorsFnType, ValidationErrorType
+  ValidateWithErrorsFnType, ValidationErrorType
 } from '../../src/types/Validation.js';
 import type { ExecContextType } from '../../src/types/ExecContext.js';
 import {
@@ -4302,14 +4302,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       value
     };
   };
-  const passingCheck: CheckFnType = () => {
-    return true;
-  };
-  const failingCheck: CheckFnType = () => {
-    return false;
-  };
-  const oneMatch: CheckFnType = (value) => {
-    return value === 1;
+
+  const oneMatchValidator: ValidateWithErrorsFnType = (value: unknown) => {
+    return {
+      'valid': value === 1,
+      value
+    };
   };
 
   void describe('Arrays — Good/Bad/Ugly', () => {
@@ -4372,12 +4370,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     });
 
     void it('validateContains: undefined, match, no-match, minContains, maxContains', () => {
-      // Good: no containsCheck = valid
+      // Good: no containsValidator = valid
       const e1: ValidationErrorType[] = [];
       const r1 = Arrays.validateContains('/a', [
         1,
         2
-      ], undefined, undefined, undefined, e1);
+      ], undefined, undefined, undefined, makeCtx(e1, true), e1);
 
       assert.equal(r1, true);
       assert.equal(e1.length, 0);
@@ -4388,7 +4386,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
         1,
         2,
         3
-      ], passingCheck, undefined, undefined, e2);
+      ], passing, undefined, undefined, makeCtx(e2, true), e2);
 
       assert.equal(r2, true);
       assert.equal(e2.length, 0);
@@ -4399,7 +4397,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
         1,
         2,
         3
-      ], failingCheck, undefined, undefined, e3);
+      ], failing, undefined, undefined, makeCtx(e3, true), e3);
 
       assert.equal(r3, false);
       assert.equal(e3.length, 1);
@@ -4411,7 +4409,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
         1,
         2,
         3
-      ], oneMatch, 2, undefined, e4);
+      ], oneMatchValidator, 2, undefined, makeCtx(e4, true), e4);
 
       assert.equal(r4, false);
       assert.equal(e4.length, 1);
@@ -4423,7 +4421,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
         1,
         2,
         3
-      ], passingCheck, undefined, 2, e5);
+      ], passing, undefined, 2, makeCtx(e5, true), e5);
 
       assert.equal(r5, false);
       assert.equal(e5.length, 1);
@@ -5027,14 +5025,6 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     return failingValidatorImpl;
   }
 
-  const alwaysTrue: CheckFnType = (_: unknown): boolean => {
-    return true;
-  };
-
-  const alwaysFalse: CheckFnType = (_: unknown): boolean => {
-    return false;
-  };
-
   void describe('Composition — Good/Bad/Ugly', () => {
     void it('validateAllOf: undefined, all-pass, earlyExit, collect-errors', () => {
       const e1: ValidationErrorType[] = [];
@@ -5076,62 +5066,69 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     void it('validateAnyOf + validateOneOf + validateNot: table-driven', () => {
       // anyOf
       const ea1: ValidationErrorType[] = [];
+      const ra1 = Composition.validateAnyOf('', 'test', undefined, makeCtx(ea1, true));
 
-      assert.equal(Composition.validateAnyOf('', 'test', undefined, ea1), true);
+      assert.equal(ra1.valid, true);
 
       const ea2: ValidationErrorType[] = [];
+      const ra2 = Composition.validateAnyOf('', 'test', [
+        failingValidator(),
+        passingValidator()
+      ], makeCtx(ea2, true));
 
-      assert.equal(Composition.validateAnyOf('', 'test', [
-        alwaysFalse,
-        alwaysTrue
-      ], ea2), true);
+      assert.equal(ra2.valid, true);
 
       const ea3: ValidationErrorType[] = [];
+      const ra3 = Composition.validateAnyOf('/root', 'test', [
+        failingValidator(),
+        failingValidator()
+      ], makeCtx(ea3, true));
 
-      assert.equal(Composition.validateAnyOf('/root', 'test', [
-        alwaysFalse,
-        alwaysFalse
-      ], ea3), false);
+      assert.equal(ra3.valid, false);
 
       // oneOf
       const eo1: ValidationErrorType[] = [];
+      const ro1 = Composition.validateOneOf('', 'test', undefined, makeCtx(eo1, true));
 
-      assert.equal(Composition.validateOneOf('', 'test', undefined, eo1), true);
+      assert.equal(ro1.valid, true);
 
       const eo2: ValidationErrorType[] = [];
+      const ro2 = Composition.validateOneOf('', 'test', [
+        failingValidator(),
+        passingValidator(),
+        failingValidator()
+      ], makeCtx(eo2, true));
 
-      assert.equal(Composition.validateOneOf('', 'test', [
-        alwaysFalse,
-        alwaysTrue,
-        alwaysFalse
-      ], eo2), true);
+      assert.equal(ro2.valid, true);
 
       const eo3: ValidationErrorType[] = [];
+      const ro3 = Composition.validateOneOf('/root', 'test', [
+        failingValidator(),
+        failingValidator()
+      ], makeCtx(eo3, true));
 
-      assert.equal(Composition.validateOneOf('/root', 'test', [
-        alwaysFalse,
-        alwaysFalse
-      ], eo3), false);
+      assert.equal(ro3.valid, false);
 
       const eo4: ValidationErrorType[] = [];
+      const ro4 = Composition.validateOneOf('/root', 'test', [
+        passingValidator(),
+        passingValidator()
+      ], makeCtx(eo4, true));
 
-      assert.equal(Composition.validateOneOf('/root', 'test', [
-        alwaysTrue,
-        alwaysTrue
-      ], eo4), false);
+      assert.equal(ro4.valid, false);
 
       // not
       const en1: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateNot('', 'test', undefined, en1), true);
+      assert.equal(Composition.validateNot('', 'test', undefined, makeCtx(en1, true)), true);
 
       const en2: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateNot('', 'test', alwaysFalse, en2), true);
+      assert.equal(Composition.validateNot('', 'test', failingValidator(), makeCtx(en2, true)), true);
 
       const en3: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateNot('/root', 'test', alwaysTrue, en3), false);
+      assert.equal(Composition.validateNot('/root', 'test', passingValidator(), makeCtx(en3, true)), false);
     });
 
     void it('validateIfThenElse + validateDependentSchemas + validateCustomKeywords', () => {
@@ -5144,19 +5141,19 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       const ei2: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '', alwaysTrue, passingValidator(), undefined, makeCtx(ei2, true)).valid, true);
+      assert.equal(Composition.validateIfThenElse('test', '', passingValidator(), passingValidator(), undefined, makeCtx(ei2, true)).valid, true);
 
       const ei3: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '/root', alwaysTrue, failingValidator(), undefined, makeCtx(ei3, true)).valid, false);
+      assert.equal(Composition.validateIfThenElse('test', '/root', passingValidator(), failingValidator(), undefined, makeCtx(ei3, true)).valid, false);
 
       const ei4: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, passingValidator(), makeCtx(ei4, true)).valid, true);
+      assert.equal(Composition.validateIfThenElse('test', '', failingValidator(), undefined, passingValidator(), makeCtx(ei4, true)).valid, true);
 
       const ei5: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, undefined, makeCtx(ei5, true)).valid, true);
+      assert.equal(Composition.validateIfThenElse('test', '', failingValidator(), undefined, undefined, makeCtx(ei5, true)).valid, true);
 
       // validateDependentSchemas
       const ed1: ValidationErrorType[] = [];

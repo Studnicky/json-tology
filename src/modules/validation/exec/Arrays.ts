@@ -1,6 +1,4 @@
-import type {
-  CheckFnType, ValidateWithErrorsFnType
-} from '../../../types/Validation.js';
+import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
 import type { ExecContextType } from '../../../types/ExecContext.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../Predicates.js';
@@ -54,19 +52,33 @@ export class Arrays {
   static validateContains(
     path: string,
     arr: unknown[],
-    containsCheck: CheckFnType | undefined,
+    containsValidator: undefined | ValidateWithErrorsFnType,
     minContains: number | undefined,
     maxContains: number | undefined,
+    ctx: ExecContextType,
     errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
-    if (containsCheck === undefined) {
+    if (containsValidator === undefined) {
       return true;
     }
 
     let count = 0;
 
     for (const item of arr) {
-      if (containsCheck(item)) {
+      // Run in isolated check-mode scratch ctx per element
+      const scratchCtx: ExecContextType = {
+        ...ctx,
+        'applyDefaults': false,
+        'collectErrors': false,
+        'doCoerce': false,
+        'errors': [],
+        'evaluatedItems': undefined,
+        'evaluatedProperties': undefined,
+        'stripUnknown': false
+      };
+      const result = containsValidator(item, path, scratchCtx);
+
+      if (result.valid) {
         count++;
       }
     }

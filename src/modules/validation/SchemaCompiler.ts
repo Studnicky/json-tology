@@ -23,11 +23,10 @@ import type {
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { BaseError } from '../../errors/BaseError.js';
-import { Predicates } from './Predicates.js';
 import { SchemaCompilerDefaults } from './SchemaCompilerDefaults.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import type {
-  CheckFnType, ValidateWithErrorsFnType, ValidateWithErrorsResultType
+  ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../types/Validation.js';
 import { VOCABULARY_FORMAT_ASSERTION } from '../../constants/DIALECT.js';
 import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
@@ -35,27 +34,14 @@ import { Arrays } from './exec/Arrays.js';
 import { Composition } from './exec/Composition.js';
 import { Objects } from './exec/Objects.js';
 import { Scalars } from './exec/Scalars.js';
-import {
-  buildNodePlan,
-  compileArrayCheck,
-  compileConstCheck,
-  compileEnumCheck,
-  compileObjectCheck,
-  compileRefCheck,
-  tryCompileFlatObjectCheck
-} from './SchemaCompilerPlan.js';
+import { buildNodePlan } from './SchemaCompilerPlan.js';
 
 // ---------------------------------------------------------------------------
 // Internal types
 // ---------------------------------------------------------------------------
 
-import type { SchemaCompilerCheckExecutionContextType } from '../../types/SchemaCompilerCheckExecutionContext.js';
-import type { SchemaCompilerGraphContextType } from '../../types/SchemaCompilerGraphContext.js';
 import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContext.js';
 import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
-import type { DepSchemaEntryType } from '../../types/DepSchemaEntryType.js';
-import type { ExtensionEntryType } from '../../types/ExtensionEntryType.js';
-import type { NodeCheckBuildContextType } from '../../types/NodeCheckBuildContextType.js';
 import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
 import type { ValidationRunOptionsType } from '../../types/ValidationRunOptionsType.js';
 import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
@@ -63,9 +49,6 @@ import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 // ---------------------------------------------------------------------------
 // Local constants
 // ---------------------------------------------------------------------------
-
-/** Maximum allowable `oneOf` branch count before early-exit is applied. */
-const ONEOF_EARLY_EXIT_THRESHOLD = 1;
 
 // ---------------------------------------------------------------------------
 // SchemaCompiler
@@ -98,26 +81,10 @@ const ONEOF_EARLY_EXIT_THRESHOLD = 1;
  * @group SchemaCompiler
  */
 export class SchemaCompiler implements SchemaCompilerInterface {
-  private static checkDependentRequiredTrigger(
-    obj: Record<string, unknown>,
-    required: string[]
-  ): boolean {
-    for (const req of required) {
-      if (!(req in obj)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
   private activeCustomKeywords: KeywordDefinitionType[] = [];
   private activeLookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  private readonly checkExecContext: SchemaCompilerCheckExecutionContextType;
-  private readonly compilingNodes = new Set<SchemaGraphNodeType>();
   private readonly compilingValidateNodes = new Map<SchemaGraphNodeType, ValidateWithErrorsFnType>();
-  private readonly graphContext: SchemaCompilerGraphContextType;
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorType | undefined) | undefined;
-  private readonly regexCache = new Map<string, RegExp>();
 
   private readonly validatePlanContext: SchemaCompilerValidatePlanContextType;
 
@@ -130,8 +97,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     'lookupCompiled'?: (schemaId: string) => CompiledValidatorType | undefined;
   }) {
     this.lookupCompiled = options?.lookupCompiled;
-    this.graphContext = this.buildGraphContext();
-    this.checkExecContext = this.buildCheckExecContext();
     this.validatePlanContext = this.buildValidatePlanContext();
   }
 
@@ -141,7 +106,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
    * An item is "evaluated" when:
    * - Its index is covered by `prefixValidators` (prefixItems), OR
    * - Its index is beyond the prefix and `itemValidator` is set (items keyword), OR
-   * - It matches `containsCheck` (contains keyword).
+   * - It matches `containsValidator` in check-mode isolation (contains keyword).
    *
    * This mirrors the interpreter accumulation in GraphEngine.ts:749, :789, :712.
    */
@@ -151,7 +116,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     ctx: ExecContextType
   ): void {
     const {
-      containsCheck, itemValidator, prefixValidators
+      containsValidator, itemValidator, prefixValidators
     } = plan;
     const prefixLen = prefixValidators === undefined ? 0 : prefixValidators.length;
 
@@ -167,13 +132,25 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       }
     }
 
-    // contains: indices where the contains check passes
-    if (containsCheck !== undefined) {
+    // contains: indices where the contains validator passes in check mode
+    if (containsValidator !== undefined) {
       for (const [
         i,
         element
       ] of arr.entries()) {
-        if (containsCheck(element)) {
+        const scratchCtx: ExecContextType = {
+          ...ctx,
+          'applyDefaults': false,
+          'collectErrors': false,
+          'doCoerce': false,
+          'errors': [],
+          'evaluatedItems': undefined,
+          'evaluatedProperties': undefined,
+          'stripUnknown': false
+        };
+        const result = containsValidator(element, `${i}`, scratchCtx);
+
+        if (result.valid) {
           (ctx.evaluatedItems ??= new Set()).add(i);
         }
       }
@@ -226,10 +203,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return typeof formatAssertionValue === 'boolean' ? formatAssertionValue : true;
   }
 
-  // ---------------------------------------------------------------------------
-  // buildNodeCheckExecution helpers
-  // ---------------------------------------------------------------------------
-
   private applyPlanDefaults(
     initialValue: unknown,
     plan: CompiledNodeValidationPlanType,
@@ -271,192 +244,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return workingValue;
   }
 
-  private buildAllOfCheck(allOfChecks: CheckFnType[]): CheckFnType {
-    return (value: unknown): boolean => {
-      return allOfChecks.every((check: CheckFnType): boolean => {
-        return check(value);
-      });
-    };
-  }
-
-  private buildAnyOfCheck(anyOfChecks: CheckFnType[]): CheckFnType {
-    return (value: unknown): boolean => {
-      return anyOfChecks.some((check: CheckFnType): boolean => {
-        return check(value);
-      });
-    };
-  }
-
-  private buildArrayStructureChecks(
-    buildCtx: NodeCheckBuildContextType,
-    graphNode: SchemaGraphNodeType,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType[] {
-    const {
-      context, formatRegistry, graph, lookupSchema
-    } = buildCtx;
-    const isArrayLike = sem.schemaTypes.includes('array') || sem.itemsNode !== undefined || sem.prefixItems.length > 0;
-
-    if (!isArrayLike) {
-      return [];
-    }
-
-    const arrCheck = context.compileNodeArrayCheck(graphNode, formatRegistry, graph, lookupSchema);
-
-    return arrCheck === undefined ? [] : [arrCheck];
-  }
-
-  private buildBoolLogicChecks(
-    buildCtx: NodeCheckBuildContextType,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType[] {
-    const {
-      context, formatRegistry, graph, lookupSchema
-    } = buildCtx;
-    const checks: CheckFnType[] = [];
-
-    if (sem.allOf.length > 0) {
-      const allOfChecks = sem.allOf.map((node: SchemaGraphNodeType): CheckFnType => {
-        return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
-      });
-
-      checks.push(this.buildAllOfCheck(allOfChecks));
-    }
-
-    if (sem.anyOf.length > 0) {
-      const anyOfChecks = sem.anyOf.map((node: SchemaGraphNodeType): CheckFnType => {
-        return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
-      });
-
-      checks.push(this.buildAnyOfCheck(anyOfChecks));
-    }
-
-    if (sem.oneOf.length > 0) {
-      const oneOfChecks = sem.oneOf.map((node: SchemaGraphNodeType): CheckFnType => {
-        return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
-      });
-
-      checks.push(this.buildOneOfCheck(oneOfChecks));
-    }
-
-    return checks;
-  }
-
-  private buildCheckExecContext(): SchemaCompilerCheckExecutionContextType {
-    const ctx: SchemaCompilerCheckExecutionContextType = {
-      'activeCustomKeywords': this.activeCustomKeywords,
-      ...this.buildCheckExecNodePart(),
-      ...this.buildCheckExecScalarPart()
-    };
-
-    Object.defineProperty(ctx, 'activeCustomKeywords', {
-      'enumerable': true,
-      'get': (): KeywordDefinitionType[] => {
-        return this.activeCustomKeywords;
-      }
-    });
-
-    return ctx;
-  }
-
-  private buildCheckExecNodePart(): Pick<
-    SchemaCompilerCheckExecutionContextType,
-    'compileNodeArrayCheck' | 'compileNodeCheck' | 'compileNodeObjectCheck'
-    | 'compileNodeOrBooleanCheck' | 'tryCompileNodeFlatObjectCheck'
-  > {
-    return {
-      'compileNodeArrayCheck': (
-        node: SchemaGraphNodeType,
-        fmtReg: FormatRegistryInterface,
-        graph: SchemaGraphInterface,
-        lookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType | undefined => {
-        return compileArrayCheck(this.graphContext, node, fmtReg, graph, lookup);
-      },
-      'compileNodeCheck': (
-        node: SchemaGraphNodeType,
-        fmtReg: FormatRegistryInterface,
-        graph: SchemaGraphInterface,
-        lookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType => {
-        return this.compileNodeCheck(node, fmtReg, graph, lookup);
-      },
-      'compileNodeObjectCheck': (
-        node: SchemaGraphNodeType,
-        fmtReg: FormatRegistryInterface,
-        graph: SchemaGraphInterface,
-        lookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType | undefined => {
-        return compileObjectCheck(this.graphContext, node, fmtReg, graph, lookup);
-      },
-      'compileNodeOrBooleanCheck': (
-        node: SchemaGraphNodeType,
-        fmtReg: FormatRegistryInterface,
-        graph: SchemaGraphInterface,
-        lookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType => {
-        return this.compileNodeOrBooleanCheck(node, fmtReg, graph, lookup);
-      },
-      'tryCompileNodeFlatObjectCheck': (
-        node: SchemaGraphNodeType,
-        fmtReg: FormatRegistryInterface,
-        graph: SchemaGraphInterface,
-        lookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType | undefined => {
-        return tryCompileFlatObjectCheck(this.graphContext, node, fmtReg, graph, lookup);
-      }
-    };
-  }
-
-  private buildCheckExecScalarPart(): Pick<
-    SchemaCompilerCheckExecutionContextType,
-    'compileNumberCheck' | 'compileRefCheck' | 'compileStringCheck' | 'compileTypeCheck'
-  > {
-    return {
-      'compileNumberCheck': (
-        min: number | undefined,
-        max: number | undefined,
-        exMin: number | undefined,
-        exMax: number | undefined,
-        mult: number | undefined
-      ): CheckFnType | undefined => {
-        return this.compileNumberCheck(min, max, exMin, exMax, mult);
-      },
-      'compileRefCheck': (
-        ref: string,
-        fmtReg: FormatRegistryInterface,
-        graph: SchemaGraphInterface,
-        lookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType | undefined => {
-        const lookupGraph = this.activeLookupGraph;
-
-        return compileRefCheck(this.graphContext, ref, fmtReg, graph, lookup, lookupGraph);
-      },
-      'compileStringCheck': (
-        minLen: number | undefined,
-        maxLen: number | undefined,
-        pat: string | undefined,
-        fmt: string | undefined,
-        fmtReg: FormatRegistryInterface,
-        sem: SchemaGraphSemanticsType
-      ): CheckFnType | undefined => {
-        return this.compileStringCheck(minLen, maxLen, pat, fmt, fmtReg, sem);
-      },
-      'compileTypeCheck': (types: string[]): CheckFnType => {
-        return this.compileTypeCheck(types);
-      }
-    };
-  }
-
   /**
-   * Build a `CheckFnType` that delegates to a `ValidateWithErrorsFnType`.
+   * Build a check function that delegates to a `ValidateWithErrorsFnType`.
    *
    * Used when the schema has `unevaluatedProperties`/`unevaluatedItems`: the cheap check
    * path cannot track evaluated sets across composition branches, so we run the full
    * validator and discard the errors. Mirrors what the interpreter does (GraphEngine has
    * a single path for both `check()` and `validate()`).
    */
-  private buildCheckFromValidate(validateFn: ValidateWithErrorsFnType): CheckFnType {
+  private buildCheckFromValidate(validateFn: ValidateWithErrorsFnType): (data: unknown) => boolean {
     return (data: unknown): boolean => {
       const errors: ValidationErrorType[] = [];
       const ctx: ExecContextType = {
@@ -482,566 +278,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  private buildComplementCheck(complementCheck: CheckFnType): CheckFnType {
-    return (value: unknown): boolean => {
-      return !complementCheck(value);
-    };
-  }
-
-  private buildCompositeCheck(checks: CheckFnType[]): CheckFnType {
-    if (checks.length === 0) {
-      return (_value: unknown): boolean => {
-        return true;
-      };
-    }
-    if (checks.length === 1) {
-      return checks[0];
-    }
-
-    return (value: unknown): boolean => {
-      for (const check of checks) {
-        if (!check(value)) {
-          return false;
-        }
-      }
-
-      return true;
-    };
-  }
-
-  private buildCompositionChecks(
-    buildCtx: NodeCheckBuildContextType,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType[] {
-    return [
-      ...this.buildBoolLogicChecks(buildCtx, sem),
-      ...this.buildNotAndIfChecks(buildCtx, sem)
-    ];
-  }
-
-  private buildCustomKeywordCheck(extensionEntries: ExtensionEntryType[]): CheckFnType {
-    return (value: unknown): boolean => {
-      let dataType: string;
-
-      if (value === null) {
-        dataType = 'null';
-      } else if (Array.isArray(value)) {
-        dataType = 'array';
-      } else {
-        dataType = typeof value;
-      }
-
-      for (const entry of extensionEntries) {
-        if (entry.allowedTypes !== undefined && !entry.allowedTypes.includes(dataType)) {
-          continue;
-        }
-
-        const ctx = {
-          'parentData': undefined as unknown,
-          'parentKey': '',
-          'path': '',
-          'rootData': value
-        };
-        const result = entry.validate(entry.schemaValue, value, ctx);
-
-        if (result === false) {
-          return false;
-        }
-        if (Array.isArray(result) && result.length > 0) {
-          return false;
-        }
-      }
-
-      return true;
-    };
-  }
-
-  private buildDependentRequiredCheck(depEntries: Array<[string, string[]]>): CheckFnType {
-    return (value: unknown): boolean => {
-      if (!isRecord(value)) {
-        return true;
-      }
-      const obj = value;
-
-      for (const [
-        trigger,
-        required
-      ] of depEntries) {
-        if (trigger in obj && !SchemaCompiler.checkDependentRequiredTrigger(obj, required)) {
-          return false;
-        }
-      }
-
-      return true;
-    };
-  }
-
-  private buildDependentSchemaCheck(depSchemaChecks: DepSchemaEntryType[]): CheckFnType {
-    return (value: unknown): boolean => {
-      if (!isRecord(value)) {
-        return true;
-      }
-      const obj = value;
-
-      for (const dep of depSchemaChecks) {
-        if (dep.trigger in obj && !dep.check(value)) {
-          return false;
-        }
-      }
-
-      return true;
-    };
-  }
-
-  private buildGraphContext(): SchemaCompilerGraphContextType {
-    const ctx: SchemaCompilerGraphContextType = {
-      'activeCustomKeywords': this.activeCustomKeywords,
-      'compileNodeCheck': (
-        node: SchemaGraphNodeType,
-        fmt: FormatRegistryInterface,
-        graph: SchemaGraphInterface,
-        lookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType => {
-        return this.compileNodeCheck(node, fmt, graph, lookup);
-      },
-      'compileNodeOrBooleanCheck': (
-        node: SchemaGraphNodeType,
-        fmt: FormatRegistryInterface,
-        graph: SchemaGraphInterface,
-        lookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType => {
-        return this.compileNodeOrBooleanCheck(node, fmt, graph, lookup);
-      },
-      'compilingNodes': this.compilingNodes,
-      'lookupCompiled': this.lookupCompiled
-    };
-
-    Object.defineProperty(ctx, 'activeCustomKeywords', {
-      'enumerable': true,
-      'get': (): KeywordDefinitionType[] => {
-        return this.activeCustomKeywords;
-      }
-    });
-
-    return ctx;
-  }
-
-  private buildIfThenElseCheck(
-    ifCheck: CheckFnType,
-    thenCheck: CheckFnType | undefined,
-    elseCheck: CheckFnType | undefined
-  ): CheckFnType {
-    return (value: unknown): boolean => {
-      if (ifCheck(value)) {
-        return thenCheck === undefined || thenCheck(value);
-      }
-
-      return elseCheck === undefined || elseCheck(value);
-    };
-  }
-
-  private buildNodeCheckExecution(
-    context: SchemaCompilerCheckExecutionContextType,
-    graphNode: SchemaGraphNodeType,
-    formatRegistry: FormatRegistryInterface,
-    graph: SchemaGraphInterface,
-    lookupSchema?: (id: string) => Record<string, unknown> | undefined
-  ): CheckFnType {
-    const fastPath = context.tryCompileNodeFlatObjectCheck(graphNode, formatRegistry, graph, lookupSchema);
-
-    if (fastPath !== undefined) {
-      return fastPath;
-    }
-
-    const sem = graph.semantics(graphNode);
-    const buildCtx: NodeCheckBuildContextType = {
-      context,
-      formatRegistry,
-      graph,
-      'lookupSchema': lookupSchema
-    };
-    const checks: CheckFnType[] = [
-      ...this.buildScalarChecks(context, sem, formatRegistry),
-      ...this.buildStructureChecks(buildCtx, graphNode, sem),
-      ...this.buildCompositionChecks(buildCtx, sem)
-    ];
-
-    if (context.activeCustomKeywords.length > 0) {
-      const extensionEntries: ExtensionEntryType[] = [];
-
-      for (const kw of context.activeCustomKeywords) {
-        if (kw.keyword in sem.extensions) {
-          extensionEntries.push({
-            'allowedTypes': SchemaCompilerSupport.normalizeKeywordTypes(kw.type),
-            'keyword': kw.keyword,
-            'schemaValue': sem.extensions[kw.keyword],
-            'validate': kw.validate
-          });
-        }
-      }
-
-      if (extensionEntries.length > 0) {
-        checks.push(this.buildCustomKeywordCheck(extensionEntries));
-      }
-    }
-
-    return this.buildCompositeCheck(checks);
-  }
-
-  private buildNotAndIfChecks(
-    buildCtx: NodeCheckBuildContextType,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType[] {
-    const {
-      context, formatRegistry, graph, lookupSchema
-    } = buildCtx;
-    const checks: CheckFnType[] = [];
-
-    if (sem.complementNode !== undefined) {
-      const complementCheck = context.compileNodeOrBooleanCheck(
-        sem.complementNode,
-        formatRegistry,
-        graph,
-        lookupSchema
-      );
-
-      checks.push(this.buildComplementCheck(complementCheck));
-    }
-
-    if (sem.ifNode !== undefined) {
-      const ifCheck = context.compileNodeOrBooleanCheck(sem.ifNode, formatRegistry, graph, lookupSchema);
-      const thenCheck = sem.thenNode === undefined
-        ? undefined
-        : context.compileNodeOrBooleanCheck(sem.thenNode, formatRegistry, graph, lookupSchema);
-      const elseCheck = sem.elseNode === undefined
-        ? undefined
-        : context.compileNodeOrBooleanCheck(sem.elseNode, formatRegistry, graph, lookupSchema);
-
-      checks.push(this.buildIfThenElseCheck(ifCheck, thenCheck, elseCheck));
-    }
-
-    return checks;
-  }
-
-  private buildNumberCheckFromSem(
-    context: SchemaCompilerCheckExecutionContextType,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType | undefined {
-    const hasNumberConstraint = sem.minimum !== undefined || sem.maximum !== undefined
-      || sem.exclusiveMinimum !== undefined || sem.exclusiveMaximum !== undefined
-      || sem.multipleOf !== undefined;
-
-    if (!hasNumberConstraint) {
-      return undefined;
-    }
-
-    return context.compileNumberCheck(
-      sem.minimum,
-      sem.maximum,
-      sem.exclusiveMinimum,
-      sem.exclusiveMaximum,
-      sem.multipleOf
-    );
-  }
-
-  private buildNumericRangeChecks(
-    minimum: number | undefined,
-    maximum: number | undefined,
-    exclusiveMinimum: number | undefined,
-    exclusiveMaximum: number | undefined,
-    multipleOf: number | undefined
-  ): Array<(num: number) => boolean> {
-    const checks: Array<(num: number) => boolean> = [];
-
-    if (minimum !== undefined) {
-      checks.push((num: number): boolean => {
-        return Predicates.satisfiesMinimum(num, minimum);
-      });
-    }
-    if (maximum !== undefined) {
-      checks.push((num: number): boolean => {
-        return Predicates.satisfiesMaximum(num, maximum);
-      });
-    }
-    if (exclusiveMinimum !== undefined) {
-      checks.push((num: number): boolean => {
-        return Predicates.satisfiesExclusiveMinimum(num, exclusiveMinimum);
-      });
-    }
-    if (exclusiveMaximum !== undefined) {
-      checks.push((num: number): boolean => {
-        return Predicates.satisfiesExclusiveMaximum(num, exclusiveMaximum);
-      });
-    }
-    if (multipleOf !== undefined) {
-      checks.push((num: number): boolean => {
-        return Predicates.satisfiesMultipleOf(num, multipleOf);
-      });
-    }
-
-    return checks;
-  }
-
-  private buildObjectStructureChecks(
-    buildCtx: NodeCheckBuildContextType,
-    graphNode: SchemaGraphNodeType,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType[] {
-    const {
-      context, formatRegistry, graph, lookupSchema
-    } = buildCtx;
-    const checks: CheckFnType[] = [];
-    const isObjectLike = sem.schemaTypes.includes('object') || sem.properties.size > 0 || sem.required.length > 0;
-
-    if (isObjectLike) {
-      const objCheck = context.compileNodeObjectCheck(graphNode, formatRegistry, graph, lookupSchema);
-
-      if (objCheck !== undefined) {
-        checks.push(objCheck);
-      }
-    }
-
-    if (Object.keys(sem.dependentRequired).length > 0) {
-      checks.push(this.buildDependentRequiredCheck(Object.entries(sem.dependentRequired)));
-    }
-
-    if (sem.dependentSchemaEntries.length > 0) {
-      const depSchemaChecks = this.compileDependentSchemaChecks(buildCtx, sem);
-
-      if (depSchemaChecks.length > 0) {
-        checks.push(this.buildDependentSchemaCheck(depSchemaChecks));
-      }
-    }
-
-    if (sem.propertyNamesNode !== undefined) {
-      const pnCheck = context.compileNodeOrBooleanCheck(sem.propertyNamesNode, formatRegistry, graph, lookupSchema);
-
-      checks.push(this.buildPropertyNamesCheck(pnCheck));
-    }
-
-    return checks;
-  }
-
-  private buildOneOfCheck(oneOfChecks: CheckFnType[]): CheckFnType {
-    return (value: unknown): boolean => {
-      let count = 0;
-
-      for (const check of oneOfChecks) {
-        if (check(value)) {
-          count++;
-          if (count > ONEOF_EARLY_EXIT_THRESHOLD) {
-            return false;
-          }
-        }
-      }
-
-      return count === ONEOF_EARLY_EXIT_THRESHOLD;
-    };
-  }
-
-  private buildPropertyNamesCheck(pnCheck: CheckFnType): CheckFnType {
-    return (value: unknown): boolean => {
-      if (!isRecord(value)) {
-        return true;
-      }
-
-      for (const key of Object.keys(value)) {
-        if (!pnCheck(key)) {
-          return false;
-        }
-      }
-
-      return true;
-    };
-  }
-
-  // ---------------------------------------------------------------------------
-  // buildValidateWithErrorsExecution helpers
-  // ---------------------------------------------------------------------------
-
-  private buildScalarChecks(
-    context: SchemaCompilerCheckExecutionContextType,
-    sem: SchemaGraphSemanticsType,
-    formatRegistry: FormatRegistryInterface
-  ): CheckFnType[] {
-    return [
-      ...this.buildTypeEnumConstChecks(context, sem),
-      ...this.buildStringNumberChecks(context, sem, formatRegistry)
-    ];
-  }
-
-  private buildStringCheckClosure(
-    checks: Array<(str: string) => boolean>,
-    formatCheck: CheckFnType | undefined,
-    contentEncoding?: string,
-    contentMediaType?: string
-  ): CheckFnType {
-    return (value: unknown): boolean => {
-      if (typeof value === 'string') {
-        for (const check of checks) {
-          if (!check(value)) {
-            return false;
-          }
-        }
-
-        if (contentEncoding !== undefined && !Predicates.satisfiesContentEncoding(value, contentEncoding)) {
-          return false;
-        }
-
-        if (contentMediaType !== undefined && !Predicates.satisfiesContentMediaType(value, contentMediaType, contentEncoding)) {
-          return false;
-        }
-      }
-
-      if (formatCheck !== undefined && !formatCheck(value)) {
-        return false;
-      }
-
-      return true;
-    };
-  }
-
-  private buildStringCheckFromSem(
-    context: SchemaCompilerCheckExecutionContextType,
-    sem: SchemaGraphSemanticsType,
-    formatRegistry: FormatRegistryInterface
-  ): CheckFnType | undefined {
-    const contentEnabled = this.appliesFormatAssertions(sem);
-    const hasStringConstraint = sem.minLength !== undefined || sem.maxLength !== undefined
-      || sem.pattern !== undefined || sem.format !== undefined
-      || (contentEnabled && (sem.contentEncoding !== undefined || sem.contentMediaType !== undefined));
-
-    if (!hasStringConstraint) {
-      return undefined;
-    }
-
-    return context.compileStringCheck(
-      sem.minLength,
-      sem.maxLength,
-      sem.pattern,
-      sem.format,
-      formatRegistry,
-      sem
-    );
-  }
-
-  private buildStringLengthPatternChecks(
-    minLength: number | undefined,
-    maxLength: number | undefined,
-    pattern: string | undefined
-  ): Array<(str: string) => boolean> {
-    const checks: Array<(str: string) => boolean> = [];
-
-    if (minLength !== undefined) {
-      checks.push((str: string): boolean => {
-        return Predicates.satisfiesMinLength(str, minLength);
-      });
-    }
-    if (maxLength !== undefined) {
-      checks.push((str: string): boolean => {
-        return Predicates.satisfiesMaxLength(str, maxLength);
-      });
-    }
-    if (pattern !== undefined) {
-      const regex = this.regexFor(pattern);
-
-      checks.push((str: string): boolean => {
-        return Predicates.satisfiesPattern(str, regex);
-      });
-    }
-
-    return checks;
-  }
-
-  private buildStringNumberChecks(
-    context: SchemaCompilerCheckExecutionContextType,
-    sem: SchemaGraphSemanticsType,
-    formatRegistry: FormatRegistryInterface
-  ): CheckFnType[] {
-    const checks: CheckFnType[] = [];
-    const stringCheck = this.buildStringCheckFromSem(context, sem, formatRegistry);
-
-    if (stringCheck !== undefined) {
-      checks.push(stringCheck);
-    }
-
-    const numCheck = this.buildNumberCheckFromSem(context, sem);
-
-    if (numCheck !== undefined) {
-      checks.push(numCheck);
-    }
-
-    return checks;
-  }
-
-  private buildStructureChecks(
-    buildCtx: NodeCheckBuildContextType,
-    graphNode: SchemaGraphNodeType,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType[] {
-    const {
-      context, formatRegistry, graph, lookupSchema
-    } = buildCtx;
-    const checks: CheckFnType[] = [];
-
-    if (typeof sem.ref === 'string') {
-      const refCheck = context.compileRefCheck(sem.ref, formatRegistry, graph, lookupSchema);
-
-      if (refCheck !== undefined) {
-        checks.push(refCheck);
-      }
-    }
-
-    return [
-      ...checks,
-      ...this.buildObjectStructureChecks(buildCtx, graphNode, sem),
-      ...this.buildArrayStructureChecks(buildCtx, graphNode, sem)
-    ];
-  }
-
-  private buildTypeEnumConstChecks(
-    context: SchemaCompilerCheckExecutionContextType,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType[] {
-    const checks: CheckFnType[] = [];
-    const types = sem.schemaTypes;
-
-    if (types.length > 0) {
-      checks.push(context.compileTypeCheck(types));
-    }
-
-    if (sem.hasConst) {
-      checks.push(compileConstCheck(sem.constValue));
-    }
-
-    if (sem.enumValues !== undefined) {
-      checks.push(compileEnumCheck(sem.enumValues));
-    }
-
-    return checks;
-  }
-
   private buildValidatePlanContext(): SchemaCompilerValidatePlanContextType {
     const ctx: SchemaCompilerValidatePlanContextType = {
       'activeCustomKeywords': this.activeCustomKeywords,
       'appliesFormatAssertions': (semantics: SchemaGraphSemanticsType): boolean => {
         return this.appliesFormatAssertions(semantics);
-      },
-      'compileNodeCheck': (
-        targetNode: SchemaGraphNodeType,
-        fmtReg: FormatRegistryInterface,
-        schemaGraph: SchemaGraphInterface,
-        schemaLookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType => {
-        return this.compileNodeCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
-      },
-      'compileNodeOrBooleanCheck': (
-        targetNode: SchemaGraphNodeType,
-        fmtReg: FormatRegistryInterface,
-        schemaGraph: SchemaGraphInterface,
-        schemaLookup?: (id: string) => Record<string, unknown> | undefined
-      ): CheckFnType => {
-        return this.compileNodeOrBooleanCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
       },
       'compileNodeOrBooleanValidateWithErrors': (
         targetNode: SchemaGraphNodeType,
@@ -1091,17 +332,17 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildValidateWithErrorsExecution(plan: CompiledNodeValidationPlanType): ValidateWithErrorsFnType {
     const {
-      allOfValidators, anyOfChecks, complementCheck, dynamicScopeEntry,
-      ifCheck, oneOfChecks,
+      allOfValidators, anyOfValidators, complementValidator, dynamicScopeEntry,
+      ifValidator, oneOfValidators,
       rdfsRangeValidator, unevaluatedItemsValidator, unevaluatedPropertiesValidator
     } = plan;
 
     const hasComposition
       = (allOfValidators !== undefined && allOfValidators.length > 0)
-      || (anyOfChecks !== undefined && anyOfChecks.length > 0)
-      || (oneOfChecks !== undefined && oneOfChecks.length > 0)
-      || complementCheck !== undefined
-      || ifCheck !== undefined
+      || (anyOfValidators !== undefined && anyOfValidators.length > 0)
+      || (oneOfValidators !== undefined && oneOfValidators.length > 0)
+      || complementValidator !== undefined
+      || ifValidator !== undefined
       // Unevaluated* and rdfsRange must run after all composition — route through composed path.
       || unevaluatedPropertiesValidator !== undefined
       || unevaluatedItemsValidator !== undefined
@@ -1262,84 +503,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  private compileDependentSchemaChecks(
-    buildCtx: NodeCheckBuildContextType,
-    sem: SchemaGraphSemanticsType
-  ): DepSchemaEntryType[] {
-    const {
-      context, formatRegistry, graph, lookupSchema
-    } = buildCtx;
-    const depSchemaChecks: DepSchemaEntryType[] = [];
-
-    for (const [
-      trigger,
-      node
-    ] of sem.dependentSchemaEntries) {
-      let depCheck: CheckFnType;
-
-      if (typeof node.schema === 'boolean') {
-        depCheck = node.schema
-          ? (_v: unknown): boolean => {
-            return true;
-          }
-          : (_v: unknown): boolean => {
-            return false;
-          };
-      } else {
-        depCheck = context.compileNodeCheck(node, formatRegistry, graph, lookupSchema);
-      }
-      depSchemaChecks.push({
-        'check': depCheck,
-        'trigger': trigger
-      });
-    }
-
-    return depSchemaChecks;
-  }
-
-  /**
-   * Node-native check compilation. Accepts a SchemaGraphNodeType directly.
-   */
-  private compileNodeCheck(
-    graphNode: SchemaGraphNodeType,
-    formatRegistry: FormatRegistryInterface,
-    graph: SchemaGraphInterface,
-    lookupSchema?: (id: string) => Record<string, unknown> | undefined
-  ): CheckFnType {
-    this.compilingNodes.add(graphNode);
-
-    try {
-      return this.buildNodeCheckExecution(
-        this.checkExecContext,
-        graphNode,
-        formatRegistry,
-        graph,
-        lookupSchema
-      );
-    } finally {
-      this.compilingNodes.delete(graphNode);
-    }
-  }
-
-  private compileNodeOrBooleanCheck(
-    node: SchemaGraphNodeType,
-    formatRegistry: FormatRegistryInterface,
-    graph: SchemaGraphInterface,
-    lookupSchema?: (id: string) => Record<string, unknown> | undefined
-  ): CheckFnType {
-    if (typeof node.schema === 'boolean') {
-      return node.schema
-        ? (_v: unknown): boolean => {
-          return true;
-        }
-        : (_v: unknown): boolean => {
-          return false;
-        };
-    }
-
-    return this.compileNodeCheck(node, formatRegistry, graph, lookupSchema);
-  }
-
   private compileNodeOrBooleanValidateWithErrors(
     node: SchemaGraphNodeType,
     formatRegistry: FormatRegistryInterface,
@@ -1423,31 +586,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         this.activeLookupGraph
       );
 
-      // Compile value-producing validators for anyOf/oneOf members so that
-      // defaults and coercion applied inside a branch are propagated forward,
-      // matching the interpreted path (VisitComposition.anyOf/oneOf) semantics.
-      const sem = graph.semantics(graphNode);
-      let anyOfValidators: undefined | ValidateWithErrorsFnType[];
-
-      if (sem.anyOf.length > 0) {
-        anyOfValidators = sem.anyOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
-          return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
-        });
-      }
-
-      let oneOfValidators: undefined | ValidateWithErrorsFnType[];
-
-      if (sem.oneOf.length > 0) {
-        oneOfValidators = sem.oneOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
-          return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
-        });
-      }
-
       const baseExecutor = this.buildValidateWithErrorsExecution(plan);
 
-      resolved = anyOfValidators === undefined && oneOfValidators === undefined
-        ? baseExecutor
-        : this.wrapWithValueProducingComposition(baseExecutor, anyOfValidators, oneOfValidators);
+      resolved = baseExecutor;
 
       return resolved;
     } finally {
@@ -1455,74 +596,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
   }
 
-  private compileNumberCheck(
-    minimum: number | undefined,
-    maximum: number | undefined,
-    exclusiveMinimum: number | undefined,
-    exclusiveMaximum: number | undefined,
-    multipleOf: number | undefined
-  ): CheckFnType | undefined {
-    const checks = this.buildNumericRangeChecks(minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf);
-
-    if (checks.length === 0) {
-      return undefined;
-    }
-
-    return (value: unknown): boolean => {
-      if (typeof value !== 'number') {
-        return true;
-      }
-
-      for (const check of checks) {
-        if (!check(value)) {
-          return false;
-        }
-      }
-
-      return true;
-    };
-  }
-
-  private compileStringCheck(
-    minLength: number | undefined,
-    maxLength: number | undefined,
-    pattern: string | undefined,
-    format: string | undefined,
-    formatRegistry: FormatRegistryInterface,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType | undefined {
-    const checks = this.buildStringLengthPatternChecks(minLength, maxLength, pattern);
-    const formatCheck = this.resolveFormatCheck(format, formatRegistry, sem);
-    const contentAssertionsEnabled = this.appliesFormatAssertions(sem);
-    const contentEncoding = contentAssertionsEnabled ? sem.contentEncoding : undefined;
-    const contentMediaType = contentAssertionsEnabled ? sem.contentMediaType : undefined;
-
-    if (checks.length === 0 && formatCheck === undefined && contentEncoding === undefined && contentMediaType === undefined) {
-      return undefined;
-    }
-
-    return this.buildStringCheckClosure(checks, formatCheck, contentEncoding, contentMediaType);
-  }
-
-  private compileTypeCheck(types: string[]): CheckFnType {
-    if (types.length === 1) {
-      const singleType = types[0];
-
-      return (value: unknown): boolean => {
-        return Predicates.matchesType(singleType, value);
-      };
-    }
-
-    return (value: unknown): boolean => {
-      return Predicates.matchesAnyType(types, value);
-    };
-  }
-
   private compileValidateMutating(
     schema: Record<string, unknown>,
     graph: SchemaGraphInterface,
     validateWithErrors: ValidateWithErrorsFnType,
-    checkFn: CheckFnType,
+    checkFn: (data: unknown) => boolean,
     trackEvaluated: boolean
   ): (data: unknown, options?: CompiledValidateOptionsType) => CompiledValidationResultType {
     const graphNode = graph.node(schema);
@@ -1573,7 +651,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     data: unknown,
     options: CompiledValidateOptionsType | undefined,
     validateFn: (data: unknown, options?: CompiledValidateOptionsType) => CompiledValidationResultType,
-    checkFn: CheckFnType,
+    checkFn: (data: unknown) => boolean,
     validateWithErrorsFn: ValidateWithErrorsFnType,
     trackEvaluated: boolean
   ): CompiledValidationResultType {
@@ -1634,48 +712,53 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     workingValue: unknown,
     path: string,
     ctx: ExecContextType
-  ): boolean {
-    const {
-      collectErrors, errors
-    } = ctx;
+  ): { 'earlyExit': boolean;
+    'valid': boolean;
+    'value': unknown } {
+    const { collectErrors } = ctx;
     let valid = true;
+    let currentValue = workingValue;
 
     if (plan.anyOfValidators !== undefined) {
-      if (!Composition.validateAnyOfWithEvaluated(path, workingValue, plan.anyOfValidators, ctx)) {
-        if (!collectErrors) {
-          return false;
-        }
+      const anyResult = Composition.validateAnyOf(path, currentValue, plan.anyOfValidators, ctx);
+
+      if (anyResult.earlyExit) {
+        return anyResult;
+      }
+      if (!anyResult.valid) {
         valid = false;
       }
-    } else if (!Composition.validateAnyOf(path, workingValue, plan.anyOfChecks, errors)) {
-      if (!collectErrors) {
-        return false;
-      }
-      valid = false;
+      currentValue = anyResult.value;
     }
 
     if (plan.oneOfValidators !== undefined) {
-      if (!Composition.validateOneOfWithEvaluated(path, workingValue, plan.oneOfValidators, ctx)) {
-        if (!collectErrors) {
-          return false;
-        }
+      const oneResult = Composition.validateOneOf(path, currentValue, plan.oneOfValidators, ctx);
+
+      if (oneResult.earlyExit) {
+        return oneResult;
+      }
+      if (!oneResult.valid) {
         valid = false;
       }
-    } else if (!Composition.validateOneOf(path, workingValue, plan.oneOfChecks, errors)) {
+      currentValue = oneResult.value;
+    }
+
+    if (!Composition.validateNot(path, currentValue, plan.complementValidator, ctx)) {
       if (!collectErrors) {
-        return false;
+        return {
+          'earlyExit': true,
+          'valid': false,
+          'value': currentValue
+        };
       }
       valid = false;
     }
 
-    if (!Composition.validateNot(path, workingValue, plan.complementCheck, errors)) {
-      if (!collectErrors) {
-        return false;
-      }
-      valid = false;
-    }
-
-    return valid;
+    return {
+      'earlyExit': false,
+      valid,
+      'value': currentValue
+    };
   }
 
   private executeComposedBoolLogic(
@@ -1686,7 +769,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
-    const { collectErrors } = ctx;
     const allOfResult = this.executeComposedAllOf(plan, initialValue, path, ctx);
 
     if (allOfResult.earlyExit) {
@@ -1694,20 +776,16 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const workingValue = allOfResult.value;
-    const anyOneNotValid = this.executeComposedAnyOneNot(plan, workingValue, path, ctx);
+    const anyOneNotResult = this.executeComposedAnyOneNot(plan, workingValue, path, ctx);
 
-    if (!anyOneNotValid && !collectErrors) {
-      return {
-        'earlyExit': true,
-        'valid': false,
-        'value': workingValue
-      };
+    if (anyOneNotResult.earlyExit) {
+      return anyOneNotResult;
     }
 
     return {
       'earlyExit': false,
-      'valid': allOfResult.valid && anyOneNotValid,
-      'value': workingValue
+      'valid': allOfResult.valid && anyOneNotResult.valid,
+      'value': anyOneNotResult.value
     };
   }
 
@@ -1719,13 +797,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     initialValid: boolean
   ): ValidateWithErrorsResultType {
     const {
-      elseValidator, ifCheck, thenValidator
+      elseValidator, ifValidator, thenValidator
     } = plan;
     const validateIfThenElse = Composition.validateIfThenElse;
     const ifResult = validateIfThenElse(
       workingValue,
       path,
-      ifCheck,
+      ifValidator,
       thenValidator,
       elseValidator,
       ctx
@@ -1781,7 +859,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     data: unknown,
     options: CompiledValidateOptionsType | undefined,
     validateWithErrors: ValidateWithErrorsFnType,
-    checkFn: CheckFnType,
+    checkFn: (data: unknown) => boolean,
     rootTypes: string[],
     rootHasDefault: boolean,
     rootDefaultValue: unknown,
@@ -2093,35 +1171,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  private regexFor(pattern: string): RegExp {
-    let cached = this.regexCache.get(pattern);
-
-    if (cached === undefined) {
-      cached = new RegExp(pattern, 'u');
-      this.regexCache.set(pattern, cached);
-    }
-
-    return cached;
-  }
-
-  private resolveFormatCheck(
-    format: string | undefined,
-    formatRegistry: FormatRegistryInterface,
-    sem: SchemaGraphSemanticsType
-  ): CheckFnType | undefined {
-    if (format === undefined) {
-      return undefined;
-    }
-
-    const hasFormatAssertion = this.appliesFormatAssertions(sem);
-
-    if (!hasFormatAssertion) {
-      return undefined;
-    }
-
-    return formatRegistry.get(format);
-  }
-
   private runPlanDynamicRefValidator(
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
@@ -2340,7 +1389,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const { collectErrors } = runOpts;
     const { errors } = ctx;
     const {
-      containsCheck, maxContains, maxItems, minContains, minItems, uniqueItems
+      containsValidator, maxContains, maxItems, minContains, minItems, uniqueItems
     } = arrOpts;
 
     if (!Arrays.validateBounds(path, arr, minItems, maxItems, uniqueItems, errors) && !collectErrors) {
@@ -2356,7 +1405,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       return itemsResult;
     }
 
-    if (!Arrays.validateContains(path, arr, containsCheck, minContains, maxContains, errors) && !collectErrors) {
+    if (!Arrays.validateContains(path, arr, containsValidator, minContains, maxContains, ctx, errors) && !collectErrors) {
       return {
         'earlyExit': true,
         'valid': false
@@ -2427,11 +1476,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): { 'earlyExit': boolean;
     'valid': boolean; } {
     const {
-      containsCheck, itemValidator, maxContains, maxItems, minContains, minItems,
+      containsValidator, itemValidator, maxContains, maxItems, minContains, minItems,
       prefixValidators, uniqueItems
     } = plan;
     const arrOpts: ArrayValidationOptionsType = {
-      containsCheck,
+      containsValidator,
       itemValidator,
       maxContains,
       maxItems,
@@ -3095,85 +2144,5 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       valid
     };
   }
-
-  // ---------------------------------------------------------------------------
-  // Validate execution (inlined from SchemaCompilerValidateExec)
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Wraps a base validator with value-producing anyOf/oneOf composition logic.
-   * Replaces the boolean-only anyOf/oneOf check path with full validators that
-   * propagate the winning branch's mutated value (defaults, coercion).
-   */
-  private wrapWithValueProducingComposition(
-    baseExecutor: ValidateWithErrorsFnType,
-    anyOfValidators: undefined | ValidateWithErrorsFnType[],
-    oneOfValidators: undefined | ValidateWithErrorsFnType[]
-  ): ValidateWithErrorsFnType {
-    return (
-      value: unknown,
-      path: string,
-      ctx: ExecContextType
-    ): ValidateWithErrorsResultType => {
-      const baseResult = baseExecutor(value, path, ctx);
-
-      // Run value-producing anyOf — this replaces the boolean anyOf check in the base executor.
-      // The base executor already validated and returned any anyOf errors; here we re-run
-      // with full validators to propagate the winner's value when applyDefaults or doCoerce is active.
-      if (!ctx.applyDefaults && !ctx.doCoerce) {
-        return baseResult;
-      }
-
-      if (!baseResult.valid) {
-        return baseResult;
-      }
-
-      let workingValue = baseResult.value;
-
-      if (anyOfValidators !== undefined) {
-        const anyResult = Composition.validateAnyOfWithValues(
-          path,
-          workingValue,
-          anyOfValidators,
-          ctx,
-          <T>(candidate: T): T => {
-            return GraphEngineSupport.cloneCandidate(candidate);
-          }
-        );
-
-        if (!anyResult.valid) {
-          return {
-            'valid': false,
-            'value': anyResult.value
-          };
-        }
-        workingValue = anyResult.value;
-      }
-
-      if (oneOfValidators !== undefined) {
-        const oneResult = Composition.validateOneOfWithValues(
-          path,
-          workingValue,
-          oneOfValidators,
-          ctx,
-          <T>(candidate: T): T => {
-            return GraphEngineSupport.cloneCandidate(candidate);
-          }
-        );
-
-        if (!oneResult.valid) {
-          return {
-            'valid': false,
-            'value': oneResult.value
-          };
-        }
-        workingValue = oneResult.value;
-      }
-
-      return {
-        'valid': true,
-        'value': workingValue
-      };
-    };
-  }
 }
+
