@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import type {
   CheckFnType, ValidateWithErrorsFnType, ValidationErrorType
 } from '../../src/types/Validation.js';
+import type { ExecContextType } from '../../src/types/ExecContext.js';
 import {
   describe, it
 } from 'node:test';
@@ -4261,6 +4262,27 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 }
 
 // ===========================================================================
+// Test helpers — exec context factory
+// ===========================================================================
+
+function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefaults = false, doCoerce = false, stripUnknown = false): ExecContextType {
+  return {
+    applyDefaults,
+    collectErrors,
+    'depth': 0,
+    doCoerce,
+    'dynamicScope': [],
+    errors,
+    'evaluatedItems': undefined,
+    'evaluatedProperties': undefined,
+    'maxDepth': 100,
+    'refStack': new Set(),
+    stripUnknown,
+    'trackEvaluated': true
+  };
+}
+
+// ===========================================================================
 // Source: arrays.test.ts
 // ===========================================================================
 {
@@ -4270,9 +4292,9 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       value
     };
   };
-  const failing: ValidateWithErrorsFnType = (value, path, errors, collectErrors) => {
-    if (collectErrors) {
-      errors.push(BaseError.validationError(path, 'type', 'mock'));
+  const failing: ValidateWithErrorsFnType = (value, path, ctx) => {
+    if (ctx.collectErrors) {
+      ctx.errors.push(BaseError.validationError(path, 'type', 'mock'));
     }
 
     return {
@@ -4414,7 +4436,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r1 = Arrays.validateItems('/a', [
         1,
         2
-      ], undefined, undefined, e1, false, false, false, false);
+      ], undefined, undefined, makeCtx(e1, false));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
@@ -4425,7 +4447,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         1,
         2,
         3
-      ], passing, undefined, e2, false, false, false, false);
+      ], passing, undefined, makeCtx(e2, false));
 
       assert.equal(r2.valid, true);
       assert.equal(r2.earlyExit, false);
@@ -4435,7 +4457,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r3 = Arrays.validateItems('/a', [
         1,
         2
-      ], failing, undefined, e3, false, false, false, false);
+      ], failing, undefined, makeCtx(e3, false));
 
       assert.equal(r3.valid, false);
       assert.equal(r3.earlyExit, true);
@@ -4445,7 +4467,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r4 = Arrays.validateItems('/a', [
         1,
         2
-      ], failing, undefined, e4, true, false, false, false);
+      ], failing, undefined, makeCtx(e4, true));
 
       assert.equal(r4.valid, false);
       assert.equal(r4.earlyExit, false);
@@ -4461,7 +4483,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ], passing, [
         passing,
         passing
-      ], e5, false, false, false, false);
+      ], makeCtx(e5, false));
 
       assert.equal(r5.valid, true);
       assert.equal(r5.earlyExit, false);
@@ -4473,7 +4495,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r1 = Arrays.validatePrefixItems('/a', [
         1,
         2
-      ], undefined, e1, false, false, false, false);
+      ], undefined, makeCtx(e1, false));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
@@ -4487,7 +4509,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ], [
         passing,
         passing
-      ], e2, false, false, false, false);
+      ], makeCtx(e2, false));
 
       assert.equal(r2.valid, true);
       assert.equal(r2.earlyExit, false);
@@ -4500,7 +4522,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ], [
         failing,
         passing
-      ], e3, false, false, false, false);
+      ], makeCtx(e3, false));
 
       assert.equal(r3.valid, false);
       assert.equal(r3.earlyExit, true);
@@ -4513,7 +4535,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ], [
         failing,
         failing
-      ], e4, true, false, false, false);
+      ], makeCtx(e4, true));
 
       assert.equal(r4.valid, false);
       assert.equal(r4.earlyExit, false);
@@ -4536,9 +4558,9 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   const failingValidatorImpl: ValidateWithErrorsFnType = (
     value: unknown,
     path: string,
-    errors: ValidationErrorType[]
+    ctx: ExecContextType
   ) => {
-    errors.push({
+    ctx.errors.push({
       'instancePath': path,
       'keyword': 'type',
       'message': 'mock failure',
@@ -4618,7 +4640,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validateDependentRequired: empty, trigger+dep, trigger+miss, non-object, earlyExit', () => {
       // Good: no entries = valid
       const e1: ValidationErrorType[] = [];
-      const r1 = Objects.validateDependentRequired('', { 'a': 1 }, [], e1, true);
+      const r1 = Objects.validateDependentRequired('', { 'a': 1 }, [], makeCtx(e1, true));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
@@ -4632,7 +4654,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       }, [[
         'a',
         ['b']
-      ]], e2, true);
+      ]], makeCtx(e2, true));
 
       assert.equal(r2.valid, true);
       assert.equal(e2.length, 0);
@@ -4642,7 +4664,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r3 = Objects.validateDependentRequired('', { 'a': 1 }, [[
         'a',
         ['b']
-      ]], e3, true);
+      ]], makeCtx(e3, true));
 
       assert.equal(r3.valid, false);
       assert.equal(e3.length, 1);
@@ -4652,7 +4674,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r4 = Objects.validateDependentRequired('', 'not-an-object', [[
         'a',
         ['b']
-      ]], e4, true);
+      ]], makeCtx(e4, true));
 
       assert.equal(r4.valid, true);
 
@@ -4664,7 +4686,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'b',
           'c'
         ]
-      ]], e5, false);
+      ]], makeCtx(e5, false));
 
       assert.equal(r5.valid, false);
       assert.equal(r5.earlyExit, true);
@@ -4727,19 +4749,19 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
       // validatePropertyNames
       const e1: ValidationErrorType[] = [];
-      const rn1 = Objects.validatePropertyNames('', { 'a': 1 }, undefined, e1, true);
+      const rn1 = Objects.validatePropertyNames('', { 'a': 1 }, undefined, makeCtx(e1, true));
 
       assert.equal(rn1.valid, true);
       assert.equal(rn1.earlyExit, false);
 
       const e2: ValidationErrorType[] = [];
-      const rn2 = Objects.validatePropertyNames('', { 'ok': 1 }, passingValidator(), e2, true);
+      const rn2 = Objects.validatePropertyNames('', { 'ok': 1 }, passingValidator(), makeCtx(e2, true));
 
       assert.equal(rn2.valid, true);
       assert.equal(rn2.earlyExit, false);
 
       const e3: ValidationErrorType[] = [];
-      const rn3 = Objects.validatePropertyNames('', { 'bad': 1 }, failingValidator(), e3, true);
+      const rn3 = Objects.validatePropertyNames('', { 'bad': 1 }, failingValidator(), makeCtx(e3, true));
 
       assert.equal(rn3.valid, false);
       assert.equal(e3.length, 1);
@@ -4757,14 +4779,14 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r1 = Objects.validateProperties('', { 'name': 'Alice' }, new Map([[
         'name',
         passingValidator()
-      ]]), undefined, false, undefined, undefined, false, emptyDefaults(), e1, true, false, false);
+      ]]), undefined, false, undefined, undefined, false, emptyDefaults(), makeCtx(e1, true));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
 
       // Bad: invalid for unknown property with additionalIsFalse
       const e2: ValidationErrorType[] = [];
-      const r2 = Objects.validateProperties('', { 'extra': 'bad' }, new Map(), undefined, true, undefined, undefined, false, emptyDefaults(), e2, true, false, false);
+      const r2 = Objects.validateProperties('', { 'extra': 'bad' }, new Map(), undefined, true, undefined, undefined, false, emptyDefaults(), makeCtx(e2, true));
 
       assert.equal(r2.valid, false);
       assert.equal(e2.length, 1);
@@ -4779,7 +4801,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       Objects.validateProperties('', obj3, new Map([[
         'name',
         passingValidator()
-      ]]), undefined, false, undefined, new Set(['name']), true, emptyDefaults(), e3, true, false, false);
+      ]]), undefined, false, undefined, new Set(['name']), true, emptyDefaults(), makeCtx(e3, true, false, false, true), new Set(['name']));
       assert.equal('extra' in obj3, false);
       assert.equal(obj3.name, 'Alice');
 
@@ -4789,7 +4811,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r4 = Objects.validateProperties('', obj4, new Map(), [{
         'regex': /^x-/u,
         'validator': coercingValidator('coerced')
-      }], false, undefined, undefined, false, emptyDefaults(), e4, true, false, false);
+      }], false, undefined, undefined, false, emptyDefaults(), makeCtx(e4, true));
 
       assert.equal(r4.valid, true);
       assert.equal(obj4['x-custom'], 'coerced');
@@ -4982,9 +5004,9 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   const failingValidatorImpl: ValidateWithErrorsFnType = (
     value: unknown,
     path: string,
-    errors: ValidationErrorType[]
+    ctx: ExecContextType
   ) => {
-    errors.push({
+    ctx.errors.push({
       'instancePath': path,
       'keyword': 'type',
       'message': 'mock failure',
@@ -5016,7 +5038,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   void describe('Composition — Good/Bad/Ugly', () => {
     void it('validateAllOf: undefined, all-pass, earlyExit, collect-errors', () => {
       const e1: ValidationErrorType[] = [];
-      const r1 = Composition.validateAllOf('test', '', undefined, e1, true, false, false);
+      const r1 = Composition.validateAllOf('test', '', undefined, makeCtx(e1, true));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
@@ -5026,7 +5048,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r2 = Composition.validateAllOf('test', '', [
         passingValidator(),
         passingValidator()
-      ], e2, true, false, false);
+      ], makeCtx(e2, true));
 
       assert.equal(r2.valid, true);
       assert.equal(r2.earlyExit, false);
@@ -5035,7 +5057,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r3 = Composition.validateAllOf('test', '/root', [
         passingValidator(),
         failingValidator()
-      ], e3, false, false, false);
+      ], makeCtx(e3, false));
 
       assert.equal(r3.valid, false);
       assert.equal(r3.earlyExit, true);
@@ -5044,7 +5066,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r4 = Composition.validateAllOf('test', '/root', [
         passingValidator(),
         failingValidator()
-      ], e4, true, false, false);
+      ], makeCtx(e4, true));
 
       assert.equal(r4.valid, false);
       assert.equal(r4.earlyExit, false);
@@ -5115,30 +5137,30 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validateIfThenElse + validateDependentSchemas + validateCustomKeywords', () => {
       // validateIfThenElse
       const ei1: ValidationErrorType[] = [];
-      const rite1 = Composition.validateIfThenElse('test', '', undefined, undefined, undefined, ei1, true, false, false, false);
+      const rite1 = Composition.validateIfThenElse('test', '', undefined, undefined, undefined, makeCtx(ei1, true));
 
       assert.equal(rite1.valid, true);
       assert.equal(rite1.value, 'test');
 
       const ei2: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '', alwaysTrue, passingValidator(), undefined, ei2, true, false, false, false).valid, true);
+      assert.equal(Composition.validateIfThenElse('test', '', alwaysTrue, passingValidator(), undefined, makeCtx(ei2, true)).valid, true);
 
       const ei3: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '/root', alwaysTrue, failingValidator(), undefined, ei3, true, false, false, false).valid, false);
+      assert.equal(Composition.validateIfThenElse('test', '/root', alwaysTrue, failingValidator(), undefined, makeCtx(ei3, true)).valid, false);
 
       const ei4: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, passingValidator(), ei4, true, false, false, false).valid, true);
+      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, passingValidator(), makeCtx(ei4, true)).valid, true);
 
       const ei5: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, undefined, ei5, true, false, false, false).valid, true);
+      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, undefined, makeCtx(ei5, true)).valid, true);
 
       // validateDependentSchemas
       const ed1: ValidationErrorType[] = [];
-      const rds1 = Composition.validateDependentSchemas({ 'a': 1 }, '', undefined, ed1, true, false, false, false);
+      const rds1 = Composition.validateDependentSchemas({ 'a': 1 }, '', undefined, makeCtx(ed1, true));
 
       assert.equal(rds1.valid, true);
       assert.equal(rds1.earlyExit, false);
@@ -5147,7 +5169,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const rds2 = Composition.validateDependentSchemas({ 'a': 1 }, '', [{
         'trigger': 'a',
         'validator': passingValidator()
-      }], ed2, true, false, false, false);
+      }], makeCtx(ed2, true));
 
       assert.equal(rds2.valid, true);
       assert.equal(rds2.earlyExit, false);
@@ -5156,7 +5178,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const rds3 = Composition.validateDependentSchemas('not-an-object', '', [{
         'trigger': 'a',
         'validator': failingValidator()
-      }], ed3, true, false, false, false);
+      }], makeCtx(ed3, true));
 
       assert.equal(rds3.valid, true);
 

@@ -5,16 +5,19 @@
 import type { InferType } from './Schema.js';
 import type { ValidationErrorSchema } from '../constants/SCHEMAS.js';
 import type { CustomKeywordEntryType } from '../types/CustomKeywordEntry.js';
+import type { ExecContextType } from '../types/ExecContext.js';
+
+export type { AllowedKeysResultType } from '../types/AllowedKeysResult.js';
 
 import type { PatternPropCheckEntryType } from '../types/PatternPropCheckEntry.js';
 import type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntry.js';
 import type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntry.js';
 import type { RefTargetType } from '../types/RefTarget.js';
 
-export type { AllowedKeysResultType } from '../types/AllowedKeysResult.js';
 export type { CompositionValidatorsResultType } from '../types/CompositionValidatorsResult.js';
 export type { ConditionalValidatorsResultType } from '../types/ConditionalValidatorsResult.js';
 export type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntry.js';
+export type { ExecContextType } from '../types/ExecContext.js';
 export type { KeyPatternCheckResultType } from '../types/KeyPatternCheckResult.js';
 export type { PatternPropCheckEntryType } from '../types/PatternPropCheckEntry.js';
 export type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntry.js';
@@ -273,16 +276,16 @@ export type ValidateWithErrorsResultType = {
  * The compiled validator function signature used throughout the validation engine.
  *
  * @remarks
- * Every schema node compiles to a function matching this signature. Parameters
- * control which side-effects the validator applies: `collectErrors` accumulates
- * failures into the `errors` array; `applyDefaults` fills missing properties
- * with schema-declared defaults; `doCoerce` converts values to the target type;
- * `stripUnknown` removes properties not declared by the schema.
+ * Every schema node compiles to a function matching this signature. All
+ * execution flags (collectErrors, applyDefaults, doCoerce, stripUnknown) are
+ * bundled in the `ExecContextType` context object. The context also carries
+ * the accumulated error list, ref-cycle guard stack, and dynamic scope.
  *
  * @example
  * ```ts
  * const validate: ValidateWithErrorsFnType = registry.compile(schema);
- * const { valid } = validate(data, '', [], true, false, false, false);
+ * const ctx: ExecContextType = { errors: [], collectErrors: true, applyDefaults: false, doCoerce: false, stripUnknown: false, refStack: new Set(), dynamicScope: [], evaluatedItems: undefined, evaluatedProperties: undefined, depth: 0, maxDepth: 100 };
+ * const { valid } = validate(data, '', ctx);
  * ```
  *
  * @category Validation
@@ -293,11 +296,7 @@ export type ValidateWithErrorsResultType = {
 export type ValidateWithErrorsFnType = (
   value: unknown,
   path: string,
-  errors: ValidationErrorType[],
-  collectErrors: boolean,
-  applyDefaults: boolean,
-  doCoerce: boolean,
-  stripUnknown: boolean
+  ctx: ExecContextType
 ) => ValidateWithErrorsResultType;
 
 /**

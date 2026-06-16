@@ -8,6 +8,7 @@
  */
 
 import type { ValidationErrorType } from '../../types/Validation.js';
+import type { ExecContextType } from '../../types/ExecContext.js';
 import type {
   CompiledValidateOptionsType, CompiledValidationResultType, CompiledValidatorType
 } from '../../types/Compiler.js';
@@ -116,6 +117,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private activeLookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
   private readonly checkExecContext: SchemaCompilerCheckExecutionContextType;
   private readonly compilingNodes = new Set<SchemaGraphNodeType>();
+  private readonly compilingValidateNodes = new Map<SchemaGraphNodeType, ValidateWithErrorsFnType>();
   private readonly graphContext: SchemaCompilerGraphContextType;
   private readonly logger: LoggerInterface;
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorType | undefined) | undefined;
@@ -139,6 +141,88 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     this.validatePlanContext = this.buildValidatePlanContext();
   }
 
+  /**
+   * After array validation, accumulate evaluated item indices into `ctx.evaluatedItems`.
+   *
+   * An item is "evaluated" when:
+   * - Its index is covered by `prefixValidators` (prefixItems), OR
+   * - Its index is beyond the prefix and `itemValidator` is set (items keyword), OR
+   * - It matches `containsCheck` (contains keyword).
+   *
+   * This mirrors the interpreter accumulation in GraphEngine.ts:749, :789, :712.
+   */
+  private accumulateEvaluatedItems(
+    plan: CompiledNodeValidationPlanType,
+    arr: unknown[],
+    ctx: ExecContextType
+  ): void {
+    const {
+      containsCheck, itemValidator, prefixValidators
+    } = plan;
+    const prefixLen = prefixValidators === undefined ? 0 : prefixValidators.length;
+
+    // prefixItems: indices [0, min(prefixLen, arr.length))
+    for (let i = 0; i < prefixLen && i < arr.length; i++) {
+      (ctx.evaluatedItems ??= new Set()).add(i);
+    }
+
+    // items: indices [prefixLen, arr.length)
+    if (itemValidator !== undefined) {
+      for (let i = prefixLen; i < arr.length; i++) {
+        (ctx.evaluatedItems ??= new Set()).add(i);
+      }
+    }
+
+    // contains: indices where the contains check passes
+    if (containsCheck !== undefined) {
+      for (const [
+        i,
+        element
+      ] of arr.entries()) {
+        if (containsCheck(element)) {
+          (ctx.evaluatedItems ??= new Set()).add(i);
+        }
+      }
+    }
+  }
+
+  /**
+   * After object validation, accumulate evaluated property keys into `ctx.evaluatedProperties`.
+   *
+   * A property is "evaluated" by this node when:
+   * - It exists in the object AND is covered by `propValidators` (properties keyword), OR
+   * - It exists in the object AND matches a `patternPropValidators` pattern (patternProperties).
+   *
+   * This mirrors the interpreter accumulation in GraphEngine.ts:1126 and :1177.
+   * Keys handled only by `additionalProperties` are tracked when they PASS validation;
+   * since we cannot distinguish pass/fail per-key here without re-running, we conservatively
+   * omit them — for unevaluated semantics, additionalProperties does not evaluate residuals
+   * for unevaluatedProperties purposes per JSON Schema 2020-12 (§11.3).
+   */
+  private accumulateEvaluatedProperties(
+    plan: CompiledNodeValidationPlanType,
+    obj: Record<string, unknown>,
+    ctx: ExecContextType
+  ): void {
+    const {
+      patternPropValidators, propValidators
+    } = plan;
+    const keys = Object.keys(obj);
+
+    for (const key of keys) {
+      if (propValidators.has(key)) {
+        (ctx.evaluatedProperties ??= new Set()).add(key);
+      } else if (patternPropValidators !== undefined) {
+        for (const pp of patternPropValidators) {
+          if (pp.regex.test(key)) {
+            (ctx.evaluatedProperties ??= new Set()).add(key);
+            break;
+          }
+        }
+      }
+    }
+  }
+
   private appliesFormatAssertions(sem: SchemaGraphSemanticsType): boolean {
     const rootVocabulary = sem.schemaVocabulary;
     const formatAssertionValue = isRecord(rootVocabulary) ? rootVocabulary[VOCABULARY_FORMAT_ASSERTION] : undefined;
@@ -147,6 +231,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     // Default: format assertions ON (strict-by-default posture).
     return typeof formatAssertionValue === 'boolean' ? formatAssertionValue : true;
   }
+
+  // ---------------------------------------------------------------------------
+  // buildNodeCheckExecution helpers
+  // ---------------------------------------------------------------------------
 
   private applyPlanDefaults(
     initialValue: unknown,
@@ -188,10 +276,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     return workingValue;
   }
-
-  // ---------------------------------------------------------------------------
-  // buildNodeCheckExecution helpers
-  // ---------------------------------------------------------------------------
 
   private buildAllOfCheck(allOfChecks: CheckFnType[]): CheckFnType {
     return (value: unknown): boolean => {
@@ -367,6 +451,38 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       'compileTypeCheck': (types: string[]): CheckFnType => {
         return this.compileTypeCheck(types);
       }
+    };
+  }
+
+  /**
+   * Build a `CheckFnType` that delegates to a `ValidateWithErrorsFnType`.
+   *
+   * Used when the schema has `unevaluatedProperties`/`unevaluatedItems`: the cheap check
+   * path cannot track evaluated sets across composition branches, so we run the full
+   * validator and discard the errors. Mirrors what the interpreter does (GraphEngine has
+   * a single path for both `check()` and `validate()`).
+   */
+  private buildCheckFromValidate(validateFn: ValidateWithErrorsFnType): CheckFnType {
+    return (data: unknown): boolean => {
+      const errors: ValidationErrorType[] = [];
+      const ctx: ExecContextType = {
+        'applyDefaults': false,
+        'collectErrors': false,
+        'depth': 0,
+        'doCoerce': false,
+        'dynamicScope': [],
+        errors,
+        'evaluatedItems': undefined,
+        'evaluatedProperties': undefined,
+        'maxDepth': 100,
+        'refStack': new Set(),
+        'stripUnknown': false,
+        // This path is only used for schemas that declare unevaluated*, so tracking is required.
+        'trackEvaluated': true
+      };
+      const result = validateFn(data, '', ctx);
+
+      return result.valid;
     };
   }
 
@@ -743,6 +859,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // buildValidateWithErrorsExecution helpers
+  // ---------------------------------------------------------------------------
+
   private buildScalarChecks(
     context: SchemaCompilerCheckExecutionContextType,
     sem: SchemaGraphSemanticsType,
@@ -808,10 +928,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       sem
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // buildValidateWithErrorsExecution helpers
-  // ---------------------------------------------------------------------------
 
   private buildStringLengthPatternChecks(
     minLength: number | undefined,
@@ -971,7 +1087,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildValidateWithErrorsExecution(plan: CompiledNodeValidationPlanType): ValidateWithErrorsFnType {
     const {
-      allOfValidators, anyOfChecks, complementCheck, ifCheck, oneOfChecks
+      allOfValidators, anyOfChecks, complementCheck, dynamicScopeEntry,
+      ifCheck, oneOfChecks,
+      rdfsRangeValidator, unevaluatedItemsValidator, unevaluatedPropertiesValidator
     } = plan;
 
     const hasComposition
@@ -979,44 +1097,90 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       || (anyOfChecks !== undefined && anyOfChecks.length > 0)
       || (oneOfChecks !== undefined && oneOfChecks.length > 0)
       || complementCheck !== undefined
-      || ifCheck !== undefined;
+      || ifCheck !== undefined
+      // Unevaluated* and rdfsRange must run after all composition — route through composed path.
+      || unevaluatedPropertiesValidator !== undefined
+      || unevaluatedItemsValidator !== undefined
+      || rdfsRangeValidator !== undefined;
 
     if (!hasComposition) {
       return (
         value: unknown,
         path: string,
-        errors: ValidationErrorType[],
-        collectErrors: boolean,
-        applyDefaults: boolean,
-        doCoerce: boolean,
-        stripUnknown: boolean
+        ctx: ExecContextType
       ): ValidateWithErrorsResultType => {
-        return this.executeValidateSimple(plan, value, path, errors, {
-          applyDefaults,
-          collectErrors,
-          doCoerce,
-          stripUnknown
-        });
+        if (ctx.depth >= ctx.maxDepth) {
+          return {
+            'valid': true,
+            value
+          };
+        }
+        // Mutate depth on the shared ctx — no allocation. Restore in finally so the
+        // depth is correct even if executeValidateSimple throws.
+        ctx.depth++;
+
+        // Push $dynamicAnchor into scope only when this node declares one (rare).
+        // Save and restore the array reference; the common path skips this entirely.
+        const savedDynamicScope = dynamicScopeEntry === undefined ? undefined : ctx.dynamicScope;
+
+        if (dynamicScopeEntry !== undefined) {
+          ctx.dynamicScope = [
+            ...ctx.dynamicScope,
+            dynamicScopeEntry
+          ];
+        }
+
+        try {
+          return this.executeValidateSimple(plan, value, path, ctx);
+        } finally {
+          ctx.depth--;
+
+          if (savedDynamicScope !== undefined) {
+            ctx.dynamicScope = savedDynamicScope;
+          }
+        }
       };
     }
 
     return (
       value: unknown,
       path: string,
-      errors: ValidationErrorType[],
-      collectErrors: boolean,
-      applyDefaults: boolean,
-      doCoerce: boolean,
-      stripUnknown: boolean
+      ctx: ExecContextType
     ): ValidateWithErrorsResultType => {
-      return this.executeValidateComposed(plan, value, path, errors, {
-        applyDefaults,
-        collectErrors,
-        doCoerce,
-        stripUnknown
-      });
+      if (ctx.depth >= ctx.maxDepth) {
+        return {
+          'valid': true,
+          value
+        };
+      }
+      // Mutate depth on the shared ctx — no allocation. Restore in finally.
+      ctx.depth++;
+
+      // Push $dynamicAnchor into scope only when this node declares one (rare).
+      const savedDynamicScope = dynamicScopeEntry === undefined ? undefined : ctx.dynamicScope;
+
+      if (dynamicScopeEntry !== undefined) {
+        ctx.dynamicScope = [
+          ...ctx.dynamicScope,
+          dynamicScopeEntry
+        ];
+      }
+
+      try {
+        return this.executeValidateComposed(plan, value, path, ctx);
+      } finally {
+        ctx.depth--;
+
+        if (savedDynamicScope !== undefined) {
+          ctx.dynamicScope = savedDynamicScope;
+        }
+      }
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // Shared object/array sub-validators
+  // ---------------------------------------------------------------------------
 
   /**
    * Compile a schema from a GraphEngine into an optimized closure validator.
@@ -1052,30 +1216,21 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     try {
-      const checkFn = this.compileCheck(schema, formatRegistry, resolvedGraph, lookupSchema);
       const validateWithErrorsFn = this.compileValidateWithErrors(schema, formatRegistry, resolvedGraph, lookupSchema);
-      const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn);
 
-      const fallback = this.engineFallback(engine);
+      const checkFn = this.buildCheckFromValidate(validateWithErrorsFn);
+      const treeHasUnevaluated = resolvedGraph.nodes().some((graphNode: SchemaGraphNodeType): boolean => {
+        const sem = resolvedGraph.semantics(graphNode);
+
+        return sem.unevaluatedPropertiesNode !== undefined || sem.unevaluatedItemsNode !== undefined;
+      });
+      const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn, treeHasUnevaluated);
 
       return {
         'check': checkFn,
         'compiled': true,
         'validate': (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
-          try {
-            return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn);
-          } catch (error) {
-            if (!(error instanceof RangeError)) {
-              throw error;
-            }
-
-            // Cyclic data fed to a recursive schema causes the compiled closures
-            // to overflow (no refStack equivalent). The interpreter has a refStack
-            // that terminates schema-level recursion; delegate to it so all callers
-            // (registry.validate/cast/convert/instantiate and Materializer) get
-            // cyclic-data protection from one place.
-            return fallback.validate(data, options);
-          }
+          return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn, treeHasUnevaluated);
         }
       };
     } catch (error: unknown) {
@@ -1118,31 +1273,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         };
       }
     };
-  }
-
-  // ---------------------------------------------------------------------------
-  // Shared object/array sub-validators
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Entry point: compiles a schema object into a check function.
-   * Thin wrapper that resolves the graph node, then delegates to compileNodeCheck.
-   */
-  private compileCheck(
-    schema: Record<string, unknown>,
-    formatRegistry: FormatRegistryInterface,
-    graph: SchemaGraphInterface,
-    lookupSchema?: (id: string) => Record<string, unknown> | undefined
-  ): CheckFnType {
-    const graphNode = graph.node(schema);
-
-    if (graphNode === undefined) {
-      return (_value: unknown): boolean => {
-        return true;
-      };
-    }
-
-    return this.compileNodeCheck(graphNode, formatRegistry, graph, lookupSchema);
   }
 
   private compileDependentSchemaChecks(
@@ -1240,11 +1370,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         : (
           value: unknown,
           path: string,
-          errors: ValidationErrorType[],
-          collect: boolean
+          ctx: ExecContextType
         ): ValidateWithErrorsResultType => {
-          if (collect) {
-            errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
+          if (ctx.collectErrors) {
+            ctx.errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
           }
 
           return {
@@ -1259,6 +1388,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   /**
    * Node-native validate-with-errors compilation. Accepts a SchemaGraphNodeType directly.
+   *
+   * Uses a forward-reference closure to break compile-time cycles: if this node is already
+   * being compiled (e.g. a self-referential schema like Tree with items: { $ref: Tree }),
+   * returns a deferred closure that resolves lazily once the outer compilation completes.
    */
   private compileNodeValidateWithErrors(
     graphNode: SchemaGraphNodeType,
@@ -1266,42 +1399,73 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): ValidateWithErrorsFnType {
-    const plan = buildNodePlan(
-      this.validatePlanContext,
-      graphNode,
-      formatRegistry,
-      graph,
-      lookupSchema,
-      this.activeLookupGraph
-    );
+    // If this node is currently being compiled, return a deferred closure to break the cycle.
+    const inProgress = this.compilingValidateNodes.get(graphNode);
 
-    // Compile value-producing validators for anyOf/oneOf members so that
-    // defaults and coercion applied inside a branch are propagated forward,
-    // matching the interpreted path (VisitComposition.anyOf/oneOf) semantics.
-    const sem = graph.semantics(graphNode);
-    let anyOfValidators: undefined | ValidateWithErrorsFnType[];
-
-    if (sem.anyOf.length > 0) {
-      anyOfValidators = sem.anyOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
-        return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
-      });
+    if (inProgress !== undefined) {
+      return inProgress;
     }
 
-    let oneOfValidators: undefined | ValidateWithErrorsFnType[];
+    // Create a forward-reference closure. `resolved` is set after compilation finishes.
+    let resolved: undefined | ValidateWithErrorsFnType;
+    const deferred: ValidateWithErrorsFnType = (
+      value: unknown,
+      path: string,
+      ctx: ExecContextType
+    ): ValidateWithErrorsResultType => {
+      if (resolved !== undefined) {
+        return resolved(value, path, ctx);
+      }
 
-    if (sem.oneOf.length > 0) {
-      oneOfValidators = sem.oneOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
-        return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
-      });
+      // Still compiling — depth guard applies; return valid to avoid false errors during cycle.
+      return {
+        'valid': true,
+        value
+      };
+    };
+
+    this.compilingValidateNodes.set(graphNode, deferred);
+
+    try {
+      const plan = buildNodePlan(
+        this.validatePlanContext,
+        graphNode,
+        formatRegistry,
+        graph,
+        lookupSchema,
+        this.activeLookupGraph
+      );
+
+      // Compile value-producing validators for anyOf/oneOf members so that
+      // defaults and coercion applied inside a branch are propagated forward,
+      // matching the interpreted path (VisitComposition.anyOf/oneOf) semantics.
+      const sem = graph.semantics(graphNode);
+      let anyOfValidators: undefined | ValidateWithErrorsFnType[];
+
+      if (sem.anyOf.length > 0) {
+        anyOfValidators = sem.anyOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
+          return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+        });
+      }
+
+      let oneOfValidators: undefined | ValidateWithErrorsFnType[];
+
+      if (sem.oneOf.length > 0) {
+        oneOfValidators = sem.oneOf.map((node: SchemaGraphNodeType): ValidateWithErrorsFnType => {
+          return this.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+        });
+      }
+
+      const baseExecutor = this.buildValidateWithErrorsExecution(plan);
+
+      resolved = anyOfValidators === undefined && oneOfValidators === undefined
+        ? baseExecutor
+        : this.wrapWithValueProducingComposition(baseExecutor, anyOfValidators, oneOfValidators);
+
+      return resolved;
+    } finally {
+      this.compilingValidateNodes.delete(graphNode);
     }
-
-    const baseExecutor = this.buildValidateWithErrorsExecution(plan);
-
-    if (anyOfValidators === undefined && oneOfValidators === undefined) {
-      return baseExecutor;
-    }
-
-    return this.wrapWithValueProducingComposition(baseExecutor, anyOfValidators, oneOfValidators);
   }
 
   private compileNumberCheck(
@@ -1371,7 +1535,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     schema: Record<string, unknown>,
     graph: SchemaGraphInterface,
     validateWithErrors: ValidateWithErrorsFnType,
-    checkFn: CheckFnType
+    checkFn: CheckFnType,
+    trackEvaluated: boolean
   ): (data: unknown, options?: CompiledValidateOptionsType) => CompiledValidationResultType {
     const graphNode = graph.node(schema);
     const rootSem = graphNode === undefined ? undefined : graph.semantics(graphNode);
@@ -1387,7 +1552,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         checkFn,
         rootTypes,
         rootHasDefault,
-        rootDefaultValue
+        rootDefaultValue,
+        trackEvaluated
       );
     };
   }
@@ -1405,10 +1571,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const graphNode = graph.node(schema);
 
     if (graphNode === undefined) {
-      return (value: unknown): ValidateWithErrorsResultType => {
+      return (_value: unknown, _path: string, _ctx: ExecContextType): ValidateWithErrorsResultType => {
         return {
           'valid': true,
-          'value': value
+          'value': _value
         };
       };
     }
@@ -1421,7 +1587,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     options: CompiledValidateOptionsType | undefined,
     validateFn: (data: unknown, options?: CompiledValidateOptionsType) => CompiledValidationResultType,
     checkFn: CheckFnType,
-    validateWithErrorsFn: ValidateWithErrorsFnType
+    validateWithErrorsFn: ValidateWithErrorsFnType,
+    trackEvaluated: boolean
   ): CompiledValidationResultType {
     if (options?.applyDefaults === true || options?.castTypes === true
       || options?.enforceSchemaProperties === true || options?.removeAdditionalProperties === true) {
@@ -1437,7 +1604,21 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const errors: ValidationErrorType[] = [];
-    const result = validateWithErrorsFn(data, '', errors, true, false, false, false);
+    const ctx: ExecContextType = {
+      'applyDefaults': false,
+      'collectErrors': true,
+      'depth': 0,
+      'doCoerce': false,
+      'dynamicScope': [],
+      errors,
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'maxDepth': 100,
+      'refStack': new Set(),
+      'stripUnknown': false,
+      'trackEvaluated': trackEvaluated
+    };
+    const result = validateWithErrorsFn(data, '', ctx);
 
     return {
       errors,
@@ -1476,37 +1657,48 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
-    const {
-      applyDefaults, collectErrors, doCoerce
-    } = runOpts;
     const { allOfValidators } = plan;
-    const fn = Composition.validateAllOf;
 
-    return fn(workingValue, path, allOfValidators, errors, collectErrors, applyDefaults, doCoerce);
+    return Composition.validateAllOf(workingValue, path, allOfValidators, ctx);
   }
 
   private executeComposedAnyOneNot(
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    collectErrors: boolean
+    ctx: ExecContextType
   ): boolean {
+    const {
+      collectErrors, errors
+    } = ctx;
     let valid = true;
 
-    if (!Composition.validateAnyOf(path, workingValue, plan.anyOfChecks, errors)) {
+    if (plan.anyOfValidators !== undefined) {
+      if (!Composition.validateAnyOfWithEvaluated(path, workingValue, plan.anyOfValidators, ctx)) {
+        if (!collectErrors) {
+          return false;
+        }
+        valid = false;
+      }
+    } else if (!Composition.validateAnyOf(path, workingValue, plan.anyOfChecks, errors)) {
       if (!collectErrors) {
         return false;
       }
       valid = false;
     }
 
-    if (!Composition.validateOneOf(path, workingValue, plan.oneOfChecks, errors)) {
+    if (plan.oneOfValidators !== undefined) {
+      if (!Composition.validateOneOfWithEvaluated(path, workingValue, plan.oneOfValidators, ctx)) {
+        if (!collectErrors) {
+          return false;
+        }
+        valid = false;
+      }
+    } else if (!Composition.validateOneOf(path, workingValue, plan.oneOfChecks, errors)) {
       if (!collectErrors) {
         return false;
       }
@@ -1527,20 +1719,19 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     initialValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
-    const { collectErrors } = runOpts;
-    const allOfResult = this.executeComposedAllOf(plan, initialValue, path, errors, runOpts);
+    const { collectErrors } = ctx;
+    const allOfResult = this.executeComposedAllOf(plan, initialValue, path, ctx);
 
     if (allOfResult.earlyExit) {
       return allOfResult;
     }
 
     const workingValue = allOfResult.value;
-    const anyOneNotValid = this.executeComposedAnyOneNot(plan, workingValue, path, errors, collectErrors);
+    const anyOneNotValid = this.executeComposedAnyOneNot(plan, workingValue, path, ctx);
 
     if (!anyOneNotValid && !collectErrors) {
       return {
@@ -1561,13 +1752,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType,
+    ctx: ExecContextType,
     initialValid: boolean
   ): ValidateWithErrorsResultType {
-    const {
-      applyDefaults, collectErrors, doCoerce, stripUnknown
-    } = runOpts;
     const {
       elseValidator, ifCheck, thenValidator
     } = plan;
@@ -1578,11 +1765,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       ifCheck,
       thenValidator,
       elseValidator,
-      errors,
-      collectErrors,
-      applyDefaults,
-      doCoerce,
-      stripUnknown
+      ctx
     );
 
     if (ifResult.earlyExit) {
@@ -1601,11 +1784,26 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private executeMutatingFullValidation(
     workingValue: unknown,
     options: CompiledValidateOptionsType,
-    validateWithErrors: ValidateWithErrorsFnType
+    validateWithErrors: ValidateWithErrorsFnType,
+    trackEvaluated: boolean
   ): CompiledValidationResultType {
     const errors: ValidationErrorType[] = [];
     const stripUnk = (options.enforceSchemaProperties ?? false) || (options.removeAdditionalProperties ?? false);
-    const result = validateWithErrors(workingValue, '', errors, options.collectErrors ?? true, options.applyDefaults ?? false, options.castTypes ?? false, stripUnk);
+    const ctx: ExecContextType = {
+      'applyDefaults': options.applyDefaults ?? false,
+      'collectErrors': options.collectErrors ?? true,
+      'depth': 0,
+      'doCoerce': options.castTypes ?? false,
+      'dynamicScope': [],
+      errors,
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'maxDepth': 100,
+      'refStack': new Set(),
+      'stripUnknown': stripUnk,
+      'trackEvaluated': trackEvaluated
+    };
+    const result = validateWithErrors(workingValue, '', ctx);
 
     return {
       errors,
@@ -1621,14 +1819,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     checkFn: CheckFnType,
     rootTypes: string[],
     rootHasDefault: boolean,
-    rootDefaultValue: unknown
+    rootDefaultValue: unknown,
+    trackEvaluated: boolean
   ): CompiledValidationResultType {
     const workingValue = this.applyRootCoercionAndDefaults(data, options, rootTypes, rootHasDefault, rootDefaultValue);
 
     if (options !== undefined
       && (options.applyDefaults === true || options.castTypes === true
         || options.enforceSchemaProperties === true || options.removeAdditionalProperties === true)) {
-      return this.executeMutatingFullValidation(workingValue, options, validateWithErrors);
+      return this.executeMutatingFullValidation(workingValue, options, validateWithErrors, trackEvaluated);
     }
 
     if (options?.collectErrors === false) {
@@ -1640,7 +1839,21 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const errors: ValidationErrorType[] = [];
-    const result = validateWithErrors(workingValue, '', errors, true, false, false, false);
+    const ctx: ExecContextType = {
+      'applyDefaults': false,
+      'collectErrors': true,
+      'depth': 0,
+      'doCoerce': false,
+      'dynamicScope': [],
+      errors,
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'maxDepth': 100,
+      'refStack': new Set(),
+      'stripUnknown': false,
+      'trackEvaluated': trackEvaluated
+    };
+    const result = validateWithErrors(workingValue, '', ctx);
 
     return {
       errors,
@@ -1649,14 +1862,218 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
+  /**
+   * Unevaluated items/properties post-pass + rdfs:range validation.
+   *
+   * Runs after all composition. Mirrors GraphEngineVisit.ts:403-473.
+   */
+  private executeUnevaluatedAndRdfs(
+    plan: CompiledNodeValidationPlanType,
+    workingValue: unknown,
+    path: string,
+    ctx: ExecContextType,
+    priorValid: boolean
+  ): ValidateWithErrorsResultType {
+    const {
+      rdfsRangeValidator, unevaluatedItemsValidator, unevaluatedPropertiesValidator
+    } = plan;
+    let valid = priorValid;
+    let currentValue = workingValue;
+
+    // unevaluatedItems — array post-pass
+    if (Array.isArray(currentValue) && unevaluatedItemsValidator !== undefined) {
+      const uiResult = this.executeUnevaluatedItems(
+        unevaluatedItemsValidator,
+        currentValue,
+        path,
+        ctx
+      );
+
+      if (uiResult.earlyExit) {
+        return {
+          'valid': false,
+          'value': uiResult.value
+        };
+      }
+      if (!uiResult.valid) {
+        valid = false;
+      }
+      currentValue = uiResult.value;
+    }
+
+    // unevaluatedProperties — object post-pass
+    if (isRecord(currentValue) && unevaluatedPropertiesValidator !== undefined) {
+      const upResult = this.executeUnevaluatedProperties(
+        unevaluatedPropertiesValidator,
+        currentValue,
+        path,
+        ctx
+      );
+
+      if (upResult.earlyExit) {
+        return {
+          'valid': false,
+          'value': upResult.value
+        };
+      }
+      if (!upResult.valid) {
+        valid = false;
+      }
+      currentValue = upResult.value;
+    }
+
+    // rdfs:range validation — mirrors GraphEngineVisit.ts:469-473
+    if (rdfsRangeValidator !== undefined) {
+      const rdfsResult = rdfsRangeValidator(currentValue, path, ctx);
+
+      if (!rdfsResult.valid) {
+        if (!ctx.collectErrors) {
+          return {
+            'valid': false,
+            'value': rdfsResult.value
+          };
+        }
+        valid = false;
+      }
+      currentValue = rdfsResult.value;
+    }
+
+    return {
+      valid,
+      'value': currentValue
+    };
+  }
+
+  /**
+   * Execute unevaluatedItems post-pass over residual (non-evaluated) array indices.
+   * Mirrors GraphEngine.applyUnevaluatedItems (GraphEngine.ts:206-255).
+   */
+  private executeUnevaluatedItems(
+    unevaluatedItemsValidator: false | ValidateWithErrorsFnType,
+    arr: unknown[],
+    path: string,
+    ctx: ExecContextType
+  ): { 'earlyExit': boolean;
+    'valid': boolean;
+    'value': unknown } {
+    const alreadyEvaluated = ctx.evaluatedItems ?? new Set<number>();
+    let valid = true;
+
+    for (let index = 0; index < arr.length; index++) {
+      if (alreadyEvaluated.has(index)) {
+        continue;
+      }
+
+      if (unevaluatedItemsValidator === false) {
+        if (ctx.collectErrors) {
+          ctx.errors.push(BaseError.validationError(
+            `${path}/${index}`,
+            'unevaluatedItems',
+            VALIDATION_MESSAGES.unevaluatedItems
+          ));
+          valid = false;
+        } else {
+          return {
+            'earlyExit': true,
+            'valid': false,
+            'value': arr
+          };
+        }
+      } else {
+        const itemResult = unevaluatedItemsValidator(arr[index], `${path}/${index}`, ctx);
+
+        if (itemResult.valid) {
+          arr[index] = itemResult.value;
+          (ctx.evaluatedItems ??= new Set()).add(index);
+        } else {
+          if (!ctx.collectErrors) {
+            return {
+              'earlyExit': true,
+              'valid': false,
+              'value': arr
+            };
+          }
+          valid = false;
+        }
+      }
+    }
+
+    return {
+      'earlyExit': false,
+      valid,
+      'value': arr
+    };
+  }
+
+  /**
+   * Execute unevaluatedProperties post-pass over residual (non-evaluated) object keys.
+   * Mirrors GraphEngine.applyUnevaluatedProperties (GraphEngine.ts:257-306).
+   */
+  private executeUnevaluatedProperties(
+    unevaluatedPropertiesValidator: false | ValidateWithErrorsFnType,
+    obj: Record<string, unknown>,
+    path: string,
+    ctx: ExecContextType
+  ): { 'earlyExit': boolean;
+    'valid': boolean;
+    'value': unknown } {
+    const alreadyEvaluated = ctx.evaluatedProperties ?? new Set<string>();
+    const pathPrefix = path === '' ? '/' : `${path}/`;
+    let valid = true;
+
+    for (const key of Object.keys(obj)) {
+      if (alreadyEvaluated.has(key)) {
+        continue;
+      }
+
+      if (unevaluatedPropertiesValidator === false) {
+        if (ctx.collectErrors) {
+          ctx.errors.push(BaseError.validationError(
+            `${pathPrefix}${key}`,
+            'unevaluatedProperties',
+            VALIDATION_MESSAGES.unevaluatedProperties
+          ));
+          valid = false;
+        } else {
+          return {
+            'earlyExit': true,
+            'valid': false,
+            'value': obj
+          };
+        }
+      } else {
+        const propResult = unevaluatedPropertiesValidator(obj[key], `${pathPrefix}${key}`, ctx);
+
+        if (propResult.valid) {
+          obj[key] = propResult.value;
+          (ctx.evaluatedProperties ??= new Set()).add(key);
+        } else {
+          if (!ctx.collectErrors) {
+            return {
+              'earlyExit': true,
+              'valid': false,
+              'value': obj
+            };
+          }
+          valid = false;
+        }
+      }
+    }
+
+    return {
+      'earlyExit': false,
+      valid,
+      'value': obj
+    };
+  }
+
   private executeValidateComposed(
     plan: CompiledNodeValidationPlanType,
     value: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType {
-    const baseResult = this.validatePlanBase(plan, value, path, errors, runOpts);
+    const baseResult = this.validatePlanBase(plan, value, path, ctx);
 
     if (baseResult.earlyExit) {
       return {
@@ -1665,7 +2082,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       };
     }
 
-    const boolResult = this.executeComposedBoolLogic(plan, baseResult.value, path, errors, runOpts);
+    const boolResult = this.executeComposedBoolLogic(plan, baseResult.value, path, ctx);
 
     if (boolResult.earlyExit) {
       return {
@@ -1675,18 +2092,25 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const composed = baseResult.valid && boolResult.valid;
+    const ifResult = this.executeComposedIfThenElse(plan, boolResult.value, path, ctx, composed);
 
-    return this.executeComposedIfThenElse(plan, boolResult.value, path, errors, runOpts, composed);
+    // --- Unevaluated items / properties post-pass ---
+    // Runs AFTER all composition (allOf/anyOf/oneOf/not/if-then-else), exactly as
+    // the interpreter does (GraphEngineVisit.ts:403-449). ctx.evaluatedItems and
+    // ctx.evaluatedProperties have been accumulated by runPlanStructure +
+    // composition branches above.
+    const postResult = this.executeUnevaluatedAndRdfs(plan, ifResult.value, path, ctx, ifResult.valid);
+
+    return postResult;
   }
 
   private executeValidateSimple(
     plan: CompiledNodeValidationPlanType,
     value: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType {
-    const baseResult = this.validatePlanBase(plan, value, path, errors, runOpts);
+    const baseResult = this.validatePlanBase(plan, value, path, ctx);
 
     if (baseResult.earlyExit) {
       return {
@@ -1730,6 +2154,41 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return formatRegistry.get(format);
   }
 
+  private runPlanDynamicRefValidator(
+    plan: CompiledNodeValidationPlanType,
+    workingValue: unknown,
+    path: string,
+    ctx: ExecContextType
+  ): { 'earlyExit': boolean;
+    'valid': boolean;
+    'value': unknown } {
+    const { collectErrors } = ctx;
+
+    if (plan.dynamicRefValidator === undefined) {
+      return {
+        'earlyExit': false,
+        'valid': true,
+        'value': workingValue
+      };
+    }
+
+    const dynResult = plan.dynamicRefValidator(workingValue, path, ctx);
+
+    if (!dynResult.valid && !collectErrors) {
+      return {
+        'earlyExit': true,
+        'valid': false,
+        'value': dynResult.value
+      };
+    }
+
+    return {
+      'earlyExit': false,
+      'valid': dynResult.valid,
+      'value': dynResult.value
+    };
+  }
+
   /**
    * Internal result type for the shared plan-base validation step.
    * earlyExit signals callers to return immediately with `valid: false`.
@@ -1738,14 +2197,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
-    const { collectErrors } = runOpts;
+    const {
+      collectErrors, errors
+    } = ctx;
 
-    const refResult = this.runPlanRefValidator(plan, workingValue, path, errors, runOpts);
+    const refResult = this.runPlanRefValidator(plan, workingValue, path, ctx);
 
     if (refResult.earlyExit) {
       return refResult;
@@ -1772,14 +2232,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
-    const {
-      applyDefaults, collectErrors, doCoerce, stripUnknown
-    } = runOpts;
+    const { collectErrors } = ctx;
 
     if (plan.refValidator === undefined) {
       return {
@@ -1790,7 +2247,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const { refValidator } = plan;
-    const refResult = refValidator(workingValue, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+    // Use the same ctx so refStack and depth are preserved across $ref boundaries,
+    // preventing infinite recursion on cyclic data.
+    const refResult = refValidator(workingValue, path, ctx);
 
     if (!refResult.valid && !collectErrors) {
       return {
@@ -1811,14 +2270,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
+    ctx: ExecContextType,
     runOpts: ValidationRunOptionsType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     let valid = true;
 
     if (isRecord(workingValue)) {
-      const objResult = this.validateObjectPlan(plan, workingValue, path, errors, runOpts);
+      const objResult = this.validateObjectPlan(plan, workingValue, path, ctx, runOpts);
 
       if (objResult.earlyExit) {
         return {
@@ -1829,10 +2288,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       if (!objResult.valid) {
         valid = false;
       }
+      if (ctx.trackEvaluated) {
+        this.accumulateEvaluatedProperties(plan, workingValue, ctx);
+      }
     }
 
     if (Array.isArray(workingValue)) {
-      const arrResult = this.validateArrayPlan(plan, workingValue, path, errors, runOpts);
+      const arrResult = this.validateArrayPlan(plan, workingValue, path, ctx, runOpts);
 
       if (arrResult.earlyExit) {
         return {
@@ -1842,6 +2304,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       }
       if (!arrResult.valid) {
         valid = false;
+      }
+      if (ctx.trackEvaluated) {
+        this.accumulateEvaluatedItems(plan, workingValue, ctx);
       }
     }
 
@@ -1859,14 +2324,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
+    ctx: ExecContextType,
     runOpts: ValidationRunOptionsType,
     initialValid: boolean
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
     let valid = initialValid;
-    const structResult = this.runPlanStructure(plan, workingValue, path, errors, runOpts);
+    const structResult = this.runPlanStructure(plan, workingValue, path, ctx, runOpts);
 
     if (structResult.earlyExit) {
       return {
@@ -1879,7 +2344,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       valid = false;
     }
 
-    const tailResult = this.validatePlanTail(plan, workingValue, path, errors, runOpts);
+    const tailResult = this.validatePlanTail(plan, workingValue, path, ctx.errors, runOpts);
 
     if (tailResult.earlyExit) {
       return {
@@ -1912,12 +2377,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private validateArrayFields(
     arr: unknown[],
     path: string,
-    errors: ValidationErrorType[],
+    ctx: ExecContextType,
     runOpts: ValidationRunOptionsType,
     arrOpts: ArrayValidationOptionsType
   ): { 'earlyExit': boolean;
     'valid': boolean; } {
     const { collectErrors } = runOpts;
+    const { errors } = ctx;
     const {
       containsCheck, maxContains, maxItems, minContains, minItems, uniqueItems
     } = arrOpts;
@@ -1929,7 +2395,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       };
     }
 
-    const itemsResult = this.validateArrayItemsAndPrefix(arr, path, errors, runOpts, arrOpts);
+    const itemsResult = this.validateArrayItemsAndPrefix(arr, path, ctx, runOpts, arrOpts);
 
     if (itemsResult.earlyExit) {
       return itemsResult;
@@ -1951,29 +2417,28 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private validateArrayItemsAndPrefix(
     arr: unknown[],
     path: string,
-    errors: ValidationErrorType[],
+    ctx: ExecContextType,
     runOpts: ValidationRunOptionsType,
     arrOpts: ArrayValidationOptionsType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
-    const {
-      applyDefaults, collectErrors, doCoerce, stripUnknown
-    } = runOpts;
+    const { stripUnknown } = runOpts;
     const {
       itemValidator, prefixValidators
     } = arrOpts;
 
+    // Inherit depth from parent ctx so the depth guard in item validators can detect
+    // cyclic data. Use a fresh refStack scoped per item-validation context.
+    const arrCtx: ExecContextType = {
+      ...ctx,
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'refStack': new Set(),
+      'stripUnknown': stripUnknown
+    };
+
     const validatePrefixItems = Arrays.validatePrefixItems;
-    const prefixResult = validatePrefixItems(
-      path,
-      arr,
-      prefixValidators,
-      errors,
-      collectErrors,
-      applyDefaults,
-      doCoerce,
-      stripUnknown
-    );
+    const prefixResult = validatePrefixItems(path, arr, prefixValidators, arrCtx);
 
     if (prefixResult.earlyExit) {
       return {
@@ -1983,17 +2448,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const validateItems = Arrays.validateItems;
-    const itemsResult = validateItems(
-      path,
-      arr,
-      itemValidator,
-      prefixValidators,
-      errors,
-      collectErrors,
-      applyDefaults,
-      doCoerce,
-      stripUnknown
-    );
+    const itemsResult = validateItems(path, arr, itemValidator, prefixValidators, arrCtx);
 
     if (itemsResult.earlyExit) {
       return {
@@ -2012,7 +2467,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     arr: unknown[],
     path: string,
-    errors: ValidationErrorType[],
+    ctx: ExecContextType,
     runOpts: ValidationRunOptionsType
   ): { 'earlyExit': boolean;
     'valid': boolean; } {
@@ -2031,7 +2486,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       uniqueItems
     };
 
-    return this.validateArrayFields(arr, path, errors, runOpts, arrOpts);
+    return this.validateArrayFields(arr, path, ctx, runOpts, arrOpts);
   }
 
   private validateForbidExtra(
@@ -2113,21 +2568,19 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private validateObjectFields(
     obj: Record<string, unknown>,
     path: string,
-    errors: ValidationErrorType[],
+    ctx: ExecContextType,
     runOpts: ValidationRunOptionsType,
     objOpts: ObjectValidationOptionsType
   ): { 'count': number;
     'earlyExit': boolean;
     'valid': boolean; } {
-    const {
-      applyDefaults, collectErrors, doCoerce, stripUnknown
-    } = runOpts;
+    const { stripUnknown } = runOpts;
     const {
       additionalIsFalse, additionalValidator, allowedKeys, allowedKeysForStrip,
       jtExtra, patternPropValidators, propertyDefaults, propValidators
     } = objOpts;
 
-    const prelude = this.validateObjectPrelude(obj, path, errors, runOpts, objOpts);
+    const prelude = this.validateObjectPrelude(obj, path, ctx.errors, runOpts, objOpts);
 
     if (prelude.earlyExit) {
       return {
@@ -2138,6 +2591,17 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const effectiveStrip = jtExtra === 'allow' || jtExtra === 'forbid' ? false : stripUnknown;
+    // Inherit depth from parent ctx so the depth guard in property validators can detect
+    // cyclic data (accumulating depth across property traversals). Use a fresh refStack
+    // so schema-level ref-cycle detection is scoped per ref-resolution path, not shared
+    // across sibling property validators.
+    const propsCtx: ExecContextType = {
+      ...ctx,
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'refStack': new Set(),
+      'stripUnknown': effectiveStrip
+    };
     const validateProperties = Objects.validateProperties;
     const propsResult = validateProperties(
       path,
@@ -2149,10 +2613,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       allowedKeys,
       effectiveStrip,
       propertyDefaults,
-      errors,
-      collectErrors,
-      applyDefaults,
-      doCoerce,
+      propsCtx,
       allowedKeysForStrip
     );
 
@@ -2166,6 +2627,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     const baseValid = propsResult.valid && prelude.requiredValid;
     const { count } = propsResult;
+    const {
+      collectErrors, errors
+    } = ctx;
     const extraResult = this.validateObjectCountAndExtra(obj, path, errors, collectErrors, count, baseValid, objOpts);
 
     return {
@@ -2179,7 +2643,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     obj: Record<string, unknown>,
     path: string,
-    errors: ValidationErrorType[],
+    ctx: ExecContextType,
     runOpts: ValidationRunOptionsType
   ): { 'count': number;
     'earlyExit': boolean;
@@ -2204,7 +2668,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       required
     };
 
-    return this.validateObjectFields(obj, path, errors, runOpts, objOpts);
+    return this.validateObjectFields(obj, path, ctx, runOpts, objOpts);
   }
 
   private validateObjectPrelude(
@@ -2255,19 +2719,40 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     initialValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown; } {
+    const runOpts: ValidationRunOptionsType = {
+      'applyDefaults': ctx.applyDefaults,
+      'collectErrors': ctx.collectErrors,
+      'doCoerce': ctx.doCoerce,
+      'stripUnknown': ctx.stripUnknown
+    };
     const workingValue = this.applyPlanDefaults(initialValue, plan, runOpts);
-    const earlyResult = this.runPlanRefAndScalars(plan, workingValue, path, errors, runOpts);
+
+    // NOTE: $dynamicAnchor scope push happens in buildValidateWithErrorsExecution, which
+    // builds childCtx with the updated dynamicScope BEFORE calling executeValidateSimple or
+    // executeValidateComposed. That means ctx.dynamicScope already contains any entries added
+    // by this node's $dynamicAnchor when validatePlanBase is called. Do not push/restore here
+    // — the scope must persist through executeComposedBoolLogic (allOf/anyOf etc.) which runs
+    // AFTER validatePlanBase returns.
+    const earlyResult = this.runPlanRefAndScalars(plan, workingValue, path, ctx);
 
     if (earlyResult.earlyExit) {
       return earlyResult;
     }
 
-    return this.runPlanStructureAndTail(plan, earlyResult.value, path, errors, runOpts, earlyResult.valid);
+    // Run $dynamicRef after $ref (matching interpreter order in GraphEngineVisit.ts:153-171).
+    const dynRefResult = this.runPlanDynamicRefValidator(plan, earlyResult.value, path, ctx);
+
+    if (dynRefResult.earlyExit) {
+      return dynRefResult;
+    }
+
+    const baseValid = earlyResult.valid && dynRefResult.valid;
+
+    return this.runPlanStructureAndTail(plan, dynRefResult.value, path, ctx, runOpts, baseValid);
   }
 
   private validatePlanDependent(
@@ -2279,13 +2764,36 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
+    if (plan.depRequiredEntries.length === 0 && plan.depSchemaValidators === undefined) {
+      return {
+        'earlyExit': false,
+        'valid': true,
+        'value': workingValue
+      };
+    }
+
     const {
       applyDefaults, collectErrors, doCoerce, stripUnknown
     } = runOpts;
 
+    const depCtx: ExecContextType = {
+      'applyDefaults': applyDefaults,
+      'collectErrors': collectErrors,
+      'depth': 0,
+      'doCoerce': doCoerce,
+      'dynamicScope': [],
+      errors,
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'maxDepth': 100,
+      'refStack': new Set(),
+      'stripUnknown': stripUnknown,
+      'trackEvaluated': true
+    };
+
     const { depRequiredEntries } = plan;
     const validateDepReq = Objects.validateDependentRequired;
-    const depReqResult = validateDepReq(path, workingValue, depRequiredEntries, errors, collectErrors);
+    const depReqResult = validateDepReq(path, workingValue, depRequiredEntries, depCtx);
 
     if (depReqResult.earlyExit) {
       return {
@@ -2301,11 +2809,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       workingValue,
       path,
       depSchemaValidators,
-      errors,
-      collectErrors,
-      applyDefaults,
-      doCoerce,
-      stripUnknown
+      depCtx
     );
 
     if (depSchemaResult.earlyExit) {
@@ -2339,7 +2843,30 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const {
       customKeywordEntries, propertyNamesValidator
     } = plan;
-    const pnResult = Objects.validatePropertyNames(path, workingValue, propertyNamesValidator, errors, collectErrors);
+
+    if (propertyNamesValidator === undefined
+      && (customKeywordEntries === undefined || customKeywordEntries.length === 0)) {
+      return {
+        'earlyExit': false,
+        'valid': true
+      };
+    }
+
+    const pnCtx: ExecContextType = {
+      'applyDefaults': false,
+      'collectErrors': collectErrors,
+      'depth': 0,
+      'doCoerce': false,
+      'dynamicScope': [],
+      errors,
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'maxDepth': 100,
+      'refStack': new Set(),
+      'stripUnknown': false,
+      'trackEvaluated': true
+    };
+    const pnResult = Objects.validatePropertyNames(path, workingValue, propertyNamesValidator, pnCtx);
 
     if (pnResult.earlyExit) {
       return {
@@ -2615,18 +3142,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return (
       value: unknown,
       path: string,
-      errors: ValidationErrorType[],
-      collectErrors: boolean,
-      applyDefaults: boolean,
-      doCoerce: boolean,
-      stripUnknown: boolean
+      ctx: ExecContextType
     ): ValidateWithErrorsResultType => {
-      const baseResult = baseExecutor(value, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+      const baseResult = baseExecutor(value, path, ctx);
 
       // Run value-producing anyOf — this replaces the boolean anyOf check in the base executor.
       // The base executor already validated and returned any anyOf errors; here we re-run
       // with full validators to propagate the winner's value when applyDefaults or doCoerce is active.
-      if (!applyDefaults && !doCoerce) {
+      if (!ctx.applyDefaults && !ctx.doCoerce) {
         return baseResult;
       }
 
@@ -2641,11 +3164,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           path,
           workingValue,
           anyOfValidators,
-          errors,
-          collectErrors,
-          applyDefaults,
-          doCoerce,
-          stripUnknown,
+          ctx,
           <T>(candidate: T): T => {
             return GraphEngineSupport.cloneCandidate(candidate);
           }
@@ -2665,11 +3184,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           path,
           workingValue,
           oneOfValidators,
-          errors,
-          collectErrors,
-          applyDefaults,
-          doCoerce,
-          stripUnknown,
+          ctx,
           <T>(candidate: T): T => {
             return GraphEngineSupport.cloneCandidate(candidate);
           }

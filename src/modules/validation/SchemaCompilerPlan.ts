@@ -21,6 +21,8 @@ import type {
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
+import type { ExecContextType } from '../../types/ExecContext.js';
+import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
 import type { CustomKeywordEntryType } from '../../types/CustomKeywordEntry.js';
 import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
 import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContext.js';
@@ -68,6 +70,8 @@ import type { PropertyDefaultsOptionsType } from '../../types/PropertyDefaultsOp
 import type { PropertyValidatorsOptionsType } from '../../types/PropertyValidatorsOptions.js';
 import type { RefNodeSupportOptionsType } from '../../types/RefNodeSupportOptions.js';
 import type { RefValidatorOptionsType } from '../../types/RefValidatorOptions.js';
+import type { RefTargetType } from '../../types/RefTarget.js';
+import type { DynamicRefValidatorOptionsType } from '../../types/DynamicRefValidatorOptions.js';
 import type { ResolveScanRefOptionsType } from '../../types/ResolveScanRefOptions.js';
 import type { ScanConditionalOptionsType } from '../../types/ScanConditionalOptions.js';
 import type { WalkInheritedRefOptionsType } from '../../types/WalkInheritedRefOptions.js';
@@ -77,9 +81,11 @@ import {
 } from '../data/DataTypes.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
+import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { Predicates } from './Predicates.js';
 import { RefResolver } from './RefResolver.js';
 import { BaseError } from '../../errors/BaseError.js';
+import { GraphError } from '../../errors/GraphError.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 
@@ -105,11 +111,10 @@ const TRUE_VALIDATOR: ValidateWithErrorsFnType = (value: unknown): ValidateWithE
 const FALSE_VALIDATOR: ValidateWithErrorsFnType = (
   value: unknown,
   path: string,
-  errors: Array<ReturnType<typeof BaseError.validationError>>,
-  collectErrors: boolean
+  ctx: ExecContextType
 ): ValidateWithErrorsResultType => {
-  if (collectErrors) {
-    errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
+  if (ctx.collectErrors) {
+    ctx.errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
   }
 
   return {
@@ -1207,13 +1212,10 @@ function checkPropertyNodesSupport(
 }
 
 /** Return `true` when the semantics include unsupported compilation-blocking keywords. */
-function hasUnsupportedKeywords(sem: SchemaGraphSemanticsType): boolean {
-  return sem.dynamicRef !== undefined
-    || sem.dynamicAnchor !== undefined
-    || sem.unevaluatedPropertiesNode !== undefined
-    || sem.unevaluatedItemsNode !== undefined
-    || sem.rdfsRange !== undefined
-    || sem.rdfsDomain !== undefined;
+function hasUnsupportedKeywords(_sem: SchemaGraphSemanticsType): boolean {
+  // Wave 2 landed: unevaluatedProperties, unevaluatedItems, rdfsRange, rdfsDomain
+  // all compile. No structural keywords remain unsupported.
+  return false;
 }
 
 /** Check whether `allOf`, `anyOf`, `oneOf`, conditional, and property nodes are all compilable. */
@@ -1257,8 +1259,8 @@ function checkCompositionSupport(
  * @returns `true` when the node and all reachable nodes are compilable.
  *
  * @remarks
- * Returns `false` immediately for nodes using `$dynamicRef`, `$dynamicAnchor`,
- * `unevaluatedProperties`, `unevaluatedItems`, or RDF domain/range constraints.
+ * Returns `false` immediately for nodes using `unevaluatedProperties`,
+ * `unevaluatedItems`, or RDF domain/range constraints.
  *
  * @example
  * ```ts
@@ -1319,8 +1321,25 @@ export function nodeSupportsCompilation(
     return false;
   }
 
-  if (sem.additionalPropertiesNode !== undefined && typeof sem.additionalPropertiesNode !== 'boolean') {
-    return nodeSupportsCompilation(sem.additionalPropertiesNode, graph, lookupSchema, visited, lookupGraph);
+  if (sem.additionalPropertiesNode !== undefined && typeof sem.additionalPropertiesNode !== 'boolean' && !nodeSupportsCompilation(sem.additionalPropertiesNode, graph, lookupSchema, visited, lookupGraph)) {
+    return false;
+  }
+
+  // Wave 2: unevaluatedProperties/unevaluatedItems nodes compile — check their children too.
+  if (
+    sem.unevaluatedPropertiesNode !== undefined
+    && typeof sem.unevaluatedPropertiesNode.schema !== 'boolean'
+    && !nodeSupportsCompilation(sem.unevaluatedPropertiesNode, graph, lookupSchema, visited, lookupGraph)
+  ) {
+    return false;
+  }
+
+  if (
+    sem.unevaluatedItemsNode !== undefined
+    && typeof sem.unevaluatedItemsNode.schema !== 'boolean'
+    && !nodeSupportsCompilation(sem.unevaluatedItemsNode, graph, lookupSchema, visited, lookupGraph)
+  ) {
+    return false;
   }
 
   return true;
@@ -1435,13 +1454,14 @@ function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithError
   return (
     value: unknown,
     path: string,
-    errors: Array<ReturnType<typeof BaseError.validationError>>,
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    _doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType => {
-    return inner(value, path, errors, collectErrors, applyDefaults, false, stripUnknown);
+    const strictCtx: ExecContextType = {
+      ...ctx,
+      'doCoerce': false
+    };
+
+    return inner(value, path, strictCtx);
   };
 }
 
@@ -1483,7 +1503,10 @@ function compileRefValidator(opts: RefValidatorOptionsType): OptionalValidateWit
   const resolved = RefResolver.resolve(ref, graph, lookupSchema, lookupGraph);
 
   if (resolved === undefined) {
-    return undefined;
+    throw new GraphError(`Cannot resolve $ref '${ref}' — schema not found`, {
+      'code': 'REF_NOT_FOUND',
+      'pointer': ref
+    });
   }
 
   const {
@@ -1494,20 +1517,146 @@ function compileRefValidator(opts: RefValidatorOptionsType): OptionalValidateWit
     return booleanValidateWithErrors(targetNode.schema);
   }
 
+  const refKey = `${GraphEngineSupport.schemaId(targetGraph.rootSchema) ?? '<anonymous>'}::${ref}`;
+
   let cached: OptionalValidateWithErrorsFnType;
 
   return (
     value: unknown,
     path: string,
-    errors: Array<ReturnType<typeof BaseError.validationError>>,
-    collectErrors: boolean,
-    applyDef: boolean,
-    doCoerce: boolean,
-    stripUnk: boolean
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType => {
-    cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, targetGraph, lookupSchema);
+    if (ctx.refStack.has(refKey)) {
+      return {
+        'valid': true,
+        value
+      };
+    }
 
-    return cached(value, path, errors, collectErrors, applyDef, doCoerce, stripUnk);
+    ctx.refStack.add(refKey);
+
+    try {
+      cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, targetGraph, lookupSchema);
+
+      return cached(value, path, ctx);
+    } finally {
+      ctx.refStack.delete(refKey);
+    }
+  };
+}
+
+/**
+ * Resolve a `$dynamicRef` at runtime against `ctx.dynamicScope`, mirroring
+ * `GraphEngine.resolveDynamicRef` (GraphEngine.ts:474-509) exactly.
+ *
+ * Resolution order:
+ *  1. If ref === '#': scan dynamicScope END-TO-START for anchor === '' (implicit root anchor).
+ *  2. Otherwise: resolve statically, extract fragment, get resolved node's dynamicAnchor.
+ *     - If no named fragment or anchor doesn't match fragment: use static target (not dynamic).
+ *     - Else: scan dynamicScope START-TO-END for first matching anchor entry.
+ *     - Fallback: static resolved target.
+ */
+function resolveDynamicRefTarget(
+  dynamicRef: string,
+  graph: SchemaGraphInterface,
+  dynamicScope: DynamicScopeEntryType[],
+  lookupSchema?: LookupSchemaFnType,
+  lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
+): RefTargetType | undefined {
+  if (dynamicRef === '#') {
+    for (let index = dynamicScope.length - 1; index >= 0; index--) {
+      if (dynamicScope[index].anchor === '') {
+        return {
+          'graph': dynamicScope[index].graph,
+          'node': dynamicScope[index].node
+        };
+      }
+    }
+
+    return undefined;
+  }
+
+  const resolved = RefResolver.resolve(dynamicRef, graph, lookupSchema, lookupGraph);
+
+  if (resolved === undefined) {
+    return undefined;
+  }
+
+  const fragment = GraphEngineSupport.extractNamedFragment(dynamicRef);
+  const resolvedSem = resolved.graph.semantics(resolved.node);
+  const resolvedAnchor = resolvedSem.dynamicAnchor;
+
+  if (fragment === undefined || resolvedAnchor !== fragment) {
+    return resolved;
+  }
+
+  for (const entry of dynamicScope) {
+    if (entry.anchor === fragment) {
+      return {
+        'graph': entry.graph,
+        'node': entry.node
+      };
+    }
+  }
+
+  return resolved;
+}
+
+/**
+ * Compile a `$dynamicRef` validator.
+ *
+ * Resolution is deferred to runtime (depends on `ctx.dynamicScope`); per-target
+ * validators are lazily compiled and cached via `context.compileNodeValidateWithErrors`.
+ *
+ * The `ctx.refStack` guard (refKey = `${schemaId}::dynamic::${dynamicRef}`) prevents
+ * infinite recursion, mirroring `Refs.resolveDynamicRef` (Refs.ts:22).
+ */
+function compileDynamicRefValidator(opts: DynamicRefValidatorOptionsType): ValidateWithErrorsFnType {
+  const {
+    context, dynamicRef, formatRegistry, graph, lookupGraph, lookupSchema
+  } = opts;
+
+  const schemaId = GraphEngineSupport.schemaId(graph.rootSchema) ?? '<anonymous>';
+  const refKey = `${schemaId}::dynamic::${dynamicRef}`;
+
+  // Per-node validator cache: resolved node → compiled validator.
+  const validatorCache = new WeakMap<SchemaGraphNodeType, ValidateWithErrorsFnType>();
+
+  return (
+    value: unknown,
+    path: string,
+    ctx: ExecContextType
+  ): ValidateWithErrorsResultType => {
+    if (ctx.refStack.has(refKey)) {
+      return {
+        'valid': true,
+        value
+      };
+    }
+
+    const target = resolveDynamicRefTarget(dynamicRef, graph, ctx.dynamicScope, lookupSchema, lookupGraph);
+
+    if (target === undefined) {
+      return {
+        'valid': true,
+        value
+      };
+    }
+
+    ctx.refStack.add(refKey);
+
+    try {
+      let cached = validatorCache.get(target.node);
+
+      if (cached === undefined) {
+        cached = context.compileNodeValidateWithErrors(target.node, formatRegistry, target.graph, lookupSchema);
+        validatorCache.set(target.node, cached);
+      }
+
+      return cached(value, path, ctx);
+    } finally {
+      ctx.refStack.delete(refKey);
+    }
   };
 }
 
@@ -1672,10 +1821,31 @@ function buildPlanCompositionValidators(opts: PlanCompileWithSemanticsType): Com
     }
   }
 
+  const hasUnevaluated = sem.unevaluatedPropertiesNode !== undefined || sem.unevaluatedItemsNode !== undefined;
+  let anyOfValidators: undefined | ValidateWithErrorsFnType[];
+
+  if (hasUnevaluated && sem.anyOf.length > 0) {
+    anyOfValidators = [];
+    for (const node of sem.anyOf) {
+      anyOfValidators.push(context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema));
+    }
+  }
+
+  let oneOfValidators: undefined | ValidateWithErrorsFnType[];
+
+  if (hasUnevaluated && sem.oneOf.length > 0) {
+    oneOfValidators = [];
+    for (const node of sem.oneOf) {
+      oneOfValidators.push(context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema));
+    }
+  }
+
   return {
     allOfValidators,
     anyOfChecks,
-    oneOfChecks
+    anyOfValidators,
+    oneOfChecks,
+    oneOfValidators
   };
 }
 
@@ -1875,6 +2045,138 @@ function buildPlanArrayValidators(opts: PlanCompileWithSemanticsType): PlanArray
 
 
 /**
+ * Compile a `unevaluatedProperties` or `unevaluatedItems` node to a validator or
+ * the sentinel `false` (meaning: reject all unevaluated items/properties).
+ *
+ * Returns `undefined` when no unevaluated node is present.
+ */
+function compileUnevaluatedNode(
+  node: SchemaGraphNodeType | undefined,
+  context: SchemaCompilerValidatePlanContextType,
+  formatRegistry: FormatRegistryInterface,
+  graph: SchemaGraphInterface,
+  lookupSchema: LookupSchemaFnType | undefined
+): false | undefined | ValidateWithErrorsFnType {
+  if (node === undefined) {
+    return undefined;
+  }
+
+  if (typeof node.schema === 'boolean') {
+    return node.schema ? undefined : false;
+  }
+
+  return context.compileNodeValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+}
+
+/**
+ * Compile an `rdfs:range` validator that replicates the interpreter semantics from
+ * `Unevaluated.rdfsRange` (Unevaluated.ts:125-169).
+ *
+ * At compile time the range schema IRI is resolved via `lookupSchema`. If found,
+ * a compiled validator is built for it. If not found at compile time, the validator
+ * returns valid immediately (matching interpreter behaviour where an unregistered
+ * range IRI is a no-op).
+ *
+ * The runtime validator:
+ * 1. Guards against recursive range validation via `ctx.refStack`.
+ * 2. Validates record values and array-element records against the range schema.
+ *
+ * `rdfs:domain` has no runtime validation semantics in the interpreter — it is
+ * ontology/TBox projection metadata only. No validator is compiled for it.
+ */
+function compileRdfsRangeValidator(
+  rdfsRange: string | undefined,
+  context: SchemaCompilerValidatePlanContextType,
+  formatRegistry: FormatRegistryInterface,
+  graph: SchemaGraphInterface,
+  lookupSchema: LookupSchemaFnType | undefined,
+  lookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined
+): undefined | ValidateWithErrorsFnType {
+  if (rdfsRange === undefined) {
+    return undefined;
+  }
+
+  // Resolve at compile time. If the range schema is not registered, the
+  // validator is a no-op (matching the interpreter which also does nothing
+  // when lookupSchema returns undefined).
+  const rangeSchemaRecord = lookupSchema?.(rdfsRange);
+
+  if (rangeSchemaRecord === undefined) {
+    return undefined;
+  }
+
+  // Resolve the graph for the range schema, falling back to the current graph.
+  const rangeGraph = lookupGraph?.(rdfsRange) ?? graph;
+  const rangeNode = rangeGraph.node(rangeSchemaRecord) ?? rangeGraph.rootNode;
+  const rangeValidator = context.compileNodeValidateWithErrors(
+    rangeNode,
+    formatRegistry,
+    rangeGraph,
+    lookupSchema
+  );
+  const rangeRefKey = `rdfs:range::${rdfsRange}`;
+
+  return (
+    value: unknown,
+    path: string,
+    ctx: ExecContextType
+  ): ValidateWithErrorsResultType => {
+    if (ctx.refStack.has(rangeRefKey)) {
+      return {
+        'valid': true,
+        value
+      };
+    }
+
+    ctx.refStack.add(rangeRefKey);
+
+    try {
+      if (isRecord(value)) {
+        return rangeValidator(value, path, ctx);
+      }
+
+      if (Array.isArray(value)) {
+        // `Array.isArray` narrows `unknown` to `any[]`; restore the honest element
+        // type (instance data is arbitrary, not a schema).
+        const items: unknown[] = value;
+        let valid = true;
+
+        for (const [
+          i,
+          item
+        ] of items.entries()) {
+          if (isRecord(item) || Array.isArray(item)) {
+            const itemRes = rangeValidator(item, `${path}/${i}`, ctx);
+
+            if (!itemRes.valid) {
+              if (!ctx.collectErrors) {
+                return {
+                  'valid': false,
+                  value
+                };
+              }
+              valid = false;
+            }
+          }
+        }
+
+        return {
+          valid,
+          value
+        };
+      }
+
+      return {
+        'valid': true,
+        value
+      };
+    } finally {
+      ctx.refStack.delete(rangeRefKey);
+    }
+  };
+}
+
+/**
  * Build a compiled validation plan from a single graph node.
  *
  * @param context - Plan compilation context providing validator-builder helpers.
@@ -1940,7 +2242,9 @@ export function buildNodePlan(
   const {
     allOfValidators,
     anyOfChecks,
-    oneOfChecks
+    anyOfValidators,
+    oneOfChecks,
+    oneOfValidators
   } = buildPlanCompositionValidators(planSemOpts);
 
   const {
@@ -1973,6 +2277,7 @@ export function buildNodePlan(
     allowedKeys,
     allowedKeysForStrip,
     anyOfChecks,
+    anyOfValidators,
     complementCheck,
     'constVal': sem.constValue,
     containsCheck,
@@ -1983,6 +2288,23 @@ export function buildNodePlan(
     'defaultValue': sem.defaultValue,
     depRequiredEntries,
     depSchemaValidators,
+    'dynamicRefValidator': typeof sem.dynamicRef === 'string'
+      ? compileDynamicRefValidator({
+        context,
+        'dynamicRef': sem.dynamicRef,
+        formatRegistry,
+        graph,
+        lookupGraph,
+        'lookupSchema': lookupSchema
+      })
+      : undefined,
+    'dynamicScopeEntry': typeof sem.dynamicAnchor === 'string'
+      ? {
+        'anchor': sem.dynamicAnchor,
+        graph,
+        'node': graphNode
+      }
+      : undefined,
     elseValidator,
     enumSet,
     'enumValues': sem.enumValues,
@@ -2008,6 +2330,7 @@ export function buildNodePlan(
     'minProperties': sem.minProperties,
     'multipleOf': sem.multipleOf,
     oneOfChecks,
+    oneOfValidators,
     'pattern': sem.pattern,
     patternPropValidators,
     patternRegex,
@@ -2028,6 +2351,14 @@ export function buildNodePlan(
       'lookupSchema': lookupSchema,
       'propertyEntries': propertyEntries
     }),
+    'rdfsRangeValidator': compileRdfsRangeValidator(
+      sem.rdfsRange,
+      context,
+      formatRegistry,
+      graph,
+      lookupSchema,
+      lookupGraph
+    ),
     'refValidator': compileRefValidator({
       context,
       formatRegistry,
@@ -2039,6 +2370,20 @@ export function buildNodePlan(
     'required': sem.required.length > 0 ? sem.required : undefined,
     thenValidator,
     'types': sem.schemaTypes,
+    'unevaluatedItemsValidator': compileUnevaluatedNode(
+      sem.unevaluatedItemsNode,
+      context,
+      formatRegistry,
+      graph,
+      lookupSchema
+    ),
+    'unevaluatedPropertiesValidator': compileUnevaluatedNode(
+      sem.unevaluatedPropertiesNode,
+      context,
+      formatRegistry,
+      graph,
+      lookupSchema
+    ),
     'uniqueItems': sem.uniqueItems
   };
 }

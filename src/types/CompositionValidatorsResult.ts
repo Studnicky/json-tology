@@ -8,15 +8,19 @@ import type {
  * @remarks
  * Produced once per schema node during compilation. `allOfValidators` collects
  * full validators for error reporting; `anyOfChecks` and `oneOfChecks` use the
- * fast-path predicate form. All three fields are `undefined` when the
- * corresponding keyword is absent from the schema.
+ * fast-path predicate form. When the node also has `unevaluatedProperties` or
+ * `unevaluatedItems`, `anyOfValidators` and `oneOfValidators` are additionally
+ * compiled as full validators so that evaluated sets can be propagated through
+ * each branch. All fields are `undefined` when the corresponding keyword is absent.
  *
  * @example
  * ```ts
  * const comp: CompositionValidatorsResultType = {
  *   allOfValidators: [validateA, validateB],
  *   anyOfChecks: [checkX, checkY],
+ *   anyOfValidators: undefined,
  *   oneOfChecks: undefined,
+ *   oneOfValidators: undefined,
  * };
  * ```
  *
@@ -28,5 +32,7 @@ import type {
 export type CompositionValidatorsResultType = {
   readonly 'allOfValidators': undefined | ValidateWithErrorsFnType[];
   readonly 'anyOfChecks': CheckFnType[] | undefined;
+  readonly 'anyOfValidators': undefined | ValidateWithErrorsFnType[];
   readonly 'oneOfChecks': CheckFnType[] | undefined;
+  readonly 'oneOfValidators': undefined | ValidateWithErrorsFnType[];
 };
