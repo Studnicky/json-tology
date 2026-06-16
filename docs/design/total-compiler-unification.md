@@ -1,7 +1,10 @@
 # Total Compiler Unification — One Execution Path
 
-Status: implementation spec (issue #159 superset)
+Status: SHIPPED on `feature/compiler-single-path` (Waves 0–5 complete). Validation
+runs a single compiled path; the graph interpreter executor is deleted. See
+"Remaining work" at the end for what is intentionally left.
 Branch: `feature/compiler-single-path`
+Issue: #159 (regression undone to ~v0.22; the pre-v0.16 gap remains — see Remaining work).
 
 ## Goal
 
@@ -181,12 +184,13 @@ conformance corpus compile with 0 fallback. The validation interpreter is dead.
   the compile-time try/catch from the validate path. Uncompilable schemas now
   surface the precise error (e.g. `REF_NOT_FOUND`) instead of silently degrading.
   `GraphEngineVisit`/`GraphEngine.execute` no longer reachable from validation.
-- **4b (BLOCKED — prerequisite).** `GraphEngine.execute` is still used by
-  `Materializer.run` (`Materializer.ts:471`) for `synthesizeDefaults` /
-  `createDefault()` — an interpreter-only capability with no compiled equivalent.
-  Deleting `GraphEngineVisit` requires first compiling zero-value synthesis
-  (`synthesizeDefaults`) into the plan, then re-pointing `Materializer` at it.
-  `GraphEngine` retains graph construction + `semantics()` regardless.
+- **4b (DONE).** `synthesizeDefaults` (data-aware zero-value synthesis) and
+  `ignoreAdditionalProperties` are compiled into the plan; `Materializer.run` runs
+  on the compiled validator and no longer calls `engine.execute`. `GraphEngineVisit`
+  and `visit/{Refs,Unevaluated,VisitComposition}` are deleted. `GraphEngine.execute`/
+  `check`/`errors` and `GraphExecutionResultType` are removed entirely (a later
+  cleanup pass deleted the throwing stubs). `GraphEngine` retains graph construction
+  + `semantics()`.
 
 ### Parallel stream — Conformance harness (independent agent, Wave 0–2)
 
@@ -204,27 +208,20 @@ validate routine in check-mode (`collectErrors:false`); every internal boolean t
 (`anyOf`/`oneOf` members, `not`, `if`, `contains`) runs a member validator in an
 isolated check-mode scratch ctx (no error/value/evaluated leak to the parent).
 
-Order (each sub-step gated by test:all + conformance + bench-no-material-regression;
-revert any keyword whose unification regresses materially):
-1. `check()` → `buildCheckFromValidate` (DONE — API-level one-way; green).
-2. `anyOf`/`oneOf` (BLOCKED — reverted). Naively routing the base executor through the
-   validator form double-validates oneOf: composition is already evaluated in TWO layers
-   — `executeComposedAnyOneNot` (base) AND `wrapWithValueProducingComposition` →
-   `validateOneOfWithValues` (value path). "exactly one" breaks, with no perf gain
-   (bench flat). PREREQUISITE: consolidate the three composition strategies
-   (`validate*` checks / `*WithValues` / `*WithEvaluated`) into ONE routine that produces
-   value + merges evaluated under `ctx.trackEvaluated`, removing the base-vs-wrap
-   duplication. Only then can `anyOfChecks`/`oneOfChecks` be dropped.
-3. `not`/`if`/`contains`: replace `complementCheck`/`ifCheck`/`containsCheck` with
-   validator-in-check-mode against a reusable scratch ctx (no side-effect leak).
-4. Delete the now-dead top-level check tree (`compileNodeCheck`, `compileNode*Check`,
-   `compileArrayCheck`/`compileObjectCheck`/`compileRefCheck`, `buildAnyOfCheck`/
-   `buildOneOfCheck`, check dispatcher contexts) across both files.
-5. Remove `CheckFnType` from the plan IR and `src/types`.
-
-Note: `compileCheck` (the top-level entry) is already deleted; `compileNodeCheck` and
-its tree remain reachable only through the composition `*Checks` and ref/if/contains
-sub-validators, so the dead-tree deletion (step 4) is gated on steps 2–3.
+All sub-steps DONE:
+1. `check()` is `buildCheckFromValidate` (validate routine in check-mode).
+2. `anyOf`/`oneOf` use one routine per operator. The three former strategies
+   (`validate*` checks / `*WithValues` / `*WithEvaluated`) and the base-vs-wrap
+   duplication are collapsed: each member runs in an isolated check-mode scratch
+   ctx, the winning branch produces value, evaluated merges under `ctx.trackEvaluated`,
+   and composition is evaluated exactly once per node (`oneOf` "exactly one" preserved —
+   pinned by `test/types/round-trip.test.ts`).
+3. `not`/`if`/`contains` run member validators in check-mode against the reusable
+   scratch ctx; `complementCheck`/`ifCheck`/`containsCheck` plan fields are gone.
+4. The entire `compileNodeCheck` tree (both files) is deleted — proven dead via a
+   probe (compileNodeCheck forced to throw → full runtime suite green, 0 hits).
+5. `CheckFnType`/`OptionalCheckFnType` removed from the plan IR and `src/types`;
+   15 orphaned check-only type files deleted. `grep CheckFnType src/` = 0.
 
 ## Invariants (every wave)
 
@@ -243,3 +240,39 @@ Highest in Wave 0 (signature change ripples through every `exec/*` site) and the
 composition evaluated-set scoping. Both are pinned by the conformance harness.
 Wave 4 is the irreversible swap — it dispatches only after Waves 0–3 are green and
 the harness reports zero fallbacks.
+
+## Remaining work
+
+The single-path architecture is shipped; these are the open items, ordered by value.
+
+### 1. Performance — close the pre-v0.16 gap (issue #159 not fully closed)
+The branch undid the regression it introduced and sits at ~77–90% of the v0.22
+baseline (review-valid ~520–620k vs 677k; order/nested ~235–255k vs 269k; ajv
+control stable). The deeper gap to pre-v0.16 (~884k review-valid) is **not**
+allocations (V8 escape analysis already neutralizes short-lived objects) — it is
+the executor's call-tree depth and per-node/per-layer `{earlyExit,valid,value}`
+result objects (`runPlanStructureAndTail → runPlanRefAndScalars → validatePlanScalars
+→ validateObjectPlan → validateObjectFields → validateProperties`). Closing it means
+flattening that chain / switching the leaf protocol to sentinel returns + ctx-carried
+value. Large, hot-path, profile-guided; gate on the validate bench. This is the right
+lever to reopen #159 with.
+
+### 2. Release artifacts (before merge)
+- `CHANGELOG.md` `[Unreleased]` entry for the single-path unification (added with this doc).
+- PR against `main` (repo is main-only) after `/enginseer:review-self`.
+
+### 3. Cosmetic / hygiene (low priority)
+- Rename misnomer test files now that there is one engine: `crossEngineMessageParity.test.ts`
+  → compiled-message validation; `compiledInterpretedParity.test.ts` → compiled-verdict.
+  (Their `describe` blocks and assertions are already present-state; only the filenames lag.)
+- Dead-export audit: there is no knip config (`litany prune dead-code` skips). After deleting
+  ~19 files, set up knip or do a manual unused-export sweep to catch any now-orphaned public types.
+- `src/cli.ts:289` has a pre-existing `as Record<string, unknown>` cast (not from this work)
+  — fix via `isRecord` narrowing when touching the CLI.
+
+### 4. Done as part of this work (no action)
+- Empty `src/modules/graph/visit/` directory removed.
+- `GraphEngine.execute/check/errors`, `GraphExecutionResultType`, `EXEC_NOT_SUPPORTED`,
+  and stale `engine.execute` docs deleted.
+- `crossEngineMessageParity` message-content assertions restored (keyword + exact
+  message sourced from `VALIDATION_MESSAGES`).

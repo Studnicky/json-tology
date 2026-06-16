@@ -11,7 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Validation runs a single compiled execution path.** Every keyword — `$ref`,
+  `$dynamicRef`/`$dynamicAnchor`, `unevaluatedProperties`/`unevaluatedItems`,
+  `rdfs:range`/`rdfs:domain`, and recursive/cyclic schemas and data — now compiles.
+  The graph-interpreter validation executor is removed, and there is one compiled
+  routine per feature (no separate boolean `check` compilation, no per-keyword
+  check/validate duality, no base-vs-wrap composition duplication).
+- **Materialization runs on the compiled path.** `createDefault()`,
+  `materialize(..., { synthesizeDefaults })`, and the `passAdditionalProperties`
+  option are served by compiled `synthesizeDefaults` (data-aware zero-value
+  synthesis) and `ignoreAdditionalProperties` rather than the interpreter.
+
+### Removed
+
+- **BREAKING — `GraphEngine.execute()`, `.check()`, `.errors()`, and
+  `GraphExecutionResultType` are removed.** Run validation through
+  `registry.validate(id, data)` or `registry.validator(id).validate(data, options)`.
+  `GraphEngine` is retained for schema-graph construction and `semantics()`.
+
 ### Fixed
+
+- **Unresolvable `$ref` is reported, not silently skipped.** A `$ref` whose target
+  is not registered surfaces a `REF_NOT_FOUND` error instead of passing validation.
 
 ## [0.23.1] - 2026-06-15
 
