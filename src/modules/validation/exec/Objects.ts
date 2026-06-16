@@ -306,7 +306,7 @@ export class Objects {
 
       if (stripUnknown && stripAllowed !== undefined && !stripAllowed.has(key)) {
         delete obj[key];
-      } else if (additionalIsFalse && allowedKeys?.has(key) !== true) {
+      } else if (additionalIsFalse && allowedKeys?.has(key) !== true && !ctx.ignoreAdditionalProperties) {
         if (!ctx.collectErrors) {
           return false;
         }

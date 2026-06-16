@@ -54,5 +54,15 @@ export const SchemaCompilerDefaults = {
     }
 
     return GraphEngineDefaults.createImplicitDefaultValueSeeded(context, node, graph, [], stringVisited);
+  },
+  synthesizeZeroValue(
+    node: SchemaGraphNodeType,
+    graph: SchemaGraphInterface,
+    lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,
+    lookupGraph?: (id: string) => SchemaGraphInterface | undefined
+  ): unknown {
+    const context = buildCompilerDefaultContext(lookup, lookupGraph);
+
+    return GraphEngineDefaults.synthesizeZeroValue(context, node, graph, []);
   }
 } as const;

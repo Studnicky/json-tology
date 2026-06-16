@@ -204,7 +204,8 @@ export class Composition {
         ...ctx,
         'collectErrors': true,
         'errors': [],
-        'stripUnknown': false
+        'stripUnknown': false,
+        'synthesizeDefaults': false
       };
 
       for (const allOfValidator of allOfValidators) {

@@ -468,9 +468,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         errors,
         'evaluatedItems': undefined,
         'evaluatedProperties': undefined,
+        'ignoreAdditionalProperties': false,
         'maxDepth': 100,
         'refStack': new Set(),
         'stripUnknown': false,
+        'synthesizeDefaults': false,
         // This path is only used for schemas that declare unevaluated*, so tracking is required.
         'trackEvaluated': true
       };
@@ -1066,6 +1068,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         const lookupGraph = this.activeLookupGraph;
 
         return SchemaCompilerDefaults.resolveImplicitDefaultValue(node, graph, lookup, visited, lookupGraph);
+      },
+      'synthesizeZeroValue': (
+        node: SchemaGraphNodeType,
+        graph: SchemaGraphInterface,
+        lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,
+        lookupGraph: ((id: string) => SchemaGraphInterface | undefined) | undefined
+      ): unknown => {
+        return SchemaCompilerDefaults.synthesizeZeroValue(node, graph, lookup, lookupGraph);
       }
     };
 
@@ -1590,9 +1600,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       errors,
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
+      'ignoreAdditionalProperties': false,
       'maxDepth': 100,
       'refStack': new Set(),
       'stripUnknown': false,
+      'synthesizeDefaults': false,
       'trackEvaluated': trackEvaluated
     };
     const result = validateWithErrorsFn(data, '', ctx);
@@ -1749,9 +1761,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       errors,
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
+      'ignoreAdditionalProperties': options.ignoreAdditionalProperties ?? false,
       'maxDepth': 100,
       'refStack': new Set(),
       'stripUnknown': stripUnk,
+      'synthesizeDefaults': options.synthesizeDefaults ?? false,
       'trackEvaluated': trackEvaluated
     };
     const result = validateWithErrors(workingValue, '', ctx);
@@ -1777,7 +1791,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     if (options !== undefined
       && (options.applyDefaults === true || options.castTypes === true
-        || options.enforceSchemaProperties === true || options.removeAdditionalProperties === true)) {
+        || options.enforceSchemaProperties === true || options.removeAdditionalProperties === true
+        || options.synthesizeDefaults === true || options.ignoreAdditionalProperties === true)) {
       return this.executeMutatingFullValidation(workingValue, options, validateWithErrors, trackEvaluated);
     }
 
@@ -1799,9 +1814,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       errors,
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
+      'ignoreAdditionalProperties': options?.ignoreAdditionalProperties ?? false,
       'maxDepth': 100,
       'refStack': new Set(),
       'stripUnknown': false,
+      'synthesizeDefaults': options?.synthesizeDefaults ?? false,
       'trackEvaluated': trackEvaluated
     };
     const result = validateWithErrors(workingValue, '', ctx);
@@ -2518,7 +2535,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       jtExtra, patternPropValidators, propertyDefaults, propValidators
     } = objOpts;
 
-    const prelude = this.validateObjectPrelude(obj, path, ctx.errors, runOpts, objOpts);
+    const prelude = this.validateObjectPrelude(obj, path, ctx.errors, runOpts, objOpts, ctx);
 
     if (prelude.earlyExit) {
       return {
@@ -2589,7 +2606,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const {
       additionalIsFalse, additionalValidator, allowedKeys, allowedKeysForStrip,
       jtExtra, maxProperties, minProperties, patternPropValidators, propertyAliases,
-      propertyDefaults, propValidators, required
+      propertyDefaults, propertyZeroValueSynthesizers, propValidators, required
     } = plan;
     const objOpts: ObjectValidationOptionsType = {
       additionalIsFalse,
@@ -2602,6 +2619,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       patternPropValidators,
       propertyAliases,
       propertyDefaults,
+      propertyZeroValueSynthesizers,
       propValidators,
       required
     };
@@ -2614,14 +2632,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     path: string,
     errors: ValidationErrorType[],
     runOpts: ValidationRunOptionsType,
-    objOpts: ObjectValidationOptionsType
+    objOpts: ObjectValidationOptionsType,
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'requiredValid': boolean } {
     const {
       applyDefaults, collectErrors
     } = runOpts;
     const {
-      propertyAliases, propertyDefaults, required
+      propertyAliases, propertyDefaults, propertyZeroValueSynthesizers, required
     } = objOpts;
 
     if (propertyAliases.size > 0) {
@@ -2630,6 +2649,16 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     if (applyDefaults) {
       Objects.applyDefaults(obj, propertyDefaults);
+    }
+
+    if (ctx.synthesizeDefaults && required !== undefined) {
+      for (const key of required) {
+        if (!(key in obj)) {
+          const synthesizer = propertyZeroValueSynthesizers.get(key);
+
+          obj[key] = synthesizer === undefined ? null : synthesizer();
+        }
+      }
     }
 
     if (!Objects.validateRequired(path, obj, required, errors)) {
@@ -2723,9 +2752,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       errors,
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
+      'ignoreAdditionalProperties': false,
       'maxDepth': 100,
       'refStack': new Set(),
       'stripUnknown': stripUnknown,
+      'synthesizeDefaults': false,
       'trackEvaluated': true
     };
 
@@ -2799,9 +2830,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       errors,
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
+      'ignoreAdditionalProperties': false,
       'maxDepth': 100,
       'refStack': new Set(),
       'stripUnknown': false,
+      'synthesizeDefaults': false,
       'trackEvaluated': true
     };
     const pnResult = Objects.validatePropertyNames(path, workingValue, propertyNamesValidator, pnCtx);

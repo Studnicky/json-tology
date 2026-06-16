@@ -41,4 +41,10 @@ export type SchemaCompilerValidatePlanContextType = {
     lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
     visited: Set<unknown>
   ) => unknown;
+  readonly 'synthesizeZeroValue': (
+    node: SchemaGraphNodeType,
+    graph: SchemaGraphInterface,
+    lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,
+    lookupGraph: ((id: string) => SchemaGraphInterface | undefined) | undefined
+  ) => unknown;
 };

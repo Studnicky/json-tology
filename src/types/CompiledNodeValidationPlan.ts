@@ -63,6 +63,7 @@ export type CompiledNodeValidationPlanType = {
   readonly 'propertyDefaults': Map<string, { 'defaultValue': unknown;
     'hasDefault': boolean; }>;
   readonly 'propertyNamesValidator': undefined | ValidateWithErrorsFnType;
+  readonly 'propertyZeroValueSynthesizers': Map<string, () => unknown>;
   readonly 'propValidators': Map<string, ValidateWithErrorsFnType>;
   readonly 'rdfsRangeValidator': undefined | ValidateWithErrorsFnType;
   readonly 'refValidator': undefined | ValidateWithErrorsFnType;

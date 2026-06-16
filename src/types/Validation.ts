@@ -284,7 +284,7 @@ export type ValidateWithErrorsResultType = {
  * @example
  * ```ts
  * const validate: ValidateWithErrorsFnType = registry.compile(schema);
- * const ctx: ExecContextType = { errors: [], collectErrors: true, applyDefaults: false, doCoerce: false, stripUnknown: false, refStack: new Set(), dynamicScope: [], evaluatedItems: undefined, evaluatedProperties: undefined, depth: 0, maxDepth: 100 };
+ * const ctx: ExecContextType = { errors: [], collectErrors: true, applyDefaults: false, doCoerce: false, ignoreAdditionalProperties: false, synthesizeDefaults: false, stripUnknown: false, refStack: new Set(), dynamicScope: [], evaluatedItems: undefined, evaluatedProperties: undefined, depth: 0, maxDepth: 100, trackEvaluated: false };
  * const { valid } = validate(data, '', ctx);
  * ```
  *

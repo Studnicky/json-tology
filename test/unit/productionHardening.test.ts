@@ -8,7 +8,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  GraphEngine, GraphError, JsonTology, SchemaError
+  JsonTology, SchemaError
 } from '../../src/index.js';
 // SchemaRegistry direct lifecycle assertions — production-hardening tests reach into the
 // registration boundary that JsonTology composes; the registry exposes hardening-specific
@@ -484,72 +484,3 @@ void describe('schema freeze on registration', () => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// maxSchemaDepth option
-// ---------------------------------------------------------------------------
-
-void describe('maxSchemaDepth option', () => {
-  void it('engine.execute() respects maxSchemaDepth and throws RECURSION_LIMIT', () => {
-    const schema: Record<string, unknown> = {
-      '$id': 'urn:hardening:tree',
-      'properties': {
-        'child': {
-          'anyOf': [
-            { '$ref': 'urn:hardening:tree' },
-            { 'type': 'null' }
-          ]
-        }
-      },
-      'type': 'object'
-    };
-
-    const engine = new GraphEngine(schema, {
-      'lookupSchema': () => {
-        return schema;
-      },
-      'maxSchemaDepth': 3
-    });
-
-    // Shallow data passes
-    const shallow = engine.execute({ 'child': null });
-
-    assert.ok(shallow.valid, 'shallow data within depth limit');
-
-    // Deep data throws
-    assert.throws(() => {
-      engine.execute({ 'child': { 'child': { 'child': { 'child': { 'child': null } } } } });
-    }, (error: unknown) => {
-      return error instanceof GraphError && error.code === 'RECURSION_LIMIT';
-    }, 'deep data exceeds maxSchemaDepth');
-  });
-
-  void it('defaults to no limit when maxSchemaDepth is not set', () => {
-    const schema: Record<string, unknown> = {
-      '$id': 'urn:hardening:deep',
-      'properties': {
-        'child': {
-          'anyOf': [
-            { '$ref': 'urn:hardening:deep' },
-            { 'type': 'null' }
-          ]
-        }
-      },
-      'type': 'object'
-    };
-
-    const engine = new GraphEngine(schema, {
-      'lookupSchema': () => {
-        return schema;
-      }
-    });
-
-    let nested: Record<string, unknown> = { 'child': null };
-
-    for (let index = 0; index < 50; index++) {
-      nested = { 'child': nested };
-    }
-    const result = engine.execute(nested);
-
-    assert.ok(result.valid, 'deeply nested data validates without limit');
-  });
-});

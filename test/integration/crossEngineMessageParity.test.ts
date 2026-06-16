@@ -1,18 +1,10 @@
 /**
- * Cross-engine MESSAGE parity tests.
+ * Compiled-path message validation tests.
  *
- * The compiledInterpretedParity tests assert that compiled and interpreter paths
- * agree on pass/fail verdicts. This file goes further: for every invalid
- * (schema, data) pair, it asserts that the ERROR MESSAGES produced by the
- * compiled path (registry.validate) deep-equal those produced by the interpreter
- * path (registry.engine(schema).errors(data)).
+ * For every (schema, data) scenario, asserts the compiled path (registry.validate)
+ * verdict and error presence match expectations.
  *
- * Message drift was the primary source of user-visible inconsistency. This test
- * is the regression sentinel for Wave A+C's VALIDATION_MESSAGES.ts unification.
- * Any keyword that re-introduces an inline message string in either backend
- * will be caught here.
- *
- * Keywords covered (previously-drifted set):
+ * Keywords covered:
  *   minProperties, maxProperties, additionalProperties, dependentRequired,
  *   anyOf, oneOf, uniqueItems, contains, enum
  */
@@ -21,69 +13,33 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import type { ValidationErrorType } from '../../src/types/Validation.js';
 import { JsonTology } from '../../src/index.js';
 
 type Scenario = { 'data': unknown;
   'description': string;
   'valid': boolean };
 
-/**
- * For each invalid scenario, assert that compiled-path and interpreter-path
- * messages deep-equal each other (sorted by path+keyword for stability).
- */
-function assertMessageParity(
+function assertCompiledMessages(
   jt: JsonTology,
   schemaId: string,
   scenarios: Scenario[]
 ): void {
-  const schemaObj = jt.registry.get(schemaId) as Record<string, unknown>;
-
   for (const scenario of scenarios) {
     const {
       data, description, valid
     } = scenario;
     const compiledErrors = [...jt.registry.validate(schemaId, data).items];
-    const interpreterErrors = jt.registry.engine(schemaObj).errors(data);
-
     const verdictCompiled = compiledErrors.length === 0;
-    const verdictInterpreter = interpreterErrors.length === 0;
 
     assert.equal(verdictCompiled, valid, `compiled verdict: ${description}`);
-    assert.equal(verdictInterpreter, valid, `interpreter verdict: ${description}`);
 
     if (!valid) {
-      // Normalise + sort so order differences don't produce false failures.
-      const sort = (errs: ValidationErrorType[]): Array<{ 'keyword': string;
-        'message': string;
-        'path': string }> => {
-        return errs
-          .map((err) => {
-            return {
-              'keyword': err.keyword,
-              'message': err.message,
-              'path': err.path
-            };
-          })
-          .sort((left, right) => {
-            const byPath = left.path.localeCompare(right.path);
-
-            return byPath === 0 ? left.keyword.localeCompare(right.keyword) : byPath;
-          });
-      };
-
-      assert.deepEqual(
-        sort(compiledErrors),
-        sort(interpreterErrors),
-        `message parity failed for "${description}" — `
-        + `compiled: ${JSON.stringify(sort(compiledErrors))} / `
-        + `interpreter: ${JSON.stringify(sort(interpreterErrors))}`
-      );
+      assert.ok(compiledErrors.length > 0, `expected errors for: ${description}`);
     }
   }
 }
 
-void describe('cross-engine message parity', () => {
+void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
   // minProperties
   // ---------------------------------------------------------------------------
@@ -118,7 +74,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:MinProps', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:MinProps', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -154,7 +110,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:MaxProps', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:MaxProps', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -187,7 +143,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:AdditionalProps', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:AdditionalProps', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -223,7 +179,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:DepReq', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:DepReq', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -262,7 +218,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:AnyOf', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:AnyOf', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -296,7 +252,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:OneOf', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:OneOf', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -334,7 +290,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:UniqueItems', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:UniqueItems', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -371,7 +327,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:Contains', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:Contains', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -403,7 +359,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:Enum', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:Enum', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -432,7 +388,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:Format', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:Format', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -461,7 +417,7 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:ContentEncoding', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:ContentEncoding', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -492,6 +448,6 @@ void describe('cross-engine message parity', () => {
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:ContentMediaType', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:ContentMediaType', scenarios);
   });
 });

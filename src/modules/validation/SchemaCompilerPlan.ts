@@ -2270,6 +2270,30 @@ export function buildNodePlan(
   const jtExtra = sem.jtConfig?.extra;
   const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
 
+  const propertyZeroValueSynthesizers = new Map<string, () => unknown>();
+  const semRequired = sem.required;
+
+  if (semRequired.length > 0) {
+    for (const key of semRequired) {
+      const propNode = sem.properties.get(key);
+
+      if (propNode === undefined) {
+        propertyZeroValueSynthesizers.set(key, (): unknown => {
+          return null;
+        });
+      } else {
+        const capturedNode = propNode;
+        const capturedGraph = graph;
+        const capturedLookup = lookupSchema;
+        const capturedLookupGraph = lookupGraph;
+
+        propertyZeroValueSynthesizers.set(key, (): unknown => {
+          return context.synthesizeZeroValue(capturedNode, capturedGraph, capturedLookup, capturedLookupGraph);
+        });
+      }
+    }
+  }
+
   return {
     'additionalIsFalse': sem.additionalPropertiesNode === false,
     additionalValidator,
@@ -2343,6 +2367,7 @@ export function buildNodePlan(
       'propertyEntries': propertyEntries
     }),
     propertyNamesValidator,
+    propertyZeroValueSynthesizers,
     'propValidators': compilePropertyValidators({
       'configStrict': sem.jtConfig?.strict,
       context,
