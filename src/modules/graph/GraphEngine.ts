@@ -1,6 +1,5 @@
-import type { ValidationErrorType } from '../../types/Validation.js';
 import type {
-  GraphEngineOptionsType, GraphExecutionResultType,
+  GraphEngineOptionsType,
   KeywordDefinitionType
 } from '../../types/GraphEngine.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
@@ -13,18 +12,16 @@ import { FormatRegistry } from '../format/FormatRegistry.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
-import { GraphError } from '../../errors/GraphError.js';
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 
 /**
- * Core validation and execution engine for compiled JSON Schema graphs.
+ * Graph construction and lookup helpers for the schema graph.
  *
  * @remarks
- * `execute()`, `check()`, and `errors()` are removed — use
- * `registry.validator(id).validate()` instead.  This class is retained for
- * its graph construction helpers (`rootSchemaId`, `graphLookup`,
- * `hasRegisteredCustomKeywords`, `keywords`) which are consumed by
- * `SchemaRegistry` and related infrastructure.
+ * Builds and caches `SchemaGraph` instances and exposes the root schema,
+ * format registry, custom keywords, and lookup functions consumed by
+ * `SchemaRegistry` and the compiler. Validation runs through
+ * `registry.validator(id).validate()`.
  *
  * @category Validation
  * @since 0.1.0
@@ -48,37 +45,6 @@ export class GraphEngine implements GraphEngineInterface {
       ...DEFAULT_OPTIONS,
       ...rest
     };
-  }
-
-  public check(value: unknown, options?: { 'pointer'?: string }): boolean {
-    void value;
-    void options;
-    throw new GraphError('GraphEngine.check() is removed; use registry.validator(id).validate()', {
-      'code': 'EXEC_NOT_SUPPORTED',
-      'pointer': ''
-    });
-  }
-
-  public errors(value: unknown, options?: { 'pointer'?: string }): ValidationErrorType[] {
-    void value;
-    void options;
-    throw new GraphError('GraphEngine.errors() is removed; use registry.validator(id).validate()', {
-      'code': 'EXEC_NOT_SUPPORTED',
-      'pointer': ''
-    });
-  }
-
-  public execute(
-    value: unknown,
-    options?: { 'overrides'?: Partial<Omit<GraphEngineOptionsType, 'formatRegistry' | 'lookupSchema'>>
-      'pointer'?: string; }
-  ): GraphExecutionResultType {
-    void value;
-    void options;
-    throw new GraphError('GraphEngine.execute() is removed; use registry.validator(id).validate()', {
-      'code': 'EXEC_NOT_SUPPORTED',
-      'pointer': ''
-    });
   }
 
   /** @internal Used by SchemaRegistry to obtain a cached graph for lookupGraph wiring. */

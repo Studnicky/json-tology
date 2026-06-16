@@ -2,11 +2,13 @@
  * Compiled-path message validation tests.
  *
  * For every (schema, data) scenario, asserts the compiled path (registry.validate)
- * verdict and error presence match expectations.
+ * verdict, error presence, and — for invalid cases — the keyword and
+ * VALIDATION_MESSAGES-sourced message of the expected error.
  *
  * Keywords covered:
  *   minProperties, maxProperties, additionalProperties, dependentRequired,
- *   anyOf, oneOf, uniqueItems, contains, enum
+ *   anyOf, oneOf, uniqueItems, contains, enum, format, contentEncoding,
+ *   contentMediaType
  */
 
 import {
@@ -14,10 +16,29 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { JsonTology } from '../../src/index.js';
+import { VALIDATION_MESSAGES } from '../../src/constants/VALIDATION_MESSAGES.js';
+import type { ValidationErrorType } from '../../src/types/Validation.js';
 
-type Scenario = { 'data': unknown;
+type ErrorSummaryType = {
+  'keyword': string;
+  'message': string;
+};
+
+type ValidScenario = {
+  'data': unknown;
   'description': string;
-  'valid': boolean };
+  'valid': true;
+};
+
+type InvalidScenario = {
+  'data': unknown;
+  'description': string;
+  'expectedKeyword': string;
+  'expectedMessage': string;
+  'valid': false;
+};
+
+type Scenario = InvalidScenario | ValidScenario;
 
 function assertCompiledMessages(
   jt: JsonTology,
@@ -33,8 +54,27 @@ function assertCompiledMessages(
 
     assert.equal(verdictCompiled, valid, `compiled verdict: ${description}`);
 
-    if (!valid) {
+    if (valid) {
+      assert.equal(compiledErrors.length, 0, `expected no errors for: ${description}`);
+    } else {
       assert.ok(compiledErrors.length > 0, `expected errors for: ${description}`);
+
+      const {
+        expectedKeyword, expectedMessage
+      } = scenario;
+      const match = compiledErrors.find((err: ValidationErrorType): boolean => {
+        return err.keyword === expectedKeyword && err.message === expectedMessage;
+      });
+
+      const actualSummary = JSON.stringify(compiledErrors.map((err: ValidationErrorType): ErrorSummaryType => {
+        return {
+          'keyword': err.keyword,
+          'message': err.message
+        };
+      }));
+      const failureMessage = `expected error with keyword="${expectedKeyword}" message="${expectedMessage}" for: ${description}\nactual errors: ${actualSummary}`;
+
+      assert.ok(match !== undefined, failureMessage);
     }
   }
 }
@@ -65,11 +105,15 @@ void describe('compiled-path message validation', () => {
       {
         'data': { 'a': 1 },
         'description': 'one property when min is 2 — invalid',
+        'expectedKeyword': 'minProperties',
+        'expectedMessage': VALIDATION_MESSAGES.minProperties(2),
         'valid': false
       },
       {
         'data': {},
         'description': 'zero properties when min is 2 — invalid',
+        'expectedKeyword': 'minProperties',
+        'expectedMessage': VALIDATION_MESSAGES.minProperties(2),
         'valid': false
       }
     ];
@@ -106,6 +150,8 @@ void describe('compiled-path message validation', () => {
           'c': 3
         },
         'description': 'three properties when max is 2 — invalid',
+        'expectedKeyword': 'maxProperties',
+        'expectedMessage': VALIDATION_MESSAGES.maxProperties(2),
         'valid': false
       }
     ];
@@ -139,6 +185,8 @@ void describe('compiled-path message validation', () => {
           'name': 'Alice'
         },
         'description': 'additional property present — invalid',
+        'expectedKeyword': 'additionalProperties',
+        'expectedMessage': VALIDATION_MESSAGES.additionalProperties('extra'),
         'valid': false
       }
     ];
@@ -175,6 +223,8 @@ void describe('compiled-path message validation', () => {
       {
         'data': { 'email': 'a@b.com' },
         'description': 'email without username — invalid',
+        'expectedKeyword': 'dependentRequired',
+        'expectedMessage': VALIDATION_MESSAGES.dependentRequired('username', 'email'),
         'valid': false
       }
     ];
@@ -214,6 +264,8 @@ void describe('compiled-path message validation', () => {
       {
         'data': true,
         'description': 'boolean matches no branch — invalid',
+        'expectedKeyword': 'anyOf',
+        'expectedMessage': VALIDATION_MESSAGES.anyOf,
         'valid': false
       }
     ];
@@ -248,6 +300,8 @@ void describe('compiled-path message validation', () => {
       {
         'data': true,
         'description': 'boolean matches no branch — invalid',
+        'expectedKeyword': 'oneOf',
+        'expectedMessage': VALIDATION_MESSAGES.oneOf,
         'valid': false
       }
     ];
@@ -286,6 +340,8 @@ void describe('compiled-path message validation', () => {
           1
         ],
         'description': 'duplicate value — invalid',
+        'expectedKeyword': 'uniqueItems',
+        'expectedMessage': VALIDATION_MESSAGES.uniqueItems,
         'valid': false
       }
     ];
@@ -323,6 +379,8 @@ void describe('compiled-path message validation', () => {
           3
         ],
         'description': 'no string element — invalid',
+        'expectedKeyword': 'contains',
+        'expectedMessage': VALIDATION_MESSAGES.contains(1),
         'valid': false
       }
     ];
@@ -355,6 +413,8 @@ void describe('compiled-path message validation', () => {
       {
         'data': 'd',
         'description': 'value not in enum — invalid',
+        'expectedKeyword': 'enum',
+        'expectedMessage': VALIDATION_MESSAGES.enum,
         'valid': false
       }
     ];
@@ -366,7 +426,7 @@ void describe('compiled-path message validation', () => {
   // format (strict-by-default)
   // ---------------------------------------------------------------------------
 
-  void it('keyword: format strict-by-default — both engines agree on message', () => {
+  void it('keyword: format', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
 
     jt.set({
@@ -384,6 +444,8 @@ void describe('compiled-path message validation', () => {
       {
         'data': 'not-an-email',
         'description': 'invalid email — fails with format message',
+        'expectedKeyword': 'format',
+        'expectedMessage': VALIDATION_MESSAGES.format('email'),
         'valid': false
       }
     ];
@@ -395,7 +457,7 @@ void describe('compiled-path message validation', () => {
   // contentEncoding (strict-by-default)
   // ---------------------------------------------------------------------------
 
-  void it('keyword: contentEncoding strict-by-default — both engines agree on message', () => {
+  void it('keyword: contentEncoding', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
 
     jt.set({
@@ -413,6 +475,8 @@ void describe('compiled-path message validation', () => {
       {
         'data': 'not valid base64!!!',
         'description': 'invalid base64 string — fails with contentEncoding message',
+        'expectedKeyword': 'contentEncoding',
+        'expectedMessage': VALIDATION_MESSAGES.contentEncoding('base64'),
         'valid': false
       }
     ];
@@ -424,7 +488,7 @@ void describe('compiled-path message validation', () => {
   // contentMediaType (strict-by-default)
   // ---------------------------------------------------------------------------
 
-  void it('keyword: contentMediaType strict-by-default — both engines agree on message', () => {
+  void it('keyword: contentMediaType', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
 
     jt.set({
@@ -444,6 +508,8 @@ void describe('compiled-path message validation', () => {
       {
         'data': 'bm90IGpzb24=',
         'description': 'valid base64 but not JSON content — fails with contentMediaType message',
+        'expectedKeyword': 'contentMediaType',
+        'expectedMessage': VALIDATION_MESSAGES.contentMediaType('application/json'),
         'valid': false
       }
     ];

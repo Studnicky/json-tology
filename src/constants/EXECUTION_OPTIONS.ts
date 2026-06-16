@@ -23,11 +23,11 @@ export const EMPTY_ERROR_LIST: readonly string[] = Object.freeze<string[]>([]);
  *
  * @remarks
  * Enables `applyDefaults` and `castTypes`; errors are thrown rather than collected.
- * Pass as the `options` argument to `GraphEngine.execute` for cast-style runs.
+ * Pass as the `options` argument to a compiled validator's `validate` for cast-style runs.
  *
  * @example
  * ```ts
- * engine.execute(graph, data, CAST_OPTIONS);
+ * compiled.validate(data, CAST_OPTIONS);
  * ```
  *
  * @category Constants
@@ -47,11 +47,11 @@ export const CAST_OPTIONS = Object.freeze({
  *
  * @remarks
  * Enforces schema properties and throws on first error rather than collecting them.
- * Pass as the `options` argument to `GraphEngine.execute` for strict clean-style runs.
+ * Pass as the `options` argument to a compiled validator's `validate` for strict clean-style runs.
  *
  * @example
  * ```ts
- * engine.execute(graph, data, CLEAN_OPTIONS);
+ * compiled.validate(data, CLEAN_OPTIONS);
  * ```
  *
  * @category Constants
@@ -74,7 +74,7 @@ export const CLEAN_OPTIONS = Object.freeze({
  *
  * @example
  * ```ts
- * engine.execute(graph, data, CONVERT_OPTIONS);
+ * compiled.validate(data, CONVERT_OPTIONS);
  * ```
  *
  * @category Constants
@@ -92,14 +92,14 @@ export const CONVERT_OPTIONS = Object.freeze({
  * COLLECT_ERRORS_OPTIONS — default execution options that accumulate all errors instead of throwing on first failure.
  *
  * @remarks
- * When passed as `options`, the engine collects every validation error encountered
- * rather than aborting at the first failure. The result carries a `ValidationErrors`
- * collection with all accumulated errors.
+ * When passed as `options`, the compiled validator collects every validation error
+ * encountered rather than aborting at the first failure. The result carries a
+ * `ValidationErrors` collection with all accumulated errors.
  *
  * @example
  * ```ts
- * const result = engine.execute(graph, data, COLLECT_ERRORS_OPTIONS);
- * if (!result.valid) console.error(result.errors.items);
+ * const result = compiled.validate(data, COLLECT_ERRORS_OPTIONS);
+ * if (!result.valid) console.error(result.errors);
  * ```
  *
  * @category Constants
