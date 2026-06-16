@@ -122,7 +122,21 @@
       "Bash(gh pr *)",
       "Bash(archivum git:github-release *)",
       "Bash(gh release *)",
-      "Bash(gh run *)"
+      "Bash(gh run *)",
+      "Bash(awk '/^## \\\\[0.23.0\\\\]/{f=1;next} /^## \\\\[0.22.0\\\\]/{f=0} f' CHANGELOG.md)",
+      "Bash(awk '/void it\\\\\\(/{init=NR; init_line=$0} /for \\\\\\(const \\\\{/{if\\(init && NR>init\\) {print \"B-loop at \"NR\" \\(it opened at \"init\"\\)\"}}' test/unit/validation.test.ts)",
+      "Bash(bc)",
+      "Bash(awk -F'|' '{gsub\\(/ /,\"\",$2\\); if\\($2+0 < 90 && $2 != \"\"\\) print}')",
+      "Bash(sort -t'|' -k2 -n)",
+      "Bash(awk ' *)",
+      "Bash(awk -F: '{print $1}')",
+      "Bash(awk -F'|' '{gsub\\(/ /,\"\",$2\\); if\\($2+0<70 && $2+0>0\\) print $0}')",
+      "Bash(set -o pipefail)",
+      "Bash(gh issue *)",
+      "Bash(xxd)",
+      "Bash(awk 'NR<=694 && \\(/^function /||/^export function /\\){m=$0;mn=NR} NR==694{print mn\": \"m}' src/modules/validation/SchemaCompilerPlan.ts)",
+      "Bash(awk 'NR<=1005 && \\(/^function /||/^export function /\\){m=$0;mn=NR} NR==1005{print mn\": \"m}' src/modules/validation/SchemaCompilerPlan.ts)",
+      "Bash(tee /tmp/wave5probe.log)"
     ]
   }
 }
