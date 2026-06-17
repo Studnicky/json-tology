@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Fixed
+
+## [0.24.0] - 2026-06-16
+
+### Added
+
+### Changed
+
 - **Validation runs a single compiled execution path.** Every keyword — `$ref`,
   `$dynamicRef`/`$dynamicAnchor`, `unevaluatedProperties`/`unevaluatedItems`,
   `rdfs:range`/`rdfs:domain`, and recursive/cyclic schemas and data — now compiles.
