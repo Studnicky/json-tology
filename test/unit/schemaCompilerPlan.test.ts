@@ -56,6 +56,9 @@ function makeContext(): SchemaCompilerValidatePlanContextType {
     },
     'resolveImplicitDefault': (_) => {
       return;
+    },
+    'synthesizeZeroValue': () => {
+      return;
     }
   };
 }

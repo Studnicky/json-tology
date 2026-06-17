@@ -4275,9 +4275,11 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     errors,
     'evaluatedItems': undefined,
     'evaluatedProperties': undefined,
+    'ignoreAdditionalProperties': false,
     'maxDepth': 100,
     'refStack': new Set(),
     stripUnknown,
+    'synthesizeDefaults': false,
     'trackEvaluated': true
   };
 }
