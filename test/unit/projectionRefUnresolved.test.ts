@@ -1,11 +1,12 @@
 /**
  * Regression test for Projection.ts — unresolvable $ref must throw GraphError
- * with code REF_UNRESOLVED instead of silently returning the original unresolved
+ * with code REF_NOT_FOUND instead of silently returning the original unresolved
  * node and emitting empty/wrong RDF quads.
  *
- * Before the fix, resolveNode() would fall through to `return { graph, node }`
- * when neither lookupGraph nor findNodeById could resolve the ref, leaving the
- * $ref string in node.schema and generating bogus quads downstream.
+ * Before the canonical resolver, resolveNode() would fall through to
+ * `return { graph, node }` when neither lookupGraph nor findNodeById could
+ * resolve the ref, leaving the $ref string in node.schema and generating bogus
+ * quads downstream. The canonical resolver now throws REF_NOT_FOUND uniformly.
  */
 
 import {
@@ -29,8 +30,8 @@ function lookupGraph(_id: string): undefined {
   return;
 }
 
-void describe('Projection — unresolvable $ref throws REF_UNRESOLVED', () => {
-  void it('throws GraphError with code REF_UNRESOLVED when the $ref target is absent', () => {
+void describe('Projection — unresolvable $ref throws REF_NOT_FOUND', () => {
+  void it('throws GraphError with code REF_NOT_FOUND when the $ref target is absent', () => {
     const graph = new SchemaGraph(UnresolvableRefSchema);
 
     assert.throws(
@@ -39,7 +40,7 @@ void describe('Projection — unresolvable $ref throws REF_UNRESOLVED', () => {
       },
       (err: unknown) => {
         assert.ok(err instanceof GraphError, `expected GraphError, got ${String(err)}`);
-        assert.equal(err.code, 'REF_UNRESOLVED');
+        assert.equal(err.code, 'REF_NOT_FOUND');
         assert.equal(
           err.pointer,
           'https://example.com/Missing',
@@ -81,7 +82,7 @@ void describe('Projection — unresolvable $ref throws REF_UNRESOLVED', () => {
     };
     const graph = new SchemaGraph(EmbeddedSchema);
 
-    // No lookupGraph — the embedded node must be found by findNodeById
+    // No lookupGraph — the embedded node must be found via the O(1) embeddedNode() index
     const quads = Projection.abox(
       graph,
       { 'child': { 'value': 'hello' } },

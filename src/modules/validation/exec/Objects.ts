@@ -1,10 +1,11 @@
-import type { ValidationErrorType } from '../../../types/Validation.js';
 import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
+import type { ExecContextType } from '../../../types/ExecContext.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import {
   isRecord
 } from '../../data/DataTypes.js';
 import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
+import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 export class Objects {
   static applyAliases(
@@ -43,8 +44,7 @@ export class Objects {
     path: string,
     value: unknown,
     depRequiredEntries: Array<[string, string[]]>,
-    errors: ValidationErrorType[],
-    collectErrors: boolean
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (depRequiredEntries.length === 0 || !isRecord(value)) {
@@ -64,13 +64,13 @@ export class Objects {
       if (trigger in obj) {
         for (const dep of deps) {
           if (!(dep in obj)) {
-            if (!collectErrors) {
+            if (!ctx.collectErrors) {
               return {
                 'earlyExit': true,
                 'valid': false
               };
             }
-            errors.push(BaseError.validationError(path, 'dependentRequired', `property '${trigger}' requires property '${dep}'`, {
+            ctx.errors.push(BaseError.validationError(path, 'dependentRequired', VALIDATION_MESSAGES.dependentRequired(dep, trigger), {
               'missingProperty': dep,
               'property': trigger
             }));
@@ -86,26 +86,19 @@ export class Objects {
     };
   }
 
-  private static validateKnownProperty(opts: {
-    'applyDefaults': boolean;
-    'childPath': string;
-    'collectErrors': boolean;
-    'doCoerce': boolean;
-    'errors': ValidationErrorType[];
-    'key': string;
-    'obj': Record<string, unknown>;
-    'propertyDefaults': Map<string, { 'defaultValue': unknown;
-      'hasDefault': boolean }>;
-    'propValidator': ValidateWithErrorsFnType;
-    'stripUnknown': boolean;
-  }): { 'earlyExit': boolean;
-    'valid': boolean } {
-    const {
-      applyDefaults, childPath, collectErrors, doCoerce, errors, key, obj, propertyDefaults, propValidator, stripUnknown
-    } = opts;
+  /** Validate one property declared in `properties`. Returns whether it is valid. */
+  private static validateKnownProperty(
+    childPath: string,
+    ctx: ExecContextType,
+    key: string,
+    obj: Record<string, unknown>,
+    propertyDefaults: Map<string, { 'defaultValue': unknown;
+      'hasDefault': boolean }>,
+    propValidator: ValidateWithErrorsFnType
+  ): boolean {
     let propValue = obj[key];
 
-    if (applyDefaults && propValue === undefined) {
+    if (ctx.applyDefaults && propValue === undefined) {
       const propDefault = propertyDefaults.get(key);
 
       if (propDefault?.hasDefault === true) {
@@ -114,37 +107,16 @@ export class Objects {
       }
     }
 
-    const propResult = propValidator(
-      propValue,
-      childPath,
-      errors,
-      collectErrors,
-      applyDefaults,
-      doCoerce,
-      stripUnknown
-    );
+    const propResult = propValidator(propValue, childPath, ctx);
 
     if (!propResult.valid) {
-      if (!collectErrors) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
-      }
-
-      return {
-        'earlyExit': false,
-        'valid': false
-      };
+      return false;
     }
     if (propResult.value !== propValue) {
       obj[key] = propResult.value;
     }
 
-    return {
-      'earlyExit': false,
-      'valid': true
-    };
+    return true;
   }
 
   static validateProperties(
@@ -159,10 +131,7 @@ export class Objects {
     stripUnknown: boolean,
     propertyDefaults: Map<string, { 'defaultValue': unknown;
       'hasDefault': boolean }>,
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
+    ctx: ExecContextType,
     allowedKeysForStrip?: Set<string>
   ): { 'count': number;
     'earlyExit': boolean;
@@ -175,57 +144,30 @@ export class Objects {
       const propValidator = propValidators.get(key);
       const childPath = pathPrefix + key;
 
-      if (propValidator === undefined) {
-        const patternResult = Objects.validateUnknownProperty({
-          'additionalIsFalse': additionalIsFalse,
-          'additionalValidator': additionalValidator,
-          'allowedKeys': allowedKeys,
-          'allowedKeysForStrip': allowedKeysForStrip ?? allowedKeys,
-          'applyDefaults': applyDefaults,
-          'childPath': childPath,
-          'collectErrors': collectErrors,
-          'doCoerce': doCoerce,
-          'errors': errors,
-          'key': key,
-          'obj': obj,
-          'patternPropValidators': patternPropValidators,
-          'stripUnknown': stripUnknown
-        });
+      const propOk = propValidator === undefined
+        ? Objects.validateUnknownProperty(
+          additionalIsFalse,
+          additionalValidator,
+          allowedKeys,
+          allowedKeysForStrip ?? allowedKeys,
+          childPath,
+          ctx,
+          key,
+          obj,
+          patternPropValidators,
+          stripUnknown
+        )
+        : Objects.validateKnownProperty(childPath, ctx, key, obj, propertyDefaults, propValidator);
 
-        if (patternResult.earlyExit) {
+      if (!propOk) {
+        if (!ctx.collectErrors) {
           return {
             'count': 0,
             'earlyExit': true,
             'valid': false
           };
         }
-        if (!patternResult.valid) {
-          valid = false;
-        }
-      } else {
-        const knownResult = Objects.validateKnownProperty({
-          'applyDefaults': applyDefaults,
-          'childPath': childPath,
-          'collectErrors': collectErrors,
-          'doCoerce': doCoerce,
-          'errors': errors,
-          'key': key,
-          'obj': obj,
-          'propertyDefaults': propertyDefaults,
-          'propValidator': propValidator,
-          'stripUnknown': stripUnknown
-        });
-
-        if (knownResult.earlyExit) {
-          return {
-            'count': 0,
-            'earlyExit': true,
-            'valid': false
-          };
-        }
-        if (!knownResult.valid) {
-          valid = false;
-        }
+        valid = false;
       }
     }
 
@@ -241,7 +183,7 @@ export class Objects {
     obj: Record<string, unknown>,
     minProperties: number | undefined,
     maxProperties: number | undefined,
-    errors: ValidationErrorType[],
+    errors: Array<ReturnType<typeof BaseError.validationError>>,
     precomputedCount?: number
   ): boolean {
     if (minProperties === undefined && maxProperties === undefined) {
@@ -252,10 +194,10 @@ export class Objects {
     const pre = errors.length;
 
     if (minProperties !== undefined && count < minProperties) {
-      errors.push(BaseError.validationError(path, 'minProperties', `must have at least ${minProperties} properties`));
+      errors.push(BaseError.validationError(path, 'minProperties', VALIDATION_MESSAGES.minProperties(minProperties)));
     }
     if (maxProperties !== undefined && count > maxProperties) {
-      errors.push(BaseError.validationError(path, 'maxProperties', `must have at most ${maxProperties} properties`));
+      errors.push(BaseError.validationError(path, 'maxProperties', VALIDATION_MESSAGES.maxProperties(maxProperties)));
     }
 
     return errors.length === pre;
@@ -265,8 +207,7 @@ export class Objects {
     path: string,
     value: unknown,
     propertyNamesValidator: undefined | ValidateWithErrorsFnType,
-    errors: ValidationErrorType[],
-    collectErrors: boolean
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (propertyNamesValidator === undefined || !isRecord(value)) {
@@ -280,10 +221,10 @@ export class Objects {
     const pathPrefix = path === '' ? '/' : `${path}/`;
 
     for (const key of Object.keys(value)) {
-      const pnResult = propertyNamesValidator(key, pathPrefix + key, errors, collectErrors, false, false, false);
+      const pnResult = propertyNamesValidator(key, pathPrefix + key, ctx);
 
       if (!pnResult.valid) {
-        if (!collectErrors) {
+        if (!ctx.collectErrors) {
           return {
             'earlyExit': true,
             'valid': false
@@ -303,7 +244,7 @@ export class Objects {
     path: string,
     obj: Record<string, unknown>,
     required: string[] | undefined,
-    errors: ValidationErrorType[]
+    errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
     if (required === undefined) {
       return true;
@@ -313,33 +254,27 @@ export class Objects {
 
     for (const key of required) {
       if (!(key in obj)) {
-        errors.push(BaseError.validationError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
+        errors.push(BaseError.validationError(path, 'required', VALIDATION_MESSAGES.required(key), { 'missingProperty': key }));
       }
     }
 
     return errors.length === pre;
   }
 
-  private static validateUnknownProperty(opts: {
-    'additionalIsFalse': boolean;
-    'additionalValidator': undefined | ValidateWithErrorsFnType;
-    'allowedKeys': Set<string> | undefined;
-    'allowedKeysForStrip': Set<string> | undefined;
-    'applyDefaults': boolean;
-    'childPath': string;
-    'collectErrors': boolean;
-    'doCoerce': boolean;
-    'errors': ValidationErrorType[];
-    'key': string;
-    'obj': Record<string, unknown>;
-    'patternPropValidators': Array<{ 'regex': RegExp;
-      'validator': ValidateWithErrorsFnType }> | undefined;
-    'stripUnknown': boolean;
-  }): { 'earlyExit': boolean;
-    'valid': boolean } {
-    const {
-      additionalIsFalse, additionalValidator, allowedKeys, allowedKeysForStrip, applyDefaults, childPath, collectErrors, doCoerce, errors, key, obj, patternPropValidators, stripUnknown
-    } = opts;
+  /** Validate one property not declared in `properties` (patternProperties/additionalProperties/strip). Returns whether it is valid. */
+  private static validateUnknownProperty(
+    additionalIsFalse: boolean,
+    additionalValidator: undefined | ValidateWithErrorsFnType,
+    allowedKeys: Set<string> | undefined,
+    allowedKeysForStrip: Set<string> | undefined,
+    childPath: string,
+    ctx: ExecContextType,
+    key: string,
+    obj: Record<string, unknown>,
+    patternPropValidators: Array<{ 'regex': RegExp;
+      'validator': ValidateWithErrorsFnType }> | undefined,
+    stripUnknown: boolean
+  ): boolean {
     let matchedPattern = false;
     let valid = true;
 
@@ -347,22 +282,11 @@ export class Objects {
       for (const pp of patternPropValidators) {
         if (pp.regex.test(key)) {
           matchedPattern = true;
-          const ppResult = pp.validator(
-            obj[key],
-            childPath,
-            errors,
-            collectErrors,
-            applyDefaults,
-            doCoerce,
-            stripUnknown
-          );
+          const ppResult = pp.validator(obj[key], childPath, ctx);
 
           if (!ppResult.valid) {
-            if (!collectErrors) {
-              return {
-                'earlyExit': true,
-                'valid': false
-              };
+            if (!ctx.collectErrors) {
+              return false;
             }
             valid = false;
           }
@@ -382,32 +306,18 @@ export class Objects {
 
       if (stripUnknown && stripAllowed !== undefined && !stripAllowed.has(key)) {
         delete obj[key];
-      } else if (additionalIsFalse && allowedKeys?.has(key) !== true) {
-        if (!collectErrors) {
-          return {
-            'earlyExit': true,
-            'valid': false
-          };
+      } else if (additionalIsFalse && allowedKeys?.has(key) !== true && !ctx.ignoreAdditionalProperties) {
+        if (!ctx.collectErrors) {
+          return false;
         }
-        errors.push(BaseError.validationError(childPath, 'additionalProperties', `must NOT have additional property '${key}'`));
+        ctx.errors.push(BaseError.validationError(childPath, 'additionalProperties', VALIDATION_MESSAGES.additionalProperties(key)));
         valid = false;
       } else if (additionalValidator !== undefined) {
-        const addResult = additionalValidator(
-          obj[key],
-          childPath,
-          errors,
-          collectErrors,
-          applyDefaults,
-          doCoerce,
-          stripUnknown
-        );
+        const addResult = additionalValidator(obj[key], childPath, ctx);
 
         if (!addResult.valid) {
-          if (!collectErrors) {
-            return {
-              'earlyExit': true,
-              'valid': false
-            };
+          if (!ctx.collectErrors) {
+            return false;
           }
           valid = false;
         }
@@ -417,9 +327,6 @@ export class Objects {
       }
     }
 
-    return {
-      'earlyExit': false,
-      valid
-    };
+    return valid;
   }
 }

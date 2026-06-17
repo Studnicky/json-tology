@@ -52,45 +52,45 @@ export function runInstantiateBench(): BenchResult[] {
   section('instantiate — Review (parse + normalize, no coercion)');
 
   results.push(bench('instantiate review', 'json-tology', () => {
-    registry.instantiate(ReviewSchema, reviewValid);
+    return registry.instantiate(ReviewSchema, reviewValid);
   }));
 
   results.push(bench('instantiate review', 'typebox', () => {
-    Value.Parse(ReviewSchemaTypebox, reviewValid);
+    return Value.Parse(ReviewSchemaTypebox, reviewValid);
   }));
 
   results.push(bench('instantiate review', 'zod', () => {
-    ReviewSchemaZod.parse(reviewValid);
+    return ReviewSchemaZod.parse(reviewValid);
   }));
 
   results.push(bench('instantiate review', 'valibot', () => {
-    vParse(ReviewSchemaValibot, reviewValid);
+    return vParse(ReviewSchemaValibot, reviewValid);
   }));
 
   results.push(bench('instantiate review', 'io-ts', () => {
-    ReviewSchemaIoTs.decode(reviewValid);
+    return ReviewSchemaIoTs.decode(reviewValid);
   }));
 
   section('instantiate — Order (parse + normalize, no coercion)');
 
   results.push(bench('instantiate order', 'json-tology', () => {
-    registry.instantiate(OrderSchema, orderValid);
+    return registry.instantiate(OrderSchema, orderValid);
   }));
 
   results.push(bench('instantiate order', 'typebox', () => {
-    Value.Parse(OrderSchemaTypebox, orderValid);
+    return Value.Parse(OrderSchemaTypebox, orderValid);
   }));
 
   results.push(bench('instantiate order', 'zod', () => {
-    OrderSchemaZod.parse(orderValid);
+    return OrderSchemaZod.parse(orderValid);
   }));
 
   results.push(bench('instantiate order', 'valibot', () => {
-    vParse(OrderSchemaValibot, orderValid);
+    return vParse(OrderSchemaValibot, orderValid);
   }));
 
   results.push(bench('instantiate order', 'io-ts', () => {
-    OrderSchemaIoTs.decode(orderValid);
+    return OrderSchemaIoTs.decode(orderValid);
   }));
 
   return results;

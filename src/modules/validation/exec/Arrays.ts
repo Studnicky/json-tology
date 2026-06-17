@@ -1,9 +1,8 @@
-import type { ValidationErrorType } from '../../../types/Validation.js';
-import type {
-  CheckFnType, ValidateWithErrorsFnType
-} from '../../../types/Validation.js';
+import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
+import type { ExecContextType } from '../../../types/ExecContext.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../Predicates.js';
+import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**
  * Compiled array-keyword validators used by the hot-path schema executor.
@@ -33,18 +32,18 @@ export class Arrays {
     minItems: number | undefined,
     maxItems: number | undefined,
     uniqueItems: boolean,
-    errors: ValidationErrorType[]
+    errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
     const pre = errors.length;
 
     if (minItems !== undefined && arr.length < minItems) {
-      errors.push(BaseError.validationError(path, 'minItems', `must have at least ${minItems} items`));
+      errors.push(BaseError.validationError(path, 'minItems', VALIDATION_MESSAGES.minItems(minItems)));
     }
     if (maxItems !== undefined && arr.length > maxItems) {
-      errors.push(BaseError.validationError(path, 'maxItems', `must have at most ${maxItems} items`));
+      errors.push(BaseError.validationError(path, 'maxItems', VALIDATION_MESSAGES.maxItems(maxItems)));
     }
     if (uniqueItems && !Predicates.satisfiesUniqueItems(arr)) {
-      errors.push(BaseError.validationError(path, 'uniqueItems', 'must have unique items'));
+      errors.push(BaseError.validationError(path, 'uniqueItems', VALIDATION_MESSAGES.uniqueItems));
     }
 
     return errors.length === pre;
@@ -53,19 +52,33 @@ export class Arrays {
   static validateContains(
     path: string,
     arr: unknown[],
-    containsCheck: CheckFnType | undefined,
+    containsValidator: undefined | ValidateWithErrorsFnType,
     minContains: number | undefined,
     maxContains: number | undefined,
-    errors: ValidationErrorType[]
+    ctx: ExecContextType,
+    errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
-    if (containsCheck === undefined) {
+    if (containsValidator === undefined) {
       return true;
     }
 
     let count = 0;
 
     for (const item of arr) {
-      if (containsCheck(item)) {
+      // Run in isolated check-mode scratch ctx per element
+      const scratchCtx: ExecContextType = {
+        ...ctx,
+        'applyDefaults': false,
+        'collectErrors': false,
+        'doCoerce': false,
+        'errors': [],
+        'evaluatedItems': undefined,
+        'evaluatedProperties': undefined,
+        'stripUnknown': false
+      };
+      const result = containsValidator(item, path, scratchCtx);
+
+      if (result.valid) {
         count++;
       }
     }
@@ -85,11 +98,7 @@ export class Arrays {
     arr: unknown[],
     itemValidator: undefined | ValidateWithErrorsFnType,
     prefixValidators: undefined | ValidateWithErrorsFnType[],
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (itemValidator === undefined) {
@@ -103,7 +112,7 @@ export class Arrays {
     let valid = true;
 
     for (let i = startIndex; i < arr.length; i++) {
-      const outcome = validateSingleItem(itemValidator, arr, i, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+      const outcome = validateSingleItem(itemValidator, arr, i, path, ctx);
 
       if (outcome === 'early-exit') {
         return {
@@ -126,11 +135,7 @@ export class Arrays {
     path: string,
     arr: unknown[],
     prefixValidators: undefined | ValidateWithErrorsFnType[],
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (prefixValidators === undefined) {
@@ -143,7 +148,7 @@ export class Arrays {
     let valid = true;
 
     for (let i = 0; i < prefixValidators.length && i < arr.length; i++) {
-      const outcome = validateSingleItem(prefixValidators[i], arr, i, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+      const outcome = validateSingleItem(prefixValidators[i], arr, i, path, ctx);
 
       if (outcome === 'early-exit') {
         return {
@@ -168,14 +173,15 @@ function resolveContainsError(
   minContains: number | undefined,
   maxContains: number | undefined
 ): string | undefined {
-  if (minContains !== undefined && count < minContains) {
-    return `must contain at least ${minContains} matching items`;
+  // Effective minimum: if minContains is absent, the default is 1 (JSON Schema spec).
+  // Use the same `contains(n)` path as the interpreter (GraphEngine) for parity.
+  const effectiveMin = minContains ?? 1;
+
+  if (count < effectiveMin) {
+    return VALIDATION_MESSAGES.contains(effectiveMin);
   }
   if (maxContains !== undefined && count > maxContains) {
-    return `must contain at most ${maxContains} matching items`;
-  }
-  if (minContains === undefined && maxContains === undefined && count === 0) {
-    return 'must contain at least one matching item';
+    return VALIDATION_MESSAGES.maxContains(maxContains);
   }
 
   return undefined;
@@ -186,21 +192,17 @@ function validateSingleItem(
   arr: unknown[],
   index: number,
   path: string,
-  errors: ValidationErrorType[],
-  collectErrors: boolean,
-  applyDefaults: boolean,
-  doCoerce: boolean,
-  stripUnknown: boolean
+  ctx: ExecContextType
 ): 'early-exit' | 'invalid' | 'valid' {
   const childPath = `${path}/${index}`;
-  const result = validator(arr[index], childPath, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+  const result = validator(arr[index], childPath, ctx);
 
   if (result.value !== arr[index]) {
     arr[index] = result.value;
   }
 
   if (!result.valid) {
-    return collectErrors ? 'invalid' : 'early-exit';
+    return ctx.collectErrors ? 'invalid' : 'early-exit';
   }
 
   return 'valid';

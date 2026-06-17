@@ -22,6 +22,8 @@ import { Command } from 'commander';
 import pkg from '../package.json' with { 'type': 'json' };
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
+import { isRecord } from './modules/data/DataTypes.js';
+import { SchemaErrorCode } from './constants/ERROR_CODES.js';
 import { GraphArtifact } from './modules/graph/GraphArtifact.js';
 import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
@@ -36,6 +38,7 @@ import type { BuildOutputOptionsType } from './types/BuildOutputOptions.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
+import { SchemaIri } from './modules/graph/SchemaIri.js';
 
 const writer = CliWriter.default;
 
@@ -80,8 +83,22 @@ function loadSchemaFiles(schemaGlob: string): Array<Record<string, unknown>> {
 
   return files.map((filePath: string): Record<string, unknown> => {
     const content = readFileSync(resolve(filePath), 'utf8');
+    let parsed: unknown;
 
-    return JSON.parse(content) as Record<string, unknown>;
+    try {
+      parsed = JSON.parse(content);
+    } catch (error) {
+      throw new SchemaError(`Invalid JSON in schema file: ${filePath}`, {
+        'code': SchemaErrorCode.INVALID_INPUT,
+        ...(error instanceof Error && { 'cause': error })
+      });
+    }
+
+    if (!isRecord(parsed)) {
+      throw new SchemaError(`Schema file is not a JSON object: ${filePath}`, { 'code': SchemaErrorCode.INVALID_INPUT });
+    }
+
+    return parsed;
   });
 }
 
@@ -115,7 +132,8 @@ function normalizeBaseIRI(value: string): string {
 }
 
 function deriveBaseIRIFromSchemaId(schemaId: string): string {
-  const withoutHash = schemaId.split('#')[0] ?? schemaId;
+  // parseRef extracts the IRI base (before '#') in the canonical way.
+  const withoutHash = SchemaIri.parseRef(schemaId).id;
 
   try {
     const parsed = new URL(withoutHash);
@@ -284,8 +302,13 @@ function buildGraphOutput(
   output: string
 ): void {
   for (const graph of graphs) {
-    const rootSchema = graph.rootSchema as Record<string, unknown>;
-    const schemaId = rootSchema.$id as string;
+    const { rootSchema } = graph;
+
+    if (typeof rootSchema !== 'object' || typeof rootSchema.$id !== 'string') {
+      continue;
+    }
+
+    const schemaId = rootSchema.$id;
     const safeName = basename(schemaId).replaceAll(/[^\w-]/gu, '_');
 
     if (format === 'artifact') {

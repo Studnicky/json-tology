@@ -15,34 +15,34 @@ import { isRecord } from '../src/modules/data/DataTypes.js';
 // Schema with constraints
 // ---------------------------------------------------------------------------
 
-const ProductSchema = {
-  '$id': 'https://example.com/Product',
+const BookSchema = {
+  '$id': 'https://bookstore.example/schema/Book',
   'properties': {
-    'name': {
-      'minLength': 1,
+    'isbn': {
+      'minLength': 10,
+      'pattern': '^(?:97[89]-)?\\d{1,5}-\\d+-\\d+-\\d$',
       'type': 'string'
     },
     'price': {
-      'maximum': 999_999,
+      'maximum': 9999.99,
       'minimum': 0,
       'type': 'number'
     },
-    'quantity': {
+    'stockLevel': {
       'minimum': 0,
       'type': 'integer'
     },
-    'sku': {
-      'minLength': 3,
-      'pattern': '^[A-Z]{2,}-\\d+$',
+    'title': {
+      'minLength': 1,
       'type': 'string'
     }
   },
   'required': [
-    'sku',
-    'name',
+    'isbn',
+    'title',
     'price'
   ],
-  'title': 'Product',
+  'title': 'Book',
   'type': 'object'
 } as const;
 
@@ -53,9 +53,9 @@ const ProductSchema = {
 // enableStrictGraph: false — self-contained demo with constrained primitives
 // (minLength, pattern, minimum) kept inline for brevity rather than extracted to $ref'd schemas.
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.com',
+  'baseIRI': 'https://bookstore.example',
   'enableStrictGraph': false,
-  'schemas': [ProductSchema]
+  'schemas': [BookSchema]
 });
 
 const shacl = jt.ontology().shaclObject();

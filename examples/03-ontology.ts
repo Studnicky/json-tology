@@ -15,38 +15,35 @@ import { isRecord } from '../src/modules/data/DataTypes.js';
 // Schemas with $ref relationships
 // ---------------------------------------------------------------------------
 
-const PersonSchema = {
-  '$id': 'https://example.com/Person',
-  'description': 'A human being',
+const AuthorSchema = {
+  '$id': 'https://bookstore.example/schema/Author',
+  'description': 'A book author',
   'properties': {
-    'email': {
-      'format': 'email',
-      'type': 'string'
-    },
+    'biography': { 'type': 'string' },
     'name': { 'type': 'string' },
-    'worksFor': { '$ref': 'https://example.com/Organization' }
+    'publishedBy': { '$ref': 'https://bookstore.example/schema/Publisher' }
   },
   'required': ['name'],
-  'title': 'Person',
+  'title': 'Author',
   'type': 'object'
 } as const;
 
-const OrganizationSchema = {
-  '$id': 'https://example.com/Organization',
-  'description': 'A company or institution',
+const PublisherSchema = {
+  '$id': 'https://bookstore.example/schema/Publisher',
+  'description': 'A book publisher',
   'properties': {
-    'founded': {
-      'minimum': 1800,
-      'type': 'integer'
-    },
-    'members': {
-      'items': { '$ref': 'https://example.com/Person' },
+    'authors': {
+      'items': { '$ref': 'https://bookstore.example/schema/Author' },
       'type': 'array'
+    },
+    'founded': {
+      'minimum': 1400,
+      'type': 'integer'
     },
     'name': { 'type': 'string' }
   },
   'required': ['name'],
-  'title': 'Organization',
+  'title': 'Publisher',
   'type': 'object'
 } as const;
 
@@ -55,13 +52,13 @@ const OrganizationSchema = {
 // ---------------------------------------------------------------------------
 
 // enableStrictGraph: false — self-contained demo with constrained primitives
-// (format, minimum) kept inline for brevity rather than extracted to $ref'd schemas.
+// (minimum) kept inline for brevity rather than extracted to $ref'd schemas.
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.com',
+  'baseIRI': 'https://bookstore.example',
   'enableStrictGraph': false,
   'schemas': [
-    PersonSchema,
-    OrganizationSchema
+    AuthorSchema,
+    PublisherSchema
   ]
 });
 

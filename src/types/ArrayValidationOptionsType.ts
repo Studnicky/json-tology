@@ -1,10 +1,8 @@
-import type {
-  CheckFnType, ValidateWithErrorsFnType
-} from '../types/Validation.js';
+import type { ValidateWithErrorsFnType } from '../types/Validation.js';
 
 /** Options passed to the array-fields validation helper. */
 export type ArrayValidationOptionsType = {
-  'containsCheck': CheckFnType | undefined;
+  'containsValidator': undefined | ValidateWithErrorsFnType;
   'itemValidator': undefined | ValidateWithErrorsFnType;
   'maxContains': number | undefined;
   'maxItems': number | undefined;

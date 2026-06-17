@@ -4,36 +4,6 @@ import {
 import { STANDARD_PREFIXES } from './STANDARD_PREFIXES.js';
 
 /**
- * Map from OWL restriction keyword names to their full IRI predicates.
- *
- * @remarks
- * Used during graph construction to convert short-form restriction keywords
- * (e.g. `'allValuesFrom'`) into canonical OWL property IRIs. Only keywords
- * that correspond to OWL restriction predicates are included; general schema
- * keywords are handled separately.
- *
- * @example
- * ```ts
- * const iri = RESTRICTION_PREDICATE['allValuesFrom'];
- * // 'http://www.w3.org/2002/07/owl#allValuesFrom'
- * ```
- *
- * @category Ontology
- * @since 0.1.0
- * @see OWL_CORE_PREDICATES
- * @defaultValue `{ allValuesFrom, cardinality, hasValue, maxCardinality, minCardinality, someValuesFrom }`
- * @group Constants
- */
-export const RESTRICTION_PREDICATE: Partial<Record<string, string>> = {
-  'allValuesFrom': OWL.allValuesFrom,
-  'cardinality': OWL.cardinality,
-  'hasValue': OWL.hasValue,
-  'maxCardinality': OWL.maxCardinality,
-  'minCardinality': OWL.minCardinality,
-  'someValuesFrom': OWL.someValuesFrom
-};
-
-/**
  * Set of CURIE-style predicate names that belong to the OWL core vocabulary.
  *
  * @remarks
@@ -151,31 +121,6 @@ export const SHACL_CORE_PREDICATES: ReadonlySet<string> = new Set([
   'sh:qualifiedValueShape',
   'sh:targetClass',
   'sh:targetNode'
-]);
-
-/**
- * Set of OWL cardinality keyword names used to identify cardinality restriction types.
- *
- * @remarks
- * Checked during graph traversal to determine whether a restriction node expresses
- * exact, minimum, or maximum cardinality. These names correspond to the short-form
- * keys in `RESTRICTION_PREDICATE`.
- *
- * @example
- * ```ts
- * if (CARDINALITY_KINDS.has(keyword)) { ... }
- * ```
- *
- * @category Ontology
- * @since 0.1.0
- * @see RESTRICTION_PREDICATE
- * @defaultValue `new Set(['cardinality', 'maxCardinality', 'minCardinality'])`
- * @group Constants
- */
-export const CARDINALITY_KINDS = new Set<string>([
-  'cardinality',
-  'maxCardinality',
-  'minCardinality'
 ]);
 
 // ---------------------------------------------------------------------------

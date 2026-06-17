@@ -18,7 +18,6 @@ import { buildNodePlan } from '../../src/modules/validation/SchemaCompilerPlan.j
 import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistry.js';
 import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContext.js';
 import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
-import type { CheckFnType } from '../../src/types/Validation.js';
 
 // ---------------------------------------------------------------------------
 // Stub context
@@ -29,10 +28,6 @@ const passValidator: ValidateWithErrorsFnType = (value) => {
     'valid': true,
     'value': value
   };
-};
-
-const passCheck: CheckFnType = () => {
-  return true;
 };
 
 const stubFormatRegistry: FormatRegistryInterface = {
@@ -53,12 +48,6 @@ function makeContext(): SchemaCompilerValidatePlanContextType {
     'appliesFormatAssertions': (_) => {
       return false;
     },
-    'compileNodeCheck': (_) => {
-      return passCheck;
-    },
-    'compileNodeOrBooleanCheck': (_) => {
-      return passCheck;
-    },
     'compileNodeOrBooleanValidateWithErrors': (_) => {
       return passValidator;
     },
@@ -66,6 +55,9 @@ function makeContext(): SchemaCompilerValidatePlanContextType {
       return passValidator;
     },
     'resolveImplicitDefault': (_) => {
+      return;
+    },
+    'synthesizeZeroValue': () => {
       return;
     }
   };
@@ -146,8 +138,8 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.ok(Array.isArray(plan.allOfValidators) && plan.allOfValidators.length === 2, 'allOfValidators should have 2 entries');
-    assert.equal(plan.anyOfChecks, undefined);
-    assert.equal(plan.oneOfChecks, undefined);
+    assert.equal(plan.anyOfValidators, undefined);
+    assert.equal(plan.oneOfValidators, undefined);
   });
 
   void it('builds plan for anyOf composition schema', () => {
@@ -162,7 +154,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     const graph = new SchemaGraph(schema);
     const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
-    assert.ok(Array.isArray(plan.anyOfChecks) && plan.anyOfChecks.length === 2, 'anyOfChecks should have 2 entries');
+    assert.ok(Array.isArray(plan.anyOfValidators) && plan.anyOfValidators.length === 2, 'anyOfValidators should have 2 entries');
     assert.equal(plan.allOfValidators, undefined);
   });
 
@@ -178,7 +170,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     const graph = new SchemaGraph(schema);
     const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
-    assert.ok(Array.isArray(plan.oneOfChecks) && plan.oneOfChecks.length === 2, 'oneOfChecks should have 2 entries');
+    assert.ok(Array.isArray(plan.oneOfValidators) && plan.oneOfValidators.length === 2, 'oneOfValidators should have 2 entries');
     assert.equal(plan.allOfValidators, undefined);
   });
 
@@ -281,8 +273,8 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     assert.equal(plan.maximum, undefined);
     assert.equal(plan.pattern, undefined);
     assert.equal(plan.allOfValidators, undefined);
-    assert.equal(plan.anyOfChecks, undefined);
-    assert.equal(plan.oneOfChecks, undefined);
+    assert.equal(plan.anyOfValidators, undefined);
+    assert.equal(plan.oneOfValidators, undefined);
     assert.equal(plan.refValidator, undefined);
     assert.ok(plan.propValidators instanceof Map && plan.propValidators.size === 0);
   });

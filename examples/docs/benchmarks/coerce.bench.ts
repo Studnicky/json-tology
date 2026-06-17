@@ -49,29 +49,29 @@ export function runCoerceBench(): BenchResult[] {
   section('coerce — already-valid Review (no coercion needed)');
 
   results.push(bench('coerce review valid', 'json-tology', () => {
-    registry.instantiate(ReviewSchema, reviewValid);
+    return registry.instantiate(ReviewSchema, reviewValid);
   }));
 
   results.push(bench('coerce review valid', 'typebox', () => {
-    Value.Parse(ReviewSchemaTypebox, reviewValid);
+    return Value.Parse(ReviewSchemaTypebox, reviewValid);
   }));
 
   results.push(bench('coerce review valid', 'zod', () => {
-    ReviewSchemaZod.parse(reviewValid);
+    return ReviewSchemaZod.parse(reviewValid);
   }));
 
   results.push(bench('coerce review valid', 'valibot', () => {
-    vParse(ReviewSchemaValibot, reviewValid);
+    return vParse(ReviewSchemaValibot, reviewValid);
   }));
 
   results.push(bench('coerce review valid', 'io-ts', () => {
-    ReviewSchemaIoTs.decode(reviewValid);
+    return ReviewSchemaIoTs.decode(reviewValid);
   }));
 
   section('coerce — Customer with defaults application (addresses → [])');
 
   results.push(bench('coerce customer defaults', 'json-tology', () => {
-    registry.instantiate(CustomerSchema, customerDefaultsInput);
+    return registry.instantiate(CustomerSchema, customerDefaultsInput);
   }));
 
   // TypeBox mirror of the bookstore Customer wire shape so the defaults
@@ -104,7 +104,7 @@ export function runCoerceBench(): BenchResult[] {
   });
 
   results.push(bench('coerce customer defaults', 'typebox', () => {
-    Value.Parse(CustomerWithDefaultsTb, customerDefaultsInput);
+    return Value.Parse(CustomerWithDefaultsTb, customerDefaultsInput);
   }));
 
   return results;

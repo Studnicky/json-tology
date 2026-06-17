@@ -28,6 +28,7 @@ import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugi
 import type { SchemaRegistryForEachCallback } from '../../types/SchemaRegistryForEachCallback.js';
 import type { SetEntryType } from '../../types/SetEntryType.js';
 
+import { BaseError } from '../../errors/BaseError.js';
 import { CoercionError } from '../../errors/CoercionError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
@@ -50,6 +51,7 @@ import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { SchemaErrorCode } from '../../constants/ERROR_CODES.js';
+import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Transform } from '../transform/Transform.js';
@@ -199,7 +201,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return this.graph(id);
     };
     this.compiler = new SchemaCompiler({
-      'logger': this.logger,
       'lookupCompiled': (schemaId: string): CompiledValidatorType | undefined => {
         return this.store.has(schemaId)
           ? this.compiled(schemaId)
@@ -302,7 +303,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       try {
         coerced[name] = fn(coerced);
       } catch (error) {
-        const causeError = error instanceof Error ? error : new Error(String(error));
+        const causeError = BaseError.toCause(error);
 
         throw new InstantiationError(
           new ValidationErrors([{
@@ -892,7 +893,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       if (error instanceof TransformError) {
         throw error;
       }
-      const causeError = error instanceof Error ? error : new Error(String(error));
+      const causeError = BaseError.toCause(error);
 
       throw new DecodeError(
         `transform decoder failed at root: ${causeError.message}`,
@@ -1158,6 +1159,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     if (rawId === undefined || rawId === '') {
       throw new SchemaError('Schema must have a $id property', { 'code': 'SCHEMA_MISSING_ID' });
     }
+
+    // Reject schemas with unsupported dialects or required vocabularies eagerly at
+    // registration time — the compiled path never reaches execution for such schemas.
+    GraphEngineSupport.buildRootDialectPlan(schema);
 
     const {
       canonicalSchema, schemaId

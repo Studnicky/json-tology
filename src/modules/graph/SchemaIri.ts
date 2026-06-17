@@ -51,6 +51,102 @@ export class SchemaIri {
     return `${classId}#${propertyName}`;
   }
 
+  /**
+   * Extract the JSON property key name from a property IRI.
+   *
+   * Resolution priority:
+   *   1. `<base>#/properties/<name>[/<deeper>]` — JSON-pointer form: returns `<name>`
+   *      (the segment immediately after `/properties/`; any further nesting is ignored).
+   *   2. `<base>#<fragment>` — bare fragment: returns the last `/`-separated segment
+   *      of the fragment (e.g. `ClassName#propName` → `propName`).
+   *   3. No `#` — returns the last `/`-separated segment of the whole IRI.
+   *
+   * @param iri - A full property IRI (with or without a `#` fragment).
+   * @returns The short property key name, or `''` when the IRI is malformed.
+   *
+   * @example
+   * ```ts
+   * SchemaIri.propertyName('https://ex.com/User#/properties/email') // 'email'
+   * SchemaIri.propertyName('https://ex.com/User#email')             // 'email'
+   * SchemaIri.propertyName('https://ex.com/User#propName')          // 'propName'
+   * SchemaIri.propertyName('https://ex.com/User#/properties/address/properties/city') // 'address'
+   * SchemaIri.propertyName('https://ex.com/vocab/email')            // 'email'
+   * ```
+   */
+  static propertyName(iri: string): string {
+    const hashIdx = iri.indexOf('#');
+
+    if (hashIdx !== -1) {
+      const fragment = iri.slice(hashIdx + 1);
+      const propsIdx = fragment.indexOf('/properties/');
+
+      if (propsIdx !== -1) {
+        // JSON-pointer form: take the segment right after '/properties/'
+        const afterProps = fragment.slice(propsIdx + '/properties/'.length);
+        const slashIdx = afterProps.indexOf('/');
+
+        return slashIdx === -1 ? afterProps : afterProps.slice(0, slashIdx);
+      }
+
+      // Bare fragment — last segment after '/'
+      const slashIdx = fragment.lastIndexOf('/');
+
+      return slashIdx === -1 ? fragment : fragment.slice(slashIdx + 1);
+    }
+
+    // No fragment — last path segment
+    const slashIdx = iri.lastIndexOf('/');
+
+    return slashIdx === -1 ? iri : iri.slice(slashIdx + 1);
+  }
+
+  /**
+   * Split a JSON Pointer fragment at the last `/properties/` boundary.
+   *
+   * Returns the parent pointer (everything before the last `/properties/`) and
+   * the property name (the segment immediately after `/properties/`). Returns
+   * `undefined` when no `/properties/` segment exists in the fragment.
+   *
+   * Operates on a bare fragment string (the part after `#`), not a full IRI.
+   * Use `splitSubject` first to extract the fragment from a full IRI.
+   *
+   * @param fragment - A JSON Pointer fragment string (e.g. `/properties/name`
+   *   or `/properties/address/properties/city`).
+   * @returns `{ parent, property }` where `parent` is the pointer prefix before
+   *   the last `/properties/` segment and `property` is the property key name,
+   *   or `undefined` when `/properties/` is not found.
+   *
+   * @example
+   * ```ts
+   * SchemaIri.splitAtProperties('/properties/name')
+   * // → { parent: '', property: 'name' }
+   *
+   * SchemaIri.splitAtProperties('/properties/address/properties/city')
+   * // → { parent: '/properties/address', property: 'city' }
+   *
+   * SchemaIri.splitAtProperties('/allOf/0')
+   * // → undefined
+   * ```
+   */
+  static splitAtProperties(fragment: string): undefined | { 'parent': string;
+    'property': string } {
+    const propsIdx = fragment.lastIndexOf('/properties/');
+
+    if (propsIdx === -1) {
+      return undefined;
+    }
+
+    const parent = fragment.slice(0, propsIdx);
+    const afterProps = fragment.slice(propsIdx + '/properties/'.length);
+    const slashIdx = afterProps.indexOf('/');
+    const property = slashIdx === -1 ? afterProps : afterProps.slice(0, slashIdx);
+
+    return {
+      parent,
+      property
+    };
+  }
+
   static splitSubject(subject: string): { 'base': string;
     'fragment': null | string } {
     // Split at the LAST `#` so a hash-namespace `$id` (e.g.

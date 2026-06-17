@@ -2,10 +2,11 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
-// Validation type aliases (CheckFnType, ValidateWithErrorsFnType, ValidationErrorType) are internal contracts for the exec primitives below.
+// Validation type aliases (ValidateWithErrorsFnType, ValidationErrorType) are internal contracts for the exec primitives below.
 import type {
-  CheckFnType, ValidateWithErrorsFnType, ValidationErrorType
+  ValidateWithErrorsFnType, ValidationErrorType
 } from '../../src/types/Validation.js';
+import type { ExecContextType } from '../../src/types/ExecContext.js';
 import {
   describe, it
 } from 'node:test';
@@ -51,144 +52,185 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('if/then/else validation', () => {
-    void it('GBU: then branch, else branch, and no-else branch scenarios', () => {
-      // then branch: if condition matches
+    // then branch: if condition matches
+    const ite1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const ite1SchemaId = 'https://cond.test/ITE1';
+
+    ite1Registry.set(makeThenElseSchema(ite1SchemaId, { 'properties': { 'kind': { 'const': 'person' } } }, {
+      'properties': { 'name': { 'type': 'string' } },
+      'required': ['name']
+    }));
+
+    for (const scenario of [
       {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://cond.test/ITE1';
-
-        registry.set(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'person' } } }, {
-          'properties': { 'name': { 'type': 'string' } },
-          'required': ['name']
-        }));
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': {
-                'kind': 'person',
-                'name': 'Alice'
-              },
-              'name': 'if matches (kind=person) and then satisfied',
-              'valid': true
-            },
-            {
-              'data': { 'kind': 'person' },
-              'name': 'if matches (kind=person) but then not satisfied — missing name',
-              'valid': false
-            },
-            {
-              'data': null,
-              'name': 'edge: null data for if/then schema',
-              'valid': false
-            },
-            {
-              'data': {},
-              'name': 'edge: empty object — if properties vacuously pass so then enforced — fails',
-              'valid': false
-            },
-            {
-              'data': {
-                'kind': 'person',
-                'name': ''
-              },
-              'name': 'edge: empty string satisfies type string in then branch',
-              'valid': true
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
-
-      // else branch: if condition does not match, else required
+        'data': {
+          'kind': 'person',
+          'name': 'Alice'
+        },
+        'name': 'if matches (kind=person) and then satisfied',
+        'valid': true
+      },
       {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://cond.test/ITE2';
-
-        registry.set(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'org' } } }, {
-          'properties': { 'orgName': { 'type': 'string' } },
-          'required': ['orgName']
-        }, {
-          'properties': { 'label': { 'type': 'string' } },
-          'required': ['label']
-        }));
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': {
-                'kind': 'person',
-                'label': 'Alice'
-              },
-              'name': 'if does not match — else requires label — satisfied',
-              'valid': true
-            },
-            {
-              'data': { 'kind': 'person' },
-              'name': 'if does not match — else requires label — missing',
-              'valid': false
-            },
-            {
-              'data': null,
-              'name': 'edge: null data for if/then/else schema',
-              'valid': false
-            },
-            {
-              'data': {
-                'kind': 'other',
-                'label': ''
-              },
-              'name': 'edge: empty string label satisfies else branch required string',
-              'valid': true
-            },
-            {
-              'data': {
-                'kind': 'org',
-                'orgName': 'Acme'
-              },
-              'name': 'edge: data matching if branch with then satisfied',
-              'valid': true
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
-
-      // no else branch: if does not match, no else — passes
+        'data': { 'kind': 'person' },
+        'expectedKeyword': 'required' as const,
+        'name': 'if matches (kind=person) but then not satisfied — missing name',
+        'valid': false
+      },
       {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://cond.test/ITE3';
-
-        registry.set(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'special' } } }, {
-          'properties': { 'code': { 'type': 'number' } },
-          'required': ['code']
-        }));
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': { 'kind': 'normal' },
-              'name': 'if does not match, no else — passes',
-              'valid': true
-            },
-            {
-              'data': null,
-              'name': 'edge: null data with no else branch',
-              'valid': false
-            },
-            {
-              'data': {},
-              'name': 'edge: empty object — if properties vacuously pass, then requires code — fails',
-              'valid': false
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
+        'data': null,
+        'expectedKeyword': 'type' as const,
+        'name': 'edge: null data for if/then schema',
+        'valid': false
+      },
+      {
+        'data': {},
+        'expectedKeyword': 'required' as const,
+        'name': 'edge: empty object — if properties vacuously pass so then enforced — fails',
+        'valid': false
+      },
+      {
+        'data': {
+          'kind': 'person',
+          'name': ''
+        },
+        'name': 'edge: empty string satisfies type string in then branch',
+        'valid': true
       }
-    });
+    ]) {
+      void it(scenario.name, () => {
+        const errors = ite1Registry.validate(ite1SchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          if ('expectedKeyword' in scenario) {
+            assert.ok(
+              errors.items.some((err) => {
+                return err.keyword === scenario.expectedKeyword;
+              }),
+              `${scenario.name}: expected keyword '${scenario.expectedKeyword}' in errors`
+            );
+          }
+        }
+      });
+    }
+
+    // else branch: if condition does not match, else required
+    const ite2Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const ite2SchemaId = 'https://cond.test/ITE2';
+
+    ite2Registry.set(makeThenElseSchema(ite2SchemaId, { 'properties': { 'kind': { 'const': 'org' } } }, {
+      'properties': { 'orgName': { 'type': 'string' } },
+      'required': ['orgName']
+    }, {
+      'properties': { 'label': { 'type': 'string' } },
+      'required': ['label']
+    }));
+
+    for (const scenario of [
+      {
+        'data': {
+          'kind': 'person',
+          'label': 'Alice'
+        },
+        'name': 'if does not match — else requires label — satisfied',
+        'valid': true
+      },
+      {
+        'data': { 'kind': 'person' },
+        'expectedKeyword': 'required' as const,
+        'name': 'if does not match — else requires label — missing',
+        'valid': false
+      },
+      {
+        'data': null,
+        'expectedKeyword': 'type' as const,
+        'name': 'edge: null data for if/then/else schema',
+        'valid': false
+      },
+      {
+        'data': {
+          'kind': 'other',
+          'label': ''
+        },
+        'name': 'edge: empty string label satisfies else branch required string',
+        'valid': true
+      },
+      {
+        'data': {
+          'kind': 'org',
+          'orgName': 'Acme'
+        },
+        'name': 'edge: data matching if branch with then satisfied',
+        'valid': true
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = ite2Registry.validate(ite2SchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          if ('expectedKeyword' in scenario) {
+            assert.ok(
+              errors.items.some((err) => {
+                return err.keyword === scenario.expectedKeyword;
+              }),
+              `${scenario.name}: expected keyword '${scenario.expectedKeyword}' in errors`
+            );
+          }
+        }
+      });
+    }
+
+    // no else branch: if does not match, no else — passes
+    const ite3Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const ite3SchemaId = 'https://cond.test/ITE3';
+
+    ite3Registry.set(makeThenElseSchema(ite3SchemaId, { 'properties': { 'kind': { 'const': 'special' } } }, {
+      'properties': { 'code': { 'type': 'number' } },
+      'required': ['code']
+    }));
+
+    for (const scenario of [
+      {
+        'data': { 'kind': 'normal' },
+        'name': 'if does not match, no else — passes',
+        'valid': true
+      },
+      {
+        'data': null,
+        'expectedKeyword': 'type' as const,
+        'name': 'edge: null data with no else branch',
+        'valid': false
+      },
+      {
+        'data': {},
+        'expectedKeyword': 'required' as const,
+        'name': 'edge: empty object — if properties vacuously pass, then requires code — fails',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = ite3Registry.validate(ite3SchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          if ('expectedKeyword' in scenario) {
+            assert.ok(
+              errors.items.some((err) => {
+                return err.keyword === scenario.expectedKeyword;
+              }),
+              `${scenario.name}: expected keyword '${scenario.expectedKeyword}' in errors`
+            );
+          }
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -196,104 +238,126 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('allOf validation', () => {
-    void it('GBU: allOf required subschemas, overlapping numeric constraints', () => {
-      // all subschemas must match
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://cond.test/AllOf1';
+    // all subschemas must match
+    const allOf1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const allOf1SchemaId = 'https://cond.test/AllOf1';
 
-        registry.set({
-          '$id': schemaId,
-          'allOf': [
-            {
-              'properties': { 'name': { 'type': 'string' } },
-              'required': ['name']
-            },
-            {
-              'properties': { 'age': { 'type': 'number' } },
-              'required': ['age']
-            }
-          ],
-          'type': 'object'
-        });
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': {
-                'age': 30,
-                'name': 'Alice'
-              },
-              'name': 'both name and age present',
-              'valid': true
-            },
-            {
-              'data': { 'name': 'Alice' },
-              'name': 'missing age',
-              'valid': false
-            },
-            {
-              'data': { 'age': 30 },
-              'name': 'missing name',
-              'valid': false
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
+    allOf1Registry.set({
+      '$id': allOf1SchemaId,
+      'allOf': [
+        {
+          'properties': { 'name': { 'type': 'string' } },
+          'required': ['name']
+        },
+        {
+          'properties': { 'age': { 'type': 'number' } },
+          'required': ['age']
         }
-      }
-
-      // overlapping numeric constraints
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://cond.test/AllOfOverlap';
-
-        registry.set({
-          '$id': schemaId,
-          'allOf': [
-            {
-              'properties': {
-                'x': {
-                  'minimum': 0,
-                  'type': 'number'
-                }
-              }
-            },
-            {
-              'properties': {
-                'x': {
-                  'maximum': 100,
-                  'type': 'number'
-                }
-              }
-            }
-          ],
-          'type': 'object'
-        });
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': { 'x': 50 },
-              'name': 'x within both constraints',
-              'valid': true
-            },
-            {
-              'data': { 'x': -1 },
-              'name': 'x below minimum',
-              'valid': false
-            },
-            {
-              'data': { 'x': 101 },
-              'name': 'x above maximum',
-              'valid': false
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
+      ],
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'age': 30,
+          'name': 'Alice'
+        },
+        'name': 'both name and age present',
+        'valid': true
+      },
+      {
+        'data': { 'name': 'Alice' },
+        'expectedKeyword': 'required' as const,
+        'name': 'missing age',
+        'valid': false
+      },
+      {
+        'data': { 'age': 30 },
+        'expectedKeyword': 'required' as const,
+        'name': 'missing name',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = allOf1Registry.validate(allOf1SchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    // overlapping numeric constraints
+    const allOfOverlapRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const allOfOverlapSchemaId = 'https://cond.test/AllOfOverlap';
+
+    allOfOverlapRegistry.set({
+      '$id': allOfOverlapSchemaId,
+      'allOf': [
+        {
+          'properties': {
+            'x': {
+              'minimum': 0,
+              'type': 'number'
+            }
+          }
+        },
+        {
+          'properties': {
+            'x': {
+              'maximum': 100,
+              'type': 'number'
+            }
+          }
+        }
+      ],
+      'type': 'object'
+    });
+
+    for (const scenario of [
+      {
+        'data': { 'x': 50 },
+        'name': 'x within both constraints',
+        'valid': true
+      },
+      {
+        'data': { 'x': -1 },
+        'expectedKeyword': 'minimum' as const,
+        'name': 'x below minimum',
+        'valid': false
+      },
+      {
+        'data': { 'x': 101 },
+        'expectedKeyword': 'maximum' as const,
+        'name': 'x above maximum',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = allOfOverlapRegistry.validate(allOfOverlapSchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -301,139 +365,170 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('anyOf, oneOf, not validation', () => {
-    void it('GBU: anyOf branch-match, oneOf exclusive-match, not negation table-driven', () => {
-      // anyOf: any branch
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://cond.test/AnyOf1';
+    // anyOf: any branch
+    const anyOf1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const anyOf1SchemaId = 'https://cond.test/AnyOf1';
 
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'val': {
-              'anyOf': [
-                { 'type': 'string' },
-                { 'type': 'number' }
-              ]
-            }
-          },
-          'required': ['val'],
-          'type': 'object'
-        });
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': { 'val': 'hello' },
-              'name': 'string matches first branch',
-              'valid': true
-            },
-            {
-              'data': { 'val': 42 },
-              'name': 'number matches second branch',
-              'valid': true
-            },
-            {
-              'data': { 'val': true },
-              'name': 'boolean matches neither branch',
-              'valid': false
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
+    anyOf1Registry.set({
+      '$id': anyOf1SchemaId,
+      'properties': {
+        'val': {
+          'anyOf': [
+            { 'type': 'string' },
+            { 'type': 'number' }
+          ]
         }
-      }
-
-      // oneOf: exactly one branch
-      {
-        // enableStrictGraph: false — synthetic oneOf branches with inline constraints
-        const registry = JsonTology.create({
-          'baseIRI': 'urn:test:',
-          'enableStrictGraph': false
-        });
-        const schemaId = 'https://cond.test/OneOf1';
-
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'val': {
-              'oneOf': [
-                {
-                  'maximum': 10,
-                  'type': 'number'
-                },
-                {
-                  'minimum': 20,
-                  'type': 'number'
-                }
-              ]
-            }
-          },
-          'required': ['val'],
-          'type': 'object'
-        });
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': { 'val': 5 },
-              'name': 'matches first branch only (val <= 10)',
-              'valid': true
-            },
-            {
-              'data': { 'val': 25 },
-              'name': 'matches second branch only (val >= 20)',
-              'valid': true
-            },
-            {
-              'data': { 'val': 15 },
-              'name': 'matches neither (between 10 and 20)',
-              'valid': false
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
-
-      // not: negation
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://cond.test/Not1';
-
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'val': {
-              'not': { 'type': 'string' },
-              'type': [
-                'string',
-                'number'
-              ]
-            }
-          },
-          'required': ['val'],
-          'type': 'object'
-        });
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': { 'val': 42 },
-              'name': 'number does not match negated string schema',
-              'valid': true
-            },
-            {
-              'data': { 'val': 'hello' },
-              'name': 'string matches negated schema — rejected',
-              'valid': false
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
+      },
+      'required': ['val'],
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': { 'val': 'hello' },
+        'name': 'string matches first branch',
+        'valid': true
+      },
+      {
+        'data': { 'val': 42 },
+        'name': 'number matches second branch',
+        'valid': true
+      },
+      {
+        'data': { 'val': true },
+        'expectedKeyword': 'anyOf' as const,
+        'name': 'boolean matches neither branch',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = anyOf1Registry.validate(anyOf1SchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    // oneOf: exactly one branch
+    // enableStrictGraph: false — synthetic oneOf branches with inline constraints
+    const oneOf1Registry = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
+    const oneOf1SchemaId = 'https://cond.test/OneOf1';
+
+    oneOf1Registry.set({
+      '$id': oneOf1SchemaId,
+      'properties': {
+        'val': {
+          'oneOf': [
+            {
+              'maximum': 10,
+              'type': 'number'
+            },
+            {
+              'minimum': 20,
+              'type': 'number'
+            }
+          ]
+        }
+      },
+      'required': ['val'],
+      'type': 'object'
+    });
+
+    for (const scenario of [
+      {
+        'data': { 'val': 5 },
+        'name': 'matches first branch only (val <= 10)',
+        'valid': true
+      },
+      {
+        'data': { 'val': 25 },
+        'name': 'matches second branch only (val >= 20)',
+        'valid': true
+      },
+      {
+        'data': { 'val': 15 },
+        'expectedKeyword': 'oneOf' as const,
+        'name': 'matches neither (between 10 and 20)',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = oneOf1Registry.validate(oneOf1SchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    // not: negation
+    const not1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const not1SchemaId = 'https://cond.test/Not1';
+
+    not1Registry.set({
+      '$id': not1SchemaId,
+      'properties': {
+        'val': {
+          'not': { 'type': 'string' },
+          'type': [
+            'string',
+            'number'
+          ]
+        }
+      },
+      'required': ['val'],
+      'type': 'object'
+    });
+
+    for (const scenario of [
+      {
+        'data': { 'val': 42 },
+        'name': 'number does not match negated string schema',
+        'valid': true
+      },
+      {
+        'data': { 'val': 'hello' },
+        'expectedKeyword': 'not' as const,
+        'name': 'string matches negated schema — rejected',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = not1Registry.validate(not1SchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -441,102 +536,123 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('dependentRequired and dependentSchemas validation', () => {
-    void it('GBU: dependentRequired mutual requirement, dependentSchemas trigger constraint', () => {
-      // dependentRequired: mutual dependency
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://cond.test/DepReq1';
+    // dependentRequired: mutual dependency
+    const depReq1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const depReq1SchemaId = 'https://cond.test/DepReq1';
 
-        registry.set({
-          '$id': schemaId,
-          'dependentRequired': {
-            'email': ['name'],
-            'name': ['email']
-          },
-          'properties': {
-            'email': { 'type': 'string' },
-            'name': { 'type': 'string' }
-          },
-          'type': 'object'
-        });
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': {
-                'email': 'a@b.c',
-                'name': 'Alice'
-              },
-              'name': 'both present — valid',
-              'valid': true
-            },
-            {
-              'data': {},
-              'name': 'neither present — valid',
-              'valid': true
-            },
-            {
-              'data': { 'name': 'Alice' },
-              'name': 'name without email — invalid',
-              'valid': false
-            },
-            {
-              'data': { 'email': 'a@b.c' },
-              'name': 'email without name — invalid',
-              'valid': false
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
-
-      // dependentSchemas: trigger activates schema constraint
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://cond.test/DepSchema1';
-
-        registry.set({
-          '$id': schemaId,
-          'dependentSchemas': {
-            'billing': {
-              'properties': { 'billingAddress': { 'type': 'string' } },
-              'required': ['billingAddress']
-            }
-          },
-          'properties': {
-            'billing': { 'type': 'boolean' },
-            'billingAddress': { 'type': 'string' }
-          },
-          'type': 'object'
-        });
-
-        for (const {
-          data, name, valid
-        } of [
-            {
-              'data': {},
-              'name': 'billing absent — no dependent constraint',
-              'valid': true
-            },
-            {
-              'data': {
-                'billing': true,
-                'billingAddress': '123 Main St'
-              },
-              'name': 'billing present — billingAddress provided',
-              'valid': true
-            },
-            {
-              'data': { 'billing': true },
-              'name': 'billing present — billingAddress missing',
-              'valid': false
-            }
-          ]) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
+    depReq1Registry.set({
+      '$id': depReq1SchemaId,
+      'dependentRequired': {
+        'email': ['name'],
+        'name': ['email']
+      },
+      'properties': {
+        'email': { 'type': 'string' },
+        'name': { 'type': 'string' }
+      },
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'email': 'a@b.c',
+          'name': 'Alice'
+        },
+        'name': 'both present — valid',
+        'valid': true
+      },
+      {
+        'data': {},
+        'name': 'neither present — valid',
+        'valid': true
+      },
+      {
+        'data': { 'name': 'Alice' },
+        'expectedKeyword': 'dependentRequired' as const,
+        'name': 'name without email — invalid',
+        'valid': false
+      },
+      {
+        'data': { 'email': 'a@b.c' },
+        'expectedKeyword': 'dependentRequired' as const,
+        'name': 'email without name — invalid',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = depReq1Registry.validate(depReq1SchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    // dependentSchemas: trigger activates schema constraint
+    const depSchema1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const depSchema1SchemaId = 'https://cond.test/DepSchema1';
+
+    depSchema1Registry.set({
+      '$id': depSchema1SchemaId,
+      'dependentSchemas': {
+        'billing': {
+          'properties': { 'billingAddress': { 'type': 'string' } },
+          'required': ['billingAddress']
+        }
+      },
+      'properties': {
+        'billing': { 'type': 'boolean' },
+        'billingAddress': { 'type': 'string' }
+      },
+      'type': 'object'
+    });
+
+    for (const scenario of [
+      {
+        'data': {},
+        'name': 'billing absent — no dependent constraint',
+        'valid': true
+      },
+      {
+        'data': {
+          'billing': true,
+          'billingAddress': '123 Main St'
+        },
+        'name': 'billing present — billingAddress provided',
+        'valid': true
+      },
+      {
+        'data': { 'billing': true },
+        'expectedKeyword': 'required' as const,
+        'name': 'billing present — billingAddress missing',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = depSchema1Registry.validate(depSchema1SchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -544,84 +660,100 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('uniqueItems validation', () => {
-    void it('validates uniqueItems scenarios', () => {
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'schema': Record<string, unknown> & { readonly '$id': string };
-        'valid': boolean }> = [
-        {
-          'data': {
-            'tags': [
-              'a',
-              'b',
-              'c'
-            ]
-          },
-          'name': 'unique items — valid',
-          'schema': {
-            '$id': 'https://cond.test/Unique1',
-            'properties': {
-              'tags': {
-                'items': { 'type': 'string' },
-                'type': 'array',
-                'uniqueItems': true
-              }
-            },
-            'required': ['tags'],
-            'type': 'object'
-          },
-          'valid': true
+    const uniqueScenarios: Array<{
+      'data': unknown;
+      'expectedKeyword'?: 'uniqueItems';
+      'name': string;
+      'schema': Record<string, unknown> & { readonly '$id': string };
+      'valid': boolean;
+    }> = [
+      {
+        'data': {
+          'tags': [
+            'a',
+            'b',
+            'c'
+          ]
         },
-        {
-          'data': {
-            'tags': [
-              'a',
-              'b',
-              'a'
-            ]
+        'name': 'unique items — valid',
+        'schema': {
+          '$id': 'https://cond.test/Unique1',
+          'properties': {
+            'tags': {
+              'items': { 'type': 'string' },
+              'type': 'array',
+              'uniqueItems': true
+            }
           },
-          'name': 'duplicate items — rejected',
-          'schema': {
-            '$id': 'https://cond.test/Unique1b',
-            'properties': {
-              'tags': {
-                'items': { 'type': 'string' },
-                'type': 'array',
-                'uniqueItems': true
-              }
-            },
-            'required': ['tags'],
-            'type': 'object'
-          },
-          'valid': false
+          'required': ['tags'],
+          'type': 'object'
         },
-        {
-          'data': { 'list': [] },
-          'name': 'empty array with uniqueItems — valid',
-          'schema': {
-            '$id': 'https://cond.test/Unique2',
-            'properties': {
-              'list': {
-                'type': 'array',
-                'uniqueItems': true
-              }
-            },
-            'required': ['list'],
-            'type': 'object'
+        'valid': true
+      },
+      {
+        'data': {
+          'tags': [
+            'a',
+            'b',
+            'a'
+          ]
+        },
+        'expectedKeyword': 'uniqueItems',
+        'name': 'duplicate items — rejected',
+        'schema': {
+          '$id': 'https://cond.test/Unique1b',
+          'properties': {
+            'tags': {
+              'items': { 'type': 'string' },
+              'type': 'array',
+              'uniqueItems': true
+            }
           },
-          'valid': true
-        }
-      ];
+          'required': ['tags'],
+          'type': 'object'
+        },
+        'valid': false
+      },
+      {
+        'data': { 'list': [] },
+        'name': 'empty array with uniqueItems — valid',
+        'schema': {
+          '$id': 'https://cond.test/Unique2',
+          'properties': {
+            'list': {
+              'type': 'array',
+              'uniqueItems': true
+            }
+          },
+          'required': ['list'],
+          'type': 'object'
+        },
+        'valid': true
+      }
+    ];
 
-      for (const {
-        data, name, schema, valid
-      } of scenarios) {
+    for (const scenario of uniqueScenarios) {
+      void it(scenario.name, () => {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.set(schema);
-        assert.equal(registry.validate(schema.$id, data).length === 0, valid, name);
-      }
-    });
+        registry.set(scenario.schema);
+        const errors = registry.validate(scenario.schema.$id, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          if (scenario.expectedKeyword !== undefined) {
+            assert.ok(
+              errors.items.some((err) => {
+                return err.keyword === scenario.expectedKeyword;
+              }),
+              `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+            );
+          }
+        }
+      });
+    }
   });
 }
 
@@ -691,12 +823,10 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    const scenarios: Array<{ 'data': unknown;
-      'name': string;
-      'schema': string;
-      'valid': boolean }> = [
+    for (const scenario of [
       {
         'data': { 'x': 1 },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'rejects value matching both oneOf branches (overlapping schemas)',
         'schema': 'https://disc.test/OverlapOneOf',
         'valid': false
@@ -715,21 +845,30 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       },
       {
         'data': { 'a': 'hello' },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'rejects value when oneOf has identical $ref schemas (matches both)',
         'schema': 'https://disc.test/IdenticalOneOf',
         'valid': false
       }
-    ];
+    ]) {
+      void it(scenario.name, () => {
+        const errors = registry.validate(scenario.schema, scenario.data);
 
-    void it('oneOf edge cases: overlapping, empty, boolean schemas, identical refs', () => {
-      for (const {
-        data, name, schema, valid
-      } of scenarios) {
-        const errors = registry.validate(schema, data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
-    });
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          if ('expectedKeyword' in scenario) {
+            assert.ok(
+              errors.items.some((err) => {
+                return err.keyword === scenario.expectedKeyword;
+              }),
+              `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+            );
+          }
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -790,12 +929,10 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    const scenarios: Array<{ 'data': unknown;
-      'name': string;
-      'schema': string;
-      'valid': boolean }> = [
+    for (const scenario of [
       {
         'data': { 'z': 'nope' },
+        'expectedKeyword': 'anyOf' as const,
         'name': 'rejects value that matches no anyOf branch',
         'schema': 'https://disc.test/NoMatchAnyOf',
         'valid': false
@@ -812,17 +949,25 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         'schema': 'https://disc.test/EmptyAnyOf',
         'valid': true
       }
-    ];
+    ]) {
+      void it(scenario.name, () => {
+        const errors = registry.validate(scenario.schema, scenario.data);
 
-    void it('anyOf edge cases: no-match, all-match, empty anyOf', () => {
-      for (const {
-        data, name, schema, valid
-      } of scenarios) {
-        const errors = registry.validate(schema, data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
-    });
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          if ('expectedKeyword' in scenario) {
+            assert.ok(
+              errors.items.some((err) => {
+                return err.keyword === scenario.expectedKeyword;
+              }),
+              `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+            );
+          }
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -867,9 +1012,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    const shapeScenarios: Array<{ 'data': unknown;
-      'name': string;
-      'valid': boolean }> = [
+    for (const scenario of [
       {
         'data': {
           'kind': 'circle',
@@ -888,6 +1031,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       },
       {
         'data': { 'radius': 5 },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Shape: rejects when discriminator property is missing',
         'valid': false
       },
@@ -896,6 +1040,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'kind': 'triangle',
           'sides': 3
         },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Shape: rejects when discriminator value matches no branch',
         'valid': false
       },
@@ -904,6 +1049,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'kind': 42,
           'radius': 5
         },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Shape: rejects when discriminator value is a number',
         'valid': false
       },
@@ -912,16 +1058,19 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'kind': null,
           'radius': 5
         },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Shape: rejects when discriminator value is null',
         'valid': false
       },
       {
         'data': {},
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Shape: edge: empty object — missing discriminator key entirely',
         'valid': false
       },
       {
         'data': null,
+        'expectedKeyword': 'type' as const,
         'name': 'Shape: edge: null data at top level',
         'valid': false
       },
@@ -930,6 +1079,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'kind': '',
           'radius': 5
         },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Shape: unhappy: discriminator value is empty string — matches no branch',
         'valid': false
       },
@@ -938,20 +1088,27 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'kind': false,
           'radius': 5
         },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Shape: unhappy: discriminator value is boolean false',
         'valid': false
       }
-    ];
+    ]) {
+      void it(scenario.name, () => {
+        const errors = shapeRegistry.validate('https://disc.test/Shape', scenario.data);
 
-    void it('Shape discriminated union: valid/invalid circle+square+edge cases', () => {
-      for (const {
-        data, name, valid
-      } of shapeScenarios) {
-        const errors = shapeRegistry.validate('https://disc.test/Shape', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
-    });
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
 
     const eventRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -1010,9 +1167,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    const eventScenarios: Array<{ 'data': unknown;
-      'name': string;
-      'valid': boolean }> = [
+    for (const scenario of [
       {
         'data': {
           'payload': 'hello',
@@ -1039,6 +1194,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       },
       {
         'data': { 'type': 'message' },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Event: rejects when branch-specific required field is missing',
         'valid': false
       },
@@ -1047,6 +1203,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'code': 'not-a-number',
           'type': 'error'
         },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Event: rejects when branch-specific field has wrong type',
         'valid': false
       },
@@ -1055,20 +1212,27 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'level': 'debug',
           'type': 'log'
         },
+        'expectedKeyword': 'oneOf' as const,
         'name': 'Event: rejects when branch-specific enum value is invalid',
         'valid': false
       }
-    ];
+    ]) {
+      void it(scenario.name, () => {
+        const errors = eventRegistry.validate('https://disc.test/Event', scenario.data);
 
-    void it('Event discriminated union: valid/invalid message+error+log events', () => {
-      for (const {
-        data, name, valid
-      } of eventScenarios) {
-        const errors = eventRegistry.validate('https://disc.test/Event', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
-    });
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 }
 
@@ -1081,196 +1245,219 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // ---------------------------------------------------------------------------
 
   void describe('contains validation', () => {
-    void it('validates basic contains scenarios', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://contains.test/Basic';
+    const containsBasicRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const containsBasicSchemaId = 'https://contains.test/Basic';
 
-      registry.set({
-        '$id': schemaId,
-        'properties': {
-          'values': {
-            'contains': { 'type': 'number' },
-            'type': 'array'
-          }
-        },
-        'required': ['values'],
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'values': [
-              'a',
-              'b',
-              42
-            ]
-          },
-          'name': 'array with a matching number item',
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              3
-            ]
-          },
-          'name': 'all items match',
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              'a',
-              'b',
-              'c'
-            ]
-          },
-          'name': 'no items match',
-          'valid': false
-        },
-        {
-          'data': { 'values': [] },
-          'name': 'empty array has no items to match',
-          'valid': false
-        },
-        {
-          'data': {
-            'values': [
-              null,
-              null,
-              null
-            ]
-          },
-          'name': 'edge: array of nulls — none match type number',
-          'valid': false
-        },
-        {
-          'data': { 'values': [42] },
-          'name': 'edge: single-element array with matching item',
-          'valid': true
-        },
-        {
-          'data': { 'values': ['only'] },
-          'name': 'edge: single-element array with non-matching item',
-          'valid': false
-        },
-        {
-          'data': {
-            'values': [
-              undefined,
-              Number.NaN,
-              Infinity
-            ]
-          },
-          'name': 'unhappy: array with undefined, NaN, Infinity — none are finite numbers',
-          'valid': false
+    containsBasicRegistry.set({
+      '$id': containsBasicSchemaId,
+      'properties': {
+        'values': {
+          'contains': { 'type': 'number' },
+          'type': 'array'
         }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+      },
+      'required': ['values'],
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'values': [
+            'a',
+            'b',
+            42
+          ]
+        },
+        'name': 'array with a matching number item',
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            3
+          ]
+        },
+        'name': 'all items match',
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            'a',
+            'b',
+            'c'
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'no items match',
+        'valid': false
+      },
+      {
+        'data': { 'values': [] },
+        'expectedKeyword': 'contains' as const,
+        'name': 'empty array has no items to match',
+        'valid': false
+      },
+      {
+        'data': {
+          'values': [
+            null,
+            null,
+            null
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'edge: array of nulls — none match type number',
+        'valid': false
+      },
+      {
+        'data': { 'values': [42] },
+        'name': 'edge: single-element array with matching item',
+        'valid': true
+      },
+      {
+        'data': { 'values': ['only'] },
+        'expectedKeyword': 'contains' as const,
+        'name': 'edge: single-element array with non-matching item',
+        'valid': false
+      },
+      {
+        'data': {
+          'values': [
+            undefined,
+            Number.NaN,
+            Infinity
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'unhappy: array with undefined, NaN, Infinity — none are finite numbers',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = containsBasicRegistry.validate(containsBasicSchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}' in errors`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
   // contains with true/false schemas
   // ---------------------------------------------------------------------------
 
-  void describe('contains with boolean schemas', () => {
-    void it('validates boolean contains scenarios', () => {
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'schema': Record<string, unknown> & { readonly '$id': string };
-        'valid': boolean }> = [
-        {
-          'data': {
-            'values': [
-              1,
-              'a',
-              null,
-              false
-            ]
-          },
-          'name': 'contains true — any non-empty array passes',
-          'schema': {
-            '$id': 'https://contains.test/TrueSchema',
-            'properties': {
-              'values': {
-                'contains': true,
-                'type': 'array'
-              }
-            },
-            'required': ['values'],
-            'type': 'object'
-          },
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              3
-            ]
-          },
-          'name': 'contains false — no item can match',
-          'schema': {
-            '$id': 'https://contains.test/FalseSchema',
-            'properties': {
-              'values': {
-                'contains': false,
-                'type': 'array'
-              }
-            },
-            'required': ['values'],
-            'type': 'object'
-          },
-          'valid': false
-        },
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              3
-            ]
-          },
-          'name': 'contains false with minContains 0 passes',
-          'schema': {
-            '$id': 'https://contains.test/FalseMinZero',
-            'properties': {
-              'values': {
-                'contains': false,
-                'minContains': 0,
-                'type': 'array'
-              }
-            },
-            'required': ['values'],
-            'type': 'object'
-          },
-          'valid': true
-        }
-      ];
+  type BooleanContainsSchemaType = Record<string, unknown> & { readonly '$id': string };
 
-      for (const {
-        data, name, schema, valid
-      } of scenarios) {
+  const trueContainsSchema: BooleanContainsSchemaType = {
+    '$id': 'https://contains.test/TrueSchema',
+    'properties': {
+      'values': {
+        'contains': true,
+        'type': 'array'
+      }
+    },
+    'required': ['values'],
+    'type': 'object'
+  };
+
+  const falseContainsSchema: BooleanContainsSchemaType = {
+    '$id': 'https://contains.test/FalseSchema',
+    'properties': {
+      'values': {
+        'contains': false,
+        'type': 'array'
+      }
+    },
+    'required': ['values'],
+    'type': 'object'
+  };
+
+  const falseMinZeroSchema: BooleanContainsSchemaType = {
+    '$id': 'https://contains.test/FalseMinZero',
+    'properties': {
+      'values': {
+        'contains': false,
+        'minContains': 0,
+        'type': 'array'
+      }
+    },
+    'required': ['values'],
+    'type': 'object'
+  };
+
+  void describe('contains with boolean schemas', () => {
+    for (const scenario of [
+      {
+        'data': {
+          'values': [
+            1,
+            'a',
+            null,
+            false
+          ]
+        },
+        'name': 'contains true — any non-empty array passes',
+        'schema': trueContainsSchema,
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            3
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'contains false — no item can match',
+        'schema': falseContainsSchema,
+        'valid': false
+      },
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            3
+          ]
+        },
+        'name': 'contains false with minContains 0 passes',
+        'schema': falseMinZeroSchema,
+        'valid': true
+      }
+    ]) {
+      void it(scenario.name, () => {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.set(schema);
-        assert.equal(registry.validate(schema.$id, data).length === 0, valid, name);
-      }
-    });
+        registry.set(scenario.schema);
+        const errors = registry.validate(scenario.schema.$id, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -1278,178 +1465,184 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('minContains validation', () => {
-    void it('GBU: minContains=0 (optional), minContains=2 (bounded), minContains=5 exceeds length', () => {
-      // Good: minContains=0 — array without matches is still valid
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://contains.test/MinZero';
+    // minContains=0 — array without matches is still valid
+    const minZeroRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const minZeroSchemaId = 'https://contains.test/MinZero';
 
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'values': {
-              'contains': { 'type': 'number' },
-              'minContains': 0,
-              'type': 'array'
-            }
-          },
-          'required': ['values'],
-          'type': 'object'
-        });
-
-        const zeroScenarios: Array<{ 'data': unknown;
-          'name': string;
-          'valid': boolean }> = [
-          {
-            'data': {
-              'values': [
-                'a',
-                'b',
-                'c'
-              ]
-            },
-            'name': 'no matching items — valid because minContains is 0',
-            'valid': true
-          },
-          {
-            'data': { 'values': [] },
-            'name': 'empty array — valid because minContains is 0',
-            'valid': true
-          }
-        ];
-
-        for (const {
-          data, name, valid
-        } of zeroScenarios) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
+    minZeroRegistry.set({
+      '$id': minZeroSchemaId,
+      'properties': {
+        'values': {
+          'contains': { 'type': 'number' },
+          'minContains': 0,
+          'type': 'array'
         }
-      }
-
-      // Good: minContains=2 — requires at least 2 matching items
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://contains.test/MinTwo';
-
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'values': {
-              'contains': { 'type': 'number' },
-              'minContains': 2,
-              'type': 'array'
-            }
-          },
-          'required': ['values'],
-          'type': 'object'
-        });
-
-        const twoScenarios: Array<{ 'data': unknown;
-          'name': string;
-          'valid': boolean }> = [
-          {
-            'data': {
-              'values': [
-                'a',
-                1,
-                'b',
-                2
-              ]
-            },
-            'name': 'two matching items',
-            'valid': true
-          },
-          {
-            'data': {
-              'values': [
-                1,
-                2,
-                3
-              ]
-            },
-            'name': 'three matching items',
-            'valid': true
-          },
-          {
-            'data': {
-              'values': [
-                'a',
-                1,
-                'b'
-              ]
-            },
-            'name': 'only one matching item — fails',
-            'valid': false
-          },
-          {
-            'data': {
-              'values': [
-                'a',
-                'b'
-              ]
-            },
-            'name': 'no matching items — fails',
-            'valid': false
-          }
-        ];
-
-        for (const {
-          data, name, valid
-        } of twoScenarios) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
-
-      // Bad: minContains=5 exceeds array length — always fails
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://contains.test/MinExceedsLength';
-
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'values': {
-              'contains': { 'type': 'number' },
-              'minContains': 5,
-              'type': 'array'
-            }
-          },
-          'required': ['values'],
-          'type': 'object'
-        });
-
-        const exceedsScenarios: Array<{ 'data': unknown;
-          'name': string;
-          'valid': boolean }> = [
-          {
-            'data': {
-              'values': [
-                1,
-                2,
-                3
-              ]
-            },
-            'name': 'array has only 3 items, cannot satisfy minContains=5',
-            'valid': false
-          },
-          {
-            'data': {
-              'values': [
-                1,
-                2
-              ]
-            },
-            'name': 'even with all matching, not enough items',
-            'valid': false
-          }
-        ];
-
-        for (const {
-          data, name, valid
-        } of exceedsScenarios) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
+      },
+      'required': ['values'],
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'values': [
+            'a',
+            'b',
+            'c'
+          ]
+        },
+        'name': 'no matching items — valid because minContains is 0',
+        'valid': true
+      },
+      {
+        'data': { 'values': [] },
+        'name': 'empty array — valid because minContains is 0',
+        'valid': true
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = minZeroRegistry.validate(minZeroSchemaId, scenario.data);
+
+        assert.equal(errors.length, 0, scenario.name);
+      });
+    }
+
+    // minContains=2 — requires at least 2 matching items
+    const minTwoRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const minTwoSchemaId = 'https://contains.test/MinTwo';
+
+    minTwoRegistry.set({
+      '$id': minTwoSchemaId,
+      'properties': {
+        'values': {
+          'contains': { 'type': 'number' },
+          'minContains': 2,
+          'type': 'array'
+        }
+      },
+      'required': ['values'],
+      'type': 'object'
+    });
+
+    for (const scenario of [
+      {
+        'data': {
+          'values': [
+            'a',
+            1,
+            'b',
+            2
+          ]
+        },
+        'name': 'two matching items',
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            3
+          ]
+        },
+        'name': 'three matching items',
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            'a',
+            1,
+            'b'
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'only one matching item — fails',
+        'valid': false
+      },
+      {
+        'data': {
+          'values': [
+            'a',
+            'b'
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'no matching items — fails',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = minTwoRegistry.validate(minTwoSchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    // minContains=5 exceeds array length — always fails
+    const minExceedsRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const minExceedsSchemaId = 'https://contains.test/MinExceedsLength';
+
+    minExceedsRegistry.set({
+      '$id': minExceedsSchemaId,
+      'properties': {
+        'values': {
+          'contains': { 'type': 'number' },
+          'minContains': 5,
+          'type': 'array'
+        }
+      },
+      'required': ['values'],
+      'type': 'object'
+    });
+
+    for (const scenario of [
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            3
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'array has only 3 items, cannot satisfy minContains=5',
+        'valid': false
+      },
+      {
+        'data': {
+          'values': [
+            1,
+            2
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'even with all matching, not enough items',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = minExceedsRegistry.validate(minExceedsSchemaId, scenario.data);
+
+        assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+        assert.ok(
+          errors.items.some((err) => {
+            return err.keyword === scenario.expectedKeyword;
+          }),
+          `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+        );
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -1457,112 +1650,124 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('maxContains validation', () => {
-    void it('GBU: maxContains=1 (allows exactly one), maxContains=0 (forbids any match)', () => {
-      // Good: maxContains=1 — at most 1 matching item
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://contains.test/MaxOne';
+    // maxContains=1 — at most 1 matching item
+    const maxOneRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const maxOneSchemaId = 'https://contains.test/MaxOne';
 
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'values': {
-              'contains': { 'type': 'number' },
-              'maxContains': 1,
-              'type': 'array'
-            }
-          },
-          'required': ['values'],
-          'type': 'object'
-        });
-
-        const oneScenarios: Array<{ 'data': unknown;
-          'name': string;
-          'valid': boolean }> = [
-          {
-            'data': {
-              'values': [
-                'a',
-                1,
-                'b'
-              ]
-            },
-            'name': 'exactly one matching item',
-            'valid': true
-          },
-          {
-            'data': {
-              'values': [
-                1,
-                2,
-                'a'
-              ]
-            },
-            'name': 'two matching items — exceeds maxContains',
-            'valid': false
-          }
-        ];
-
-        for (const {
-          data, name, valid
-        } of oneScenarios) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
+    maxOneRegistry.set({
+      '$id': maxOneSchemaId,
+      'properties': {
+        'values': {
+          'contains': { 'type': 'number' },
+          'maxContains': 1,
+          'type': 'array'
         }
-      }
-
-      // Bad: maxContains=0 (combined with minContains=0) — no matches allowed
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://contains.test/MaxZero';
-
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'values': {
-              'contains': { 'type': 'number' },
-              'maxContains': 0,
-              'minContains': 0,
-              'type': 'array'
-            }
-          },
-          'required': ['values'],
-          'type': 'object'
-        });
-
-        const zeroScenarios: Array<{ 'data': unknown;
-          'name': string;
-          'valid': boolean }> = [
-          {
-            'data': {
-              'values': [
-                'a',
-                'b',
-                'c'
-              ]
-            },
-            'name': 'no matching items — valid',
-            'valid': true
-          },
-          {
-            'data': {
-              'values': [
-                'a',
-                1,
-                'b'
-              ]
-            },
-            'name': 'one matching item — exceeds maxContains=0',
-            'valid': false
-          }
-        ];
-
-        for (const {
-          data, name, valid
-        } of zeroScenarios) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
+      },
+      'required': ['values'],
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'values': [
+            'a',
+            1,
+            'b'
+          ]
+        },
+        'name': 'exactly one matching item',
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            'a'
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'two matching items — exceeds maxContains',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = maxOneRegistry.validate(maxOneSchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    // maxContains=0 (combined with minContains=0) — no matches allowed
+    const maxZeroRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const maxZeroSchemaId = 'https://contains.test/MaxZero';
+
+    maxZeroRegistry.set({
+      '$id': maxZeroSchemaId,
+      'properties': {
+        'values': {
+          'contains': { 'type': 'number' },
+          'maxContains': 0,
+          'minContains': 0,
+          'type': 'array'
+        }
+      },
+      'required': ['values'],
+      'type': 'object'
+    });
+
+    for (const scenario of [
+      {
+        'data': {
+          'values': [
+            'a',
+            'b',
+            'c'
+          ]
+        },
+        'name': 'no matching items — valid',
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            'a',
+            1,
+            'b'
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'one matching item — exceeds maxContains=0',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = maxZeroRegistry.validate(maxZeroSchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -1570,156 +1775,167 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('minContains and maxContains range', () => {
-    void it('GBU: [2,4] range valid, below min fails, above max fails; impossible [min>max] always fails', () => {
-      // Good: minContains=2 maxContains=4 range
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://contains.test/Range';
+    // minContains=2 maxContains=4 range
+    const rangeRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const rangeSchemaId = 'https://contains.test/Range';
 
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'values': {
-              'contains': { 'type': 'number' },
-              'maxContains': 4,
-              'minContains': 2,
-              'type': 'array'
-            }
-          },
-          'required': ['values'],
-          'type': 'object'
-        });
-
-        const rangeScenarios: Array<{ 'data': unknown;
-          'name': string;
-          'valid': boolean }> = [
-          {
-            'data': {
-              'values': [
-                'a',
-                1,
-                'b',
-                2
-              ]
-            },
-            'name': 'exactly 2 matching items (lower bound)',
-            'valid': true
-          },
-          {
-            'data': {
-              'values': [
-                1,
-                2,
-                3,
-                'a'
-              ]
-            },
-            'name': 'exactly 3 matching items (mid range)',
-            'valid': true
-          },
-          {
-            'data': {
-              'values': [
-                1,
-                2,
-                3,
-                4
-              ]
-            },
-            'name': 'exactly 4 matching items (upper bound)',
-            'valid': true
-          },
-          {
-            'data': {
-              'values': [
-                'a',
-                1,
-                'b',
-                'c'
-              ]
-            },
-            'name': 'only 1 matching item — below minContains',
-            'valid': false
-          },
-          {
-            'data': {
-              'values': [
-                1,
-                2,
-                3,
-                4,
-                5
-              ]
-            },
-            'name': '5 matching items — exceeds maxContains',
-            'valid': false
-          }
-        ];
-
-        for (const {
-          data, name, valid
-        } of rangeScenarios) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
+    rangeRegistry.set({
+      '$id': rangeSchemaId,
+      'properties': {
+        'values': {
+          'contains': { 'type': 'number' },
+          'maxContains': 4,
+          'minContains': 2,
+          'type': 'array'
         }
-      }
-
-      // Ugly: impossible constraint maxContains < minContains — always fails
-      {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-        const schemaId = 'https://contains.test/Impossible';
-
-        registry.set({
-          '$id': schemaId,
-          'properties': {
-            'values': {
-              'contains': { 'type': 'number' },
-              'maxContains': 1,
-              'minContains': 3,
-              'type': 'array'
-            }
-          },
-          'required': ['values'],
-          'type': 'object'
-        });
-
-        const impossibleScenarios: Array<{ 'data': unknown;
-          'name': string;
-          'valid': boolean }> = [
-          {
-            'data': {
-              'values': [
-                1,
-                2,
-                3
-              ]
-            },
-            'name': 'cannot satisfy min=3 and max=1 with 3 numbers',
-            'valid': false
-          },
-          {
-            'data': { 'values': [1] },
-            'name': 'cannot satisfy min=3 and max=1 with 1 number',
-            'valid': false
-          },
-          {
-            'data': {
-              'values': [
-                'a',
-                'b'
-              ]
-            },
-            'name': 'cannot satisfy min=3 and max=1 with no numbers',
-            'valid': false
-          }
-        ];
-
-        for (const {
-          data, name, valid
-        } of impossibleScenarios) {
-          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
-        }
-      }
+      },
+      'required': ['values'],
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'values': [
+            'a',
+            1,
+            'b',
+            2
+          ]
+        },
+        'name': 'exactly 2 matching items (lower bound)',
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            3,
+            'a'
+          ]
+        },
+        'name': 'exactly 3 matching items (mid range)',
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        'name': 'exactly 4 matching items (upper bound)',
+        'valid': true
+      },
+      {
+        'data': {
+          'values': [
+            'a',
+            1,
+            'b',
+            'c'
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'only 1 matching item — below minContains',
+        'valid': false
+      },
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': '5 matching items — exceeds maxContains',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = rangeRegistry.validate(rangeSchemaId, scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    // impossible constraint maxContains < minContains — always fails
+    const impossibleRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const impossibleSchemaId = 'https://contains.test/Impossible';
+
+    impossibleRegistry.set({
+      '$id': impossibleSchemaId,
+      'properties': {
+        'values': {
+          'contains': { 'type': 'number' },
+          'maxContains': 1,
+          'minContains': 3,
+          'type': 'array'
+        }
+      },
+      'required': ['values'],
+      'type': 'object'
+    });
+
+    for (const scenario of [
+      {
+        'data': {
+          'values': [
+            1,
+            2,
+            3
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'cannot satisfy min=3 and max=1 with 3 numbers',
+        'valid': false
+      },
+      {
+        'data': { 'values': [1] },
+        'expectedKeyword': 'contains' as const,
+        'name': 'cannot satisfy min=3 and max=1 with 1 number',
+        'valid': false
+      },
+      {
+        'data': {
+          'values': [
+            'a',
+            'b'
+          ]
+        },
+        'expectedKeyword': 'contains' as const,
+        'name': 'cannot satisfy min=3 and max=1 with no numbers',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = impossibleRegistry.validate(impossibleSchemaId, scenario.data);
+
+        assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+        assert.ok(
+          errors.items.some((err) => {
+            return err.keyword === scenario.expectedKeyword;
+          }),
+          `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+        );
+      });
+    }
   });
 }
 
@@ -1732,110 +1948,124 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // ---------------------------------------------------------------------------
 
   void describe('patternProperties basic matching', () => {
-    void it('validates single pattern against declared schema', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const basicStringRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/BasicString',
-        'patternProperties': { '^S_': { 'type': 'string' } },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'S_name': 'Alice' },
-          'name': 'single matching key with valid type',
-          'valid': true
-        },
-        {
-          'data': {
-            'S_a': 'x',
-            'S_b': 'y'
-          },
-          'name': 'multiple matching keys with valid type',
-          'valid': true
-        },
-        {
-          'data': { 'S_count': 42 },
-          'name': 'matching key with wrong type',
-          'valid': false
-        },
-        {
-          'data': {},
-          'name': 'edge: empty object — no keys to match patterns',
-          'valid': true
-        },
-        {
-          'data': { '': 'value' },
-          'name': 'edge: empty string key — does not match ^S_ pattern',
-          'valid': true
-        },
-        {
-          'data': { 'S_': 'val' },
-          'name': 'edge: key is exactly the pattern prefix with empty suffix',
-          'valid': true
-        },
-        {
-          'data': { 'S_name': null },
-          'name': 'unhappy: matching key with null value — not a string',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/BasicString', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+    basicStringRegistry.set({
+      '$id': 'https://pattern.test/BasicString',
+      'patternProperties': { '^S_': { 'type': 'string' } },
+      'type': 'object'
     });
 
-    void it('validates multiple distinct patterns independently', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.set({
-        '$id': 'https://pattern.test/MultiPattern',
-        'patternProperties': {
-          '^I_': { 'type': 'integer' },
-          '^S_': { 'type': 'string' }
+    for (const scenario of [
+      {
+        'data': { 'S_name': 'Alice' },
+        'name': 'single matching key with valid type',
+        'valid': true
+      },
+      {
+        'data': {
+          'S_a': 'x',
+          'S_b': 'y'
         },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'I_count': 5,
-            'S_name': 'Alice'
-          },
-          'name': 'both patterns satisfied',
-          'valid': true
-        },
-        {
-          'data': { 'S_name': 42 },
-          'name': 'S_ key with wrong type (number instead of string)',
-          'valid': false
-        },
-        {
-          'data': { 'I_count': 'five' },
-          'name': 'I_ key with wrong type (string instead of integer)',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/MultiPattern', data);
-
-        assert.equal(errors.length === 0, valid, name);
+        'name': 'multiple matching keys with valid type',
+        'valid': true
+      },
+      {
+        'data': { 'S_count': 42 },
+        'expectedKeyword': 'type' as const,
+        'expectedPath': '/S_count',
+        'name': 'matching key with wrong type',
+        'valid': false
+      },
+      {
+        'data': {},
+        'name': 'edge: empty object — no keys to match patterns',
+        'valid': true
+      },
+      {
+        'data': { '': 'value' },
+        'name': 'edge: empty string key — does not match ^S_ pattern',
+        'valid': true
+      },
+      {
+        'data': { 'S_': 'val' },
+        'name': 'edge: key is exactly the pattern prefix with empty suffix',
+        'valid': true
+      },
+      {
+        'data': { 'S_name': null },
+        'expectedKeyword': 'type' as const,
+        'expectedPath': '/S_name',
+        'name': 'unhappy: matching key with null value — not a string',
+        'valid': false
       }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = basicStringRegistry.validate('https://pattern.test/BasicString', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    const multiPatternRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+    multiPatternRegistry.set({
+      '$id': 'https://pattern.test/MultiPattern',
+      'patternProperties': {
+        '^I_': { 'type': 'integer' },
+        '^S_': { 'type': 'string' }
+      },
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'I_count': 5,
+          'S_name': 'Alice'
+        },
+        'name': 'validates multiple distinct patterns independently — both patterns satisfied',
+        'valid': true
+      },
+      {
+        'data': { 'S_name': 42 },
+        'expectedKeyword': 'type' as const,
+        'name': 'S_ key with wrong type (number instead of string)',
+        'valid': false
+      },
+      {
+        'data': { 'I_count': 'five' },
+        'expectedKeyword': 'type' as const,
+        'name': 'I_ key with wrong type (string instead of integer)',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = multiPatternRegistry.validate('https://pattern.test/MultiPattern', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
 
     void it('allows keys that match no pattern when additionalProperties is not restricted', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
@@ -1845,22 +2075,9 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         'patternProperties': { '^S_': { 'type': 'string' } },
         'type': 'object'
       });
+      const errors = registry.validate('https://pattern.test/Unrestricted', { 'other': 123 });
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [{
-        'data': { 'other': 123 },
-        'name': 'non-matching key passes when additionalProperties unrestricted',
-        'valid': true
-      }];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/Unrestricted', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+      assert.equal(errors.length, 0, 'non-matching key passes when additionalProperties unrestricted');
     });
   });
 
@@ -1869,51 +2086,57 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with overlapping patterns', () => {
-    void it('applies all matching pattern schemas to a single property', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const overlapRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/Overlap',
-        'patternProperties': {
-          '^S_': { 'type': 'string' },
-          '_name$': { 'minLength': 3 }
-        },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'S_name': 'Alice' },
-          'name': 'S_name matches both patterns, satisfies both',
-          'valid': true
-        },
-        {
-          'data': { 'S_name': 'Al' },
-          'name': 'S_name matches both patterns, too short for _name$',
-          'valid': false
-        },
-        {
-          'data': { 'X_name': 'Bob' },
-          'name': 'X_name matches only _name$, satisfies minLength',
-          'valid': true
-        },
-        {
-          'data': { 'X_name': 'Bo' },
-          'name': 'X_name matches only _name$, too short',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/Overlap', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+    overlapRegistry.set({
+      '$id': 'https://pattern.test/Overlap',
+      'patternProperties': {
+        '^S_': { 'type': 'string' },
+        '_name$': { 'minLength': 3 }
+      },
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': { 'S_name': 'Alice' },
+        'name': 'S_name matches both patterns, satisfies both',
+        'valid': true
+      },
+      {
+        'data': { 'S_name': 'Al' },
+        'expectedKeyword': 'minLength' as const,
+        'name': 'S_name matches both patterns, too short for _name$',
+        'valid': false
+      },
+      {
+        'data': { 'X_name': 'Bob' },
+        'name': 'X_name matches only _name$, satisfies minLength',
+        'valid': true
+      },
+      {
+        'data': { 'X_name': 'Bo' },
+        'expectedKeyword': 'minLength' as const,
+        'name': 'X_name matches only _name$, too short',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = overlapRegistry.validate('https://pattern.test/Overlap', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -1921,49 +2144,55 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties combined with properties on the same key', () => {
-    void it('enforces both explicit property and pattern type constraints', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const propAndPatternRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/PropAndPattern',
-        'patternProperties': { '^S_': { 'type': 'string' } },
-        'properties': { 'S_name': { 'type': 'string' } },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'S_name': 'Alice' },
-          'name': 'S_name is string, satisfies both properties and pattern',
-          'valid': true
-        },
-        {
-          'data': { 'S_name': 99 },
-          'name': 'S_name is not string, fails both properties and pattern',
-          'valid': false
-        },
-        {
-          'data': { 'S_other': 42 },
-          'name': 'S_other matches pattern but wrong type',
-          'valid': false
-        },
-        {
-          'data': { 'S_other': 'ok' },
-          'name': 'S_other matches pattern with correct type',
-          'valid': true
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/PropAndPattern', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+    propAndPatternRegistry.set({
+      '$id': 'https://pattern.test/PropAndPattern',
+      'patternProperties': { '^S_': { 'type': 'string' } },
+      'properties': { 'S_name': { 'type': 'string' } },
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': { 'S_name': 'Alice' },
+        'name': 'S_name is string, satisfies both properties and pattern',
+        'valid': true
+      },
+      {
+        'data': { 'S_name': 99 },
+        'expectedKeyword': 'type' as const,
+        'name': 'S_name is not string, fails both properties and pattern',
+        'valid': false
+      },
+      {
+        'data': { 'S_other': 42 },
+        'expectedKeyword': 'type' as const,
+        'name': 'S_other matches pattern but wrong type',
+        'valid': false
+      },
+      {
+        'data': { 'S_other': 'ok' },
+        'name': 'S_other matches pattern with correct type',
+        'valid': true
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = propAndPatternRegistry.validate('https://pattern.test/PropAndPattern', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -1971,93 +2200,103 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with additionalProperties schema', () => {
-    void it('applies additionalProperties schema to keys not matching any pattern', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const additionalSchemaRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/AdditionalSchema',
-        'additionalProperties': { 'type': 'boolean' },
-        'patternProperties': { '^S_': { 'type': 'string' } },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'S_val': 'ok' },
-          'name': 'pattern-matched key with valid type',
-          'valid': true
-        },
-        {
-          'data': { 'flag': true },
-          'name': 'unmatched key satisfies additionalProperties boolean',
-          'valid': true
-        },
-        {
-          'data': { 'flag': 'not-a-boolean' },
-          'name': 'unmatched key violates additionalProperties boolean',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/AdditionalSchema', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+    additionalSchemaRegistry.set({
+      '$id': 'https://pattern.test/AdditionalSchema',
+      'additionalProperties': { 'type': 'boolean' },
+      'patternProperties': { '^S_': { 'type': 'string' } },
+      'type': 'object'
     });
 
-    void it('allows explicit properties alongside pattern-matched properties', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.set({
-        '$id': 'https://pattern.test/ExplicitAndPattern',
-        'additionalProperties': { 'type': 'boolean' },
-        'patternProperties': { '^x_': { 'type': 'number' } },
-        'properties': { 'name': { 'type': 'string' } },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'name': 'Alice',
-            'x_score': 10
-          },
-          'name': 'explicit property + pattern-matched key both valid',
-          'valid': true
-        },
-        {
-          'data': {
-            'name': 'Alice',
-            'unknown': 'not-bool'
-          },
-          'name': 'unknown key fails additionalProperties boolean',
-          'valid': false
-        },
-        {
-          'data': {
-            'extra': true,
-            'name': 'Alice'
-          },
-          'name': 'unknown key satisfies additionalProperties boolean',
-          'valid': true
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/ExplicitAndPattern', data);
-
-        assert.equal(errors.length === 0, valid, name);
+    for (const scenario of [
+      {
+        'data': { 'S_val': 'ok' },
+        'name': 'pattern-matched key with valid type',
+        'valid': true
+      },
+      {
+        'data': { 'flag': true },
+        'name': 'unmatched key satisfies additionalProperties boolean',
+        'valid': true
+      },
+      {
+        'data': { 'flag': 'not-a-boolean' },
+        'expectedKeyword': 'type' as const,
+        'name': 'unmatched key violates additionalProperties boolean',
+        'valid': false
       }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = additionalSchemaRegistry.validate('https://pattern.test/AdditionalSchema', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    const explicitAndPatternRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+    explicitAndPatternRegistry.set({
+      '$id': 'https://pattern.test/ExplicitAndPattern',
+      'additionalProperties': { 'type': 'boolean' },
+      'patternProperties': { '^x_': { 'type': 'number' } },
+      'properties': { 'name': { 'type': 'string' } },
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'name': 'Alice',
+          'x_score': 10
+        },
+        'name': 'explicit property + pattern-matched key both valid',
+        'valid': true
+      },
+      {
+        'data': {
+          'name': 'Alice',
+          'unknown': 'not-bool'
+        },
+        'expectedKeyword': 'type' as const,
+        'name': 'unknown key fails additionalProperties boolean',
+        'valid': false
+      },
+      {
+        'data': {
+          'extra': true,
+          'name': 'Alice'
+        },
+        'name': 'unknown key satisfies additionalProperties boolean',
+        'valid': true
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = explicitAndPatternRegistry.validate('https://pattern.test/ExplicitAndPattern', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -2065,45 +2304,39 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with additionalProperties false', () => {
-    void it('allows only keys matching patterns when additionalProperties is false', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const patternFalseRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/PatternFalse',
-        'additionalProperties': false,
-        'patternProperties': {
-          '^I_': { 'type': 'integer' },
-          '^S_': { 'type': 'string' }
-        },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'I_count': 1,
-            'S_name': 'ok'
-          },
-          'name': 'keys matching patterns are allowed',
-          'valid': true
-        },
-        {
-          'data': {},
-          'name': 'empty object is valid',
-          'valid': true
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/PatternFalse', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+    patternFalseRegistry.set({
+      '$id': 'https://pattern.test/PatternFalse',
+      'additionalProperties': false,
+      'patternProperties': {
+        '^I_': { 'type': 'integer' },
+        '^S_': { 'type': 'string' }
+      },
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'I_count': 1,
+          'S_name': 'ok'
+        },
+        'name': 'keys matching patterns are allowed',
+        'valid': true
+      },
+      {
+        'data': {},
+        'name': 'empty object is valid',
+        'valid': true
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = patternFalseRegistry.validate('https://pattern.test/PatternFalse', scenario.data);
+
+        assert.equal(errors.length, 0, scenario.name);
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -2111,87 +2344,97 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with complex regex patterns', () => {
-    void it('validates type constraints with anchored digit-only pattern', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const digitKeysRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/DigitKeys',
-        'patternProperties': { '^\\d+$': { 'type': 'string' } },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            '0': 'zero',
-            '123': 'value'
-          },
-          'name': 'digit keys with valid string values',
-          'valid': true
-        },
-        {
-          'data': { '123': 42 },
-          'name': 'digit key with wrong type (number instead of string)',
-          'valid': false
-        },
-        {
-          'data': { 'abc': 'text' },
-          'name': 'edge: non-digit key does not match ^\\d+$ pattern — passes',
-          'valid': true
-        },
-        {
-          'data': { '': 'empty-key' },
-          'name': 'edge: empty string key does not match ^\\d+$ pattern',
-          'valid': true
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/DigitKeys', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+    digitKeysRegistry.set({
+      '$id': 'https://pattern.test/DigitKeys',
+      'patternProperties': { '^\\d+$': { 'type': 'string' } },
+      'type': 'object'
     });
 
-    void it('validates type constraints with dot-separated key pattern', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.set({
-        '$id': 'https://pattern.test/DotSep',
-        'patternProperties': { '^[a-z]+(\\.[a-z]+)*$': { 'type': 'string' } },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'app': 'v1',
-            'app.server.host': 'localhost'
-          },
-          'name': 'dot-separated keys with valid string values',
-          'valid': true
+    for (const scenario of [
+      {
+        'data': {
+          '0': 'zero',
+          '123': 'value'
         },
-        {
-          'data': { 'app': 123 },
-          'name': 'matching key with wrong type (number instead of string)',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/DotSep', data);
-
-        assert.equal(errors.length === 0, valid, name);
+        'name': 'digit keys with valid string values',
+        'valid': true
+      },
+      {
+        'data': { '123': 42 },
+        'expectedKeyword': 'type' as const,
+        'name': 'digit key with wrong type (number instead of string)',
+        'valid': false
+      },
+      {
+        'data': { 'abc': 'text' },
+        'name': 'edge: non-digit key does not match ^\\d+$ pattern — passes',
+        'valid': true
+      },
+      {
+        'data': { '': 'empty-key' },
+        'name': 'edge: empty string key does not match ^\\d+$ pattern',
+        'valid': true
       }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = digitKeysRegistry.validate('https://pattern.test/DigitKeys', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    const dotSepRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+    dotSepRegistry.set({
+      '$id': 'https://pattern.test/DotSep',
+      'patternProperties': { '^[a-z]+(\\.[a-z]+)*$': { 'type': 'string' } },
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'app': 'v1',
+          'app.server.host': 'localhost'
+        },
+        'name': 'dot-separated keys with valid string values',
+        'valid': true
+      },
+      {
+        'data': { 'app': 123 },
+        'expectedKeyword': 'type' as const,
+        'name': 'matching key with wrong type (number instead of string)',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = dotSepRegistry.validate('https://pattern.test/DotSep', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -2199,45 +2442,50 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties where every key matches the pattern', () => {
-    void it('validates when all keys conform to the single pattern schema', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const allMatchRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/AllMatch',
-        'patternProperties': { '^field_': { 'type': 'number' } },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'field_a': 1,
-            'field_b': 2,
-            'field_c': 3
-          },
-          'name': 'all keys match pattern with valid types',
-          'valid': true
-        },
-        {
-          'data': {
-            'field_a': 1,
-            'field_b': 'two'
-          },
-          'name': 'one key has wrong type',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/AllMatch', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+    allMatchRegistry.set({
+      '$id': 'https://pattern.test/AllMatch',
+      'patternProperties': { '^field_': { 'type': 'number' } },
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'field_a': 1,
+          'field_b': 2,
+          'field_c': 3
+        },
+        'name': 'all keys match pattern with valid types',
+        'valid': true
+      },
+      {
+        'data': {
+          'field_a': 1,
+          'field_b': 'two'
+        },
+        'expectedKeyword': 'type' as const,
+        'name': 'one key has wrong type',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = allMatchRegistry.validate('https://pattern.test/AllMatch', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -2245,68 +2493,61 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with no matching keys', () => {
-    void it('treats unmatched keys per additionalProperties schema constraint', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const noMatchRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/NoMatch',
-        'additionalProperties': { 'type': 'boolean' },
-        'patternProperties': { '^x_': { 'type': 'string' } },
-        'type': 'object'
-      });
+    noMatchRegistry.set({
+      '$id': 'https://pattern.test/NoMatch',
+      'additionalProperties': { 'type': 'boolean' },
+      'patternProperties': { '^x_': { 'type': 'string' } },
+      'type': 'object'
+    });
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'flag': true,
-            'other': false
-          },
-          'name': 'all unmatched keys satisfy additionalProperties boolean',
-          'valid': true
+    for (const scenario of [
+      {
+        'data': {
+          'flag': true,
+          'other': false
         },
-        {
-          'data': { 'flag': 'not-a-boolean' },
-          'name': 'unmatched key violates additionalProperties boolean',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/NoMatch', data);
-
-        assert.equal(errors.length === 0, valid, name);
+        'name': 'all unmatched keys satisfy additionalProperties boolean',
+        'valid': true
+      },
+      {
+        'data': { 'flag': 'not-a-boolean' },
+        'expectedKeyword': 'type' as const,
+        'name': 'unmatched key violates additionalProperties boolean',
+        'valid': false
       }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = noMatchRegistry.validate('https://pattern.test/NoMatch', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    const noMatchEmptyRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+    noMatchEmptyRegistry.set({
+      '$id': 'https://pattern.test/NoMatchEmpty',
+      'additionalProperties': false,
+      'patternProperties': { '^zzz_': { 'type': 'string' } },
+      'type': 'object'
     });
 
     void it('accepts empty objects regardless of pattern configuration', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const errors = noMatchEmptyRegistry.validate('https://pattern.test/NoMatchEmpty', {});
 
-      registry.set({
-        '$id': 'https://pattern.test/NoMatchEmpty',
-        'additionalProperties': false,
-        'patternProperties': { '^zzz_': { 'type': 'string' } },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [{
-        'data': {},
-        'name': 'empty object with additionalProperties false',
-        'valid': true
-      }];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/NoMatchEmpty', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+      assert.equal(errors.length, 0, 'empty object with additionalProperties false');
     });
   });
 
@@ -2315,78 +2556,85 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with nested object schemas', () => {
-    void it('validates pattern property values against referenced nested object constraints', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const nestedRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$defs': {
-          'Addr': {
-            'properties': {
-              'city': { 'type': 'string' },
-              'zip': {
-                'pattern': '^\\d{5}$',
-                'type': 'string'
-              }
-            },
-            'required': [
-              'city',
-              'zip'
-            ],
-            'type': 'object'
+    nestedRegistry.set({
+      '$defs': {
+        'Addr': {
+          'properties': {
+            'city': { 'type': 'string' },
+            'zip': {
+              'pattern': '^\\d{5}$',
+              'type': 'string'
+            }
+          },
+          'required': [
+            'city',
+            'zip'
+          ],
+          'type': 'object'
+        }
+      },
+      '$id': 'https://pattern.test/Nested',
+      'patternProperties': { '^addr_': { '$ref': '#/$defs/Addr' } },
+      'type': 'object'
+    });
+
+    for (const scenario of [
+      {
+        'data': {
+          'addr_home': {
+            'city': 'Springfield',
+            'zip': '62704'
+          },
+          'addr_work': {
+            'city': 'Shelbyville',
+            'zip': '62565'
           }
         },
-        '$id': 'https://pattern.test/Nested',
-        'patternProperties': { '^addr_': { '$ref': '#/$defs/Addr' } },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'addr_home': {
-              'city': 'Springfield',
-              'zip': '62704'
-            },
-            'addr_work': {
-              'city': 'Shelbyville',
-              'zip': '62565'
-            }
-          },
-          'name': 'multiple valid nested address objects',
-          'valid': true
+        'name': 'multiple valid nested address objects',
+        'valid': true
+      },
+      {
+        'data': { 'addr_home': { 'city': 'Springfield' } },
+        'expectedKeyword': 'required' as const,
+        'name': 'missing required zip in nested object',
+        'valid': false
+      },
+      {
+        'data': {
+          'addr_home': {
+            'city': 'Springfield',
+            'zip': 'bad'
+          }
         },
-        {
-          'data': { 'addr_home': { 'city': 'Springfield' } },
-          'name': 'missing required zip in nested object',
-          'valid': false
-        },
-        {
-          'data': {
-            'addr_home': {
-              'city': 'Springfield',
-              'zip': 'bad'
-            }
-          },
-          'name': 'invalid zip pattern in nested object',
-          'valid': false
-        },
-        {
-          'data': { 'addr_home': 'not an object' },
-          'name': 'non-object value for pattern-matched key expecting object',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/Nested', data);
-
-        assert.equal(errors.length === 0, valid, name);
+        'expectedKeyword': 'pattern' as const,
+        'name': 'invalid zip pattern in nested object',
+        'valid': false
+      },
+      {
+        'data': { 'addr_home': 'not an object' },
+        'expectedKeyword': 'type' as const,
+        'name': 'non-object value for pattern-matched key expecting object',
+        'valid': false
       }
-    });
+    ]) {
+      void it(scenario.name, () => {
+        const errors = nestedRegistry.validate('https://pattern.test/Nested', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -2394,56 +2642,62 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties interaction with required', () => {
-    void it('required applies to named keys only, not to patterns', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const withRequiredRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/WithRequired',
-        'patternProperties': { '^opt_': { 'type': 'string' } },
-        'properties': { 'id': { 'type': 'string' } },
-        'required': ['id'],
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'id': 'abc' },
-          'name': 'required id present, no pattern-matched keys needed',
-          'valid': true
-        },
-        {
-          'data': {
-            'id': 'abc',
-            'opt_label': 'hello'
-          },
-          'name': 'required id present plus valid pattern-matched key',
-          'valid': true
-        },
-        {
-          'data': { 'opt_label': 'hello' },
-          'name': 'missing required id',
-          'valid': false
-        },
-        {
-          'data': {
-            'id': 'abc',
-            'opt_count': 99
-          },
-          'name': 'required id present but pattern-matched key has wrong type',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/WithRequired', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+    withRequiredRegistry.set({
+      '$id': 'https://pattern.test/WithRequired',
+      'patternProperties': { '^opt_': { 'type': 'string' } },
+      'properties': { 'id': { 'type': 'string' } },
+      'required': ['id'],
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': { 'id': 'abc' },
+        'name': 'required id present, no pattern-matched keys needed',
+        'valid': true
+      },
+      {
+        'data': {
+          'id': 'abc',
+          'opt_label': 'hello'
+        },
+        'name': 'required id present plus valid pattern-matched key',
+        'valid': true
+      },
+      {
+        'data': { 'opt_label': 'hello' },
+        'expectedKeyword': 'required' as const,
+        'name': 'missing required id',
+        'valid': false
+      },
+      {
+        'data': {
+          'id': 'abc',
+          'opt_count': 99
+        },
+        'expectedKeyword': 'type' as const,
+        'name': 'required id present but pattern-matched key has wrong type',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = withRequiredRegistry.validate('https://pattern.test/WithRequired', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -2451,98 +2705,110 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with exclusive non-overlapping patterns', () => {
-    void it('applies each pattern schema only to its own matching keys', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const exclusiveRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.set({
-        '$id': 'https://pattern.test/Exclusive',
-        'patternProperties': {
-          '^bool_': { 'type': 'boolean' },
-          '^num_': { 'type': 'number' },
-          '^str_': { 'type': 'string' }
-        },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'bool_active': true,
-            'num_score': 95,
-            'str_name': 'Alice'
-          },
-          'name': 'all three patterns satisfied with correct types',
-          'valid': true
-        },
-        {
-          'data': { 'str_name': 123 },
-          'name': 'str_ key with wrong type (number)',
-          'valid': false
-        },
-        {
-          'data': { 'num_score': 'high' },
-          'name': 'num_ key with wrong type (string)',
-          'valid': false
-        },
-        {
-          'data': { 'bool_active': 'yes' },
-          'name': 'bool_ key with wrong type (string)',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/Exclusive', data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
+    exclusiveRegistry.set({
+      '$id': 'https://pattern.test/Exclusive',
+      'patternProperties': {
+        '^bool_': { 'type': 'boolean' },
+        '^num_': { 'type': 'number' },
+        '^str_': { 'type': 'string' }
+      },
+      'type': 'object'
     });
 
-    void it('handles mixed valid and invalid keys across exclusive patterns', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.set({
-        '$id': 'https://pattern.test/ExclusiveMixed',
-        'patternProperties': {
-          '^ct_': { 'type': 'integer' },
-          '^nm_': { 'type': 'string' }
+    for (const scenario of [
+      {
+        'data': {
+          'bool_active': true,
+          'num_score': 95,
+          'str_name': 'Alice'
         },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'ct_items': 10,
-            'nm_first': 'Ada'
-          },
-          'name': 'both patterns satisfied',
-          'valid': true
-        },
-        {
-          'data': {
-            'ct_items': 'ten',
-            'nm_first': 'Ada'
-          },
-          'name': 'ct_ key has wrong type (string instead of integer)',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate('https://pattern.test/ExclusiveMixed', data);
-
-        assert.equal(errors.length === 0, valid, name);
+        'name': 'all three patterns satisfied with correct types',
+        'valid': true
+      },
+      {
+        'data': { 'str_name': 123 },
+        'expectedKeyword': 'type' as const,
+        'name': 'str_ key with wrong type (number)',
+        'valid': false
+      },
+      {
+        'data': { 'num_score': 'high' },
+        'expectedKeyword': 'type' as const,
+        'name': 'num_ key with wrong type (string)',
+        'valid': false
+      },
+      {
+        'data': { 'bool_active': 'yes' },
+        'expectedKeyword': 'type' as const,
+        'name': 'bool_ key with wrong type (string)',
+        'valid': false
       }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = exclusiveRegistry.validate('https://pattern.test/Exclusive', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
+
+    const exclusiveMixedRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+    exclusiveMixedRegistry.set({
+      '$id': 'https://pattern.test/ExclusiveMixed',
+      'patternProperties': {
+        '^ct_': { 'type': 'integer' },
+        '^nm_': { 'type': 'string' }
+      },
+      'type': 'object'
     });
+
+    for (const scenario of [
+      {
+        'data': {
+          'ct_items': 10,
+          'nm_first': 'Ada'
+        },
+        'name': 'both patterns satisfied',
+        'valid': true
+      },
+      {
+        'data': {
+          'ct_items': 'ten',
+          'nm_first': 'Ada'
+        },
+        'expectedKeyword': 'type' as const,
+        'name': 'ct_ key has wrong type (string instead of integer)',
+        'valid': false
+      }
+    ]) {
+      void it(scenario.name, () => {
+        const errors = exclusiveMixedRegistry.validate('https://pattern.test/ExclusiveMixed', scenario.data);
+
+        if (scenario.valid) {
+          assert.equal(errors.length, 0, scenario.name);
+        } else {
+          assert.ok(errors.length > 0, `${scenario.name}: expected errors`);
+          assert.ok(
+            errors.items.some((err) => {
+              return err.keyword === scenario.expectedKeyword;
+            }),
+            `${scenario.name}: expected keyword '${scenario.expectedKeyword}'`
+          );
+        }
+      });
+    }
   });
 }
 
@@ -3996,6 +4262,29 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 }
 
 // ===========================================================================
+// Test helpers — exec context factory
+// ===========================================================================
+
+function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefaults = false, doCoerce = false, stripUnknown = false): ExecContextType {
+  return {
+    applyDefaults,
+    collectErrors,
+    'depth': 0,
+    doCoerce,
+    'dynamicScope': [],
+    errors,
+    'evaluatedItems': undefined,
+    'evaluatedProperties': undefined,
+    'ignoreAdditionalProperties': false,
+    'maxDepth': 100,
+    'refStack': new Set(),
+    stripUnknown,
+    'synthesizeDefaults': false,
+    'trackEvaluated': true
+  };
+}
+
+// ===========================================================================
 // Source: arrays.test.ts
 // ===========================================================================
 {
@@ -4005,9 +4294,9 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       value
     };
   };
-  const failing: ValidateWithErrorsFnType = (value, path, errors, collectErrors) => {
-    if (collectErrors) {
-      errors.push(BaseError.validationError(path, 'type', 'mock'));
+  const failing: ValidateWithErrorsFnType = (value, path, ctx) => {
+    if (ctx.collectErrors) {
+      ctx.errors.push(BaseError.validationError(path, 'type', 'mock'));
     }
 
     return {
@@ -4015,14 +4304,12 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       value
     };
   };
-  const passingCheck: CheckFnType = () => {
-    return true;
-  };
-  const failingCheck: CheckFnType = () => {
-    return false;
-  };
-  const oneMatch: CheckFnType = (value) => {
-    return value === 1;
+
+  const oneMatchValidator: ValidateWithErrorsFnType = (value: unknown) => {
+    return {
+      'valid': value === 1,
+      value
+    };
   };
 
   void describe('Arrays — Good/Bad/Ugly', () => {
@@ -4085,12 +4372,12 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     });
 
     void it('validateContains: undefined, match, no-match, minContains, maxContains', () => {
-      // Good: no containsCheck = valid
+      // Good: no containsValidator = valid
       const e1: ValidationErrorType[] = [];
       const r1 = Arrays.validateContains('/a', [
         1,
         2
-      ], undefined, undefined, undefined, e1);
+      ], undefined, undefined, undefined, makeCtx(e1, true), e1);
 
       assert.equal(r1, true);
       assert.equal(e1.length, 0);
@@ -4101,7 +4388,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         1,
         2,
         3
-      ], passingCheck, undefined, undefined, e2);
+      ], passing, undefined, undefined, makeCtx(e2, true), e2);
 
       assert.equal(r2, true);
       assert.equal(e2.length, 0);
@@ -4112,7 +4399,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         1,
         2,
         3
-      ], failingCheck, undefined, undefined, e3);
+      ], failing, undefined, undefined, makeCtx(e3, true), e3);
 
       assert.equal(r3, false);
       assert.equal(e3.length, 1);
@@ -4124,7 +4411,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         1,
         2,
         3
-      ], oneMatch, 2, undefined, e4);
+      ], oneMatchValidator, 2, undefined, makeCtx(e4, true), e4);
 
       assert.equal(r4, false);
       assert.equal(e4.length, 1);
@@ -4136,7 +4423,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         1,
         2,
         3
-      ], passingCheck, undefined, 2, e5);
+      ], passing, undefined, 2, makeCtx(e5, true), e5);
 
       assert.equal(r5, false);
       assert.equal(e5.length, 1);
@@ -4149,7 +4436,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r1 = Arrays.validateItems('/a', [
         1,
         2
-      ], undefined, undefined, e1, false, false, false, false);
+      ], undefined, undefined, makeCtx(e1, false));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
@@ -4160,7 +4447,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         1,
         2,
         3
-      ], passing, undefined, e2, false, false, false, false);
+      ], passing, undefined, makeCtx(e2, false));
 
       assert.equal(r2.valid, true);
       assert.equal(r2.earlyExit, false);
@@ -4170,7 +4457,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r3 = Arrays.validateItems('/a', [
         1,
         2
-      ], failing, undefined, e3, false, false, false, false);
+      ], failing, undefined, makeCtx(e3, false));
 
       assert.equal(r3.valid, false);
       assert.equal(r3.earlyExit, true);
@@ -4180,7 +4467,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r4 = Arrays.validateItems('/a', [
         1,
         2
-      ], failing, undefined, e4, true, false, false, false);
+      ], failing, undefined, makeCtx(e4, true));
 
       assert.equal(r4.valid, false);
       assert.equal(r4.earlyExit, false);
@@ -4196,7 +4483,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ], passing, [
         passing,
         passing
-      ], e5, false, false, false, false);
+      ], makeCtx(e5, false));
 
       assert.equal(r5.valid, true);
       assert.equal(r5.earlyExit, false);
@@ -4208,7 +4495,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r1 = Arrays.validatePrefixItems('/a', [
         1,
         2
-      ], undefined, e1, false, false, false, false);
+      ], undefined, makeCtx(e1, false));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
@@ -4222,7 +4509,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ], [
         passing,
         passing
-      ], e2, false, false, false, false);
+      ], makeCtx(e2, false));
 
       assert.equal(r2.valid, true);
       assert.equal(r2.earlyExit, false);
@@ -4235,7 +4522,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ], [
         failing,
         passing
-      ], e3, false, false, false, false);
+      ], makeCtx(e3, false));
 
       assert.equal(r3.valid, false);
       assert.equal(r3.earlyExit, true);
@@ -4248,7 +4535,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ], [
         failing,
         failing
-      ], e4, true, false, false, false);
+      ], makeCtx(e4, true));
 
       assert.equal(r4.valid, false);
       assert.equal(r4.earlyExit, false);
@@ -4271,9 +4558,9 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   const failingValidatorImpl: ValidateWithErrorsFnType = (
     value: unknown,
     path: string,
-    errors: ValidationErrorType[]
+    ctx: ExecContextType
   ) => {
-    errors.push({
+    ctx.errors.push({
       'instancePath': path,
       'keyword': 'type',
       'message': 'mock failure',
@@ -4353,7 +4640,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validateDependentRequired: empty, trigger+dep, trigger+miss, non-object, earlyExit', () => {
       // Good: no entries = valid
       const e1: ValidationErrorType[] = [];
-      const r1 = Objects.validateDependentRequired('', { 'a': 1 }, [], e1, true);
+      const r1 = Objects.validateDependentRequired('', { 'a': 1 }, [], makeCtx(e1, true));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
@@ -4367,7 +4654,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       }, [[
         'a',
         ['b']
-      ]], e2, true);
+      ]], makeCtx(e2, true));
 
       assert.equal(r2.valid, true);
       assert.equal(e2.length, 0);
@@ -4377,7 +4664,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r3 = Objects.validateDependentRequired('', { 'a': 1 }, [[
         'a',
         ['b']
-      ]], e3, true);
+      ]], makeCtx(e3, true));
 
       assert.equal(r3.valid, false);
       assert.equal(e3.length, 1);
@@ -4387,7 +4674,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r4 = Objects.validateDependentRequired('', 'not-an-object', [[
         'a',
         ['b']
-      ]], e4, true);
+      ]], makeCtx(e4, true));
 
       assert.equal(r4.valid, true);
 
@@ -4399,7 +4686,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'b',
           'c'
         ]
-      ]], e5, false);
+      ]], makeCtx(e5, false));
 
       assert.equal(r5.valid, false);
       assert.equal(r5.earlyExit, true);
@@ -4462,19 +4749,19 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
       // validatePropertyNames
       const e1: ValidationErrorType[] = [];
-      const rn1 = Objects.validatePropertyNames('', { 'a': 1 }, undefined, e1, true);
+      const rn1 = Objects.validatePropertyNames('', { 'a': 1 }, undefined, makeCtx(e1, true));
 
       assert.equal(rn1.valid, true);
       assert.equal(rn1.earlyExit, false);
 
       const e2: ValidationErrorType[] = [];
-      const rn2 = Objects.validatePropertyNames('', { 'ok': 1 }, passingValidator(), e2, true);
+      const rn2 = Objects.validatePropertyNames('', { 'ok': 1 }, passingValidator(), makeCtx(e2, true));
 
       assert.equal(rn2.valid, true);
       assert.equal(rn2.earlyExit, false);
 
       const e3: ValidationErrorType[] = [];
-      const rn3 = Objects.validatePropertyNames('', { 'bad': 1 }, failingValidator(), e3, true);
+      const rn3 = Objects.validatePropertyNames('', { 'bad': 1 }, failingValidator(), makeCtx(e3, true));
 
       assert.equal(rn3.valid, false);
       assert.equal(e3.length, 1);
@@ -4492,14 +4779,14 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r1 = Objects.validateProperties('', { 'name': 'Alice' }, new Map([[
         'name',
         passingValidator()
-      ]]), undefined, false, undefined, undefined, false, emptyDefaults(), e1, true, false, false);
+      ]]), undefined, false, undefined, undefined, false, emptyDefaults(), makeCtx(e1, true));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
 
       // Bad: invalid for unknown property with additionalIsFalse
       const e2: ValidationErrorType[] = [];
-      const r2 = Objects.validateProperties('', { 'extra': 'bad' }, new Map(), undefined, true, undefined, undefined, false, emptyDefaults(), e2, true, false, false);
+      const r2 = Objects.validateProperties('', { 'extra': 'bad' }, new Map(), undefined, true, undefined, undefined, false, emptyDefaults(), makeCtx(e2, true));
 
       assert.equal(r2.valid, false);
       assert.equal(e2.length, 1);
@@ -4514,7 +4801,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       Objects.validateProperties('', obj3, new Map([[
         'name',
         passingValidator()
-      ]]), undefined, false, undefined, new Set(['name']), true, emptyDefaults(), e3, true, false, false);
+      ]]), undefined, false, undefined, new Set(['name']), true, emptyDefaults(), makeCtx(e3, true, false, false, true), new Set(['name']));
       assert.equal('extra' in obj3, false);
       assert.equal(obj3.name, 'Alice');
 
@@ -4524,7 +4811,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r4 = Objects.validateProperties('', obj4, new Map(), [{
         'regex': /^x-/u,
         'validator': coercingValidator('coerced')
-      }], false, undefined, undefined, false, emptyDefaults(), e4, true, false, false);
+      }], false, undefined, undefined, false, emptyDefaults(), makeCtx(e4, true));
 
       assert.equal(r4.valid, true);
       assert.equal(obj4['x-custom'], 'coerced');
@@ -4717,9 +5004,9 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   const failingValidatorImpl: ValidateWithErrorsFnType = (
     value: unknown,
     path: string,
-    errors: ValidationErrorType[]
+    ctx: ExecContextType
   ) => {
-    errors.push({
+    ctx.errors.push({
       'instancePath': path,
       'keyword': 'type',
       'message': 'mock failure',
@@ -4740,18 +5027,10 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     return failingValidatorImpl;
   }
 
-  const alwaysTrue: CheckFnType = (_: unknown): boolean => {
-    return true;
-  };
-
-  const alwaysFalse: CheckFnType = (_: unknown): boolean => {
-    return false;
-  };
-
   void describe('Composition — Good/Bad/Ugly', () => {
     void it('validateAllOf: undefined, all-pass, earlyExit, collect-errors', () => {
       const e1: ValidationErrorType[] = [];
-      const r1 = Composition.validateAllOf('test', '', undefined, e1, true, false, false);
+      const r1 = Composition.validateAllOf('test', '', undefined, makeCtx(e1, true));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
@@ -4761,7 +5040,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r2 = Composition.validateAllOf('test', '', [
         passingValidator(),
         passingValidator()
-      ], e2, true, false, false);
+      ], makeCtx(e2, true));
 
       assert.equal(r2.valid, true);
       assert.equal(r2.earlyExit, false);
@@ -4770,7 +5049,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r3 = Composition.validateAllOf('test', '/root', [
         passingValidator(),
         failingValidator()
-      ], e3, false, false, false);
+      ], makeCtx(e3, false));
 
       assert.equal(r3.valid, false);
       assert.equal(r3.earlyExit, true);
@@ -4779,7 +5058,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r4 = Composition.validateAllOf('test', '/root', [
         passingValidator(),
         failingValidator()
-      ], e4, true, false, false);
+      ], makeCtx(e4, true));
 
       assert.equal(r4.valid, false);
       assert.equal(r4.earlyExit, false);
@@ -4789,91 +5068,98 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validateAnyOf + validateOneOf + validateNot: table-driven', () => {
       // anyOf
       const ea1: ValidationErrorType[] = [];
+      const ra1 = Composition.validateAnyOf('', 'test', undefined, makeCtx(ea1, true));
 
-      assert.equal(Composition.validateAnyOf('', 'test', undefined, ea1), true);
+      assert.equal(ra1.valid, true);
 
       const ea2: ValidationErrorType[] = [];
+      const ra2 = Composition.validateAnyOf('', 'test', [
+        failingValidator(),
+        passingValidator()
+      ], makeCtx(ea2, true));
 
-      assert.equal(Composition.validateAnyOf('', 'test', [
-        alwaysFalse,
-        alwaysTrue
-      ], ea2), true);
+      assert.equal(ra2.valid, true);
 
       const ea3: ValidationErrorType[] = [];
+      const ra3 = Composition.validateAnyOf('/root', 'test', [
+        failingValidator(),
+        failingValidator()
+      ], makeCtx(ea3, true));
 
-      assert.equal(Composition.validateAnyOf('/root', 'test', [
-        alwaysFalse,
-        alwaysFalse
-      ], ea3), false);
+      assert.equal(ra3.valid, false);
 
       // oneOf
       const eo1: ValidationErrorType[] = [];
+      const ro1 = Composition.validateOneOf('', 'test', undefined, makeCtx(eo1, true));
 
-      assert.equal(Composition.validateOneOf('', 'test', undefined, eo1), true);
+      assert.equal(ro1.valid, true);
 
       const eo2: ValidationErrorType[] = [];
+      const ro2 = Composition.validateOneOf('', 'test', [
+        failingValidator(),
+        passingValidator(),
+        failingValidator()
+      ], makeCtx(eo2, true));
 
-      assert.equal(Composition.validateOneOf('', 'test', [
-        alwaysFalse,
-        alwaysTrue,
-        alwaysFalse
-      ], eo2), true);
+      assert.equal(ro2.valid, true);
 
       const eo3: ValidationErrorType[] = [];
+      const ro3 = Composition.validateOneOf('/root', 'test', [
+        failingValidator(),
+        failingValidator()
+      ], makeCtx(eo3, true));
 
-      assert.equal(Composition.validateOneOf('/root', 'test', [
-        alwaysFalse,
-        alwaysFalse
-      ], eo3), false);
+      assert.equal(ro3.valid, false);
 
       const eo4: ValidationErrorType[] = [];
+      const ro4 = Composition.validateOneOf('/root', 'test', [
+        passingValidator(),
+        passingValidator()
+      ], makeCtx(eo4, true));
 
-      assert.equal(Composition.validateOneOf('/root', 'test', [
-        alwaysTrue,
-        alwaysTrue
-      ], eo4), false);
+      assert.equal(ro4.valid, false);
 
       // not
       const en1: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateNot('', 'test', undefined, en1), true);
+      assert.equal(Composition.validateNot('', 'test', undefined, makeCtx(en1, true)), true);
 
       const en2: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateNot('', 'test', alwaysFalse, en2), true);
+      assert.equal(Composition.validateNot('', 'test', failingValidator(), makeCtx(en2, true)), true);
 
       const en3: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateNot('/root', 'test', alwaysTrue, en3), false);
+      assert.equal(Composition.validateNot('/root', 'test', passingValidator(), makeCtx(en3, true)), false);
     });
 
     void it('validateIfThenElse + validateDependentSchemas + validateCustomKeywords', () => {
       // validateIfThenElse
       const ei1: ValidationErrorType[] = [];
-      const rite1 = Composition.validateIfThenElse('test', '', undefined, undefined, undefined, ei1, true, false, false, false);
+      const rite1 = Composition.validateIfThenElse('test', '', undefined, undefined, undefined, makeCtx(ei1, true));
 
       assert.equal(rite1.valid, true);
       assert.equal(rite1.value, 'test');
 
       const ei2: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '', alwaysTrue, passingValidator(), undefined, ei2, true, false, false, false).valid, true);
+      assert.equal(Composition.validateIfThenElse('test', '', passingValidator(), passingValidator(), undefined, makeCtx(ei2, true)).valid, true);
 
       const ei3: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '/root', alwaysTrue, failingValidator(), undefined, ei3, true, false, false, false).valid, false);
+      assert.equal(Composition.validateIfThenElse('test', '/root', passingValidator(), failingValidator(), undefined, makeCtx(ei3, true)).valid, false);
 
       const ei4: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, passingValidator(), ei4, true, false, false, false).valid, true);
+      assert.equal(Composition.validateIfThenElse('test', '', failingValidator(), undefined, passingValidator(), makeCtx(ei4, true)).valid, true);
 
       const ei5: ValidationErrorType[] = [];
 
-      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, undefined, ei5, true, false, false, false).valid, true);
+      assert.equal(Composition.validateIfThenElse('test', '', failingValidator(), undefined, undefined, makeCtx(ei5, true)).valid, true);
 
       // validateDependentSchemas
       const ed1: ValidationErrorType[] = [];
-      const rds1 = Composition.validateDependentSchemas({ 'a': 1 }, '', undefined, ed1, true, false, false, false);
+      const rds1 = Composition.validateDependentSchemas({ 'a': 1 }, '', undefined, makeCtx(ed1, true));
 
       assert.equal(rds1.valid, true);
       assert.equal(rds1.earlyExit, false);
@@ -4882,7 +5168,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const rds2 = Composition.validateDependentSchemas({ 'a': 1 }, '', [{
         'trigger': 'a',
         'validator': passingValidator()
-      }], ed2, true, false, false, false);
+      }], makeCtx(ed2, true));
 
       assert.equal(rds2.valid, true);
       assert.equal(rds2.earlyExit, false);
@@ -4891,7 +5177,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const rds3 = Composition.validateDependentSchemas('not-an-object', '', [{
         'trigger': 'a',
         'validator': failingValidator()
-      }], ed3, true, false, false, false);
+      }], makeCtx(ed3, true));
 
       assert.equal(rds3.valid, true);
 

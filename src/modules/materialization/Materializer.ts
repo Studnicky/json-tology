@@ -1,4 +1,3 @@
-import type { GraphExecutionResultType } from '../../types/GraphEngine.js';
 import type {
   MaterializationResultType, MaterializerOptionsType
 } from '../../types/Materializer.js';
@@ -11,27 +10,26 @@ import type { InferSchemaType } from '../../types/Infer.js';
 import type { AboxOptionsType } from '../../types/AboxOptions.js';
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
+import type { ValidationErrorType } from '../../types/Validation.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
-import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
-import { SchemaIri } from '../graph/SchemaIri.js';
 import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
+import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
 import { Projection } from '../rdf/Projection.js';
 import { Terms } from '../rdf/Terms.js';
 import { OWL } from '../../constants/IRI.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
+import { SchemaCompilerDefaults } from '../validation/SchemaCompilerDefaults.js';
 
 /**
  * Materializer — runtime projection over validation execution results.
  *
  * The runtime contract has three disciplined stages:
  *
- * 1. **Validation execution** (`GraphEngine.execute()`) — validates data against
- *    the canonical graph and applies defaults/coercion during traversal.
+ * 1. **Validation execution** — validates data against the canonical graph via the compiled validator, applying defaults, coercion, and zero-value synthesis during traversal.
  *
  * 2. **Materialization** (`materialize()`) — projects validation execution output
  *    into a fully-populated JS value with implicit properties filled.
@@ -74,20 +72,23 @@ export class Materializer implements MaterializerInterface {
     return false;
   }
 
+  // When true, additionalProperties:false enforcement is bypassed via ignoreAdditionalProperties.
+  private readonly allowAdditionalProperties: boolean;
+
   private readonly cachedOverridesNoDefaults: {
-    readonly 'allowAdditionalProperties': boolean;
     readonly 'applyDefaults': true;
     readonly 'castTypes': boolean;
     readonly 'collectErrors': true;
+    readonly 'ignoreAdditionalProperties': boolean;
     readonly 'removeAdditionalProperties': false;
     readonly 'synthesizeDefaults': false;
   };
 
   private readonly cachedOverridesWithDefaults: {
-    readonly 'allowAdditionalProperties': boolean;
     readonly 'applyDefaults': true;
     readonly 'castTypes': boolean;
     readonly 'collectErrors': true;
+    readonly 'ignoreAdditionalProperties': boolean;
     readonly 'removeAdditionalProperties': false;
     readonly 'synthesizeDefaults': true;
   };
@@ -118,19 +119,21 @@ export class Materializer implements MaterializerInterface {
     const allowAdditionalProperties = options.passAdditionalProperties === true;
     const castTypes = registry.castTypes;
 
+    this.allowAdditionalProperties = allowAdditionalProperties;
+
     this.cachedOverridesNoDefaults = {
-      'allowAdditionalProperties': allowAdditionalProperties,
       'applyDefaults': true,
       'castTypes': castTypes,
       'collectErrors': true,
+      'ignoreAdditionalProperties': allowAdditionalProperties,
       'removeAdditionalProperties': false,
       'synthesizeDefaults': false
     };
     this.cachedOverridesWithDefaults = {
-      'allowAdditionalProperties': allowAdditionalProperties,
       'applyDefaults': true,
       'castTypes': castTypes,
       'collectErrors': true,
+      'ignoreAdditionalProperties': allowAdditionalProperties,
       'removeAdditionalProperties': false,
       'synthesizeDefaults': true
     };
@@ -172,7 +175,7 @@ export class Materializer implements MaterializerInterface {
       try {
         value[name] = fn(value);
       } catch (error) {
-        const causeError = error instanceof Error ? error : new Error(String(error));
+        const causeError = BaseError.toCause(error);
 
         throw new InstantiationError(
           new ValidationErrors([{
@@ -305,8 +308,8 @@ export class Materializer implements MaterializerInterface {
     this.fillImplicitProperties(propertyGraph, propertyTargetNode, propertyValue, visited);
   }
 
-  private formatErrors(result: GraphExecutionResultType): string[] {
-    return BaseError.formatErrors(result.errors);
+  private formatErrors(errors: ValidationErrorType[]): string[] {
+    return BaseError.formatErrors(errors);
   }
 
   /**
@@ -346,10 +349,14 @@ export class Materializer implements MaterializerInterface {
 
     return value;
   }
-  private materializeResult(result: GraphExecutionResultType): unknown {
-    this.fillImplicitProperties(result.graph, result.entryNode, result.value);
+  private materializeResult(
+    graph: SchemaGraphInterface,
+    entryNode: SchemaGraphNodeType,
+    value: unknown
+  ): unknown {
+    this.fillImplicitProperties(graph, entryNode, value);
 
-    return result.value;
+    return value;
   }
 
   /**
@@ -389,14 +396,16 @@ export class Materializer implements MaterializerInterface {
   }
 
   private projectAboxFromExecution(
-    execution: GraphExecutionResultType,
+    graph: SchemaGraphInterface,
+    entryNode: SchemaGraphNodeType,
     materialized: unknown,
     baseIRI: string,
     options?: AboxOptionsType
   ): QuadInterface[] {
-    const quads = Projection.abox(execution.graph, materialized, baseIRI, {
+    const quads = Projection.abox(graph, materialized, baseIRI, {
+      'annotationEmitMode': options?.annotationEmitMode,
       'curie': options?.curie,
-      'entryNode': execution.entryNode,
+      entryNode,
       'graphIRI': options?.graphIRI,
       'iriFor': options?.iriFor,
       'lookupGraph': this.lookupGraphFn,
@@ -428,45 +437,12 @@ export class Materializer implements MaterializerInterface {
       ];
     }
 
-    const ref = semantics.ref;
+    const resolved = canonicalResolveRef(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn });
 
-    if (ref.startsWith('#')) {
-      return [
-        graph,
-        graph.resolveFragment(ref.slice(1))
-      ];
-    }
-
-    const parsed = SchemaIri.parseRef(ref);
-    const targetGraph = this.registry.graph(parsed.id);
-
-    if (targetGraph !== undefined) {
-      return [
-        targetGraph,
-        targetGraph.resolveFragment(parsed.fragment)
-      ];
-    }
-
-    // Embedded `$defs` `$id`: a non-fragment `$ref` whose target is an `$id`
-    // declared inside this same graph's `$defs` (e.g. `urn:bookstore:BookCatalogEntryVariant`)
-    // is not a separately-registered schema, so the registry lookup misses it.
-    // Resolve it within the current graph by matching the node whose id equals
-    // the ref target. Mirrors the same-graph embedded-$id fallback in
-    // Projection.resolveNode. Without this, ABox projection of such a ref
-    // throws REF_UNRESOLVED.
-    for (const candidate of graph.nodes()) {
-      if (candidate.id === parsed.id) {
-        return [
-          graph,
-          candidate
-        ];
-      }
-    }
-
-    throw new GraphError(`Unresolved schema reference: ${ref}`, {
-      'code': GraphErrorCode.REF_UNRESOLVED,
-      'pointer': ref
-    });
+    return [
+      resolved.graph,
+      resolved.node
+    ];
   }
 
   private run(
@@ -482,20 +458,73 @@ export class Materializer implements MaterializerInterface {
       this.registry.set(schema);
     }
 
-    const engine = this.registry.engine(schema);
-    const execution = engine.execute(data, { 'overrides': synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults });
-    const materialized = synthesizeDefaults
-      ? execution.value
-      : this.materializeResult(execution);
+    if (synthesizeDefaults || this.allowAdditionalProperties) {
+      const graph = this.registry.graph(id);
+
+      if (graph === undefined) {
+        throw new MaterializationError(id, {
+          'code': 'MATERIALIZATION_FAILED',
+          'validationErrors': [`No graph found for schema: ${id}`]
+        });
+      }
+
+      const entryNode = graph.rootNode;
+
+      const opts = synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults;
+      const validator = this.registry.validator(id);
+      const lookupSchema = (sid: string): Record<string, unknown> | undefined => {
+        const schemaGraph = this.lookupGraphFn(sid);
+
+        if (schemaGraph === undefined || !isRecord(schemaGraph.rootSchema)) {
+          return undefined;
+        }
+
+        return schemaGraph.rootSchema;
+      };
+      const seedData = synthesizeDefaults && data === undefined
+        ? SchemaCompilerDefaults.synthesizeZeroValue(entryNode, graph, lookupSchema, this.lookupGraphFn)
+        : data;
+      const compiledResult = validator.validate(seedData, opts);
+
+      const materialized = synthesizeDefaults
+        ? compiledResult.value
+        : this.materializeResult(graph, entryNode, compiledResult.value);
+      const abox = baseIRI === undefined
+        ? []
+        : this.projectAboxFromExecution(graph, entryNode, materialized, baseIRI, aboxOptions);
+
+      return {
+        abox,
+        'errors': this.formatErrors(compiledResult.errors),
+        'valid': compiledResult.valid,
+        'value': materialized
+      };
+    }
+
+    // Default materialization path — compiled validator with defaults and coercion applied.
+    const validator = this.registry.validator(id);
+    const compiledResult = validator.validate(data, this.cachedOverridesNoDefaults);
+
+    const graph = this.registry.graph(id);
+
+    if (graph === undefined) {
+      throw new MaterializationError(id, {
+        'code': 'MATERIALIZATION_FAILED',
+        'validationErrors': [`No graph found for schema: ${id}`]
+      });
+    }
+
+    const entryNode = graph.rootNode;
+    const materialized = this.materializeResult(graph, entryNode, compiledResult.value);
 
     const abox = baseIRI === undefined
       ? []
-      : this.projectAboxFromExecution(execution, materialized, baseIRI, aboxOptions);
+      : this.projectAboxFromExecution(graph, entryNode, materialized, baseIRI, aboxOptions);
 
     return {
       abox,
-      'errors': this.formatErrors(execution),
-      'valid': execution.valid,
+      'errors': this.formatErrors(compiledResult.errors),
+      'valid': compiledResult.valid,
       'value': materialized
     };
   }

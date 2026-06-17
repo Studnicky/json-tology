@@ -78,5 +78,7 @@ export type CompiledValidateOptionsType = {
   'castTypes'?: boolean;
   'collectErrors'?: boolean;
   'enforceSchemaProperties'?: boolean;
+  'ignoreAdditionalProperties'?: boolean;
   'removeAdditionalProperties'?: boolean;
+  'synthesizeDefaults'?: boolean;
 };

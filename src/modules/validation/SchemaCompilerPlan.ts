@@ -1,26 +1,19 @@
 /**
  * SchemaCompilerPlan — plan-time graph helpers and node validation plan builder.
  *
- * Merged from SchemaCompilerGraph.ts (check-time graph traversal) and
- * SchemaCompilerValidatePlan.ts (validate-time plan construction).
- *
  * Exports:
- *   buildNodePlan     — single keyword traversal → CompiledNodeValidationPlanType
- *   graph helpers     — compileArrayCheck, compileConstCheck, compileEnumCheck,
- *                       compileObjectCheck, compileRefCheck,
- *                       nodeSupportsCompilation, tryCompileFlatObjectCheck
+ *   buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
  */
 
-import type { CheckFnType } from '../../types/Validation.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-import type { PropCheckType } from '../../types/PropCheck.js';
-import type { SchemaCompilerGraphContextType } from '../../types/SchemaCompilerGraphContext.js';
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
+import type { ExecContextType } from '../../types/ExecContext.js';
+import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
 import type { CustomKeywordEntryType } from '../../types/CustomKeywordEntry.js';
 import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
 import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContext.js';
@@ -37,12 +30,7 @@ import type {
   EnumPrimitiveSetType,
   InheritedPropertyKeySetType,
   JtStrictPerFieldMapType,
-  KeyPatternCheckResultType,
-  ObjectPropValidatorsMapType,
-  OptionalCheckFnType,
   OptionalValidateWithErrorsFnType,
-  PatternPropCheckEntryType,
-  PatternPropChecksResultType,
   PatternPropValidatorEntryType,
   PatternPropValidatorsResultType,
   PlanArrayValidatorsType,
@@ -51,48 +39,31 @@ import type {
   ValidateWithErrorsResultType
 } from '../../types/Validation.js';
 import type { LookupSchemaFnType } from '../../types/LookupSchema.js';
-import type {
-  GraphCompileOptionsType, GraphCompileWithSemanticsType
-} from '../../types/GraphCompileOptions.js';
 import type { PlanCompileWithSemanticsType } from '../../types/PlanCompileOptions.js';
-import type { ArrayChecksType } from '../../types/ArrayChecks.js';
-import type { CheckObjectKeysOptionsType } from '../../types/CheckObjectKeysOptions.js';
 import type { CollectBranchOptionsType } from '../../types/CollectBranchOptions.js';
-import type { ContainsCheckOptionsType } from '../../types/ContainsCheckOptions.js';
-import type { FlatObjectCheckContextType } from '../../types/FlatObjectCheckContext.js';
-import type { NodeSupportContextType } from '../../types/NodeSupportContext.js';
-import type { ObjectChecksType } from '../../types/ObjectChecks.js';
 import type { PlanAllowedKeysOptionsType } from '../../types/PlanAllowedKeysOptions.js';
 import type { PlanPreludeType } from '../../types/PlanPrelude.js';
 import type { PropertyDefaultsOptionsType } from '../../types/PropertyDefaultsOptions.js';
 import type { PropertyValidatorsOptionsType } from '../../types/PropertyValidatorsOptions.js';
-import type { RefNodeSupportOptionsType } from '../../types/RefNodeSupportOptions.js';
 import type { RefValidatorOptionsType } from '../../types/RefValidatorOptions.js';
+import type { RefTargetType } from '../../types/RefTarget.js';
+import type { DynamicRefValidatorOptionsType } from '../../types/DynamicRefValidatorOptions.js';
 import type { ResolveScanRefOptionsType } from '../../types/ResolveScanRefOptions.js';
 import type { ScanConditionalOptionsType } from '../../types/ScanConditionalOptions.js';
 import type { WalkInheritedRefOptionsType } from '../../types/WalkInheritedRefOptions.js';
 import type { ConstraintValidatorsResult } from '../../types/ConstraintValidatorsResult.js';
-import {
-  deepEqual, isRecord
-} from '../data/DataTypes.js';
-import { SchemaGraph } from '../graph/SchemaGraph.js';
+import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
-import { Predicates } from './Predicates.js';
+import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { RefResolver } from './RefResolver.js';
 import { BaseError } from '../../errors/BaseError.js';
+import { GraphError } from '../../errors/GraphError.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
+import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 
 // ---------------------------------------------------------------------------
 // Module-scope singletons — boolean schema fast paths (A.1)
 // ---------------------------------------------------------------------------
-
-const ALWAYS_TRUE_CHECK: CheckFnType = (_: unknown): boolean => {
-  return true;
-};
-
-const ALWAYS_FALSE_CHECK: CheckFnType = (_: unknown): boolean => {
-  return false;
-};
 
 const TRUE_VALIDATOR: ValidateWithErrorsFnType = (value: unknown): ValidateWithErrorsResultType => {
   return {
@@ -104,11 +75,10 @@ const TRUE_VALIDATOR: ValidateWithErrorsFnType = (value: unknown): ValidateWithE
 const FALSE_VALIDATOR: ValidateWithErrorsFnType = (
   value: unknown,
   path: string,
-  errors: Array<ReturnType<typeof BaseError.validationError>>,
-  collectErrors: boolean
+  ctx: ExecContextType
 ): ValidateWithErrorsResultType => {
-  if (collectErrors) {
-    errors.push(BaseError.validationError(path, 'falseSchema', 'must not match false schema'));
+  if (ctx.collectErrors) {
+    ctx.errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
   }
 
   return {
@@ -403,1025 +373,6 @@ function collectConditionalPropertyKeys(
   return conditional;
 }
 
-/** Check whether composition keywords block the flat-object fast path. */
-function hasBlockingCompositionKeywords(sem: SchemaGraphSemanticsType): boolean {
-  return sem.allOf.length > 0
-    || sem.anyOf.length > 0
-    || sem.oneOf.length > 0
-    || sem.complementNode !== undefined
-    || sem.ifNode !== undefined;
-}
-
-/** Check whether structural keywords (ref, pattern, size) block the fast path. */
-function hasBlockingStructuralKeywords(sem: SchemaGraphSemanticsType): boolean {
-  if (sem.ref !== undefined) {
-    return true;
-  }
-  if (sem.patternPropertyEntries.length > 0) {
-    return true;
-  }
-  if (sem.minProperties !== undefined || sem.maxProperties !== undefined) {
-    return true;
-  }
-  if (sem.additionalPropertiesNode !== undefined
-    && sem.additionalPropertiesNode !== false
-    && sem.additionalPropertiesNode !== true) {
-    return true;
-  }
-
-  return false;
-}
-
-/** Check whether dependency or custom-keyword constraints block the fast path. */
-function hasBlockingDependencyKeywords(
-  sem: SchemaGraphSemanticsType,
-  context: SchemaCompilerGraphContextType
-): boolean {
-  if (sem.containsNode !== undefined) {
-    return true;
-  }
-  if (Object.keys(sem.dependentRequired).length > 0) {
-    return true;
-  }
-  if (sem.dependentSchemaEntries.length > 0) {
-    return true;
-  }
-  if (context.activeCustomKeywords.length > 0 && Object.keys(sem.extensions).length > 0) {
-    return true;
-  }
-
-  return false;
-}
-
-/** Check whether constraint keywords block the flat-object fast path. */
-function hasBlockingConstraintKeywords(
-  sem: SchemaGraphSemanticsType,
-  context: SchemaCompilerGraphContextType
-): boolean {
-  return hasBlockingStructuralKeywords(sem) || hasBlockingDependencyKeywords(sem, context);
-}
-
-function canUseFlatObjectFastPath(
-  context: SchemaCompilerGraphContextType,
-  sem: SchemaGraphSemanticsType
-): boolean {
-  if (!sem.schemaTypes.includes('object')) {
-    return false;
-  }
-  if (hasBlockingCompositionKeywords(sem)) {
-    return false;
-  }
-  if (hasBlockingConstraintKeywords(sem, context)) {
-    return false;
-  }
-
-  return sem.properties.size > 0;
-}
-
-function buildFlatObjectPropertyChecks(
-  opts: GraphCompileOptionsType,
-  sem: SchemaGraphSemanticsType
-): PropCheckType[] {
-  const {
-    properties, required
-  } = sem;
-  const {
-    context, formatRegistry, graph, lookupSchema
-  } = opts;
-  const propChecks: PropCheckType[] = [];
-
-  for (const [
-    name,
-    propNode
-  ] of properties) {
-    propChecks.push({
-      'check': context.compileNodeOrBooleanCheck(propNode, formatRegistry, graph, lookupSchema),
-      name,
-      'required': required.includes(name)
-    });
-  }
-
-  return propChecks;
-}
-
-// ---------------------------------------------------------------------------
-// Graph helpers (check-time)
-// ---------------------------------------------------------------------------
-
-/** Run prefix-item checks over the appropriate index range. */
-function runPrefixItemChecks(
-  value: unknown[],
-  prefixChecks: CheckFnType[]
-): boolean {
-  for (let i = 0; i < prefixChecks.length && i < value.length; i++) {
-    if (!prefixChecks[i](value[i])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/** Run item-level checks from a start index. */
-function runItemChecks(
-  value: unknown[],
-  itemCheck: CheckFnType,
-  startIndex: number
-): boolean {
-  for (let i = startIndex; i < value.length; i++) {
-    if (!itemCheck(value[i])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/** Validate array size and uniqueness constraints. */
-function runArraySizeChecks(value: unknown[], checks: ArrayChecksType): boolean {
-  if (checks.minItems !== undefined && value.length < checks.minItems) {
-    return false;
-  }
-  if (checks.maxItems !== undefined && value.length > checks.maxItems) {
-    return false;
-  }
-  if (checks.uniqueItems && !Predicates.satisfiesUniqueItems(value)) {
-    return false;
-  }
-
-  return true;
-}
-
-/** Validate array item-level constraints (prefix items, items, contains). */
-function runArrayItemChecks(value: unknown[], checks: ArrayChecksType): boolean {
-  const {
-    containsCheck, itemCheck, maxContains, minContains, prefixChecks
-  } = checks;
-
-  if (prefixChecks !== undefined && !runPrefixItemChecks(value, prefixChecks)) {
-    return false;
-  }
-  if (itemCheck !== undefined) {
-    const startIndex = prefixChecks === undefined ? 0 : prefixChecks.length;
-
-    if (!runItemChecks(value, itemCheck, startIndex)) {
-      return false;
-    }
-  }
-  if (containsCheck !== undefined && !runContainsCheck({
-    containsCheck,
-    maxContains,
-    minContains,
-    value
-  })) {
-    return false;
-  }
-
-  return true;
-}
-
-/** Execute all compiled array checks against a known-array value. */
-function runArrayChecks(value: unknown[], checks: ArrayChecksType): boolean {
-  if (!runArraySizeChecks(value, checks)) {
-    return false;
-  }
-
-  return runArrayItemChecks(value, checks);
-}
-
-/** Evaluate a `contains` check against an array, returning whether the count satisfies min/max. */
-function runContainsCheck(opts: ContainsCheckOptionsType): boolean {
-  const {
-    containsCheck, maxContains, minContains, value
-  } = opts;
-  let count = 0;
-
-  for (const item of value) {
-    if (containsCheck(item)) {
-      count++;
-    }
-  }
-  if (minContains !== undefined && count < minContains) {
-    return false;
-  }
-  if (maxContains !== undefined && count > maxContains) {
-    return false;
-  }
-  if (minContains === undefined && maxContains === undefined && count === 0) {
-    return false;
-  }
-
-  return true;
-}
-
-/** Build the item-level check from a node (or return a boolean fast-path). */
-function buildItemCheck(
-  opts: GraphCompileOptionsType,
-  itemsNode: SchemaGraphNodeType
-): OptionalCheckFnType {
-  if (typeof itemsNode.schema === 'boolean') {
-    return itemsNode.schema ? undefined : ALWAYS_FALSE_CHECK;
-  }
-
-  const {
-    context, formatRegistry, graph, lookupSchema
-  } = opts;
-
-  return context.compileNodeCheck(itemsNode, formatRegistry, graph, lookupSchema);
-}
-
-/**
- * Compile a check function for array-typed values from the given graph node.
- *
- * @param context - Graph compilation context providing node-check helpers.
- * @param graphNode - The graph node representing the array schema.
- * @param formatRegistry - Registry for format validators.
- * @param graph - The schema graph containing `graphNode`.
- * @param lookupSchema - Optional cross-schema lookup by `$id`.
- * @returns A `CheckFnType` for arrays, or `undefined` when no array constraints apply.
- *
- * @remarks
- * Returns `undefined` when no array-specific keywords are present; callers
- * should treat `undefined` as an always-pass check.
- *
- * @example
- * ```ts
- * const check = compileArrayCheck(context, node, fmtReg, graph);
- * // check(value) returns true when value satisfies all array constraints
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link compileObjectCheck}
- * @group SchemaCompiler
- */
-export function compileArrayCheck(
-  context: SchemaCompilerGraphContextType,
-  graphNode: SchemaGraphNodeType,
-  formatRegistry: FormatRegistryInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema?: LookupSchemaFnType
-): OptionalCheckFnType {
-  const sem = graph.semantics(graphNode);
-  const minItems = sem.minItems;
-  const maxItems = sem.maxItems;
-  const uniqueItems = sem.uniqueItems;
-  const prefixItemNodes = sem.prefixItems;
-  const containsNode = sem.containsNode;
-  const minContains = sem.minContains;
-  const maxContains = sem.maxContains;
-
-  const graphOpts: GraphCompileOptionsType = lookupSchema === undefined
-    ? {
-      context,
-      formatRegistry,
-      graph
-    }
-    : {
-      context,
-      formatRegistry,
-      graph,
-      'lookupSchema': lookupSchema
-    };
-  const itemCheck = sem.itemsNode === undefined
-    ? undefined
-    : buildItemCheck(graphOpts, sem.itemsNode);
-
-  let prefixChecks: CheckFnType[] | undefined;
-
-  if (prefixItemNodes.length > 0) {
-    prefixChecks = [];
-    for (const node of prefixItemNodes) {
-      prefixChecks.push(context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema));
-    }
-  }
-
-  const containsCheck = containsNode === undefined
-    ? undefined
-    : context.compileNodeOrBooleanCheck(containsNode, formatRegistry, graph, lookupSchema);
-
-  const arrayChecks: ArrayChecksType = {
-    containsCheck,
-    itemCheck,
-    maxContains,
-    maxItems,
-    minContains,
-    minItems,
-    prefixChecks,
-    uniqueItems
-  };
-
-  return (value: unknown): boolean => {
-    if (!Array.isArray(value)) {
-      return true;
-    }
-
-    return runArrayChecks(value, arrayChecks);
-  };
-}
-
-/**
- * Compile a check function for a `const` schema value.
- *
- * @param constValue - The constant value from the schema.
- * @returns A `CheckFnType` that performs a fast equality or deep-equality check.
- *
- * @remarks
- * Primitive `const` values use strict equality (`===`). Object and array
- * values use deep structural equality via `deepEqual`.
- *
- * @example
- * ```ts
- * const check = compileConstCheck('active');
- * check('active'); // true
- * check('inactive'); // false
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link compileEnumCheck}
- * @group SchemaCompiler
- */
-export function compileConstCheck(constValue: unknown): CheckFnType {
-  if (constValue === null || typeof constValue === 'string' || typeof constValue === 'number' || typeof constValue === 'boolean') {
-    return (value: unknown): boolean => {
-      return value === constValue;
-    };
-  }
-
-  return (value: unknown): boolean => {
-    return deepEqual(value, constValue);
-  };
-}
-
-/**
- * Compile a check function for an `enum` schema value list.
- *
- * @param enumValues - The list of allowed values from the schema.
- * @returns A `CheckFnType` using a `Set` for primitive-only enums, or deep equality otherwise.
- *
- * @remarks
- * When all enum entries are primitives (`null`, `string`, `number`, `boolean`),
- * uses a `Set.has` lookup for O(1) performance. Falls back to deep equality
- * comparison for mixed or complex enum values.
- *
- * @example
- * ```ts
- * const check = compileEnumCheck(['red', 'green', 'blue']);
- * check('red');    // true
- * check('purple'); // false
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link compileConstCheck}
- * @group SchemaCompiler
- */
-export function compileEnumCheck(enumValues: unknown[]): CheckFnType {
-  const allPrimitive = enumValues.every((entry: unknown): boolean => {
-    return entry === null || typeof entry === 'string' || typeof entry === 'number' || typeof entry === 'boolean';
-  });
-
-  if (allPrimitive) {
-    const enumSet = new Set(enumValues);
-
-    return (value: unknown): boolean => {
-      return enumSet.has(value);
-    };
-  }
-
-  return (value: unknown): boolean => {
-    return enumValues.some((entry: unknown): boolean => {
-      return deepEqual(entry, value);
-    });
-  };
-}
-
-/** Build object property validators from semantics. */
-function buildObjectPropValidators(opts: GraphCompileWithSemanticsType): ObjectPropValidatorsMapType {
-  const {
-    context, formatRegistry, graph, lookupSchema, sem
-  } = opts;
-  const propValidators = new Map<string, CheckFnType>();
-
-  for (const [
-    key,
-    propNode
-  ] of sem.properties) {
-    if (typeof propNode.schema === 'boolean') {
-      if (!propNode.schema) {
-        propValidators.set(key, ALWAYS_FALSE_CHECK);
-      }
-    } else {
-      propValidators.set(key, context.compileNodeCheck(propNode, formatRegistry, graph, lookupSchema));
-    }
-  }
-
-  return propValidators;
-}
-
-/** Build pattern-property validators from semantics. */
-function buildPatternPropChecks(opts: GraphCompileWithSemanticsType): PatternPropChecksResultType {
-  const {
-    context, formatRegistry, graph, lookupSchema, sem
-  } = opts;
-
-  if (sem.patternPropertyEntries.length === 0) {
-    return undefined;
-  }
-
-  const patternChecks: PatternPropCheckEntryType[] = [];
-
-  for (const [
-    pat,
-    patNode
-  ] of sem.patternPropertyEntries) {
-    patternChecks.push({
-      'check': context.compileNodeOrBooleanCheck(patNode, formatRegistry, graph, lookupSchema),
-      'regex': new RegExp(pat, 'u')
-    });
-  }
-
-  return patternChecks;
-}
-
-/**
- * Check a single key against pattern-property validators.
- * Returns `{ matched: true, valid: false }` when a pattern matches but fails validation.
- * Returns `{ matched: true, valid: true }` when a pattern matches and passes.
- * Returns `{ matched: false, valid: true }` when no pattern matches.
- */
-function checkKeyAgainstPatterns(
-  key: string,
-  value: unknown,
-  patternChecks: PatternPropChecksResultType
-): KeyPatternCheckResultType {
-  if (patternChecks === undefined) {
-    return {
-      'matched': false,
-      'valid': true
-    };
-  }
-
-  let matched = false;
-
-  for (const pc of patternChecks) {
-    if (pc.regex.test(key)) {
-      matched = true;
-      if (!pc.check(value)) {
-        return {
-          'matched': true,
-          'valid': false
-        };
-      }
-    }
-  }
-
-  return {
-    'matched': matched,
-    'valid': true
-  };
-}
-
-/** Execute all compiled object checks against a known-record value. */
-function runObjectCheck(value: Record<string, unknown>, checks: ObjectChecksType): boolean {
-  const {
-    additionalCheck, additionalIsFalse, maxProperties, minProperties,
-    patternChecks, properties, propValidators, required
-  } = checks;
-
-  if (required !== undefined) {
-    for (const key of required) {
-      if (!(key in value)) {
-        return false;
-      }
-    }
-  }
-
-  if (minProperties !== undefined || maxProperties !== undefined) {
-    const count = Object.keys(value).length;
-
-    if (minProperties !== undefined && count < minProperties) {
-      return false;
-    }
-    if (maxProperties !== undefined && count > maxProperties) {
-      return false;
-    }
-  }
-
-  return checkObjectKeys({
-    additionalCheck,
-    additionalIsFalse,
-    'obj': value,
-    patternChecks,
-    properties,
-    propValidators
-  });
-}
-
-/** Evaluate all object keys against property, pattern, and additional validators. */
-function checkObjectKeys(opts: CheckObjectKeysOptionsType): boolean {
-  const {
-    additionalCheck, additionalIsFalse, obj, patternChecks, properties, propValidators
-  } = opts;
-
-  for (const key of Object.keys(obj)) {
-    const propCheck = propValidators.get(key);
-
-    if (propCheck !== undefined) {
-      if (!propCheck(obj[key])) {
-        return false;
-      }
-      continue;
-    }
-
-    const patternResult = checkKeyAgainstPatterns(key, obj[key], patternChecks);
-
-    if (!patternResult.valid) {
-      return false;
-    }
-    if (patternResult.matched) {
-      continue;
-    }
-
-    if (additionalIsFalse) {
-      if (!properties.has(key)) {
-        return false;
-      }
-    } else if (additionalCheck !== undefined && !additionalCheck(obj[key])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * Compile a check function for object-typed values from the given graph node.
- *
- * @param context - Graph compilation context providing node-check helpers.
- * @param graphNode - The graph node representing the object schema.
- * @param formatRegistry - Registry for format validators.
- * @param graph - The schema graph containing `graphNode`.
- * @param lookupSchema - Optional cross-schema lookup by `$id`.
- * @returns A `CheckFnType` for object values, or `undefined` when no object constraints apply.
- *
- * @remarks
- * Evaluates required properties, min/max property counts, per-property validators,
- * pattern-property validators, and additional-properties constraints.
- *
- * @example
- * ```ts
- * const check = compileObjectCheck(context, node, fmtReg, graph);
- * // check({ id: '1' }) returns true when the object satisfies all object constraints
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link compileArrayCheck}
- * @group SchemaCompiler
- */
-export function compileObjectCheck(
-  context: SchemaCompilerGraphContextType,
-  graphNode: SchemaGraphNodeType,
-  formatRegistry: FormatRegistryInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema?: LookupSchemaFnType
-): OptionalCheckFnType {
-  const sem = graph.semantics(graphNode);
-  const semOpts: GraphCompileWithSemanticsType = {
-    context,
-    formatRegistry,
-    graph,
-    'lookupSchema': lookupSchema,
-    sem
-  };
-  const propValidators = buildObjectPropValidators(semOpts);
-  const properties = sem.properties;
-  const required = sem.required.length > 0 ? sem.required : undefined;
-  const additionalPropertiesNode = sem.additionalPropertiesNode;
-  const minProperties = sem.minProperties;
-  const maxProperties = sem.maxProperties;
-  const patternChecks = buildPatternPropChecks(semOpts);
-
-  const hasAdditionalSchemaNode = additionalPropertiesNode !== undefined
-    && additionalPropertiesNode !== true
-    && additionalPropertiesNode !== false;
-
-  const additionalCheck = hasAdditionalSchemaNode
-    ? context.compileNodeOrBooleanCheck(
-      additionalPropertiesNode,
-      formatRegistry,
-      graph,
-      lookupSchema
-    )
-    : undefined;
-
-  const objectChecks: ObjectChecksType = {
-    additionalCheck,
-    'additionalIsFalse': additionalPropertiesNode === false,
-    maxProperties,
-    minProperties,
-    patternChecks,
-    properties,
-    propValidators,
-    required
-  };
-
-  return (value: unknown): boolean => {
-    if (!isRecord(value)) {
-      return true;
-    }
-
-    return runObjectCheck(value, objectChecks);
-  };
-}
-
-/** Resolve a cross-schema root ref using the pre-compiled lookup when available. */
-function compileCrossSchemaRootRef(
-  context: SchemaCompilerGraphContextType,
-  schemaId: string,
-  fragment: string
-): OptionalCheckFnType {
-  if ((fragment === '' || fragment === '/') && context.lookupCompiled !== undefined) {
-    const { lookupCompiled } = context;
-
-    return (value: unknown): boolean => {
-      const compiled = lookupCompiled(schemaId);
-
-      return compiled === undefined ? true : compiled.check(value);
-    };
-  }
-
-  return undefined;
-}
-
-/**
- * Compile a check function for a `$ref` reference from the given graph node.
- *
- * @param context - Graph compilation context providing node-check helpers.
- * @param ref - The `$ref` string to resolve.
- * @param formatRegistry - Registry for format validators.
- * @param graph - The schema graph containing the referencing node.
- * @param lookupSchema - Optional cross-schema lookup by `$id`.
- * @param lookupGraph - Optional cross-graph lookup by `$id`.
- * @returns A `CheckFnType` for the referenced schema, or `undefined` when the ref cannot be resolved.
- *
- * @remarks
- * Uses a pre-compiled root-ref fast path when the referenced schema has been
- * compiled and the ref targets the root. Falls back to recursive compilation
- * for intra-graph and fragment refs.
- *
- * @example
- * ```ts
- * const check = compileRefCheck(context, '#/definitions/Address', fmtReg, graph);
- * // check(value) validates value against the referenced schema
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link compileArrayCheck}
- * @group SchemaCompiler
- */
-export function compileRefCheck(
-  context: SchemaCompilerGraphContextType,
-  ref: string,
-  formatRegistry: FormatRegistryInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema?: LookupSchemaFnType,
-  lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
-): OptionalCheckFnType {
-  // Fast path: cross-schema root ref with a pre-compiled entry
-  if (!ref.startsWith('#')) {
-    const {
-      fragment, 'id': schemaId
-    } = SchemaIri.parseRef(ref);
-    const fastPath = compileCrossSchemaRootRef(context, schemaId, fragment);
-
-    if (fastPath !== undefined) {
-      return fastPath;
-    }
-  }
-
-  const resolved = RefResolver.resolve(ref, graph, lookupSchema, lookupGraph);
-
-  if (resolved === undefined) {
-    return undefined;
-  }
-
-  const {
-    'graph': targetGraph, 'node': targetNode
-  } = resolved;
-
-  if (typeof targetNode.schema === 'boolean') {
-    return targetNode.schema ? ALWAYS_TRUE_CHECK : ALWAYS_FALSE_CHECK;
-  }
-
-  if (targetGraph === graph && context.compilingNodes.has(targetNode)) {
-    let cachedCheck: OptionalCheckFnType;
-
-    return (value: unknown): boolean => {
-      cachedCheck ??= context.compileNodeCheck(targetNode, formatRegistry, targetGraph, lookupSchema);
-
-      return cachedCheck(value);
-    };
-  }
-
-  return context.compileNodeCheck(targetNode, formatRegistry, targetGraph, lookupSchema);
-}
-
-/** Check whether a `$ref` target supports compilation, updating `visited` to prevent re-entry. */
-function checkRefNodeSupport(opts: RefNodeSupportOptionsType): boolean {
-  const {
-    graph, lookupGraph, lookupSchema, ref, refTargetNode, visited
-  } = opts;
-
-  if (refTargetNode !== undefined) {
-    return nodeSupportsCompilation(refTargetNode, graph, lookupSchema, visited, lookupGraph);
-  }
-
-  const { 'id': schemaId } = SchemaIri.parseRef(ref);
-
-  if (visited.has(schemaId)) {
-    return true;
-  }
-  visited.add(schemaId);
-
-  const refSchema = lookupGraph === undefined ? lookupSchema?.(schemaId) : undefined;
-  const refGraph = lookupGraph?.(schemaId) ?? (refSchema === undefined ? undefined : new SchemaGraph(refSchema));
-
-  if (refGraph !== undefined) {
-    return nodeSupportsCompilation(refGraph.rootNode, refGraph, lookupSchema, visited, lookupGraph);
-  }
-
-  return true;
-}
-
-/** Check that every branch in an array supports compilation. */
-function checkBranchArraySupport(
-  branches: readonly SchemaGraphNodeType[],
-  ctx: NodeSupportContextType
-): boolean {
-  for (const branch of branches) {
-    if (!nodeSupportsCompilation(branch, ctx.graph, ctx.lookupSchema, ctx.visited, ctx.lookupGraph)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/** Check that every optional child node supports compilation. */
-function checkOptionalChildrenSupport(
-  children: ReadonlyArray<SchemaGraphNodeType | undefined>,
-  ctx: NodeSupportContextType
-): boolean {
-  const {
-    graph, lookupGraph, lookupSchema, visited
-  } = ctx;
-
-  for (const child of children) {
-    if (child !== undefined && !nodeSupportsCompilation(child, graph, lookupSchema, visited, lookupGraph)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/** Check that every property node supports compilation. */
-function checkPropertyNodesSupport(
-  properties: ReadonlyMap<string, SchemaGraphNodeType>,
-  ctx: NodeSupportContextType
-): boolean {
-  for (const [
-    , propNode
-  ] of properties) {
-    if (!nodeSupportsCompilation(propNode, ctx.graph, ctx.lookupSchema, ctx.visited, ctx.lookupGraph)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/** Return `true` when the semantics include unsupported compilation-blocking keywords. */
-function hasUnsupportedKeywords(sem: SchemaGraphSemanticsType): boolean {
-  return sem.dynamicRef !== undefined
-    || sem.dynamicAnchor !== undefined
-    || sem.unevaluatedPropertiesNode !== undefined
-    || sem.unevaluatedItemsNode !== undefined
-    || sem.rdfsRange !== undefined
-    || sem.rdfsDomain !== undefined;
-}
-
-/** Check whether `allOf`, `anyOf`, `oneOf`, conditional, and property nodes are all compilable. */
-function checkCompositionSupport(
-  sem: SchemaGraphSemanticsType,
-  ctx: NodeSupportContextType
-): boolean {
-  if (!checkBranchArraySupport(sem.allOf, ctx)) {
-    return false;
-  }
-  if (!checkBranchArraySupport(sem.anyOf, ctx)) {
-    return false;
-  }
-  if (!checkBranchArraySupport(sem.oneOf, ctx)) {
-    return false;
-  }
-  if (!checkOptionalChildrenSupport(
-    [
-      sem.complementNode,
-      sem.ifNode,
-      sem.thenNode,
-      sem.elseNode
-    ],
-    ctx
-  )) {
-    return false;
-  }
-
-  return checkPropertyNodesSupport(sem.properties, ctx);
-}
-
-/**
- * Return whether the schema node and all nodes reachable from it can be
- * compiled into check/validate functions.
- *
- * @param node - The graph node to evaluate.
- * @param graph - The schema graph containing `node`.
- * @param lookupSchema - Optional cross-schema lookup by `$id`.
- * @param visited - Mutable set of already-visited nodes, preventing re-entry.
- * @param lookupGraph - Optional cross-graph lookup by `$id`.
- * @returns `true` when the node and all reachable nodes are compilable.
- *
- * @remarks
- * Returns `false` immediately for nodes using `$dynamicRef`, `$dynamicAnchor`,
- * `unevaluatedProperties`, `unevaluatedItems`, or RDF domain/range constraints.
- *
- * @example
- * ```ts
- * const visited = new Set<SchemaGraphNodeType | string>();
- * const supported = nodeSupportsCompilation(graph.rootNode, graph, undefined, visited);
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link compileArrayCheck}
- * @group SchemaCompiler
- */
-export function nodeSupportsCompilation(
-  node: SchemaGraphNodeType,
-  graph: SchemaGraphInterface,
-  lookupSchema: LookupSchemaFnType | undefined,
-  visited: Set<SchemaGraphNodeType | string>,
-  lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
-): boolean {
-  if (visited.has(node)) {
-    return true;
-  }
-  visited.add(node);
-
-  const sem = graph.semantics(node);
-
-  if (hasUnsupportedKeywords(sem)) {
-    return false;
-  }
-
-  if (sem.ref !== undefined
-    && !checkRefNodeSupport({
-      graph,
-      lookupGraph,
-      lookupSchema,
-      'ref': sem.ref,
-      'refTargetNode': sem.refTargetNode,
-      visited
-    })) {
-    return false;
-  }
-
-  const ctx: NodeSupportContextType = {
-    graph,
-    lookupGraph,
-    lookupSchema,
-    visited
-  };
-
-  if (!checkCompositionSupport(sem, ctx)) {
-    return false;
-  }
-
-  if (
-    sem.itemsNode !== undefined
-    && !nodeSupportsCompilation(sem.itemsNode, graph, lookupSchema, visited, lookupGraph)
-  ) {
-    return false;
-  }
-
-  if (sem.additionalPropertiesNode !== undefined && typeof sem.additionalPropertiesNode !== 'boolean') {
-    return nodeSupportsCompilation(sem.additionalPropertiesNode, graph, lookupSchema, visited, lookupGraph);
-  }
-
-  return true;
-}
-
-/**
- * Attempt to compile a flat-object fast-path check for the given graph node.
- *
- * @param context - Graph compilation context providing node-check helpers.
- * @param graphNode - The graph node representing the object schema.
- * @param formatRegistry - Registry for format validators.
- * @param graph - The schema graph containing `graphNode`.
- * @param lookupSchema - Optional cross-schema lookup by `$id`.
- * @returns A `CheckFnType` when the fast path is applicable, `undefined` otherwise.
- *
- * @remarks
- * The flat-object fast path applies when the schema is a plain object type
- * with properties but no composition, conditional, pattern-property, or
- * size-constraint keywords. It skips the full `compileObjectCheck` overhead.
- *
- * @example
- * ```ts
- * const check = tryCompileFlatObjectCheck(context, node, fmtReg, graph);
- * // undefined when the schema is too complex for the fast path
- * ```
- *
- * @category Validation
- * @since 0.1.0
- * @see {@link compileObjectCheck}
- * @group SchemaCompiler
- */
-export function tryCompileFlatObjectCheck(
-  context: SchemaCompilerGraphContextType,
-  graphNode: SchemaGraphNodeType,
-  formatRegistry: FormatRegistryInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema?: LookupSchemaFnType
-): OptionalCheckFnType {
-  const sem = graph.semantics(graphNode);
-
-  if (!canUseFlatObjectFastPath(context, sem)) {
-    return undefined;
-  }
-
-  const propChecks = buildFlatObjectPropertyChecks(
-    {
-      context,
-      formatRegistry,
-      graph,
-      ...(!(lookupSchema === undefined) && { lookupSchema })
-    },
-    sem
-  );
-  const rejectsAdditional = sem.additionalPropertiesNode === false;
-  const semProperties = sem.properties;
-
-  const flatCtx: FlatObjectCheckContextType = {
-    propChecks,
-    rejectsAdditional,
-    'semProperties': semProperties
-  };
-
-  return (value: unknown): boolean => {
-    if (!isRecord(value)) {
-      return false;
-    }
-
-    return runFlatObjectCheck(value, flatCtx);
-  };
-}
-
-/** Execute flat-object property and additional-property checks against a known-record value. */
-function runFlatObjectCheck(obj: Record<string, unknown>, ctx: FlatObjectCheckContextType): boolean {
-  const {
-    propChecks, rejectsAdditional, semProperties
-  } = ctx;
-
-  for (const pc of propChecks) {
-    const val = obj[pc.name];
-
-    if (val === undefined && !(pc.name in obj)) {
-      if (pc.required) {
-        return false;
-      }
-      continue;
-    }
-    if (!pc.check(val)) {
-      return false;
-    }
-  }
-
-  if (rejectsAdditional) {
-    for (const key of Object.keys(obj)) {
-      if (!semProperties.has(key)) {
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
 // ---------------------------------------------------------------------------
 // Plan-time helpers (validate context)
 // ---------------------------------------------------------------------------
@@ -1434,13 +385,14 @@ function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithError
   return (
     value: unknown,
     path: string,
-    errors: Array<ReturnType<typeof BaseError.validationError>>,
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    _doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType => {
-    return inner(value, path, errors, collectErrors, applyDefaults, false, stripUnknown);
+    const strictCtx: ExecContextType = {
+      ...ctx,
+      'doCoerce': false
+    };
+
+    return inner(value, path, strictCtx);
   };
 }
 
@@ -1482,7 +434,10 @@ function compileRefValidator(opts: RefValidatorOptionsType): OptionalValidateWit
   const resolved = RefResolver.resolve(ref, graph, lookupSchema, lookupGraph);
 
   if (resolved === undefined) {
-    return undefined;
+    throw new GraphError(`Cannot resolve $ref '${ref}' — schema not found`, {
+      'code': 'REF_NOT_FOUND',
+      'pointer': ref
+    });
   }
 
   const {
@@ -1493,20 +448,146 @@ function compileRefValidator(opts: RefValidatorOptionsType): OptionalValidateWit
     return booleanValidateWithErrors(targetNode.schema);
   }
 
+  const refKey = `${GraphEngineSupport.schemaId(targetGraph.rootSchema) ?? '<anonymous>'}::${ref}`;
+
   let cached: OptionalValidateWithErrorsFnType;
 
   return (
     value: unknown,
     path: string,
-    errors: Array<ReturnType<typeof BaseError.validationError>>,
-    collectErrors: boolean,
-    applyDef: boolean,
-    doCoerce: boolean,
-    stripUnk: boolean
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType => {
-    cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, targetGraph, lookupSchema);
+    if (ctx.refStack.has(refKey)) {
+      return {
+        'valid': true,
+        value
+      };
+    }
 
-    return cached(value, path, errors, collectErrors, applyDef, doCoerce, stripUnk);
+    ctx.refStack.add(refKey);
+
+    try {
+      cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, targetGraph, lookupSchema);
+
+      return cached(value, path, ctx);
+    } finally {
+      ctx.refStack.delete(refKey);
+    }
+  };
+}
+
+/**
+ * Resolve a `$dynamicRef` at runtime against `ctx.dynamicScope`, mirroring
+ * `GraphEngine.resolveDynamicRef` (GraphEngine.ts:474-509) exactly.
+ *
+ * Resolution order:
+ *  1. If ref === '#': scan dynamicScope END-TO-START for anchor === '' (implicit root anchor).
+ *  2. Otherwise: resolve statically, extract fragment, get resolved node's dynamicAnchor.
+ *     - If no named fragment or anchor doesn't match fragment: use static target (not dynamic).
+ *     - Else: scan dynamicScope START-TO-END for first matching anchor entry.
+ *     - Fallback: static resolved target.
+ */
+function resolveDynamicRefTarget(
+  dynamicRef: string,
+  graph: SchemaGraphInterface,
+  dynamicScope: DynamicScopeEntryType[],
+  lookupSchema?: LookupSchemaFnType,
+  lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
+): RefTargetType | undefined {
+  if (dynamicRef === '#') {
+    for (let index = dynamicScope.length - 1; index >= 0; index--) {
+      if (dynamicScope[index].anchor === '') {
+        return {
+          'graph': dynamicScope[index].graph,
+          'node': dynamicScope[index].node
+        };
+      }
+    }
+
+    return undefined;
+  }
+
+  const resolved = RefResolver.resolve(dynamicRef, graph, lookupSchema, lookupGraph);
+
+  if (resolved === undefined) {
+    return undefined;
+  }
+
+  const fragment = GraphEngineSupport.extractNamedFragment(dynamicRef);
+  const resolvedSem = resolved.graph.semantics(resolved.node);
+  const resolvedAnchor = resolvedSem.dynamicAnchor;
+
+  if (fragment === undefined || resolvedAnchor !== fragment) {
+    return resolved;
+  }
+
+  for (const entry of dynamicScope) {
+    if (entry.anchor === fragment) {
+      return {
+        'graph': entry.graph,
+        'node': entry.node
+      };
+    }
+  }
+
+  return resolved;
+}
+
+/**
+ * Compile a `$dynamicRef` validator.
+ *
+ * Resolution is deferred to runtime (depends on `ctx.dynamicScope`); per-target
+ * validators are lazily compiled and cached via `context.compileNodeValidateWithErrors`.
+ *
+ * The `ctx.refStack` guard (refKey = `${schemaId}::dynamic::${dynamicRef}`) prevents
+ * infinite recursion, mirroring `Refs.resolveDynamicRef` (Refs.ts:22).
+ */
+function compileDynamicRefValidator(opts: DynamicRefValidatorOptionsType): ValidateWithErrorsFnType {
+  const {
+    context, dynamicRef, formatRegistry, graph, lookupGraph, lookupSchema
+  } = opts;
+
+  const schemaId = GraphEngineSupport.schemaId(graph.rootSchema) ?? '<anonymous>';
+  const refKey = `${schemaId}::dynamic::${dynamicRef}`;
+
+  // Per-node validator cache: resolved node → compiled validator.
+  const validatorCache = new WeakMap<SchemaGraphNodeType, ValidateWithErrorsFnType>();
+
+  return (
+    value: unknown,
+    path: string,
+    ctx: ExecContextType
+  ): ValidateWithErrorsResultType => {
+    if (ctx.refStack.has(refKey)) {
+      return {
+        'valid': true,
+        value
+      };
+    }
+
+    const target = resolveDynamicRefTarget(dynamicRef, graph, ctx.dynamicScope, lookupSchema, lookupGraph);
+
+    if (target === undefined) {
+      return {
+        'valid': true,
+        value
+      };
+    }
+
+    ctx.refStack.add(refKey);
+
+    try {
+      let cached = validatorCache.get(target.node);
+
+      if (cached === undefined) {
+        cached = context.compileNodeValidateWithErrors(target.node, formatRegistry, target.graph, lookupSchema);
+        validatorCache.set(target.node, cached);
+      }
+
+      return cached(value, path, ctx);
+    } finally {
+      ctx.refStack.delete(refKey);
+    }
   };
 }
 
@@ -1653,39 +734,39 @@ function buildPlanCompositionValidators(opts: PlanCompileWithSemanticsType): Com
     }
   }
 
-  let anyOfChecks: CheckFnType[] | undefined;
+  let anyOfValidators: undefined | ValidateWithErrorsFnType[];
 
   if (sem.anyOf.length > 0) {
-    anyOfChecks = [];
+    anyOfValidators = [];
     for (const node of sem.anyOf) {
-      anyOfChecks.push(context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema));
+      anyOfValidators.push(context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema));
     }
   }
 
-  let oneOfChecks: CheckFnType[] | undefined;
+  let oneOfValidators: undefined | ValidateWithErrorsFnType[];
 
   if (sem.oneOf.length > 0) {
-    oneOfChecks = [];
+    oneOfValidators = [];
     for (const node of sem.oneOf) {
-      oneOfChecks.push(context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema));
+      oneOfValidators.push(context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema));
     }
   }
 
   return {
     allOfValidators,
-    anyOfChecks,
-    oneOfChecks
+    anyOfValidators,
+    oneOfValidators
   };
 }
 
-/** Compile `if` / `then` / `else` checks and validators from the semantics node. */
+/** Compile `if` / `then` / `else` validators from the semantics node. */
 function buildPlanConditionalValidators(opts: PlanCompileWithSemanticsType): ConditionalValidatorsResultType {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
-  const ifCheck = sem.ifNode === undefined
+  const ifValidator = sem.ifNode === undefined
     ? undefined
-    : context.compileNodeOrBooleanCheck(sem.ifNode, formatRegistry, graph, lookupSchema);
+    : context.compileNodeOrBooleanValidateWithErrors(sem.ifNode, formatRegistry, graph, lookupSchema);
   const thenValidator = sem.ifNode !== undefined && sem.thenNode !== undefined
     ? context.compileNodeOrBooleanValidateWithErrors(sem.thenNode, formatRegistry, graph, lookupSchema)
     : undefined;
@@ -1695,7 +776,7 @@ function buildPlanConditionalValidators(opts: PlanCompileWithSemanticsType): Con
 
   return {
     elseValidator,
-    ifCheck,
+    ifValidator,
     thenValidator
   };
 }
@@ -1802,16 +883,16 @@ function buildPlanConstraintValidators(opts: PlanCompileWithSemanticsType): Cons
     && additionalPropertiesNode !== false
     ? context.compileNodeOrBooleanValidateWithErrors(additionalPropertiesNode, formatRegistry, graph, lookupSchema)
     : undefined;
-  const complementCheck = sem.complementNode === undefined
+  const complementValidator = sem.complementNode === undefined
     ? undefined
-    : context.compileNodeOrBooleanCheck(sem.complementNode, formatRegistry, graph, lookupSchema);
+    : context.compileNodeOrBooleanValidateWithErrors(sem.complementNode, formatRegistry, graph, lookupSchema);
   const propertyNamesValidator = sem.propertyNamesNode === undefined
     ? undefined
     : context.compileNodeOrBooleanValidateWithErrors(sem.propertyNamesNode, formatRegistry, graph, lookupSchema);
 
   return {
     additionalValidator,
-    complementCheck,
+    complementValidator,
     propertyNamesValidator
   };
 }
@@ -1826,12 +907,12 @@ function buildPlanPrelude(opts: PlanCompileWithSemanticsType): PlanPreludeType {
     ? formatRegistry.get(sem.format)
     : undefined;
   const {
-    additionalValidator, complementCheck, propertyNamesValidator
+    additionalValidator, complementValidator, propertyNamesValidator
   } = buildPlanConstraintValidators(opts);
 
   return {
     additionalValidator,
-    complementCheck,
+    complementValidator,
     'depRequiredEntries': buildPlanDepRequired(sem.dependentRequired),
     formatValidator,
     patternRegex,
@@ -1857,21 +938,153 @@ function buildPlanArrayValidators(opts: PlanCompileWithSemanticsType): PlanArray
     }
   }
 
-  const containsCheck = sem.containsNode === undefined
+  const containsValidator = sem.containsNode === undefined
     ? undefined
-    : context.compileNodeOrBooleanCheck(sem.containsNode, formatRegistry, graph, lookupSchema);
+    : context.compileNodeOrBooleanValidateWithErrors(sem.containsNode, formatRegistry, graph, lookupSchema);
 
   const itemValidator = sem.itemsNode === undefined
     ? undefined
     : context.compileNodeOrBooleanValidateWithErrors(sem.itemsNode, formatRegistry, graph, lookupSchema);
 
   return {
-    containsCheck,
+    containsValidator,
     itemValidator,
     prefixValidators
   };
 }
 
+
+/**
+ * Compile a `unevaluatedProperties` or `unevaluatedItems` node to a validator or
+ * the sentinel `false` (meaning: reject all unevaluated items/properties).
+ *
+ * Returns `undefined` when no unevaluated node is present.
+ */
+function compileUnevaluatedNode(
+  node: SchemaGraphNodeType | undefined,
+  context: SchemaCompilerValidatePlanContextType,
+  formatRegistry: FormatRegistryInterface,
+  graph: SchemaGraphInterface,
+  lookupSchema: LookupSchemaFnType | undefined
+): false | undefined | ValidateWithErrorsFnType {
+  if (node === undefined) {
+    return undefined;
+  }
+
+  if (typeof node.schema === 'boolean') {
+    return node.schema ? undefined : false;
+  }
+
+  return context.compileNodeValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+}
+
+/**
+ * Compile an `rdfs:range` validator that replicates the interpreter semantics from
+ * `Unevaluated.rdfsRange` (Unevaluated.ts:125-169).
+ *
+ * At compile time the range schema IRI is resolved via `lookupSchema`. If found,
+ * a compiled validator is built for it. If not found at compile time, the validator
+ * returns valid immediately (matching interpreter behaviour where an unregistered
+ * range IRI is a no-op).
+ *
+ * The runtime validator:
+ * 1. Guards against recursive range validation via `ctx.refStack`.
+ * 2. Validates record values and array-element records against the range schema.
+ *
+ * `rdfs:domain` has no runtime validation semantics in the interpreter — it is
+ * ontology/TBox projection metadata only. No validator is compiled for it.
+ */
+function compileRdfsRangeValidator(
+  rdfsRange: string | undefined,
+  context: SchemaCompilerValidatePlanContextType,
+  formatRegistry: FormatRegistryInterface,
+  graph: SchemaGraphInterface,
+  lookupSchema: LookupSchemaFnType | undefined,
+  lookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined
+): undefined | ValidateWithErrorsFnType {
+  if (rdfsRange === undefined) {
+    return undefined;
+  }
+
+  // Resolve at compile time. If the range schema is not registered, the
+  // validator is a no-op (matching the interpreter which also does nothing
+  // when lookupSchema returns undefined).
+  const rangeSchemaRecord = lookupSchema?.(rdfsRange);
+
+  if (rangeSchemaRecord === undefined) {
+    return undefined;
+  }
+
+  // Resolve the graph for the range schema, falling back to the current graph.
+  const rangeGraph = lookupGraph?.(rdfsRange) ?? graph;
+  const rangeNode = rangeGraph.node(rangeSchemaRecord) ?? rangeGraph.rootNode;
+  const rangeValidator = context.compileNodeValidateWithErrors(
+    rangeNode,
+    formatRegistry,
+    rangeGraph,
+    lookupSchema
+  );
+  const rangeRefKey = `rdfs:range::${rdfsRange}`;
+
+  return (
+    value: unknown,
+    path: string,
+    ctx: ExecContextType
+  ): ValidateWithErrorsResultType => {
+    if (ctx.refStack.has(rangeRefKey)) {
+      return {
+        'valid': true,
+        value
+      };
+    }
+
+    ctx.refStack.add(rangeRefKey);
+
+    try {
+      if (isRecord(value)) {
+        return rangeValidator(value, path, ctx);
+      }
+
+      if (Array.isArray(value)) {
+        // `Array.isArray` narrows `unknown` to `any[]`; restore the honest element
+        // type (instance data is arbitrary, not a schema).
+        const items: unknown[] = value;
+        let valid = true;
+
+        for (const [
+          i,
+          item
+        ] of items.entries()) {
+          if (isRecord(item) || Array.isArray(item)) {
+            const itemRes = rangeValidator(item, `${path}/${i}`, ctx);
+
+            if (!itemRes.valid) {
+              if (!ctx.collectErrors) {
+                return {
+                  'valid': false,
+                  value
+                };
+              }
+              valid = false;
+            }
+          }
+        }
+
+        return {
+          valid,
+          value
+        };
+      }
+
+      return {
+        'valid': true,
+        value
+      };
+    } finally {
+      ctx.refStack.delete(rangeRefKey);
+    }
+  };
+}
 
 /**
  * Build a compiled validation plan from a single graph node.
@@ -1921,7 +1134,7 @@ export function buildNodePlan(
 
   const {
     additionalValidator,
-    complementCheck,
+    complementValidator,
     depRequiredEntries,
     formatValidator,
     patternRegex,
@@ -1931,20 +1144,20 @@ export function buildNodePlan(
   const patternPropValidators = buildPlanPatternPropValidators(planSemOpts);
 
   const {
-    containsCheck,
+    containsValidator,
     itemValidator,
     prefixValidators
   } = buildPlanArrayValidators(planSemOpts);
 
   const {
     allOfValidators,
-    anyOfChecks,
-    oneOfChecks
+    anyOfValidators,
+    oneOfValidators
   } = buildPlanCompositionValidators(planSemOpts);
 
   const {
     elseValidator,
-    ifCheck,
+    ifValidator,
     thenValidator
   } = buildPlanConditionalValidators(planSemOpts);
 
@@ -1965,20 +1178,64 @@ export function buildNodePlan(
   const jtExtra = sem.jtConfig?.extra;
   const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
 
+  const propertyZeroValueSynthesizers = new Map<string, () => unknown>();
+  const semRequired = sem.required;
+
+  if (semRequired.length > 0) {
+    for (const key of semRequired) {
+      const propNode = sem.properties.get(key);
+
+      if (propNode === undefined) {
+        propertyZeroValueSynthesizers.set(key, (): unknown => {
+          return null;
+        });
+      } else {
+        const capturedNode = propNode;
+        const capturedGraph = graph;
+        const capturedLookup = lookupSchema;
+        const capturedLookupGraph = lookupGraph;
+
+        propertyZeroValueSynthesizers.set(key, (): unknown => {
+          return context.synthesizeZeroValue(capturedNode, capturedGraph, capturedLookup, capturedLookupGraph);
+        });
+      }
+    }
+  }
+
   return {
     'additionalIsFalse': sem.additionalPropertiesNode === false,
     additionalValidator,
     allOfValidators,
     allowedKeys,
     allowedKeysForStrip,
-    anyOfChecks,
-    complementCheck,
+    anyOfValidators,
+    complementValidator,
     'constVal': sem.constValue,
-    containsCheck,
+    containsValidator,
+    'contentAssertionsEnabled': context.appliesFormatAssertions(sem),
+    'contentEncoding': sem.contentEncoding,
+    'contentMediaType': sem.contentMediaType,
     'customKeywordEntries': buildCustomKeywordEntries(context.activeCustomKeywords, sem),
     'defaultValue': sem.defaultValue,
     depRequiredEntries,
     depSchemaValidators,
+    'dynamicRefValidator': typeof sem.dynamicRef === 'string'
+      ? compileDynamicRefValidator({
+        context,
+        'dynamicRef': sem.dynamicRef,
+        formatRegistry,
+        graph,
+        lookupGraph,
+        'lookupSchema': lookupSchema
+      })
+      : undefined,
+    'dynamicScopeEntry': typeof sem.dynamicAnchor === 'string'
+      ? {
+        'anchor': sem.dynamicAnchor,
+        graph,
+        'node': graphNode
+      }
+      : undefined,
     elseValidator,
     enumSet,
     'enumValues': sem.enumValues,
@@ -1988,7 +1245,7 @@ export function buildNodePlan(
     formatValidator,
     'hasConst': sem.hasConst,
     'hasDefault': sem.hasDefault,
-    ifCheck,
+    ifValidator,
     itemValidator,
     'jtExtra': jtExtra,
     'jtStrictPerField': jtStrictPerField,
@@ -2003,7 +1260,7 @@ export function buildNodePlan(
     'minLength': sem.minLength,
     'minProperties': sem.minProperties,
     'multipleOf': sem.multipleOf,
-    oneOfChecks,
+    oneOfValidators,
     'pattern': sem.pattern,
     patternPropValidators,
     patternRegex,
@@ -2016,6 +1273,7 @@ export function buildNodePlan(
       'propertyEntries': propertyEntries
     }),
     propertyNamesValidator,
+    propertyZeroValueSynthesizers,
     'propValidators': compilePropertyValidators({
       'configStrict': sem.jtConfig?.strict,
       context,
@@ -2024,6 +1282,14 @@ export function buildNodePlan(
       'lookupSchema': lookupSchema,
       'propertyEntries': propertyEntries
     }),
+    'rdfsRangeValidator': compileRdfsRangeValidator(
+      sem.rdfsRange,
+      context,
+      formatRegistry,
+      graph,
+      lookupSchema,
+      lookupGraph
+    ),
     'refValidator': compileRefValidator({
       context,
       formatRegistry,
@@ -2035,6 +1301,20 @@ export function buildNodePlan(
     'required': sem.required.length > 0 ? sem.required : undefined,
     thenValidator,
     'types': sem.schemaTypes,
+    'unevaluatedItemsValidator': compileUnevaluatedNode(
+      sem.unevaluatedItemsNode,
+      context,
+      formatRegistry,
+      graph,
+      lookupSchema
+    ),
+    'unevaluatedPropertiesValidator': compileUnevaluatedNode(
+      sem.unevaluatedPropertiesNode,
+      context,
+      formatRegistry,
+      graph,
+      lookupSchema
+    ),
     'uniqueItems': sem.uniqueItems
   };
 }

@@ -17,10 +17,12 @@ declare const DIALECT: unique symbol;
 declare const EXCLUSIVE_MAXIMUM: unique symbol;
 declare const EXCLUSIVE_MINIMUM: unique symbol;
 declare const FORMAT: unique symbol;
+declare const MAX_CONTAINS: unique symbol;
 declare const MAX_ITEMS: unique symbol;
 declare const MAX_LENGTH: unique symbol;
 declare const MAX_PROPERTIES: unique symbol;
 declare const MAXIMUM: unique symbol;
+declare const MIN_CONTAINS: unique symbol;
 declare const MIN_ITEMS: unique symbol;
 declare const MIN_LENGTH: unique symbol;
 declare const MIN_PROPERTIES: unique symbol;
@@ -201,6 +203,32 @@ export type ExclusiveMinimumBrandType<TN extends number> = { readonly [EXCLUSIVE
 export type FormatBrandType<TF extends string> = { readonly [FORMAT]: TF };
 
 /**
+ * Phantom brand for the `maxContains` keyword.
+ *
+ * Carries the maximum number of matching `contains` items so arrays validated
+ * against different `maxContains` values produce incompatible types.
+ *
+ * @remarks
+ * Attach via `InferSchemaType` when `arrayBrands` is enabled.
+ * The brand is not assignable from plain arrays — values must pass through
+ * the validation API (`coerce`, `materialize`, or `is`) first.
+ *
+ * @example
+ * ```ts
+ * type T = MaxContainsBrandType<5>;
+ * ```
+ *
+ * @category Constraint Brands
+ * @since 0.23.0
+ * @see {@link MinContainsBrandType}
+ * @see {@link ContainsBrandType}
+ * @group Constraint Brands
+ *
+ * @typeParam TN - The numeric literal for the maximum contains count.
+ */
+export type MaxContainsBrandType<TN extends number> = { readonly [MAX_CONTAINS]: TN };
+
+/**
  * Phantom brand for the `maxItems` keyword.
  *
  * Carries the maximum item count so arrays validated against different
@@ -291,6 +319,32 @@ export type MaxPropertiesBrandType<TN extends number> = { readonly [MAX_PROPERTI
  * @typeParam TN - The numeric literal for the inclusive upper bound.
  */
 export type MaximumBrandType<TN extends number> = { readonly [MAXIMUM]: TN };
+
+/**
+ * Phantom brand for the `minContains` keyword.
+ *
+ * Carries the minimum number of matching `contains` items so arrays validated
+ * against different `minContains` values produce incompatible types.
+ *
+ * @remarks
+ * Attach via `InferSchemaType` when `arrayBrands` is enabled.
+ * The brand is not assignable from plain arrays — values must pass through
+ * the validation API (`coerce`, `materialize`, or `is`) first.
+ *
+ * @example
+ * ```ts
+ * type T = MinContainsBrandType<2>;
+ * ```
+ *
+ * @category Constraint Brands
+ * @since 0.23.0
+ * @see {@link MaxContainsBrandType}
+ * @see {@link ContainsBrandType}
+ * @group Constraint Brands
+ *
+ * @typeParam TN - The numeric literal for the minimum contains count.
+ */
+export type MinContainsBrandType<TN extends number> = { readonly [MIN_CONTAINS]: TN };
 
 /**
  * Phantom brand for the `minItems` keyword.

@@ -3365,12 +3365,13 @@ function expandCurie(value: string): string {
       const scenarios: Array<{
         'code': string;
         'name': string;
-        'schema': Record<string, unknown>;
+        'schema': Record<string, unknown> & { '$id': string };
       }> = [
         {
           'code': 'DIALECT_UNSUPPORTED',
           'name': 'rejects unsupported dialect (draft-07)',
           'schema': {
+            '$id': 'urn:test:dialect:draft07',
             '$schema': 'http://json-schema.org/draft-07/schema#',
             'type': 'string'
           }
@@ -3379,6 +3380,7 @@ function expandCurie(value: string): string {
           'code': 'VOCABULARY_UNSUPPORTED',
           'name': 'rejects unknown required vocabulary',
           'schema': {
+            '$id': 'urn:test:dialect:custom-vocab',
             '$schema': 'https://json-schema.org/draft/2020-12/schema',
             '$vocabulary': { 'https://example.io/vocab/custom-required': true },
             'type': 'string'
@@ -3390,9 +3392,11 @@ function expandCurie(value: string): string {
         'code': expectedCode, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
+          const reg = new SchemaRegistry({ 'enableStrictGraph': false });
+
           assert.throws(
             () => {
-              new GraphEngine(sch);
+              reg.set(sch);
             },
             (err: unknown) => {
               assert.ok(err instanceof GraphError, 'expected GraphError');
@@ -3414,11 +3418,32 @@ function expandCurie(value: string): string {
       }> = [
         {
           'data': 'not-an-email',
-          'expected': true,
-          'name': 'format as annotation-only allows invalid format',
+          'expected': false,
+          'name': 'format assertions are ON by default — invalid email fails',
           'schema': {
             '$id': 'urn:test:format-annotation',
             '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            'format': 'email',
+            'type': 'string'
+          }
+        },
+        {
+          'data': 'not-an-email',
+          'expected': true,
+          'name': 'format opt-out: $vocabulary format-assertion false disables checking',
+          'schema': {
+            '$id': 'urn:test:format-opt-out',
+            '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            '$vocabulary': {
+              'https://json-schema.org/draft/2020-12/vocab/applicator': true,
+              'https://json-schema.org/draft/2020-12/vocab/content': true,
+              'https://json-schema.org/draft/2020-12/vocab/core': true,
+              'https://json-schema.org/draft/2020-12/vocab/format-annotation': true,
+              'https://json-schema.org/draft/2020-12/vocab/format-assertion': false,
+              'https://json-schema.org/draft/2020-12/vocab/meta-data': true,
+              'https://json-schema.org/draft/2020-12/vocab/unevaluated': true,
+              'https://json-schema.org/draft/2020-12/vocab/validation': true
+            },
             'format': 'email',
             'type': 'string'
           }
@@ -3467,14 +3492,36 @@ function expandCurie(value: string): string {
         },
         {
           'data': 'definitely not base64 or json',
-          'expected': true,
-          'name': 'content keywords are annotation-only, not assertions',
+          'expected': false,
+          'name': 'content assertions are ON by default — invalid base64 fails',
           'schema': {
             '$id': 'urn:test:content-annotations',
             '$schema': 'https://json-schema.org/draft/2020-12/schema',
             'contentEncoding': 'base64',
             'contentMediaType': 'application/json',
             'contentSchema': { '$ref': 'urn:test:content-inner' },
+            'type': 'string'
+          }
+        },
+        {
+          'data': 'definitely not base64 or json',
+          'expected': true,
+          'name': 'content opt-out: $vocabulary format-assertion false disables content checking',
+          'schema': {
+            '$id': 'urn:test:content-opt-out',
+            '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            '$vocabulary': {
+              'https://json-schema.org/draft/2020-12/vocab/applicator': true,
+              'https://json-schema.org/draft/2020-12/vocab/content': true,
+              'https://json-schema.org/draft/2020-12/vocab/core': true,
+              'https://json-schema.org/draft/2020-12/vocab/format-annotation': true,
+              'https://json-schema.org/draft/2020-12/vocab/format-assertion': false,
+              'https://json-schema.org/draft/2020-12/vocab/meta-data': true,
+              'https://json-schema.org/draft/2020-12/vocab/unevaluated': true,
+              'https://json-schema.org/draft/2020-12/vocab/validation': true
+            },
+            'contentEncoding': 'base64',
+            'contentMediaType': 'application/json',
             'type': 'string'
           }
         }
@@ -4512,6 +4559,89 @@ function expandCurie(value: string): string {
       assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/address/properties/street'), 'street');
       assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/'), '');
     });
+
+    void it('propertyName — JSON-pointer /properties/, bare fragment, and path segment forms', () => {
+      // JSON-pointer /properties/<name> form
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#/properties/email'),
+        'email',
+        'bare /properties/ fragment'
+      );
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#/properties/address/properties/city'),
+        'address',
+        'nested: first /properties/ segment after last occurrence'
+      );
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#/properties/name/nested'),
+        'name',
+        '/properties/<name>/<sub> stops at first /'
+      );
+
+      // Bare fragment (classId#propName)
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#email'),
+        'email',
+        'bare fragment no slash'
+      );
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/User#some/nested'),
+        'nested',
+        'bare fragment last slash segment'
+      );
+
+      // No '#' — last path segment
+      assert.equal(
+        SchemaIri.propertyName('https://ex.com/vocab/email'),
+        'email',
+        'no hash: last path segment'
+      );
+      assert.equal(
+        SchemaIri.propertyName('email'),
+        'email',
+        'no hash, no slash: whole string'
+      );
+    });
+
+    void it('splitAtProperties — splits fragment at last /properties/ boundary', () => {
+      // Basic case
+      const r1 = SchemaIri.splitAtProperties('/properties/name');
+
+      assert.ok(r1 !== undefined);
+      assert.equal(r1.parent, '');
+      assert.equal(r1.property, 'name');
+
+      // Nested: last /properties/
+      const r2 = SchemaIri.splitAtProperties('/properties/address/properties/city');
+
+      assert.ok(r2 !== undefined);
+      assert.equal(r2.parent, '/properties/address');
+      assert.equal(r2.property, 'city');
+
+      // allOf prefix before properties
+      const r3 = SchemaIri.splitAtProperties('/allOf/0/properties/tag');
+
+      assert.ok(r3 !== undefined);
+      assert.equal(r3.parent, '/allOf/0');
+      assert.equal(r3.property, 'tag');
+
+      // No /properties/ — returns undefined
+      const r4 = SchemaIri.splitAtProperties('/allOf/0');
+
+      assert.equal(r4, undefined);
+
+      // Empty fragment — returns undefined
+      const r5 = SchemaIri.splitAtProperties('');
+
+      assert.equal(r5, undefined);
+
+      // /properties/ with nested deeper path — property is just the immediate name
+      const r6 = SchemaIri.splitAtProperties('/properties/addr/sub/deeper');
+
+      assert.ok(r6 !== undefined);
+      assert.equal(r6.parent, '');
+      assert.equal(r6.property, 'addr');
+    });
   });
 }
 
@@ -4544,43 +4674,6 @@ void describe('maxSchemaDepth — GraphEngine recursion depth parameter', () => 
     'required': ['name'],
     'type': 'object'
   } as const;
-
-  void it('engine.execute() with maxSchemaDepth below the schema-graph $ref depth throws RECURSION_LIMIT', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:depth:',
-      'enableStrictGraph': false,
-      'maxSchemaDepth': 1,
-      'schemas': [SelfNode] as const
-    });
-
-    // maxSchemaDepth bounds the SCHEMA-GRAPH traversal depth, not the data depth.
-    // With maxSchemaDepth: 1 even a 2-element data chain trips the limit because
-    // resolving a $ref counts as descent.
-    const engine = jt.registry.engine(SelfNode);
-
-    assert.throws(
-      () => {
-        return engine.execute(buildSelfRefChain(2));
-      },
-      (err: unknown) => {
-        return err instanceof GraphError && (err).code === 'RECURSION_LIMIT';
-      }
-    );
-  });
-
-  void it('engine.execute() with maxSchemaDepth above the $ref depth completes successfully', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:depth:',
-      'enableStrictGraph': false,
-      'maxSchemaDepth': 100,
-      'schemas': [SelfNode] as const
-    });
-    const engine = jt.registry.engine(SelfNode);
-    const result = engine.execute(buildSelfRefChain(5));
-
-    assert.equal(result.valid, true);
-    assert.equal((result.value as Record<string, unknown>).name, 'root');
-  });
 
   void it('instantiate (compiled validation path) does NOT enforce maxSchemaDepth (documented gap)', () => {
     const jt = JsonTology.create({
@@ -4621,15 +4714,15 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
 
     registry.set(TreeNodeSchema);
 
-    const engine = registry.engine(TreeNodeSchema);
+    const validator = registry.validator(TreeNodeSchema.$id);
     const valid = {
       'left': { 'value': 2 },
       'right': { 'value': 3 },
       'value': 1
     };
-    const errors = engine.errors(valid);
+    const result = validator.validate(valid, { 'collectErrors': true });
 
-    assert.equal(errors.length, 0, `expected no errors but got: ${errors.map((err) => {
+    assert.equal(result.errors.length, 0, `expected no errors but got: ${result.errors.map((err) => {
       return err.message;
     }).join(', ')}`);
   });
@@ -4646,15 +4739,19 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
       },
       'type': 'object'
     };
-    const engine = new GraphEngine(schema);
+    const reg = new SchemaRegistry({ 'enableStrictGraph': false });
+
+    reg.set(schema as Record<string, unknown> & { '$id': string });
+
+    const validator = reg.validator(schema.$id as string);
     const valid = {
       'left': { 'value': 2 },
       'right': { 'value': 3 },
       'value': 1
     };
-    const errors = engine.errors(valid);
+    const result = validator.validate(valid, { 'collectErrors': true });
 
-    assert.equal(errors.length, 0, `expected no errors but got: ${errors.map((err) => {
+    assert.equal(result.errors.length, 0, `expected no errors but got: ${result.errors.map((err) => {
       return err.message;
     }).join(', ')}`);
   });
@@ -4664,20 +4761,20 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
 
     registry.set(TreeNodeSchema);
 
-    const engine = registry.engine(TreeNodeSchema);
+    const validator = registry.validator(TreeNodeSchema.$id);
     // left.value is a string, violating { type: 'number' } on the self-referenced schema.
     const invalid = {
       'left': { 'value': 'not-a-number' },
       'value': 1
     };
-    const errors = engine.errors(invalid);
+    const result = validator.validate(invalid, { 'collectErrors': true });
 
-    assert.ok(errors.length > 0, 'expected at least one validation error for invalid nested node');
+    assert.ok(result.errors.length > 0, 'expected at least one validation error for invalid nested node');
     assert.ok(
-      errors.some((err) => {
+      result.errors.some((err) => {
         return err.path.includes('left');
       }),
-      `expected an error path containing "left", got: ${errors.map((err) => {
+      `expected an error path containing "left", got: ${result.errors.map((err) => {
         return err.path;
       }).join(', ')}`
     );
@@ -4737,10 +4834,10 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
 
     registry.set(TreeSchema);
 
-    const engine = registry.engine(TreeSchema);
-    const errors = engine.errors(validData);
+    const validator = registry.validator(TreeSchema.$id);
+    const result = validator.validate(validData, { 'collectErrors': true });
 
-    assert.equal(errors.length, 0, `expected no errors but got: ${errors.map((err) => {
+    assert.equal(result.errors.length, 0, `expected no errors but got: ${result.errors.map((err) => {
       return err.message;
     }).join(', ')}`);
   });
@@ -4750,10 +4847,10 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
 
     registry.set(TreeSchema);
 
-    const engine = registry.engine(TreeSchema);
-    const errors = engine.errors(invalidData);
+    const validator = registry.validator(TreeSchema.$id);
+    const result = validator.validate(invalidData, { 'collectErrors': true });
 
-    assert.ok(errors.length > 0, 'expected at least one validation error for invalid nested node');
+    assert.ok(result.errors.length > 0, 'expected at least one validation error for invalid nested node');
   });
 
   void it('error path includes the nested field that failed', () => {
@@ -4761,14 +4858,14 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
 
     registry.set(TreeSchema);
 
-    const engine = registry.engine(TreeSchema);
-    const errors = engine.errors(invalidData);
+    const validator = registry.validator(TreeSchema.$id);
+    const result = validator.validate(invalidData, { 'collectErrors': true });
 
     assert.ok(
-      errors.some((err) => {
+      result.errors.some((err) => {
         return err.path.includes('children') || err.path.includes('label');
       }),
-      `expected an error path containing "children" or "label", got: ${errors.map((err) => {
+      `expected an error path containing "children" or "label", got: ${result.errors.map((err) => {
         return err.path;
       }).join(', ')}`
     );

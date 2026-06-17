@@ -441,44 +441,6 @@ export const TIME_SECONDS_DIGIT_1_OFFSET = 6;
 export const TIME_SECONDS_DIGIT_2_OFFSET = 7;
 
 /**
- * IP version number for IPv4.
- *
- * @remarks
- * Used in format validation dispatch to select the IPv4 validation path.
- *
- * @example
- * ```ts
- * if (version === IP_VERSION_4) { validateIpv4(value); }
- * ```
- *
- * @category Format validation
- * @since 0.1.0
- * @see IP_VERSION_6
- * @defaultValue `4`
- * @group Constants
- */
-export const IP_VERSION_4 = 4;
-
-/**
- * IP version number for IPv6.
- *
- * @remarks
- * Used in format validation dispatch to select the IPv6 validation path.
- *
- * @example
- * ```ts
- * if (version === IP_VERSION_6) { validateIpv6(value); }
- * ```
- *
- * @category Format validation
- * @since 0.1.0
- * @see IP_VERSION_4
- * @defaultValue `6`
- * @group Constants
- */
-export const IP_VERSION_6 = 6;
-
-/**
  * Number of dot-separated parts in a valid IPv4 address string.
  *
  * @remarks
@@ -552,7 +514,6 @@ export const IPV4_OCTET_MAX_VALUE = 255;
  *
  * @category Format validation
  * @since 0.1.0
- * @see IP_VERSION_6
  * @defaultValue `8`
  * @group Constants
  */
@@ -581,16 +542,15 @@ export const DAYS_IN_JAN = 31;
  * Number of days in February in a common (non-leap) year.
  *
  * @remarks
- * Used in the per-month day-count lookup. For leap years, use `DAYS_IN_FEB_LEAP`.
+ * Used in the per-month day-count lookup when validating calendar dates.
  *
  * @example
  * ```ts
- * const feb = isLeap ? DAYS_IN_FEB_LEAP : DAYS_IN_FEB_COMMON;
+ * const feb = isLeap ? 29 : DAYS_IN_FEB_COMMON;
  * ```
  *
  * @category Format validation
  * @since 0.1.0
- * @see DAYS_IN_FEB_LEAP
  * @defaultValue `28`
  * @group Constants
  */
@@ -785,26 +745,6 @@ export const DAYS_IN_NOV = 30;
  * @group Constants
  */
 export const DAYS_IN_DEC = 31;
-
-/**
- * Number of days in February in a leap year.
- *
- * @remarks
- * Used in calendar date validation when the year is divisible by 4 (with
- * the standard century/400-year leap corrections applied).
- *
- * @example
- * ```ts
- * const feb = isLeap ? DAYS_IN_FEB_LEAP : DAYS_IN_FEB_COMMON;
- * ```
- *
- * @category Format validation
- * @since 0.1.0
- * @see DAYS_IN_FEB_COMMON
- * @defaultValue `29`
- * @group Constants
- */
-export const DAYS_IN_FEB_LEAP = 29;
 
 /**
  * Number of characters in each base64 chunk (every 4 characters encodes 3 bytes).

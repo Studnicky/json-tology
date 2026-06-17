@@ -2,6 +2,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { RefDecoderRegistryType } from '../../types/RefDecoderRegistry.js';
 
+import { BaseError } from '../../errors/BaseError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { Transform } from '../transform/Transform.js';
@@ -45,7 +46,7 @@ export class RefDecoder {
       if (error instanceof TransformError) {
         throw error;
       }
-      const causeError = error instanceof Error ? error : new Error(String(error));
+      const causeError = BaseError.toCause(error);
       const schemaId = typeof schema.$id === 'string' ? schema.$id : undefined;
 
       throw new DecodeError(

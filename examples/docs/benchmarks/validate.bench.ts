@@ -39,79 +39,79 @@ export function runValidateBench(): BenchResult[] {
   section('Validation — Review (flat object, valid data)');
 
   results.push(bench('review valid', 'json-tology', () => {
-    registry.validate(ReviewSchema.$id, reviewValid);
+    return registry.validate(ReviewSchema.$id, reviewValid);
   }));
 
   results.push(bench('review valid', 'typebox', () => {
-    tbReview.Check(reviewValid);
+    return tbReview.Check(reviewValid);
   }));
 
   results.push(bench('review valid', 'ajv', () => {
-    ajvValidateReview(reviewValid);
+    return ajvValidateReview(reviewValid);
   }));
 
   results.push(bench('review valid', 'zod', () => {
-    ReviewSchemaZod.safeParse(reviewValid);
+    return ReviewSchemaZod.safeParse(reviewValid);
   }));
 
   results.push(bench('review valid', 'valibot', () => {
-    safeParse(ReviewSchemaValibot, reviewValid);
+    return safeParse(ReviewSchemaValibot, reviewValid);
   }));
 
   results.push(bench('review valid', 'io-ts', () => {
-    ReviewSchemaIoTs.decode(reviewValid);
+    return ReviewSchemaIoTs.decode(reviewValid);
   }));
 
   section('Validation — Review (invalid data, error collection)');
 
   results.push(bench('review invalid', 'json-tology', () => {
-    registry.validate(ReviewSchema.$id, reviewInvalid);
+    return registry.validate(ReviewSchema.$id, reviewInvalid);
   }));
 
   results.push(bench('review invalid', 'typebox', () => {
-    void [...tbReview.Errors(reviewInvalid)];
+    return [...tbReview.Errors(reviewInvalid)];
   }));
 
   results.push(bench('review invalid', 'ajv', () => {
-    ajvValidateReview(reviewInvalid);
+    return ajvValidateReview(reviewInvalid);
   }));
 
   results.push(bench('review invalid', 'zod', () => {
-    ReviewSchemaZod.safeParse(reviewInvalid);
+    return ReviewSchemaZod.safeParse(reviewInvalid);
   }));
 
   results.push(bench('review invalid', 'valibot', () => {
-    safeParse(ReviewSchemaValibot, reviewInvalid);
+    return safeParse(ReviewSchemaValibot, reviewInvalid);
   }));
 
   results.push(bench('review invalid', 'io-ts', () => {
-    ReviewSchemaIoTs.decode(reviewInvalid);
+    return ReviewSchemaIoTs.decode(reviewInvalid);
   }));
 
   section('Validation — Order (nested $ref graph, valid data)');
 
   results.push(bench('order valid', 'json-tology', () => {
-    registry.validate(OrderSchema.$id, orderValid);
+    return registry.validate(OrderSchema.$id, orderValid);
   }));
 
   results.push(bench('order valid', 'typebox', () => {
-    tbOrder.Check(orderValid);
+    return tbOrder.Check(orderValid);
   }));
 
   results.push(bench('order valid', 'ajv', () => {
-    ajvValidateOrder(orderValid);
+    return ajvValidateOrder(orderValid);
   }));
 
   results.push(bench('order valid', 'zod', () => {
-    OrderSchemaZod.safeParse(orderValid);
+    return OrderSchemaZod.safeParse(orderValid);
   }));
 
   results.push(bench('order valid', 'valibot', () => {
-    safeParse(OrderSchemaValibot, orderValid);
+    return safeParse(OrderSchemaValibot, orderValid);
   }));
 
   results.push(bench('order valid', 'io-ts', () => {
-    OrderSchemaIoTs.decode(orderValid);
+    return OrderSchemaIoTs.decode(orderValid);
   }));
 
   return results;

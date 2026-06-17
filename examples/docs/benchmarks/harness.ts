@@ -12,10 +12,25 @@ export interface BenchResult {
   'opsPerSec': number;
 }
 
+/**
+ * Module-level volatile sink used to defeat V8 dead-code elimination (DCE).
+ *
+ * V8 can elide an entire call to a pure, side-effect-free function when its
+ * return value is discarded — producing fictitious sub-nanosecond measurements.
+ * Assigning the return value of every bench closure to `_blackhole` forces V8
+ * to materialise the return value and prevents it from proving the call dead.
+ * The guard below forces a read of `_blackhole` after the loop in a
+ * Math.random()-gated branch: V8 cannot constant-fold Math.random(), so it
+ * cannot determine the branch is unreachable and must keep the assignment live.
+ * This technique is equivalent to the `__attribute__((noinline))` / escape
+ * pattern used in C++ micro-benchmark harnesses (e.g. Google Benchmark).
+ */
+let _blackhole: unknown;
+
 export function bench(
   name: string,
   library: string,
-  fn: () => void,
+  fn: () => unknown,
   options: { 'iterations'?: number;
     'warmup'?: number } = {}
 ): BenchResult {
@@ -23,17 +38,27 @@ export function bench(
     iterations = 100_000, warmup = 1000
   } = options;
 
-  // Warmup — let V8 JIT compile the hot path
+  // Warmup — let V8 JIT compile the hot path. Sink the result to defeat DCE.
   for (let i = 0; i < warmup; i++) {
-    fn();
+    _blackhole = fn();
   }
 
   const start = performance.now();
 
+  // Measured loop. Assign each result to the module-level sink so V8 cannot
+  // elide the call even when the measured function is pure and cheap.
   for (let i = 0; i < iterations; i++) {
-    fn();
+    _blackhole = fn();
   }
   const elapsed = performance.now() - start;
+
+  // Force a read of _blackhole via an unpredictable branch. Math.random() is
+  // not constant-foldable, so V8 must keep the entire sink assignment chain
+  // live. Without this read, a sufficiently aggressive optimiser could still
+  // treat the write-only _blackhole as dead and remove the assignments.
+  if (_blackhole === undefined && Math.random() < 0) {
+    throw new Error(String(_blackhole));
+  }
 
   const avgMs = elapsed / iterations;
   const avgUs = avgMs * 1000;

@@ -2,7 +2,7 @@ name: Code Coverage
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     types: [opened, synchronize, reopened]
   push:
     branches: [main]
@@ -26,8 +26,24 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run tests with coverage
-        run: npx tsx --test --experimental-test-coverage 'test/unit/**/*.test.ts' 2>&1 | tee coverage-report.txt
+      - name: Run tests with coverage (threshold-gated)
+        # Measure SOURCE coverage across unit + integration (integration exercises
+        # the projection/SHACL paths that unit alone misses). Exclude built dist
+        # artifacts and the test files themselves so the numbers reflect src/, and
+        # fail the job if coverage regresses below the floor. pipefail preserves
+        # the test runner's exit code through the tee pipe.
+        run: |
+          set -o pipefail
+          npx tsx --test --experimental-test-coverage \
+            --test-coverage-exclude='**/dist/**' \
+            --test-coverage-exclude='test/**' \
+            --test-coverage-lines=96 \
+            --test-coverage-branches=87 \
+            --test-coverage-functions=89 \
+            'test/smoke/**/*.test.ts' \
+            'test/unit/**/*.test.ts' \
+            'test/integration/**/*.test.ts' \
+            2>&1 | tee coverage-report.txt
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7

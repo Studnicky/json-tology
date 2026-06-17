@@ -7,8 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Compile-time `$ref` resolution is now uniform and graph-native, and the inline
-type surface has been consolidated into a canonical taxonomy.
+### Added
+
+### Changed
+
+- **Validation runs a single compiled execution path.** Every keyword — `$ref`,
+  `$dynamicRef`/`$dynamicAnchor`, `unevaluatedProperties`/`unevaluatedItems`,
+  `rdfs:range`/`rdfs:domain`, and recursive/cyclic schemas and data — now compiles.
+  The graph-interpreter validation executor is removed, and there is one compiled
+  routine per feature (no separate boolean `check` compilation, no per-keyword
+  check/validate duality, no base-vs-wrap composition duplication).
+- **Materialization runs on the compiled path.** `createDefault()`,
+  `materialize(..., { synthesizeDefaults })`, and the `passAdditionalProperties`
+  option are served by compiled `synthesizeDefaults` (data-aware zero-value
+  synthesis) and `ignoreAdditionalProperties` rather than the interpreter.
+
+### Removed
+
+- **BREAKING — `GraphEngine.execute()`, `.check()`, `.errors()`, and
+  `GraphExecutionResultType` are removed.** Run validation through
+  `registry.validate(id, data)` or `registry.validator(id).validate(data, options)`.
+  `GraphEngine` is retained for schema-graph construction and `semantics()`.
+
+### Fixed
+
+- **Unresolvable `$ref` is reported, not silently skipped.** A `$ref` whose target
+  is not registered surfaces a `REF_NOT_FOUND` error instead of passing validation.
+
+## [0.23.1] - 2026-06-15
+
+### Changed
+
+- **Validation tests assert the rejecting keyword.** Cases that were hidden inside
+  loop-based tests asserting only a valid/invalid boolean are now named per-case
+  tests that also assert which keyword produced the rejection, so a schema failing
+  for the wrong reason is caught rather than passing silently.
+- **Coverage is measured at the source and gated.** The coverage workflow now
+  measures `src/` coverage across unit and integration tests (excluding built
+  artifacts and test files, which previously deflated the reported figure) and
+  fails below lines 96% / branches 87% / functions 89%. Added table-driven
+  `FormatRegistry` tests covering the format-validator rejection branches.
+
+## [0.23.0] - 2026-06-15
+
+Compile-time inference closes its remaining gaps with runtime validation, the
+RDF projection layer drops its last duplicated logic, and the benchmark harness
+measures real work instead of optimizer-elided no-ops.
+
+### Added
+
+- **`minContains` / `maxContains` constraint brands.** `InferType` now carries
+  `MinContainsBrandType<N>` and `MaxContainsBrandType<N>` on arrays declaring
+  those keywords — the last `contains`-family keyword that had no type-level
+  trace.
+- **`pattern` value narrowing on `type: 'string'`.** A recognised anchored
+  pattern narrows the inferred value type via `PatternToKeyType`: `^(a|b|c)# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+ →
+  `'a' | 'b' | 'c'`, `^prefix` → `` `prefix${string}` ``. Complex or unanchored
+  patterns stay `string`, so the change is invisible to existing schemas.
+- **`propertyNames: { pattern }` key narrowing.** Object key types narrow to the
+  corresponding template-literal type, matching the existing `patternProperties`
+  behaviour. Non-anchored patterns keep the open key type.
+
+### Changed
+
+- **Benchmark harness is dead-code-elimination safe.** Every bench closure's
+  result is consumed through a volatile sink, so V8 can no longer elide cheap
+  pure operations into fictitious sub-nanosecond measurements. All published
+  benchmark results are regenerated against the corrected harness.
+- **`type-check:tests` runs the full test glob.** The curated
+  `tsconfig.types-test.json` (which silently excluded new type-test files) is
+  removed; the script now shares `tsconfig.tests.json` with `type-check:tests:all`.
+
+### Fixed
+
+- **RDF projection duplication removed.** The byte-identical `contains`
+  restriction filter is unified as `ProjectionIndex.filterContainsRestrictions`,
+  and the shared cardinality numeric-parse guard as `ProjectionHelpers.finiteNumber`;
+  OWL and SHACL projections delegate to both.
+
+## [0.22.0] - 2026-06-14
+
+Validation now executes on one path with two backends behind a single message
+table; `$ref` resolution and the inline type surface are uniform and
+graph-native; `format` and content assertions are enforced at runtime; and
+annotated edges project as RDF 1.2 triple-terms or flat triples on demand.
 
 ### Added
 
@@ -28,6 +117,23 @@ type surface has been consolidated into a canonical taxonomy.
 - Schema-valued `additionalProperties` on an object without declared
   `properties` now types the index signature (resolving `$ref` values) instead
   of collapsing to `Record<string, unknown>`.
+- **Runtime `format` and content assertions.** `format`, `contentEncoding`, and
+  `contentMediaType` are enforced at runtime (strict by default), so the
+  matching compile-time brands reflect a real guarantee. Disable via the
+  `format-assertion` vocabulary set to `false` for annotation-only behavior.
+- **Single validation message table.** Both validation backends emit error
+  messages from one `VALIDATION_MESSAGES` source, guarded by a cross-engine
+  message-parity test and a single-source scan so the two backends cannot drift.
+- **End-to-end reasoning example.** `examples/e2e-reasoning.ts` projects real
+  bookstore objects to quads, encodes scalars into the typed literals an OWL/N3
+  reasoner (EYE) consumes via Transform codecs, runs refund-eligibility and
+  review-processing rules, and decodes the inferred verdicts back into TS values.
+- **`annotationEmitMode` projection option.** `toQuads`/ABox projection accepts
+  `annotationEmitMode: 'star-only' | 'flat-only' | 'both'` (default `'star-only'`)
+  to control how annotated-edge annotations serialize: as RDF 1.2 triple-terms,
+  as flat `<subject> <predicate> <value>` triples for RDF-star-unaware consumers,
+  or both. The reasoning example shows the same annotation driving a flat rule
+  and an RDF 1.2 triple-term (`<<( s p o )>>`) rule in EYE.
 
 ### Changed
 
@@ -55,6 +161,20 @@ type surface has been consolidated into a canonical taxonomy.
   `SCHEMA_DUPLICATE_ID`, `SCHEMA_DUPLICATE_SHAPE`, `INVALID_LANGUAGE_TAG`,
   `INVALID_PREDICATE_IRI`, `INVALID_IRI_VALUE`, `NON_FINITE_NUMBER`, and
   `MISSING_GRAPH_IRI` have named constants.
+- **BREAKING — `format`/content enforced by default.** Schemas declaring the
+  2020-12 dialect now assert `format`, `contentEncoding`, and `contentMediaType`
+  rather than treating them as annotations. Data that was format- or
+  content-invalid but previously passed now fails; opt out via the
+  `format-assertion` vocabulary.
+- **Unified validation execution.** Validation runs one path with two backends —
+  the compiled validator is canonical, with the graph interpreter retained as its
+  fallback for un-compilable keywords (`$dynamicRef`, `unevaluated*`,
+  `rdfsRange`/`rdfsDomain`) and for cyclic data. Both backends share one `$ref`
+  resolver and one message table.
+- Unresolvable `$ref`s throw a typed `GraphError` (`REF_NOT_FOUND`, or
+  `ANCHOR_NOT_FOUND` for a missing anchor) uniformly across the validation,
+  projection, and materialization paths, rather than one path throwing and
+  another silently returning no target.
 
 ### Removed
 
@@ -85,10 +205,20 @@ type surface has been consolidated into a canonical taxonomy.
 - **Compiled/interpreted parity.** The compiled validation path applies defaults
   and coercion for `anyOf` / `oneOf` members and emits constraint messages
   identical to the interpreted path.
-- ABox projection raises `GraphError('REF_UNRESOLVED')` on an unresolvable
+- ABox projection raises `GraphError('REF_NOT_FOUND')` on an unresolvable
   `$ref`, invalid JSON pointers surface instead of being swallowed, and external
   RDF literals without a datatype default to `xsd:string`.
 - Zero-value synthesis returns a value for `anyOf` / `oneOf` schemas.
+- **Cyclic-data validation.** A recursive schema fed structurally-cyclic data no
+  longer overflows the stack on the compiled path; `validate` and `materialize`
+  terminate via the interpreter's recursion guard.
+- **SHACL restriction projection.** A user `someValuesFrom` restriction no longer
+  emits a spurious `sh:qualifiedValueShape`, and restriction-structured
+  `subClassOf` relations now project as `sh:PropertyShape` with
+  `sh:minCount`/`sh:maxCount` instead of being dropped.
+- **CURIE expansion.** A CURIE reference containing colons (e.g.
+  `urn:uuid:abc-123`) expands with the full reference preserved instead of being
+  truncated at the first colon.
 
 ### Internal
 
@@ -1787,6 +1917,8 @@ Docs and release-pipeline polish.
 ### Security
 
 [Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.4.0...HEAD
+[0.23.1]: https://github.com/Studnicky/json-tology/compare/v0.23.0...v0.23.1
+[0.23.0]: https://github.com/Studnicky/json-tology/compare/v0.22.0...v0.23.0
 [0.4.0]: https://github.com/Studnicky/json-tology/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Studnicky/json-tology/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Studnicky/json-tology/compare/v0.3.1...v0.3.2

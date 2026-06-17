@@ -16,6 +16,9 @@
 
 import { deepEqual } from '../data/DataTypes.js';
 import { MULTIPLE_OF_EPSILON_FACTOR } from '../../constants/NUMERIC.js';
+import {
+  SUPPORTED_CONTENT_ENCODINGS, SUPPORTED_CONTENT_MEDIA_TYPES
+} from '../../constants/CONTENT_VALIDATION.js';
 import type {
   CoerceToBooleanResultType, CoerceToNumberResultType
 } from '../../types/Validation.js';
@@ -421,6 +424,82 @@ export class Predicates {
   }
 
   /**
+   * Check that a string decodes successfully under the named `contentEncoding`.
+   *
+   * @param value - The string to test.
+   * @param encoding - The encoding name from the schema (e.g. `"base64"`).
+   * @returns `true` when the encoding is unsupported (unconstrained per spec) or
+   * the string decodes without error under the named encoding.
+   *
+   * @remarks
+   * Only encodings in {@link SUPPORTED_CONTENT_ENCODINGS} are actively checked.
+   * Unknown encodings return `true` (pass) per the JSON Schema specification.
+   *
+   * Supported encodings:
+   * - `base64` — standard Base64 (RFC 4648 §4); padding required.
+   * - `base64url` — URL-safe Base64 (RFC 4648 §5); no padding required.
+   *
+   * @category Validation
+   * @since 0.22.0
+   * @see {@link https://json-schema.org/understanding-json-schema/reference/non_json_data#contentencoding}
+   * @group String
+   */
+  static satisfiesContentEncoding(value: string, encoding: string): boolean {
+    if (!SUPPORTED_CONTENT_ENCODINGS.has(encoding)) {
+      return true;
+    }
+
+    return decodeBase64Safe(value, encoding === 'base64url') !== null;
+  }
+
+  /**
+   * Check that a string's content parses as the named `contentMediaType`.
+   *
+   * @param value - The raw string to test (before any encoding decode).
+   * @param mediaType - The media type from the schema (e.g. `"application/json"`).
+   * @param encoding - Optional `contentEncoding` to decode `value` before parsing.
+   * @returns `true` when the media type is unsupported (unconstrained per spec) or
+   * the content (after optional decode) is valid for the named media type.
+   *
+   * @remarks
+   * Only media types in {@link SUPPORTED_CONTENT_MEDIA_TYPES} are actively checked.
+   * Unknown media types return `true` (pass) per the JSON Schema specification.
+   * When `encoding` is provided and supported, `value` is decoded first.
+   * If decoding fails, the check returns `false`.
+   *
+   * Supported media types:
+   * - `application/json` — content must be valid JSON (`JSON.parse` succeeds).
+   *
+   * @category Validation
+   * @since 0.22.0
+   * @see {@link https://json-schema.org/understanding-json-schema/reference/non_json_data#contentmediatype}
+   * @group String
+   */
+  static satisfiesContentMediaType(value: string, mediaType: string, encoding?: string): boolean {
+    if (!SUPPORTED_CONTENT_MEDIA_TYPES.has(mediaType)) {
+      return true;
+    }
+
+    let content = value;
+
+    if (encoding !== undefined && SUPPORTED_CONTENT_ENCODINGS.has(encoding)) {
+      const decoded = decodeBase64Safe(value, encoding === 'base64url');
+
+      if (decoded === null) {
+        return false;
+      }
+
+      content = decoded;
+    }
+
+    if (mediaType === 'application/json') {
+      return isValidJson(content);
+    }
+
+    return true;
+  }
+
+  /**
    * Check that a value is present in an `enum` array (deep equality).
    *
    * @param value - The instance value to test.
@@ -660,5 +739,31 @@ export class Predicates {
     }
 
     return true;
+  }
+}
+
+function decodeBase64Safe(value: string, urlSafe: boolean): null | string {
+  try {
+    // Normalise url-safe alphabet to standard before decoding
+    const normalised = urlSafe
+      ? value.replaceAll('-', '+').replaceAll('_', '/')
+      : value;
+
+    // atob is available in Node 16+ and all browsers
+    const decoded = atob(normalised);
+
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+function isValidJson(content: string): boolean {
+  try {
+    JSON.parse(content);
+
+    return true;
+  } catch {
+    return false;
   }
 }

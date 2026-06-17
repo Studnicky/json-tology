@@ -139,7 +139,7 @@ export function runOwlCodegenBench(): BenchResult[] {
     'owl-codegen bookstore tbox',
     'json-tology',
     () => {
-      generate({
+      return generate({
         'input': bookstoreTboxJsonLd,
         'name': 'bookstore'
       });
@@ -156,7 +156,7 @@ export function runOwlCodegenBench(): BenchResult[] {
     'owl-codegen minimal class',
     'json-tology',
     () => {
-      generate({
+      return generate({
         'input': minimalTboxJsonLd,
         'name': 'minimal'
       });

@@ -1,5 +1,6 @@
 import type { CurieInterface } from '../interfaces/Curie.js';
 import type { IriMinterInterface } from '../interfaces/Projection.js';
+import type { AnnotationEmitModeType } from './AnnotationEmitMode.js';
 import type { QuadInterface } from '../interfaces/Quad.js';
 import type {
   DefaultGraphTermType, IriTermType
@@ -25,6 +26,7 @@ import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
  * @group ABox
  */
 export type ProjectBaseArgsType = {
+  readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
   readonly 'curie': CurieInterface | undefined;
   readonly 'depth': number;
   readonly 'graph': SchemaGraphInterface;
