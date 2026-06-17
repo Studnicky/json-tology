@@ -1,7 +1,5 @@
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-import type {
-  CheckFnType, OptionalCheckFnType
-} from '../../types/Validation.js';
+import type { FormatPredicateType } from '../../types/FormatPredicate.js';
 import {
   IPV6_FULL, IPV6_MIXED, IPV6_MIXED_COMPRESSED, IPV6_WITH_DOUBLE_COLON
 } from '../../constants/FORMAT_REGEXES.js';
@@ -659,7 +657,7 @@ function validateRegex(value: string): boolean {
   }
 }
 
-const STRING_FORMAT_VALIDATORS: Record<string, CheckFnType> = {
+const STRING_FORMAT_VALIDATORS: Record<string, FormatPredicateType> = {
   'binary': (value: unknown): boolean => {
     return typeof value === 'string' && validateBinary(value);
   },
@@ -727,7 +725,7 @@ STRING_FORMAT_VALIDATORS['uri-template'] = (value: unknown): boolean => {
 // Built-in number format validators
 // ---------------------------------------------------------------------------
 
-const NUMBER_FORMAT_VALIDATORS: Record<string, CheckFnType> = {
+const NUMBER_FORMAT_VALIDATORS: Record<string, FormatPredicateType> = {
   'double': (value: unknown): boolean => {
     return typeof value === 'number' && Number.isFinite(value);
   },
@@ -793,7 +791,7 @@ export class FormatRegistry implements FormatRegistryInterface {
     return registry;
   }
 
-  private readonly validators = new Map<string, CheckFnType>();
+  private readonly validators = new Map<string, FormatPredicateType>();
 
   /**
    * Look up a format validator by name.
@@ -801,7 +799,7 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @param name - Format name (e.g. "email", "uri", "int32")
    * @returns Validator function, or undefined if the format is not registered
    */
-  get(name: string): OptionalCheckFnType {
+  get(name: string): FormatPredicateType | undefined {
     return this.validators.get(name);
   }
 
@@ -821,7 +819,7 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @param name - Format name to register
    * @param validator - Validation function that returns true when the value matches the format
    */
-  set(name: string, validator: CheckFnType): void {
+  set(name: string, validator: FormatPredicateType): void {
     this.validators.set(name, validator);
   }
 }

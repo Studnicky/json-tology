@@ -2,12 +2,12 @@
  * Runtime content and format assertion tests.
  *
  * Validates the strict-by-default posture for `format`, `contentEncoding`, and
- * `contentMediaType` added in Wave 4. Covers:
+ * `contentMediaType`. Covers:
  *   - format enforced by default (no $vocabulary needed)
  *   - format opt-out via $vocabulary: { format-assertion: false }
- *   - contentEncoding base64 accept/reject (both engines)
+ *   - contentEncoding base64 accept/reject
  *   - contentEncoding base64url accept/reject
- *   - contentMediaType application/json accept/reject (both engines)
+ *   - contentMediaType application/json accept/reject
  *   - unknown encoding passes unconditionally
  *   - unknown media type passes unconditionally
  *   - content opt-out via $vocabulary: { format-assertion: false }
@@ -93,7 +93,7 @@ void describe('Predicates.satisfiesContentMediaType', () => {
 // ---------------------------------------------------------------------------
 
 void describe('format strict-by-default', () => {
-  void it('invalid format value rejected when no $vocabulary set (both engines)', () => {
+  void it('invalid format value rejected when no $vocabulary set', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
 
     jt.set({
@@ -105,13 +105,6 @@ void describe('format strict-by-default', () => {
     // Compiled path (registry.is)
     assert.equal(jt.registry.is('urn:content-test:FormatStrict', 'not-an-email'), false, 'compiled: invalid email rejected');
     assert.equal(jt.registry.is('urn:content-test:FormatStrict', 'user@example.com'), true, 'compiled: valid email accepted');
-
-    // Interpreter path
-    const schema = jt.registry.get('urn:content-test:FormatStrict') as Record<string, unknown>;
-    const engine = jt.registry.engine(schema);
-
-    assert.equal(engine.check('not-an-email'), false, 'interpreter: invalid email rejected');
-    assert.equal(engine.check('user@example.com'), true, 'interpreter: valid email accepted');
   });
 
   void it('format opt-out via $vocabulary: format-assertion: false allows invalid format', () => {
@@ -136,12 +129,6 @@ void describe('format strict-by-default', () => {
 
     // Compiled path: format disabled via vocabulary opt-out
     assert.equal(jt.registry.is('urn:content-test:FormatOptOut', 'not-an-email'), true, 'compiled: format opt-out allows invalid value');
-
-    // Interpreter path
-    const schema = jt.registry.get('urn:content-test:FormatOptOut') as Record<string, unknown>;
-    const engine = jt.registry.engine(schema);
-
-    assert.equal(engine.check('not-an-email'), true, 'interpreter: format opt-out allows invalid value');
   });
 
   void it('format opt-in via $vocabulary: format-assertion: true enforces format', () => {
@@ -174,7 +161,7 @@ void describe('format strict-by-default', () => {
 // ---------------------------------------------------------------------------
 
 void describe('contentEncoding strict-by-default', () => {
-  void it('invalid base64 rejected (both engines)', () => {
+  void it('invalid base64 rejected', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
 
     jt.set({
@@ -186,13 +173,6 @@ void describe('contentEncoding strict-by-default', () => {
     // Compiled path
     assert.equal(jt.registry.is('urn:content-test:Base64Strict', 'not valid base64!!!'), false, 'compiled: invalid base64 rejected');
     assert.equal(jt.registry.is('urn:content-test:Base64Strict', 'aGVsbG8='), true, 'compiled: valid base64 accepted');
-
-    // Interpreter path
-    const schema = jt.registry.get('urn:content-test:Base64Strict') as Record<string, unknown>;
-    const engine = jt.registry.engine(schema);
-
-    assert.equal(engine.check('not valid base64!!!'), false, 'interpreter: invalid base64 rejected');
-    assert.equal(engine.check('aGVsbG8='), true, 'interpreter: valid base64 accepted');
   });
 
   void it('unknown encoding passes unconditionally', () => {
@@ -227,13 +207,8 @@ void describe('contentEncoding strict-by-default', () => {
       'type': 'string'
     });
 
-    // Both paths: opt-out disables content encoding assertion
+    // Compiled path: opt-out disables content encoding assertion
     assert.equal(jt.registry.is('urn:content-test:EncodingOptOut', 'not valid base64!!!'), true, 'compiled: content encoding opt-out allows invalid');
-
-    const schema = jt.registry.get('urn:content-test:EncodingOptOut') as Record<string, unknown>;
-    const engine = jt.registry.engine(schema);
-
-    assert.equal(engine.check('not valid base64!!!'), true, 'interpreter: content encoding opt-out allows invalid');
   });
 });
 
@@ -242,7 +217,7 @@ void describe('contentEncoding strict-by-default', () => {
 // ---------------------------------------------------------------------------
 
 void describe('contentMediaType strict-by-default', () => {
-  void it('invalid JSON content rejected (both engines)', () => {
+  void it('invalid JSON content rejected', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
 
     jt.set({
@@ -254,16 +229,9 @@ void describe('contentMediaType strict-by-default', () => {
     // Compiled path
     assert.equal(jt.registry.is('urn:content-test:JsonMediaType', 'not json'), false, 'compiled: non-JSON rejected');
     assert.equal(jt.registry.is('urn:content-test:JsonMediaType', '{"key":"value"}'), true, 'compiled: valid JSON accepted');
-
-    // Interpreter path
-    const schema = jt.registry.get('urn:content-test:JsonMediaType') as Record<string, unknown>;
-    const engine = jt.registry.engine(schema);
-
-    assert.equal(engine.check('not json'), false, 'interpreter: non-JSON rejected');
-    assert.equal(engine.check('{"key":"value"}'), true, 'interpreter: valid JSON accepted');
   });
 
-  void it('base64-encoded JSON: invalid base64 rejected before media type check (both engines)', () => {
+  void it('base64-encoded JSON: invalid base64 rejected before media type check', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
 
     jt.set({
@@ -281,13 +249,6 @@ void describe('contentMediaType strict-by-default', () => {
     assert.equal(jt.registry.is('urn:content-test:Base64Json', validData), true, 'compiled: valid base64 JSON accepted');
     assert.equal(jt.registry.is('urn:content-test:Base64Json', validBase64NonJson), false, 'compiled: valid base64 non-JSON rejected');
     assert.equal(jt.registry.is('urn:content-test:Base64Json', 'not-base64!!!'), false, 'compiled: invalid base64 rejected');
-
-    const schema = jt.registry.get('urn:content-test:Base64Json') as Record<string, unknown>;
-    const engine = jt.registry.engine(schema);
-
-    assert.equal(engine.check(validData), true, 'interpreter: valid base64 JSON accepted');
-    assert.equal(engine.check(validBase64NonJson), false, 'interpreter: valid base64 non-JSON rejected');
-    assert.equal(engine.check('not-base64!!!'), false, 'interpreter: invalid base64 rejected');
   });
 
   void it('unknown media type passes unconditionally', () => {

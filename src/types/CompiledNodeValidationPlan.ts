@@ -1,8 +1,7 @@
 import type { CustomKeywordEntryType } from './CustomKeywordEntry.js';
-import type {
-  CheckFnType, ValidateWithErrorsFnType
-} from '../types/Validation.js';
+import type { ValidateWithErrorsFnType } from '../types/Validation.js';
 import type { JtExtraType } from '../types/JtConfig.js';
+import type { DynamicScopeEntryType } from './DynamicScopeEntry.js';
 
 export type CompiledNodeValidationPlanType = {
   readonly 'additionalIsFalse': boolean;
@@ -10,10 +9,10 @@ export type CompiledNodeValidationPlanType = {
   readonly 'allOfValidators': undefined | ValidateWithErrorsFnType[];
   readonly 'allowedKeys': Set<string> | undefined;
   readonly 'allowedKeysForStrip': Set<string> | undefined;
-  readonly 'anyOfChecks': CheckFnType[] | undefined;
-  readonly 'complementCheck': CheckFnType | undefined;
+  readonly 'anyOfValidators': undefined | ValidateWithErrorsFnType[];
+  readonly 'complementValidator': undefined | ValidateWithErrorsFnType;
   readonly 'constVal': unknown;
-  readonly 'containsCheck': CheckFnType | undefined;
+  readonly 'containsValidator': undefined | ValidateWithErrorsFnType;
   readonly 'contentAssertionsEnabled': boolean;
   readonly 'contentEncoding': string | undefined;
   readonly 'contentMediaType': string | undefined;
@@ -22,6 +21,10 @@ export type CompiledNodeValidationPlanType = {
   readonly 'depRequiredEntries': Array<[string, string[]]>;
   readonly 'depSchemaValidators': Array<{ 'trigger': string;
     'validator': ValidateWithErrorsFnType; }> | undefined;
+  /** Compiled validator for `$dynamicRef`, or `undefined` if absent. */
+  readonly 'dynamicRefValidator': undefined | ValidateWithErrorsFnType;
+  /** Pre-built dynamic scope entry for `$dynamicAnchor` on this node, or `undefined` if absent. */
+  readonly 'dynamicScopeEntry': DynamicScopeEntryType | undefined;
   readonly 'elseValidator': undefined | ValidateWithErrorsFnType;
   readonly 'enumSet': Set<boolean | null | number | string> | undefined;
   readonly 'enumValues': undefined | unknown[];
@@ -31,7 +34,7 @@ export type CompiledNodeValidationPlanType = {
   readonly 'formatValidator': ((value: unknown) => boolean) | undefined;
   readonly 'hasConst': boolean;
   readonly 'hasDefault': boolean;
-  readonly 'ifCheck': CheckFnType | undefined;
+  readonly 'ifValidator': undefined | ValidateWithErrorsFnType;
   readonly 'itemValidator': undefined | ValidateWithErrorsFnType;
   readonly 'jtExtra': JtExtraType | undefined;
   readonly 'jtStrictPerField': Map<string, boolean> | undefined;
@@ -46,7 +49,7 @@ export type CompiledNodeValidationPlanType = {
   readonly 'minLength': number | undefined;
   readonly 'minProperties': number | undefined;
   readonly 'multipleOf': number | undefined;
-  readonly 'oneOfChecks': CheckFnType[] | undefined;
+  readonly 'oneOfValidators': undefined | ValidateWithErrorsFnType[];
   readonly 'pattern': string | undefined;
   readonly 'patternPropValidators': Array<{ 'regex': RegExp;
     'validator': ValidateWithErrorsFnType; }> | undefined;
@@ -56,10 +59,22 @@ export type CompiledNodeValidationPlanType = {
   readonly 'propertyDefaults': Map<string, { 'defaultValue': unknown;
     'hasDefault': boolean; }>;
   readonly 'propertyNamesValidator': undefined | ValidateWithErrorsFnType;
+  readonly 'propertyZeroValueSynthesizers': Map<string, () => unknown>;
   readonly 'propValidators': Map<string, ValidateWithErrorsFnType>;
+  readonly 'rdfsRangeValidator': undefined | ValidateWithErrorsFnType;
   readonly 'refValidator': undefined | ValidateWithErrorsFnType;
   readonly 'required': string[] | undefined;
   readonly 'thenValidator': undefined | ValidateWithErrorsFnType;
   readonly 'types': string[];
+  /**
+   * Compiled validator for `unevaluatedItems` node, or `false` when
+   * `unevaluatedItems: false` (reject all), or `undefined` when absent.
+   */
+  readonly 'unevaluatedItemsValidator': false | undefined | ValidateWithErrorsFnType;
+  /**
+   * Compiled validator for `unevaluatedProperties` node, or `false` when
+   * `unevaluatedProperties: false` (reject all), or `undefined` when absent.
+   */
+  readonly 'unevaluatedPropertiesValidator': false | undefined | ValidateWithErrorsFnType;
   readonly 'uniqueItems': boolean;
 };

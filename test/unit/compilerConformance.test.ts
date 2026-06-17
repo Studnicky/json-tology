@@ -67,21 +67,8 @@ void describe('Compiler conformance', () => {
     registry.set(schema as Record<string, unknown> & { readonly '$id': string });
     const schemaId = schema.$id as string;
 
-    // Compiled path (may fall back to engine internally)
     const compiledErrors = registry.validate(schemaId, data);
-
-    // Interpreted (engine) path — direct execution
-    const engine = registry.registry.engine(schema);
-    const engineResult = engine.execute(data, { 'overrides': { 'collectErrors': true } });
-
     const compiledValid = compiledErrors.length === 0;
-    const engineValid = engineResult.valid;
-
-    assert.equal(
-      compiledValid,
-      engineValid,
-      `Compiled valid=${compiledValid} but engine valid=${engineValid} for schema ${schemaId}`
-    );
 
     assert.equal(
       compiledValid,
@@ -1662,11 +1649,6 @@ void describe('Compiler conformance', () => {
           } else {
             assert.ok(compiledErrors.length > 0, `compiled should reject ${data}`);
           }
-
-          const engine = registry.registry.engine(schema);
-          const engineResult = engine.execute(data, { 'overrides': { 'collectErrors': true } });
-
-          assert.equal(engineResult.valid, valid, `engine should ${valid ? 'accept' : 'reject'} ${data}`);
         }
 
         // custom keyword schema compiles without engine fallback

@@ -3365,12 +3365,13 @@ function expandCurie(value: string): string {
       const scenarios: Array<{
         'code': string;
         'name': string;
-        'schema': Record<string, unknown>;
+        'schema': Record<string, unknown> & { '$id': string };
       }> = [
         {
           'code': 'DIALECT_UNSUPPORTED',
           'name': 'rejects unsupported dialect (draft-07)',
           'schema': {
+            '$id': 'urn:test:dialect:draft07',
             '$schema': 'http://json-schema.org/draft-07/schema#',
             'type': 'string'
           }
@@ -3379,6 +3380,7 @@ function expandCurie(value: string): string {
           'code': 'VOCABULARY_UNSUPPORTED',
           'name': 'rejects unknown required vocabulary',
           'schema': {
+            '$id': 'urn:test:dialect:custom-vocab',
             '$schema': 'https://json-schema.org/draft/2020-12/schema',
             '$vocabulary': { 'https://example.io/vocab/custom-required': true },
             'type': 'string'
@@ -3390,9 +3392,11 @@ function expandCurie(value: string): string {
         'code': expectedCode, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
+          const reg = new SchemaRegistry({ 'enableStrictGraph': false });
+
           assert.throws(
             () => {
-              new GraphEngine(sch);
+              reg.set(sch);
             },
             (err: unknown) => {
               assert.ok(err instanceof GraphError, 'expected GraphError');
@@ -4671,43 +4675,6 @@ void describe('maxSchemaDepth — GraphEngine recursion depth parameter', () => 
     'type': 'object'
   } as const;
 
-  void it('engine.execute() with maxSchemaDepth below the schema-graph $ref depth throws RECURSION_LIMIT', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:depth:',
-      'enableStrictGraph': false,
-      'maxSchemaDepth': 1,
-      'schemas': [SelfNode] as const
-    });
-
-    // maxSchemaDepth bounds the SCHEMA-GRAPH traversal depth, not the data depth.
-    // With maxSchemaDepth: 1 even a 2-element data chain trips the limit because
-    // resolving a $ref counts as descent.
-    const engine = jt.registry.engine(SelfNode);
-
-    assert.throws(
-      () => {
-        return engine.execute(buildSelfRefChain(2));
-      },
-      (err: unknown) => {
-        return err instanceof GraphError && (err).code === 'RECURSION_LIMIT';
-      }
-    );
-  });
-
-  void it('engine.execute() with maxSchemaDepth above the $ref depth completes successfully', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:depth:',
-      'enableStrictGraph': false,
-      'maxSchemaDepth': 100,
-      'schemas': [SelfNode] as const
-    });
-    const engine = jt.registry.engine(SelfNode);
-    const result = engine.execute(buildSelfRefChain(5));
-
-    assert.equal(result.valid, true);
-    assert.equal((result.value as Record<string, unknown>).name, 'root');
-  });
-
   void it('instantiate (compiled validation path) does NOT enforce maxSchemaDepth (documented gap)', () => {
     const jt = JsonTology.create({
       'baseIRI': 'urn:depth:',
@@ -4747,15 +4714,15 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
 
     registry.set(TreeNodeSchema);
 
-    const engine = registry.engine(TreeNodeSchema);
+    const validator = registry.validator(TreeNodeSchema.$id);
     const valid = {
       'left': { 'value': 2 },
       'right': { 'value': 3 },
       'value': 1
     };
-    const errors = engine.errors(valid);
+    const result = validator.validate(valid, { 'collectErrors': true });
 
-    assert.equal(errors.length, 0, `expected no errors but got: ${errors.map((err) => {
+    assert.equal(result.errors.length, 0, `expected no errors but got: ${result.errors.map((err) => {
       return err.message;
     }).join(', ')}`);
   });
@@ -4772,15 +4739,19 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
       },
       'type': 'object'
     };
-    const engine = new GraphEngine(schema);
+    const reg = new SchemaRegistry({ 'enableStrictGraph': false });
+
+    reg.set(schema as Record<string, unknown> & { '$id': string });
+
+    const validator = reg.validator(schema.$id as string);
     const valid = {
       'left': { 'value': 2 },
       'right': { 'value': 3 },
       'value': 1
     };
-    const errors = engine.errors(valid);
+    const result = validator.validate(valid, { 'collectErrors': true });
 
-    assert.equal(errors.length, 0, `expected no errors but got: ${errors.map((err) => {
+    assert.equal(result.errors.length, 0, `expected no errors but got: ${result.errors.map((err) => {
       return err.message;
     }).join(', ')}`);
   });
@@ -4790,20 +4761,20 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
 
     registry.set(TreeNodeSchema);
 
-    const engine = registry.engine(TreeNodeSchema);
+    const validator = registry.validator(TreeNodeSchema.$id);
     // left.value is a string, violating { type: 'number' } on the self-referenced schema.
     const invalid = {
       'left': { 'value': 'not-a-number' },
       'value': 1
     };
-    const errors = engine.errors(invalid);
+    const result = validator.validate(invalid, { 'collectErrors': true });
 
-    assert.ok(errors.length > 0, 'expected at least one validation error for invalid nested node');
+    assert.ok(result.errors.length > 0, 'expected at least one validation error for invalid nested node');
     assert.ok(
-      errors.some((err) => {
+      result.errors.some((err) => {
         return err.path.includes('left');
       }),
-      `expected an error path containing "left", got: ${errors.map((err) => {
+      `expected an error path containing "left", got: ${result.errors.map((err) => {
         return err.path;
       }).join(', ')}`
     );
@@ -4863,10 +4834,10 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
 
     registry.set(TreeSchema);
 
-    const engine = registry.engine(TreeSchema);
-    const errors = engine.errors(validData);
+    const validator = registry.validator(TreeSchema.$id);
+    const result = validator.validate(validData, { 'collectErrors': true });
 
-    assert.equal(errors.length, 0, `expected no errors but got: ${errors.map((err) => {
+    assert.equal(result.errors.length, 0, `expected no errors but got: ${result.errors.map((err) => {
       return err.message;
     }).join(', ')}`);
   });
@@ -4876,10 +4847,10 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
 
     registry.set(TreeSchema);
 
-    const engine = registry.engine(TreeSchema);
-    const errors = engine.errors(invalidData);
+    const validator = registry.validator(TreeSchema.$id);
+    const result = validator.validate(invalidData, { 'collectErrors': true });
 
-    assert.ok(errors.length > 0, 'expected at least one validation error for invalid nested node');
+    assert.ok(result.errors.length > 0, 'expected at least one validation error for invalid nested node');
   });
 
   void it('error path includes the nested field that failed', () => {
@@ -4887,14 +4858,14 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
 
     registry.set(TreeSchema);
 
-    const engine = registry.engine(TreeSchema);
-    const errors = engine.errors(invalidData);
+    const validator = registry.validator(TreeSchema.$id);
+    const result = validator.validate(invalidData, { 'collectErrors': true });
 
     assert.ok(
-      errors.some((err) => {
+      result.errors.some((err) => {
         return err.path.includes('children') || err.path.includes('label');
       }),
-      `expected an error path containing "children" or "label", got: ${errors.map((err) => {
+      `expected an error path containing "children" or "label", got: ${result.errors.map((err) => {
         return err.path;
       }).join(', ')}`
     );

@@ -1,19 +1,18 @@
 /**
- * GraphEngine — execute, check, errors, keywords, rootSchemaId.
+ * Compiled validation — validate, check, errors, custom keywords.
  *
- * `GraphEngine` is the core validation and execution engine for compiled
- * JSON Schema graphs. Instantiate once per root schema and reuse across calls.
+ * `SchemaRegistry` provides compiled closure-based validation for registered
+ * JSON Schema graphs. Register schemas once and reuse the validator across calls.
  *
  * Demonstrated here:
- *   - `execute(value)` — returns `{ valid, errors, value, … }`
- *   - `check(value)` — fast boolean shortcut (no error collection)
- *   - `errors(value)` — returns only the `ValidationErrorType[]`
- *   - `keywords()` — returns any registered custom keyword definitions
- *   - `rootSchemaId()` — returns the `$id` of the root schema (or undefined)
+ *   - `registry.validator(id).validate(value)` — returns `{ valid, errors, value }`
+ *   - `registry.validator(id).check(value)` — fast boolean shortcut
+ *   - `registry.validator(id).validate(value, { collectErrors: true })` — full error collection
+ *   - custom keyword registration via `RegistryOptionsType.keywords`
  */
 
 import type { KeywordContextType } from '../../../src/types/GraphEngine.js';
-import { GraphEngine } from '../../../src/index.js';
+import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 
 // ── Schema under test ────────────────────────────────────────────────────────
 
@@ -30,72 +29,62 @@ const BookSchema = {
   'type': 'object'
 } as const;
 
-// Instantiate once — the engine caches the compiled graph internally.
-const engine = new GraphEngine(BookSchema);
+// Register once — the registry compiles the schema graph on first validate call.
+const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
-// ── rootSchemaId ─────────────────────────────────────────────────────────────
+registry.set(BookSchema);
 
-const schemaId = engine.rootSchemaId();
+const validator = registry.validator(BookSchema.$id);
 
-console.assert(
-  schemaId === 'https://bookstore.example/Book',
-  `rootSchemaId() must return the schema $id; got: ${schemaId}`
-);
-console.log('rootSchemaId():', schemaId);
+// ── validate — valid data ─────────────────────────────────────────────────────
 
-// ── execute — valid data ─────────────────────────────────────────────────────
-
-const validResult = engine.execute({
+const validResult = validator.validate({
   'pages': 396,
   'title': 'The Neverending Story'
-});
+}, { 'collectErrors': true });
 
-console.assert(validResult.valid, 'valid book must pass execute()');
+console.assert(validResult.valid, 'valid book must pass validate()');
 console.assert(validResult.errors.length === 0, 'valid book must have zero errors');
-console.log('execute(valid) — valid:', validResult.valid, 'errors:', validResult.errors.length);
+console.log('validate(valid) — valid:', validResult.valid, 'errors:', validResult.errors.length);
 
-// ── execute — invalid data ────────────────────────────────────────────────────
+// ── validate — invalid data ────────────────────────────────────────────────────
 
-const invalidResult = engine.execute({ 'pages': 0 });
+const invalidResult = validator.validate({ 'pages': 0 }, { 'collectErrors': true });
 
-console.assert(!invalidResult.valid, 'book missing title must fail execute()');
+console.assert(!invalidResult.valid, 'book missing title must fail validate()');
 console.assert(
   invalidResult.errors.length > 0,
   'invalid result must carry at least one error'
 );
 console.log(
-  `execute(invalid) — valid: ${String(invalidResult.valid)}`,
+  `validate(invalid) — valid: ${String(invalidResult.valid)}`,
   `errors: ${invalidResult.errors.length}`,
   `first keyword: ${invalidResult.errors[0]?.keyword}`
 );
 
-// ── check — fast boolean ─────────────────────────────────────────────────────
+// ── check — fast boolean shortcut ────────────────────────────────────────────
 
-const checkValid = engine.check({ 'title': 'Dune' });
-const checkInvalid = engine.check({});
+const checkValid = validator.check({ 'title': 'Dune' });
+const checkInvalid = validator.check({});
 
 console.assert(checkValid, 'check() must return true for valid data');
 console.assert(!checkInvalid, 'check() must return false for missing required field');
 console.log('check(valid):', checkValid, '  check(invalid):', checkInvalid);
 
-// ── errors — error array shortcut ────────────────────────────────────────────
+// ── full error collection ─────────────────────────────────────────────────────
 
-const errs = engine.errors({ 'pages': -1 });
+const errorResult = validator.validate({ 'pages': -1 }, { 'collectErrors': true });
 
-console.assert(Array.isArray(errs), 'errors() must return an array');
-console.assert(errs.length > 0, 'errors() must report at least one error for invalid data');
-console.log('errors() count for { pages: -1 }:', errs.length);
+console.assert(Array.isArray(errorResult.errors), 'errors must be an array');
+console.assert(errorResult.errors.length > 0, 'must report at least one error for invalid data');
+console.log('errors for { pages: -1 }:', errorResult.errors.length);
 
-// ── keywords — custom keyword definitions ─────────────────────────────────────
+// ── custom keyword registration ───────────────────────────────────────────────
 
-// When no custom keywords are registered, keywords() returns an empty array.
-const kws = engine.keywords();
-
-console.assert(Array.isArray(kws), 'keywords() must return an array');
-console.log('keywords() length (no custom keywords):', kws.length);
-
-// With a custom keyword registered:
-const customEngine = new GraphEngine(BookSchema, {
+// Custom keywords are registered at the registry level and apply to all
+// compiled validators created by that registry.
+const customRegistry = new SchemaRegistry({
+  'enableStrictGraph': false,
   'keywords': [{
     'keyword': 'x-example-tag',
     'type': 'string',
@@ -105,10 +94,9 @@ const customEngine = new GraphEngine(BookSchema, {
   }]
 });
 
-const customKws = customEngine.keywords();
+customRegistry.set(BookSchema);
 
-console.assert(customKws.length === 1, 'custom engine must have 1 keyword definition');
-console.assert(customKws[0]?.keyword === 'x-example-tag', 'keyword name must match');
-console.log('custom keywords():', customKws.map((kw) => {
-  return kw.keyword;
-}).join(', '));
+const customResult = customRegistry.validator(BookSchema.$id).validate({ 'title': 'Dune' });
+
+console.assert(customResult.valid, 'custom registry must validate correctly');
+console.log('custom registry validate(valid).valid:', customResult.valid);
