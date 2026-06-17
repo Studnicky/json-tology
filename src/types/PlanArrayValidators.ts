@@ -1,5 +1,5 @@
 import type {
-  OptionalCheckFnType, OptionalValidateWithErrorsFnType, ValidateWithErrorsFnType
+  OptionalValidateWithErrorsFnType, ValidateWithErrorsFnType
 } from '../types/Validation.js';
 
 /**
@@ -8,16 +8,16 @@ import type {
  * @remarks
  * Produced once per array schema node during compilation. `itemValidator`
  * applies to every element; `prefixValidators` applies positionally to tuple
- * items; `containsCheck` tests whether at least one element satisfies the
- * `contains` sub-schema. All fields are `undefined` when the corresponding
- * keyword is absent.
+ * items; `containsValidator` tests whether at least one element satisfies the
+ * `contains` sub-schema, run in check-mode isolation. All fields are `undefined`
+ * when the corresponding keyword is absent.
  *
  * @example
  * ```ts
  * const arrayVals: PlanArrayValidatorsType = {
  *   itemValidator: validateString,
  *   prefixValidators: [validateId, validateName],
- *   containsCheck: isNonEmpty,
+ *   containsValidator: validateNonEmpty,
  * };
  * ```
  *
@@ -27,7 +27,7 @@ import type {
  * @group Validation
  */
 export type PlanArrayValidatorsType = {
-  readonly 'containsCheck': OptionalCheckFnType;
+  readonly 'containsValidator': OptionalValidateWithErrorsFnType;
   readonly 'itemValidator': OptionalValidateWithErrorsFnType;
   readonly 'prefixValidators': undefined | ValidateWithErrorsFnType[];
 };

@@ -9,7 +9,7 @@ import {
   describe, it
 } from 'node:test';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { RDFS } from '../../src/constants/IRI.js';
 
 // ---------------------------------------------------------------------------
@@ -218,15 +218,19 @@ void describe('SchemaGraph — embedded-$id index', { 'concurrency': true }, () 
       'required': ['status'],
       'type': 'object'
     } as const;
-    const engine = new GraphEngine(schema);
+    const registry = new SchemaRegistry({ 'enableStrictGraph': false });
+
+    registry.set(schema);
+
+    const validator = registry.validator(schema.$id);
 
     // Valid: status matches the embedded Status enum
-    const valid = engine.execute({ 'status': 'active' });
+    const valid = validator.validate({ 'status': 'active' }, { 'collectErrors': false });
 
     assert.equal(valid.valid, true, 'valid instance should pass');
 
     // Invalid: status does not match the enum
-    const invalid = engine.execute({ 'status': 'unknown' });
+    const invalid = validator.validate({ 'status': 'unknown' }, { 'collectErrors': true });
 
     assert.equal(invalid.valid, false, 'invalid instance should fail');
     assert.ok(invalid.errors.length > 0, 'should have validation errors');

@@ -1,7 +1,6 @@
 import type { FormatRegistryInterface } from '../interfaces/FormatRegistry.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
 import type { ValidationErrorType } from '../types/Validation.js';
-import type { SchemaGraphNodeType } from './SchemaGraph.js';
 
 /**
  * Execution context passed to custom keyword validators during schema traversal.
@@ -102,7 +101,6 @@ export type KeywordDefinitionType = {
  *
  * @category GraphEngine
  * @since 0.1.0
- * @see {@link GraphExecutionResultType}
  * @group GraphEngine
  */
 export type GraphEngineOptionsType = {
@@ -129,41 +127,3 @@ export type GraphEngineOptionsType = {
   'synthesizeDefaults'?: boolean;
 };
 
-/**
- * Full result of a `GraphEngine.execute` call, including the transformed value,
- * validation errors, evaluated tracking sets, and graph access.
- *
- * @remarks
- * The `valid` flag is `true` only when `errors` is empty. `value` holds the
- * (possibly coerced, defaults-applied, additional-properties-stripped) output
- * value. `evaluatedItems` and `evaluatedProperties` track which array indices
- * and object keys were reached by at least one schema branch — required for
- * correct `unevaluatedItems` / `unevaluatedProperties` enforcement.
- *
- * `entryNode` and `graph` expose the graph representation used during this
- * execution pass for post-validation inspection or ABox projection.
- *
- * @example
- * ```ts
- * const result = engine.execute({ id: '1', name: 'Alice' });
- * if (result.valid) {
- *   console.log(result.value);
- * } else {
- *   console.error(result.errors);
- * }
- * ```
- *
- * @category GraphEngine
- * @since 0.1.0
- * @see {@link GraphEngineOptionsType}
- * @group GraphEngine
- */
-export type GraphExecutionResultType = {
-  'entryNode': SchemaGraphNodeType;
-  'errors': ValidationErrorType[];
-  'evaluatedItems': Set<number>;
-  'evaluatedProperties': Set<string>;
-  'graph': SchemaGraphInterface;
-  'valid': boolean;
-  'value': unknown;
-};

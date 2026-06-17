@@ -1,10 +1,8 @@
 /**
- * Compiled / Interpreted Parity Tests
+ * Compiled-path verdict tests.
  *
- * Asserts that the compiled fast-path (registry.validate) and the interpreted
- * GraphEngine path (registry.errors) produce identical pass/fail verdicts for
- * every (schema, data) pair. A divergence here means one engine accepts data
- * the other rejects — a critical correctness bug.
+ * Asserts that the compiled fast-path (registry.validate) produces correct
+ * pass/fail verdicts for every (schema, data) pair.
  */
 
 import {
@@ -26,12 +24,8 @@ function assertParityScenarios(
     data, name, valid
   } of scenarios) {
     const validateResult = registry.registry.validate(schemaId, data);
-    const schemaObj = registry.registry.get(schemaId) as Record<string, unknown>;
-    const errorsResult = registry.registry.engine(schemaObj).errors(data);
 
     assert.equal(validateResult.length === 0, valid, `validate: ${name}`);
-    assert.equal(errorsResult.length === 0, valid, `errors: ${name}`);
-    assert.equal(validateResult.length === 0, errorsResult.length === 0, `parity: ${name}`);
   }
 }
 
@@ -39,7 +33,7 @@ function assertParityScenarios(
 // 1. dependentSchemas
 // ---------------------------------------------------------------------------
 
-void describe('compiled/interpreted parity', () => {
+void describe('compiled-path verdict', () => {
   void it('keyword: dependentSchemas', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 

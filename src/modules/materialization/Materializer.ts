@@ -22,14 +22,14 @@ import { Terms } from '../rdf/Terms.js';
 import { OWL } from '../../constants/IRI.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
+import { SchemaCompilerDefaults } from '../validation/SchemaCompilerDefaults.js';
 
 /**
  * Materializer — runtime projection over validation execution results.
  *
  * The runtime contract has three disciplined stages:
  *
- * 1. **Validation execution** (`GraphEngine.execute()`) — validates data against
- *    the canonical graph and applies defaults/coercion during traversal.
+ * 1. **Validation execution** — validates data against the canonical graph via the compiled validator, applying defaults, coercion, and zero-value synthesis during traversal.
  *
  * 2. **Materialization** (`materialize()`) — projects validation execution output
  *    into a fully-populated JS value with implicit properties filled.
@@ -72,24 +72,23 @@ export class Materializer implements MaterializerInterface {
     return false;
   }
 
-  // When true, the engine path is used even for the main materialization run because
-  // the compiled validator has no equivalent for allowAdditionalProperties bypass.
+  // When true, additionalProperties:false enforcement is bypassed via ignoreAdditionalProperties.
   private readonly allowAdditionalProperties: boolean;
 
   private readonly cachedOverridesNoDefaults: {
-    readonly 'allowAdditionalProperties': boolean;
     readonly 'applyDefaults': true;
     readonly 'castTypes': boolean;
     readonly 'collectErrors': true;
+    readonly 'ignoreAdditionalProperties': boolean;
     readonly 'removeAdditionalProperties': false;
     readonly 'synthesizeDefaults': false;
   };
 
   private readonly cachedOverridesWithDefaults: {
-    readonly 'allowAdditionalProperties': boolean;
     readonly 'applyDefaults': true;
     readonly 'castTypes': boolean;
     readonly 'collectErrors': true;
+    readonly 'ignoreAdditionalProperties': boolean;
     readonly 'removeAdditionalProperties': false;
     readonly 'synthesizeDefaults': true;
   };
@@ -123,18 +122,18 @@ export class Materializer implements MaterializerInterface {
     this.allowAdditionalProperties = allowAdditionalProperties;
 
     this.cachedOverridesNoDefaults = {
-      'allowAdditionalProperties': allowAdditionalProperties,
       'applyDefaults': true,
       'castTypes': castTypes,
       'collectErrors': true,
+      'ignoreAdditionalProperties': allowAdditionalProperties,
       'removeAdditionalProperties': false,
       'synthesizeDefaults': false
     };
     this.cachedOverridesWithDefaults = {
-      'allowAdditionalProperties': allowAdditionalProperties,
       'applyDefaults': true,
       'castTypes': castTypes,
       'collectErrors': true,
+      'ignoreAdditionalProperties': allowAdditionalProperties,
       'removeAdditionalProperties': false,
       'synthesizeDefaults': true
     };
@@ -459,39 +458,50 @@ export class Materializer implements MaterializerInterface {
       this.registry.set(schema);
     }
 
-    // synthesizeDefaults generates zero values for required properties that have
-    // no explicit default — this is a GraphEngine-only capability with no compiled
-    // equivalent, so the engine path is retained solely for createDefault().
-    // allowAdditionalProperties bypasses additionalProperties checks entirely —
-    // the compiled validator has no equivalent option, so the engine path is also
-    // retained when passAdditionalProperties: true was set on this Materializer.
     if (synthesizeDefaults || this.allowAdditionalProperties) {
-      const overrides = synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults;
-      const engine = this.registry.engine(schema);
-      const execution = engine.execute(data, { overrides });
-      const graph = execution.graph;
-      const entryNode = execution.entryNode;
-      const materialized = synthesizeDefaults
-        ? execution.value
-        : this.materializeResult(graph, entryNode, execution.value);
+      const graph = this.registry.graph(id);
 
+      if (graph === undefined) {
+        throw new MaterializationError(id, {
+          'code': 'MATERIALIZATION_FAILED',
+          'validationErrors': [`No graph found for schema: ${id}`]
+        });
+      }
+
+      const entryNode = graph.rootNode;
+
+      const opts = synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults;
+      const validator = this.registry.validator(id);
+      const lookupSchema = (sid: string): Record<string, unknown> | undefined => {
+        const schemaGraph = this.lookupGraphFn(sid);
+
+        if (schemaGraph === undefined || !isRecord(schemaGraph.rootSchema)) {
+          return undefined;
+        }
+
+        return schemaGraph.rootSchema;
+      };
+      const seedData = synthesizeDefaults && data === undefined
+        ? SchemaCompilerDefaults.synthesizeZeroValue(entryNode, graph, lookupSchema, this.lookupGraphFn)
+        : data;
+      const compiledResult = validator.validate(seedData, opts);
+
+      const materialized = synthesizeDefaults
+        ? compiledResult.value
+        : this.materializeResult(graph, entryNode, compiledResult.value);
       const abox = baseIRI === undefined
         ? []
         : this.projectAboxFromExecution(graph, entryNode, materialized, baseIRI, aboxOptions);
 
       return {
         abox,
-        'errors': this.formatErrors(execution.errors),
-        'valid': execution.valid,
+        'errors': this.formatErrors(compiledResult.errors),
+        'valid': compiledResult.valid,
         'value': materialized
       };
     }
 
-    // Main materialization path: route through the compiled validator (same path
-    // SchemaRegistry.validate/cast/convert use). The compiled validator falls back
-    // to the GraphEngine internally for un-compilable keywords ($dynamicRef,
-    // unevaluated*, rdfsRange/rdfsDomain) and for cyclic data on recursive schemas
-    // (RangeError → interpreter refStack). No special-casing needed here.
+    // Default materialization path — compiled validator with defaults and coercion applied.
     const validator = this.registry.validator(id);
     const compiledResult = validator.validate(data, this.cachedOverridesNoDefaults);
 

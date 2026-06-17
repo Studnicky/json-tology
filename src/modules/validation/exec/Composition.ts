@@ -1,13 +1,14 @@
-import type { ValidationErrorType } from '../../../types/Validation.js';
 import type { KeywordContextType } from '../../../types/GraphEngine.js';
 import type {
-  CheckFnType, ValidateWithErrorsFnType, ValidateWithErrorsResultType
+  ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../../types/Validation.js';
+import type { ExecContextType } from '../../../types/ExecContext.js';
 import type { CustomKeywordEntryType } from '../../../types/CustomKeywordEntry.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import {
   isRecord
 } from '../../data/DataTypes.js';
+import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
 import { Predicates } from '../Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
@@ -30,7 +31,7 @@ import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
  *
  * @example
  * ```ts
- * const result = Composition.validateAllOf(value, path, validators, errors, true, false, false);
+ * const result = Composition.validateAllOf(value, path, validators, ctx);
  * ```
  */
 export class Composition {
@@ -38,14 +39,30 @@ export class Composition {
     current: unknown,
     path: string,
     validator: ValidateWithErrorsFnType,
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
-    const result = validator(current, path, errors, collectErrors, applyDefaults, doCoerce, false);
+    // allOf members run with stripUnknown forced false — see comment in validateAllOf
+    const memberCtx: ExecContextType = {
+      ...ctx,
+      'stripUnknown': false
+    };
+    const result = validator(current, path, memberCtx);
 
-    if (!result.valid && !collectErrors) {
+    // Propagate evaluated sets from the member ctx back to the outer ctx so that
+    // unevaluatedProperties/unevaluatedItems post-passes see what the allOf branch
+    // evaluated. Mirrors VisitComposition.allOf (VisitComposition.ts:60-70).
+    if (memberCtx.evaluatedProperties !== undefined) {
+      for (const key of memberCtx.evaluatedProperties) {
+        (ctx.evaluatedProperties ??= new Set()).add(key);
+      }
+    }
+    if (memberCtx.evaluatedItems !== undefined) {
+      for (const index of memberCtx.evaluatedItems) {
+        (ctx.evaluatedItems ??= new Set()).add(index);
+      }
+    }
+
+    if (!result.valid && !ctx.collectErrors) {
       return {
         'earlyExit': true,
         'valid': false,
@@ -64,15 +81,11 @@ export class Composition {
     current: unknown,
     path: string,
     validator: ValidateWithErrorsFnType,
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
-    const result = validator(current, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+    const result = validator(current, path, ctx);
 
-    if (!result.valid && !collectErrors) {
+    if (!result.valid && !ctx.collectErrors) {
       return {
         'earlyExit': true,
         'valid': false,
@@ -91,15 +104,27 @@ export class Composition {
     workingValue: unknown,
     path: string,
     elseValidator: ValidateWithErrorsFnType,
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
-    const elseResult = elseValidator(workingValue, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+    const branchCtx: ExecContextType = { ...ctx };
+    const elseResult = elseValidator(workingValue, path, branchCtx);
 
-    if (!elseResult.valid && !collectErrors) {
+    // Propagate evaluated sets from the else branch back to the outer ctx.
+    // The else branch's compiled validator creates its own childCtx (via spread),
+    // accumulates evaluated keys/indices onto that childCtx, and never writes
+    // back to the caller — so explicit propagation is required here.
+    if (branchCtx.evaluatedProperties !== undefined) {
+      for (const key of branchCtx.evaluatedProperties) {
+        (ctx.evaluatedProperties ??= new Set()).add(key);
+      }
+    }
+    if (branchCtx.evaluatedItems !== undefined) {
+      for (const index of branchCtx.evaluatedItems) {
+        (ctx.evaluatedItems ??= new Set()).add(index);
+      }
+    }
+
+    if (!elseResult.valid && !ctx.collectErrors) {
       return {
         'earlyExit': true,
         'valid': false,
@@ -118,15 +143,26 @@ export class Composition {
     workingValue: unknown,
     path: string,
     thenValidator: ValidateWithErrorsFnType,
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
-    const thenResult = thenValidator(workingValue, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+    const branchCtx: ExecContextType = { ...ctx };
+    const thenResult = thenValidator(workingValue, path, branchCtx);
 
-    if (!thenResult.valid && !collectErrors) {
+    // Propagate evaluated sets from the then branch back to the outer ctx.
+    // Mirror of applyElseBranch: branch validators create child contexts via spread;
+    // evaluated sets are accumulated on the child and must be explicitly merged back.
+    if (branchCtx.evaluatedProperties !== undefined) {
+      for (const key of branchCtx.evaluatedProperties) {
+        (ctx.evaluatedProperties ??= new Set()).add(key);
+      }
+    }
+    if (branchCtx.evaluatedItems !== undefined) {
+      for (const index of branchCtx.evaluatedItems) {
+        (ctx.evaluatedItems ??= new Set()).add(index);
+      }
+    }
+
+    if (!thenResult.valid && !ctx.collectErrors) {
       return {
         'earlyExit': true,
         'valid': false,
@@ -145,10 +181,7 @@ export class Composition {
     workingValue: unknown,
     path: string,
     allOfValidators: undefined | ValidateWithErrorsFnType[],
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
@@ -167,11 +200,17 @@ export class Composition {
     // branch's required check runs. A required field in branch N whose default
     // lives in branch N+1 would otherwise fail the required check.
     // exec/* is the compiled backend; visit/* (VisitComposition) is the interpreter fallback.
-    if (applyDefaults) {
-      const preErrors: ValidationErrorType[] = [];
+    if (ctx.applyDefaults) {
+      const preCtx: ExecContextType = {
+        ...ctx,
+        'collectErrors': true,
+        'errors': [],
+        'stripUnknown': false,
+        'synthesizeDefaults': false
+      };
 
       for (const allOfValidator of allOfValidators) {
-        current = allOfValidator(current, path, preErrors, true, true, doCoerce, false).value;
+        current = allOfValidator(current, path, preCtx).value;
       }
     }
 
@@ -182,7 +221,7 @@ export class Composition {
     // validator performs the final strip against `allowedKeysForStrip`,
     // which is the union of own + allOf-inherited property names.
     for (const allOfValidator of allOfValidators) {
-      const step = Composition.applyAllOfMember(current, path, allOfValidator, errors, collectErrors, applyDefaults, doCoerce);
+      const step = Composition.applyAllOfMember(current, path, allOfValidator, ctx);
 
       if (step.earlyExit) {
         return step;
@@ -200,61 +239,126 @@ export class Composition {
     };
   }
 
+  /**
+   * Unified anyOf validation.
+   *
+   * Runs each anyOf branch as a full validator in an isolated scratch context.
+   * When `ctx.applyDefaults || ctx.doCoerce`, each branch gets a cloned candidate
+   * value and the first passing branch's output is used. In check-mode (no value
+   * production), branches run with collectErrors:false so they short-circuit on
+   * first failure — cheap and avoids accumulating phantom errors.
+   *
+   * Evaluated sets from all passing branches are merged back into `ctx` for
+   * `unevaluatedProperties` / `unevaluatedItems` post-pass correctness.
+   */
   static validateAnyOf(
     path: string,
     value: unknown,
-    anyOfChecks: CheckFnType[] | undefined,
-    errors: ValidationErrorType[]
-  ): boolean {
-    if (anyOfChecks === undefined) {
-      return true;
-    }
-
-    const matched = anyOfChecks.some((check: CheckFnType) => {
-      return check(value);
-    });
-
-    if (matched) {
-      return true;
-    }
-
-    errors.push(BaseError.validationError(path, 'anyOf', VALIDATION_MESSAGES.anyOf));
-
-    return false;
-  }
-
-  /**
-   * Value-producing anyOf: runs full validators on cloned candidates, picks the first
-   * winner's output value (matching VisitComposition.anyOf semantics).
-   */
-  static validateAnyOfWithValues(
-    path: string,
-    workingValue: unknown,
-    anyOfValidators: ValidateWithErrorsFnType[],
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean,
-    cloneCandidate: <T>(v: T) => T
+    anyOfValidators: undefined | ValidateWithErrorsFnType[],
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
-    const branchErrors: ValidationErrorType[] = [];
-    let winnerValue: unknown;
-    let found = false;
+    if (anyOfValidators === undefined) {
+      return {
+        'earlyExit': false,
+        'valid': true,
+        'value': value
+      };
+    }
+
+    const needsValueProducing = ctx.applyDefaults || ctx.doCoerce;
+    let matched = false;
+    let winnerValue: unknown = value;
+    let winnerBranchCtx: ExecContextType | undefined;
 
     for (const validator of anyOfValidators) {
-      const candidate = cloneCandidate(workingValue);
-      const result = validator(candidate, path, branchErrors, true, applyDefaults, doCoerce, stripUnknown);
+      if (needsValueProducing) {
+        const candidate = GraphEngineSupport.cloneCandidate(value);
+        const branchCtx: ExecContextType = {
+          ...ctx,
+          'collectErrors': true,
+          'errors': [],
+          'evaluatedItems': undefined,
+          'evaluatedProperties': undefined
+        };
+        const result = validator(candidate, path, branchCtx);
 
-      if (result.valid && !found) {
-        winnerValue = result.value;
-        found = true;
+        if (result.valid) {
+          if (!matched) {
+            matched = true;
+            winnerValue = result.value;
+            winnerBranchCtx = branchCtx;
+          } else if (ctx.trackEvaluated) {
+            // Merge evaluated sets from additional passing branches
+            if (branchCtx.evaluatedProperties !== undefined) {
+              for (const key of branchCtx.evaluatedProperties) {
+                (ctx.evaluatedProperties ??= new Set()).add(key);
+              }
+            }
+            if (branchCtx.evaluatedItems !== undefined) {
+              for (const index of branchCtx.evaluatedItems) {
+                (ctx.evaluatedItems ??= new Set()).add(index);
+              }
+            }
+          }
+        }
+      } else {
+        // Check mode: run in isolated scratch ctx
+        const branchCtx: ExecContextType = {
+          ...ctx,
+          'applyDefaults': false,
+          'collectErrors': false,
+          'doCoerce': false,
+          'errors': [],
+          'evaluatedItems': undefined,
+          'evaluatedProperties': undefined,
+          'stripUnknown': false
+        };
+        const result = validator(value, path, branchCtx);
+
+        if (result.valid) {
+          if (!matched) {
+            matched = true;
+            // Record first winner for post-loop merge when not tracking evaluated
+            winnerBranchCtx = branchCtx;
+          }
+
+          if (ctx.trackEvaluated) {
+            // Merge evaluated sets from ALL passing branches immediately
+            if (branchCtx.evaluatedProperties !== undefined) {
+              for (const key of branchCtx.evaluatedProperties) {
+                (ctx.evaluatedProperties ??= new Set()).add(key);
+              }
+            }
+            if (branchCtx.evaluatedItems !== undefined) {
+              for (const index of branchCtx.evaluatedItems) {
+                (ctx.evaluatedItems ??= new Set()).add(index);
+              }
+            }
+          } else {
+            // In check mode without unevaluated tracking, break early
+            break;
+          }
+        }
       }
     }
 
-    if (found) {
+    if (matched) {
+      // When NOT tracking evaluated, merge winner's sets now
+      if (!ctx.trackEvaluated && winnerBranchCtx !== undefined) {
+        if (winnerBranchCtx.evaluatedProperties !== undefined) {
+          for (const key of winnerBranchCtx.evaluatedProperties) {
+            (ctx.evaluatedProperties ??= new Set()).add(key);
+          }
+        }
+        if (winnerBranchCtx.evaluatedItems !== undefined) {
+          for (const index of winnerBranchCtx.evaluatedItems) {
+            (ctx.evaluatedItems ??= new Set()).add(index);
+          }
+        }
+      }
+
       return {
         'earlyExit': false,
         'valid': true,
@@ -262,14 +366,14 @@ export class Composition {
       };
     }
 
-    if (collectErrors) {
-      errors.push(BaseError.validationError(path, 'anyOf', VALIDATION_MESSAGES.anyOf));
+    if (ctx.collectErrors) {
+      ctx.errors.push(BaseError.validationError(path, 'anyOf', VALIDATION_MESSAGES.anyOf));
     }
 
     return {
-      'earlyExit': !collectErrors,
+      'earlyExit': !ctx.collectErrors,
       'valid': false,
-      'value': workingValue
+      'value': value
     };
   }
 
@@ -277,7 +381,7 @@ export class Composition {
     path: string,
     value: unknown,
     customKeywordEntries: CustomKeywordEntryType[] | undefined,
-    errors: ValidationErrorType[]
+    errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
     if (customKeywordEntries === undefined) {
       return true;
@@ -314,11 +418,7 @@ export class Composition {
     path: string,
     depSchemaValidators: Array<{ 'trigger': string;
       'validator': ValidateWithErrorsFnType }> | undefined,
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
@@ -336,7 +436,7 @@ export class Composition {
 
     for (const dep of depSchemaValidators) {
       if (dep.trigger in obj) {
-        const step = Composition.applyDependentSchemaMember(current, path, dep.validator, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+        const step = Composition.applyDependentSchemaMember(current, path, dep.validator, ctx);
 
         if (step.earlyExit) {
           return step;
@@ -355,21 +455,25 @@ export class Composition {
     };
   }
 
+  /**
+   * Unified if/then/else validation.
+   *
+   * Runs `ifValidator` in an isolated check-mode scratch context to determine
+   * the branch. The scratch context suppresses value production and error
+   * collection so the branch test is a pure predicate that does not contaminate
+   * the parent context's error list or output value.
+   */
   static validateIfThenElse(
     workingValue: unknown,
     path: string,
-    ifCheck: CheckFnType | undefined,
+    ifValidator: undefined | ValidateWithErrorsFnType,
     thenValidator: undefined | ValidateWithErrorsFnType,
     elseValidator: undefined | ValidateWithErrorsFnType,
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
-    if (ifCheck === undefined) {
+    if (ifValidator === undefined) {
       return {
         'earlyExit': false,
         'valid': true,
@@ -377,12 +481,25 @@ export class Composition {
       };
     }
 
-    if (ifCheck(workingValue)) {
+    // Run if in isolated check-mode scratch ctx
+    const ifScratchCtx: ExecContextType = {
+      ...ctx,
+      'applyDefaults': false,
+      'collectErrors': false,
+      'doCoerce': false,
+      'errors': [],
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'stripUnknown': false
+    };
+    const ifResult = ifValidator(workingValue, path, ifScratchCtx);
+
+    if (ifResult.valid) {
       if (thenValidator !== undefined) {
-        return Composition.applyThenBranch(workingValue, path, thenValidator, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+        return Composition.applyThenBranch(workingValue, path, thenValidator, ctx);
       }
     } else if (elseValidator !== undefined) {
-      return Composition.applyElseBranch(workingValue, path, elseValidator, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+      return Composition.applyElseBranch(workingValue, path, elseValidator, ctx);
     }
 
     return {
@@ -392,84 +509,129 @@ export class Composition {
     };
   }
 
+  /**
+   * Unified not validation.
+   *
+   * Runs `complementValidator` in an isolated check-mode scratch context.
+   * The `not` keyword passes iff the inner validator FAILS — so we invert the result.
+   */
   static validateNot(
     path: string,
     value: unknown,
-    complementCheck: CheckFnType | undefined,
-    errors: ValidationErrorType[]
+    complementValidator: undefined | ValidateWithErrorsFnType,
+    ctx: ExecContextType
   ): boolean {
-    if (complementCheck?.(value) !== true) {
+    if (complementValidator === undefined) {
       return true;
     }
 
-    errors.push(BaseError.validationError(path, 'not', VALIDATION_MESSAGES.not));
+    // Run in isolated check-mode scratch ctx — not passes iff validator FAILS
+    const scratchCtx: ExecContextType = {
+      ...ctx,
+      'applyDefaults': false,
+      'collectErrors': false,
+      'doCoerce': false,
+      'errors': [],
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'stripUnknown': false
+    };
+    const result = complementValidator(value, path, scratchCtx);
 
-    return false;
+    if (result.valid) {
+      // Complement validated — not fails
+      if (ctx.collectErrors) {
+        ctx.errors.push(BaseError.validationError(path, 'not', VALIDATION_MESSAGES.not));
+      }
+
+      return false;
+    }
+
+    return true;
   }
 
+  /**
+   * Unified oneOf validation.
+   *
+   * Runs each oneOf branch as a full validator in an isolated scratch context.
+   * Exactly one branch must pass. When `ctx.applyDefaults || ctx.doCoerce`, each
+   * branch gets a cloned candidate value and the unique winner's output is used.
+   * In check-mode, branches run with collectErrors:false.
+   *
+   * Evaluated sets from the unique passing branch are merged back into `ctx`.
+   */
   static validateOneOf(
     path: string,
     value: unknown,
-    oneOfChecks: CheckFnType[] | undefined,
-    errors: ValidationErrorType[]
-  ): boolean {
-    if (oneOfChecks === undefined) {
-      return true;
+    oneOfValidators: undefined | ValidateWithErrorsFnType[],
+    ctx: ExecContextType
+  ): { 'earlyExit': boolean;
+    'valid': boolean;
+    'value': unknown } {
+    if (oneOfValidators === undefined) {
+      return {
+        'earlyExit': false,
+        'valid': true,
+        'value': value
+      };
     }
 
-    let count = 0;
+    const needsValueProducing = ctx.applyDefaults || ctx.doCoerce;
+    let matchCount = 0;
+    let winnerValue: unknown = value;
+    let winnerBranchCtx: ExecContextType | undefined;
 
-    for (const check of oneOfChecks) {
-      if (check(value)) {
-        count++;
-        if (count > 1) {
+    for (const validator of oneOfValidators) {
+      const branchCtx: ExecContextType = needsValueProducing
+        ? {
+          ...ctx,
+          'collectErrors': true,
+          'errors': [],
+          'evaluatedItems': undefined,
+          'evaluatedProperties': undefined
+        }
+        : {
+          ...ctx,
+          'applyDefaults': false,
+          'collectErrors': false,
+          'doCoerce': false,
+          'errors': [],
+          'evaluatedItems': undefined,
+          'evaluatedProperties': undefined,
+          'stripUnknown': false
+        };
+      const candidate = needsValueProducing ? GraphEngineSupport.cloneCandidate(value) : value;
+      const result = validator(candidate, path, branchCtx);
+
+      if (result.valid) {
+        matchCount++;
+
+        if (matchCount === 1) {
+          winnerValue = result.value;
+          winnerBranchCtx = branchCtx;
+        }
+
+        if (matchCount > 1 && !ctx.collectErrors) {
           break;
         }
       }
     }
 
-    if (count === 1) {
-      return true;
-    }
-
-    errors.push(BaseError.validationError(path, 'oneOf', VALIDATION_MESSAGES.oneOf, { 'matchCount': count }));
-
-    return false;
-  }
-
-  /**
-   * Value-producing oneOf: runs full validators on cloned candidates, ensures exactly
-   * one wins, propagates that winner's output value (matching VisitComposition.oneOf semantics).
-   */
-  static validateOneOfWithValues(
-    path: string,
-    workingValue: unknown,
-    oneOfValidators: ValidateWithErrorsFnType[],
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean,
-    cloneCandidate: <T>(v: T) => T
-  ): { 'earlyExit': boolean;
-    'valid': boolean;
-    'value': unknown } {
-    let matches = 0;
-    let winnerValue: unknown = workingValue;
-
-    for (const validator of oneOfValidators) {
-      const candidate = cloneCandidate(workingValue);
-      const result = validator(candidate, path, [], true, applyDefaults, doCoerce, stripUnknown);
-
-      if (result.valid) {
-        matches++;
-        if (matches === 1) {
-          winnerValue = result.value;
+    if (matchCount === 1) {
+      // Merge evaluated sets from winner into parent ctx
+      if (ctx.trackEvaluated && winnerBranchCtx !== undefined) {
+        if (winnerBranchCtx.evaluatedProperties !== undefined) {
+          for (const key of winnerBranchCtx.evaluatedProperties) {
+            (ctx.evaluatedProperties ??= new Set()).add(key);
+          }
+        }
+        if (winnerBranchCtx.evaluatedItems !== undefined) {
+          for (const index of winnerBranchCtx.evaluatedItems) {
+            (ctx.evaluatedItems ??= new Set()).add(index);
+          }
         }
       }
-    }
 
-    if (matches === 1) {
       return {
         'earlyExit': false,
         'valid': true,
@@ -477,14 +639,14 @@ export class Composition {
       };
     }
 
-    if (collectErrors) {
-      errors.push(BaseError.validationError(path, 'oneOf', VALIDATION_MESSAGES.oneOf, { 'matchCount': matches }));
+    if (ctx.collectErrors) {
+      ctx.errors.push(BaseError.validationError(path, 'oneOf', VALIDATION_MESSAGES.oneOf, { 'matchCount': matchCount }));
     }
 
     return {
-      'earlyExit': !collectErrors,
+      'earlyExit': !ctx.collectErrors,
       'valid': false,
-      'value': workingValue
+      'value': value
     };
   }
 }

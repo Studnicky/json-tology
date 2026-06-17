@@ -1,7 +1,5 @@
-import type { ValidationErrorType } from '../../../types/Validation.js';
-import type {
-  CheckFnType, ValidateWithErrorsFnType
-} from '../../../types/Validation.js';
+import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
+import type { ExecContextType } from '../../../types/ExecContext.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
@@ -34,7 +32,7 @@ export class Arrays {
     minItems: number | undefined,
     maxItems: number | undefined,
     uniqueItems: boolean,
-    errors: ValidationErrorType[]
+    errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
     const pre = errors.length;
 
@@ -54,19 +52,33 @@ export class Arrays {
   static validateContains(
     path: string,
     arr: unknown[],
-    containsCheck: CheckFnType | undefined,
+    containsValidator: undefined | ValidateWithErrorsFnType,
     minContains: number | undefined,
     maxContains: number | undefined,
-    errors: ValidationErrorType[]
+    ctx: ExecContextType,
+    errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
-    if (containsCheck === undefined) {
+    if (containsValidator === undefined) {
       return true;
     }
 
     let count = 0;
 
     for (const item of arr) {
-      if (containsCheck(item)) {
+      // Run in isolated check-mode scratch ctx per element
+      const scratchCtx: ExecContextType = {
+        ...ctx,
+        'applyDefaults': false,
+        'collectErrors': false,
+        'doCoerce': false,
+        'errors': [],
+        'evaluatedItems': undefined,
+        'evaluatedProperties': undefined,
+        'stripUnknown': false
+      };
+      const result = containsValidator(item, path, scratchCtx);
+
+      if (result.valid) {
         count++;
       }
     }
@@ -86,11 +98,7 @@ export class Arrays {
     arr: unknown[],
     itemValidator: undefined | ValidateWithErrorsFnType,
     prefixValidators: undefined | ValidateWithErrorsFnType[],
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (itemValidator === undefined) {
@@ -104,7 +112,7 @@ export class Arrays {
     let valid = true;
 
     for (let i = startIndex; i < arr.length; i++) {
-      const outcome = validateSingleItem(itemValidator, arr, i, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+      const outcome = validateSingleItem(itemValidator, arr, i, path, ctx);
 
       if (outcome === 'early-exit') {
         return {
@@ -127,11 +135,7 @@ export class Arrays {
     path: string,
     arr: unknown[],
     prefixValidators: undefined | ValidateWithErrorsFnType[],
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (prefixValidators === undefined) {
@@ -144,7 +148,7 @@ export class Arrays {
     let valid = true;
 
     for (let i = 0; i < prefixValidators.length && i < arr.length; i++) {
-      const outcome = validateSingleItem(prefixValidators[i], arr, i, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+      const outcome = validateSingleItem(prefixValidators[i], arr, i, path, ctx);
 
       if (outcome === 'early-exit') {
         return {
@@ -188,21 +192,17 @@ function validateSingleItem(
   arr: unknown[],
   index: number,
   path: string,
-  errors: ValidationErrorType[],
-  collectErrors: boolean,
-  applyDefaults: boolean,
-  doCoerce: boolean,
-  stripUnknown: boolean
+  ctx: ExecContextType
 ): 'early-exit' | 'invalid' | 'valid' {
   const childPath = `${path}/${index}`;
-  const result = validator(arr[index], childPath, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+  const result = validator(arr[index], childPath, ctx);
 
   if (result.value !== arr[index]) {
     arr[index] = result.value;
   }
 
   if (!result.valid) {
-    return collectErrors ? 'invalid' : 'early-exit';
+    return ctx.collectErrors ? 'invalid' : 'early-exit';
   }
 
   return 'valid';

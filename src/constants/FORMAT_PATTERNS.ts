@@ -6,8 +6,6 @@ const FORMAT_PATTERN_JSON_POINTER = '^(/[^/]*)*$';
 const FORMAT_PATTERN_RELATIVE_JSON_POINTER = '^[0-9]+(#|(/[^/]*)*)$';
 const FORMAT_PATTERN_UUID = '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
 
-export const URI_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/iu;
-
 export const FORMAT_PATTERNS: Record<string, string> = {
   'email': FORMAT_PATTERN_EMAIL,
   'hostname': FORMAT_PATTERN_HOSTNAME,

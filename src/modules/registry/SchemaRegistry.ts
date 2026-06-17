@@ -51,6 +51,7 @@ import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { SchemaErrorCode } from '../../constants/ERROR_CODES.js';
+import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Transform } from '../transform/Transform.js';
@@ -200,7 +201,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return this.graph(id);
     };
     this.compiler = new SchemaCompiler({
-      'logger': this.logger,
       'lookupCompiled': (schemaId: string): CompiledValidatorType | undefined => {
         return this.store.has(schemaId)
           ? this.compiled(schemaId)
@@ -1159,6 +1159,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     if (rawId === undefined || rawId === '') {
       throw new SchemaError('Schema must have a $id property', { 'code': 'SCHEMA_MISSING_ID' });
     }
+
+    // Reject schemas with unsupported dialects or required vocabularies eagerly at
+    // registration time — the compiled path never reaches execution for such schemas.
+    GraphEngineSupport.buildRootDialectPlan(schema);
 
     const {
       canonicalSchema, schemaId

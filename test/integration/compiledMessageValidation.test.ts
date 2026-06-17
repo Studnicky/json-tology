@@ -1,89 +1,85 @@
 /**
- * Cross-engine MESSAGE parity tests.
+ * Compiled-path message validation tests.
  *
- * The compiledInterpretedParity tests assert that compiled and interpreter paths
- * agree on pass/fail verdicts. This file goes further: for every invalid
- * (schema, data) pair, it asserts that the ERROR MESSAGES produced by the
- * compiled path (registry.validate) deep-equal those produced by the interpreter
- * path (registry.engine(schema).errors(data)).
+ * For every (schema, data) scenario, asserts the compiled path (registry.validate)
+ * verdict, error presence, and — for invalid cases — the keyword and
+ * VALIDATION_MESSAGES-sourced message of the expected error.
  *
- * Message drift was the primary source of user-visible inconsistency. This test
- * is the regression sentinel for Wave A+C's VALIDATION_MESSAGES.ts unification.
- * Any keyword that re-introduces an inline message string in either backend
- * will be caught here.
- *
- * Keywords covered (previously-drifted set):
+ * Keywords covered:
  *   minProperties, maxProperties, additionalProperties, dependentRequired,
- *   anyOf, oneOf, uniqueItems, contains, enum
+ *   anyOf, oneOf, uniqueItems, contains, enum, format, contentEncoding,
+ *   contentMediaType
  */
 
 import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import type { ValidationErrorType } from '../../src/types/Validation.js';
 import { JsonTology } from '../../src/index.js';
+import { VALIDATION_MESSAGES } from '../../src/constants/VALIDATION_MESSAGES.js';
+import type { ValidationErrorType } from '../../src/types/Validation.js';
 
-type Scenario = { 'data': unknown;
+type ErrorSummaryType = {
+  'keyword': string;
+  'message': string;
+};
+
+type ValidScenario = {
+  'data': unknown;
   'description': string;
-  'valid': boolean };
+  'valid': true;
+};
 
-/**
- * For each invalid scenario, assert that compiled-path and interpreter-path
- * messages deep-equal each other (sorted by path+keyword for stability).
- */
-function assertMessageParity(
+type InvalidScenario = {
+  'data': unknown;
+  'description': string;
+  'expectedKeyword': string;
+  'expectedMessage': string;
+  'valid': false;
+};
+
+type Scenario = InvalidScenario | ValidScenario;
+
+function assertCompiledMessages(
   jt: JsonTology,
   schemaId: string,
   scenarios: Scenario[]
 ): void {
-  const schemaObj = jt.registry.get(schemaId) as Record<string, unknown>;
-
   for (const scenario of scenarios) {
     const {
       data, description, valid
     } = scenario;
     const compiledErrors = [...jt.registry.validate(schemaId, data).items];
-    const interpreterErrors = jt.registry.engine(schemaObj).errors(data);
-
     const verdictCompiled = compiledErrors.length === 0;
-    const verdictInterpreter = interpreterErrors.length === 0;
 
     assert.equal(verdictCompiled, valid, `compiled verdict: ${description}`);
-    assert.equal(verdictInterpreter, valid, `interpreter verdict: ${description}`);
 
-    if (!valid) {
-      // Normalise + sort so order differences don't produce false failures.
-      const sort = (errs: ValidationErrorType[]): Array<{ 'keyword': string;
-        'message': string;
-        'path': string }> => {
-        return errs
-          .map((err) => {
-            return {
-              'keyword': err.keyword,
-              'message': err.message,
-              'path': err.path
-            };
-          })
-          .sort((left, right) => {
-            const byPath = left.path.localeCompare(right.path);
+    if (valid) {
+      assert.equal(compiledErrors.length, 0, `expected no errors for: ${description}`);
+    } else {
+      assert.ok(compiledErrors.length > 0, `expected errors for: ${description}`);
 
-            return byPath === 0 ? left.keyword.localeCompare(right.keyword) : byPath;
-          });
-      };
+      const {
+        expectedKeyword, expectedMessage
+      } = scenario;
+      const match = compiledErrors.find((err: ValidationErrorType): boolean => {
+        return err.keyword === expectedKeyword && err.message === expectedMessage;
+      });
 
-      assert.deepEqual(
-        sort(compiledErrors),
-        sort(interpreterErrors),
-        `message parity failed for "${description}" — `
-        + `compiled: ${JSON.stringify(sort(compiledErrors))} / `
-        + `interpreter: ${JSON.stringify(sort(interpreterErrors))}`
-      );
+      const actualSummary = JSON.stringify(compiledErrors.map((err: ValidationErrorType): ErrorSummaryType => {
+        return {
+          'keyword': err.keyword,
+          'message': err.message
+        };
+      }));
+      const failureMessage = `expected error with keyword="${expectedKeyword}" message="${expectedMessage}" for: ${description}\nactual errors: ${actualSummary}`;
+
+      assert.ok(match !== undefined, failureMessage);
     }
   }
 }
 
-void describe('cross-engine message parity', () => {
+void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
   // minProperties
   // ---------------------------------------------------------------------------
@@ -109,16 +105,20 @@ void describe('cross-engine message parity', () => {
       {
         'data': { 'a': 1 },
         'description': 'one property when min is 2 — invalid',
+        'expectedKeyword': 'minProperties',
+        'expectedMessage': VALIDATION_MESSAGES.minProperties(2),
         'valid': false
       },
       {
         'data': {},
         'description': 'zero properties when min is 2 — invalid',
+        'expectedKeyword': 'minProperties',
+        'expectedMessage': VALIDATION_MESSAGES.minProperties(2),
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:MinProps', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:MinProps', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -150,11 +150,13 @@ void describe('cross-engine message parity', () => {
           'c': 3
         },
         'description': 'three properties when max is 2 — invalid',
+        'expectedKeyword': 'maxProperties',
+        'expectedMessage': VALIDATION_MESSAGES.maxProperties(2),
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:MaxProps', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:MaxProps', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -183,11 +185,13 @@ void describe('cross-engine message parity', () => {
           'name': 'Alice'
         },
         'description': 'additional property present — invalid',
+        'expectedKeyword': 'additionalProperties',
+        'expectedMessage': VALIDATION_MESSAGES.additionalProperties('extra'),
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:AdditionalProps', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:AdditionalProps', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -219,11 +223,13 @@ void describe('cross-engine message parity', () => {
       {
         'data': { 'email': 'a@b.com' },
         'description': 'email without username — invalid',
+        'expectedKeyword': 'dependentRequired',
+        'expectedMessage': VALIDATION_MESSAGES.dependentRequired('username', 'email'),
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:DepReq', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:DepReq', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -258,11 +264,13 @@ void describe('cross-engine message parity', () => {
       {
         'data': true,
         'description': 'boolean matches no branch — invalid',
+        'expectedKeyword': 'anyOf',
+        'expectedMessage': VALIDATION_MESSAGES.anyOf,
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:AnyOf', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:AnyOf', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -292,11 +300,13 @@ void describe('cross-engine message parity', () => {
       {
         'data': true,
         'description': 'boolean matches no branch — invalid',
+        'expectedKeyword': 'oneOf',
+        'expectedMessage': VALIDATION_MESSAGES.oneOf,
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:OneOf', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:OneOf', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -330,11 +340,13 @@ void describe('cross-engine message parity', () => {
           1
         ],
         'description': 'duplicate value — invalid',
+        'expectedKeyword': 'uniqueItems',
+        'expectedMessage': VALIDATION_MESSAGES.uniqueItems,
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:UniqueItems', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:UniqueItems', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -367,11 +379,13 @@ void describe('cross-engine message parity', () => {
           3
         ],
         'description': 'no string element — invalid',
+        'expectedKeyword': 'contains',
+        'expectedMessage': VALIDATION_MESSAGES.contains(1),
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:Contains', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:Contains', scenarios);
   });
 
   // ---------------------------------------------------------------------------
@@ -399,18 +413,20 @@ void describe('cross-engine message parity', () => {
       {
         'data': 'd',
         'description': 'value not in enum — invalid',
+        'expectedKeyword': 'enum',
+        'expectedMessage': VALIDATION_MESSAGES.enum,
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:Enum', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:Enum', scenarios);
   });
 
   // ---------------------------------------------------------------------------
   // format (strict-by-default)
   // ---------------------------------------------------------------------------
 
-  void it('keyword: format strict-by-default — both engines agree on message', () => {
+  void it('keyword: format', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
 
     jt.set({
@@ -428,18 +444,20 @@ void describe('cross-engine message parity', () => {
       {
         'data': 'not-an-email',
         'description': 'invalid email — fails with format message',
+        'expectedKeyword': 'format',
+        'expectedMessage': VALIDATION_MESSAGES.format('email'),
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:Format', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:Format', scenarios);
   });
 
   // ---------------------------------------------------------------------------
   // contentEncoding (strict-by-default)
   // ---------------------------------------------------------------------------
 
-  void it('keyword: contentEncoding strict-by-default — both engines agree on message', () => {
+  void it('keyword: contentEncoding', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
 
     jt.set({
@@ -457,18 +475,20 @@ void describe('cross-engine message parity', () => {
       {
         'data': 'not valid base64!!!',
         'description': 'invalid base64 string — fails with contentEncoding message',
+        'expectedKeyword': 'contentEncoding',
+        'expectedMessage': VALIDATION_MESSAGES.contentEncoding('base64'),
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:ContentEncoding', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:ContentEncoding', scenarios);
   });
 
   // ---------------------------------------------------------------------------
   // contentMediaType (strict-by-default)
   // ---------------------------------------------------------------------------
 
-  void it('keyword: contentMediaType strict-by-default — both engines agree on message', () => {
+  void it('keyword: contentMediaType', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
 
     jt.set({
@@ -488,10 +508,12 @@ void describe('cross-engine message parity', () => {
       {
         'data': 'bm90IGpzb24=',
         'description': 'valid base64 but not JSON content — fails with contentMediaType message',
+        'expectedKeyword': 'contentMediaType',
+        'expectedMessage': VALIDATION_MESSAGES.contentMediaType('application/json'),
         'valid': false
       }
     ];
 
-    assertMessageParity(jt, 'urn:msg-parity:ContentMediaType', scenarios);
+    assertCompiledMessages(jt, 'urn:msg-parity:ContentMediaType', scenarios);
   });
 });

@@ -14,6 +14,7 @@ export type ObjectValidationOptionsType = {
   'propertyAliases': Map<string, string>;
   'propertyDefaults': Map<string, { 'defaultValue': unknown;
     'hasDefault': boolean; }>;
+  'propertyZeroValueSynthesizers': Map<string, () => unknown>;
   'propValidators': Map<string, ValidateWithErrorsFnType>;
   'required': string[] | undefined;
 };

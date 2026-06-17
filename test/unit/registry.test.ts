@@ -10,7 +10,7 @@ import {
   describe, it
 } from 'node:test';
 import {
-  Compose, GraphEngine, InstantiationError, JsonTology, Resolver, SchemaError
+  Compose, InstantiationError, JsonTology, Resolver, SchemaError
 } from '../../src/index.js';
 // Internal access: FormatRegistry's builtin() / register() mechanics are tested
 // directly; the public API exposes formats only as a config option.
@@ -529,16 +529,17 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       assert.ok(!registry.has('nonexistent'), 'unknown format: has returns false');
     });
 
-    void describe('GraphEngine integration and override', () => {
-      void it('validates with custom format via GraphEngine, and re-registering overrides the existing format', () => {
+    void describe('SchemaRegistry integration and override', () => {
+      void it('validates with custom format via SchemaRegistry, and re-registering overrides the existing format', () => {
         // happy: custom format validates correctly
-        const reg = FormatRegistry.builtin();
+        const formatReg = FormatRegistry.builtin();
 
-        reg.set('hex-color', (value) => {
+        formatReg.set('hex-color', (value) => {
           return typeof value === 'string' && /^#[\da-f]{6}$/iu.test(value);
         });
 
         const schema: Record<string, unknown> = {
+          '$id': 'https://test.com/HexColor',
           '$schema': 'https://json-schema.org/draft/2020-12/schema',
           '$vocabulary': {
             'https://json-schema.org/draft/2020-12/vocab/core': true,
@@ -549,19 +550,24 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           'type': 'string'
         };
 
-        const engine = new GraphEngine(schema, { 'formatRegistry': reg });
+        const reg = new SchemaRegistry({ 'formatRegistry': formatReg });
 
-        assert.ok(engine.check('#ff00aa'), 'valid hex color accepted');
-        assert.ok(!engine.check('not-a-color'), 'invalid hex color rejected');
+        reg.set(schema as Record<string, unknown> & { '$id': string });
+
+        const validator = reg.validator(schema.$id as string);
+
+        assert.ok(validator.validate('#ff00aa', { 'collectErrors': false }).valid, 'valid hex color accepted');
+        assert.ok(!validator.validate('not-a-color', { 'collectErrors': false }).valid, 'invalid hex color rejected');
 
         // edge: re-registering over an existing format overrides it
-        const overrideReg = FormatRegistry.builtin();
+        const overrideFormatReg = FormatRegistry.builtin();
 
-        overrideReg.set('email', () => {
+        overrideFormatReg.set('email', () => {
           return false;
         });
 
         const emailSchema: Record<string, unknown> = {
+          '$id': 'https://test.com/EmailOverride',
           '$schema': 'https://json-schema.org/draft/2020-12/schema',
           '$vocabulary': {
             'https://json-schema.org/draft/2020-12/vocab/core': true,
@@ -572,9 +578,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           'type': 'string'
         };
 
-        const emailEngine = new GraphEngine(emailSchema, { 'formatRegistry': overrideReg });
+        const emailReg = new SchemaRegistry({ 'formatRegistry': overrideFormatReg });
 
-        assert.ok(!emailEngine.check('user@example.com'), 'overridden email format rejects valid email');
+        emailReg.set(emailSchema as Record<string, unknown> & { '$id': string });
+
+        const emailValidator = emailReg.validator(emailSchema.$id as string);
+
+        assert.ok(!emailValidator.validate('user@example.com', { 'collectErrors': false }).valid, 'overridden email format rejects valid email');
       });
     });
   });
@@ -764,9 +774,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       'data': data, 'keyword': keyword, 'name': name, 'schema': schema, 'valid': valid
     } of validationScenarios) {
       void it(name, () => {
-        const engine = new GraphEngine(schema, { 'keywords': [keyword] });
+        const reg = new SchemaRegistry({ 'keywords': [keyword] });
 
-        assert.equal(engine.check(data), valid);
+        reg.set(schema as Record<string, unknown> & { '$id': string });
+
+        const result = reg.validator(schema.$id as string).validate(data, { 'collectErrors': false });
+
+        assert.equal(result.valid, valid);
       });
     }
 
@@ -779,12 +793,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         'type': 'number'
       };
-      const rangeEngine = new GraphEngine(
-        rangeSchema,
-        { 'keywords': [rangeKeyword] }
-      );
+      const reg = new SchemaRegistry({ 'keywords': [rangeKeyword] });
 
-      assert.equal(rangeEngine.errors(5)[0].message, 'must be >= 10');
+      reg.set(rangeSchema as Record<string, unknown> & { '$id': string });
+
+      const result = reg.validator(rangeSchema.$id as string).validate(5, { 'collectErrors': true });
+
+      assert.equal(result.errors[0].message, 'must be >= 10');
     });
   });
 
@@ -834,9 +849,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       'data': data, 'name': name, 'schema': schema, 'valid': valid
     } of plainScenarios) {
       void it(name, () => {
-        const engine = new GraphEngine(schema);
+        const reg = new SchemaRegistry({ 'enableStrictGraph': false });
 
-        assert.equal(engine.check(data), valid);
+        reg.set(schema as Record<string, unknown> & { '$id': string });
+
+        const result = reg.validator(schema.$id as string).validate(data, { 'collectErrors': false });
+
+        assert.equal(result.valid, valid);
       });
     }
   });
@@ -895,15 +914,16 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'evenNumber': true,
             'type': 'number'
           };
-          const engine = new GraphEngine(
-            kwSchema,
-            { 'keywords': [evenNumberKeyword] }
-          );
+          const reg = new SchemaRegistry({ 'keywords': [evenNumberKeyword] });
 
-          assert.equal(engine.execute(4).valid, true);
-          assert.equal(engine.execute(3).valid, false);
+          reg.set(kwSchema as Record<string, unknown> & { '$id': string });
+
+          const validator = reg.validator(kwSchema.$id as string);
+
+          assert.equal(validator.validate(4, { 'collectErrors': false }).valid, true);
+          assert.equal(validator.validate(3, { 'collectErrors': false }).valid, false);
         },
-        'name': 'happy: GraphEngine.execute() validates with custom keyword'
+        'name': 'happy: compiled validator validates with custom keyword'
       },
       {
         'check': () => {
