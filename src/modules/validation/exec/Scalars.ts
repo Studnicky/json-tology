@@ -1,5 +1,6 @@
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
+import { isTrustedFormatPredicate } from '../../format/FormatRegistry.js';
 import { Predicates } from '../Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
@@ -115,12 +116,22 @@ export class Scalars {
       return true;
     }
 
-    try {
-      if (formatValidator(value)) {
-        return true;
+    let passed: boolean;
+
+    if (isTrustedFormatPredicate(formatValidator)) {
+      // Built-in validators are total functions — skip the try/catch on the hot path.
+      passed = formatValidator(value);
+    } else {
+      // User-supplied validators may throw — treat a throw as format failure.
+      try {
+        passed = formatValidator(value);
+      } catch {
+        passed = false;
       }
-    } catch {
-      // user-supplied validator threw — treat as format failure
+    }
+
+    if (passed) {
+      return true;
     }
 
     errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format ?? '')));
@@ -177,16 +188,21 @@ export class Scalars {
     path: string,
     types: string[],
     value: unknown,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorType[],
+    typePredicate?: (v: unknown) => boolean
   ): boolean {
     if (types.length === 0) {
       return true;
     }
 
-    for (const typeName of types) {
-      if (Predicates.matchesType(typeName, value)) {
-        return true;
-      }
+    const passes = typePredicate === undefined
+      ? types.some((typeName: string): boolean => {
+        return Predicates.matchesType(typeName, value);
+      })
+      : typePredicate(value);
+
+    if (passes) {
+      return true;
     }
 
     errors.push(BaseError.validationError(

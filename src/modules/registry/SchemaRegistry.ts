@@ -167,6 +167,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly logger: LoggerInterface;
   private readonly lookupGraphFn: (id: string) => SchemaGraphInterface | undefined;
   private readonly maxSchemaDepth: number | undefined;
+  private readonly refDecoderRegistry: {
+    'getGraph': (target: Record<string, unknown>) => SchemaGraphInterface | undefined;
+    'getSchema': (targetId: string) => Record<string, unknown> | undefined;
+    'resolveSchemaId': (rawId: string) => string;
+  };
   private readonly refs: SchemaRefWalkerInterface;
   public readonly sameAsStore: SameAsStore;
   private readonly store: SchemaEntryStoreInterface;
@@ -199,6 +204,19 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.invariants = new InvariantStore(options?.invariants);
     this.lookupGraphFn = (id: string): SchemaGraphInterface | undefined => {
       return this.graph(id);
+    };
+    this.refDecoderRegistry = {
+      'getGraph': (target: Record<string, unknown>): SchemaGraphInterface | undefined => {
+        const found = this.store.get(target.$id as string);
+
+        return found === undefined ? undefined : this.graphOf(found);
+      },
+      'getSchema': (targetId: string): Record<string, unknown> | undefined => {
+        return this.store.get(targetId)?.schema;
+      },
+      'resolveSchemaId': (rawId: string): string => {
+        return this.resolve(rawId);
+      }
     };
     this.compiler = new SchemaCompiler({
       'lookupCompiled': (schemaId: string): CompiledValidatorType | undefined => {
@@ -568,30 +586,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     return merged;
-  }
-
-  /**
-   * Build the `RefDecoderRegistryType` object used by `RefDecoder.run`.
-   * Centralises the three store-backed lookup callbacks.
-   */
-  private buildRefDecoderRegistry(): {
-    'getGraph': (target: Record<string, unknown>) => SchemaGraphInterface | undefined;
-    'getSchema': (targetId: string) => Record<string, unknown> | undefined;
-    'resolveSchemaId': (rawId: string) => string;
-  } {
-    return {
-      'getGraph': (target: Record<string, unknown>): SchemaGraphInterface | undefined => {
-        const found = this.store.get(target.$id as string);
-
-        return found === undefined ? undefined : this.graphOf(found);
-      },
-      'getSchema': (targetId: string): Record<string, unknown> | undefined => {
-        return this.store.get(targetId)?.schema;
-      },
-      'resolveSchemaId': (rawId: string): string => {
-        return this.resolve(rawId);
-      }
-    };
   }
 
   /**
@@ -1078,7 +1072,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     // decoders run over the canonical structure. Validation + strip then run on
     // the decoded result, because the schema describes the transform's OUTPUT.
     const rootDecoded = this.decodeWithTransform(schemaObj, input, schemaId);
-    const decoded = RefDecoder.run(this.graphOf(entry), rootDecoded, this.buildRefDecoderRegistry());
+    const decoded = RefDecoder.run(this.graphOf(entry), rootDecoded, this.refDecoderRegistry);
 
     const result = compiled.validate(decoded, resolvedOptions);
 

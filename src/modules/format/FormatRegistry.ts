@@ -7,7 +7,7 @@ import {
   BASE64_CHUNK_SIZE, BASE64_MAX_PADDING, DATE_DAY_MAX,
   DATE_DAY_OFFSET_1, DATE_DAY_OFFSET_2, DATE_DAY_SEPARATOR_OFFSET,
   DATE_MONTH_MAX, DATE_MONTH_OFFSET_1, DATE_MONTH_OFFSET_2,
-  DATE_STRING_LENGTH, DATE_YEAR_DIGIT_COUNT, DATETIME_MIN_LENGTH,
+  DATE_STRING_LENGTH, DATE_YEAR_DIGIT_COUNT,
   DAYS_IN_APR, DAYS_IN_AUG, DAYS_IN_DEC, DAYS_IN_FEB_COMMON,
   DAYS_IN_JAN, DAYS_IN_JUL, DAYS_IN_JUN, DAYS_IN_MAR,
   DAYS_IN_MAY, DAYS_IN_NOV, DAYS_IN_OCT, DAYS_IN_SEP,
@@ -187,9 +187,9 @@ function isIPv6(value: string): boolean {
   if (IPV6_MIXED.test(value) || IPV6_MIXED_COMPRESSED.test(value)) {
     return true;
   }
-  const doubleColonCount = (value.match(/::/gu) ?? []).length;
+  const firstDC = value.indexOf('::');
 
-  if (doubleColonCount > 1) {
+  if (firstDC !== -1 && value.includes('::', firstDC + 2)) {
     return false;
   }
   if (IPV6_WITH_DOUBLE_COLON.test(value)) {
@@ -409,7 +409,69 @@ function validateDateFormat(value: string): boolean {
 }
 
 function validateDateTime(value: string): boolean {
-  return value.length > DATETIME_MIN_LENGTH && value.includes('T') && !Number.isNaN(Date.parse(value));
+  // Minimum RFC 3339 date-time: YYYY-MM-DDThh:mm:ssZ = 20 chars
+  if (value.length < DATE_STRING_LENGTH + 1 + TIME_BASE_LENGTH + 1) {
+    return false;
+  }
+  // Validate full-date portion (chars 0–9): digit pattern, separators, and basic month/day ranges
+  if (!validateDate(value, 0)) {
+    return false;
+  }
+  // Leap-year-aware day bounds — allocation-free digit extraction
+  const year = (codeAt(value, 0) - 0x30) * 1000
+    + (codeAt(value, 1) - 0x30) * 100
+    + (codeAt(value, 2) - 0x30) * 10
+    + (codeAt(value, 3) - 0x30);
+  const month = (codeAt(value, DATE_MONTH_OFFSET_1) - 0x30) * DECIMAL_RADIX
+    + (codeAt(value, DATE_MONTH_OFFSET_2) - 0x30);
+  const day = (codeAt(value, DATE_DAY_OFFSET_1) - 0x30) * DECIMAL_RADIX
+    + (codeAt(value, DATE_DAY_OFFSET_2) - 0x30);
+  const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
+
+  if (day < 1 || day > maxDay) {
+    return false;
+  }
+  // RFC 3339 allows 'T' or 't' as the date-time separator (index 10)
+  const sep = codeAt(value, DATE_STRING_LENGTH);
+
+  if (sep !== 0x54 && sep !== 0x74) {
+    return false;
+  }
+  // Time portion begins immediately after the separator (index 11)
+  const timeStart = DATE_STRING_LENGTH + 1;
+
+  if (validateTimeHM(value, timeStart) === false) {
+    return false;
+  }
+  if (!validateTimeSeconds(value, timeStart)) {
+    return false;
+  }
+  // Advance past the base time (HH:MM:SS)
+  let pos = timeStart + TIME_BASE_LENGTH;
+
+  // Optional fractional seconds: '.' followed by one or more digits
+  if (pos < value.length && codeAt(value, pos) === 0x2E) {
+    const afterDot = pos + 1;
+
+    pos = advancePastFractionalSecondsInFormat(value, afterDot);
+    // Require at least one digit after '.'
+    if (pos === afterDot) {
+      return false;
+    }
+  }
+  // RFC 3339 requires a time offset — accept uppercase or lowercase 'Z'
+  if (pos >= value.length) {
+    return false;
+  }
+  const tzChar = codeAt(value, pos);
+
+  // Handle lowercase 'z' (RFC 3339 §5.6 allows it)
+  if (tzChar === 0x7A) {
+    return pos + 1 === value.length;
+  }
+
+  return validateTimeOffset(value, pos);
 }
 
 function consumeDigits(value: string, start: number): number {
@@ -740,6 +802,30 @@ const NUMBER_FORMAT_VALIDATORS: Record<string, FormatPredicateType> = {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Trust marker — applied to built-in validators at registration time
+// ---------------------------------------------------------------------------
+
+const TRUSTED_MARKER = 'trusted' as const;
+
+/**
+ * Returns `true` when `fn` is a built-in format validator registered via
+ * {@link FormatRegistry.builtin}.  Built-in validators are total functions
+ * that never throw, so callers can omit the try/catch guard on the hot path.
+ *
+ * User-supplied validators registered via {@link FormatRegistry.set} are never
+ * trusted — the try/catch guard is preserved for them.
+ *
+ * @param fn - Format predicate to test
+ * @returns `true` when the function carries the built-in trust marker
+ * @category Validation
+ * @since 0.25.0
+ * @group Format
+ */
+export function isTrustedFormatPredicate(fn: FormatPredicateType): boolean {
+  return Object.hasOwn(fn, TRUSTED_MARKER);
+}
+
 /**
  * Pluggable registry for JSON Schema `format` validators.
  *
@@ -778,14 +864,14 @@ export class FormatRegistry implements FormatRegistryInterface {
       name,
       fn
     ] of Object.entries(STRING_FORMAT_VALIDATORS)) {
-      registry.set(name, fn);
+      registry.setBuiltin(name, fn);
     }
 
     for (const [
       name,
       fn
     ] of Object.entries(NUMBER_FORMAT_VALIDATORS)) {
-      registry.set(name, fn);
+      registry.setBuiltin(name, fn);
     }
 
     return registry;
@@ -816,10 +902,29 @@ export class FormatRegistry implements FormatRegistryInterface {
   /**
    * Add a format validator under the given name, replacing any previous validator.
    *
+   * User-supplied validators are not trusted — the hot-path executor wraps
+   * them in a try/catch to guard against validators that throw.
+   *
    * @param name - Format name to register
    * @param validator - Validation function that returns true when the value matches the format
    */
   set(name: string, validator: FormatPredicateType): void {
+    this.validators.set(name, validator);
+  }
+
+  /**
+   * Register a built-in (trusted) format validator.
+   *
+   * Brands the function with a non-enumerable {@link TRUSTED_MARKER} property so the
+   * hot-path executor can call it without a try/catch guard.
+   */
+  private setBuiltin(name: string, validator: FormatPredicateType): void {
+    Object.defineProperty(validator, TRUSTED_MARKER, {
+      'configurable': false,
+      'enumerable': false,
+      'value': true,
+      'writable': false
+    });
     this.validators.set(name, validator);
   }
 }

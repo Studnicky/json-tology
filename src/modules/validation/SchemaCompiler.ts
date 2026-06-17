@@ -43,8 +43,11 @@ import { buildNodePlan } from './SchemaCompilerPlan.js';
 import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContext.js';
 import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
 import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
-import type { ValidationRunOptionsType } from '../../types/ValidationRunOptionsType.js';
 import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
+import {
+  VS_EARLY_EXIT, VS_INVALID, VS_VALID
+} from '../../types/ValidatorStatusType.js';
+import type { ValidatorStatusType } from '../../types/ValidatorStatusType.js';
 
 // ---------------------------------------------------------------------------
 // Local constants
@@ -134,20 +137,31 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     // contains: indices where the contains validator passes in check mode
     if (containsValidator !== undefined) {
+      // Hoist scratch ctx outside the per-element loop. check-mode (collectErrors:false)
+      // means no errors are pushed, so the errors array is never mutated.
+      const scratchCtx: ExecContextType = {
+        'applyDefaults': false,
+        'collectErrors': false,
+        'depth': ctx.depth,
+        'doCoerce': false,
+        'dynamicScope': ctx.dynamicScope,
+        'errors': [],
+        'evaluatedItems': undefined,
+        'evaluatedProperties': undefined,
+        'ignoreAdditionalProperties': ctx.ignoreAdditionalProperties,
+        'maxDepth': ctx.maxDepth,
+        'refStack': ctx.refStack,
+        'stripUnknown': false,
+        'synthesizeDefaults': false,
+        'trackEvaluated': ctx.trackEvaluated
+      };
+
       for (const [
         i,
         element
       ] of arr.entries()) {
-        const scratchCtx: ExecContextType = {
-          ...ctx,
-          'applyDefaults': false,
-          'collectErrors': false,
-          'doCoerce': false,
-          'errors': [],
-          'evaluatedItems': undefined,
-          'evaluatedProperties': undefined,
-          'stripUnknown': false
-        };
+        scratchCtx.evaluatedItems = undefined;
+        scratchCtx.evaluatedProperties = undefined;
         const result = containsValidator(element, `${i}`, scratchCtx);
 
         if (result.valid) {
@@ -206,18 +220,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private applyPlanDefaults(
     initialValue: unknown,
     plan: CompiledNodeValidationPlanType,
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): unknown {
-    const {
-      applyDefaults, doCoerce
-    } = runOpts;
     let workingValue = initialValue;
 
-    if (applyDefaults && workingValue === undefined && plan.hasDefault) {
+    if (ctx.applyDefaults && workingValue === undefined && plan.hasDefault) {
       workingValue = GraphEngineSupport.cloneDefault(plan.defaultValue);
     }
 
-    if (doCoerce && plan.types.length > 0) {
+    if (ctx.doCoerce && plan.types.length > 0) {
       workingValue = SchemaCompilerSupport.coerceCompiledValue(plan.types, workingValue);
     }
 
@@ -1228,9 +1239,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       return refResult;
     }
 
-    const scalarResult = this.validatePlanScalars(plan, refResult.value, path, errors, collectErrors);
+    const scalarStatus = this.validatePlanScalars(plan, refResult.value, path, errors, collectErrors);
 
-    if (scalarResult.earlyExit) {
+    if (scalarStatus === VS_EARLY_EXIT) {
       return {
         'earlyExit': true,
         'valid': false,
@@ -1240,7 +1251,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     return {
       'earlyExit': false,
-      'valid': refResult.valid && scalarResult.valid,
+      'valid': refResult.valid && scalarStatus === VS_VALID,
       'value': refResult.value
     };
   }
@@ -1287,20 +1298,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
-    ctx: ExecContextType,
-    runOpts: ValidationRunOptionsType
-  ): { 'earlyExit': boolean;
-    'valid': boolean } {
+    ctx: ExecContextType
+  ): ValidatorStatusType {
     let valid = true;
 
     if (isRecord(workingValue)) {
-      const objResult = this.validateObjectPlan(plan, workingValue, path, ctx, runOpts);
+      const objResult = this.validateObjectPlan(plan, workingValue, path, ctx);
 
       if (objResult.earlyExit) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
+        return VS_EARLY_EXIT;
       }
       if (!objResult.valid) {
         valid = false;
@@ -1311,13 +1317,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     if (Array.isArray(workingValue)) {
-      const arrResult = this.validateArrayPlan(plan, workingValue, path, ctx, runOpts);
+      const arrResult = this.validateArrayPlan(plan, workingValue, path, ctx);
 
       if (arrResult.earlyExit) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
+        return VS_EARLY_EXIT;
       }
       if (!arrResult.valid) {
         valid = false;
@@ -1327,10 +1330,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       }
     }
 
-    return {
-      'earlyExit': false,
-      valid
-    };
+    return valid ? VS_VALID : VS_INVALID;
   }
 
   // ---------------------------------------------------------------------------
@@ -1342,26 +1342,25 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     workingValue: unknown,
     path: string,
     ctx: ExecContextType,
-    runOpts: ValidationRunOptionsType,
     initialValid: boolean
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
     let valid = initialValid;
-    const structResult = this.runPlanStructure(plan, workingValue, path, ctx, runOpts);
+    const structStatus = this.runPlanStructure(plan, workingValue, path, ctx);
 
-    if (structResult.earlyExit) {
+    if (structStatus === VS_EARLY_EXIT) {
       return {
         'earlyExit': true,
         'valid': false,
         'value': workingValue
       };
     }
-    if (!structResult.valid) {
+    if (structStatus === VS_INVALID) {
       valid = false;
     }
 
-    const tailResult = this.validatePlanTail(plan, workingValue, path, ctx.errors, runOpts);
+    const tailResult = this.validatePlanTail(plan, workingValue, path, ctx);
 
     if (tailResult.earlyExit) {
       return {
@@ -1382,12 +1381,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     arr: unknown[],
     path: string,
     ctx: ExecContextType,
-    runOpts: ValidationRunOptionsType,
     arrOpts: ArrayValidationOptionsType
   ): { 'earlyExit': boolean;
     'valid': boolean; } {
-    const { collectErrors } = runOpts;
-    const { errors } = ctx;
+    const {
+      collectErrors, errors
+    } = ctx;
     const {
       containsValidator, maxContains, maxItems, minContains, minItems, uniqueItems
     } = arrOpts;
@@ -1399,7 +1398,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       };
     }
 
-    const itemsResult = this.validateArrayItemsAndPrefix(arr, path, ctx, runOpts, arrOpts);
+    const itemsResult = this.validateArrayItemsAndPrefix(arr, path, ctx, arrOpts);
 
     if (itemsResult.earlyExit) {
       return itemsResult;
@@ -1422,39 +1421,53 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     arr: unknown[],
     path: string,
     ctx: ExecContextType,
-    runOpts: ValidationRunOptionsType,
     arrOpts: ArrayValidationOptionsType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
-    const { stripUnknown } = runOpts;
+    const { stripUnknown } = ctx;
     const {
       itemValidator, prefixValidators
     } = arrOpts;
 
-    // Inherit depth from parent ctx so the depth guard in item validators can detect
-    // cyclic data. Use a fresh refStack scoped per item-validation context.
-    const arrCtx: ExecContextType = {
-      ...ctx,
-      'evaluatedItems': undefined,
-      'evaluatedProperties': undefined,
-      'refStack': new Set(),
-      'stripUnknown': stripUnknown
-    };
+    // Mutate-and-restore ctx in place — avoids per-value child-ctx allocation.
+    // Use a fresh refStack for item validation so ref-cycle detection is scoped per item path.
+    const savedRefStack = ctx.refStack;
+    const savedEvalItems = ctx.evaluatedItems;
+    const savedEvalProps = ctx.evaluatedProperties;
+    const savedStrip = stripUnknown;
 
-    const validatePrefixItems = Arrays.validatePrefixItems;
-    const prefixResult = validatePrefixItems(path, arr, prefixValidators, arrCtx);
+    ctx.refStack = new Set();
+    ctx.evaluatedItems = undefined;
+    ctx.evaluatedProperties = undefined;
+    ctx.stripUnknown = stripUnknown;
 
-    if (prefixResult.earlyExit) {
-      return {
-        'earlyExit': true,
-        'valid': false
-      };
+    let prefixValid = true;
+    let itemsValid = true;
+    let earlyExit = false;
+
+    try {
+      const prefixResult = Arrays.validatePrefixItems(path, arr, prefixValidators, ctx);
+
+      if (prefixResult.earlyExit) {
+        earlyExit = true;
+      } else {
+        prefixValid = prefixResult.valid;
+        const itemsResult = Arrays.validateItems(path, arr, itemValidator, prefixValidators, ctx);
+
+        if (itemsResult.earlyExit) {
+          earlyExit = true;
+        } else {
+          itemsValid = itemsResult.valid;
+        }
+      }
+    } finally {
+      ctx.refStack = savedRefStack;
+      ctx.evaluatedItems = savedEvalItems;
+      ctx.evaluatedProperties = savedEvalProps;
+      ctx.stripUnknown = savedStrip;
     }
 
-    const validateItems = Arrays.validateItems;
-    const itemsResult = validateItems(path, arr, itemValidator, prefixValidators, arrCtx);
-
-    if (itemsResult.earlyExit) {
+    if (earlyExit) {
       return {
         'earlyExit': true,
         'valid': false
@@ -1463,7 +1476,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     return {
       'earlyExit': false,
-      'valid': prefixResult.valid && itemsResult.valid
+      'valid': prefixValid && itemsValid
     };
   }
 
@@ -1471,26 +1484,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     arr: unknown[],
     path: string,
-    ctx: ExecContextType,
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean; } {
-    const {
-      containsValidator, itemValidator, maxContains, maxItems, minContains, minItems,
-      prefixValidators, uniqueItems
-    } = plan;
-    const arrOpts: ArrayValidationOptionsType = {
-      containsValidator,
-      itemValidator,
-      maxContains,
-      maxItems,
-      minContains,
-      minItems,
-      prefixValidators,
-      uniqueItems
-    };
-
-    return this.validateArrayFields(arr, path, ctx, runOpts, arrOpts);
+    return this.validateArrayFields(arr, path, ctx, plan.arrOpts);
   }
 
   private validateForbidExtra(
@@ -1532,8 +1529,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     count: number,
     initialValid: boolean,
     objOpts: ObjectValidationOptionsType
-  ): { 'earlyExit': boolean;
-    'valid': boolean } {
+  ): ValidatorStatusType {
     const {
       allowedKeys, jtExtra, maxProperties, minProperties
     } = objOpts;
@@ -1543,10 +1539,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       const forbidResult = this.validateForbidExtra(obj, path, allowedKeys, errors, collectErrors);
 
       if (forbidResult.earlyExit) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
+        return VS_EARLY_EXIT;
       }
       if (!forbidResult.valid) {
         valid = false;
@@ -1555,36 +1548,29 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     if (!Objects.validatePropertyCount(path, obj, minProperties, maxProperties, errors, count)) {
       if (!collectErrors) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
+        return VS_EARLY_EXIT;
       }
       valid = false;
     }
 
-    return {
-      'earlyExit': false,
-      valid
-    };
+    return valid ? VS_VALID : VS_INVALID;
   }
 
   private validateObjectFields(
     obj: Record<string, unknown>,
     path: string,
     ctx: ExecContextType,
-    runOpts: ValidationRunOptionsType,
     objOpts: ObjectValidationOptionsType
   ): { 'count': number;
     'earlyExit': boolean;
     'valid': boolean; } {
-    const { stripUnknown } = runOpts;
+    const { stripUnknown } = ctx;
     const {
       additionalIsFalse, additionalValidator, allowedKeys, allowedKeysForStrip,
       jtExtra, patternPropValidators, propertyDefaults, propValidators
     } = objOpts;
 
-    const prelude = this.validateObjectPrelude(obj, path, ctx.errors, runOpts, objOpts, ctx);
+    const prelude = this.validateObjectPrelude(obj, path, ctx, objOpts);
 
     if (prelude.earlyExit) {
       return {
@@ -1595,31 +1581,42 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const effectiveStrip = jtExtra === 'allow' || jtExtra === 'forbid' ? false : stripUnknown;
-    // Inherit depth from parent ctx so the depth guard in property validators can detect
-    // cyclic data (accumulating depth across property traversals). Use a fresh refStack
-    // so schema-level ref-cycle detection is scoped per ref-resolution path, not shared
-    // across sibling property validators.
-    const propsCtx: ExecContextType = {
-      ...ctx,
-      'evaluatedItems': undefined,
-      'evaluatedProperties': undefined,
-      'refStack': new Set(),
-      'stripUnknown': effectiveStrip
-    };
-    const validateProperties = Objects.validateProperties;
-    const propsResult = validateProperties(
-      path,
-      obj,
-      propValidators,
-      patternPropValidators,
-      additionalIsFalse,
-      additionalValidator,
-      allowedKeys,
-      effectiveStrip,
-      propertyDefaults,
-      propsCtx,
-      allowedKeysForStrip
-    );
+    // Mutate-and-restore ctx in place — avoids per-value child-ctx allocation.
+    // Save the four fields that change for property validation.
+    const savedRefStack = ctx.refStack;
+    const savedEvalItems = ctx.evaluatedItems;
+    const savedEvalProps = ctx.evaluatedProperties;
+    const savedStrip = stripUnknown;
+
+    ctx.refStack = new Set();
+    ctx.evaluatedItems = undefined;
+    ctx.evaluatedProperties = undefined;
+    ctx.stripUnknown = effectiveStrip;
+
+    let propsResult: { 'count': number;
+      'earlyExit': boolean;
+      'valid': boolean };
+
+    try {
+      propsResult = Objects.validateProperties(
+        path,
+        obj,
+        propValidators,
+        patternPropValidators,
+        additionalIsFalse,
+        additionalValidator,
+        allowedKeys,
+        effectiveStrip,
+        propertyDefaults,
+        ctx,
+        allowedKeysForStrip
+      );
+    } finally {
+      ctx.refStack = savedRefStack;
+      ctx.evaluatedItems = savedEvalItems;
+      ctx.evaluatedProperties = savedEvalProps;
+      ctx.stripUnknown = savedStrip;
+    }
 
     if (propsResult.earlyExit) {
       return {
@@ -1634,12 +1631,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const {
       collectErrors, errors
     } = ctx;
-    const extraResult = this.validateObjectCountAndExtra(obj, path, errors, collectErrors, count, baseValid, objOpts);
+    const extraStatus = this.validateObjectCountAndExtra(obj, path, errors, collectErrors, count, baseValid, objOpts);
 
     return {
       count,
-      'earlyExit': extraResult.earlyExit,
-      'valid': extraResult.valid
+      'earlyExit': extraStatus === VS_EARLY_EXIT,
+      'valid': extraStatus === VS_VALID
     };
   }
 
@@ -1647,47 +1644,23 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     plan: CompiledNodeValidationPlanType,
     obj: Record<string, unknown>,
     path: string,
-    ctx: ExecContextType,
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): { 'count': number;
     'earlyExit': boolean;
     'valid': boolean; } {
-    const {
-      additionalIsFalse, additionalValidator, allowedKeys, allowedKeysForStrip,
-      jtExtra, maxProperties, minProperties, patternPropValidators, propertyAliases,
-      propertyDefaults, propertyZeroValueSynthesizers, propValidators, required
-    } = plan;
-    const objOpts: ObjectValidationOptionsType = {
-      additionalIsFalse,
-      additionalValidator,
-      allowedKeys,
-      allowedKeysForStrip,
-      jtExtra,
-      maxProperties,
-      minProperties,
-      patternPropValidators,
-      propertyAliases,
-      propertyDefaults,
-      propertyZeroValueSynthesizers,
-      propValidators,
-      required
-    };
-
-    return this.validateObjectFields(obj, path, ctx, runOpts, objOpts);
+    return this.validateObjectFields(obj, path, ctx, plan.objOpts);
   }
 
   private validateObjectPrelude(
     obj: Record<string, unknown>,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType,
-    objOpts: ObjectValidationOptionsType,
-    ctx: ExecContextType
+    ctx: ExecContextType,
+    objOpts: ObjectValidationOptionsType
   ): { 'earlyExit': boolean;
     'requiredValid': boolean } {
     const {
-      applyDefaults, collectErrors
-    } = runOpts;
+      applyDefaults, collectErrors, errors
+    } = ctx;
     const {
       propertyAliases, propertyDefaults, propertyZeroValueSynthesizers, required
     } = objOpts;
@@ -1739,13 +1712,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown; } {
-    const runOpts: ValidationRunOptionsType = {
-      'applyDefaults': ctx.applyDefaults,
-      'collectErrors': ctx.collectErrors,
-      'doCoerce': ctx.doCoerce,
-      'stripUnknown': ctx.stripUnknown
-    };
-    const workingValue = this.applyPlanDefaults(initialValue, plan, runOpts);
+    const workingValue = this.applyPlanDefaults(initialValue, plan, ctx);
 
     // NOTE: $dynamicAnchor scope push happens in buildValidateWithErrorsExecution, which
     // builds childCtx with the updated dynamicScope BEFORE calling executeValidateSimple or
@@ -1768,15 +1735,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     const baseValid = earlyResult.valid && dynRefResult.valid;
 
-    return this.runPlanStructureAndTail(plan, dynRefResult.value, path, ctx, runOpts, baseValid);
+    return this.runPlanStructureAndTail(plan, dynRefResult.value, path, ctx, baseValid);
   }
 
   private validatePlanDependent(
     plan: CompiledNodeValidationPlanType,
     workingValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
@@ -1788,23 +1754,19 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       };
     }
 
-    const {
-      applyDefaults, collectErrors, doCoerce, stripUnknown
-    } = runOpts;
-
     const depCtx: ExecContextType = {
-      'applyDefaults': applyDefaults,
-      'collectErrors': collectErrors,
+      'applyDefaults': ctx.applyDefaults,
+      'collectErrors': ctx.collectErrors,
       'depth': 0,
-      'doCoerce': doCoerce,
+      'doCoerce': ctx.doCoerce,
       'dynamicScope': [],
-      errors,
+      'errors': ctx.errors,
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
       'ignoreAdditionalProperties': false,
       'maxDepth': 100,
       'refStack': new Set(),
-      'stripUnknown': stripUnknown,
+      'stripUnknown': ctx.stripUnknown,
       'synthesizeDefaults': false,
       'trackEvaluated': true
     };
@@ -1921,38 +1883,31 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     path: string,
     errors: ValidationErrorType[],
     collectErrors: boolean
-  ): { 'earlyExit': boolean;
-    'valid': boolean; } {
-    const tecResult = this.validateTypeEnumConst(plan, workingValue, path, errors, collectErrors);
+  ): ValidatorStatusType {
+    const tecStatus = this.validateTypeEnumConst(plan, workingValue, path, errors, collectErrors);
 
-    if (tecResult.earlyExit) {
-      return tecResult;
+    if (tecStatus === VS_EARLY_EXIT) {
+      return VS_EARLY_EXIT;
     }
 
-    const snResult = this.validateStringNumberFormat(plan, workingValue, path, errors, collectErrors);
+    const snStatus = this.validateStringNumberFormat(plan, workingValue, path, errors, collectErrors);
 
-    if (snResult.earlyExit) {
-      return snResult;
+    if (snStatus === VS_EARLY_EXIT) {
+      return VS_EARLY_EXIT;
     }
 
-    return {
-      'earlyExit': false,
-      'valid': tecResult.valid && snResult.valid
-    };
+    return tecStatus === VS_INVALID || snStatus === VS_INVALID ? VS_INVALID : VS_VALID;
   }
 
   private validatePlanTail(
     plan: CompiledNodeValidationPlanType,
     initialValue: unknown,
     path: string,
-    errors: ValidationErrorType[],
-    runOpts: ValidationRunOptionsType
+    ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown; } {
-    const { collectErrors } = runOpts;
-
-    const depResult = this.validatePlanDependent(plan, initialValue, path, errors, runOpts);
+    const depResult = this.validatePlanDependent(plan, initialValue, path, ctx);
 
     if (depResult.earlyExit) {
       return {
@@ -1964,7 +1919,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     const workingValue = depResult.value;
     const tailValid = depResult.valid;
-    const pnKwResult = this.validatePlanPropNamesAndKeywords(plan, workingValue, path, errors, collectErrors);
+    const pnKwResult = this.validatePlanPropNamesAndKeywords(plan, workingValue, path, ctx.errors, ctx.collectErrors);
 
     return {
       'earlyExit': pnKwResult.earlyExit,
@@ -1979,12 +1934,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     path: string,
     errors: ValidationErrorType[],
     collectErrors: boolean
-  ): { 'earlyExit': boolean;
-    'valid': boolean; } {
-    const strResult = this.validateStringPart(plan, value, path, errors, collectErrors);
+  ): ValidatorStatusType {
+    const strStatus = this.validateStringPart(plan, value, path, errors, collectErrors);
 
-    if (strResult.earlyExit) {
-      return strResult;
+    if (strStatus === VS_EARLY_EXIT) {
+      return VS_EARLY_EXIT;
     }
 
     const {
@@ -1995,23 +1949,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       && !Scalars.validateNumber(path, value, minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf, errors);
 
     if (numberInvalid) {
-      if (!collectErrors) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
-      }
-
-      return {
-        'earlyExit': false,
-        'valid': false
-      };
+      return collectErrors ? VS_INVALID : VS_EARLY_EXIT;
     }
 
-    return {
-      'earlyExit': false,
-      'valid': strResult.valid
-    };
+    return strStatus;
   }
 
   // ---------------------------------------------------------------------------
@@ -2024,8 +1965,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     path: string,
     errors: ValidationErrorType[],
     collectErrors: boolean
-  ): { 'earlyExit': boolean;
-    'valid': boolean } {
+  ): ValidatorStatusType {
     const {
       contentAssertionsEnabled, contentEncoding, contentMediaType,
       format, formatValidator, maxLength, minLength, pattern, patternRegex
@@ -2033,67 +1973,24 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     if (typeof value === 'string'
       && !Scalars.validateString(path, value, minLength, maxLength, patternRegex, pattern, errors)) {
-      if (!collectErrors) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
-      }
-
-      return {
-        'earlyExit': false,
-        'valid': false
-      };
+      return collectErrors ? VS_INVALID : VS_EARLY_EXIT;
     }
 
     if (!Scalars.validateFormat(path, value, format, formatValidator, errors)) {
-      if (!collectErrors) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
-      }
-
-      return {
-        'earlyExit': false,
-        'valid': false
-      };
+      return collectErrors ? VS_INVALID : VS_EARLY_EXIT;
     }
 
     if (contentAssertionsEnabled && typeof value === 'string') {
       if (!Scalars.validateContentEncoding(path, value, contentEncoding, errors)) {
-        if (!collectErrors) {
-          return {
-            'earlyExit': true,
-            'valid': false
-          };
-        }
-
-        return {
-          'earlyExit': false,
-          'valid': false
-        };
+        return collectErrors ? VS_INVALID : VS_EARLY_EXIT;
       }
 
       if (!Scalars.validateContentMediaType(path, value, contentMediaType, contentEncoding, errors)) {
-        if (!collectErrors) {
-          return {
-            'earlyExit': true,
-            'valid': false
-          };
-        }
-
-        return {
-          'earlyExit': false,
-          'valid': false
-        };
+        return collectErrors ? VS_INVALID : VS_EARLY_EXIT;
       }
     }
 
-    return {
-      'earlyExit': false,
-      'valid': true
-    };
+    return VS_VALID;
   }
 
   private validateTypeEnumConst(
@@ -2102,47 +1999,34 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     path: string,
     errors: ValidationErrorType[],
     collectErrors: boolean
-  ): { 'earlyExit': boolean;
-    'valid': boolean; } {
+  ): ValidatorStatusType {
     const {
-      constVal, enumSet, enumValues, hasConst, types
+      constVal, enumSet, enumValues, hasConst, typePredicate, types
     } = plan;
     let valid = true;
 
-    if (!Scalars.validateType(path, types, value, errors)) {
+    if (!Scalars.validateType(path, types, value, errors, typePredicate)) {
       if (!collectErrors) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
+        return VS_EARLY_EXIT;
       }
       valid = false;
     }
 
     if (!Scalars.validateEnum(path, value, enumValues, enumSet, errors)) {
       if (!collectErrors) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
+        return VS_EARLY_EXIT;
       }
       valid = false;
     }
 
     if (!Scalars.validateConst(path, value, hasConst, constVal, errors)) {
       if (!collectErrors) {
-        return {
-          'earlyExit': true,
-          'valid': false
-        };
+        return VS_EARLY_EXIT;
       }
       valid = false;
     }
 
-    return {
-      'earlyExit': false,
-      valid
-    };
+    return valid ? VS_VALID : VS_INVALID;
   }
 }
 

@@ -142,22 +142,23 @@ export class Objects {
 
     for (const key of keys) {
       const propValidator = propValidators.get(key);
-      const childPath = pathPrefix + key;
 
+      // childPath is constructed lazily — only at the call site where it is needed.
+      // On the all-valid path (no errors) this avoids one string concatenation per property.
       const propOk = propValidator === undefined
         ? Objects.validateUnknownProperty(
           additionalIsFalse,
           additionalValidator,
           allowedKeys,
           allowedKeysForStrip ?? allowedKeys,
-          childPath,
-          ctx,
+          pathPrefix,
           key,
+          ctx,
           obj,
           patternPropValidators,
           stripUnknown
         )
-        : Objects.validateKnownProperty(childPath, ctx, key, obj, propertyDefaults, propValidator);
+        : Objects.validateKnownProperty(pathPrefix + key, ctx, key, obj, propertyDefaults, propValidator);
 
       if (!propOk) {
         if (!ctx.collectErrors) {
@@ -267,9 +268,9 @@ export class Objects {
     additionalValidator: undefined | ValidateWithErrorsFnType,
     allowedKeys: Set<string> | undefined,
     allowedKeysForStrip: Set<string> | undefined,
-    childPath: string,
-    ctx: ExecContextType,
+    pathPrefix: string,
     key: string,
+    ctx: ExecContextType,
     obj: Record<string, unknown>,
     patternPropValidators: Array<{ 'regex': RegExp;
       'validator': ValidateWithErrorsFnType }> | undefined,
@@ -282,6 +283,7 @@ export class Objects {
       for (const pp of patternPropValidators) {
         if (pp.regex.test(key)) {
           matchedPattern = true;
+          const childPath = pathPrefix + key;
           const ppResult = pp.validator(obj[key], childPath, ctx);
 
           if (!ppResult.valid) {
@@ -310,9 +312,10 @@ export class Objects {
         if (!ctx.collectErrors) {
           return false;
         }
-        ctx.errors.push(BaseError.validationError(childPath, 'additionalProperties', VALIDATION_MESSAGES.additionalProperties(key)));
+        ctx.errors.push(BaseError.validationError(pathPrefix + key, 'additionalProperties', VALIDATION_MESSAGES.additionalProperties(key)));
         valid = false;
       } else if (additionalValidator !== undefined) {
+        const childPath = pathPrefix + key;
         const addResult = additionalValidator(obj[key], childPath, ctx);
 
         if (!addResult.valid) {

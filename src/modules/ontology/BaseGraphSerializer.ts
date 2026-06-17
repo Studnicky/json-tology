@@ -79,8 +79,19 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
     }
   }
 
+  /** Lazily-memoized result of corePredicates() — populated on first findPluginForPredicate call. */
+  #corePredicatesCache: ReadonlySet<string> | undefined;
+  /**
+   * Flat list of {plugin, prefix} pairs built from all vocabulary plugins.
+   * Computed once on first findPluginForPredicate call; avoids Object.values()
+   * allocations per relation during serializeQuads.
+   */
+  #pluginPrefixEntries: Array<{ 'plugin': VocabularyPluginInterface;
+    'prefix': string }> | undefined;
   protected readonly curie: CurieInterface;
+
   protected readonly predicateResolver: PredicateResolverFnType | undefined;
+
   protected readonly vocabularies: readonly VocabularyPluginInterface[];
 
   public constructor(options?: { 'curie'?: CurieInterface;
@@ -94,16 +105,33 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
   protected abstract corePredicates(): ReadonlySet<string>;
 
   protected findPluginForPredicate(predicate: string): undefined | VocabularyPluginInterface {
-    if (this.corePredicates().has(predicate)) {
+    // Lazily memoize corePredicates — abstract method resolved after super() completes.
+    if (this.#corePredicatesCache === undefined) {
+      this.#corePredicatesCache = this.corePredicates();
+    }
+
+    if (this.#corePredicatesCache.has(predicate)) {
       return undefined;
     }
 
+    // Build flat prefix list once; avoids Object.values() allocation per relation.
+    if (this.#pluginPrefixEntries === undefined) {
+      this.#pluginPrefixEntries = [];
+
+      for (const plugin of this.vocabularies) {
+        for (const prefix of Object.values(plugin.prefixes)) {
+          this.#pluginPrefixEntries.push({
+            plugin,
+            prefix
+          });
+        }
+      }
+    }
+
     // Find plugin that owns this predicate
-    for (const plugin of this.vocabularies) {
-      if (Object.values(plugin.prefixes).some((prefix: string): boolean => {
-        return predicate.startsWith(prefix);
-      })) {
-        return plugin;
+    for (const entry of this.#pluginPrefixEntries) {
+      if (predicate.startsWith(entry.prefix)) {
+        return entry.plugin;
       }
     }
 

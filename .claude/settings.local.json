@@ -136,7 +136,8 @@
       "Bash(xxd)",
       "Bash(awk 'NR<=694 && \\(/^function /||/^export function /\\){m=$0;mn=NR} NR==694{print mn\": \"m}' src/modules/validation/SchemaCompilerPlan.ts)",
       "Bash(awk 'NR<=1005 && \\(/^function /||/^export function /\\){m=$0;mn=NR} NR==1005{print mn\": \"m}' src/modules/validation/SchemaCompilerPlan.ts)",
-      "Bash(tee /tmp/wave5probe.log)"
+      "Bash(tee /tmp/wave5probe.log)",
+      "Bash(tee /tmp/bench-full-159.txt)"
     ]
   }
 }
