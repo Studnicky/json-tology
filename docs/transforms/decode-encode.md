@@ -50,6 +50,9 @@ const DateSchema = Transform.create(
 );
 // jt.instantiate(DateSchema.$id, '2026-01-15T10:30:00Z') → Date
 // jt.encode(DateSchema, date) → '2026-01-15T10:30:00Z'
+// Note: json-tology enforces strict RFC 3339 for date-time — a time offset
+// (Z or ±HH:MM) is required. Offset-less strings (e.g. '2026-01-15T10:30:00')
+// are rejected at validation time.
 ```
 
 ```ts [Zod]

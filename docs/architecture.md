@@ -48,7 +48,7 @@ The canonical graph is the single runtime artifact. Validation, materialization,
 8. Compile-time inference covers external `$ref` resolution via explicit references maps; `if/then/else` uses a documented sound branch-union approximation.
 9. SHACL JSON-LD emits `jt:*` annotations for graph semantics SHACL Core cannot express directly: `multipleOf`, `minItems`, `maxItems`, `uniqueItems`.
 10. Round-trip artifact coverage includes anchors, dynamic anchors, `contains`, `patternProperties`, and conditionals.
-11. Benchmark reproducibility is verified. `npm run bench` completes cleanly; the compiled-vs-interpreted path is locked by a smoke test.
+11. Benchmark reproducibility is verified. `npm run bench` completes cleanly; the single compiled validation path is exercised by a smoke test.
 
 Mandatory verification commands:
 
@@ -168,7 +168,7 @@ All error classes extend `BaseError`. Internal imports reference each file direc
 - _(no LoadError class)_ — loader failures use `SchemaLoadErrorType` in `src/types/Loader.ts` (a discriminated union type, not an error class)
 - `MaterializationError.ts` — materialization and ABox projection failures; codes: `MATERIALIZATION_FAILED`, `CYCLIC_DATA`, `INVALID_IRI_VALUE`, `NON_FINITE_NUMBER`, `MISSING_GRAPH_IRI`
 - `OwlImportError.ts` — OWL import fatal conditions; carries `axiomIri` and `subjectIri`; code: `OWL_IMPORT_NOT_IMPLEMENTED`
-- `SchemaError.ts` — registration, missing `$id`, structure validation; codes: see `SchemaErrorCode` in `src/constants/ERROR_CODES.ts`; additionally `SCHEMA_DUPLICATE_ID` and `SCHEMA_DUPLICATE_SHAPE` are thrown as direct strings (no corresponding `SchemaErrorCode` constant — see `src/types/ErrorCodes.ts`)
+- `SchemaError.ts` — registration, missing `$id`, structure validation; codes: see `SchemaErrorCode` in `src/constants/ERROR_CODES.ts`; includes `SchemaErrorCode.DUPLICATE_ID` (`SCHEMA_DUPLICATE_ID`) and `SchemaErrorCode.DUPLICATE_SHAPE` (`SCHEMA_DUPLICATE_SHAPE`) used by `SchemaRegistry` for duplicate detection
 - `TransformError.ts` — base class for directional transform failures; adds `direction`, `schemaId?`, `path?`; not thrown directly by the library
 - `ValidationErrors.ts` — collection class for accumulated validation errors
 
@@ -340,12 +340,12 @@ Canonical graph construction and engine execution. `SchemaGraph.ts` is the canon
 - `Cursor.ts` — lazy, immutable selection of resource IRIs over an `AboxGraph`; navigation and refinement return a new cursor, terminals materialize the selection into typed instances
 - `EffectiveProperties.ts` — the single effective-property walk shared by materialization, RDF lift, and ABox projection; collects own `properties`, `allOf` members, and `if/then/else` branches (first-declaration-wins, cycle-safe, cross-graph `$ref` resolution)
 - `GraphArtifact.ts` — compiled graph artifact
-- `GraphEngine.ts` — graph execution engine; validates, parses, materializes, and encodes
+- `GraphEngine.ts` — builds and caches `SchemaGraph` instances; exposes `semantics()` and the lookup functions consumed by `SchemaRegistry` and `SchemaCompiler`; validation runs through `registry.validator(id).validate()`
 - `GraphEngineDefaults.ts` — default engine option resolution
 - `GraphEngineScalars.ts` — scalar validation paths
 - `GraphEngineSupport.ts` — engine utility functions
-- `GraphEngineVisit.ts` — graph traversal coordination
 - `PredicateResolver.ts` — resolves and validates property predicate IRIs; rejects multi-fragment IRIs and control characters with `GraphError` code `INVALID_PREDICATE_IRI`
+- `RefResolution.ts` — canonical single-source `$ref` → `{ graph, node }` resolver; all resolution paths (validation, projection, materialization) delegate here
 - `QuadBackedSchemaGraph.ts` — `SchemaGraphInterface` implementation backed by OWL 2 quads; the structural inverse of `OwlProjection.graph()`, ingesting projected quads and reconstructing nodes and relations for the import dispatchers to traverse
 - `RefDecoder.ts` — `$ref` decode and registry lookup
 - `SchemaCursor.ts` — lazy, immutable selection of class IRIs in the TBox; navigation (`subClassOf`) and terminals lift each class IRI to its authored JSON Schema object
@@ -353,12 +353,6 @@ Canonical graph construction and engine execution. `SchemaGraph.ts` is the canon
 - `SchemaGraphRelations.ts` — relation construction helpers
 - `SchemaGraphSupport.ts` — graph support utilities; primitive constraint and type keyword sets
 - `SchemaIri.ts` — IRI construction for graph nodes; provides `SchemaIri.propertyIri(classId, propertyName)` for graph-identity helpers; `parseRef` and `splitSubject` for ref/IRI decomposition
-
-#### Module: graph/visit (`src/modules/graph/visit/`)
-
-- `Refs.ts` — `$ref`, `$recursiveRef`, and `$dynamicRef` visit logic
-- `Unevaluated.ts` — `unevaluatedProperties` and `unevaluatedItems` visit logic
-- `VisitComposition.ts` — `allOf`, `anyOf`, `oneOf`, `not`, `if/then/else` visit logic
 
 ### Module: hash (`src/modules/hash/`)
 
@@ -451,6 +445,7 @@ Compiled validation. `SchemaCompiler` compiles graph nodes into executable valid
 - `SchemaCompilerDefaults.ts` — default compiler option resolution
 - `SchemaCompilerPlan.ts` — builds the per-node validation plan structure
 - `SchemaCompilerSupport.ts` — compiler utility functions
+- `ShaclValidator.ts` — native SHACL validation engine; consumes SHACL shape quads from `ShaclProjection` and ABox instance quads from `toQuads()`, returning a structured conformance report
 
 #### Module: validation/exec (`src/modules/validation/exec/`)
 
