@@ -2,6 +2,8 @@ import type { CustomKeywordEntryType } from './CustomKeywordEntry.js';
 import type { ValidateWithErrorsFnType } from '../types/Validation.js';
 import type { JtExtraType } from '../types/JtConfig.js';
 import type { DynamicScopeEntryType } from './DynamicScopeEntry.js';
+import type { ArrayValidationOptionsType } from './ArrayValidationOptionsType.js';
+import type { ObjectValidationOptionsType } from './ObjectValidationOptionsType.js';
 
 export type CompiledNodeValidationPlanType = {
   readonly 'additionalIsFalse': boolean;
@@ -10,6 +12,8 @@ export type CompiledNodeValidationPlanType = {
   readonly 'allowedKeys': Set<string> | undefined;
   readonly 'allowedKeysForStrip': Set<string> | undefined;
   readonly 'anyOfValidators': undefined | ValidateWithErrorsFnType[];
+  /** Precomputed array validation options bag (compile-time constant from plan fields). */
+  readonly 'arrOpts': ArrayValidationOptionsType;
   readonly 'complementValidator': undefined | ValidateWithErrorsFnType;
   readonly 'constVal': unknown;
   readonly 'containsValidator': undefined | ValidateWithErrorsFnType;
@@ -49,6 +53,8 @@ export type CompiledNodeValidationPlanType = {
   readonly 'minLength': number | undefined;
   readonly 'minProperties': number | undefined;
   readonly 'multipleOf': number | undefined;
+  /** Precomputed object validation options bag (compile-time constant from plan fields). */
+  readonly 'objOpts': ObjectValidationOptionsType;
   readonly 'oneOfValidators': undefined | ValidateWithErrorsFnType[];
   readonly 'pattern': string | undefined;
   readonly 'patternPropValidators': Array<{ 'regex': RegExp;
@@ -65,6 +71,13 @@ export type CompiledNodeValidationPlanType = {
   readonly 'refValidator': undefined | ValidateWithErrorsFnType;
   readonly 'required': string[] | undefined;
   readonly 'thenValidator': undefined | ValidateWithErrorsFnType;
+  /**
+   * Precompiled type predicate (compile-time constant).
+   * - `undefined` when `types` is empty (no type constraint).
+   * - For single-type schemas: a monomorphic `(v) => boolean` avoiding Map.get dispatch.
+   * - For multi-type schemas: a multi-matcher that chains the per-type predicates.
+   */
+  readonly 'typePredicate': ((v: unknown) => boolean) | undefined;
   readonly 'types': string[];
   /**
    * Compiled validator for `unevaluatedItems` node, or `false` when

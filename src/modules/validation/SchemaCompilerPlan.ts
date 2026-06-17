@@ -52,6 +52,8 @@ import type { ResolveScanRefOptionsType } from '../../types/ResolveScanRefOption
 import type { ScanConditionalOptionsType } from '../../types/ScanConditionalOptions.js';
 import type { WalkInheritedRefOptionsType } from '../../types/WalkInheritedRefOptions.js';
 import type { ConstraintValidatorsResult } from '../../types/ConstraintValidatorsResult.js';
+import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
+import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
@@ -60,6 +62,127 @@ import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
+
+// ---------------------------------------------------------------------------
+// Compile-time monomorphic type predicates (avoids per-value Map.get dispatch)
+// ---------------------------------------------------------------------------
+
+// Named predicates bound at module load — one allocation each, reused across all plans.
+const typePredicateString = (value: unknown): boolean => {
+  return typeof value === 'string';
+};
+const typePredicateNumber = (value: unknown): boolean => {
+  return typeof value === 'number' && Number.isFinite(value);
+};
+const typePredicateInteger = (value: unknown): boolean => {
+  return typeof value === 'number' && Number.isInteger(value);
+};
+const typePredicateBoolean = (value: unknown): boolean => {
+  return typeof value === 'boolean';
+};
+const typePredicateNull = (value: unknown): boolean => {
+  return value === null;
+};
+const typePredicateArray = (value: unknown): boolean => {
+  return Array.isArray(value);
+};
+const typePredicateObject = (value: unknown): boolean => {
+  return value !== null && !Array.isArray(value) && typeof value === 'object';
+};
+
+const singleTypePredicates = new Map<string, (v: unknown) => boolean>([
+  [
+    'array',
+    typePredicateArray
+  ],
+  [
+    'boolean',
+    typePredicateBoolean
+  ],
+  [
+    'integer',
+    typePredicateInteger
+  ],
+  [
+    'null',
+    typePredicateNull
+  ],
+  [
+    'number',
+    typePredicateNumber
+  ],
+  [
+    'object',
+    typePredicateObject
+  ],
+  [
+    'string',
+    typePredicateString
+  ]
+]);
+
+function buildTypePredicate(types: string[]): ((v: unknown) => boolean) | undefined {
+  if (types.length === 0) {
+    return undefined;
+  }
+
+  if (types.length === 1) {
+    const pred = singleTypePredicates.get(types[0]);
+
+    // Return the specialized predicate if known; fall back to Predicates.matchesType for exotic types.
+    if (pred !== undefined) {
+      return pred;
+    }
+
+    const singleType = types[0];
+
+    return (value: unknown): boolean => {
+      // exotic single type — use the same string-comparison fallback as Predicates.inferValueType
+      if (value === null) {
+        return singleType === 'null';
+      }
+      if (Array.isArray(value)) {
+        return singleType === 'array';
+      }
+
+      return typeof value === singleType;
+    };
+  }
+
+  // Multi-type: collect per-type predicates into a small closure.
+  const preds: Array<(value: unknown) => boolean> = [];
+
+  for (const type of types) {
+    const pred = singleTypePredicates.get(type);
+
+    if (pred === undefined) {
+      const capturedType = type;
+
+      preds.push((value: unknown): boolean => {
+        if (value === null) {
+          return capturedType === 'null';
+        }
+        if (Array.isArray(value)) {
+          return capturedType === 'array';
+        }
+
+        return typeof value === capturedType;
+      });
+    } else {
+      preds.push(pred);
+    }
+  }
+
+  return (value: unknown): boolean => {
+    for (const pred of preds) {
+      if (pred(value)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Module-scope singletons — boolean schema fast paths (A.1)
@@ -387,9 +510,22 @@ function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithError
     path: string,
     ctx: ExecContextType
   ): ValidateWithErrorsResultType => {
+    // Direct construction avoids the spread overhead on the hot validation path.
     const strictCtx: ExecContextType = {
-      ...ctx,
-      'doCoerce': false
+      'applyDefaults': ctx.applyDefaults,
+      'collectErrors': ctx.collectErrors,
+      'depth': ctx.depth,
+      'doCoerce': false,
+      'dynamicScope': ctx.dynamicScope,
+      'errors': ctx.errors,
+      'evaluatedItems': ctx.evaluatedItems,
+      'evaluatedProperties': ctx.evaluatedProperties,
+      'ignoreAdditionalProperties': ctx.ignoreAdditionalProperties,
+      'maxDepth': ctx.maxDepth,
+      'refStack': ctx.refStack,
+      'stripUnknown': ctx.stripUnknown,
+      'synthesizeDefaults': ctx.synthesizeDefaults,
+      'trackEvaluated': ctx.trackEvaluated
     };
 
     return inner(value, path, strictCtx);
@@ -1202,13 +1338,59 @@ export function buildNodePlan(
     }
   }
 
+  const additionalIsFalse = sem.additionalPropertiesNode === false;
+  const propValidators = compilePropertyValidators({
+    'configStrict': sem.jtConfig?.strict,
+    context,
+    formatRegistry,
+    graph,
+    'lookupSchema': lookupSchema,
+    'propertyEntries': propertyEntries
+  });
+  const propertyDefaults = buildPropertyDefaults({
+    context,
+    graph,
+    'lookupSchema': lookupSchema,
+    'propertyEntries': propertyEntries
+  });
+  const requiredArr = sem.required.length > 0 ? sem.required : undefined;
+
+  // Precompute option bags once at compile time — avoids per-value object allocation.
+  const arrOpts: ArrayValidationOptionsType = {
+    containsValidator,
+    itemValidator,
+    'maxContains': sem.maxContains,
+    'maxItems': sem.maxItems,
+    'minContains': sem.minContains,
+    'minItems': sem.minItems,
+    prefixValidators,
+    'uniqueItems': sem.uniqueItems
+  };
+
+  const objOpts: ObjectValidationOptionsType = {
+    additionalIsFalse,
+    additionalValidator,
+    allowedKeys,
+    allowedKeysForStrip,
+    jtExtra,
+    'maxProperties': sem.maxProperties,
+    'minProperties': sem.minProperties,
+    patternPropValidators,
+    propertyAliases,
+    propertyDefaults,
+    propertyZeroValueSynthesizers,
+    propValidators,
+    'required': requiredArr
+  };
+
   return {
-    'additionalIsFalse': sem.additionalPropertiesNode === false,
+    additionalIsFalse,
     additionalValidator,
     allOfValidators,
     allowedKeys,
     allowedKeysForStrip,
     anyOfValidators,
+    arrOpts,
     complementValidator,
     'constVal': sem.constValue,
     containsValidator,
@@ -1260,28 +1442,17 @@ export function buildNodePlan(
     'minLength': sem.minLength,
     'minProperties': sem.minProperties,
     'multipleOf': sem.multipleOf,
+    objOpts,
     oneOfValidators,
     'pattern': sem.pattern,
     patternPropValidators,
     patternRegex,
     prefixValidators,
     propertyAliases,
-    'propertyDefaults': buildPropertyDefaults({
-      context,
-      graph,
-      'lookupSchema': lookupSchema,
-      'propertyEntries': propertyEntries
-    }),
+    propertyDefaults,
     propertyNamesValidator,
     propertyZeroValueSynthesizers,
-    'propValidators': compilePropertyValidators({
-      'configStrict': sem.jtConfig?.strict,
-      context,
-      formatRegistry,
-      graph,
-      'lookupSchema': lookupSchema,
-      'propertyEntries': propertyEntries
-    }),
+    propValidators,
     'rdfsRangeValidator': compileRdfsRangeValidator(
       sem.rdfsRange,
       context,
@@ -1298,8 +1469,9 @@ export function buildNodePlan(
       'lookupSchema': lookupSchema,
       'ref': sem.ref
     }),
-    'required': sem.required.length > 0 ? sem.required : undefined,
+    'required': requiredArr,
     thenValidator,
+    'typePredicate': buildTypePredicate(sem.schemaTypes),
     'types': sem.schemaTypes,
     'unevaluatedItemsValidator': compileUnevaluatedNode(
       sem.unevaluatedItemsNode,

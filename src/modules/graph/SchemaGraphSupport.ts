@@ -24,8 +24,6 @@ import type {
   AdditionalNodesResultType,
   AdditionalSchemaNodeType,
   BooleanFlagsType,
-  DiscriminatorFieldsType,
-  DomainRangeFieldsType,
   ExtractedAnnotatedEdgeType,
   ExtractedJtConfigType,
   ExtractedRestrictionsType,
@@ -39,8 +37,7 @@ import type {
   PropertyMap,
   ScalarFieldsType,
   SchemaExtensionsType,
-  SemanticsBuildContextType,
-  SemanticsGraphPartType
+  SemanticsBuildContextType
 } from '../../types/SchemaGraphSupport.js';
 
 /** BCP-47 language tag pattern: one or more subtags of 1–8 ASCII chars, hyphen-separated. */
@@ -311,30 +308,6 @@ function resolveAdditionalNodes(
   };
 }
 
-/** Extract discriminator fields from the schema. */
-function extractDiscriminatorFields(schema: Record<string, unknown>): DiscriminatorFieldsType {
-  const discriminator = isRecord(schema.discriminator) ? schema.discriminator : undefined;
-
-  return {
-    'discriminatorMapping': discriminator !== undefined && isRecord(discriminator.mapping)
-      ? discriminator.mapping as Record<string, string>
-      : undefined,
-    'discriminatorPropertyName': discriminator !== undefined && typeof discriminator.propertyName === 'string'
-      ? discriminator.propertyName
-      : undefined
-  };
-}
-
-/** Extract rdfs:domain and rdfs:range from the schema record. */
-function extractRdfsDomainRange(schema: Record<string, unknown>): DomainRangeFieldsType {
-  return {
-    'rdfsDomain': (typeof schema['rdfs:domain'] === 'string' ? schema['rdfs:domain'] : undefined)
-      ?? (typeof schema[RDFS.domain] === 'string' ? (schema[RDFS.domain] as string) : undefined),
-    'rdfsRange': (typeof schema['rdfs:range'] === 'string' ? schema['rdfs:range'] : undefined)
-      ?? (typeof schema[RDFS.range] === 'string' ? (schema[RDFS.range] as string) : undefined)
-  };
-}
-
 /** Coerce a schema property to string or undefined. */
 function strOrUndef(val: unknown): OptionalStringType {
   return typeof val === 'string' ? val : undefined;
@@ -411,8 +384,8 @@ function extractBooleanFlags(
 // validateGraphStructure helpers
 // ---------------------------------------------------------------------------
 
-/** Collect graph-traversal children and computed non-flag, non-scalar fields. */
-function buildSemanticsGraphPart(ctx: SemanticsBuildContextType): SemanticsGraphPartType {
+/** Build the full SchemaGraphSemanticsType from a validated schema record. */
+function buildSemantics(ctx: SemanticsBuildContextType): SchemaGraphSemanticsType {
   const {
     graph,
     node,
@@ -421,67 +394,110 @@ function buildSemanticsGraphPart(ctx: SemanticsBuildContextType): SemanticsGraph
     schema
   } = ctx;
 
+  const jtConfig = extractJtConfig(schema);
+  const additional = resolveAdditionalNodes(graph, node);
+  const flags = extractBooleanFlags(schema, jtConfig);
+  const scalar = extractScalarFields(schema);
+  const discriminator = isRecord(schema.discriminator) ? schema.discriminator : undefined;
+
   return {
+    'additionalItemsNode': additional.additionalItemsNode,
+    'additionalPropertiesNode': additional.additionalPropertiesNode,
+    'aliases': normalizeAliases(schema),
     'allOf': graph.indexedChildren(node, 'allOf'),
+    'annotatedEdge': extractAnnotatedEdgeDescriptor(schema),
     'anyOf': graph.indexedChildren(node, 'anyOf'),
+    'asymmetric': flags.asymmetric,
+    'comment': scalar.comment,
     'complementNode': graph.child(node, 'not'),
+    'computed': flags.computed,
+    'constValue': 'const' in schema ? schema.const : undefined,
     'containsNode': graph.child(node, 'contains'),
+    'contentEncoding': scalar.contentEncoding,
+    'contentMediaType': scalar.contentMediaType,
+    'defaultValue': 'default' in schema ? schema.default : undefined,
     'definitions': graph.entries(node, 'definitions'),
+    'dependentRequired': normalizeDependentRequired(schema),
     'dependentSchemaEntries': graph.entries(node, 'dependentSchemas'),
+    'deprecated': flags.deprecated,
+    'description': scalar.description,
+    'discriminatorMapping': discriminator !== undefined && isRecord(discriminator.mapping)
+      ? discriminator.mapping as Record<string, string>
+      : undefined,
+    'discriminatorPropertyName': discriminator !== undefined && typeof discriminator.propertyName === 'string'
+      ? discriminator.propertyName
+      : undefined,
+    'disjointWith': scalar.disjointWith,
+    'dynamicAnchor': normalizeDynamicAnchor(schema),
+    'dynamicRef': scalar.dynamicRef,
     'elseNode': graph.child(node, 'else'),
+    'enumValues': Array.isArray(schema.enum) ? schema.enum : undefined,
+    'equivalentTo': scalar.equivalentTo,
+    'examples': Array.isArray(schema.examples) ? schema.examples : undefined,
+    'exclusiveMaximum': scalar.exclusiveMaximum,
+    'exclusiveMinimum': scalar.exclusiveMinimum,
+    'extensions': collectSchemaExtensions(schema),
+    'format': scalar.format,
+    'functional': flags.functional,
+    'hasConst': flags.hasConst,
+    'hasDefault': flags.hasDefault,
     'ifNode': graph.child(node, 'if'),
+    'inverseFunctional': flags.inverseFunctional,
+    'inverseOf': scalar.inverseOf,
+    'iriRef': flags.iriRef,
+    'irreflexive': flags.irreflexive,
     'itemsNode': graph.child(node, 'items'),
+    jtConfig,
+    'jtFrozen': flags.jtFrozen,
+    'jtStrict': typeof schema['jt:strict'] === 'boolean' ? schema['jt:strict'] : undefined,
+    'language': normalizeLanguageTag(schema['x-jt-language']),
+    'maxContains': scalar.maxContains,
+    'maximum': scalar.maximum,
+    'maxItems': scalar.maxItems,
+    'maxLength': scalar.maxLength,
+    'maxProperties': scalar.maxProperties,
+    'minContains': scalar.minContains,
+    'minimum': scalar.minimum,
+    'minItems': scalar.minItems,
+    'minLength': scalar.minLength,
+    'minProperties': scalar.minProperties,
+    'multipleOf': scalar.multipleOf,
     'oneOf': graph.indexedChildren(node, 'oneOf'),
+    'pattern': scalar.pattern,
     'patternPropertyEntries': graph.entries(node, 'patternProperties'),
     'prefixItems': graph.indexedChildren(node, 'prefixItems'),
     'properties': propertiesMap(graph.entries(node, 'properties')),
     'propertyNamesNode': graph.child(node, 'propertyNames'),
+    'rdfsDomain': (typeof schema['rdfs:domain'] === 'string' ? schema['rdfs:domain'] : undefined)
+      ?? (typeof schema[RDFS.domain] === 'string' ? (schema[RDFS.domain] as string) : undefined),
+    'rdfsRange': (typeof schema['rdfs:range'] === 'string' ? schema['rdfs:range'] : undefined)
+      ?? (typeof schema[RDFS.range] === 'string' ? (schema[RDFS.range] as string) : undefined),
+    'readOnly': flags.readOnly,
+    'recursiveAnchor': flags.recursiveAnchor,
+    'recursiveRef': scalar.recursiveRef,
     ref,
+    'reflexive': flags.reflexive,
     'refTargetNode': ref?.startsWith('#') === true ? resolveLocalRef(ref) : undefined,
     'required': Array.isArray(schema.required)
       ? schema.required.filter((entry: unknown): boolean => {
         return isString(entry);
       }) as string[]
       : [],
-    'thenNode': graph.child(node, 'then'),
-    'unevaluatedItemsNode': graph.child(node, 'unevaluatedItems'),
-    'unevaluatedPropertiesNode': graph.child(node, 'unevaluatedProperties')
-  };
-}
-
-/** Build the full SchemaGraphSemanticsType from a validated schema record. */
-function buildSemantics(ctx: SemanticsBuildContextType): SchemaGraphSemanticsType {
-  const {
-    graph,
-    node,
-    schema
-  } = ctx;
-  const jtConfig = extractJtConfig(schema);
-
-  const semantics: SchemaGraphSemanticsType = {
-    ...resolveAdditionalNodes(graph, node),
-    'aliases': normalizeAliases(schema),
-    'annotatedEdge': extractAnnotatedEdgeDescriptor(schema),
-    ...extractBooleanFlags(schema, jtConfig),
-    'constValue': 'const' in schema ? schema.const : undefined,
-    'defaultValue': 'default' in schema ? schema.default : undefined,
-    'dependentRequired': normalizeDependentRequired(schema),
-    ...extractDiscriminatorFields(schema),
-    'dynamicAnchor': normalizeDynamicAnchor(schema),
-    'enumValues': Array.isArray(schema.enum) ? schema.enum : undefined,
-    'examples': Array.isArray(schema.examples) ? schema.examples : undefined,
-    'extensions': collectSchemaExtensions(schema),
-    jtConfig,
-    'jtStrict': typeof schema['jt:strict'] === 'boolean' ? schema['jt:strict'] : undefined,
-    'language': normalizeLanguageTag(schema['x-jt-language']),
-    ...extractRdfsDomainRange(schema),
-    'restrictions': typeof schema === 'object' ? extractRestrictions(schema) : [],
-    ...extractScalarFields(schema),
+    'restrictions': extractRestrictions(schema),
+    'schemaAnchor': scalar.schemaAnchor,
+    'schemaDialect': scalar.schemaDialect,
+    'schemaId': scalar.schemaId,
     'schemaTypes': normalizeSchemaTypes(schema),
-    ...buildSemanticsGraphPart(ctx)
+    'schemaVocabulary': scalar.schemaVocabulary,
+    'symmetric': flags.symmetric,
+    'thenNode': graph.child(node, 'then'),
+    'title': scalar.title,
+    'transitive': flags.transitive,
+    'unevaluatedItemsNode': graph.child(node, 'unevaluatedItems'),
+    'unevaluatedPropertiesNode': graph.child(node, 'unevaluatedProperties'),
+    'uniqueItems': flags.uniqueItems,
+    'writeOnly': flags.writeOnly
   };
-
-  return semantics;
 }
 
 /** Check for inline nested object violations and push a warning if found. */

@@ -6,7 +6,7 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 ## Environment
 
-- Date: 2026-06-15T14:30:58.098Z
+- Date: 2026-06-17T03:58:08.232Z
 - Node: v24.13.0
 - OS: darwin 25.4.0
 - CPU: Apple M4 Max
@@ -17,34 +17,34 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 676,755 | 1478 | - |
-| ajv | 1,824,157 | 548 | 2.70x slower |
-| io-ts | 2,767,441 | 361 | 4.09x slower |
-| typebox | 4,050,988 | 247 | 5.99x slower |
-| valibot | 2,097,922 | 477 | 3.10x slower |
-| zod | 2,494,694 | 401 | 3.69x slower |
+| json-tology | 750,792 | 1332 | - |
+| ajv | 1,845,224 | 542 | 2.46x slower |
+| io-ts | 2,760,163 | 362 | 3.68x slower |
+| typebox | 3,833,829 | 261 | 5.11x slower |
+| valibot | 1,993,920 | 502 | 2.66x slower |
+| zod | 2,305,203 | 434 | 3.07x slower |
 
 ### review invalid
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 926,568 | 1079 | - |
-| ajv | 9,545,666 | 105 | 10.30x slower |
-| io-ts | 3,122,329 | 320 | 3.37x slower |
-| typebox | 550,564 | 1816 | 1.68x faster |
-| valibot | 948,484 | 1054 | 1.02x slower |
-| zod | 103,948 | 9620 | 8.91x faster |
+| json-tology | 895,585 | 1117 | - |
+| ajv | 9,460,477 | 106 | 10.56x slower |
+| io-ts | 4,059,245 | 246 | 4.53x slower |
+| typebox | 570,191 | 1754 | 1.57x faster |
+| valibot | 1,255,198 | 797 | 1.40x slower |
+| zod | 99,214 | 10079 | 9.03x faster |
 
 ### order valid
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 268,575 | 3723 | - |
-| ajv | 2,168,513 | 461 | 8.07x slower |
-| io-ts | 1,343,809 | 744 | 5.00x slower |
-| typebox | 3,746,944 | 267 | 13.95x slower |
-| valibot | 760,239 | 1315 | 2.83x slower |
-| zod | 1,119,937 | 893 | 4.17x slower |
+| json-tology | 290,216 | 3446 | - |
+| ajv | 2,126,732 | 470 | 7.33x slower |
+| io-ts | 1,317,993 | 759 | 4.54x slower |
+| typebox | 3,734,496 | 268 | 12.87x slower |
+| valibot | 747,582 | 1338 | 2.58x slower |
+| zod | 1,092,874 | 915 | 3.77x slower |
 
 ## Instantiation
 
@@ -52,21 +52,21 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 239,768 | 4171 | - |
-| io-ts | 2,761,481 | 362 | 11.52x slower |
-| typebox | 529,732 | 1888 | 2.21x slower |
-| valibot | 1,734,593 | 577 | 7.23x slower |
-| zod | 2,323,825 | 430 | 9.69x slower |
+| json-tology | 319,475 | 3130 | - |
+| io-ts | 2,683,204 | 373 | 8.40x slower |
+| typebox | 515,003 | 1942 | 1.61x slower |
+| valibot | 1,848,012 | 541 | 5.78x slower |
+| zod | 2,201,013 | 454 | 6.89x slower |
 
 ### instantiate order
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 93,353 | 10712 | - |
-| io-ts | 1,374,584 | 727 | 14.72x slower |
-| typebox | 123,822 | 8076 | 1.33x slower |
-| valibot | 742,719 | 1346 | 7.96x slower |
-| zod | 1,146,794 | 872 | 12.28x slower |
+| json-tology | 118,862 | 8413 | - |
+| io-ts | 1,352,667 | 739 | 11.38x slower |
+| typebox | 121,381 | 8238 | 1.02x slower |
+| valibot | 780,153 | 1282 | 6.56x slower |
+| zod | 1,130,345 | 885 | 9.51x slower |
 
 ## Coerce
 
@@ -74,19 +74,19 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 242,098 | 4131 | - |
-| io-ts | 2,789,452 | 358 | 11.52x slower |
-| typebox | 516,675 | 1935 | 2.13x slower |
-| valibot | 2,009,532 | 498 | 8.30x slower |
-| zod | 2,360,251 | 424 | 9.75x slower |
+| json-tology | 315,437 | 3170 | - |
+| io-ts | 2,741,920 | 365 | 8.69x slower |
+| typebox | 517,936 | 1931 | 1.64x slower |
+| valibot | 1,845,509 | 542 | 5.85x slower |
+| zod | 2,289,222 | 437 | 7.26x slower |
 
 ### coerce customer defaults
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 304,429 | 3285 | - |
+| json-tology | 377,232 | 2651 | - |
 | io-ts | N/A | N/A | N/A |
-| typebox | 666,947 | 1499 | 2.19x slower |
+| typebox | 633,250 | 1579 | 1.68x slower |
 | valibot | N/A | N/A | N/A |
 | zod | N/A | N/A | N/A |
 
@@ -96,41 +96,41 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 374,519 | 2670 | - |
+| json-tology | 370,063 | 2702 | - |
 | structuredClone | N/A | N/A | N/A |
-| typebox | 805,551 | 1241 | 2.15x slower |
+| typebox | 731,600 | 1367 | 1.98x slower |
 
 ### clean order
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 147,308 | 6788 | - |
+| json-tology | 140,565 | 7114 | - |
 | structuredClone | N/A | N/A | N/A |
-| typebox | 339,407 | 2946 | 2.30x slower |
+| typebox | 313,036 | 3195 | 2.23x slower |
 
 ### convert review
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 393,226 | 2543 | - |
+| json-tology | 409,953 | 2439 | - |
 | structuredClone | N/A | N/A | N/A |
-| typebox | 4,794,362 | 209 | 12.19x slower |
+| typebox | 4,560,319 | 219 | 11.12x slower |
 
 ### clone order
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 631,147 | 1584 | - |
-| structuredClone | 635,129 | 1574 | 1.01x slower |
+| json-tology | 578,167 | 1730 | - |
+| structuredClone | 567,863 | 1761 | 1.02x faster |
 | typebox | N/A | N/A | N/A |
 
 ### diff order
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 2,405,224 | 416 | - |
+| json-tology | 2,251,973 | 444 | - |
 | structuredClone | N/A | N/A | N/A |
-| typebox | 164,619 | 6075 | 14.61x faster |
+| typebox | 154,268 | 6482 | 14.60x faster |
 
 ## Transforms
 
@@ -138,18 +138,18 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 82,277 | 12154 | - |
-| io-ts | 2,149,088 | 465 | 26.12x slower |
-| typebox | 1,510,446 | 662 | 18.36x slower |
-| zod | 1,721,442 | 581 | 20.92x slower |
+| json-tology | 151,879 | 6584 | - |
+| io-ts | 2,086,400 | 479 | 13.74x slower |
+| typebox | 1,419,840 | 704 | 9.35x slower |
+| zod | 1,736,460 | 576 | 11.43x slower |
 
 ### encode date
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 120,937,264 | 8 | - |
-| io-ts | 267,648,043 | 4 | 2.21x slower |
-| typebox | 5,370,966 | 186 | 22.52x faster |
+| json-tology | 122,430,190 | 8 | - |
+| io-ts | 259,993,500 | 4 | 2.12x slower |
+| typebox | 4,968,029 | 201 | 24.64x faster |
 | zod | N/A | N/A | N/A |
 
 ## Composition
@@ -158,37 +158,37 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 12,399,256 | 81 | - |
-| typebox | 1,609,762 | 621 | 7.70x faster |
+| json-tology | 12,504,494 | 80 | - |
+| typebox | 1,503,815 | 665 | 8.32x faster |
 | valibot | N/A | N/A | N/A |
-| zod | 83,398 | 11991 | 148.68x faster |
+| zod | 79,170 | 12631 | 157.94x faster |
 
 ### extend + validate
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 1,055,152 | 948 | - |
-| typebox | 169,551,299 | 6 | 160.69x slower |
+| json-tology | 1,367,193 | 731 | - |
+| typebox | 158,373,943 | 6 | 115.84x slower |
 | valibot | N/A | N/A | N/A |
-| zod | 12,166,190 | 82 | 11.53x slower |
+| zod | 11,624,302 | 86 | 8.50x slower |
 
 ### discriminated union
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 3,780,301 | 265 | - |
-| typebox | 150,413,487 | 7 | 39.79x slower |
-| valibot | 6,414,865 | 156 | 1.70x slower |
-| zod | 19,986,841 | 50 | 5.29x slower |
+| json-tology | 1,859,086 | 538 | - |
+| typebox | 143,377,809 | 7 | 77.12x slower |
+| valibot | 6,329,832 | 158 | 3.40x slower |
+| zod | 18,277,777 | 55 | 9.83x slower |
 
 ### intersection
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 1,178,723 | 848 | - |
-| typebox | 61,491,161 | 16 | 52.17x slower |
+| json-tology | 1,443,698 | 693 | - |
+| typebox | 52,746,093 | 19 | 36.54x slower |
 | valibot | N/A | N/A | N/A |
-| zod | 4,810,718 | 208 | 4.08x slower |
+| zod | 4,824,964 | 207 | 3.34x slower |
 
 ## Serialization
 
@@ -196,17 +196,17 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 6,637 | 150667 | - |
+| json-tology | 6,898 | 144970 | - |
 | JSON.stringify | N/A | N/A | N/A |
-| structuredClone | 598,492 | 1671 | 90.18x slower |
-| typebox | 349,720 | 2859 | 52.69x slower |
+| structuredClone | 566,895 | 1764 | 82.18x slower |
+| typebox | 340,912 | 2933 | 49.42x slower |
 
 ### dumpJson order
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 7,550 | 132443 | - |
-| JSON.stringify | 2,213,969 | 452 | 293.24x slower |
+| json-tology | 7,092 | 141012 | - |
+| JSON.stringify | 2,213,712 | 452 | 312.14x slower |
 | structuredClone | N/A | N/A | N/A |
 | typebox | N/A | N/A | N/A |
 
@@ -214,10 +214,10 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 73,048,260 | 14 | - |
+| json-tology | 49,048,652 | 20 | - |
 | JSON.stringify | N/A | N/A | N/A |
 | structuredClone | N/A | N/A | N/A |
-| typebox | 1,993,135 | 502 | 36.65x faster |
+| typebox | 1,978,029 | 506 | 24.80x faster |
 
 ## Registry
 
@@ -225,19 +225,19 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 389 | 2569203 | - |
-| typebox | 39,348 | 25414 | 101.15x slower |
-| valibot | 783,771 | 1276 | 2014.84x slower |
-| zod | 27,461 | 36416 | 70.59x slower |
+| json-tology | 391 | 2556468 | - |
+| typebox | 38,580 | 25920 | 98.67x slower |
+| valibot | 781,866 | 1279 | 1999.66x slower |
+| zod | 27,088 | 36917 | 69.28x slower |
 
 ### warm validate
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 271,811 | 3679 | - |
-| typebox | 3,895,977 | 257 | 14.33x slower |
-| valibot | 777,311 | 1286 | 2.86x slower |
-| zod | 1,156,485 | 865 | 4.25x slower |
+| json-tology | 279,043 | 3584 | - |
+| typebox | 3,760,135 | 266 | 13.48x slower |
+| valibot | 788,201 | 1269 | 2.82x slower |
+| zod | 1,123,934 | 890 | 4.03x slower |
 
 ## Compiled vs Interpreted
 
@@ -246,24 +246,21 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
 | json-tology | N/A | N/A | N/A |
-| compiled | 685,792 | 1458 | - |
-| interpreted | 152,862 | 6542 | - |
+| compiled | 813,221 | 1230 | - |
 
 ### compiled simple invalid
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
 | json-tology | N/A | N/A | N/A |
-| compiled | 947,162 | 1056 | - |
-| interpreted | 228,207 | 4382 | - |
+| compiled | 918,592 | 1089 | - |
 
 ### compiled nested valid
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
 | json-tology | N/A | N/A | N/A |
-| compiled | 274,644 | 3641 | - |
-| interpreted | 49,865 | 20054 | - |
+| compiled | 285,198 | 3506 | - |
 
 ## OWL Import
 
@@ -271,13 +268,13 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 1,320 | 757747 | - |
+| json-tology | 1,186 | 843062 | - |
 
 ### owl-import minimal class
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 65,772 | 15204 | - |
+| json-tology | 58,916 | 16973 | - |
 
 ## OWL Codegen
 
@@ -285,13 +282,13 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 1,040 | 961742 | - |
+| json-tology | 1,019 | 981058 | - |
 
 ### owl-codegen minimal class
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 44,080 | 22686 | - |
+| json-tology | 41,171 | 24289 | - |
 
 ## OWL Codegen Directory
 
@@ -299,30 +296,29 @@ Every per-scenario table lists every comparator we benchmark against. `N/A` mean
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 5,456 | 183285 | - |
+| json-tology | 5,328 | 187691 | - |
 
 ### owl-codegen-dir minimal class
 
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 129,493 | 7722 | - |
+| json-tology | 125,021 | 7999 | - |
 
 ## Where we have work to do
 
 Scenarios where json-tology is more than 5x slower than the median comparator:
 
-- `order valid`: 5.00x slower than median comparator
-- `instantiate review`: 9.69x slower than median comparator
-- `instantiate order`: 12.28x slower than median comparator
-- `coerce review valid`: 9.75x slower than median comparator
-- `convert review`: 12.19x slower than median comparator
-- `decode date`: 20.92x slower than median comparator
-- `extend + validate`: 160.69x slower than median comparator
-- `discriminated union`: 5.29x slower than median comparator
-- `intersection`: 52.17x slower than median comparator
-- `dump order`: 90.18x slower than median comparator
-- `dumpJson order`: 293.24x slower than median comparator
-- `cold first validate`: 101.15x slower than median comparator
+- `instantiate review`: 6.89x slower than median comparator
+- `instantiate order`: 9.51x slower than median comparator
+- `coerce review valid`: 7.26x slower than median comparator
+- `convert review`: 11.12x slower than median comparator
+- `decode date`: 11.43x slower than median comparator
+- `extend + validate`: 115.84x slower than median comparator
+- `discriminated union`: 9.83x slower than median comparator
+- `intersection`: 36.54x slower than median comparator
+- `dump order`: 82.18x slower than median comparator
+- `dumpJson order`: 312.14x slower than median comparator
+- `cold first validate`: 98.67x slower than median comparator
 
 ## Reproduce
 

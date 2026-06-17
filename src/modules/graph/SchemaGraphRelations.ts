@@ -827,12 +827,18 @@ export const SchemaGraphRelations = {
       sem
     };
     const typeCtx: TypeRelationsContextType = {
-      ...ctx,
-      nonNullTypes
+      graph,
+      node,
+      nonNullTypes,
+      relations,
+      sem
     };
     const cardCtx: CardinalityContextType = {
-      ...ctx,
-      nodeMap
+      graph,
+      node,
+      nodeMap,
+      relations,
+      sem
     };
 
     pushPropertyTypeRelations(typeCtx);

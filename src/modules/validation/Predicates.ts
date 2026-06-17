@@ -175,6 +175,54 @@ export class Predicates {
   }
 
   /**
+   * Return `true` as soon as `target` code points have been counted, without
+   * completing a full walk of the string.
+   *
+   * Used by `satisfiesMinLength` in the residual band `[m, 2m)` to stop early.
+   */
+  private static codePointLengthAtLeast(str: string, target: number): boolean {
+    let count = 0;
+
+    for (let index = 0; index < str.length; index++) {
+      count++;
+      if (count >= target) {
+        return true;
+      }
+      const code = str.codePointAt(index);
+
+      if (code !== undefined && code > 0xFF_FF) {
+        index++;
+      }
+    }
+
+    return count >= target;
+  }
+
+  /**
+   * Return `false` as soon as the code-point count exceeds `limit`, without
+   * completing a full walk of the string.
+   *
+   * Used by `satisfiesMaxLength` when `value.length > maximum`.
+   */
+  private static codePointLengthAtMost(str: string, limit: number): boolean {
+    let count = 0;
+
+    for (let index = 0; index < str.length; index++) {
+      count++;
+      if (count > limit) {
+        return false;
+      }
+      const code = str.codePointAt(index);
+
+      if (code !== undefined && code > 0xFF_FF) {
+        index++;
+      }
+    }
+
+    return true;
+  }
+
+  /**
    * Attempt to coerce a string to a boolean value.
    *
    * @param value - The string to coerce.
@@ -588,13 +636,25 @@ export class Predicates {
    * @param maximum - The maximum allowed code point length.
    * @returns `true` when the code point length is at most `maximum`.
    *
+   * @remarks
+   * Fast-path: for any string, `code_points <= utf16_length`. When
+   * `value.length <= maximum` the answer is definitely `true` without scanning.
+   * Only performs a full code-point walk when `value.length > maximum`, stopping
+   * as soon as the count exceeds `maximum`.
+   *
    * @category Validation
    * @since 0.1.0
    * @see {@link https://json-schema.org/understanding-json-schema/reference/string#length}
    * @group String
    */
   static satisfiesMaxLength(value: string, maximum: number): boolean {
-    return Predicates.codePointLength(value) <= maximum;
+    // cp <= len, so len <= M guarantees cp <= M.
+    if (value.length <= maximum) {
+      return true;
+    }
+
+    // Residual band: len > M. Count code points, stopping early when M is exceeded.
+    return Predicates.codePointLengthAtMost(value, maximum);
   }
 
   /**
@@ -652,13 +712,32 @@ export class Predicates {
    * @param minimum - The minimum required code point length.
    * @returns `true` when the code point length is at least `minimum`.
    *
+   * @remarks
+   * Fast-paths: for any string, `ceil(len/2) <= code_points <= len`.
+   * - `len < minimum` → definitely `false` (cp <= len < m).
+   * - `len >= 2 * minimum` → definitely `true` (cp >= ceil(len/2) >= m).
+   * Only performs a code-point walk in the residual band `[m, 2m)`, stopping
+   * as soon as `minimum` code points have been counted.
+   *
    * @category Validation
    * @since 0.1.0
    * @see {@link https://json-schema.org/understanding-json-schema/reference/string#length}
    * @group String
    */
   static satisfiesMinLength(value: string, minimum: number): boolean {
-    return Predicates.codePointLength(value) >= minimum;
+    const len = value.length;
+
+    // cp <= len, so len < m guarantees cp < m.
+    if (len < minimum) {
+      return false;
+    }
+    // cp >= ceil(len/2), so len >= 2*m guarantees cp >= m.
+    if (len >= minimum * 2) {
+      return true;
+    }
+
+    // Residual band: m <= len < 2m. Count code points, stopping once minimum reached.
+    return Predicates.codePointLengthAtLeast(value, minimum);
   }
 
   /**

@@ -13,6 +13,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [0.24.1] - 2026-06-17
+
+### Changed
+
+- **Validation hot path is allocation- and dispatch-lean.** The compiled executor
+  reuses per-node execution context (mutate-and-restore) and a shared `refStack`
+  on ref-free subtrees instead of allocating a fresh context and `Set` per node;
+  object/array option bags and single-type predicates are bound once at compile
+  time rather than rebuilt per value; internal plan helpers signal pass/fail via a
+  monomorphic numeric status instead of allocating result objects on the pass path.
+  `$ref` targets resolve through a per-graph node cache (resolved once, not re-walked
+  per value), and the ref-decoder registry adapter and materializer schema lookup
+  are bound once on the instance. `minLength`/`maxLength` short-circuit from the
+  UTF-16 length before scanning code points, `date-time` validates structurally
+  (no `Date.parse` allocation, and strictly per RFC 3339), trusted built-in format
+  validators skip the throw guard, `deepEqual` avoids iterator allocation, and
+  per-node semantics build as a single stable-shape object. Throughput recovers
+  26–47% across validation, instantiation, coercion, and conversion versus 0.24.0,
+  reversing the regression tracked in #159. Behavior and JSON Schema 2020-12
+  semantics are unchanged.
+
+### Fixed
+
 ## [0.24.0] - 2026-06-16
 
 ### Added
