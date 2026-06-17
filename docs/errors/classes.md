@@ -60,6 +60,7 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 | `SchemaErrorCode.COMPUTED_INPUT_FORBIDDEN` | `COMPUTED_INPUT_FORBIDDEN`  | |
 | `SchemaErrorCode.DUPLICATE_ID`          | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `set()` with `enableDuplicateDetection` enabled. |
 | `SchemaErrorCode.DUPLICATE_SHAPE`       | `SCHEMA_DUPLICATE_SHAPE`       | Thrown by `SchemaRegistry` when a schema with a duplicate canonical shape (same structural hash) is registered. |
+| `SchemaErrorCode.PROPERTY_CHARACTERISTIC_CONFLICT` | `PROPERTY_CHARACTERISTIC_CONFLICT` | Thrown by `SchemaRegistry` when conflicting property characteristics are registered for the same property. |
 
 <RunnableExample src="examples/docs/errors/16-schema-error" />
 
@@ -81,6 +82,7 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 | `GraphErrorCode.POINTER_NOT_FOUND`    | `POINTER_NOT_FOUND`         | |
 | `GraphErrorCode.POINTER_NOT_SCHEMA`   | `POINTER_NOT_SCHEMA`        | |
 | `GraphErrorCode.ANCHOR_NOT_FOUND`     | `ANCHOR_NOT_FOUND`          | |
+| `GraphErrorCode.REF_NOT_FOUND`        | `REF_NOT_FOUND`             | `$ref` ID cannot be resolved within the graph by `RefResolution`. Distinct from `REF_UNRESOLVED`: thrown when in-graph resolution fails after the schema is already loaded (pointer, anchor, and embedded-`$id` lookups all exhausted). |
 | `GraphErrorCode.REF_UNRESOLVED`       | `REF_UNRESOLVED`            | Cross-schema `$ref` points to an IRI not in the registry. Thrown on first use of a schema entry. |
 | `GraphErrorCode.RECURSION_LIMIT`      | `RECURSION_LIMIT`           | |
 | `GraphErrorCode.DIALECT_UNSUPPORTED`  | `DIALECT_UNSUPPORTED`       | |

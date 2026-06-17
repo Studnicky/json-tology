@@ -290,9 +290,9 @@ Validate after registration; hot path.
 
 ---
 
-## Compiled vs Interpreted
+## Compiled validator
 
-A json-tology-internal A/B between `SchemaCompiler` and `GraphEngine.execute` on the same registered schema. No peer library has an equivalent surface; there is nothing to compare against in-browser, only against itself.
+Measures `SchemaCompiler` on the same schemas used in the Validation section. There is one validation path — compiled — so the table shows a single json-tology row with no peer comparator. No peer library has an equivalent surface for this isolated measurement.
 
 Source:
 
@@ -326,16 +326,11 @@ Operations no comparator implements. Single-library rows in the Node report; inc
 
 ## Known gaps
 
-Scenarios where json-tology is more than 5× slower than the median comparator. Each is a tracked improvement.
+Scenarios where json-tology trails the comparator field by a meaningful margin. Each is a tracked improvement.
 
-- `simple valid` validation (~6× slower than median): per-validate graph traversal cost dominates a 5-property flat schema. *Tracked: hot path for ref-free flat schemas.*
-- `nested valid` validation (~7× slower than median): amplified by per-property subschema lookup.
-- `convert simple` (~32× slower than TypeBox): `castTypes: true` runs a separate normalize pass.
-- `extend + validate` cold path (~12× slower than TypeBox): derived schema rebuilds the canonical graph from scratch.
-- `intersection` cold path (~12× slower than Zod): same root cause.
-- `dumpJson nested` (~8× slower than `JSON.stringify`): `dump` walks the schema graph for every property.
-- `discriminated union` warm (~74× slower than TypeBox compiled).
-- `cold first validate` (~156× slower than Valibot).
+Validation trails compile-to-JS validators (AJV, TypeBox) on flat and nested schemas. The per-validate graph traversal cost is the dominant factor; ref-free flat schemas and cross-schema `$ref` lookups are both tracked hot-path candidates.
+
+`convert` (type-cast pass), `extend + validate` and `intersection` (cold graph rebuild per derived schema), `dumpJson` (schema-graph walk per property), `discriminated union` (warm compiled path), and `cold first validate` (JIT compilation cost on first use) all show substantial gaps versus the fastest comparators in their category. See the result tables above for current ratios; the `npm run bench:report` output in `examples/docs/benchmarks/results/latest.md` lists every scenario that exceeds 5× the median comparator under "Where we have work to do".
 
 ## See also
 
