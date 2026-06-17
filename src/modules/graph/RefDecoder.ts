@@ -1,6 +1,9 @@
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
+import type {
+  SchemaGraphNodeType, SchemaGraphSemanticsType
+} from '../../types/SchemaGraph.js';
 import type { RefDecoderRegistryType } from '../../types/RefDecoderRegistry.js';
+import type { ResolvedRefTargetType } from '../../types/RefDecoderCache.js';
 
 import { BaseError } from '../../errors/BaseError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
@@ -10,6 +13,30 @@ import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from './SchemaIri.js';
 
 export type { RefDecoderRegistryType } from '../../types/RefDecoderRegistry.js';
+
+/**
+ * Per-graph cache: source node → resolved cross-schema ref target (or null sentinel).
+ * Keyed on graph identity so caches are scoped to the graph instance and GC'd with it.
+ * `null` means the ref was previously resolved but found unresolvable — stored
+ * explicitly so unresolvable refs do not trigger re-resolution on every value walk.
+ */
+const refTargetCache = new WeakMap<
+  SchemaGraphInterface,
+  WeakMap<SchemaGraphNodeType, null | ResolvedRefTargetType>
+>();
+
+function getGraphCache(graph: SchemaGraphInterface): WeakMap<SchemaGraphNodeType, null | ResolvedRefTargetType> {
+  const existing = refTargetCache.get(graph);
+
+  if (existing !== undefined) {
+    return existing;
+  }
+  const cache = new WeakMap<SchemaGraphNodeType, null | ResolvedRefTargetType>();
+
+  refTargetCache.set(graph, cache);
+
+  return cache;
+}
 
 /**
  * RefDecoder — walks a schema graph and applies Transform decoders at every `$ref` boundary.
@@ -105,8 +132,8 @@ export class RefDecoder {
   }
 
   private static walkAdditionalProperties(
+    semantics: SchemaGraphSemanticsType,
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
     value: unknown,
     registry: RefDecoderRegistryType,
     visited: Set<SchemaGraphNodeType>
@@ -114,7 +141,6 @@ export class RefDecoder {
     if (!isRecord(value)) {
       return value;
     }
-    const semantics = graph.semantics(node);
     const additional = semantics.additionalPropertiesNode;
 
     if (additional === undefined || typeof additional === 'boolean') {
@@ -135,14 +161,13 @@ export class RefDecoder {
   }
 
   private static walkComposition(
+    semantics: SchemaGraphSemanticsType,
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
     value: unknown,
     registry: RefDecoderRegistryType,
     visited: Set<SchemaGraphNodeType>
   ): unknown {
     let current = value;
-    const semantics = graph.semantics(node);
 
     for (const branch of semantics.oneOf) {
       current = RefDecoder.walk(graph, branch, current, registry, visited);
@@ -178,23 +203,25 @@ export class RefDecoder {
     registry: RefDecoderRegistryType,
     visited: Set<SchemaGraphNodeType>
   ): unknown {
+    // Resolve semantics once per node descent — immutable after graph construction.
     const semantics = graph.semantics(node);
     const refTarget = semantics.ref;
 
     if (refTarget !== undefined) {
-      return RefDecoder.walkRef(graph, node, refTarget, value, registry, visited);
+      return RefDecoder.walkRef(graph, node, semantics, refTarget, value, registry, visited);
     }
 
-    let current = RefDecoder.walkComposition(graph, node, value, registry, visited);
+    let current = RefDecoder.walkComposition(semantics, graph, value, registry, visited);
 
-    current = RefDecoder.walkProperties(graph, node, current, registry, visited);
-    current = RefDecoder.walkItems(graph, node, current, registry, visited);
-    current = RefDecoder.walkAdditionalProperties(graph, node, current, registry, visited);
+    current = RefDecoder.walkProperties(semantics, graph, current, registry, visited);
+    current = RefDecoder.walkItems(semantics, graph, node, current, registry, visited);
+    current = RefDecoder.walkAdditionalProperties(semantics, graph, current, registry, visited);
 
     return current;
   }
 
   private static walkItems(
+    semantics: SchemaGraphSemanticsType,
     graph: SchemaGraphInterface,
     node: SchemaGraphNodeType,
     value: unknown,
@@ -210,7 +237,6 @@ export class RefDecoder {
     // are merged here so behavior matches the previous schema-walking
     // implementation.
     const tupleNodes = graph.indexedChildren(node, 'items');
-    const semantics = graph.semantics(node);
     const prefixNodes = semantics.prefixItems;
     const positionalNodes = tupleNodes.length > 0 ? tupleNodes : prefixNodes;
 
@@ -243,8 +269,8 @@ export class RefDecoder {
   }
 
   private static walkProperties(
+    semantics: SchemaGraphSemanticsType,
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
     value: unknown,
     registry: RefDecoderRegistryType,
     visited: Set<SchemaGraphNodeType>
@@ -252,7 +278,6 @@ export class RefDecoder {
     if (!isRecord(value)) {
       return value;
     }
-    const semantics = graph.semantics(node);
 
     for (const [
       propName,
@@ -274,6 +299,7 @@ export class RefDecoder {
   private static walkRef(
     graph: SchemaGraphInterface,
     node: SchemaGraphNodeType,
+    semantics: SchemaGraphSemanticsType,
     refTarget: string,
     value: unknown,
     registry: RefDecoderRegistryType,
@@ -283,7 +309,6 @@ export class RefDecoder {
     // resolved fragment node. No cross-schema decoder applies here, but
     // the subtree may contain its own $refs to registered schemas.
     if (refTarget.startsWith('#')) {
-      const semantics = graph.semantics(node);
       const localTarget = semantics.refTargetNode;
 
       if (localTarget === undefined) {
@@ -293,11 +318,35 @@ export class RefDecoder {
       return RefDecoder.walk(graph, localTarget, value, registry, visited);
     }
 
+    // Per-graph, per-source-node cache for the resolved cross-schema target.
+    // Resolution is node-deterministic: the same source node always resolves
+    // to the same targetGraph/targetNode/targetSchema triple.
+    const graphCache = getGraphCache(graph);
+
+    if (graphCache.has(node)) {
+      const cached = graphCache.get(node);
+
+      if (cached === null || cached === undefined) {
+        // Null sentinel — ref is unresolvable, return value as-is.
+        return value;
+      }
+      // Cache hit: ResolvedRefTargetType stored.
+      if (cached.targetGraph === undefined) {
+        return RefDecoder.decodeWithSchema(cached.targetSchema, value);
+      }
+      const inner = RefDecoder.walk(cached.targetGraph, cached.targetNode, value, registry, visited);
+
+      return RefDecoder.decodeWithSchema(cached.targetSchema, inner);
+    }
+
+    // Cache miss — resolve and store.
     const parsed = SchemaIri.parseRef(refTarget);
     const targetId = registry.resolveSchemaId(parsed.id);
     const targetSchema = registry.getSchema(targetId);
 
     if (targetSchema === undefined) {
+      graphCache.set(node, null);
+
       return value;
     }
 
@@ -306,12 +355,24 @@ export class RefDecoder {
     if (targetGraph === undefined) {
       // The registry knows about the schema but cannot produce a graph for
       // it — fall back to applying the root decoder for that schema only.
+      graphCache.set(node, {
+        'targetGraph': undefined,
+        'targetNode': undefined,
+        'targetSchema': targetSchema
+      });
+
       return RefDecoder.decodeWithSchema(targetSchema, value);
     }
 
     const targetNode = parsed.fragment === ''
       ? targetGraph.rootNode
       : targetGraph.resolveFragment(parsed.fragment);
+
+    graphCache.set(node, {
+      'targetGraph': targetGraph,
+      'targetNode': targetNode,
+      'targetSchema': targetSchema
+    });
 
     const inner = RefDecoder.walk(targetGraph, targetNode, value, registry, visited);
 

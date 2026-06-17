@@ -12,8 +12,8 @@ import { Session } from 'node:inspector/promises';
 import { writeFileSync } from 'node:fs';
 import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 import {
-  AddressSchema, CustomerSchema, defaultsInput,
-  DefaultsSchema, NestedSchema, nestedValid, OrderItemSchema,
+  bookstoreBenchSchemas, defaultsInput,
+  DefaultsSchema, NestedSchema, nestedValid,
   SimpleSchema, simpleValid
 } from './fixtures.js';
 
@@ -29,12 +29,9 @@ interface Scenario {
 
 const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
-registry.set(SimpleSchema);
-registry.set(AddressSchema);
-registry.set(CustomerSchema);
-registry.set(OrderItemSchema);
-registry.set(NestedSchema);
-registry.set(DefaultsSchema);
+for (const schema of bookstoreBenchSchemas) {
+  registry.set(schema as Record<string, unknown>);
+}
 
 // Warm up all paths
 registry.validate(SimpleSchema.$id, simpleValid);

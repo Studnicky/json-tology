@@ -18,8 +18,12 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** Type guard for plain objects whose prototype is `Object.prototype` or `null`. */
 export function isPlainObject(value: unknown): boolean {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-    && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  const proto = Object.getPrototypeOf(value) as unknown;
+
+  return proto === Object.prototype || proto === null;
 }
 
 /**
@@ -94,10 +98,10 @@ export function deepEqual(left: unknown, right: unknown): boolean {
     }
 
     for (const [
-      index,
+      i,
       element
     ] of left.entries()) {
-      if (!deepEqual(element, right[index])) {
+      if (!deepEqual(element, right[i])) {
         return false;
       }
     }

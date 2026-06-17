@@ -106,6 +106,11 @@ export class Materializer implements MaterializerInterface {
   // per-call arrow allocation in projectAboxFromExecution.
   private readonly lookupGraphFn: (schemaId: string) => SchemaGraphInterface | undefined;
 
+  // Pre-bound in the constructor alongside lookupGraphFn; reused across run()
+  // calls to avoid a fresh closure allocation on every synthesizeDefaults/
+  // allowAdditionalProperties execution path.
+  private readonly lookupSchemaFn: (sid: string) => Record<string, unknown> | undefined;
+
   /**
    * Create a Materializer bound to a schema registry.
    *
@@ -139,6 +144,15 @@ export class Materializer implements MaterializerInterface {
     };
     this.lookupGraphFn = (schemaId: string): SchemaGraphInterface | undefined => {
       return registry.graph(schemaId);
+    };
+    this.lookupSchemaFn = (sid: string): Record<string, unknown> | undefined => {
+      const schemaGraph = this.lookupGraphFn(sid);
+
+      if (schemaGraph === undefined || !isRecord(schemaGraph.rootSchema)) {
+        return undefined;
+      }
+
+      return schemaGraph.rootSchema;
     };
   }
 
@@ -472,17 +486,8 @@ export class Materializer implements MaterializerInterface {
 
       const opts = synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults;
       const validator = this.registry.validator(id);
-      const lookupSchema = (sid: string): Record<string, unknown> | undefined => {
-        const schemaGraph = this.lookupGraphFn(sid);
-
-        if (schemaGraph === undefined || !isRecord(schemaGraph.rootSchema)) {
-          return undefined;
-        }
-
-        return schemaGraph.rootSchema;
-      };
       const seedData = synthesizeDefaults && data === undefined
-        ? SchemaCompilerDefaults.synthesizeZeroValue(entryNode, graph, lookupSchema, this.lookupGraphFn)
+        ? SchemaCompilerDefaults.synthesizeZeroValue(entryNode, graph, this.lookupSchemaFn, this.lookupGraphFn)
         : data;
       const compiledResult = validator.validate(seedData, opts);
 

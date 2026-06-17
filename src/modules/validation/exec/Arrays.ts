@@ -64,18 +64,30 @@ export class Arrays {
 
     let count = 0;
 
+    // Hoist scratch ctx outside the loop — check-mode (collectErrors:false) means no errors
+    // are ever pushed, so the errors array is never mutated and can be shared across elements.
+    // evaluatedItems/evaluatedProperties are reset to undefined since they are per-element.
+    const scratchCtx: ExecContextType = {
+      'applyDefaults': false,
+      'collectErrors': false,
+      'depth': ctx.depth,
+      'doCoerce': false,
+      'dynamicScope': ctx.dynamicScope,
+      'errors': [],
+      'evaluatedItems': undefined,
+      'evaluatedProperties': undefined,
+      'ignoreAdditionalProperties': ctx.ignoreAdditionalProperties,
+      'maxDepth': ctx.maxDepth,
+      'refStack': ctx.refStack,
+      'stripUnknown': false,
+      'synthesizeDefaults': false,
+      'trackEvaluated': ctx.trackEvaluated
+    };
+
     for (const item of arr) {
-      // Run in isolated check-mode scratch ctx per element
-      const scratchCtx: ExecContextType = {
-        ...ctx,
-        'applyDefaults': false,
-        'collectErrors': false,
-        'doCoerce': false,
-        'errors': [],
-        'evaluatedItems': undefined,
-        'evaluatedProperties': undefined,
-        'stripUnknown': false
-      };
+      // Reset per-element mutable scratch fields before each run.
+      scratchCtx.evaluatedItems = undefined;
+      scratchCtx.evaluatedProperties = undefined;
       const result = containsValidator(item, path, scratchCtx);
 
       if (result.valid) {

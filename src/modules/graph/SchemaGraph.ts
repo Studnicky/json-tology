@@ -66,6 +66,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     const fields = graph as unknown as Record<string, unknown>;
 
     fields.anchorMap = new Map<string, SchemaGraphNodeType>();
+    fields.cachedRootNode = undefined;
     fields.childMap = new WeakMap<SchemaGraphNodeType, Map<string, SchemaGraphNodeType>>();
     fields.domainMap = new WeakMap<SchemaGraphNodeType, SchemaGraphNodeType>();
     fields.embeddedIdMap = new Map<string, SchemaGraphNodeType>();
@@ -74,11 +75,13 @@ export class SchemaGraph implements SchemaGraphInterface {
     fields.indexedChildMap = new WeakMap<SchemaGraphNodeType, Map<string, SchemaGraphNodeType[]>>();
     fields.nodeMap = new Map<string, SchemaGraphNodeType>();
     fields.relationMap = new WeakMap<SchemaGraphNodeType, SchemaGraphRelationType[]>();
+    fields.relationsForSubjectIndex = undefined;
     fields.semanticMap = new WeakMap<SchemaGraphNodeType, SchemaGraphSemanticsType>();
     fields.vocabularies = [];
     fields.rootSchema = normIR.rootSchema;
 
     SchemaGraph.rebuildNodes(graph, normIR);
+    fields.cachedRootNode = (graph.nodeMap).get('');
     SchemaGraph.rebuildChildren(graph, normIR);
     SchemaGraph.rebuildEntries(graph, normIR);
     SchemaGraph.rebuildIndexedChildren(graph, normIR);
@@ -314,6 +317,7 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
   private allRelationsCache: SchemaGraphRelationType[] | undefined = undefined;
   private readonly anchorMap = new Map<string, SchemaGraphNodeType>();
+  private readonly cachedRootNode: SchemaGraphNodeType | undefined = undefined;
   private readonly childMap = new WeakMap<SchemaGraphNodeType, Map<string, SchemaGraphNodeType>>();
   /**
    * Explicit property→domain index built during lower().
@@ -340,6 +344,8 @@ export class SchemaGraph implements SchemaGraphInterface {
 
   private readonly relationMap = new WeakMap<SchemaGraphNodeType, SchemaGraphRelationType[]>();
 
+  private relationsForSubjectIndex: Map<string, SchemaGraphRelationType[]> | undefined = undefined;
+
   private readonly semanticMap = new WeakMap<SchemaGraphNodeType, SchemaGraphSemanticsType>();
 
   private readonly vocabularies: readonly VocabularyPluginInterface[];
@@ -347,6 +353,7 @@ export class SchemaGraph implements SchemaGraphInterface {
   public constructor(public readonly rootSchema: JsonSchemaType, options?: { 'vocabularies'?: readonly VocabularyPluginInterface[] }) {
     this.vocabularies = options?.vocabularies ?? [];
     this.lower(rootSchema, '');
+    this.cachedRootNode = this.nodeMap.get('');
   }
 
   public allRelations(): SchemaGraphRelationType[] {
@@ -636,9 +643,22 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
 
   public relationsForSubject(subjectIri: string): readonly SchemaGraphRelationType[] {
-    return this.allRelations().filter((rel: SchemaGraphRelationType): boolean => {
-      return rel.source.id === subjectIri;
-    });
+    if (this.relationsForSubjectIndex === undefined) {
+      const index = new Map<string, SchemaGraphRelationType[]>();
+
+      for (const rel of this.allRelations()) {
+        const bucket = index.get(rel.source.id);
+
+        if (bucket === undefined) {
+          index.set(rel.source.id, [rel]);
+        } else {
+          bucket.push(rel);
+        }
+      }
+      this.relationsForSubjectIndex = index;
+    }
+
+    return this.relationsForSubjectIndex.get(subjectIri) ?? [];
   }
 
   public resolveFragment(fragment: string): SchemaGraphNodeType {
@@ -704,6 +724,10 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
 
   public get rootNode(): SchemaGraphNodeType {
+    if (this.cachedRootNode !== undefined) {
+      return this.cachedRootNode;
+    }
+
     return this.nodeForPointer('');
   }
 
