@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [0.24.2] - 2026-06-17
+
+### Fixed
+
+- **Documentation reflects the current compiled-validation architecture.**
+  `architecture.md` describes `GraphEngine` as building and caching the schema
+  graph (validation runs through the compiler), lists `RefResolution.ts` and
+  `ShaclValidator.ts`, and no longer references the removed interpreter path or
+  deleted `graph/visit` modules. The error reference documents
+  `GraphErrorCode.REF_NOT_FOUND` and `SchemaErrorCode.PROPERTY_CHARACTERISTIC_CONFLICT`.
+  The benchmarks page describes the single compiled path and states performance
+  gaps directionally. The `date-time` format is documented as requiring an RFC
+  3339 time offset.
+
 ## [0.24.1] - 2026-06-17
 
 ### Changed
