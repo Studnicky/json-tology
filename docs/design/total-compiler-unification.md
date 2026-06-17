@@ -261,18 +261,27 @@ lever to reopen #159 with.
 - `CHANGELOG.md` `[Unreleased]` entry for the single-path unification (added with this doc).
 - PR against `main` (repo is main-only) after `/enginseer:review-self`.
 
-### 3. Cosmetic / hygiene (low priority)
-- Rename misnomer test files now that there is one engine: `crossEngineMessageParity.test.ts`
-  → compiled-message validation; `compiledInterpretedParity.test.ts` → compiled-verdict.
-  (Their `describe` blocks and assertions are already present-state; only the filenames lag.)
-- Dead-export audit: there is no knip config (`litany prune dead-code` skips). After deleting
-  ~19 files, set up knip or do a manual unused-export sweep to catch any now-orphaned public types.
-- `src/cli.ts:289` has a pre-existing `as Record<string, unknown>` cast (not from this work)
-  — fix via `isRecord` narrowing when touching the CLI.
+### 3. Pre-existing dead exports (separate follow-up)
+A native unused-export sweep (knip is not installed; per the no-unnecessary-deps rule
+we did not add it) finds ~50 exported symbols in `src/` with zero references outside
+their defining file — `VOCABULARY_*` (DIALECT), several `FORMAT_*` constants,
+`SchemaEntryType`, `PlanCompileOptionsType`, etc. These PRE-DATE this branch (e.g.
+`PlanCompileOptions.ts` last changed in #156) and are NOT orphans of the single-path
+work. Cleaning them needs per-item triage because some are intended-but-unconsumed
+public API — e.g. `SchemaLoadErrorType` is documented in CLAUDE.md as the canonical
+loader-failure type. Recommended as a focused follow-up: add a knip config under
+`.litany/`, then remove the genuinely-dead set, preserving documented API. Do NOT
+fold this into the single-path PR.
 
 ### 4. Done as part of this work (no action)
 - Empty `src/modules/graph/visit/` directory removed.
 - `GraphEngine.execute/check/errors`, `GraphExecutionResultType`, `EXEC_NOT_SUPPORTED`,
   and stale `engine.execute` docs deleted.
+- Interpreter-orphaned type files removed: `VisitFn.ts`, `VisitContext.ts`,
+  `InternalExecutionResult.ts` (the deleted `GraphEngineVisit` was their only consumer).
 - `crossEngineMessageParity` message-content assertions restored (keyword + exact
-  message sourced from `VALIDATION_MESSAGES`).
+  message sourced from `VALIDATION_MESSAGES`); renamed → `compiledMessageValidation.test.ts`.
+  `compiledInterpretedParity.test.ts` → `compiledVerdict.test.ts`.
+- `src/cli.ts` casts removed: `buildGraphOutput` narrows the root schema and skips
+  schemas without a string `$id`; the schema-file loader wraps `JSON.parse` and reports
+  malformed/non-object input via `SchemaError(INVALID_INPUT)` instead of bare throws/casts.
