@@ -261,17 +261,18 @@ lever to reopen #159 with.
 - `CHANGELOG.md` `[Unreleased]` entry for the single-path unification (added with this doc).
 - PR against `main` (repo is main-only) after `/enginseer:review-self`.
 
-### 3. Pre-existing dead exports (separate follow-up)
-A native unused-export sweep (knip is not installed; per the no-unnecessary-deps rule
-we did not add it) finds ~50 exported symbols in `src/` with zero references outside
-their defining file — `VOCABULARY_*` (DIALECT), several `FORMAT_*` constants,
-`SchemaEntryType`, `PlanCompileOptionsType`, etc. These PRE-DATE this branch (e.g.
-`PlanCompileOptions.ts` last changed in #156) and are NOT orphans of the single-path
-work. Cleaning them needs per-item triage because some are intended-but-unconsumed
-public API — e.g. `SchemaLoadErrorType` is documented in CLAUDE.md as the canonical
-loader-failure type. Recommended as a focused follow-up: add a knip config under
-`.litany/`, then remove the genuinely-dead set, preserving documented API. Do NOT
-fold this into the single-path PR.
+### 3. Dead exports (DONE)
+A native unused-export sweep (knip not installed; per the no-unnecessary-deps rule we
+did not add it) found ~50 exports with zero references outside their defining file, then
+classified them: barrel-re-exported (public API) vs not. Outcome:
+- **16 genuinely-dead removed** — `EMPTY_*` (EXECUTION_OPTIONS), `URI_SCHEME_PATTERN`,
+  `IP_VERSION_4/6`, `DAYS_IN_FEB_LEAP`, `RESTRICTION_PREDICATE`, `CARDINALITY_KINDS`,
+  `ID_/REF_/DEFS_/SCHEMA_KEYWORD`, `XSD_COERCERS`, `PlanCompileOptionsType`, `VariantEntryType`
+  (file deleted). Stale doc cross-refs and a now-unused import cleaned.
+- **9 kept (same-file usage)** — `VOCABULARY_*` feed `SUPPORTED_VOCABULARIES`;
+  `RestrictionResultType`/`RelationsContextType` are same-file base types. Not dead.
+- **25 kept (public API)** — re-exported by a barrel/entry, e.g. `SchemaLoadErrorType`
+  (documented in CLAUDE.md as the canonical loader-failure type).
 
 ### 4. Done as part of this work (no action)
 - Empty `src/modules/graph/visit/` directory removed.
