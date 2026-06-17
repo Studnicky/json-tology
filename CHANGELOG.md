@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Fixed
+
+## [0.24.1] - 2026-06-17
+
+### Changed
+
 - **Validation hot path is allocation- and dispatch-lean.** The compiled executor
   reuses per-node execution context (mutate-and-restore) and a shared `refStack`
   on ref-free subtrees instead of allocating a fresh context and `Set` per node;
