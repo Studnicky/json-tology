@@ -123,7 +123,7 @@ void describe('ABox literal datatype is derived from the declared graph type', {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [FreeformSchema]
     });
 
@@ -159,7 +159,7 @@ void describe('CURIE x-jt-predicate expands on toQuads and round-trips through f
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'prefixes': { 'bk': 'https://books.example.org/vocab#' },
       'schemas': [BookSchema]
     });

@@ -151,7 +151,7 @@ void describe('bookstore aboxFixtures', () => {
     const quads = bookstoreEntities.toQuads(
       ReviewSchema,
       validated,
-      { 'graphIRI': REVIEWS_GRAPH }
+      { 'graphIri': REVIEWS_GRAPH }
     );
 
     const EDGE_PREDICATE = 'https://bookstore.example/reviews';

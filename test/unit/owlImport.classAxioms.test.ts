@@ -84,13 +84,13 @@ function makeCtx(quads: QuadInterface[]): OwlImportContextType {
     }
   }
 
-  const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:example' });
+  const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:example' });
   const curie = new Curie(STANDARD_PREFIXES);
 
   return {
     allClassIris,
     'allPropertyIris': new Set(),
-    'baseIRI': 'urn:example',
+    'baseIri': 'urn:example',
     curie,
     graph,
     'isDatatype': () => {

@@ -745,7 +745,7 @@ function expandIri(value: string): string {
             'x-api-version': 2
           };
           const jt = JsonTology.create({
-            'baseIRI': 'https://example.com',
+            'baseIri': 'https://example.com',
             'schemas': [schema] as const
           });
           const result = jt.toSchema(schema.$id);
@@ -777,7 +777,7 @@ function expandIri(value: string): string {
             'type': 'string'
           };
           const jt = JsonTology.create({
-            'baseIRI': 'https://example.com',
+            'baseIri': 'https://example.com',
             'schemas': [exSchema] as const
           });
           const exResult = jt.toSchema(exSchema.$id);
@@ -793,7 +793,7 @@ function expandIri(value: string): string {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://example.com',
+            'baseIri': 'https://example.com',
             'schemas': []
           });
 
@@ -960,13 +960,13 @@ function expandIri(value: string): string {
             if (typeQuadFirst === undefined) {
               throw new Error('typeQuads[0] missing');
             }
-            const instIRI = typeQuadFirst.subject.value;
+            const instIri = typeQuadFirst.subject.value;
 
-            assert.ok(instIRI.startsWith('https://data.example.com/'));
-            assert.ok(hasIriQuad(quads, instIRI, 'rdf:type', 'https://example.com/User'));
-            assert.ok(hasLiteralQuad(quads, instIRI, 'https://data.example.com/name', 'Alice', 'xsd:string'));
-            assert.ok(hasLiteralQuad(quads, instIRI, 'https://data.example.com/age', 30, 'xsd:integer'));
-            assert.ok(hasLiteralQuad(quads, instIRI, 'https://data.example.com/active', true, 'xsd:boolean'));
+            assert.ok(instIri.startsWith('https://data.example.com/'));
+            assert.ok(hasIriQuad(quads, instIri, 'rdf:type', 'https://example.com/User'));
+            assert.ok(hasLiteralQuad(quads, instIri, 'https://data.example.com/name', 'Alice', 'xsd:string'));
+            assert.ok(hasLiteralQuad(quads, instIri, 'https://data.example.com/age', 30, 'xsd:integer'));
+            assert.ok(hasLiteralQuad(quads, instIri, 'https://data.example.com/active', true, 'xsd:boolean'));
           },
           'instance': {
             'active': true,
@@ -991,8 +991,8 @@ function expandIri(value: string): string {
             });
 
             assert.ok(arrTypeQuad, 'should have rdf:type quad');
-            const arrInstIRI = arrTypeQuad.subject.value;
-            const tagQuads = findQuadsForSubject(quads, arrInstIRI, 'https://data.example.com/tags');
+            const arrInstIri = arrTypeQuad.subject.value;
+            const tagQuads = findQuadsForSubject(quads, arrInstIri, 'https://data.example.com/tags');
 
             assert.equal(tagQuads.length, 3);
 
@@ -1034,11 +1034,11 @@ function expandIri(value: string): string {
             });
 
             assert.ok(nullTypeQuad, 'should have rdf:type quad');
-            const nullInstIRI = nullTypeQuad.subject.value;
+            const nullInstIri = nullTypeQuad.subject.value;
 
-            assert.ok(hasLiteralQuad(quads, nullInstIRI, 'https://data.example.com/name', 'Alice'));
+            assert.ok(hasLiteralQuad(quads, nullInstIri, 'https://data.example.com/name', 'Alice'));
 
-            const nickQuads = findQuadsForSubject(quads, nullInstIRI, 'https://data.example.com/nickname');
+            const nickQuads = findQuadsForSubject(quads, nullInstIri, 'https://data.example.com/nickname');
 
             assert.equal(nickQuads.length, 0);
           },
@@ -1119,9 +1119,9 @@ function expandIri(value: string): string {
           if (parentTypeQuadFirst === undefined) {
             throw new Error('parentTypeQuads[0] missing');
           }
-          const parentIRI = parentTypeQuadFirst.subject.value;
+          const parentIri = parentTypeQuadFirst.subject.value;
 
-          const addrQuads = findQuadsForSubject(quads, parentIRI, 'https://data.example.com/address');
+          const addrQuads = findQuadsForSubject(quads, parentIri, 'https://data.example.com/address');
 
           assert.equal(addrQuads.length, 1);
           const addrQuadFirst = addrQuads.at(0);
@@ -1131,13 +1131,13 @@ function expandIri(value: string): string {
           }
           assert.equal(addrQuadFirst.object.termType, 'NamedNode');
 
-          const nestedIRI = addrQuadFirst.object.value;
+          const nestedIri = addrQuadFirst.object.value;
 
           assert.ok(
-            hasLiteralQuad(quads, nestedIRI, 'https://data.example.com/street', 'Springfield', 'xsd:string')
-            || hasLiteralQuad(quads, nestedIRI, 'https://data.example.com/city', 'Springfield', 'xsd:string')
+            hasLiteralQuad(quads, nestedIri, 'https://data.example.com/street', 'Springfield', 'xsd:string')
+            || hasLiteralQuad(quads, nestedIri, 'https://data.example.com/city', 'Springfield', 'xsd:string')
             || quads.some((quad) => {
-              return quad.subject.value === nestedIRI
+              return quad.subject.value === nestedIri
               && quad.predicate.value.includes('city')
               && quad.object.termType === 'Literal'
               && quad.object.value === 'Springfield';
@@ -1478,7 +1478,7 @@ function expandIri(value: string): string {
       void it(name, () => {
         // enableStrictGraph: false — round-trip test schemas use inline constraints
         const jt = JsonTology.create({
-          'baseIRI': BASE_IRI,
+          'baseIri': BASE_IRI,
           'enableStrictGraph': false,
           'schemas': schemas
         });
@@ -1567,7 +1567,7 @@ function expandIri(value: string): string {
       void it(name, () => {
         // enableStrictGraph: false — round-trip test schemas use inline constraints
         const jt = JsonTology.create({
-          'baseIRI': BASE_IRI,
+          'baseIri': BASE_IRI,
           'enableStrictGraph': false,
           'schemas': schemas
         });
@@ -1673,7 +1673,7 @@ function expandIri(value: string): string {
     } of specialRoundTripScenarios) {
       void it(name, () => {
         const jt = JsonTology.create({
-          'baseIRI': BASE_IRI,
+          'baseIri': BASE_IRI,
           'schemas': schemas
         });
 
@@ -1777,7 +1777,7 @@ function expandIri(value: string): string {
       void it(name, () => {
         // enableStrictGraph: false — multi-instance test schemas include inline constraints
         const jt = JsonTology.create({
-          'baseIRI': BASE_IRI,
+          'baseIri': BASE_IRI,
           'enableStrictGraph': false,
           'schemas': schemas
         });
@@ -3561,7 +3561,7 @@ function expandIri(value: string): string {
   ];
 
   void describe('OWL serialization: scalar property ranges', () => {
-    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+    const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
     reg.set({
       '$id': 'https://example.com/ScalarOnly',
@@ -3617,7 +3617,7 @@ function expandIri(value: string): string {
   ];
 
   void describe('OWL serialization: mixed ref/scalar property types', () => {
-    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+    const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
     reg.set({
       '$id': 'https://example.com/Target',
@@ -3654,7 +3654,7 @@ function expandIri(value: string): string {
   // -------------------------------------------------------------------------
 
   void describe('OWL serialization: array of $ref with allValuesFrom', () => {
-    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+    const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
     reg.set({
       '$id': 'https://example.com/Item',
@@ -3787,7 +3787,7 @@ function expandIri(value: string): string {
   ];
 
   void describe('OWL serialization: readOnly/writeOnly annotations', () => {
-    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+    const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
     reg.set({
       '$id': 'https://example.com/AccessControl',
@@ -3826,7 +3826,7 @@ function expandIri(value: string): string {
   // -------------------------------------------------------------------------
 
   void describe('OWL serialization: enum oneOf', () => {
-    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+    const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
     reg.set({
       '$id': 'https://example.com/StatusEnum',
@@ -3959,7 +3959,7 @@ function expandIri(value: string): string {
       classId, expectedSuperClasses, name, schemas
     } of owlSubClassScenarios) {
       void it(name, () => {
-        const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+        const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
         for (const schema of schemas) {
           reg.set(schema);
@@ -3998,7 +3998,7 @@ function expandIri(value: string): string {
 
   void describe('OWL serialization: no-$id schema', () => {
     void it('throws SchemaError for schema with no $id', () => {
-      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+      const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
       assert.throws(() => {
         reg.set({
@@ -4034,7 +4034,7 @@ function expandIri(value: string): string {
   void describe('SHACL serialization: string constraints', () => {
     // enableStrictGraph: false — serialization test uses inline string length constraints
     const reg = JsonTology.create({
-      'baseIRI': 'https://test.io',
+      'baseIri': 'https://test.io',
       'enableStrictGraph': false
     }).registry;
 
@@ -4113,7 +4113,7 @@ function expandIri(value: string): string {
       void it(name, () => {
         // enableStrictGraph: false — pattern test schemas use inline pattern constraints
         const reg = JsonTology.create({
-          'baseIRI': 'https://test.io',
+          'baseIri': 'https://test.io',
           'enableStrictGraph': false
         }).registry;
 
@@ -4148,7 +4148,7 @@ function expandIri(value: string): string {
   // -------------------------------------------------------------------------
 
   void describe('SHACL serialization: array cardinality', () => {
-    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+    const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
     reg.set({
       '$id': 'https://example.com/ArrayConstrained',
@@ -4208,7 +4208,7 @@ function expandIri(value: string): string {
   // -------------------------------------------------------------------------
 
   void describe('SHACL serialization: nested $ref property', () => {
-    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+    const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
     reg.set({
       '$id': 'https://example.com/Address',
@@ -4410,7 +4410,7 @@ function expandIri(value: string): string {
       expectedMinCount, name, propPathFragment, schemas, shapeId
     } of shaclRequiredScenarios) {
       void it(name, () => {
-        const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+        const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
         for (const schema of schemas) {
           reg.set(schema);
@@ -4456,7 +4456,7 @@ function expandIri(value: string): string {
 
   void describe('cross-cutting serialization edge cases', () => {
     void it('edge: schema with only $defs and no properties produces class but no property nodes', () => {
-      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+      const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
       reg.set({
         '$defs': {
@@ -4488,7 +4488,7 @@ function expandIri(value: string): string {
     });
 
     void it('edge: readOnly and writeOnly on same property emits both annotations', () => {
-      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+      const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
       reg.set({
         '$id': 'https://example.com/BothAccess',
@@ -4516,7 +4516,7 @@ function expandIri(value: string): string {
     void it('edge: schema with all constraint types combined serializes without error', () => {
       // enableStrictGraph: false — edge-case schema uses many inline constraints
       const reg = JsonTology.create({
-        'baseIRI': 'https://test.io',
+        'baseIri': 'https://test.io',
         'enableStrictGraph': false
       }).registry;
 
@@ -4566,7 +4566,7 @@ function expandIri(value: string): string {
     });
 
     void it('produces valid class/shape with no property shapes for empty schema', () => {
-      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+      const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
       reg.set({
         '$id': 'https://example.com/Empty',
@@ -4615,7 +4615,7 @@ function expandIri(value: string): string {
     });
 
     void it('uses full IRIs in all predicate keys, no CURIE shortcuts', () => {
-      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+      const reg = JsonTology.create({ 'baseIri': 'https://test.io' }).registry;
 
       reg.set({
         '$id': 'https://example.com/FullIri',
@@ -5364,7 +5364,7 @@ function expandIri(value: string): string {
             'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
           };
           const builder = new OntologyBuilder({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'prefixes': prefixes
           });
 
@@ -5377,7 +5377,7 @@ function expandIri(value: string): string {
       {
         'check': () => {
           const builder = new OntologyBuilder({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'prefixes': {}
           });
 
@@ -5398,7 +5398,7 @@ function expandIri(value: string): string {
           const q2 = Terms.quad(Terms.iri('https://example.io/ns#SubThing'), Terms.iri(rdfType), Terms.iri(owlClass));
 
           const builder = new OntologyBuilder({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'prefixes': { 'ex': 'https://example.io/ns#' }
           }).addFromQuads([
             q1,
@@ -5430,7 +5430,7 @@ function expandIri(value: string): string {
           const quad = Terms.quad(Terms.iri('https://example.io/ns#Thing'), Terms.iri(rdfType), Terms.iri(owlClass));
 
           const builder = new OntologyBuilder({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'prefixes': { 'ex': 'https://example.io/ns#' }
           }).addFromQuads([quad]);
 
@@ -5449,7 +5449,7 @@ function expandIri(value: string): string {
           const quad = Terms.quad(Terms.iri('https://example.io/ns#Thing'), Terms.iri(rdfType), Terms.iri(owlClass));
 
           const builder = new OntologyBuilder({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'prefixes': { 'ex': 'https://example.io/ns#' }
           }).addFromQuads([quad]);
 
@@ -5466,7 +5466,7 @@ function expandIri(value: string): string {
       {
         'check': () => {
           const builder = new OntologyBuilder({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'prefixes': { 'ex': 'https://example.io/ns#' }
           });
 
@@ -5481,7 +5481,7 @@ function expandIri(value: string): string {
       {
         'check': () => {
           const builder = new OntologyBuilder({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'prefixes': {}
           });
 
@@ -5497,7 +5497,7 @@ function expandIri(value: string): string {
             '@type': 'http://www.w3.org/2002/07/owl#Class'
           };
           const builder = await new OntologyBuilder({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'prefixes': { 'ex': 'https://example.io/ns#' }
           }).addFromJsonLd(doc);
 
@@ -6198,7 +6198,7 @@ function expandIri(value: string): string {
 
   void describe('JsonTology.toTbox().quads()', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [PersonSchema]
     });
 
@@ -6248,7 +6248,7 @@ function expandIri(value: string): string {
 
   void describe('JsonTology.toShacl().shaclQuads()', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [PersonSchema]
     });
 

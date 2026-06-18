@@ -38,7 +38,7 @@ void describe('value.create — allOf-composed schemas', { 'concurrency': false 
       'type': 'object'
     } as const;
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:allof:create:',
+      'baseIri': 'urn:test:allof:create:',
       'schemas': [FlatBase]
     });
     const result = jt.value.create(FlatBase.$id) as Record<string, unknown>;
@@ -81,7 +81,7 @@ void describe('value.create — allOf-composed schemas', { 'concurrency': false 
       'type': 'object'
     } as const);
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:allof:create:',
+      'baseIri': 'urn:test:allof:create:',
       'schemas': [
         MessageBase,
         ChatMessage as unknown as Record<string, unknown> & { '$id': string }
@@ -126,7 +126,7 @@ void describe('value.create — allOf-composed schemas', { 'concurrency': false 
       'type': 'object'
     } as const);
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:allof:create:',
+      'baseIri': 'urn:test:allof:create:',
       'schemas': [
         Base2L,
         Child2L as unknown as Record<string, unknown> & { '$id': string }
@@ -174,7 +174,7 @@ void describe('value.create — allOf-composed schemas', { 'concurrency': false 
       'type': 'object'
     } as const);
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:allof:create:',
+      'baseIri': 'urn:test:allof:create:',
       'schemas': [
         BaseDef,
         ChildDef as unknown as Record<string, unknown> & { '$id': string }
@@ -242,7 +242,7 @@ void describe('value.create — allOf-composed schemas', { 'concurrency': false 
       GrandchildGP
     ];
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:allof:create:',
+      'baseIri': 'urn:test:allof:create:',
       'schemas': schemas3L
     });
     const result = jt.value.create(GrandchildGP.$id) as Record<string, unknown>;
@@ -272,7 +272,7 @@ void describe('value.create — allOf-composed schemas', { 'concurrency': false 
       'type': 'object'
     } as const;
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:allof:create:',
+      'baseIri': 'urn:test:allof:create:',
       'schemas': [FlatReg]
     });
     const result = jt.value.create(FlatReg.$id) as Record<string, unknown>;
@@ -284,7 +284,7 @@ void describe('value.create — allOf-composed schemas', { 'concurrency': false 
   void it('returns null for untyped schema with no allOf — no regression', () => {
     const EmptyS = { '$id': 'urn:test:allof:create:EmptyS' } as const;
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:allof:create:',
+      'baseIri': 'urn:test:allof:create:',
       'schemas': [EmptyS]
     });
 
@@ -528,7 +528,7 @@ void describe('value.cast — allOf cross-branch defaults (compiled validator)',
       'type': 'object'
     } as const);
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:allof:cast:',
+      'baseIri': 'urn:test:allof:cast:',
       'schemas': [
         CastParent,
         CastChild as unknown as Record<string, unknown> & { '$id': string }
@@ -569,7 +569,7 @@ void describe('value.cast — allOf cross-branch defaults (compiled validator)',
       'type': 'object'
     } as const);
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:allof:cast:',
+      'baseIri': 'urn:test:allof:cast:',
       'schemas': [
         CastBase3,
         CastMid3 as unknown as Record<string, unknown> & { '$id': string }
@@ -612,7 +612,7 @@ void describe('$ref + sibling properties — default pre-apply', { 'concurrency'
       'type': 'object'
     } as const;
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:ref-sibling:',
+      'baseIri': 'urn:test:ref-sibling:',
       'enableStrictGraph': false
     });
 
@@ -649,7 +649,7 @@ void describe('$ref + sibling properties — default pre-apply', { 'concurrency'
       '$ref': 'urn:test:ref-sibling:StrictBase'
     };
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:ref-sibling:',
+      'baseIri': 'urn:test:ref-sibling:',
       'enableStrictGraph': false
     });
 

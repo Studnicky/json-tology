@@ -12,9 +12,9 @@ const PARENT_IRI = 'urn:example:Person#parent';
 const NAME_IRI = 'urn:example:Person#name';
 
 // Restrictions author onProperty in the class-scoped form above, but the TBox
-// projection resolves onProperty to the FLAT canonical predicate IRI (baseIRI +
+// projection resolves onProperty to the FLAT canonical predicate IRI (baseIri +
 // propertyName) so restrictions stay connected to the flat property declarations
-// and ABox assertions. baseIRI is `urn:example`, so `parent`/`name` flatten to:
+// and ABox assertions. baseIri is `urn:example`, so `parent`/`name` flatten to:
 const PARENT_FLAT_IRI = 'urn:example/parent';
 const NAME_FLAT_IRI = 'urn:example/name';
 
@@ -32,7 +32,7 @@ type JsonLdNodeType = Record<string, unknown>;
 
 function tboxNodes(schema: Record<string, unknown> & { '$id': string }): readonly JsonLdNodeType[] {
   const jt = JsonTology.create({
-    'baseIRI': 'urn:example',
+    'baseIri': 'urn:example',
     'enableStrictGraph': false,
     'schemas': [schema] as const
   });

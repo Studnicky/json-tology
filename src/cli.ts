@@ -121,11 +121,11 @@ function loadSchemas(schemaGlob: string): SchemaRegistryInterface {
 // IRI resolution
 // ---------------------------------------------------------------------------
 
-function normalizeBaseIRI(value: string): string {
+function normalizeBaseIri(value: string): string {
   return SchemaIri.normalizeBase(value);
 }
 
-function deriveBaseIRIFromSchemaId(schemaId: string): string {
+function deriveBaseIriFromSchemaId(schemaId: string): string {
   // parseRef extracts the IRI base (before '#') in the canonical way.
   const withoutHash = SchemaIri.parseRef(schemaId).id;
 
@@ -138,20 +138,20 @@ function deriveBaseIRIFromSchemaId(schemaId: string): string {
     parsed.search = '';
     parsed.pathname = lastSlash <= 0 ? '/' : pathname.slice(0, lastSlash);
 
-    return normalizeBaseIRI(parsed.toString());
+    return normalizeBaseIri(parsed.toString());
   } catch {
     const lastSlash = withoutHash.lastIndexOf('/');
 
-    return normalizeBaseIRI(lastSlash <= 0 ? withoutHash : withoutHash.slice(0, lastSlash));
+    return normalizeBaseIri(lastSlash <= 0 ? withoutHash : withoutHash.slice(0, lastSlash));
   }
 }
 
-function resolveBaseIRI(
+function resolveBaseIri(
   graphs: readonly SchemaGraphInterface[],
-  configuredBaseIRI: string | undefined
+  configuredBaseIri: string | undefined
 ): string {
-  if (configuredBaseIRI !== undefined && configuredBaseIRI !== '') {
-    return normalizeBaseIRI(configuredBaseIRI);
+  if (configuredBaseIri !== undefined && configuredBaseIri !== '') {
+    return normalizeBaseIri(configuredBaseIri);
   }
 
   const firstRootSchema = graphs[0]?.rootSchema;
@@ -166,7 +166,7 @@ function resolveBaseIRI(
     );
   }
 
-  return deriveBaseIRIFromSchemaId(firstSchemaId);
+  return deriveBaseIriFromSchemaId(firstSchemaId);
 }
 
 function resolveSingleOutputPath(
@@ -184,7 +184,7 @@ function resolveSingleOutputPath(
 // Prefix derivation
 // ---------------------------------------------------------------------------
 
-function derivePrefixFromIRI(iri: URL): string {
+function derivePrefixFromIri(iri: URL): string {
   const segments = iri.pathname.split('/').filter(Boolean);
 
   segments.pop();
@@ -229,7 +229,7 @@ function derivePrefixesFromSchemas(schemas: ReadonlyArray<Record<string, unknown
 
     const lastSlash = id.lastIndexOf('/');
     const namespace = `${id.slice(0, lastSlash)}/`;
-    const prefix = derivePrefixFromIRI(parsed);
+    const prefix = derivePrefixFromIri(parsed);
 
     if (prefix !== '' && !Object.hasOwn(prefixes, prefix)) {
       prefixes[prefix] = namespace;
@@ -266,12 +266,12 @@ function openBrowser(filePath: string): void {
 
 function buildOntologyOutput(opts: BuildOutputOptionsType): void {
   const {
-    baseIRI, graphs, output, outputFile
+    baseIri, graphs, output, outputFile
   } = opts;
   const serializer = new GraphOntologySerializer();
   const quads = serializer.serializeQuads(graphs);
   const builder = new OntologyBuilder({
-    baseIRI,
+    baseIri,
     'prefixes': CLI_PREFIXES
   }).addFromQuads(quads);
   const outPath = resolveSingleOutputPath(output, outputFile, 'ontology.jsonld');
@@ -282,12 +282,12 @@ function buildOntologyOutput(opts: BuildOutputOptionsType): void {
 
 function buildShaclOutput(opts: BuildOutputOptionsType): void {
   const {
-    baseIRI, graphs, output, outputFile
+    baseIri, graphs, output, outputFile
   } = opts;
   const serializer = new GraphShaclSerializer();
   const shaclQuads = serializer.serializeQuads(graphs);
   const builder = new OntologyBuilder({
-    baseIRI,
+    baseIri,
     'prefixes': CLI_PREFIXES
   }).addShaclFromQuads(shaclQuads);
   const outPath = resolveSingleOutputPath(output, outputFile, 'shacl.jsonld');
@@ -337,7 +337,7 @@ function buildGraphOutput(
 
 async function runBuild(options: BuildOptionsType): Promise<void> {
   const {
-    'baseIri': configuredBaseIRI, format, output, outputFile, 'schema': schemaGlob
+    'baseIri': configuredBaseIri, format, output, outputFile, 'schema': schemaGlob
   } = options;
   const registry = loadSchemas(schemaGlob);
 
@@ -346,10 +346,10 @@ async function runBuild(options: BuildOptionsType): Promise<void> {
   }
 
   const graphs = registry.listGraphs();
-  const baseIRI = resolveBaseIRI(graphs, configuredBaseIRI);
+  const baseIri = resolveBaseIri(graphs, configuredBaseIri);
 
   const buildOpts: BuildOutputOptionsType = {
-    baseIRI,
+    baseIri,
     graphs,
     output,
     outputFile
@@ -447,7 +447,7 @@ async function runOwlGen(
   if (isDirectoryMode) {
     const outDir = resolve(outPath);
     const fileResult = writeRegistryDirectory({
-      ...(!(opts.baseIri === undefined) && { 'baseIRI': opts.baseIri }),
+      ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
       'input': parsed,
       'name': inferredName,
       'outDir': outDir,
@@ -457,7 +457,7 @@ async function runOwlGen(
     writer.out(`Generated registry directory (${fileResult.entityFiles.length} entities + index.ts) → ${outPath}`);
   } else {
     writeFromTbox({
-      ...(!(opts.baseIri === undefined) && { 'baseIRI': opts.baseIri }),
+      ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
       'input': parsed,
       'name': inferredName,
       'output': resolve(outPath),

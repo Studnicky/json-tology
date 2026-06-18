@@ -668,7 +668,7 @@ import {
     // properties intentionally: inline shapes (not $ref) ensure the projection
     // emits XSD IRIs as rdfs:range / sh:datatype rather than referenced schema IRIs.
     return JsonTology.create({
-      'baseIRI': 'https://xsd-test.example',
+      'baseIri': 'https://xsd-test.example',
       'enableStrictGraph': false,
       'schemas': [ArticleSchema]
     });

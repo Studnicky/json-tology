@@ -24,7 +24,7 @@ export type GenerateFromTboxOptionsType = {
    * Override the base IRI. When omitted the generator derives it from
    * the first schema `$id` in the import result.
    */
-  readonly 'baseIRI'?: string | undefined;
+  readonly 'baseIri'?: string | undefined;
 
   /**
    * Extra header comment lines inserted after the banner.
@@ -61,7 +61,7 @@ export type GenerateRegistryDirectoryOptionsType = {
    * Override the base IRI. When omitted the generator derives it from
    * the first schema `$id` in the import result.
    */
-  readonly 'baseIRI'?: string | undefined;
+  readonly 'baseIri'?: string | undefined;
 
   /**
    * Extra header comment lines inserted after the banner in `index.ts`.

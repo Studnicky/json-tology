@@ -15,7 +15,7 @@ import type { ProjectBaseArgsType } from './ProjectBaseArgsType.js';
  * ```ts
  * const args: ProjectPropertyArgsType = {
  *   curie, depth: 1, graph, graphTerm, instanceIri, minter, path: '/name',
- *   predicateResolver, propertyIRI, propertyNode, propertySemantics,
+ *   predicateResolver, propertyIri, propertyNode, propertySemantics,
  *   quadOpts, quads, value, visited,
  * };
  * ```
@@ -28,7 +28,7 @@ import type { ProjectBaseArgsType } from './ProjectBaseArgsType.js';
 export type ProjectPropertyArgsType = {
   readonly 'instanceIri': string;
   /** Single predicate-derivation authority — forwarded to the recursive nested-instance projection. */
-  readonly 'propertyIRI': string;
+  readonly 'propertyIri': string;
   readonly 'propertyNode': SchemaGraphNodeType;
   readonly 'propertySemantics': { 'format': string | undefined;
     'iriRef': boolean;

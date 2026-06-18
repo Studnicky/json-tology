@@ -4800,7 +4800,7 @@ void describe('maxSchemaDepth — GraphEngine recursion depth parameter', () => 
 
   void it('instantiate (compiled validation path) does NOT enforce maxSchemaDepth (documented gap)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:depth:',
+      'baseIri': 'urn:depth:',
       'enableStrictGraph': false,
       'maxSchemaDepth': 1,
       'schemas': [SelfNode] as const

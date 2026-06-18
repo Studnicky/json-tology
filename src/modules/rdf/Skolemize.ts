@@ -5,7 +5,7 @@
  * `iriFor` option on `toQuads`. Strategies can be composed via
  * `Skolemize.compose(...)` — the first non-undefined return wins. When a
  * strategy returns `undefined`, the projection's built-in default IRI minter
- * takes over, emitting `<baseIRI>/instances/<classId>-<contentHash>`.
+ * takes over, emitting `<baseIri>/instances/<classId>-<contentHash>`.
  *
  * Background: in RDF, a node without an explicit IRI is typically a
  * blank node. Skolemization replaces blank nodes with deterministic
@@ -125,7 +125,7 @@ function randomUuidV4(): string {
  * option on `toQuads`. Strategies compose via `Skolemize.compose(...)` —
  * the first non-`undefined` return wins. When a strategy returns `undefined`,
  * the projection's built-in default IRI minter takes over, emitting
- * `<baseIRI>/instances/<contentHash>`.
+ * `<baseIri>/instances/<contentHash>`.
  *
  * In RDF a node without an explicit IRI is typically a blank node.
  * Skolemization replaces blank nodes with deterministic IRIs so downstream
@@ -135,7 +135,7 @@ function randomUuidV4(): string {
  * ```ts
  * const strategy = Skolemize.compose(
  *   Skolemize.fromProperty('id'),
- *   Skolemize.hash({ baseIRI: 'https://example.com' })
+ *   Skolemize.hash({ baseIri: 'https://example.com' })
  * );
  * ```
  *
@@ -177,17 +177,17 @@ export class Skolemize {
    * Mint an IRI from a property of the value object.
    *
    * If `value[name]` is a non-empty string, returns
-   * `<baseIRI>/<value[name]>` where the property value is
+   * `<baseIri>/<value[name]>` where the property value is
    * percent-encoded via `encodeURIComponent` before being appended.
    * Otherwise, delegates to `fallback` (defaults to `Skolemize.hash()`).
    */
   public static fromProperty(
     name: string,
-    options?: { 'baseIRI'?: string;
+    options?: { 'baseIri'?: string;
       'fallback'?: SkolemizeFnType }
   ): SkolemizeFnType {
     const fallback = options?.fallback
-      ?? Skolemize.hash(options?.baseIRI === undefined ? undefined : { 'baseIRI': options.baseIRI });
+      ?? Skolemize.hash(options?.baseIri === undefined ? undefined : { 'baseIri': options.baseIri });
 
     return (ctx: Parameters<SkolemizeFnType>[0]): string | undefined => {
       const { value } = ctx;
@@ -196,7 +196,7 @@ export class Skolemize {
         const candidate = (value as Record<string, unknown>)[name];
 
         if (typeof candidate === 'string' && candidate.length > 0) {
-          const base = options?.baseIRI;
+          const base = options?.baseIri;
 
           return base === undefined
             ? candidate
@@ -209,13 +209,13 @@ export class Skolemize {
   }
 
   /**
-   * Default strategy. Mints `<baseIRI>/instances/<contentHash>` from a
+   * Default strategy. Mints `<baseIri>/instances/<contentHash>` from a
    * deterministic hash of the value. Returns `undefined` when no
-   * baseIRI is configured at any layer (registry or strategy), letting
+   * baseIri is configured at any layer (registry or strategy), letting
    * the caller's default kick in.
    */
-  public static hash(options?: { 'baseIRI'?: string }): SkolemizeFnType {
-    const base = options?.baseIRI;
+  public static hash(options?: { 'baseIri'?: string }): SkolemizeFnType {
+    const base = options?.baseIri;
 
     return (ctx: Parameters<SkolemizeFnType>[0]): string | undefined => {
       let result: string | undefined;
@@ -253,13 +253,13 @@ export class Skolemize {
 
   /**
    * Mint an IRI matching the W3C RDF 1.1 §3.5 well-known genid pattern:
-   * `<baseIRI>/.well-known/genid/<contentHash>`.
+   * `<baseIri>/.well-known/genid/<contentHash>`.
    *
    * IRIs of this shape are reversible by `fromQuads({ deskolemize: true })`,
    * which treats them as blank nodes when reconstructing typed objects.
    */
-  public static wellKnownGenid(baseIRI: string): SkolemizeFnType {
-    const root = stripTrailingSlash(baseIRI);
+  public static wellKnownGenid(baseIri: string): SkolemizeFnType {
+    const root = stripTrailingSlash(baseIri);
 
     return (ctx: Parameters<SkolemizeFnType>[0]): string => {
       const contentHash = Hash.value(ctx.value);

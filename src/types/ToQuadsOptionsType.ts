@@ -17,11 +17,11 @@ import type { SkolemizeFnType } from './SkolemizeFnType.js';
  * called once per object subject with `{ path, value, depth }` and returns
  * either an IRI or `undefined` to fall through.
  *
- * `graphIRI` — when set, every emitted quad has its `graph` field stamped
+ * `graphIri` — when set, every emitted quad has its `graph` field stamped
  * with this IRI.
  */
 export type ToQuadsOptionsType = {
   readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
-  readonly 'graphIRI'?: string | undefined;
+  readonly 'graphIri'?: string | undefined;
   readonly 'iriFor'?: SkolemizeFnType | string | undefined;
 };

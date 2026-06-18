@@ -183,7 +183,7 @@ const BookSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': BASE,
+  'baseIri': BASE,
   'schemas': [
     GenreSchema,
     AuthorSchema,
@@ -220,7 +220,7 @@ void describe('validateWithShacl — conforming round-trip', () => {
 // ---------------------------------------------------------------------------
 // sh:minCount — missing required property
 // Shapes come from JsonTology; data is hand-crafted using the predicate IRI
-// that toQuads() produces (baseIRI/propertyName, no fragment).
+// that toQuads() produces (baseIri/propertyName, no fragment).
 // ---------------------------------------------------------------------------
 
 void describe('validateWithShacl — missing required field (sh:minCount)', () => {
@@ -236,7 +236,7 @@ void describe('validateWithShacl — missing required field (sh:minCount)', () =
     } as const;
 
     const jtSimple = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [SimpleBookSchema] as const
     });
 
@@ -281,7 +281,7 @@ void describe('validateWithShacl — too many values (sh:maxCount)', () => {
     } as const;
 
     const jtTitle = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [TitleOnlySchema] as const
     });
 
@@ -321,7 +321,7 @@ void describe('validateWithShacl — wrong datatype (sh:datatype)', () => {
     } as const;
 
     const jtYear = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [YearBookSchema] as const
     });
 
@@ -558,7 +558,7 @@ void describe('validateWithShacl — OntologyBuilder overload', () => {
     } as const;
 
     const jtOB = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [OBBookSchema] as const
     });
 

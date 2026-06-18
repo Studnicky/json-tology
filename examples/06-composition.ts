@@ -112,7 +112,7 @@ console.log();
 // enableStrictGraph: false — self-contained demo with constrained primitives
 // (format, enum, minimum) kept inline for brevity rather than extracted to $ref'd schemas.
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableStrictGraph': false,
   'schemas': [BookSchema]
 });

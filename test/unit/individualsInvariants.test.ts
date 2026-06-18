@@ -59,7 +59,7 @@ function runIndividuals(
   const ctx: OwlImportContextType = {
     'allClassIris': new Set<string>(allClassIris),
     'allPropertyIris': new Set<string>(allPropertyIris),
-    'baseIRI': 'urn:test',
+    'baseIri': 'urn:test',
     'curie': {
       'compact': (iri: string) => {
         return iri;
@@ -71,7 +71,7 @@ function runIndividuals(
         return value;
       }
     },
-    'graph': SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' }),
+    'graph': SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' }),
     'isDatatype': () => {
       return false;
     },

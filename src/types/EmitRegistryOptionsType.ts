@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * emitRegistryConstruction(lines, { schemasConst, registryConstName, schemaNames, effectiveBaseIRI });
+ * emitRegistryConstruction(lines, { schemasConst, registryConstName, schemaNames, effectiveBaseIri });
  * ```
  *
  * @category Codegen
@@ -17,7 +17,7 @@
  */
 export type EmitRegistryOptionsType = {
   /** Effective base IRI for `JsonTology.create`. */
-  readonly 'effectiveBaseIRI': string;
+  readonly 'effectiveBaseIri': string;
   /** Name of the exported registry constant. */
   readonly 'registryConstName': string;
   /** Ordered list of PascalCase schema identifiers. */

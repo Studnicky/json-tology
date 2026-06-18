@@ -7,7 +7,7 @@
  * predicate IRIs in ABox data (both go through JsonTology's predicateResolver).
  *
  * Hand-crafted data quads for non-conforming cases use the same predicate IRIs
- * that `toQuads()` produces: `<baseIRI>/<propertyName>` (no fragment).
+ * that `toQuads()` produces: `<baseIri>/<propertyName>` (no fragment).
  */
 
 import assert from 'node:assert/strict';
@@ -112,7 +112,7 @@ void describe('ShaclValidator — minCount (required property)', () => {
 
   // Use JsonTology so predicateResolver aligns sh:path with toQuads predicates
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       TitleSchema,
       BookSchema
@@ -163,7 +163,7 @@ void describe('ShaclValidator — maxCount', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [BookSchema] as const
   });
   const shapeQuads = jt.toShacl().shaclQuads();
@@ -201,7 +201,7 @@ void describe('ShaclValidator — datatype', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [YearBook] as const
   });
   const shapeQuads = jt.toShacl().shaclQuads();
@@ -253,7 +253,7 @@ void describe('ShaclValidator — pattern', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       IsbnSchema,
       PatternBook
@@ -455,7 +455,7 @@ void describe('ShaclValidator — minLength / maxLength', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       CodeSchema,
       LenBook
@@ -669,7 +669,7 @@ void describe('ShaclValidator — minInclusive / maxInclusive', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       PriceSchema,
       RangeBook
@@ -882,7 +882,7 @@ void describe('ShaclValidator — minExclusive / maxExclusive', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       YearExclSchema,
       ExclBook
@@ -1270,7 +1270,7 @@ void describe('ShaclValidator — accepts raw quad array', () => {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [RawBook] as const
     });
 
@@ -1294,7 +1294,7 @@ void describe('ShaclValidator — accepts raw quad array', () => {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [RawBook2] as const
     });
 
@@ -1373,7 +1373,7 @@ void describe('ShaclValidator — composition, node-level, and recursion (audit 
       'type': 'object'
     } as const;
     const jt = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [Person]
     });
     const shapes = jt.toShacl().shaclQuads();

@@ -45,7 +45,7 @@ const RANGE_IRI = 'urn:example:Item';
  * Build a minimal OwlImportContextType from a SchemaGraph backed by the given quads.
  */
 function makeCtx(quads: QuadInterface[]): OwlImportContextType {
-  const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:example' });
+  const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:example' });
   const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{
     'axiomIri': string;
@@ -67,7 +67,7 @@ function makeCtx(quads: QuadInterface[]): OwlImportContextType {
   return {
     allClassIris,
     allPropertyIris,
-    'baseIRI': 'urn:example',
+    'baseIri': 'urn:example',
     curie,
     graph,
     'isDatatype': () => {
@@ -385,7 +385,7 @@ void describe('importPropertyRestrictions', () => {
       const quads = OwlProjection.graph(graph);
 
       // Pass QuadInterface[] directly — OwlImporter.import() accepts this form.
-      const importer = new OwlImporter({ 'baseIRI': 'urn:example' });
+      const importer = new OwlImporter({ 'baseIri': 'urn:example' });
       const result = importer.import(quads);
 
       // PropertyRestrictions fully projects owl:maxCardinality; it must not

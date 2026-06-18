@@ -82,8 +82,8 @@ type CorpusEntry = {
 // ---------------------------------------------------------------------------
 
 function runCorpusEntry(entry: CorpusEntry): void {
-  const baseIRI = `urn:coverage:${entry.key}:`;
-  const schemaId = `${baseIRI}root`;
+  const baseIri = `urn:coverage:${entry.key}:`;
+  const schemaId = `${baseIri}root`;
   const fullSchema: Record<string, unknown> = {
     '$id': schemaId,
     ...entry.schema
@@ -91,10 +91,10 @@ function runCorpusEntry(entry: CorpusEntry): void {
 
   const jt = entry.relaxGraph === true
     ? JsonTology.create({
-      'baseIRI': baseIRI,
+      'baseIri': baseIri,
       'enableStrictGraph': false
     })
-    : JsonTology.create({ 'baseIRI': baseIRI });
+    : JsonTology.create({ 'baseIri': baseIri });
 
   if (entry.deps) {
     for (const dep of entry.deps) {
@@ -599,11 +599,11 @@ void describe('compilation-coverage: compiled keywords', () => {
 
   // --- 10. Mutual recursion: A → B → A ---
   void it('mutual recursion: A → B → A', () => {
-    const baseIRI = 'urn:coverage:mutual-ref:';
-    const idA = `${baseIRI}A`;
-    const idB = `${baseIRI}B`;
+    const baseIri = 'urn:coverage:mutual-ref:';
+    const idA = `${baseIri}A`;
+    const idB = `${baseIri}B`;
 
-    const jt = JsonTology.create({ 'baseIRI': baseIRI });
+    const jt = JsonTology.create({ 'baseIri': baseIri });
 
     jt.set({
       '$id': idB,
@@ -688,7 +688,7 @@ void describe('compilation-coverage: compiled keywords', () => {
       'type': 'object'
     } as const;
 
-    const jt = JsonTology.create({ 'baseIRI': 'urn:coverage:cyclic-data:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:coverage:cyclic-data:' });
 
     jt.set(CycleSchema);
 
@@ -939,9 +939,9 @@ void describe('compilation-coverage: fallback-detected keywords (Wave targets)',
   // --- $dynamicRef + $dynamicAnchor (Wave 1) ---
   void it('dynamicRef-basic: $dynamicRef resolves to $dynamicAnchor in same schema', () => {
     // Build schema inline — JsonTology.set with $dynamicAnchor requires plain record
-    const baseIRI = 'urn:coverage:dynamicRef-basic:';
-    const schemaId = `${baseIRI}root`;
-    const jt = JsonTology.create({ 'baseIRI': baseIRI });
+    const baseIri = 'urn:coverage:dynamicRef-basic:';
+    const schemaId = `${baseIri}root`;
+    const jt = JsonTology.create({ 'baseIri': baseIri });
 
     const schema: Record<string, unknown> = {
       '$dynamicAnchor': 'node',
@@ -978,26 +978,26 @@ void describe('compilation-coverage: fallback-detected keywords (Wave targets)',
 
   // --- $dynamicRef with external schema override (Wave 1) ---
   void it('dynamicRef-with-anchor: $dynamicRef resolves via scope to extended anchor', () => {
-    const baseIRI = 'urn:coverage:dynamicRef-anchor:';
-    const jt = JsonTology.create({ 'baseIRI': baseIRI });
+    const baseIri = 'urn:coverage:dynamicRef-anchor:';
+    const jt = JsonTology.create({ 'baseIri': baseIri });
 
     // Base schema: uses $dynamicAnchor so an extension can override resolution
     const BaseSchema: Record<string, unknown> = {
       '$dynamicAnchor': 'item',
-      '$id': `${baseIRI}Base`,
+      '$id': `${baseIri}Base`,
       'items': { '$dynamicRef': '#item' },
       'type': 'array'
     };
     // Extension: provides its own $dynamicAnchor 'item' that binds to a concrete type
     const ExtSchema: Record<string, unknown> = {
       '$dynamicAnchor': 'item',
-      '$id': `${baseIRI}Ext`,
-      'allOf': [{ '$ref': `${baseIRI}Base` }],
+      '$id': `${baseIri}Ext`,
+      'allOf': [{ '$ref': `${baseIri}Base` }],
       'items': { '$dynamicRef': '#item' }
     };
     const ConcreteSchema: Record<string, unknown> = {
       '$dynamicAnchor': 'item',
-      '$id': `${baseIRI}Concrete`,
+      '$id': `${baseIri}Concrete`,
       'type': 'string'
     };
 
@@ -1005,7 +1005,7 @@ void describe('compilation-coverage: fallback-detected keywords (Wave targets)',
     jt.set(ExtSchema as Record<string, unknown> & { readonly '$id': string });
     jt.set(ConcreteSchema as Record<string, unknown> & { readonly '$id': string });
 
-    const validator: CompiledValidatorType = jt.registry.validator(`${baseIRI}Base`);
+    const validator: CompiledValidatorType = jt.registry.validator(`${baseIri}Base`);
     const fallbackAllowed = CURRENTLY_FALLS_BACK.has('dynamicRef-with-anchor');
 
     if (!validator.compiled) {
@@ -1013,7 +1013,7 @@ void describe('compilation-coverage: fallback-detected keywords (Wave targets)',
     }
 
     // At minimum: base schema validates an array without crashing
-    const result = jt.validate(`${baseIRI}Base`, [
+    const result = jt.validate(`${baseIri}Base`, [
       'a',
       'b'
     ]);

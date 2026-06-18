@@ -113,7 +113,7 @@ The bookstore example uses `urn:bookstore:{PascalCase}` - e.g. `urn:bookstore:Is
 
 <RunnableExample src="examples/docs/advanced/65-graph-base-iri" />
 
-`baseIRI` is used by the serializers to expand CURIE prefixes and anchor relative IRIs. It does
+`baseIri` is used by the serializers to expand CURIE prefixes and anchor relative IRIs. It does
 not need to match the `$id` prefixes of the registered schemas - it is the base for the
 ontology document itself.
 

@@ -61,10 +61,10 @@ import { RefResolution } from '../graph/RefResolution.js';
  *
  * @example
  * ```ts
- * const aboxQuads = Projection.abox(graph, data, baseIRI, { curie });
+ * const aboxQuads = Projection.abox(graph, data, baseIri, { curie });
  * ```
  *
- * @defaultValue Uses a canonical predicate resolver derived from `baseIRI` when no `predicateResolver` option is provided.
+ * @defaultValue Uses a canonical predicate resolver derived from `baseIri` when no `predicateResolver` option is provided.
  * @category RDF
  * @since 0.1.0
  * @see {@link OwlProjection}
@@ -74,23 +74,23 @@ export const Projection = {
   abox(
     graph: SchemaGraphInterface,
     data: unknown,
-    baseIRI: string,
+    baseIri: string,
     options?: { 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
       'curie'?: CurieInterface | undefined;
       'entryNode'?: SchemaGraphNodeType | undefined;
-      'graphIRI'?: string | undefined;
+      'graphIri'?: string | undefined;
       'iriFor'?: SkolemizeFnType | undefined;
       'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
       'predicateResolver'?: PredicateResolverFnType | undefined }
   ): QuadInterface[] {
     return projectAbox({
       'annotationEmitMode': options?.annotationEmitMode,
-      baseIRI,
+      baseIri,
       'curie': options?.curie,
       data,
       'entryNode': options?.entryNode,
       graph,
-      'graphIRI': options?.graphIRI,
+      'graphIri': options?.graphIri,
       'iriFor': options?.iriFor,
       'lookupGraph': options?.lookupGraph,
       'predicateResolver': options?.predicateResolver
@@ -103,12 +103,12 @@ export const Projection = {
 // ---------------------------------------------------------------------------
 
 class IriMinter {
-  private readonly baseIRI: string;
+  private readonly baseIri: string;
   private readonly iriFor: SkolemizeFnType | undefined;
   private readonly memo: WeakMap<object, string>;
 
-  public constructor(baseIRI: string, iriFor: SkolemizeFnType | undefined) {
-    this.baseIRI = baseIRI;
+  public constructor(baseIri: string, iriFor: SkolemizeFnType | undefined) {
+    this.baseIri = baseIri;
     this.iriFor = iriFor;
     this.memo = new WeakMap();
   }
@@ -134,7 +134,7 @@ class IriMinter {
       });
     }
 
-    const iri = chosen ?? defaultInstanceIri(this.baseIRI, classId, value);
+    const iri = chosen ?? defaultInstanceIri(this.baseIri, classId, value);
 
     if (memoKey !== undefined) {
       this.memo.set(memoKey, iri);
@@ -146,7 +146,7 @@ class IriMinter {
 
 function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
   const {
-    annotationEmitMode, baseIRI, curie, data, entryNode, graph, graphIRI, iriFor, lookupGraph, predicateResolver
+    annotationEmitMode, baseIri, curie, data, entryNode, graph, graphIri, iriFor, lookupGraph, predicateResolver
   } = args;
 
   const quads: QuadInterface[] = [];
@@ -168,14 +168,14 @@ function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
     );
   }
 
-  const minter = new IriMinter(baseIRI, iriFor);
-  const graphTerm = graphIRI === undefined ? Terms.defaultGraph() : Terms.iri(graphIRI);
+  const minter = new IriMinter(baseIri, iriFor);
+  const graphTerm = graphIri === undefined ? Terms.defaultGraph() : Terms.iri(graphIri);
   const quadOpts = {
     curie,
     'graph': graphTerm
   };
   const resolvePredicate = predicateResolver ?? PredicateResolver.forConfig({
-    'baseIRI': baseIRI,
+    'baseIri': baseIri,
     'enableCanonicalPredicates': undefined,
     'predicateFor': undefined
   });
@@ -200,10 +200,10 @@ function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
   return quads;
 }
 
-function defaultInstanceIri(baseIRI: string, classId: string, data: unknown): string {
+function defaultInstanceIri(baseIri: string, classId: string, data: unknown): string {
   const contentHash = Hash.value(data);
 
-  return `${baseIRI}/instances/${SchemaIri.escapeSegment(classId)}-${contentHash}`;
+  return `${baseIri}/instances/${SchemaIri.escapeSegment(classId)}-${contentHash}`;
 }
 
 function resolveNode(
@@ -406,7 +406,7 @@ function collectProjectionProperties(
 
 function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
   const {
-    baseArgs, instIRI, nodeId, propertyEntry, propertyName
+    baseArgs, instIri, nodeId, propertyEntry, propertyName
   } = args;
   const {
     annotationEmitMode, curie, data, depth, graphTerm, lookupGraph, minter, path, predicateResolver, quadOpts, quads, visited
@@ -424,7 +424,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
       depth,
       'edge': annotatedEdge,
       graphTerm,
-      'instanceIri': instIRI,
+      'instanceIri': instIri,
       minter,
       'path': propertyPath,
       predicateResolver,
@@ -437,7 +437,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
     return;
   }
 
-  const propertyIRI = predicateResolver({
+  const propertyIri = predicateResolver({
     'classId': nodeId,
     propertyName,
     'propertySchema': propertyNode.schema
@@ -455,12 +455,12 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
     'depth': depth + 1,
     'graph': resolved.graph,
     graphTerm,
-    'instanceIri': instIRI,
+    'instanceIri': instIri,
     lookupGraph,
     minter,
     'path': propertyPath,
     predicateResolver,
-    propertyIRI,
+    propertyIri,
     'propertyNode': resolved.node,
     'propertySemantics': resolved.graph.semantics(resolved.node),
     quadOpts,
@@ -488,9 +488,9 @@ function projectInstance(args: ProjectInstanceArgsType): string {
   visited.add(data);
 
   try {
-    const instIRI = minter.mint(node.id, data, path, depth);
+    const instIri = minter.mint(node.id, data, path, depth);
 
-    quads.push(QuadFactory.quad(instIRI, RDF.type, QuadFactory.iri(node.id), quadOpts));
+    quads.push(QuadFactory.quad(instIri, RDF.type, QuadFactory.iri(node.id), quadOpts));
 
     // Flatten own `properties` plus every `allOf` member's properties so
     // subclass instances (Compose.subClassOf bodies carry inherited fields
@@ -510,14 +510,14 @@ function projectInstance(args: ProjectInstanceArgsType): string {
 
       projectInstanceProperty({
         'baseArgs': args,
-        instIRI,
+        instIri,
         'nodeId': node.id,
         propertyEntry,
         propertyName
       });
     }
 
-    return instIRI;
+    return instIri;
   } finally {
     visited.delete(data);
   }
@@ -625,12 +625,12 @@ function isClassRange(rangeRef: string): boolean {
 /**
  * Emit the base triple and one annotation quad per annotation for an annotated edge.
  *
- * Base triple: `s edgePredicate o` (graph = graphIRI).
- * Annotation quads: `<< s edgePredicate o >> annotationPredicate value` (graph = graphIRI).
+ * Base triple: `s edgePredicate o` (graph = graphIri).
+ * Annotation quads: `<< s edgePredicate o >> annotationPredicate value` (graph = graphIri).
  * All quads share the SAME named graph — a triple term carries no graph membership,
  * so the base and annotation triples MUST be asserted in one named graph.
  *
- * Raises a MaterializationError when no `graphIRI` was supplied (the default
+ * Raises a MaterializationError when no `graphIri` was supplied (the default
  * graph is not a valid home for an annotated edge).
  */
 /** Emit one annotation quad per annotation on the edge. */
@@ -689,8 +689,8 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
       sourceId,
       {
         'code': MaterializationErrorCode.MISSING_GRAPH_IRI,
-        'message': `Annotated edge ${edge.edgePredicate} at ${path} requires a graphIRI: a triple term carries no graph membership, so the base triple and its annotations must share one named graph. Pass { graphIRI } to toQuads.`,
-        'validationErrors': [`annotated edge ${edge.edgePredicate} requires an explicit graphIRI`]
+        'message': `Annotated edge ${edge.edgePredicate} at ${path} requires a graphIri: a triple term carries no graph membership, so the base triple and its annotations must share one named graph. Pass { graphIri } to toQuads.`,
+        'validationErrors': [`annotated edge ${edge.edgePredicate} requires an explicit graphIri`]
       }
     );
   }
@@ -800,7 +800,7 @@ function numericDatatype(value: number, schemaTypes: readonly string[], format: 
 
 function projectStringValue(value: string, ctx: ProjectScalarValueArgsType): void {
   const {
-    instanceIri, path, propertyIRI, propertyNode, propertySemantics, quadOpts, quads
+    instanceIri, path, propertyIri, propertyNode, propertySemantics, quadOpts, quads
   } = ctx;
 
   if (propertySemantics.iriRef) {
@@ -813,12 +813,12 @@ function projectStringValue(value: string, ctx: ProjectScalarValueArgsType): voi
         propertyNode.id,
         {
           'code': MaterializationErrorCode.INVALID_IRI_VALUE,
-          'message': `Property ${propertyIRI} (x-jt-iriRef) received an invalid IRI: "${value}". Expected an absolute IRI with an allowed scheme (http/https/urn/ftp/file) and no control characters or spaces.`,
+          'message': `Property ${propertyIri} (x-jt-iriRef) received an invalid IRI: "${value}". Expected an absolute IRI with an allowed scheme (http/https/urn/ftp/file) and no control characters or spaces.`,
           'validationErrors': [`invalid IRI value at ${path}: ${value}`]
         }
       );
     }
-    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.iri(value), quadOpts));
+    quads.push(QuadFactory.quad(instanceIri, propertyIri, QuadFactory.iri(value), quadOpts));
 
     return;
   }
@@ -826,7 +826,7 @@ function projectStringValue(value: string, ctx: ProjectScalarValueArgsType): voi
   if (propertySemantics.language !== undefined && propertySemantics.language !== '') {
     const langLiteral = QuadFactory.literal(value, XSD.string, { 'language': propertySemantics.language });
 
-    quads.push(QuadFactory.quad(instanceIri, propertyIRI, langLiteral, quadOpts));
+    quads.push(QuadFactory.quad(instanceIri, propertyIri, langLiteral, quadOpts));
 
     return;
   }
@@ -836,12 +836,12 @@ function projectStringValue(value: string, ctx: ProjectScalarValueArgsType): voi
     propertySemantics.format === undefined ? undefined : { 'format': propertySemantics.format }
   ) ?? XSD.string;
 
-  quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, xsdDatatype), quadOpts));
+  quads.push(QuadFactory.quad(instanceIri, propertyIri, QuadFactory.literal(value, xsdDatatype), quadOpts));
 }
 
 function projectNumberValue(value: number, ctx: ProjectScalarValueArgsType): void {
   const {
-    instanceIri, path, propertyIRI, propertyNode, propertySemantics, quadOpts, quads
+    instanceIri, path, propertyIri, propertyNode, propertySemantics, quadOpts, quads
   } = ctx;
 
   // Reject non-finite values: NaN/Infinity are not valid RDF/XSD literals
@@ -863,13 +863,13 @@ function projectNumberValue(value: number, ctx: ProjectScalarValueArgsType): voi
   // numeric type is declared (e.g. freeform / untyped value).
   const datatype = numericDatatype(value, propertySemantics.schemaTypes, propertySemantics.format);
 
-  quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, datatype), quadOpts));
+  quads.push(QuadFactory.quad(instanceIri, propertyIri, QuadFactory.literal(value, datatype), quadOpts));
 }
 
 function projectObjectValue(args: ProjectPropertyArgsType, path: string, value: Record<string, unknown>): void {
   const {
     annotationEmitMode, curie, depth, graph, graphTerm, instanceIri, lookupGraph, minter,
-    predicateResolver, propertyIRI, propertyNode, propertySemantics, quadOpts, quads, visited
+    predicateResolver, propertyIri, propertyNode, propertySemantics, quadOpts, quads, visited
   } = args;
 
   let targetGraph = graph;
@@ -897,7 +897,7 @@ function projectObjectValue(args: ProjectPropertyArgsType, path: string, value: 
     return;
   }
 
-  const nestedIRI = projectInstance({
+  const nestedIri = projectInstance({
     annotationEmitMode,
     curie,
     'data': value,
@@ -914,12 +914,12 @@ function projectObjectValue(args: ProjectPropertyArgsType, path: string, value: 
     visited
   });
 
-  quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.iri(nestedIRI), quadOpts));
+  quads.push(QuadFactory.quad(instanceIri, propertyIri, QuadFactory.iri(nestedIri), quadOpts));
 }
 
 function projectSingleValue(args: ProjectPropertyArgsType, path: string, value: unknown): void {
   const {
-    instanceIri, propertyIRI, propertyNode, propertySemantics, quadOpts, quads
+    instanceIri, propertyIri, propertyNode, propertySemantics, quadOpts, quads
   } = args;
 
   if (value === null || value === undefined) {
@@ -929,7 +929,7 @@ function projectSingleValue(args: ProjectPropertyArgsType, path: string, value: 
   const scalarCtx: ProjectScalarValueArgsType = {
     instanceIri,
     path,
-    propertyIRI,
+    propertyIri,
     propertyNode,
     propertySemantics,
     quadOpts,
@@ -950,7 +950,7 @@ function projectSingleValue(args: ProjectPropertyArgsType, path: string, value: 
 
   if (typeof value === 'boolean') {
     // boolean has no XSD format variants — emit XSD.boolean directly.
-    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, XSD.boolean), quadOpts));
+    quads.push(QuadFactory.quad(instanceIri, propertyIri, QuadFactory.literal(value, XSD.boolean), quadOpts));
 
     return;
   }

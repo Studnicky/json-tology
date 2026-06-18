@@ -101,7 +101,7 @@ void describe('Terms.literal — datatype and language contract', () => {
 // ---------------------------------------------------------------------------
 
 void describe('OwlImporter — annotation literal round-trip', () => {
-  const importer = new OwlImporter({ 'baseIRI': 'https://example.com/' });
+  const importer = new OwlImporter({ 'baseIri': 'https://example.com/' });
 
   void it('imports a compact JSON-LD document with an owl:versionInfo annotation', () => {
     // Minimal OWL annotation document — synchronous compact JSON-LD path

@@ -228,7 +228,7 @@ void describe('VocabularyPlugin', () => {
           };
 
           const registry = JsonTology.create({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'vocabularies': [plugin]
           }).registry;
 
@@ -288,7 +288,7 @@ void describe('VocabularyPlugin', () => {
           };
 
           const registry = JsonTology.create({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'vocabularies': [plugin]
           }).registry;
 
@@ -335,7 +335,7 @@ void describe('VocabularyPlugin', () => {
           };
 
           const registry = JsonTology.create({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'vocabularies': [plugin]
           }).registry;
 
@@ -356,7 +356,7 @@ void describe('VocabularyPlugin', () => {
           const plugin: VocabularyPluginInterface = { 'prefixes': {} };
 
           const registry = JsonTology.create({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'vocabularies': [plugin]
           }).registry;
 
@@ -375,7 +375,7 @@ void describe('VocabularyPlugin', () => {
           const plugin2: VocabularyPluginInterface = { 'prefixes': { 'shared': ns2 } };
 
           const registry = JsonTology.create({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'vocabularies': [
               plugin1,
               plugin2
@@ -413,7 +413,7 @@ void describe('VocabularyPlugin', () => {
           const plugin: VocabularyPluginInterface = { 'prefixes': { 'acme': ACME_NS } };
 
           const registry = JsonTology.create({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'vocabularies': [plugin]
           }).registry;
 
@@ -469,7 +469,7 @@ void describe('VocabularyPlugin', () => {
           };
 
           const registry = JsonTology.create({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'vocabularies': [
               bioPlugin,
               geoPlugin
@@ -529,7 +529,7 @@ void describe('VocabularyPlugin', () => {
           };
 
           const jt = JsonTology.create({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'schemas': [AcmeSchema],
             'vocabularies': [plugin]
           });
@@ -558,7 +558,7 @@ void describe('VocabularyPlugin', () => {
           };
 
           const registry = JsonTology.create({
-            'baseIRI': 'https://example.io',
+            'baseIri': 'https://example.io',
             'vocabularies': [plugin]
           }).registry;
 

@@ -58,7 +58,7 @@ void describe('Fix A — NegativePropertyAssertion end-to-end', () => {
 
   void it('fromTbox with register:true wires NPA invariant to class schema', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       'enableStrictGraph': false
     });
     const result = jt.fromTbox(quads, { 'register': true });
@@ -73,7 +73,7 @@ void describe('Fix A — NegativePropertyAssertion end-to-end', () => {
 
   void it('validate(C, { $id: i, p: forbiddenV }) reports invariant error', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       'enableStrictGraph': false
     });
 
@@ -96,7 +96,7 @@ void describe('Fix A — NegativePropertyAssertion end-to-end', () => {
 
   void it('validate(C, { $id: i, p: otherValue }) passes', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       'enableStrictGraph': false
     });
 
@@ -112,7 +112,7 @@ void describe('Fix A — NegativePropertyAssertion end-to-end', () => {
 
   void it('validate(C, { $id: differentIndividual, p: forbiddenV }) passes (identity guard)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       'enableStrictGraph': false
     });
 
@@ -138,7 +138,7 @@ void describe('Fix B — differentFrom identity consistency end-to-end', () => {
   void it('consistent import (differentFrom only, no unifying sameAs) does not throw', () => {
     const diffQuads: QuadInterface[] = [tripleQuad(iriA, OWL_DIFFERENT_FROM, iriB)];
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       'enableStrictGraph': false
     });
 
@@ -155,7 +155,7 @@ void describe('Fix B — differentFrom identity consistency end-to-end', () => {
       tripleQuad(iriA, OWL_SAME_AS, iriB)
     ];
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       'enableStrictGraph': false
     });
 
@@ -189,7 +189,7 @@ void describe('Fix C — hasKey well-formedness end-to-end', () => {
 
   void it('validate(C, { isbn: "scalar" }) passes well-formedness', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       'enableStrictGraph': false
     });
 
@@ -202,7 +202,7 @@ void describe('Fix C — hasKey well-formedness end-to-end', () => {
 
   void it('validate(C, { isbn: ["array","value"] }) reports well-formedness invariant error', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       'enableStrictGraph': false
     });
 
@@ -227,7 +227,7 @@ void describe('Fix C — hasKey well-formedness end-to-end', () => {
 
   void it('validate(C, { isbn: 12345 }) passes (numeric scalar)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       'enableStrictGraph': false
     });
 

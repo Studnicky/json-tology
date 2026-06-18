@@ -55,10 +55,10 @@ function makeCtx(classIris: string[] = [], quads: QuadInterface[] = []): OwlImpo
   return {
     'allClassIris': new Set(classIris),
     'allPropertyIris': new Set(),
-    'baseIRI': 'https://example.com/',
+    'baseIri': 'https://example.com/',
     curie,
     'graph': SchemaGraph.fromQuads(quads, {
-      'baseIRI': 'https://example.com/',
+      'baseIri': 'https://example.com/',
       'prefixes': STANDARD_PREFIXES
     }),
     'isDatatype': () => {

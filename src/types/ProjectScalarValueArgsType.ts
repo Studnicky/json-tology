@@ -7,7 +7,7 @@ import type { ProjectPropertyArgsType } from './ProjectPropertyArgsType.js';
 export type ProjectScalarValueArgsType = {
   readonly 'instanceIri': string;
   readonly 'path': string;
-  readonly 'propertyIRI': string;
+  readonly 'propertyIri': string;
   readonly 'propertyNode': SchemaGraphNodeType;
   readonly 'propertySemantics': ProjectPropertyArgsType['propertySemantics'];
   readonly 'quadOpts': QuadFactoryQuadOptsType;

@@ -467,7 +467,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
 
   public constructor(
     quads: readonly QuadInterface[],
-    options?: { 'baseIRI'?: string;
+    options?: { 'baseIri'?: string;
       'prefixes'?: PrefixMapType }
   ) {
     const mergedPrefixes: PrefixMapType = {
@@ -491,7 +491,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     });
 
     // Root schema stub — carries the base IRI so callers can inspect it.
-    this._rootSchema = { '$id': options?.baseIRI ?? '' };
+    this._rootSchema = { '$id': options?.baseIri ?? '' };
   }
 
   public allRelations(): SchemaGraphRelationType[] {

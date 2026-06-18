@@ -24,12 +24,12 @@ function bookstoreAboxQuads(): QuadInterface[] {
   quads.push(...jt.toQuads(
     CustomerSchema,
     jt.instantiate(CustomerSchema, aboxFixtures.customer),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIri': ABOX_GRAPH_IRI }
   ));
   quads.push(...jt.toQuads(
     OrderSchema,
     jt.instantiate(OrderSchema, aboxFixtures.order),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIri': ABOX_GRAPH_IRI }
   ));
 
   return quads;
@@ -205,8 +205,8 @@ void test('aboxGraph: schema cursors walk rdfs:domain / range / subClassOf', () 
 void test('aboxGraph: a differently-named foreign key resolves via the shared identity range', () => {
   const jt = bookstoreEntities;
   const quads: QuadInterface[] = [
-    ...jt.toQuads(RareBookSchema, jt.instantiate(RareBookSchema, aboxFixtures.rareBook), { 'graphIRI': ABOX_GRAPH_IRI }),
-    ...jt.toQuads(ReviewSchema, jt.instantiate(ReviewSchema, aboxFixtures.review), { 'graphIRI': ABOX_GRAPH_IRI })
+    ...jt.toQuads(RareBookSchema, jt.instantiate(RareBookSchema, aboxFixtures.rareBook), { 'graphIri': ABOX_GRAPH_IRI }),
+    ...jt.toQuads(ReviewSchema, jt.instantiate(ReviewSchema, aboxFixtures.review), { 'graphIri': ABOX_GRAPH_IRI })
   ];
   const graph = jt.aboxGraph(quads);
   const reviewIri = graph.instances(ReviewSchema.$id)

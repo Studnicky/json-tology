@@ -275,7 +275,7 @@ void describe('OWL round-trip', () => {
 
   void it('class axioms: bookstore taxonomy round-trips via fromTbox', () => {
     const tboxJsonLd = bookstoreEntities.toTbox().jsonLd();
-    const result = JsonTology.fromTbox(tboxJsonLd, { 'baseIRI': 'urn:bookstore' });
+    const result = JsonTology.fromTbox(tboxJsonLd, { 'baseIri': 'urn:bookstore' });
 
     assert.ok(result.schemas.length > 0, 'fromTbox must produce schemas from bookstore TBox');
 
@@ -349,7 +349,7 @@ void describe('OWL round-trip', () => {
 
   void it('full round-trip: every bookstore schema satisfies OWL-preservable structural equality', () => {
     const tboxJsonLd = bookstoreEntities.toTbox().jsonLd();
-    const result = JsonTology.fromTbox(tboxJsonLd, { 'baseIRI': 'urn:bookstore' });
+    const result = JsonTology.fromTbox(tboxJsonLd, { 'baseIri': 'urn:bookstore' });
 
     // Sanity: no unsupported axioms after Phase 1 is complete.
     assert.deepEqual(result.unsupported, [], 'All axioms must be handled — no unsupported entries');
@@ -460,12 +460,12 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
     const graph = new SchemaGraph(schema);
     const tbox = OwlProjection.graph(graph);
 
-    const qbGraph = SchemaGraph.fromQuads(tbox, { 'baseIRI': 'urn:test' });
+    const qbGraph = SchemaGraph.fromQuads(tbox, { 'baseIri': 'urn:test' });
     const curie = new Curie(STANDARD_PREFIXES);
     const ctx = {
       'allClassIris': new Set([CLASS_IRI]),
       'allPropertyIris': new Set<string>(),
-      'baseIRI': 'urn:test',
+      'baseIri': 'urn:test',
       curie,
       'graph': qbGraph,
       'isDatatype': () => {
@@ -506,7 +506,7 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
 
     const graph = new SchemaGraph(schema);
     const tbox = OwlProjection.graph(graph);
-    const result = new OwlImporter({ 'baseIRI': 'urn:test' }).import(tbox);
+    const result = new OwlImporter({ 'baseIri': 'urn:test' }).import(tbox);
 
     const invEntries = result.invariants.filter((entry) => {
       return entry.schemaId === CLASS_IRI;

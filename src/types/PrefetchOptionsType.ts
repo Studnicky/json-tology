@@ -6,7 +6,7 @@ import type { LoaderType } from '../types/Loader.js';
  * is invoked for every unknown cross-schema IRI until the graph closes.
  */
 export type PrefetchOptionsType = {
-  readonly 'baseIRI'?: string;
+  readonly 'baseIri'?: string;
   readonly 'loader': LoaderType;
   readonly 'rootIds'?: readonly string[];
   readonly 'schemas'?: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>;

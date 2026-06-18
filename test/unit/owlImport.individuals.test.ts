@@ -90,7 +90,7 @@ function makeCtx(
   return {
     'allClassIris': new Set(allClassIris),
     'allPropertyIris': new Set(allPropertyIris),
-    'baseIRI': 'urn:test',
+    'baseIri': 'urn:test',
     'curie': {
       'compact': (iri: string) => {
         return iri;
@@ -102,7 +102,7 @@ function makeCtx(
         return value;
       }
     },
-    'graph': SchemaGraph.fromQuads([], { 'baseIRI': 'urn:test' }),
+    'graph': SchemaGraph.fromQuads([], { 'baseIri': 'urn:test' }),
     'isDatatype': () => {
       return false;
     },
@@ -125,7 +125,7 @@ function runIndividuals(
   const ctx = makeCtx(allClassIris, allPropertyIris, reportUnsupported);
   const withGraph: OwlImportContextType = {
     ...ctx,
-    'graph': SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' })
+    'graph': SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' })
   };
 
   return Individuals.dispatch(quads, withGraph);
@@ -566,7 +566,7 @@ void describe('importIndividuals — bookstore sameAs round-trip', () => {
         ...tboxQuads,
         ...extraQuads
       ],
-      { 'baseIRI': 'https://bookstore.example' }
+      { 'baseIri': 'https://bookstore.example' }
     );
 
     const resultPairs = result.sameAs.map((pair) => {

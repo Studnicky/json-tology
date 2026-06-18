@@ -38,7 +38,7 @@ const AvailableBookSchema = Compose.complementOf(UnavailableBookSchema, {
 
 // Register all schemas — Book first, then the subclasses.
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [
     BookSchema,
     UnavailableBookSchema,

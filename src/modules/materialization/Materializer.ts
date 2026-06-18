@@ -176,13 +176,13 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
    * ABox projection. Called automatically by projectAbox so direct callers and
    * the JsonTology.toQuads facade emit equivalent output — there is no bypass.
    */
-  private appendSameAsQuads(quads: QuadInterface[], graphIRI: string | undefined): void {
+  private appendSameAsQuads(quads: QuadInterface[], graphIri: string | undefined): void {
     const pairs = this.registry.sameAsStore.all();
 
     if (pairs.length === 0) {
       return;
     }
-    const graphTerm = graphIRI === undefined ? Terms.defaultGraph() : Terms.iri(graphIRI);
+    const graphTerm = graphIri === undefined ? Terms.defaultGraph() : Terms.iri(graphIri);
     const predicate = Terms.iri(OWL.sameAs);
 
     for (const [
@@ -268,12 +268,12 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
   public execute(
     schema: Record<string, unknown> & { '$id': string },
     data?: unknown,
-    options?: { 'baseIRI'?: string;
+    options?: { 'baseIri'?: string;
       'synthesizeDefaults'?: boolean }
   ): MaterializationResultType {
-    const baseIRI = options?.baseIRI;
+    const baseIri = options?.baseIri;
     const synthesize = options?.synthesizeDefaults === true;
-    const runResult = this.run(schema, data, baseIRI, synthesize);
+    const runResult = this.run(schema, data, baseIri, synthesize);
 
     return runResult;
   }
@@ -400,9 +400,9 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
    *
    * @param schema - Schema object with $id
    * @param data - Data to project
-   * @param baseIRI - Base IRI for generated quad subjects
+   * @param baseIri - Base IRI for generated quad subjects
    * @param options - Optional overrides: `iriFor` mints subject IRIs per object;
-   *                  `graphIRI` sets the graph field on all quads;
+   *                  `graphIri` sets the graph field on all quads;
    *                  `curie` expands CURIE prefixes in predicates;
    *                  `predicateResolver` overrides predicate IRI resolution
    * @returns Array of RDF quads representing the ABox projection
@@ -411,10 +411,10 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
   public projectAbox(
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
-    baseIRI: string,
+    baseIri: string,
     options?: AboxOptionsType
   ): QuadInterface[] {
-    const result = this.run(schema, data, baseIRI, false, options);
+    const result = this.run(schema, data, baseIri, false, options);
 
     if (!result.valid) {
       throw new MaterializationError(schema.$id, {
@@ -430,7 +430,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     graph: SchemaGraphInterface,
     entryNode: SchemaGraphNodeType,
     materialized: unknown,
-    baseIRI: string,
+    baseIri: string,
     options?: AboxOptionsType
   ): QuadInterface[] {
     if (this.aboxProjector === undefined) {
@@ -444,17 +444,17 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       );
     }
 
-    const quads = this.aboxProjector.abox(graph, materialized, baseIRI, {
+    const quads = this.aboxProjector.abox(graph, materialized, baseIri, {
       'annotationEmitMode': options?.annotationEmitMode,
       'curie': options?.curie,
       entryNode,
-      'graphIRI': options?.graphIRI,
+      'graphIri': options?.graphIri,
       'iriFor': options?.iriFor,
       'lookupGraph': this.lookupGraphFn,
       'predicateResolver': options?.predicateResolver
     });
 
-    this.appendSameAsQuads(quads, options?.graphIRI);
+    this.appendSameAsQuads(quads, options?.graphIri);
 
     return quads;
   }
@@ -495,7 +495,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
   private run(
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
-    baseIRI?: string,
+    baseIri?: string,
     synthesizeDefaults = false,
     aboxOptions?: AboxOptionsType
   ): MaterializationResultType {
@@ -527,9 +527,9 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       const materialized = synthesizeDefaults
         ? compiledResult.value
         : this.materializeResult(graph, entryNode, compiledResult.value);
-      const abox = baseIRI === undefined
+      const abox = baseIri === undefined
         ? []
-        : this.projectAboxFromExecution(graph, entryNode, materialized, baseIRI, aboxOptions);
+        : this.projectAboxFromExecution(graph, entryNode, materialized, baseIri, aboxOptions);
 
       const errors = this.formatErrors(compiledResult.errors);
 
@@ -561,9 +561,9 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     const entryNode = graph.rootNode;
     const materialized = this.materializeResult(graph, entryNode, compiledResult.value);
 
-    const abox = baseIRI === undefined
+    const abox = baseIri === undefined
       ? []
-      : this.projectAboxFromExecution(graph, entryNode, materialized, baseIRI, aboxOptions);
+      : this.projectAboxFromExecution(graph, entryNode, materialized, baseIri, aboxOptions);
 
     const errors = this.formatErrors(compiledResult.errors);
 

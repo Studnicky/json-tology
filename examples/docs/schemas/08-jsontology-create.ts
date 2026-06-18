@@ -1,7 +1,7 @@
 /**
  * JsonTology.create — Example 8: register multiple schemas at once
  *
- * `JsonTology.create` takes a `schemas` array (as const) and a `baseIRI`.
+ * `JsonTology.create` takes a `schemas` array (as const) and a `baseIri`.
  * All schemas are registered, the validation graph is compiled, and the
  * type map is built. `$ref` resolution works because all referenced
  * schemas are registered in the same call.

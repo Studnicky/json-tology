@@ -309,7 +309,7 @@ import {
       {
         'check': () => {
           const reg = JsonTology.create({
-            'baseIRI': 'urn:test:',
+            'baseIri': 'urn:test:',
             'enableStrictGraph': false
           });
           const schema = Compose.partial(UserSchema, 'https://myapp.io/PartialUser2');
@@ -358,7 +358,7 @@ import {
       {
         'check': () => {
           const reg = JsonTology.create({
-            'baseIRI': 'urn:test:',
+            'baseIri': 'urn:test:',
             'enableStrictGraph': false
           });
           const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser2');
@@ -386,7 +386,7 @@ import {
       {
         'check': () => {
           const reg = JsonTology.create({
-            'baseIRI': 'urn:test:',
+            'baseIri': 'urn:test:',
             'enableStrictGraph': false
           });
           const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser3');
@@ -451,7 +451,7 @@ import {
       {
         'check': () => {
           const reg = JsonTology.create({
-            'baseIRI': 'urn:test:',
+            'baseIri': 'urn:test:',
             'enableStrictGraph': false
           });
           const schema = Compose.pick(UserSchema, [
@@ -531,7 +531,7 @@ import {
       {
         'check': () => {
           const reg = JsonTology.create({
-            'baseIRI': 'urn:test:',
+            'baseIri': 'urn:test:',
             'enableStrictGraph': false
           });
           const schema = Compose.omit(UserSchema, [
@@ -1829,7 +1829,7 @@ import {
 
     void it('two registered equivalent schemas validate the same data', () => {
       const registry = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'enableStrictGraph': false
       });
 
@@ -1940,7 +1940,7 @@ import {
       const EmployeeSchema = Compose.extend(PersonSchema, { 'role': { 'type': 'string' } } as const, 'https://example.io/Employee2');
 
       const jt = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'enableStrictGraph': false
       });
 
@@ -1964,7 +1964,7 @@ import {
       const SeniorManagerSchema = Compose.extend(ManagerSchema, { 'budget': { 'type': 'number' } } as const, 'https://example.io/SeniorManager');
 
       const jt = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'enableStrictGraph': false
       });
 
@@ -2195,7 +2195,7 @@ import {
       } as const);
 
       const jt = JsonTology.create({
-        'baseIRI': 'urn:aonprd',
+        'baseIri': 'urn:aonprd',
         'enableStrictGraph': false,
         'schemas': [
           Weapon,
@@ -2252,7 +2252,7 @@ import {
       // enableStrictGraph: false — synthetic test schemas use const/string inline
       // shapes to test disjointWith mechanics, not data-modelling discipline.
       const jt = JsonTology.create({
-        'baseIRI': 'urn:aonprd',
+        'baseIri': 'urn:aonprd',
         'enableStrictGraph': false,
         'schemas': [
           WeaponB,

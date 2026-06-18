@@ -70,7 +70,7 @@ const ProductSchema = {
 void describe('addTransform decode output resolves registered $refs to readable canonical types', { 'concurrency': true }, () => {
   void it('produces a canonical output whose $ref-typed leaves resolve to branded types', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:codec',
+      'baseIri': 'urn:codec',
       'schemas': [
         NameSchema,
         PriceSchema,

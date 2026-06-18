@@ -7,13 +7,13 @@ Every property in a registered schema is assigned a predicate IRI at projection 
 1. **`x-jt-predicate`**: an explicit IRI annotated directly on the property schema.
 2. **Absolute property `$id`**: when the property schema carries a `$id` that contains `://`, that IRI is used as-is.
 3. **`predicateFor` callback**: a registry-level function that can return a custom IRI for selected properties.
-4. **Default derivation**: flat canonical (`baseIRI/propertyName`) or class-scoped (`classId#propertyName`).
+4. **Default derivation**: flat canonical (`baseIri/propertyName`) or class-scoped (`classId#propertyName`).
 
 ---
 
 ## Flat canonical predicates (default) {#canonical}
 
-When `enableCanonicalPredicates` is `true` (the default), property predicates are derived as flat shared IRIs from the registry `baseIRI`:
+When `enableCanonicalPredicates` is `true` (the default), property predicates are derived as flat shared IRIs from the registry `baseIri`:
 
 ```
 https://bookstore.example/title
@@ -87,7 +87,7 @@ With `enableCanonicalPredicates: false`, each class-scoped predicate carries its
 | 1 | `x-jt-predicate` on the property schema | Explicit IRI string |
 | 2 | Absolute `$id` on the property schema (`includes('://')`) | Property `$id` value |
 | 3 | `predicateFor(ctx)` returning a string | Custom IRI string |
-| 4a | Default, canonical flat (`enableCanonicalPredicates !== false`) | `baseIRI/propertyName` |
+| 4a | Default, canonical flat (`enableCanonicalPredicates !== false`) | `baseIri/propertyName` |
 | 4b | Default, class-scoped (`enableCanonicalPredicates: false`) | `classId#propertyName` |
 
 ---

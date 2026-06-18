@@ -15,7 +15,7 @@ const CatalogIsbnSchema = Compose.equivalent(IsbnSchema, { '$id': 'https://books
 
 // ✓ Register the source alongside the alias so $ref resolution succeeds.
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [
     IsbnSchema,
     CatalogIsbnSchema

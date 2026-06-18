@@ -25,7 +25,7 @@ const owlSerializer = new GraphOntologySerializer();
 const owlQuads = owlSerializer.serializeQuads(graphs);
 
 const builder = new OntologyBuilder({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'prefixes': { 'bs': 'https://bookstore.example/' }
 }).addFromQuads(owlQuads);
 const owlJson = builder.jsonLd();

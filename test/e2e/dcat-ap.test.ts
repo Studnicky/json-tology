@@ -24,7 +24,7 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
   // Initialize with all DCAT-AP schemas
   it('registers all 9 schemas without error', async () => {
     jt = JsonTology.create({
-      'baseIRI': 'https://example.com/',
+      'baseIri': 'https://example.com/',
       'enableStrictGraph': false,
       'schemas': AllSchemas
     });

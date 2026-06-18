@@ -282,7 +282,7 @@ Clusters (all under RC1 plus a few strays):
   `VocabProjection.ts` → domain verbs.
 - `*Helpers.ts` (`DispatchHelpers.ts`, `ProjectionHelpers.ts`) → domain names.
 - `IRI` (variables) vs `Iri` (types) — type-level split is defensible; only
-  local-variable casing (`baseIRI`/`graphIRI` vs `subjectIri`) needs settling.
+  local-variable casing (`baseIri`/`graphIri` vs `subjectIri`) needs settling.
 
 ---
 

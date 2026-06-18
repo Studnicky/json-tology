@@ -140,7 +140,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
 
   void it('applies cross-schema decoder at $ref boundary (via instantiate)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       'schemas': [
         DateSchema,
         EventSchema
@@ -203,7 +203,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
 
   void it('walks nested $ref in wrapping object schema (via instantiate)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       'schemas': [
         DateSchema,
         EventSchema,
@@ -274,7 +274,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       'schemas': [
         TagSchema,
         ListSchema

@@ -719,7 +719,7 @@ const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
  * Fixtures to project, paired with the schema that types them. Single-sourced
  * from aboxFixtures — instance data is never duplicated here. Each entry is
  * projected with `instantiate` (to obtain a branded, validated value) then
- * `toQuads`. A graphIRI is supplied so the annotated-edge fixture (which
+ * `toQuads`. A graphIri is supplied so the annotated-edge fixture (which
  * requires one) projects without error; all fixtures share one ABox graph.
  */
 const ABOX_GRAPH_IRI = 'https://bookstore.example/graph/abox';
@@ -809,52 +809,52 @@ function aboxFixtureQuads(): QuadInterface[] {
   quads.push(...bookstoreEntities.toQuads(
     CustomerSchema,
     bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     OrderSchema,
     bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     RareBookSchema,
     bookstoreEntities.instantiate(RareBookSchema, aboxFixtures.rareBook),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     EBookSchema,
     bookstoreEntities.instantiate(EBookSchema, aboxFixtures.ebook),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     PrintBookSchema,
     bookstoreEntities.instantiate(PrintBookSchema, aboxFixtures.printBook),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     SignedFirstEditionSchema,
     bookstoreEntities.instantiate(SignedFirstEditionSchema, aboxFixtures.signedFirstEdition),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     SimilarBookSchema,
     bookstoreEntities.instantiate(SimilarBookSchema, aboxFixtures.similarBook),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     SequelSchema,
     bookstoreEntities.instantiate(SequelSchema, aboxFixtures.sequel),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     BookListPageSchema,
     bookstoreEntities.instantiate(BookListPageSchema, aboxFixtures.bookListPage),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     ReviewSchema,
     bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge),
-    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
 
   return quads;

@@ -94,7 +94,7 @@ void describe('Predicates.satisfiesContentMediaType', () => {
 
 void describe('format strict-by-default', () => {
   void it('invalid format value rejected when no $vocabulary set', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:content-test:' });
 
     jt.set({
       '$id': 'urn:content-test:FormatStrict',
@@ -108,7 +108,7 @@ void describe('format strict-by-default', () => {
   });
 
   void it('format opt-out via $vocabulary: format-assertion: false allows invalid format', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:content-test:' });
 
     jt.set({
       '$id': 'urn:content-test:FormatOptOut',
@@ -132,7 +132,7 @@ void describe('format strict-by-default', () => {
   });
 
   void it('format opt-in via $vocabulary: format-assertion: true enforces format', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:content-test:' });
 
     jt.set({
       '$id': 'urn:content-test:FormatExplicitOn',
@@ -162,7 +162,7 @@ void describe('format strict-by-default', () => {
 
 void describe('contentEncoding strict-by-default', () => {
   void it('invalid base64 rejected', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:content-test:' });
 
     jt.set({
       '$id': 'urn:content-test:Base64Strict',
@@ -176,7 +176,7 @@ void describe('contentEncoding strict-by-default', () => {
   });
 
   void it('unknown encoding passes unconditionally', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:content-test:' });
 
     jt.set({
       '$id': 'urn:content-test:UnknownEncoding',
@@ -188,7 +188,7 @@ void describe('contentEncoding strict-by-default', () => {
   });
 
   void it('contentEncoding opt-out via $vocabulary allows invalid encoding', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:content-test:' });
 
     jt.set({
       '$id': 'urn:content-test:EncodingOptOut',
@@ -218,7 +218,7 @@ void describe('contentEncoding strict-by-default', () => {
 
 void describe('contentMediaType strict-by-default', () => {
   void it('invalid JSON content rejected', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:content-test:' });
 
     jt.set({
       '$id': 'urn:content-test:JsonMediaType',
@@ -232,7 +232,7 @@ void describe('contentMediaType strict-by-default', () => {
   });
 
   void it('base64-encoded JSON: invalid base64 rejected before media type check', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:content-test:' });
 
     jt.set({
       '$id': 'urn:content-test:Base64Json',
@@ -252,7 +252,7 @@ void describe('contentMediaType strict-by-default', () => {
   });
 
   void it('unknown media type passes unconditionally', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:content-test:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:content-test:' });
 
     jt.set({
       '$id': 'urn:content-test:UnknownMedia',

@@ -9,12 +9,12 @@ import type { SkolemizeFnType } from '../types/SkolemizeFnType.js';
 /** Arguments for the projectAbox function. */
 export type ProjectAboxArgsType = {
   readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
-  readonly 'baseIRI': string;
+  readonly 'baseIri': string;
   readonly 'curie'?: CurieInterface | undefined;
   readonly 'data': unknown;
   readonly 'entryNode'?: SchemaGraphNodeType | undefined;
   readonly 'graph': SchemaGraphInterface;
-  readonly 'graphIRI'?: string | undefined;
+  readonly 'graphIri'?: string | undefined;
   readonly 'iriFor'?: SkolemizeFnType | undefined;
   readonly 'lookupGraph'?: LookupGraphFn | undefined;
   readonly 'predicateResolver'?: PredicateResolverFnType | undefined;

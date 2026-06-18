@@ -19,7 +19,7 @@ import {
 } from '../bookstore/index.js';
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'predicateFor': ({
     classId,
     propertyName

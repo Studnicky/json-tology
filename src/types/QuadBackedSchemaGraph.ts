@@ -255,7 +255,7 @@ export type SubjectRelationsType = readonly SchemaGraphRelationType[];
  * The root schema stub record carried by the graph.
  *
  * @remarks
- * Contains `{ $id: baseIRI }` so callers can inspect the base IRI without
+ * Contains `{ $id: baseIri }` so callers can inspect the base IRI without
  * needing a full schema object.
  *
  * @example

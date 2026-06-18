@@ -98,7 +98,7 @@ void describe('anyOf composition', () => {
       ...dogQuads
     ];
 
-    const importer = new OwlImporter({ 'baseIRI': BASE });
+    const importer = new OwlImporter({ 'baseIri': BASE });
     const result = importer.import(allQuads);
 
     const petResult = result.schemas.find((schemaItem) => {
@@ -175,7 +175,7 @@ void describe('oneOf composition', () => {
       ...dogQuads
     ];
 
-    const importer = new OwlImporter({ 'baseIRI': BASE });
+    const importer = new OwlImporter({ 'baseIri': BASE });
     const result = importer.import(allQuads);
 
     const shapeResult = result.schemas.find((schemaItem) => {

@@ -24,11 +24,11 @@ export interface AboxProjectorInterface {
   abox(
     graph: SchemaGraphInterface,
     data: unknown,
-    baseIRI: string,
+    baseIri: string,
     options?: { 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
       'curie'?: CurieInterface | undefined;
       'entryNode'?: SchemaGraphNodeType | undefined;
-      'graphIRI'?: string | undefined;
+      'graphIri'?: string | undefined;
       'iriFor'?: SkolemizeFnType | undefined;
       'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
       'predicateResolver'?: PredicateResolverFnType | undefined }

@@ -17,7 +17,7 @@
  *
  * Fixture: a bookstore Review `reviews` a Book, annotated with `ratingGiven 5`
  * and `verifiedPurchase true`, asserted in the named graph
- * `https://bookstore.example/graph/reviews`. With `baseIRI`
+ * `https://bookstore.example/graph/reviews`. With `baseIri`
  * `https://bookstore.example`, the canonical predicate resolver maps the
  * annotation property names to flat IRIs `…/ratingGiven` and `…/verifiedPurchase`.
  */
@@ -95,7 +95,7 @@ const reviewInstance = {
 
 function freshJt(): ReturnType<typeof JsonTology.create> {
   const jt = JsonTology.create({
-    'baseIRI': BASE_IRI,
+    'baseIri': BASE_IRI,
     'enableStrictGraph': false
   });
 
@@ -165,7 +165,7 @@ function liftedReviewEdge(mode: 'both' | 'flat-only' | 'star-only'): Record<stri
   const jt = freshJt();
   const quads = jt.toQuads(ReviewSchema, reviewInstance, {
     'annotationEmitMode': mode,
-    'graphIRI': REVIEWS_GRAPH
+    'graphIri': REVIEWS_GRAPH
   });
   const lifted = jt.fromQuads(ReviewSchema, quads);
 
@@ -192,7 +192,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const jt = freshJt();
       const quads = jt.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'star-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       // Base flat edge triple present (exactly one).
@@ -237,10 +237,10 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const jt1 = freshJt();
       const jt2 = freshJt();
 
-      const unsetQuads = jt1.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+      const unsetQuads = jt1.toQuads(ReviewSchema, reviewInstance, { 'graphIri': REVIEWS_GRAPH });
       const starQuads = jt2.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'star-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       assert.equal(unsetQuads.length, starQuads.length, 'same quad count');
@@ -258,7 +258,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const jt = freshJt();
       const quads = jt.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'flat-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       // Base flat edge triple present (exactly one).
@@ -305,11 +305,11 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       assert.equal(star.length, 0, 'flat-only emits NO Quad-subject (star) quads');
     });
 
-    void it("'flat-only' stamps the flat annotation triples with the same graphIRI", () => {
+    void it("'flat-only' stamps the flat annotation triples with the same graphIri", () => {
       const jt = freshJt();
       const quads = jt.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'flat-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       for (const quad of flatAnnotationTriples(quads)) {
@@ -324,7 +324,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const jt = freshJt();
       const quads = jt.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'both',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       const base = baseEdgeTriples(quads);
@@ -357,11 +357,11 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 
       const starQuads = jtStar.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'star-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
       const bothQuads = jtBoth.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'both',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       assert.equal(
@@ -426,7 +426,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 // x-jt-predicate grounding — BY DESIGN, not by accident.
 //
 // The default fixture's annotations omit `x-jt-predicate`, so they resolve to
-// the canonical `baseIRI + propertyName` fallback. These tests use annotations
+// the canonical `baseIri + propertyName` fallback. These tests use annotations
 // that DO carry `x-jt-predicate`, proving the flat path honours the grounded
 // predicate IRI: `emitFlatAnnotationQuads` resolves through the SAME
 // `PredicateResolver` (passed the annotation's `propertySchema`) as the star
@@ -463,7 +463,7 @@ const GroundedReviewSchema = {
 
 function groundedQuads(mode: 'both' | 'flat-only' | 'star-only'): readonly QuadInterface[] {
   const jt = JsonTology.create({
-    'baseIRI': BASE_IRI,
+    'baseIri': BASE_IRI,
     'enableStrictGraph': false
   });
 
@@ -474,7 +474,7 @@ function groundedQuads(mode: 'both' | 'flat-only' | 'star-only'): readonly QuadI
 
   return jt.toQuads(GroundedReviewSchema, reviewInstance, {
     'annotationEmitMode': mode,
-    'graphIRI': REVIEWS_GRAPH
+    'graphIri': REVIEWS_GRAPH
   });
 }
 
@@ -497,7 +497,7 @@ void describe('annotationEmitMode — x-jt-predicate grounding (by design, not b
     assert.equal(verified.object.value, 'true');
     assert.equal(rating.object.value, '5');
 
-    // The canonical baseIRI+propertyName fallback must NOT appear when grounded.
+    // The canonical baseIri+propertyName fallback must NOT appear when grounded.
     const fallback = quads.filter((quad) => {
       return quad.predicate.value === VERIFIED_PREDICATE || quad.predicate.value === RATING_PREDICATE;
     });

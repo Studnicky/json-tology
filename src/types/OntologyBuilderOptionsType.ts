@@ -4,7 +4,7 @@ export type OntologyBuilderOptionsType = {
   /**
    * Base IRI for the ontology (e.g., 'https://my-project.io')
    */
-  'baseIRI': string;
+  'baseIri': string;
 
   /**
    * Optional logger for ontology-build observability. Defaults to SILENT_LOGGER when omitted.

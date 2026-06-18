@@ -67,7 +67,7 @@ export type {
  */
 export function generateFromTbox(options: GenerateFromTboxOptionsType): string {
   const {
-    baseIRI,
+    baseIri,
     header,
     input,
     name,
@@ -79,7 +79,7 @@ export function generateFromTbox(options: GenerateFromTboxOptionsType): string {
   const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
 
   const codegenOptions: OwlCodegenOptionsType = {
-    ...(!(baseIRI === undefined) && { 'baseIRI': baseIRI }),
+    ...(!(baseIri === undefined) && { 'baseIri': baseIri }),
     ...(!(header === undefined) && { 'header': header }),
     ...(!(name === undefined) && { 'registryConstName': name }),
     'sourceLabel': sourceLabel ?? defaultSourceLabel
@@ -117,7 +117,7 @@ export function generateFromTbox(options: GenerateFromTboxOptionsType): string {
  */
 export function generateRegistryDirectory(options: GenerateRegistryDirectoryOptionsType): GenerateRegistryDirectoryResultType {
   const {
-    baseIRI,
+    baseIri,
     header,
     input,
     name,
@@ -129,7 +129,7 @@ export function generateRegistryDirectory(options: GenerateRegistryDirectoryOpti
   const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
 
   const codegenOptions: OwlRegistryDirOptionsType = {
-    ...(!(baseIRI === undefined) && { 'baseIRI': baseIRI }),
+    ...(!(baseIri === undefined) && { 'baseIri': baseIri }),
     ...(!(header === undefined) && { 'header': header }),
     ...(!(name === undefined) && { 'registryConstName': name }),
     'sourceLabel': sourceLabel ?? defaultSourceLabel

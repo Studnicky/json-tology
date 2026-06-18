@@ -16,13 +16,13 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  * Options accepted by the {@link OwlImporter} constructor.
  *
  * @remarks
- * `baseIRI` anchors relative IRIs during the import session.
+ * `baseIri` anchors relative IRIs during the import session.
  * `prefixes` extends the default `STANDARD_PREFIXES` map with project-specific
  * prefix bindings used to compact and expand IRIs throughout the import pipeline.
  *
  * @example
  * ```ts
- * const importer = new OwlImporter({ baseIRI: 'https://example.com/', prefixes: { ex: 'https://example.com/' } });
+ * const importer = new OwlImporter({ baseIri: 'https://example.com/', prefixes: { ex: 'https://example.com/' } });
  * ```
  *
  * @category OWL Import
@@ -32,7 +32,7 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  */
 export type OwlImporterOptionsType = {
   /** Base IRI for the import session. Used when building OwlImportContextType. */
-  readonly 'baseIRI': string;
+  readonly 'baseIri': string;
   /** Optional logger; defaults to SILENT_LOGGER. */
   readonly 'logger'?: LoggerInterface;
   /** Additional prefix mappings merged with STANDARD_PREFIXES. */
@@ -195,7 +195,7 @@ export type OwlImportContextType = {
   'allPropertyIris': ReadonlySet<string>;
 
   /** Base IRI of the import session (from OwlImporter constructor options). */
-  'baseIRI': string;
+  'baseIri': string;
 
   /** CURIE handler for expanding and compacting IRIs. */
   'curie': CurieInterface;

@@ -16,7 +16,7 @@ The shape is two steps: prefetch the snapshot once (async), then construct the i
   });
 
   const jt = JsonTology.create({
-    baseIRI: 'https://myapp.io',
+    baseIri: 'https://myapp.io',
     prefetched: snapshot,
   });
 

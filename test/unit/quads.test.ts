@@ -1,12 +1,12 @@
 /**
- * toQuads / fromQuads — v2 iriFor / graphIRI / deskolemize integration tests.
+ * toQuads / fromQuads — v2 iriFor / graphIri / deskolemize integration tests.
  *
  * Covers the full skolemization design landed in feat/skolemizer-v2:
  *   - iriFor as string (root-only override)
  *   - iriFor as 'blank-node' (every subject is _:b<n>)
  *   - iriFor as Skolemize.fromProperty / Skolemize.wellKnownGenid
  *   - iriFor function ctx + memoization
- *   - registry-level iriFor / defaultGraphIRI / defaultDeskolemize
+ *   - registry-level iriFor / defaultGraphIri / defaultDeskolemize
  *   - fromQuads round-trip with deskolemize
  */
 
@@ -64,7 +64,7 @@ const noopSkolemize: SkolemizeFnType = () => {
 void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
   void it('iriFor string overrides root subject; nested subjects fall through to default', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [TeamSchema]
     });
     const quads = jt.toQuads(TeamSchema, {
@@ -96,7 +96,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
 
   void it("iriFor 'blank-node' emits _:b<n> for every subject; counter resets per call", () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [TeamSchema]
     });
     const quads = jt.toQuads(TeamSchema, {
@@ -117,7 +117,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
     }
 
     const jtUser = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [UserSchema]
     });
     const quadsA = jtUser.toQuads(UserSchema, { 'name': 'Alice' }, { 'iriFor': 'blank-node' });
@@ -147,13 +147,13 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
       'type': 'object'
     } as const;
     const jtDoc = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [DocSchema]
     });
     const docQuads = jtDoc.toQuads(DocSchema, {
       'id': 'doc-42',
       'title': 'Hello'
-    }, { 'iriFor': Skolemize.fromProperty('id', { 'baseIRI': 'https://example.com/docs' }) });
+    }, { 'iriFor': Skolemize.fromProperty('id', { 'baseIri': 'https://example.com/docs' }) });
     const docSubjects = new Set(docQuads.map((quad) => {
       return quad.subject.value;
     }));
@@ -162,7 +162,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
 
     // fromProperty: fallback called for nodes missing the property
     const jtTeam = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [TeamSchema]
     });
     let fallbackCalls = 0;
@@ -177,7 +177,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
       'name': 'Platform'
     }, {
       'iriFor': Skolemize.fromProperty('id', {
-        'baseIRI': 'https://example.com/by-id',
+        'baseIri': 'https://example.com/by-id',
         fallback
       })
     });
@@ -209,7 +209,7 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
       return;
     };
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [TeamSchema]
     });
 
@@ -253,15 +253,15 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
     assert.equal(calls, 4);
   });
 
-  void it('registry-level iriFor / defaultGraphIRI / blank-node config; noopSkolemize fallback', () => {
+  void it('registry-level iriFor / defaultGraphIri / blank-node config; noopSkolemize fallback', () => {
     const jtBase = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [UserSchema]
     });
 
     // inherits registry iriFor
     const jt1 = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'iriFor': 'https://example.com/registry-default',
       'schemas': [UserSchema]
     });
@@ -279,10 +279,10 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
     assert.equal(s2.has('https://example.com/per-call'), true);
     assert.equal(s2.has('https://example.com/registry-default'), false);
 
-    // inherits registry defaultGraphIRI
+    // inherits registry defaultGraphIri
     const jt3 = JsonTology.create({
-      'baseIRI': 'https://example.com',
-      'defaultGraphIRI': 'https://example.com/g/default',
+      'baseIri': 'https://example.com',
+      'defaultGraphIri': 'https://example.com/g/default',
       'schemas': [UserSchema]
     });
 
@@ -290,14 +290,14 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
       assert.equal(quad.graph.value, 'https://example.com/g/default');
     }
 
-    // per-call graphIRI overrides registry
-    for (const quad of jt3.toQuads(UserSchema, { 'name': 'Alice' }, { 'graphIRI': 'https://example.com/g/override' })) {
+    // per-call graphIri overrides registry
+    for (const quad of jt3.toQuads(UserSchema, { 'name': 'Alice' }, { 'graphIri': 'https://example.com/g/override' })) {
       assert.equal(quad.graph.value, 'https://example.com/g/override');
     }
 
     // blank-node registry-level config produces fresh counters per call
     const jt5 = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'iriFor': 'blank-node',
       'schemas': [UserSchema]
     });
@@ -318,7 +318,7 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
 
     // noopSkolemize falls back to default IRI minter
     const jtTeam = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [TeamSchema]
     });
     const noopQuads = jtTeam.toQuads(TeamSchema, {
@@ -340,7 +340,7 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
 void describe('fromQuads — deskolemize round-trip — Good/Bad/Ugly', () => {
   void it('reproduces input via wellKnownGenid; registry-level defaultDeskolemize; passthrough', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [UserSchema]
     });
     const input = {
@@ -360,7 +360,7 @@ void describe('fromQuads — deskolemize round-trip — Good/Bad/Ugly', () => {
 
     // Good: registry-level defaultDeskolemize is honored
     const jt2 = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'defaultDeskolemize': true,
       'schemas': [UserSchema]
     });
@@ -372,7 +372,7 @@ void describe('fromQuads — deskolemize round-trip — Good/Bad/Ugly', () => {
 
     // Ugly: noopSkolemize falls back to default IRI minter (2 instance subjects: root + lead)
     const jtTeam = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [TeamSchema]
     });
     const noopQuads = jtTeam.toQuads(TeamSchema, {

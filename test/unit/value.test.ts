@@ -85,7 +85,7 @@ void describe('Value.create()', () => {
   } of primitiveScenarios) {
     void it(scenarioName, () => {
       const tology = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'schemas': [schema as SchemaWithId]
       });
 
@@ -191,7 +191,7 @@ void describe('Value.create()', () => {
   } of defaultScenarios) {
     void it(scenarioName, () => {
       const tology = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'schemas': schemaList as readonly SchemaWithId[]
       });
 
@@ -201,7 +201,7 @@ void describe('Value.create()', () => {
 
   void it('creates required properties but omits optional ones', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'schemas': [{
         '$id': 'urn:test:required-props',
         'properties': {
@@ -622,7 +622,7 @@ void describe('Value.cast()', () => {
   // enableStrictGraph: false — synthetic fixture schemas include plain-type properties
   // that structurally match other registered schemas; this tests cast mechanics.
   const tology = JsonTology.create({
-    'baseIRI': 'urn:test:',
+    'baseIri': 'urn:test:',
     'enableStrictGraph': false,
     'schemas': castSchemas
   });
@@ -751,7 +751,7 @@ void describe('Value.clean()', () => {
     }
   ];
   const tology = JsonTology.create({
-    'baseIRI': 'urn:test:',
+    'baseIri': 'urn:test:',
     'schemas': cleanSchemas
   });
   const value = tology.value;

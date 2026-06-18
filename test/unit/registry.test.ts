@@ -69,7 +69,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       } as const;
 
       const registry = JsonTology.create({
-        'baseIRI': 'urn:test',
+        'baseIri': 'urn:test',
         'enableTypeCast': true
       }).registry;
 
@@ -84,7 +84,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('jt:config.extra: allow retains unknown properties in coerce output', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      const registry = JsonTology.create({ 'baseIri': 'urn:test' }).registry;
 
       registry.set(AllowExtraSchema);
       const result = registry.instantiate(AllowExtraSchema.$id, {
@@ -97,7 +97,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
     void it('jt:config.extra: forbid — GBU: rejects unknown props (InstantiationError), accepts known only, reports EXTRA_FORBIDDEN keyword', () => {
       // Bad: rejects unknown properties with InstantiationError
-      const reg1 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      const reg1 = JsonTology.create({ 'baseIri': 'urn:test' }).registry;
 
       reg1.set(ForbidExtraSchema);
 
@@ -111,7 +111,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       });
 
       // Good: accepts only known properties
-      const reg2 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      const reg2 = JsonTology.create({ 'baseIri': 'urn:test' }).registry;
 
       reg2.set(ForbidExtraSchema);
       const result = reg2.instantiate(ForbidExtraSchema.$id, { 'name': 'Alice' });
@@ -119,7 +119,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       assert.deepEqual(result, { 'name': 'Alice' });
 
       // Ugly: validate() reports EXTRA_FORBIDDEN keyword
-      const reg3 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      const reg3 = JsonTology.create({ 'baseIri': 'urn:test' }).registry;
 
       reg3.set(ForbidExtraSchema);
       const errs = reg3.validate(ForbidExtraSchema.$id, {
@@ -233,7 +233,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
   void describe('SchemaRegistry.findDuplicates()', () => {
     void it('returns empty when no duplicates', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      const registry = JsonTology.create({ 'baseIri': 'urn:test' }).registry;
 
       registry.set(EmailSchema);
       registry.set({
@@ -248,7 +248,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       // enableStrictGraph: false — this test explicitly registers inline duplicate
       // shapes to verify findDuplicates() detects them.
       const registry = JsonTology.create({
-        'baseIRI': 'urn:test',
+        'baseIri': 'urn:test',
         'enableStrictGraph': false
       }).registry;
 
@@ -290,7 +290,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       // enableStrictGraph: false — registers inline duplicate shapes to verify
       // that findDuplicates() ignores title/description in structural matching.
       const registry = JsonTology.create({
-        'baseIRI': 'urn:test',
+        'baseIri': 'urn:test',
         'enableStrictGraph': false
       }).registry;
 
@@ -306,7 +306,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       // enableStrictGraph: false — registers inline duplicate shapes to verify
       // findDuplicates() result shape.
       const registry = JsonTology.create({
-        'baseIRI': 'urn:test',
+        'baseIri': 'urn:test',
         'enableStrictGraph': false
       }).registry;
 
@@ -327,7 +327,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('returns empty when only $ref properties exist', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      const registry = JsonTology.create({ 'baseIri': 'urn:test' }).registry;
 
       registry.set(EmailSchema);
       registry.set({
@@ -891,7 +891,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       {
         'check': () => {
           const registry = JsonTology.create({
-            'baseIRI': 'urn:test',
+            'baseIri': 'urn:test',
             'keywords': [evenNumberKeyword]
           }).registry;
 
@@ -907,7 +907,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       },
       {
         'check': () => {
-          const reg2 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+          const reg2 = JsonTology.create({ 'baseIri': 'urn:test' }).registry;
 
           reg2.set({
             '$id': 'urn:test:graph-kw',
@@ -947,7 +947,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://test.com',
+            'baseIri': 'https://test.com',
             'keywords': [evenNumberKeyword],
             'schemas': [{
               '$id': 'https://test.com/JtEven',
@@ -964,7 +964,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://test.com',
+            'baseIri': 'https://test.com',
             'keywords': [numberOnlyKeyword],
             'schemas': [{
               '$id': 'https://test.com/JtScoped',

@@ -16,7 +16,7 @@ const PROPERTY_NAME = 'name';
 const EMPTY_VOCAB: Record<string, string | undefined> = {};
 
 function resolve(overrides: {
-  'baseIRI'?: string;
+  'baseIri'?: string;
   'classId'?: string;
   'enableCanonicalPredicates'?: boolean | undefined;
   'predicateFor'?: PredicateForType | undefined;
@@ -24,7 +24,7 @@ function resolve(overrides: {
   'propertySchema'?: JsonSchemaType;
 }): string {
   return PredicateResolver.resolve({
-    'baseIRI': overrides.baseIRI ?? BASE_IRI,
+    'baseIri': overrides.baseIri ?? BASE_IRI,
     'classId': overrides.classId ?? CLASS_ID,
     'enableCanonicalPredicates': overrides.enableCanonicalPredicates,
     'predicateFor': overrides.predicateFor,
@@ -34,7 +34,7 @@ function resolve(overrides: {
 }
 
 void describe('PredicateResolver.resolve — precedence', { 'concurrency': true }, () => {
-  void it('flat default (baseIRI + propertyName) when enableCanonicalPredicates is undefined', () => {
+  void it('flat default (baseIri + propertyName) when enableCanonicalPredicates is undefined', () => {
     assert.equal(
       resolve({ 'enableCanonicalPredicates': undefined }),
       'https://example.com/name',
@@ -159,7 +159,7 @@ void describe('PredicateResolver.resolve — precedence', { 'concurrency': true 
 void describe('PredicateResolver.forConfig — closure capture', { 'concurrency': true }, () => {
   void it('binds config and applies per-call ctx', () => {
     const resolver = PredicateResolver.forConfig({
-      'baseIRI': BASE_IRI,
+      'baseIri': BASE_IRI,
       'enableCanonicalPredicates': true,
       'predicateFor': undefined
     });
@@ -177,7 +177,7 @@ void describe('PredicateResolver.forConfig — closure capture', { 'concurrency'
 
   void it('bound resolver honors per-call x-jt-predicate', () => {
     const resolver = PredicateResolver.forConfig({
-      'baseIRI': BASE_IRI,
+      'baseIri': BASE_IRI,
       'enableCanonicalPredicates': false,
       'predicateFor': undefined
     });

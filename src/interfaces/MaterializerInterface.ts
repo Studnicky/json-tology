@@ -10,7 +10,7 @@ export interface MaterializerInterface {
   execute(
     schema: Record<string, unknown> & { '$id': string },
     data?: unknown,
-    options?: { 'baseIRI'?: string;
+    options?: { 'baseIri'?: string;
       'synthesizeDefaults'?: boolean }
   ): MaterializationResultType;
   materialize<TSchema extends JsonSchemaDocumentType & { readonly '$id': string }>(
@@ -24,7 +24,7 @@ export interface MaterializerInterface {
   projectAbox(
     schema: Record<string, unknown> & { '$id': string },
     data: unknown,
-    baseIRI: string,
+    baseIri: string,
     options?: AboxOptionsType
   ): QuadInterface[];
 }

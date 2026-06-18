@@ -38,7 +38,7 @@ const CatalogSearchPreferencesSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [CatalogSearchPreferencesSchema]
 });
 

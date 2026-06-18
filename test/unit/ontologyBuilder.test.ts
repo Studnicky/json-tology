@@ -22,7 +22,7 @@ function makeQuad(subjectIri: string, predicateIri: string, objectIri: string): 
 
 function emptyBuilder(): OntologyBuilder {
   return new OntologyBuilder({
-    'baseIRI': 'https://example.com',
+    'baseIri': 'https://example.com',
     'prefixes': { 'ex': 'https://example.com/' }
   });
 }

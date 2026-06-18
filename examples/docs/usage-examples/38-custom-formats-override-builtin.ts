@@ -22,7 +22,7 @@ const formats: Record<string, (value: unknown) => boolean> = {
 };
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   formats,
   'schemas': [EmailSchema] as const
 });

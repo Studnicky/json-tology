@@ -6,7 +6,7 @@ import type { SkolemizeFnType } from './SkolemizeFnType.js';
 export type AboxOptionsType = {
   readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
   readonly 'curie'?: CurieInterface | undefined;
-  readonly 'graphIRI'?: string | undefined;
+  readonly 'graphIri'?: string | undefined;
   readonly 'iriFor'?: SkolemizeFnType | undefined;
   readonly 'predicateResolver'?: PredicateResolverFnType | undefined;
 };

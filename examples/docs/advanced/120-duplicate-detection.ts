@@ -47,7 +47,7 @@ let strictModeThrew = false;
 
 try {
   JsonTology.create({
-    'baseIRI': 'https://bookstore.example',
+    'baseIri': 'https://bookstore.example',
     'schemas': [
       IsbnSchema,
       BookWithInlineIsbn

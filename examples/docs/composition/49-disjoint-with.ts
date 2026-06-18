@@ -52,7 +52,7 @@ const PhysicalEditionSchema = Compose.disjointWith(DigitalEditionBase, PhysicalE
 
 // Register all three schemas — Book first, then the subclasses.
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [
     BookSchema,
     DigitalEditionBase,

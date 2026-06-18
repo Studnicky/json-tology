@@ -65,7 +65,7 @@ const order = {
 // enableStrictGraph: false — self-contained demo with a nested inline $defs
 // shape kept inline for brevity rather than extracted to its own $ref'd schema.
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableStrictGraph': false,
   'schemas': [OrderSchema]
 });

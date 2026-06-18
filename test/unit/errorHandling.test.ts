@@ -51,7 +51,7 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
       messageContains, name, schema
     } of scenarios) {
       const jt = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'enableStrictGraph': false
       });
 
@@ -69,7 +69,7 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
 
   void it('set() replaces an existing schema with new content (Map semantics)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -97,7 +97,7 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
 
   void it('SchemaError has code and toJson()', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -200,7 +200,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('carries structured ValidationErrors with items', () => {
     // enableStrictGraph: false — synthetic fixture schema with inline minimum
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -241,7 +241,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('reports multiple errors simultaneously', () => {
     // enableStrictGraph: false — synthetic fixture schema with inline format/minLength
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -275,7 +275,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
 
   void it('InstantiationError.toJson() serializes cleanly', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -310,7 +310,7 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
   void it('remains usable after failed registration', () => {
     // Use enableStrictGraph to trigger inline-object error (default mode is silent)
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': true
     });
 
@@ -365,7 +365,7 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
 
   void it('remains usable after InstantiationError', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -393,7 +393,7 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
 void describe('JsonTology error handling', { 'concurrency': true }, () => {
   void it('handles unregistered schema operations', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://err.test',
+      'baseIri': 'https://err.test',
       'enableStrictGraph': false
     });
 

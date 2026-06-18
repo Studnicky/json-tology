@@ -36,7 +36,7 @@ const NormalizedDateSchema = Transform.create(DateTimeSchema, {
 });
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.io',
+  'baseIri': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [NormalizedDateSchema] as const
 });

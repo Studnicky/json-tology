@@ -9,7 +9,7 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  *
  * @example
  * ```ts
- * buildSingleFileBody({ sortedIris, nameMap, schemas, effectiveBaseIRI, inferTypeImportPath, registryConstName });
+ * buildSingleFileBody({ sortedIris, nameMap, schemas, effectiveBaseIri, inferTypeImportPath, registryConstName });
  * ```
  *
  * @category Codegen
@@ -19,7 +19,7 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  */
 export type SingleFileBodyOptionsType = {
   /** Effective base IRI for `JsonTology.create`. */
-  readonly 'effectiveBaseIRI': string;
+  readonly 'effectiveBaseIri': string;
   /** Import path for `InferType`. */
   readonly 'inferTypeImportPath': string;
   /** Map from IRI to PascalCase identifier. */

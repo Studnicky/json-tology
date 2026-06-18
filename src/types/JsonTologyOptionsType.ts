@@ -10,7 +10,7 @@ import type { PredicateForType } from '../types/PredicateForType.js';
 import type { SkolemizeFnType } from '../types/SkolemizeFnType.js';
 
 export type JsonTologyOptionsType<TSchemas extends readonly unknown[] = readonly unknown[]> = {
-  'baseIRI': string;
+  'baseIri': string;
   'computeds'?: Record<string, Record<string, ComputedFnType>>;
   /**
    * Default for the `deskolemize` flag on {@link fromQuads}. When true,
@@ -20,9 +20,9 @@ export type JsonTologyOptionsType<TSchemas extends readonly unknown[] = readonly
   readonly 'defaultDeskolemize'?: boolean;
   /**
    * Default graph IRI applied to ABox quads when {@link toQuads} is called
-   * without a per-call `graphIRI`.
+   * without a per-call `graphIri`.
    */
-  readonly 'defaultGraphIRI'?: string;
+  readonly 'defaultGraphIri'?: string;
   /**
    * When true (the default), property predicates are derived as flat shared
    * IRIs (canonical form). Set to `false` to derive class-scoped

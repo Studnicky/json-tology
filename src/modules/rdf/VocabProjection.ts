@@ -226,7 +226,7 @@ export abstract class VocabProjection {
    * When `predicateResolver` is available (OWL/SHACL projection with
    * canonical-predicate mode), delegates to the resolver so that flat
    * base-IRI predicates (e.g. `https://bookstore.example/customerId`) are
-   * emitted instead of class-scoped `<ClassIRI>#<propName>` IRIs.
+   * emitted instead of class-scoped `<ClassIri>#<propName>` IRIs.
    * Falls back to the class-scoped form when no resolver is supplied.
    */
   protected resolvePredicateIri(

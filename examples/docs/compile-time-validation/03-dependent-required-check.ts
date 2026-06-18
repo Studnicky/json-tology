@@ -34,7 +34,7 @@ const _check: ValidateSchemaType<typeof PaymentSchema> = PaymentSchema;
 void _check;
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:docs-compile-time-03',
+  'baseIri': 'urn:docs-compile-time-03',
   // doc example with synthetic fixture schemas
   'enableStrictGraph': false,
   'schemas': [PaymentSchema] as const

@@ -23,7 +23,7 @@ const myVocabulary: VocabularyPluginInterface = {
 };
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   // prefixes must be declared here to appear in OntologyBuilder.context()
   'prefixes': { 'myns': MY_NS },
   'schemas': [BookSchema] as const,

@@ -214,7 +214,7 @@ void describe('RefDecoder logger DI (end-to-end through the registry)', () => {
       logger, messages
     } = capturingLogger();
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       logger,
       'schemas': [
         ThrowingDecodeSchema,

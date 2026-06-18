@@ -59,12 +59,12 @@ function makeCtx(allPropertyIris?: ReadonlySet<string>, quads: QuadInterface[] =
     'axiomIri': string;
     'subjectIri': null | string;
   }> = [];
-  const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
+  const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' });
 
   return {
     'allClassIris': new Set<string>(),
     'allPropertyIris': allPropertyIris ?? new Set([PROPERTY_IRI]),
-    'baseIRI': 'urn:test',
+    'baseIri': 'urn:test',
     curie,
     graph,
     'isDatatype': () => {

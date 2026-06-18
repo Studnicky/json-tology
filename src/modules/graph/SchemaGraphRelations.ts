@@ -697,17 +697,17 @@ export const SchemaGraphRelations = {
 
     for (const propertyName of sem.required) {
       const propNode = sem.properties.get(propertyName);
-      const propIRI = `${node.id}#${propertyName}`;
+      const propIri = `${node.id}#${propertyName}`;
 
       relations.push({
         'metadata': {
           'minCardinality': 1,
-          'onProperty': propIRI,
+          'onProperty': propIri,
           'propertyName': propertyName
         },
         'predicate': OWL.Restriction,
         'source': node,
-        'target': propNode ?? propIRI
+        'target': propNode ?? propIri
       });
     }
 

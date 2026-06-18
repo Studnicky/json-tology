@@ -635,7 +635,7 @@ import {
   const SH_NODE_SHAPE_IRI = 'http://www.w3.org/ns/shacl#NodeShape';
   const SH_PROPERTY_IRI = 'http://www.w3.org/ns/shacl#property';
 
-  function hasType(nodes: unknown[], typeIRI: string): boolean {
+  function hasType(nodes: unknown[], typeIri: string): boolean {
     return nodes.some((node) => {
       if (typeof node !== 'object' || node === null) {
         return false;
@@ -645,14 +645,14 @@ import {
       const typeValue = record['@type'];
 
       if (Array.isArray(typeValue)) {
-        return (typeValue as string[]).includes(typeIRI);
+        return (typeValue as string[]).includes(typeIri);
       }
 
-      return typeValue === typeIRI;
+      return typeValue === typeIri;
     });
   }
 
-  function hasPredicate(nodes: unknown[], predicateIRI: string): boolean {
+  function hasPredicate(nodes: unknown[], predicateIri: string): boolean {
     return nodes.some((node) => {
       if (typeof node !== 'object' || node === null) {
         return false;
@@ -660,7 +660,7 @@ import {
 
       const record = node as Record<string, unknown>;
 
-      return predicateIRI in record;
+      return predicateIri in record;
     });
   }
 
@@ -871,7 +871,7 @@ import {
 
   function makeJt() {
     return JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         PersonSchema,
         AddressSchema,

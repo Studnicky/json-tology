@@ -19,7 +19,7 @@ const SetSchema = {
 type StringSet = InferType<typeof SetSchema>;
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:brands:',
+  'baseIri': 'urn:brands:',
   'enableStrictGraph': false,
   'schemas': [SetSchema]
 });

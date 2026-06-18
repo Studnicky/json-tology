@@ -66,7 +66,7 @@ const BookSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': BASE,
+  'baseIri': BASE,
   'schemas': [
     AuthorNameSchema,
     TitleSchema,

@@ -1,7 +1,7 @@
 /**
  * Getting started: JsonTology.create — register schemas and build the type map
  *
- * `JsonTology.create` takes `baseIRI` and `schemas` (as const array),
+ * `JsonTology.create` takes `baseIri` and `schemas` (as const array),
  * registers all schemas, compiles the validation graph, and builds the
  * type map. Every subsequent method call that accepts a schema `$id`
  * returns typed results from that map.
@@ -19,7 +19,7 @@ import {
 // bookstoreSchemas seeds every transitive $ref so CustomerSchema's
 // references to AddressSchema, EmailSchema, etc. all resolve.
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': bookstoreSchemas
 });
 

@@ -29,7 +29,7 @@ function collectErrors(
   keyword: string
 ): string[] {
   const jt = JsonTology.create({
-    'baseIRI': 'urn:test:scalar-parity:',
+    'baseIri': 'urn:test:scalar-parity:',
     'enableStrictGraph': false
   });
 

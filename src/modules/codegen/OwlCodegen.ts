@@ -308,9 +308,9 @@ function topoSort(
 
 /**
  * Derive the base IRI portion of an IRI (before '#' or last '/').
- * Used to compute the default baseIRI when one is not specified.
+ * Used to compute the default baseIri when one is not specified.
  */
-function deriveBaseIRI(firstIri: string): string {
+function deriveBaseIri(firstIri: string): string {
   const { id } = SchemaIri.parseRef(firstIri);
 
   // parseRef returns id = everything before '#' (or the whole IRI when no '#').
@@ -467,7 +467,7 @@ function emitSchemaConstants(lines: string[], opts: EmitSchemaConstantsOptionsTy
 /** Emit the registry array and JsonTology.create() call. */
 function emitRegistryConstruction(lines: string[], opts: EmitRegistryOptionsType): void {
   const {
-    effectiveBaseIRI,
+    effectiveBaseIri,
     registryConstName,
     schemaNames,
     schemasConst
@@ -489,7 +489,7 @@ function emitRegistryConstruction(lines: string[], opts: EmitRegistryOptionsType
 
   const createArg = serializeSchemaLiteral(
     {
-      'baseIRI': effectiveBaseIRI,
+      'baseIri': effectiveBaseIri,
       'schemas': '__SCHEMAS_PLACEHOLDER__'
     },
     0
@@ -618,7 +618,7 @@ function buildSingleFileBody(
     'sortedIris': opts.sortedIris
   });
   emitRegistryConstruction(lines, {
-    'effectiveBaseIRI': opts.effectiveBaseIRI,
+    'effectiveBaseIri': opts.effectiveBaseIri,
     'registryConstName': opts.registryConstName,
     schemaNames,
     schemasConst
@@ -655,7 +655,7 @@ export class OwlCodegen {
    * ```
    *
    * @param result  - The import result from `JsonTology.fromTbox()`.
-   * @param options - Codegen options (name, baseIRI, etc.).
+   * @param options - Codegen options (name, baseIri, etc.).
    * @returns Entity file sources + index source.
    *
    * @category Codegen
@@ -668,7 +668,7 @@ export class OwlCodegen {
     options: OwlRegistryDirOptionsType
   ): RegistryFilesResultType {
     const {
-      baseIRI = '',
+      baseIri = '',
       header = [],
       registryConstName = 'registry',
       sourceLabel = ''
@@ -683,7 +683,7 @@ export class OwlCodegen {
       collisions,
       nameMap
     } = buildNameMap(sortedIris);
-    const effectiveBaseIRI = baseIRI === '' ? deriveBaseIRI(iris[0] ?? '') : baseIRI;
+    const effectiveBaseIri = baseIri === '' ? deriveBaseIri(iris[0] ?? '') : baseIri;
     const schemasConst = `${registryConstName}Schemas`;
     const ctx: RegistryDirContextType = {
       nameMap,
@@ -698,7 +698,7 @@ export class OwlCodegen {
       'entityFiles': buildEntityFiles(ctx),
       'indexSource': buildIndexSource(ctx, {
         collisions,
-        'effectiveBaseIRI': effectiveBaseIRI,
+        'effectiveBaseIri': effectiveBaseIri,
         header,
         registryConstName,
         schemasConst
@@ -722,7 +722,7 @@ export class OwlCodegen {
    * ```
    *
    * @param result - The import result from `JsonTology.fromTbox()`.
-   * @param options - Codegen options (name, baseIRI, etc.).
+   * @param options - Codegen options (name, baseIri, etc.).
    * @returns The generated TypeScript source string.
    *
    * @category Codegen
@@ -735,7 +735,7 @@ export class OwlCodegen {
     options: OwlCodegenOptionsType
   ): string {
     const {
-      baseIRI = '',
+      baseIri = '',
       header = [],
       inferTypeImportPath = 'json-tology/types',
       registryConstName = 'registry',
@@ -753,7 +753,7 @@ export class OwlCodegen {
       nameMap
     } = buildNameMap(sortedIris);
 
-    const effectiveBaseIRI = baseIRI === '' ? deriveBaseIRI(iris[0] ?? '') : baseIRI;
+    const effectiveBaseIri = baseIri === '' ? deriveBaseIri(iris[0] ?? '') : baseIri;
     const lines: string[] = [];
     const ts = new Date().toISOString();
 
@@ -764,7 +764,7 @@ export class OwlCodegen {
       'ts': ts
     });
     buildSingleFileBody(lines, {
-      effectiveBaseIRI,
+      effectiveBaseIri,
       inferTypeImportPath,
       nameMap,
       registryConstName,
@@ -889,7 +889,7 @@ function buildIndexSource(
 
   emitEntityImports(indexLines, schemaNames);
   emitRegistryConstruction(indexLines, {
-    'effectiveBaseIRI': opts.effectiveBaseIRI,
+    'effectiveBaseIri': opts.effectiveBaseIri,
     'registryConstName': opts.registryConstName,
     schemaNames,
     'schemasConst': opts.schemasConst

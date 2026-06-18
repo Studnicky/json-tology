@@ -15,9 +15,9 @@ import {
 } from '../bookstore/index.js';
 
 const strategy = Skolemize.compose(
-  Skolemize.fromProperty('customerId', { 'baseIRI': 'https://shop.example.com/by-id' }),
-  Skolemize.fromProperty('email', { 'baseIRI': 'https://shop.example.com/by-email' }),
-  Skolemize.hash({ 'baseIRI': 'https://shop.example.com' })
+  Skolemize.fromProperty('customerId', { 'baseIri': 'https://shop.example.com/by-id' }),
+  Skolemize.fromProperty('email', { 'baseIri': 'https://shop.example.com/by-email' }),
+  Skolemize.hash({ 'baseIri': 'https://shop.example.com' })
 );
 
 const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': strategy });

@@ -42,7 +42,7 @@ const BookSchema = {
 // constrained primitives (minimum, minLength) inline for brevity. The strict-graph
 // default would require extracting each into its own $ref'd schema.
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableStrictGraph': false,
   'schemas': [BookSchema]
 });

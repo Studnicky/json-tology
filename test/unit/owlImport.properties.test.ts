@@ -39,7 +39,7 @@ function makeCtx(
   quads: QuadInterface[],
   extraClassIris: string[] = []
 ): OwlImportContextType {
-  const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': BASE_IRI });
+  const graph = SchemaGraph.fromQuads(quads, { 'baseIri': BASE_IRI });
   const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{ 'axiomIri': string;
     'subjectIri': null | string }> = [];
@@ -76,7 +76,7 @@ function makeCtx(
   return {
     allClassIris,
     allPropertyIris,
-    'baseIRI': BASE_IRI,
+    'baseIri': BASE_IRI,
     curie,
     graph,
     'isDatatype': (iri: string) => {
@@ -419,7 +419,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         ...customerQuads
       ];
 
-      const importer = new OwlImporter({ 'baseIRI': BASE });
+      const importer = new OwlImporter({ 'baseIri': BASE });
       const result = importer.import(allQuads);
 
       const orderResult = result.schemas.find((schema) => {
@@ -444,7 +444,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       } as const;
 
       const quads = OwlProjection.graph(new SchemaGraph(bookSchema));
-      const importer = new OwlImporter({ 'baseIRI': BASE });
+      const importer = new OwlImporter({ 'baseIri': BASE });
       const result = importer.import(quads);
 
       const bookResult = result.schemas.find((schema) => {
@@ -469,7 +469,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       } as const;
 
       const quads = OwlProjection.graph(new SchemaGraph(bookSchema));
-      const importer = new OwlImporter({ 'baseIRI': BASE });
+      const importer = new OwlImporter({ 'baseIri': BASE });
       const result = importer.import(quads);
 
       const bookResult = result.schemas.find((schema) => {
@@ -510,7 +510,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         ...emailQuads
       ];
 
-      const importer = new OwlImporter({ 'baseIRI': BASE });
+      const importer = new OwlImporter({ 'baseIri': BASE });
       const result = importer.import(allQuads);
 
       const customerResult = result.schemas.find((schema) => {

@@ -113,7 +113,7 @@ if (quads.length > 0) {
 // ---------------------------------------------------------------------------
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [RatingSchema] as const
 });
 

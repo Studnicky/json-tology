@@ -177,7 +177,7 @@ void describe('JsonTology.create with prefetched snapshot', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://schema.example',
+      'baseIri': 'https://schema.example',
       'prefetched': snapshot,
       'schemas': [UserSchema] as const
     });
@@ -204,7 +204,7 @@ void describe('JsonTology.create with prefetched snapshot', () => {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://schema.example',
+      'baseIri': 'https://schema.example',
       'prefetched': snapshot,
       'schemas': [OverrideAddressSchema] as const
     });

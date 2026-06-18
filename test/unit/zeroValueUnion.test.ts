@@ -28,7 +28,7 @@ void describe('synthesizeZeroValue — anyOf/oneOf schemas', { 'concurrency': fa
 
     // anyOf members are primitive types (no nested objects) — passes strict validation.
     const jt = JsonTology.create({
-      'baseIRI': 'urn:zeroval:anyof:',
+      'baseIri': 'urn:zeroval:anyof:',
       'schemas': [Schema] as const
     });
 
@@ -51,7 +51,7 @@ void describe('synthesizeZeroValue — anyOf/oneOf schemas', { 'concurrency': fa
 
     // oneOf members are primitive types — passes strict validation.
     const jt = JsonTology.create({
-      'baseIRI': 'urn:zeroval:oneof:',
+      'baseIri': 'urn:zeroval:oneof:',
       'schemas': [Schema] as const
     });
 
@@ -75,7 +75,7 @@ void describe('synthesizeZeroValue — anyOf/oneOf schemas', { 'concurrency': fa
 
     // anyOf members are primitive or description-only — passes strict validation.
     const jt = JsonTology.create({
-      'baseIRI': 'urn:zeroval:anyof:skip:',
+      'baseIri': 'urn:zeroval:anyof:skip:',
       'schemas': [Schema] as const
     });
 
@@ -103,7 +103,7 @@ void describe('synthesizeZeroValue — anyOf/oneOf schemas', { 'concurrency': fa
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'urn:zeroval:anyof:obj:',
+      'baseIri': 'urn:zeroval:anyof:obj:',
       'enableStrictGraph': false,
       'schemas': [Schema] as const
     });

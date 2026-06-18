@@ -1,7 +1,7 @@
 /**
  * Skolemize.wellKnownGenid — reversible W3C RDF 1.1 §3.5 pattern.
  *
- * Mints IRIs of the form `<baseIRI>/.well-known/genid/<hash>`. These are
+ * Mints IRIs of the form `<baseIri>/.well-known/genid/<hash>`. These are
  * intentionally reversible — fromQuads({ deskolemize: true }) recognises
  * the pattern and rewrites the IRIs back to blank nodes during lift.
  *

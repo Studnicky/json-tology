@@ -25,7 +25,7 @@ import {
 } from '../../src/constants/IRI.js';
 
 const BASE = 'https://example.com/';
-const importer = new OwlImporter({ 'baseIRI': BASE });
+const importer = new OwlImporter({ 'baseIri': BASE });
 
 // ---------------------------------------------------------------------------
 // Fix 1 — normalizeInput: malformed JSON-LD string throws OwlImportError

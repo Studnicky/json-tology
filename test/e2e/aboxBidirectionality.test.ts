@@ -664,7 +664,7 @@ void describe('B-11: reviewWithAnnotatedEdge — RDF-star annotated edge', () =>
 
   void it('emits the base reviews triple targeting the book IRI', () => {
     const validated = bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge);
-    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIri': REVIEWS_GRAPH });
 
     const baseTriples = quads.filter((quad) => {
       return quad.predicate.value === EDGE_PREDICATE
@@ -689,7 +689,7 @@ void describe('B-11: reviewWithAnnotatedEdge — RDF-star annotated edge', () =>
 
   void it('emits triple-term annotation quads for ratingGiven and verifiedPurchase with grounded predicates', () => {
     const validated = bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge);
-    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIri': REVIEWS_GRAPH });
 
     const annotationQuads = quads.filter((quad) => {
       return quad.subject.termType === 'Quad';
@@ -712,7 +712,7 @@ void describe('B-11: reviewWithAnnotatedEdge — RDF-star annotated edge', () =>
 
   void it('base Review scalars are still present alongside the annotated edge', () => {
     const validated = bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge);
-    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIri': REVIEWS_GRAPH });
 
     const reviewIdQuad = quads.find((quad) => {
       return quad.predicate.value === 'https://bookstore.example/reviewId';

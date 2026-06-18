@@ -45,10 +45,10 @@ function makeCtx(quads: QuadInterface[] = []): OwlImportContextType & { 'unsuppo
   return {
     'allClassIris': new Set(),
     'allPropertyIris': new Set(),
-    'baseIRI': 'https://example.com/',
+    'baseIri': 'https://example.com/',
     curie,
     'graph': SchemaGraph.fromQuads(quads, {
-      'baseIRI': 'https://example.com/',
+      'baseIri': 'https://example.com/',
       'prefixes': STANDARD_PREFIXES
     }),
     'isDatatype': () => {

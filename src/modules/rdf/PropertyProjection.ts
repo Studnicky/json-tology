@@ -139,7 +139,7 @@ export class PropertyProjection {
    *
    * User-declared restrictions (`jt:restrictions`) and required-cardinality
    * restrictions carry a class-scoped onProperty of the form
-   * `<ClassIRI>#<propertyName>` (e.g. `urn:bookstore:Book#authors`). The flat
+   * `<ClassIri>#<propertyName>` (e.g. `urn:bookstore:Book#authors`). The flat
    * predicate declared via rdfs:domain/range and used by the ABox is derived from
    * the base IRI (e.g. `https://bookstore.example/authors`). To keep restrictions
    * connected to instances, the onProperty must use the same flat IRI.

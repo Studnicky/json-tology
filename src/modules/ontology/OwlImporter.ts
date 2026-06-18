@@ -437,7 +437,7 @@ const DISPATCHERS: readonly DispatcherFnType[] = [
  *
  * @example
  * ```ts
- * const importer = new OwlImporter({ baseIRI: 'https://example.com/' });
+ * const importer = new OwlImporter({ baseIri: 'https://example.com/' });
  * const result = importer.import(jsonLdDoc);
  * ```
  *
@@ -447,13 +447,13 @@ const DISPATCHERS: readonly DispatcherFnType[] = [
  * @group OWL Import
  */
 export class OwlImporter {
-  private readonly baseIRI: string;
+  private readonly baseIri: string;
   private readonly curie: CurieInterface;
   private readonly logger: LoggerInterface;
   private readonly prefixes: PrefixMapType;
 
   public constructor(options: OwlImporterOptionsType) {
-    this.baseIRI = options.baseIRI;
+    this.baseIri = options.baseIri;
     this.logger = options.logger ?? SILENT_LOGGER;
     this.prefixes = {
       ...STANDARD_PREFIXES,
@@ -485,7 +485,7 @@ export class OwlImporter {
   public import(jsonLd: QuadInterface[] | Record<string, unknown> | string): OwlImportResultType {
     const quads = normalizeInput(jsonLd);
     const graph = SchemaGraph.fromQuads(quads, {
-      'baseIRI': this.baseIRI,
+      'baseIri': this.baseIri,
       'prefixes': this.prefixes
     });
     const allClassIris = collectClassIris(quads);
@@ -498,7 +498,7 @@ export class OwlImporter {
     const ctx: OwlImportContextType = {
       allClassIris,
       allPropertyIris,
-      'baseIRI': this.baseIRI,
+      'baseIri': this.baseIri,
       'curie': this.curie,
       graph,
       'isDatatype': (iri: string): boolean => {

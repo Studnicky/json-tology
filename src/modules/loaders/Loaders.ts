@@ -30,7 +30,7 @@ const HTTP_SERVER_ERROR_MIN = 500;
  * });
  *
  * const jt = JsonTology.create({
- *   baseIRI: 'https://example.com',
+ *   baseIri: 'https://example.com',
  *   prefetched: snapshot,
  *   schemas: [LocalSchema] as const,
  * });

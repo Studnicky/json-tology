@@ -177,7 +177,7 @@ const WikipediaSummarySchema = {
 // bibliographic record, not a priced inventory listing.
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.org/etl',
+  'baseIri': 'https://example.org/etl',
   'schemas': [
     // BibliographicRecord primitives (dependency order: PersonName before AuthorName)
     PersonNameSchema,

@@ -31,7 +31,7 @@ import { QuadFactory } from '../quads/QuadFactory.js';
  * All outputs derive from the canonical internal quad store.
  */
 export class OntologyBuilder implements OntologyBuilderInterface {
-  private readonly baseIRI: string;
+  private readonly baseIri: string;
   private readonly logger: LoggerInterface;
   private readonly prefixes: Record<string, string>;
   private readonly quadStore: QuadInterface[] = [];
@@ -42,7 +42,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Graph data enters through `addFromQuads` / `addFromJsonLd` and their SHACL variants.
    */
   public constructor(config: Readonly<OntologyBuilderOptionsType>) {
-    this.baseIRI = config.baseIRI;
+    this.baseIri = config.baseIri;
     this.logger = config.logger ?? SILENT_LOGGER;
     this.prefixes = config.prefixes;
   }
@@ -135,7 +135,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
     return {
       [JSONLD.context]: this.prefixes,
       [JSONLD.graph]: nodes,
-      [JSONLD.id]: `${this.baseIRI}/ontology/`,
+      [JSONLD.id]: `${this.baseIri}/ontology/`,
       [JSONLD.type]: 'owl:Ontology',
       'rdfs:label': 'Generated Ontology'
     };

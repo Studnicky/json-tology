@@ -680,7 +680,7 @@ describe('ontology round-trip: bookstore domain', () => {
       } as const;
 
       const localJt = JsonTology.create({
-        'baseIRI': BOOKSTORE_BASE_IRI,
+        'baseIri': BOOKSTORE_BASE_IRI,
         'enableStrictGraph': false,
         'schemas': [InlineSchema]
       });

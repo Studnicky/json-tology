@@ -44,7 +44,7 @@ const BookSchema = {
 
 function makeBookTology(): ReturnType<typeof JsonTology.create> {
   return JsonTology.create({
-    'baseIRI': 'https://bookstore.io',
+    'baseIri': 'https://bookstore.io',
     'schemas': [BookSchema]
   });
 }
@@ -176,7 +176,7 @@ const BookWithAuthorSchema = {
 void describe('VizDataCollector → TypeStringEmitter $ref and nested object', () => {
   void it('renders a $ref property as the target type name without infinite loop', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
+      'baseIri': 'https://bookstore.io',
       'schemas': [
         AuthorSchema,
         BookWithAuthorSchema

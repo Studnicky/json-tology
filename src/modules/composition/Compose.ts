@@ -85,17 +85,17 @@ function makeRestriction<
  */
 export class Compose {
   /**
-   * Restrict a property so all values satisfy `rangeClassIRI`.
+   * Restrict a property so all values satisfy `rangeClassIri`.
    *
    * Compose with `Compose.subClassOf` to attach the restriction to a class. The
-   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
-   * owl:allValuesFrom <rangeClassIRI>` and links the class via `rdfs:subClassOf`.
+   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIri>;
+   * owl:allValuesFrom <rangeClassIri>` and links the class via `rdfs:subClassOf`.
    */
   public static allValuesFrom<TProp extends string, TRange extends string>(
-    propIRI: TProp,
-    rangeClassIRI: TRange
+    propIri: TProp,
+    rangeClassIri: TRange
   ): TypedRestrictionRefType<'allValuesFrom', TProp, TRange> {
-    return makeRestriction('allValuesFrom', propIRI, rangeClassIRI);
+    return makeRestriction('allValuesFrom', propIri, rangeClassIri);
   }
 
   /**
@@ -106,7 +106,7 @@ export class Compose {
    * its subject (a Quad-typed term / `<< s p o >>`), an annotation predicate,
    * and an annotation value. All quads share the same named graph.
    *
-   * ABox emission requires a `graphIRI` — supplying none raises an error.
+   * ABox emission requires a `graphIri` — supplying none raises an error.
    *
    * `predicate` and every `$ref` in `annotations` are preserved as literal types
    * so `$ref` resolution and graph keying operate on the concrete IRI.
@@ -178,14 +178,14 @@ export class Compose {
    * Restrict a property to exactly `n` values.
    *
    * Compose with `Compose.subClassOf` to attach the restriction to a class. The
-   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
+   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIri>;
    * owl:cardinality "n"^^xsd:nonNegativeInteger`.
    */
   public static cardinality<TProp extends string, TN extends number>(
-    propIRI: TProp,
+    propIri: TProp,
     n: TN
   ): TypedRestrictionRefType<'cardinality', TProp, TN> {
-    return makeRestriction('cardinality', propIRI, n);
+    return makeRestriction('cardinality', propIri, n);
   }
 
   /**
@@ -495,15 +495,15 @@ export class Compose {
    * Restrict a property to a fixed value (`owl:hasValue`).
    *
    * Compose with `Compose.subClassOf` to attach the restriction. The OWL TBox
-   * emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
+   * emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIri>;
    * owl:hasValue <literal>`. Strings, numbers, and booleans are emitted as
    * typed literals.
    */
   public static hasValue<TProp extends string, TValue extends boolean | number | string>(
-    propIRI: TProp,
+    propIri: TProp,
     value: TValue
   ): TypedRestrictionRefType<'hasValue', TProp, TValue> {
-    return makeRestriction('hasValue', propIRI, value);
+    return makeRestriction('hasValue', propIri, value);
   }
 
   /**
@@ -536,10 +536,10 @@ export class Compose {
    * Restrict a property to at most `n` values (`owl:maxCardinality`).
    */
   public static maxCardinality<TProp extends string, TN extends number>(
-    propIRI: TProp,
+    propIri: TProp,
     n: TN
   ): TypedRestrictionRefType<'maxCardinality', TProp, TN> {
-    return makeRestriction('maxCardinality', propIRI, n);
+    return makeRestriction('maxCardinality', propIri, n);
   }
 
   private static mergeJtConfig(
@@ -562,10 +562,10 @@ export class Compose {
    * Restrict a property to at least `n` values (`owl:minCardinality`).
    */
   public static minCardinality<TProp extends string, TN extends number>(
-    propIRI: TProp,
+    propIri: TProp,
     n: TN
   ): TypedRestrictionRefType<'minCardinality', TProp, TN> {
-    return makeRestriction('minCardinality', propIRI, n);
+    return makeRestriction('minCardinality', propIri, n);
   }
 
   /**
@@ -736,17 +736,17 @@ export class Compose {
   }
 
   /**
-   * Restrict a property so at least one value satisfies `rangeClassIRI`.
+   * Restrict a property so at least one value satisfies `rangeClassIri`.
    *
    * Compose with `Compose.subClassOf` to attach the restriction to a class. The
-   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
-   * owl:someValuesFrom <rangeClassIRI>`.
+   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIri>;
+   * owl:someValuesFrom <rangeClassIri>`.
    */
   public static someValuesFrom<TProp extends string, TRange extends string>(
-    propIRI: TProp,
-    rangeClassIRI: TRange
+    propIri: TProp,
+    rangeClassIri: TRange
   ): TypedRestrictionRefType<'someValuesFrom', TProp, TRange> {
-    return makeRestriction('someValuesFrom', propIRI, rangeClassIRI);
+    return makeRestriction('someValuesFrom', propIri, rangeClassIri);
   }
 
   /**

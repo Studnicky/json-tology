@@ -164,7 +164,7 @@ export const bookstoreSchemas = [
 ] as const;
 
 export const bookstoreEntities = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': bookstoreSchemas
 });
 
@@ -183,7 +183,7 @@ export const bookstoreEntities = JsonTology.create({
 
 export function createBookstoreDocRegistry(): typeof bookstoreEntities {
   return JsonTology.create({
-    'baseIRI': 'https://bookstore.example',
+    'baseIri': 'https://bookstore.example',
     'enableStrictGraph': false,
     'schemas': bookstoreSchemas
   });

@@ -219,7 +219,7 @@ void describe('SchemaRegistry registration', () => {
       'check': () => {
         // Default (strict) mode: inline schemas throw SchemaError
         const strictRegistry = JsonTology.create({
-          'baseIRI': 'https://example.io',
+          'baseIri': 'https://example.io',
           'logger': new Logger()
         }).registry;
 
@@ -247,7 +247,7 @@ void describe('SchemaRegistry registration', () => {
 
         // Permissive mode (enableStrictGraph: false): inline schemas register silently
         const permissiveRegistry = JsonTology.create({
-          'baseIRI': 'https://example.io',
+          'baseIri': 'https://example.io',
           'enableStrictGraph': false,
           'logger': new Logger()
         }).registry;
@@ -300,7 +300,7 @@ void describe('SchemaRegistry registration', () => {
       // enableStrictGraph: false — some scenarios register schemas with inline
       // nested objects to test Map-replacement semantics.
       const registry = JsonTology.create({
-        'baseIRI': 'https://example.io',
+        'baseIri': 'https://example.io',
         'enableStrictGraph': false,
         'logger': new Logger()
       }).registry;
@@ -357,7 +357,7 @@ void describe('SchemaRegistry registration', () => {
     void it(scenarioName, () => {
       const logs: string[] = [];
       const registry = JsonTology.create({
-        'baseIRI': 'https://example.io',
+        'baseIri': 'https://example.io',
         'logger': mockLogger(logs)
       }).registry;
 
@@ -417,7 +417,7 @@ void describe('SchemaRegistry validation', () => {
   } of validationScenarios) {
     void it(scenarioName, () => {
       const registry = JsonTology.create({
-        'baseIRI': 'https://example.io',
+        'baseIri': 'https://example.io',
         'logger': new Logger()
       }).registry;
 
@@ -444,7 +444,7 @@ void describe('SchemaRegistry validation', () => {
 
   void it('unregistered schema throws SchemaError from validate()', () => {
     const registry = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       'logger': new Logger()
     }).registry;
 
@@ -455,7 +455,7 @@ void describe('SchemaRegistry validation', () => {
 
   void it('unregistered schema throws SchemaError from validate() (renamed)', () => {
     const registry = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       'logger': new Logger()
     }).registry;
 
@@ -466,7 +466,7 @@ void describe('SchemaRegistry validation', () => {
 
   void it('validates at JSON Pointer', () => {
     const registry = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       'logger': new Logger()
     }).registry;
 
@@ -554,7 +554,7 @@ void describe('SchemaRegistry options', () => {
     void it(scenarioName, () => {
       const logs: string[] = [];
       const registry = JsonTology.create({
-        'baseIRI': 'https://example.io',
+        'baseIri': 'https://example.io',
         'logger': mockLogger(logs),
         ...options
       }).registry;
@@ -676,7 +676,7 @@ void describe('coerce / is / errors', () => {
   } of coerceScenarios) {
     void it(scenarioName, () => {
       const registry = JsonTology.create({
-        'baseIRI': 'https://example.io',
+        'baseIri': 'https://example.io',
         'logger': new Logger()
       }).registry;
 
@@ -717,7 +717,7 @@ void describe('coerce / is / errors', () => {
   } of isScenarios) {
     void it(scenarioName, () => {
       const registry = JsonTology.create({
-        'baseIRI': 'https://example.io',
+        'baseIri': 'https://example.io',
         'logger': new Logger()
       }).registry;
 
@@ -748,7 +748,7 @@ void describe('coerce / is / errors', () => {
   } of errorsScenarios) {
     void it(scenarioName, () => {
       const registry = JsonTology.create({
-        'baseIRI': 'https://example.io',
+        'baseIri': 'https://example.io',
         'logger': new Logger()
       }).registry;
 
@@ -921,7 +921,7 @@ void describe('Structure Validation', () => {
     {
       'check': () => {
         const registry = JsonTology.create({
-          'baseIRI': 'https://example.io',
+          'baseIri': 'https://example.io',
           'enableTypeCast': true,
           'logger': new Logger()
         }).registry;
@@ -940,7 +940,7 @@ void describe('Structure Validation', () => {
     {
       'check': () => {
         const registry = JsonTology.create({
-          'baseIRI': 'https://example.io',
+          'baseIri': 'https://example.io',
           'logger': new Logger()
         }).registry;
 
@@ -959,7 +959,7 @@ void describe('Structure Validation', () => {
     {
       'check': () => {
         const registry = JsonTology.create({
-          'baseIRI': 'https://example.io',
+          'baseIri': 'https://example.io',
           'logger': new Logger()
         }).registry;
 
@@ -977,7 +977,7 @@ void describe('Structure Validation', () => {
     {
       'check': () => {
         const registry = JsonTology.create({
-          'baseIRI': 'https://example.io',
+          'baseIri': 'https://example.io',
           'logger': new Logger()
         }).registry;
 
@@ -1043,7 +1043,7 @@ void describe('embedded-$id single-path resolution via graph index', { 'concurre
       'type': 'object'
     } as const;
 
-    const registry = JsonTology.create({ 'baseIRI': 'https://x.test' }).registry;
+    const registry = JsonTology.create({ 'baseIri': 'https://x.test' }).registry;
 
     registry.set(AddressSchema);
 
@@ -1093,7 +1093,7 @@ void describe('embedded-$id single-path resolution via graph index', { 'concurre
       'type': 'object'
     } as const;
 
-    const registry = JsonTology.create({ 'baseIRI': 'https://x.test' }).registry;
+    const registry = JsonTology.create({ 'baseIri': 'https://x.test' }).registry;
 
     registry.set(OrderSchema);
 
@@ -1134,7 +1134,7 @@ void describe('embedded-$id single-path resolution via graph index', { 'concurre
       'type': 'object'
     } as const;
 
-    const registry = JsonTology.create({ 'baseIRI': 'https://x.test' }).registry;
+    const registry = JsonTology.create({ 'baseIri': 'https://x.test' }).registry;
 
     registry.set(SchemaA);
 

@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * buildIndexSource({ ctx, collisions, header, schemasConst, registryConstName, effectiveBaseIRI, result });
+ * buildIndexSource({ ctx, collisions, header, schemasConst, registryConstName, effectiveBaseIri, result });
  * ```
  *
  * @category Codegen
@@ -19,7 +19,7 @@ export type BuildIndexSourceOptionsType = {
   /** Set of IRI base names that collided during name generation. */
   readonly 'collisions': Set<string>;
   /** Effective base IRI for `JsonTology.create`. */
-  readonly 'effectiveBaseIRI': string;
+  readonly 'effectiveBaseIri': string;
   /** Extra comment lines for the banner. */
   readonly 'header': readonly string[];
   /** Name of the exported registry constant. */

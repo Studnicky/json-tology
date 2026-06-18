@@ -107,7 +107,7 @@ export const dcatSchemas = [
 ] as const;
 
 export const dcat = JsonTology.create({
-  "baseIRI": "http://purl.org/dc/terms",
+  "baseIri": "http://purl.org/dc/terms",
   "schemas": dcatSchemas,
 } as const);
 

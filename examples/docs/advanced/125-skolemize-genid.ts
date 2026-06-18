@@ -1,8 +1,8 @@
 /**
  * Skolemize.wellKnownGenid and Skolemize.isWellKnownGenid.
  *
- * `Skolemize.wellKnownGenid(baseIRI)` returns a strategy that mints IRIs of
- * the form `<baseIRI>/.well-known/genid/<contentHash>`. These are reversible:
+ * `Skolemize.wellKnownGenid(baseIri)` returns a strategy that mints IRIs of
+ * the form `<baseIri>/.well-known/genid/<contentHash>`. These are reversible:
  * `fromQuads({ deskolemize: true })` detects the pattern and rewrites such
  * IRIs back to blank nodes on lift.
  *

@@ -81,7 +81,7 @@ export type OwlCodegenOptionsType = {
    * Base IRI used in the `JsonTology.create` call. Defaults to empty string,
    * which causes the generator to derive it from the first schema $id.
    */
-  readonly 'baseIRI'?: string | undefined;
+  readonly 'baseIri'?: string | undefined;
 
   /**
    * Extra comment lines inserted immediately after the auto-generated banner.
@@ -140,7 +140,7 @@ export type OwlRegistryDirOptionsType = {
    * Base IRI used in the `JsonTology.create` call.
    * Defaults to an IRI derived from the first schema `$id`.
    */
-  readonly 'baseIRI'?: string | undefined;
+  readonly 'baseIri'?: string | undefined;
 
   /**
    * Extra comment lines inserted after the auto-generated banner in the

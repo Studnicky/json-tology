@@ -85,7 +85,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: minProperties', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:MinProps',
@@ -126,7 +126,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: maxProperties', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:MaxProps',
@@ -164,7 +164,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: additionalProperties: false', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:AdditionalProps',
@@ -199,7 +199,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: dependentRequired', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:DepReq',
@@ -238,7 +238,7 @@ void describe('compiled-path message validation', () => {
 
   void it('keyword: anyOf', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:msg-parity:',
+      'baseIri': 'urn:msg-parity:',
       'enableStrictGraph': false
     });
 
@@ -279,7 +279,7 @@ void describe('compiled-path message validation', () => {
 
   void it('keyword: oneOf', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:msg-parity:',
+      'baseIri': 'urn:msg-parity:',
       'enableStrictGraph': false
     });
 
@@ -314,7 +314,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: uniqueItems', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:UniqueItems',
@@ -354,7 +354,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: contains', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:Contains',
@@ -393,7 +393,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: enum', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:Enum',
@@ -427,7 +427,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: format', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:Format',
@@ -458,7 +458,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: contentEncoding', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:ContentEncoding',
@@ -489,7 +489,7 @@ void describe('compiled-path message validation', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: contentMediaType', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:msg-parity:' });
+    const jt = JsonTology.create({ 'baseIri': 'urn:msg-parity:' });
 
     jt.set({
       '$id': 'urn:msg-parity:ContentMediaType',

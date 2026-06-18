@@ -25,7 +25,7 @@ const AuthorSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableStrictGraph': false,
   'prefixes': { 'bk': 'https://bookstore.example/' },
   'schemas': [AuthorSchema] as const

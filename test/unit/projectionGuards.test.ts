@@ -41,7 +41,7 @@ const LinkSchema = {
 
 void describe('Projection guard — x-jt-iriRef value validation', () => {
   const jt = JsonTology.create({
-    'baseIRI': 'https://example.com',
+    'baseIri': 'https://example.com',
     'schemas': [LinkSchema]
   });
 

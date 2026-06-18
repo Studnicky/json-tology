@@ -80,7 +80,7 @@ void describe('Transform.create()', () => {
       'name': 'happy: preserves schema identity after create',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
       }
@@ -95,7 +95,7 @@ void describe('Transform.create()', () => {
       'name': 'happy: decode normalizes the wire payload into the canonical string',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
       }
@@ -114,7 +114,7 @@ void describe('Transform.create()', () => {
       'name': 'unhappy: coerce() rejects invalid data',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
       }
@@ -128,7 +128,7 @@ void describe('Transform.create()', () => {
       'name': 'happy: encode() converts back to wire format',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
       }
@@ -147,7 +147,7 @@ void describe('Transform.create()', () => {
       'name': 'edge: encode() returns value unchanged for non-transformed schemas',
       'setup': () => {
         const jt = JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
 
@@ -165,7 +165,7 @@ void describe('Transform.create()', () => {
       'name': 'edge: identity transform decode/encode round-trips unchanged',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [IdentitySchema] as const
         });
       }
@@ -216,7 +216,7 @@ void describe('Transform.brand()', () => {
           } as const,
           'UserId'
         );
-        const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+        const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
         jt.set(UserIdSchema2);
         assert.equal(jt.validate(UserIdSchema2.$id, 'abc').length, 0);
@@ -244,7 +244,7 @@ void describe('Transform.brand()', () => {
           } as const,
           'ConstrainedId'
         );
-        const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+        const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
         jt.set(ConstrainedId);
         assert.equal(jt.validate(ConstrainedId.$id, 'abc').length, 0);
@@ -322,7 +322,7 @@ void describe('Transform contract alignment', () => {
   ];
 
   const jt = JsonTology.create({
-    'baseIRI': 'https://myapp.io',
+    'baseIri': 'https://myapp.io',
     'schemas': [
       TransformedDateSchema,
       UserSchema
@@ -429,7 +429,7 @@ void describe('Transform.chain()', () => {
       assert.equal(chained.$id, ChainSchema.$id);
 
       const jt = JsonTology.create({
-        'baseIRI': 'https://myapp.io',
+        'baseIri': 'https://myapp.io',
         'schemas': [chained] as const
       });
 
@@ -466,7 +466,7 @@ void describe('Transform bad paths', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -507,7 +507,7 @@ void describe('Transform bad paths', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -547,7 +547,7 @@ void describe('Transform bad paths', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -588,7 +588,7 @@ void describe('Transform bad paths', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -615,7 +615,7 @@ void describe('Transform bad paths', () => {
     assert.equal(chained.type, IdentityChainSchema.type);
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [chained] as const
     });
 
@@ -676,7 +676,7 @@ void describe('Transform error taxonomy — new contract coverage', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -714,7 +714,7 @@ void describe('Transform error taxonomy — new contract coverage', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 

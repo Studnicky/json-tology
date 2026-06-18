@@ -92,7 +92,7 @@ export function runSerializeBench(): BenchResult[] {
   // dump — schema without transforms (compares to JSON.stringify baseline)
   // -------------------------------------------------------------------------
   const jt = JsonTology.create({
-    'baseIRI': 'urn:bench:serialize',
+    'baseIri': 'urn:bench:serialize',
     'enableStrictGraph': false,
     'schemas': [
       ...bookstoreBenchSchemas,

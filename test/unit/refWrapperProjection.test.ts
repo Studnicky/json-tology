@@ -99,7 +99,7 @@ void describe('ABox projection through transparent $ref wrappers', { 'concurrenc
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         TimestampSchema,
         EventSchema
@@ -126,7 +126,7 @@ void describe('ABox projection through transparent $ref wrappers', { 'concurrenc
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         TimestampSchema,
         EventSchema
@@ -149,7 +149,7 @@ void describe('ABox projection through transparent $ref wrappers', { 'concurrenc
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         LatSchema,
         LonSchema,
@@ -210,7 +210,7 @@ void describe('ABox projection through transparent $ref wrappers', { 'concurrenc
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         LatSchema,
         LonSchema,

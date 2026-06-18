@@ -117,13 +117,13 @@ export class SchemaGraph implements SchemaGraphInterface {
    * - semantics() returns an empty stub; dispatchers must traverse allRelations().
    *
    * @param quads  - Flat array of rdf/js-compatible quads (prefixed or full IRIs).
-   * @param options - Optional baseIRI and additional prefix mappings merged
+   * @param options - Optional baseIri and additional prefix mappings merged
    *                  with STANDARD_PREFIXES.
    * @returns A SchemaGraphInterface backed by the supplied quads.
    */
   public static fromQuads(
     quads: readonly QuadInterface[],
-    options?: { 'baseIRI'?: string;
+    options?: { 'baseIri'?: string;
       'prefixes'?: PrefixMapType }
   ): SchemaGraphInterface {
     return new QuadBackedSchemaGraph(quads, options);

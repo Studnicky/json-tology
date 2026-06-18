@@ -268,7 +268,7 @@ void describe('Fix 4b — $dynamicRef "#" spec-legal no-op validates successfull
     };
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://hardening.test/',
+      'baseIri': 'https://hardening.test/',
       'enableStrictGraph': false
     });
 

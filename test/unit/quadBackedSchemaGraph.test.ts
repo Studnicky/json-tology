@@ -46,7 +46,7 @@ void describe('QuadBackedSchemaGraph.collectList', { 'concurrency': true }, () =
       ]
     )];
 
-    const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
+    const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' });
     // The parent quad's object is the bnode list head.
     const parentRelation = graph.allRelations().find((rel) => {
       return rel.predicate === 'owl:intersectionOf' || rel.predicate === OWL_INTERSECTION_OF;
@@ -80,7 +80,7 @@ void describe('QuadBackedSchemaGraph.collectList', { 'concurrency': true }, () =
   });
 
   void it('returns an empty array for rdf:nil heads', () => {
-    const graph = SchemaGraph.fromQuads([], { 'baseIRI': 'urn:test' });
+    const graph = SchemaGraph.fromQuads([], { 'baseIri': 'urn:test' });
 
     assert.deepEqual(graph.collectList('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'), []);
     assert.deepEqual(graph.collectList(''), []);
@@ -97,7 +97,7 @@ void describe('QuadBackedSchemaGraph.collectList', { 'concurrency': true }, () =
       ]
     );
 
-    const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
+    const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' });
     const parent = graph.allRelations().find((rel) => {
       return rel.predicate === 'owl:intersectionOf' || rel.predicate === OWL_INTERSECTION_OF;
     });
@@ -136,7 +136,7 @@ void describe('QuadBackedSchemaGraph.relationsForSubject', { 'concurrency': true
       )
     ];
 
-    const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
+    const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' });
     const relations = graph.relationsForSubject(classIri);
 
     assert.equal(relations.length, 2);
@@ -163,7 +163,7 @@ void describe('QuadBackedSchemaGraph.relationsForSubject', { 'concurrency': true
       )
     ];
 
-    const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
+    const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' });
     const siblings = graph.relationsForSubject(bnodeId);
 
     assert.equal(siblings.length, 3, 'all three sibling predicates returned');
@@ -182,7 +182,7 @@ void describe('QuadBackedSchemaGraph.relationsForSubject', { 'concurrency': true
   });
 
   void it('returns an empty array for unknown subjects', () => {
-    const graph = SchemaGraph.fromQuads([], { 'baseIRI': 'urn:test' });
+    const graph = SchemaGraph.fromQuads([], { 'baseIri': 'urn:test' });
 
     assert.deepEqual(graph.relationsForSubject('urn:nope'), []);
   });
@@ -210,7 +210,7 @@ void describe('QuadBackedSchemaGraph literal-tag preservation', { 'concurrency':
       )
     ];
 
-    const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
+    const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' });
     const labels = graph.relationsForSubject(subject).filter((rel) => {
       return rel.predicate === 'rdfs:label' || rel.predicate === RDFS_LABEL;
     });
@@ -236,7 +236,7 @@ void describe('QuadBackedSchemaGraph literal-tag preservation', { 'concurrency':
       Terms.literal(5, { 'datatype': Terms.iri(XSD_INTEGER) })
     )];
 
-    const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
+    const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' });
     const relations = graph.relationsForSubject(subject);
 
     assert.equal(relations.length, 1);

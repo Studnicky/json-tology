@@ -43,7 +43,7 @@ function chain(depth: number): Record<string, unknown> {
 void describe('refStack leak — compiled validator idempotence', { 'concurrency': false }, () => {
   void it('after one validation call, a subsequent call with invalid $ref data returns valid:false', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:refstack:',
+      'baseIri': 'urn:refstack:',
       'enableStrictGraph': false,
       'schemas': [NodeSchema] as const
     });
