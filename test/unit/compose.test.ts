@@ -468,8 +468,13 @@ import {
           const missingId = reg.validate(schema.$id, { 'name': 'Alice' });
 
           assert.equal(missingId.length, 1);
-          assert.equal(missingId.items[0]?.keyword, 'required');
-          assert.equal(missingId.items[0]?.params.missingProperty, 'id');
+          const missingItem = missingId.items.at(0);
+
+          if (missingItem === undefined) {
+            throw new Error('expected missingId.items[0]');
+          }
+          assert.equal(missingItem.keyword, 'required');
+          assert.equal(missingItem.params.missingProperty, 'id');
         },
         'name': 'validates picked schema correctly'
       },
@@ -821,7 +826,12 @@ import {
             (grouped[err.path || '_root'] ??= []).push(err);
           }
 
-          assert.deepEqual(grouped._root.map((err) => {
+          const rootErrors = grouped['_root'];
+
+          if (rootErrors === undefined) {
+            throw new Error('expected _root group in grouped errors');
+          }
+          assert.deepEqual(rootErrors.map((err) => {
             return err.message;
           }), ['must be object']);
         },
@@ -986,9 +996,18 @@ import {
       {
         'check': (mapped) => {
           assert.equal(mapped.length, 2);
-          assert.equal(mapped.items[0].path, '/name');
-          assert.equal(mapped.items[0].message, 'must be string');
-          assert.equal(mapped.items[1].message, 'Validation failed');
+          const item0 = mapped.items.at(0);
+          const item1 = mapped.items.at(1);
+
+          if (item0 === undefined) {
+            throw new Error('expected items[0]');
+          }
+          if (item1 === undefined) {
+            throw new Error('expected items[1]');
+          }
+          assert.equal(item0.path, '/name');
+          assert.equal(item0.message, 'must be string');
+          assert.equal(item1.message, 'Validation failed');
         },
         'input': [
           {
@@ -1008,7 +1027,12 @@ import {
       {
         'check': (mapped) => {
           assert.equal(mapped.length, 1);
-          assert.equal(mapped.items[0].keyword, 'unknown');
+          const item = mapped.items.at(0);
+
+          if (item === undefined) {
+            throw new Error('expected items[0]');
+          }
+          assert.equal(item.keyword, 'unknown');
         },
         'input': null,
         'name': 'null input produces single unknown error'
@@ -1016,7 +1040,12 @@ import {
       {
         'check': (mapped) => {
           assert.equal(mapped.length, 1);
-          assert.equal(mapped.items[0].keyword, 'unknown');
+          const item = mapped.items.at(0);
+
+          if (item === undefined) {
+            throw new Error('expected items[0]');
+          }
+          assert.equal(item.keyword, 'unknown');
         },
         'input': undefined,
         'name': 'undefined input produces single unknown error'
@@ -1024,7 +1053,12 @@ import {
       {
         'check': (mapped) => {
           assert.equal(mapped.length, 1);
-          assert.equal(mapped.items[0].keyword, 'unknown');
+          const item = mapped.items.at(0);
+
+          if (item === undefined) {
+            throw new Error('expected items[0]');
+          }
+          assert.equal(item.keyword, 'unknown');
         },
         'input': [],
         'name': 'empty array produces single unknown error'
@@ -1113,9 +1147,22 @@ import {
           const chain = deep.flatten();
 
           assert.equal(chain.length, 3);
-          assert.equal(chain[0].code, 'L1');
-          assert.equal(chain[1].code, 'L2');
-          assert.equal(chain[2].code, 'L3');
+          const c0 = chain.at(0);
+          const c1 = chain.at(1);
+          const c2 = chain.at(2);
+
+          if (c0 === undefined) {
+            throw new Error('expected chain[0]');
+          }
+          if (c1 === undefined) {
+            throw new Error('expected chain[1]');
+          }
+          if (c2 === undefined) {
+            throw new Error('expected chain[2]');
+          }
+          assert.equal(c0.code, 'L1');
+          assert.equal(c1.code, 'L2');
+          assert.equal(c2.code, 'L3');
         },
         'name': 'flatten walks the full cause chain'
       }
@@ -1153,10 +1200,23 @@ import {
           const flat = err.flatten();
 
           assert.equal(flat.length, 3);
-          assert.equal(flat[0].code, 'INSTANTIATION_FAILED');
-          assert.equal(flat[1].code, 'required');
-          assert.match(flat[1].message, /missing name/u);
-          assert.equal(flat[2].code, 'type');
+          const f0 = flat.at(0);
+          const f1 = flat.at(1);
+          const f2 = flat.at(2);
+
+          if (f0 === undefined) {
+            throw new Error('expected flat[0]');
+          }
+          if (f1 === undefined) {
+            throw new Error('expected flat[1]');
+          }
+          if (f2 === undefined) {
+            throw new Error('expected flat[2]');
+          }
+          assert.equal(f0.code, 'INSTANTIATION_FAILED');
+          assert.equal(f1.code, 'required');
+          assert.match(f1.message, /missing name/u);
+          assert.equal(f2.code, 'type');
         },
         'name': 'flatten appends validation items after base entry'
       },
@@ -1183,8 +1243,17 @@ import {
           const errors = (json as Record<string, unknown>).errors as Array<Record<string, unknown>>;
 
           assert.equal(errors.length, 2);
-          assert.equal(errors[0].keyword, 'required');
-          assert.equal(errors[1].path, '/age');
+          const e0 = errors.at(0);
+          const e1 = errors.at(1);
+
+          if (e0 === undefined) {
+            throw new Error('expected errors[0]');
+          }
+          if (e1 === undefined) {
+            throw new Error('expected errors[1]');
+          }
+          assert.equal(e0.keyword, 'required');
+          assert.equal(e1.path, '/age');
         },
         'name': 'toJson includes errors array'
       }
@@ -1562,13 +1631,22 @@ import {
       'assertions': (result) => {
         assert.strictEqual(result.$id, 'https://example.io/conflicting', 'conflicting types — $id');
         assert.strictEqual(result.allOf.length, 2, 'conflicting types — allOf length');
+        const allOf0 = result.allOf.at(0);
+        const allOf1 = result.allOf.at(1);
+
+        if (allOf0 === undefined) {
+          throw new Error('expected allOf[0]');
+        }
+        if (allOf1 === undefined) {
+          throw new Error('expected allOf[1]');
+        }
         assert.strictEqual(
-          (result.allOf[0]).type,
+          allOf0.type,
           'string',
           'conflicting types — first type'
         );
         assert.strictEqual(
-          (result.allOf[1]).type,
+          allOf1.type,
           'number',
           'conflicting types — second type'
         );
@@ -1655,13 +1733,28 @@ import {
         assert.deepStrictEqual(result.discriminator, { 'propertyName': 'tag' }, 'mixed discriminator — discriminator');
         assert.strictEqual(result.oneOf.length, 2, 'mixed discriminator — oneOf length');
 
-        const first = result.oneOf[0];
-        const second = result.oneOf[1];
+        const first = result.oneOf.at(0);
+        const second = result.oneOf.at(1);
+
+        if (first === undefined) {
+          throw new Error('expected oneOf[0]');
+        }
+        if (second === undefined) {
+          throw new Error('expected oneOf[1]');
+        }
         const firstProps = first.properties as Record<string, Record<string, unknown>>;
         const secondProps = second.properties as Record<string, Record<string, unknown>>;
+        const firstTag = firstProps['tag'];
+        const secondTag = secondProps['tag'];
 
-        assert.strictEqual(firstProps.tag.type, 'string', 'mixed discriminator — first tag type');
-        assert.strictEqual(secondProps.tag.type, 'number', 'mixed discriminator — second tag type');
+        if (firstTag === undefined) {
+          throw new Error('expected firstProps.tag');
+        }
+        if (secondTag === undefined) {
+          throw new Error('expected secondProps.tag');
+        }
+        assert.strictEqual(firstTag.type, 'string', 'mixed discriminator — first tag type');
+        assert.strictEqual(secondTag.type, 'number', 'mixed discriminator — second tag type');
       },
       'discriminator': 'tag',
       'name': 'accepts variants where discriminator property has different types',
@@ -1832,8 +1925,11 @@ import {
         'allOf': Array<Record<string, unknown>>;
       };
 
-      const additions = result.allOf[1];
+      const additions = result.allOf.at(1);
 
+      if (additions === undefined) {
+        throw new Error('expected allOf[1]');
+      }
       assert.strictEqual(additions.type, 'object');
       const props = additions.properties as Record<string, unknown>;
 
@@ -1943,9 +2039,14 @@ import {
       assert.strictEqual(Weapon.$id, 'aonprd:WeaponSub');
       assert.strictEqual(Weapon.allOf.length, 2);
       assert.deepStrictEqual(Weapon.allOf[0], { '$ref': 'aonprd:Equipment' });
-      assert.strictEqual((Weapon.allOf[1]).type, 'object');
+      const weaponAllOf1 = Weapon.allOf.at(1);
+
+      if (weaponAllOf1 === undefined) {
+        throw new Error('expected Weapon.allOf[1]');
+      }
+      assert.strictEqual(weaponAllOf1.type, 'object');
       assert.deepStrictEqual(
-        (Weapon.allOf[1].properties as Record<string, unknown>).damage,
+        (weaponAllOf1.properties as Record<string, unknown>).damage,
         { 'type': 'string' }
       );
     });
@@ -1970,7 +2071,12 @@ import {
       assert.strictEqual(Scoped.allOf.length, 3);
       assert.deepStrictEqual(Scoped.allOf[0], { '$ref': 'urn:auth:BearerToken' });
       assert.deepStrictEqual(Scoped.allOf[1], { '$ref': 'urn:auth:ScopedToken' });
-      assert.strictEqual((Scoped.allOf[2]).type, 'object');
+      const scopedAllOf2 = Scoped.allOf.at(2);
+
+      if (scopedAllOf2 === undefined) {
+        throw new Error('expected Scoped.allOf[2]');
+      }
+      assert.strictEqual(scopedAllOf2.type, 'object');
     });
 
     void it('omits body block when only $id is supplied', () => {
@@ -2104,9 +2210,14 @@ import {
       const errs = jt.validate(Armor as unknown as { '$id': string }, both);
 
       assert.strictEqual(errs.length, 1, 'one disjointWith error expected');
-      assert.strictEqual(errs.items[0].keyword, 'disjointWith');
+      const errItem0 = errs.items.at(0);
+
+      if (errItem0 === undefined) {
+        throw new Error('expected errs.items[0]');
+      }
+      assert.strictEqual(errItem0.keyword, 'disjointWith');
       assert.strictEqual(
-        (errs.items[0].params).disjointTarget,
+        (errItem0.params).disjointTarget,
         'urn:aonprd:DisjointEnforce:Weapon'
       );
     });

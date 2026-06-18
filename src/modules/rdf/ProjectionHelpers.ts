@@ -206,9 +206,10 @@ export function resolveCanonicalPropertyIri(args: {
   }
 
   const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
-  const classId = domainRels.length > 0
-    ? ProjectionIndex.relationTargetId(domainRels[0])
-    : SchemaIri.structuralParent(propSubject);
+  const firstDomainRel = domainRels[0];
+  const classId = firstDomainRel === undefined
+    ? SchemaIri.structuralParent(propSubject)
+    : ProjectionIndex.relationTargetId(firstDomainRel);
   const propName = SchemaIri.lastSegment(propSubject);
   const propertySchema = resolvePropertySchema(graph, propSubject);
 

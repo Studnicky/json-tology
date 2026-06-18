@@ -49,6 +49,10 @@ export class Operations {
     for (let i = 0; i < segments.length - 1; i++) {
       const segment = segments[i];
 
+      if (segment === undefined) {
+        break;
+      }
+
       if (segment === '__proto__' || segment === 'constructor' || segment === 'prototype') {
         return result;
       }

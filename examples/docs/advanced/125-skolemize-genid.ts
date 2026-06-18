@@ -53,7 +53,12 @@ console.log('isWellKnownGenid(plain IRI):', isGenidPlain);
 console.log('isWellKnownGenid(\'\'):', isGenidEmpty);
 
 // Round-trip: deskolemize recovers the original typed object from genid quads.
-const [restored] = bookstoreEntities.fromQuads(CustomerSchema.$id, quads, { 'deskolemize': true });
+const restoredList = bookstoreEntities.fromQuads(CustomerSchema.$id, quads, { 'deskolemize': true });
+const restored = restoredList[0];
+
+if (restored === undefined) {
+  throw new Error('expected restored customer');
+}
 
 console.assert(
   restored.customerId === customer.customerId,

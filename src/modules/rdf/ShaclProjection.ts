@@ -70,7 +70,13 @@ function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndex
   const rangeRels = targetEntry.byPredicate.get(RDFS.range) ?? [];
 
   if (rangeRels.length > 0) {
-    return ProjectionIndex.relationTargetId(rangeRels[0]);
+    const rangeRel0 = rangeRels.at(0);
+
+    if (rangeRel0 === undefined) {
+      return targetNodeId;
+    }
+
+    return ProjectionIndex.relationTargetId(rangeRel0);
   }
 
   return targetNodeId;
@@ -289,7 +295,9 @@ class ShaclVocabProjection extends VocabProjection {
 
       const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
 
-      if (domainRels.length === 0 || ProjectionIndex.relationTargetId(domainRels[0]) !== thenRef) {
+      const domainRel0 = domainRels.at(0);
+
+      if (domainRels.length === 0 || domainRel0 === undefined || ProjectionIndex.relationTargetId(domainRel0) !== thenRef) {
         continue;
       }
 
@@ -713,15 +721,24 @@ function emitNodeShapeEquivalences(
   const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
 
   if (complementRels.length > 0) {
-    const compRef = resolveTargetRef(ProjectionIndex.relationTargetId(complementRels[0]), index);
+    const complementRel0 = complementRels.at(0);
 
-    quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(compRef, { curie }), { curie }));
+    if (complementRel0 !== undefined) {
+      const compRef = resolveTargetRef(ProjectionIndex.relationTargetId(complementRel0), index);
+
+      quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(compRef, { curie }), { curie }));
+    }
   }
 
   const disjointRels = entry.byPredicate.get(OWL.disjointWith) ?? [];
 
   if (complementRels.length === 0 && disjointRels.length > 0) {
-    const disjRef = resolveTargetRef(ProjectionIndex.relationTargetId(disjointRels[0]), index);
+    const disjointRel0 = disjointRels.at(0);
+
+    if (disjointRel0 === undefined) {
+      return;
+    }
+    const disjRef = resolveTargetRef(ProjectionIndex.relationTargetId(disjointRel0), index);
 
     quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(disjRef, { curie }), { curie }));
   }
@@ -771,7 +788,12 @@ function emitCountConstraint(args: EmitCountConstraintArgsType): void {
   if (rels.length === 0) {
     return;
   }
-  const count = Number(ProjectionIndex.relationTargetId(rels[0]));
+  const rel0 = rels.at(0);
+
+  if (rel0 === undefined) {
+    return;
+  }
+  const count = Number(ProjectionIndex.relationTargetId(rel0));
 
   quads.push(QuadFactory.quad(bnodeId, predicate, QuadFactory.literal(count, XSD.integer, opts), opts));
 }
@@ -785,7 +807,12 @@ function emitRangeConstraint(args: EmitRangeConstraintArgsType): void {
   if (rangeRels.length === 0) {
     return;
   }
-  const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), opts);
+  const rangeRel0 = rangeRels.at(0);
+
+  if (rangeRel0 === undefined) {
+    return;
+  }
+  const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRel0), opts);
   const rangePredicate = datatypeRels.length > 0 || rangeRels.length > 1 ? SH.class : SH.node;
 
   quads.push(QuadFactory.quad(bnodeId, rangePredicate, rangeIri, opts));
@@ -799,7 +826,12 @@ function emitPropertyShapeTypeConstraints(args: EmitPropertyShapeConstraintsArgs
   const rangeRels = entry.byPredicate.get(RDFS.range) ?? [];
 
   if (datatypeRels.length > 0 && rangeRels.length === 0) {
-    const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), opts);
+    const datatypeRel0 = datatypeRels.at(0);
+
+    if (datatypeRel0 === undefined) {
+      return;
+    }
+    const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRel0), opts);
 
     quads.push(QuadFactory.quad(bnodeId, SH.datatype, datatypeIri, opts));
   }
@@ -834,7 +866,12 @@ function emitPropertyShapeValueConstraints(args: EmitPropertyShapeConstraintsArg
   const hasValueRels = entry.byPredicate.get(OWL.hasValue) ?? [];
 
   if (hasValueRels.length > 0) {
-    const hasValueLit = QuadFactory.literal(ProjectionIndex.relationTargetId(hasValueRels[0]), XSD.string, opts);
+    const hasValueRel0 = hasValueRels.at(0);
+
+    if (hasValueRel0 === undefined) {
+      return;
+    }
+    const hasValueLit = QuadFactory.literal(ProjectionIndex.relationTargetId(hasValueRel0), XSD.string, opts);
 
     quads.push(QuadFactory.quad(bnodeId, SH.hasValue, hasValueLit, opts));
   }
@@ -877,8 +914,9 @@ function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
   quads.push(QuadFactory.quad(bnodeId, RDF.type, QuadFactory.iri(SH.PropertyShape, opts), opts));
 
   const domainRels = entry.byPredicate.get(RDFS.domain) ?? [];
+  const domainRel0 = domainRels.at(0);
   const pathClassId = overridePathClassId
-    ?? (domainRels.length > 0 ? ProjectionIndex.relationTargetId(domainRels[0]) : classId);
+    ?? (domainRels.length > 0 && domainRel0 !== undefined ? ProjectionIndex.relationTargetId(domainRel0) : classId);
   const propName = SchemaIri.lastSegment(subject);
   const propertySchema = resolvePropertySchema(graph, subject);
   const canonicalId = predicateResolver === undefined
@@ -935,16 +973,25 @@ function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinality
   const minQualRels = entry.byPredicate.get(OWL.minQualifiedCardinality) ?? [];
 
   if (minQualRels.length > 0) {
-    const minQual = Number(ProjectionIndex.relationTargetId(minQualRels[0]));
-    const minQualLit = QuadFactory.literal(minQual, XSD.integer, { curie });
+    const minQualRel0 = minQualRels.at(0);
 
-    quads.push(QuadFactory.quad(psBnode, SH.qualifiedMinCount, minQualLit, { curie }));
+    if (minQualRel0 !== undefined) {
+      const minQual = Number(ProjectionIndex.relationTargetId(minQualRel0));
+      const minQualLit = QuadFactory.literal(minQual, XSD.integer, { curie });
+
+      quads.push(QuadFactory.quad(psBnode, SH.qualifiedMinCount, minQualLit, { curie }));
+    }
   }
 
   const maxQualRels = entry.byPredicate.get(OWL.maxQualifiedCardinality) ?? [];
 
   if (maxQualRels.length > 0) {
-    const maxQual = Number(ProjectionIndex.relationTargetId(maxQualRels[0]));
+    const maxQualRel0 = maxQualRels.at(0);
+
+    if (maxQualRel0 === undefined) {
+      return;
+    }
+    const maxQual = Number(ProjectionIndex.relationTargetId(maxQualRel0));
     const maxQualLit = QuadFactory.literal(maxQual, XSD.integer, { curie });
 
     quads.push(QuadFactory.quad(psBnode, SH.qualifiedMaxCount, maxQualLit, { curie }));
@@ -968,7 +1015,13 @@ function emitContainsPropertyShape(
     return;
   }
 
-  const structure = containsRels[0].structure;
+  const containsRel0 = containsRels.at(0);
+
+  if (containsRel0 === undefined) {
+    return;
+  }
+
+  const structure = containsRel0.structure;
 
   if (!ProjectionIndex.isRestrictionStructure(structure)) {
     return;

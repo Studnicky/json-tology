@@ -197,8 +197,13 @@ import {
           const errs = jt.validate(UserSchema, { 'name': 'Alice' });
 
           assert.ok(errs.length > 0);
-          assert.ok(typeof errs.items[0].path === 'string');
-          assert.ok(typeof errs.items[0].message === 'string');
+          const errsFirst = errs.items[0];
+
+          if (errsFirst === undefined) {
+            throw new Error('errs.items[0] missing');
+          }
+          assert.ok(typeof errsFirst.path === 'string');
+          assert.ok(typeof errsFirst.message === 'string');
         },
         'data': { 'name': 'Alice' },
         'method': 'validate',
@@ -864,9 +869,14 @@ import {
 
       assert.equal(result.ok, false);
       assert.ok(result.length > 0);
-      assert.ok(typeof result.items[0].path === 'string');
-      assert.ok(typeof result.items[0].keyword === 'string');
-      assert.ok(typeof result.items[0].message === 'string');
+      const resultFirst = result.items[0];
+
+      if (resultFirst === undefined) {
+        throw new Error('result.items[0] missing');
+      }
+      assert.ok(typeof resultFirst.path === 'string');
+      assert.ok(typeof resultFirst.keyword === 'string');
+      assert.ok(typeof resultFirst.message === 'string');
     });
 
     void it('is iterable over ValidationErrorType items', () => {
@@ -874,7 +884,12 @@ import {
       const collected = [...result];
 
       assert.equal(collected.length, result.length);
-      assert.ok(typeof collected[0].keyword === 'string');
+      const collectedFirst = collected[0];
+
+      if (collectedFirst === undefined) {
+        throw new Error('collected[0] missing');
+      }
+      assert.ok(typeof collectedFirst.keyword === 'string');
     });
   });
 

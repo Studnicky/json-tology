@@ -267,9 +267,14 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     });
 
     assert.ok(discReports.length > 0, 'discriminator detection should be reported');
+    const discReport0 = discReports.at(0);
+
+    if (discReport0 === undefined) {
+      throw new Error('expected discriminator report at index 0');
+    }
     assert.ok(
-      discReports[0].axiomIri.includes('kind'),
-      `discriminator property name should include 'kind'; got: ${discReports[0].axiomIri}`
+      discReport0.axiomIri.includes('kind'),
+      `discriminator property name should include 'kind'; got: ${discReport0.axiomIri}`
     );
   });
 

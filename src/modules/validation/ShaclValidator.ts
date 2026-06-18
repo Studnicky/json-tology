@@ -136,7 +136,11 @@ function collectRdfListValues(
     const firstArr = node.get(RDF.first);
 
     if (firstArr !== undefined && firstArr.length > 0) {
-      values.push(firstArr[0]);
+      const firstVal = firstArr.at(0);
+
+      if (firstVal !== undefined) {
+        values.push(firstVal);
+      }
     }
 
     const restArr = node.get(RDF.rest);
@@ -145,7 +149,13 @@ function collectRdfListValues(
       break;
     }
 
-    current = restArr[0];
+    const next = restArr.at(0);
+
+    if (next === undefined) {
+      break;
+    }
+
+    current = next;
   }
 
   return values;
@@ -244,11 +254,17 @@ function buildShapeView(shapeId: string, shapeIndex: SubjectPredicateIndexType):
       continue;
     }
 
+    const pathFirst = pathArr.at(0);
+
+    if (pathFirst === undefined) {
+      continue;
+    }
+
     propertyShapes.push({
       'bnodeId': bnodeId,
       'constraints': extractConstraints(bnodeId, shapeIndex),
       'isDeactivated': isDeactivated(bnodeId, shapeIndex),
-      'path': pathArr[0]
+      'path': pathFirst
     });
   }
 
@@ -398,7 +414,13 @@ function evalMinCount(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const min = parseNumeric(minCountArr[0]);
+  const minCountVal = minCountArr.at(0);
+
+  if (minCountVal === undefined) {
+    return [];
+  }
+
+  const min = parseNumeric(minCountVal);
 
   if (Number.isNaN(min) || args.valueCount >= min) {
     return [];
@@ -422,7 +444,13 @@ function evalMaxCount(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const max = parseNumeric(maxCountArr[0]);
+  const maxCountVal = maxCountArr.at(0);
+
+  if (maxCountVal === undefined) {
+    return [];
+  }
+
+  const max = parseNumeric(maxCountVal);
 
   if (Number.isNaN(max) || args.valueCount <= max) {
     return [];
@@ -520,7 +548,13 @@ function evalMinLength(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const min = parseNumeric(minLenArr[0]);
+  const minLenVal = minLenArr.at(0);
+
+  if (minLenVal === undefined) {
+    return [];
+  }
+
+  const min = parseNumeric(minLenVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
@@ -547,7 +581,13 @@ function evalMaxLength(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const max = parseNumeric(maxLenArr[0]);
+  const maxLenVal = maxLenArr.at(0);
+
+  if (maxLenVal === undefined) {
+    return [];
+  }
+
+  const max = parseNumeric(maxLenVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
@@ -574,7 +614,13 @@ function evalMinInclusive(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const min = parseNumeric(minArr[0]);
+  const minInclusiveVal = minArr.at(0);
+
+  if (minInclusiveVal === undefined) {
+    return [];
+  }
+
+  const min = parseNumeric(minInclusiveVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
@@ -585,7 +631,7 @@ function evalMinInclusive(args: EvalArgsType): ShaclValidationResultType[] {
         args.focusNode,
         args.path,
         SH.MinInclusiveConstraintComponent,
-        `Value ${value} is less than sh:minInclusive ${minArr[0]}.`,
+        `Value ${value} is less than sh:minInclusive ${minInclusiveVal}.`,
         value,
         args.shapeId
       ));
@@ -603,7 +649,13 @@ function evalMaxInclusive(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const max = parseNumeric(maxArr[0]);
+  const maxInclusiveVal = maxArr.at(0);
+
+  if (maxInclusiveVal === undefined) {
+    return [];
+  }
+
+  const max = parseNumeric(maxInclusiveVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
@@ -614,7 +666,7 @@ function evalMaxInclusive(args: EvalArgsType): ShaclValidationResultType[] {
         args.focusNode,
         args.path,
         SH.MaxInclusiveConstraintComponent,
-        `Value ${value} exceeds sh:maxInclusive ${maxArr[0]}.`,
+        `Value ${value} exceeds sh:maxInclusive ${maxInclusiveVal}.`,
         value,
         args.shapeId
       ));
@@ -632,7 +684,13 @@ function evalMinExclusive(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const min = parseNumeric(minArr[0]);
+  const minExclusiveVal = minArr.at(0);
+
+  if (minExclusiveVal === undefined) {
+    return [];
+  }
+
+  const min = parseNumeric(minExclusiveVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
@@ -643,7 +701,7 @@ function evalMinExclusive(args: EvalArgsType): ShaclValidationResultType[] {
         args.focusNode,
         args.path,
         SH.MinExclusiveConstraintComponent,
-        `Value ${value} must be greater than sh:minExclusive ${minArr[0]}.`,
+        `Value ${value} must be greater than sh:minExclusive ${minExclusiveVal}.`,
         value,
         args.shapeId
       ));
@@ -661,7 +719,13 @@ function evalMaxExclusive(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const max = parseNumeric(maxArr[0]);
+  const maxExclusiveVal = maxArr.at(0);
+
+  if (maxExclusiveVal === undefined) {
+    return [];
+  }
+
+  const max = parseNumeric(maxExclusiveVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
@@ -672,7 +736,7 @@ function evalMaxExclusive(args: EvalArgsType): ShaclValidationResultType[] {
         args.focusNode,
         args.path,
         SH.MaxExclusiveConstraintComponent,
-        `Value ${value} must be less than sh:maxExclusive ${maxArr[0]}.`,
+        `Value ${value} must be less than sh:maxExclusive ${maxExclusiveVal}.`,
         value,
         args.shapeId
       ));
@@ -716,7 +780,11 @@ function evalIn(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const listHead = inArr[0];
+  const listHead = inArr.at(0);
+
+  if (listHead === undefined) {
+    return [];
+  }
   const allowed = collectRdfListValues(listHead, args.shapeIndex);
 
   if (allowed.length === 0) {
@@ -879,7 +947,12 @@ function evalQualifiedValueShape(
     return [];
   }
 
-  const qvsRef = qvsArr[0];
+  const qvsRef = qvsArr.at(0);
+
+  if (qvsRef === undefined) {
+    return [];
+  }
+
   const innerShape = ctx.resolveShape(qvsRef);
   // A blank-node inner shape constraining only sh:datatype validates the value
   // nodes' datatype at the parent path (the values are literals, whose datatype
@@ -888,7 +961,7 @@ function evalQualifiedValueShape(
     && innerShape?.propertyShapes.length === 0
     && innerShape.constraints.has(SH.datatype)
     && !innerShape.constraints.has(SH.node);
-  const expectedDt = datatypeOnly ? innerShape.constraints.get(SH.datatype)?.[0] : undefined;
+  const expectedDt = datatypeOnly ? innerShape.constraints.get(SH.datatype)?.at(0) : undefined;
   const actualDts = args.datatypeBySubjectPredicate.get(args.focusNode)?.get(args.path) ?? [];
   const results: ShaclValidationResultType[] = [];
   let qualifiedCount = 0;
@@ -906,34 +979,42 @@ function evalQualifiedValueShape(
   const qMinArr = args.constraints.get(SH.qualifiedMinCount);
 
   if (qMinArr !== undefined && qMinArr.length > 0) {
-    const qMin = parseNumeric(qMinArr[0]);
+    const qMinVal = qMinArr.at(0);
 
-    if (!Number.isNaN(qMin) && qualifiedCount < qMin) {
-      results.push(violation(
-        args.focusNode,
-        args.path,
-        SH.QualifiedMinCountConstraintComponent,
-        `Expected at least ${qMin} value(s) matching sh:qualifiedValueShape but found ${qualifiedCount}.`,
-        undefined,
-        args.shapeId
-      ));
+    if (qMinVal !== undefined) {
+      const qMin = parseNumeric(qMinVal);
+
+      if (!Number.isNaN(qMin) && qualifiedCount < qMin) {
+        results.push(violation(
+          args.focusNode,
+          args.path,
+          SH.QualifiedMinCountConstraintComponent,
+          `Expected at least ${qMin} value(s) matching sh:qualifiedValueShape but found ${qualifiedCount}.`,
+          undefined,
+          args.shapeId
+        ));
+      }
     }
   }
 
   const qMaxArr = args.constraints.get(SH.qualifiedMaxCount);
 
   if (qMaxArr !== undefined && qMaxArr.length > 0) {
-    const qMax = parseNumeric(qMaxArr[0]);
+    const qMaxVal = qMaxArr.at(0);
 
-    if (!Number.isNaN(qMax) && qualifiedCount > qMax) {
-      results.push(violation(
-        args.focusNode,
-        args.path,
-        SH.QualifiedMaxCountConstraintComponent,
-        `Expected at most ${qMax} value(s) matching sh:qualifiedValueShape but found ${qualifiedCount}.`,
-        undefined,
-        args.shapeId
-      ));
+    if (qMaxVal !== undefined) {
+      const qMax = parseNumeric(qMaxVal);
+
+      if (!Number.isNaN(qMax) && qualifiedCount > qMax) {
+        results.push(violation(
+          args.focusNode,
+          args.path,
+          SH.QualifiedMaxCountConstraintComponent,
+          `Expected at most ${qMax} value(s) matching sh:qualifiedValueShape but found ${qualifiedCount}.`,
+          undefined,
+          args.shapeId
+        ));
+      }
     }
   }
 
@@ -957,7 +1038,13 @@ function evalAnd(
     return [];
   }
 
-  const memberIris = collectRdfListValues(andArr[0], ctx.shapeIndex);
+  const andListHead = andArr.at(0);
+
+  if (andListHead === undefined) {
+    return [];
+  }
+
+  const memberIris = collectRdfListValues(andListHead, ctx.shapeIndex);
   const results: ShaclValidationResultType[] = [];
 
   for (const memberIri of memberIris) {
@@ -989,7 +1076,13 @@ function evalOr(
     return [];
   }
 
-  const memberIris = collectRdfListValues(orArr[0], ctx.shapeIndex);
+  const orListHead = orArr.at(0);
+
+  if (orListHead === undefined) {
+    return [];
+  }
+
+  const memberIris = collectRdfListValues(orListHead, ctx.shapeIndex);
 
   if (memberIris.length === 0) {
     return [];

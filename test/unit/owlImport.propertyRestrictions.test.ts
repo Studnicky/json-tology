@@ -174,15 +174,20 @@ void describe('importPropertyRestrictions', () => {
       });
 
       assert.equal(inv.length, 1, 'one invariant emitted');
-      assert.ok(inv[0].invariant.name.includes('someValuesFrom'), 'invariant name contains someValuesFrom');
+      const inv0 = inv.at(0);
+
+      if (inv0 === undefined) {
+        throw new Error('expected invariant at index 0');
+      }
+      assert.ok(inv0.invariant.name.includes('someValuesFrom'), 'invariant name contains someValuesFrom');
 
       // The invariant fn returns null for a non-empty array
-      const result = inv[0].invariant.fn({ 'items': ['x'] });
+      const result = inv0.invariant.fn({ 'items': ['x'] });
 
       assert.equal(result, null, 'non-empty array satisfies someValuesFrom');
 
       // Empty array → error message
-      const fail = inv[0].invariant.fn({ 'items': [] });
+      const fail = inv0.invariant.fn({ 'items': [] });
 
       assert.ok(typeof fail === 'string', 'empty array fails someValuesFrom');
     });

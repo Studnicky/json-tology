@@ -38,8 +38,14 @@ const customers = mixed.filter((item): item is Customer => {
 
 // customers is Customer[]
 console.assert(customers.length === 2);
-console.assert(customers[0].name === 'Cornelia Funke');
-console.assert(customers[1].name === 'Patrick Süskind');
+const firstCustomer = customers[0];
+const secondCustomer = customers[1];
+
+if (firstCustomer === undefined || secondCustomer === undefined) {
+  throw new Error('expected two customers');
+}
+console.assert(firstCustomer.name === 'Cornelia Funke');
+console.assert(secondCustomer.name === 'Patrick Süskind');
 
 console.log('filtered customers:', customers.map((customer) => {
   return customer.name;

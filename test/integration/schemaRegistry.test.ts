@@ -641,6 +641,10 @@ void describe('coerce / is / errors', () => {
           assert.equal(ie.errors.length > 0, true);
           const first = ie.errors.items[0];
 
+          if (first === undefined) {
+            throw new Error('ie.errors.items[0] missing', { 'cause': error });
+          }
+
           assert.equal(typeof first.path, 'string');
           assert.equal(typeof first.keyword, 'string');
           assert.equal(typeof first.message, 'string');
@@ -757,6 +761,10 @@ void describe('coerce / is / errors', () => {
       } else {
         assert.equal(errs.length > 0, true);
         const first = errs.items[0];
+
+        if (first === undefined) {
+          throw new Error('errs.items[0] missing');
+        }
 
         assert.equal(typeof first.path, 'string');
         assert.equal(typeof first.keyword, 'string');

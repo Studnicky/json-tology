@@ -121,7 +121,11 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
         ids
       ] of hashToIds) {
         if (ids.length === 1) {
-          cache.set(hash, ids[0]);
+          const id = ids[0];
+
+          if (id !== undefined) {
+            cache.set(hash, id);
+          }
         }
         // Multiple top-level schemas share this nominal hash → nominally
         // contested → omit from the cache so inline shapes are not flagged.

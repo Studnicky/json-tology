@@ -78,6 +78,10 @@ console.assert(duplicates.length > 0, 'findDuplicates returns at least one dupli
 
 const entry = duplicates[0];
 
+if (entry === undefined) {
+  throw new Error('expected at least one duplicate entry');
+}
+
 console.assert(
   entry.schemaId === BookWithInlineIsbn.$id,
   'entry.schemaId is the schema containing the duplicate inline shape'

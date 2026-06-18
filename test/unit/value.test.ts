@@ -495,11 +495,16 @@ void describe('Value.diff() -> Changeset', () => {
           idx,
           element
         ] of expected.entries()) {
-          assert.equal(cs.operations[idx].op, element.op);
-          assert.equal(cs.operations[idx].path, element.path);
+          const op = cs.operations.at(idx);
+
+          if (op === undefined) {
+            throw new Error(`expected operations[${idx}] to exist`);
+          }
+          assert.equal(op.op, element.op);
+          assert.equal(op.path, element.path);
           if ('value' in element) {
             assert.deepEqual(
-              (cs.operations[idx] as { 'value': unknown }).value,
+              (op as { 'value': unknown }).value,
               element.value
             );
           }

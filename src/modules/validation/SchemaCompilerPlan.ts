@@ -124,14 +124,18 @@ function buildTypePredicate(types: string[]): ((v: unknown) => boolean) | undefi
   }
 
   if (types.length === 1) {
-    const pred = singleTypePredicates.get(types[0]);
+    const singleType = types[0];
+
+    if (singleType === undefined) {
+      return undefined;
+    }
+
+    const pred = singleTypePredicates.get(singleType);
 
     // Return the specialized predicate if known; fall back to Predicates.matchesType for exotic types.
     if (pred !== undefined) {
       return pred;
     }
-
-    const singleType = types[0];
 
     return (value: unknown): boolean => {
       // exotic single type — use the same string-comparison fallback as Predicates.inferValueType
@@ -617,10 +621,16 @@ function resolveDynamicRefTarget(
 ): RefTargetType | undefined {
   if (dynamicRef === '#') {
     for (let index = dynamicScope.length - 1; index >= 0; index--) {
-      if (dynamicScope[index].anchor === '') {
+      const scopeEntry = dynamicScope[index];
+
+      if (scopeEntry === undefined) {
+        continue;
+      }
+
+      if (scopeEntry.anchor === '') {
         return {
-          'graph': dynamicScope[index].graph,
-          'node': dynamicScope[index].node
+          'graph': scopeEntry.graph,
+          'node': scopeEntry.node
         };
       }
     }

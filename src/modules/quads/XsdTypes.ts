@@ -33,7 +33,13 @@ export const XsdTypes = {
       return types.length > 0 ? OWL.Nothing : null;
     }
     if (nonNull.length === 1) {
-      return XsdTypes.resolveSingle(nonNull[0], format === undefined ? undefined : { format });
+      const singleType = nonNull[0];
+
+      if (singleType === undefined) {
+        return null;
+      }
+
+      return XsdTypes.resolveSingle(singleType, format === undefined ? undefined : { format });
     }
 
     return null;

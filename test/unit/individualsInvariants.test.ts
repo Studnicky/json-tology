@@ -133,7 +133,12 @@ void describe('negativePropertyAssertionInvariant fn', () => {
     const fragment = runIndividuals(quads, [classIri], []);
 
     assert.equal(fragment.invariants.length, 1);
-    assert.equal(fragment.invariants[0].schemaId, classIri, 'invariant is keyed to class IRI');
+    const inv0 = fragment.invariants.at(0);
+
+    if (inv0 === undefined) {
+      throw new Error('expected invariants[0] to exist');
+    }
+    assert.equal(inv0.schemaId, classIri, 'invariant is keyed to class IRI');
   });
 
   void it('returns an error string when value carries sourceIri identity and the forbidden property value matches', () => {

@@ -224,8 +224,13 @@ void describe('Transform.brand()', () => {
         const wrongTypeErrors = jt.validate(UserIdSchema2.$id, 123);
 
         assert.equal(wrongTypeErrors.length, 1);
-        assert.equal(wrongTypeErrors.items[0]?.keyword, 'type');
-        assert.match(wrongTypeErrors.items[0]?.message ?? '', /must be string/u);
+        const wrongTypeItem0 = wrongTypeErrors.items.at(0);
+
+        if (wrongTypeItem0 === undefined) {
+          throw new Error('expected validation error at index 0');
+        }
+        assert.equal(wrongTypeItem0.keyword, 'type');
+        assert.match(wrongTypeItem0.message, /must be string/u);
       },
       'name': 'happy: branded schema validates correct type and rejects wrong type'
     },
@@ -247,8 +252,13 @@ void describe('Transform.brand()', () => {
         const tooShortErrors = jt.validate(ConstrainedId.$id, 'ab');
 
         assert.equal(tooShortErrors.length, 1);
-        assert.equal(tooShortErrors.items[0]?.keyword, 'minLength');
-        assert.match(tooShortErrors.items[0]?.message ?? '', /NOT have fewer than 3 characters/u);
+        const tooShortItem0 = tooShortErrors.items.at(0);
+
+        if (tooShortItem0 === undefined) {
+          throw new Error('expected validation error at index 0');
+        }
+        assert.equal(tooShortItem0.keyword, 'minLength');
+        assert.match(tooShortItem0.message, /NOT have fewer than 3 characters/u);
       },
       'name': 'edge: brand preserves validation constraints from base schema'
     }

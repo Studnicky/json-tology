@@ -405,6 +405,10 @@ function validateDateFormat(value: string): boolean {
   const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
   const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
 
+  if (maxDay === undefined) {
+    return false;
+  }
+
   return day >= 1 && day <= maxDay;
 }
 
@@ -429,7 +433,7 @@ function validateDateTime(value: string): boolean {
   const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
   const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
 
-  if (day < 1 || day > maxDay) {
+  if (maxDay === undefined || day < 1 || day > maxDay) {
     return false;
   }
   // RFC 3339 allows 'T' or 't' as the date-time separator (index 10)

@@ -542,7 +542,13 @@ function liftMatchingQuads(mqArgs: LiftMatchingQuadsArgsType): unknown {
     });
   }
 
-  const narrowed = Lists.asQuadObject(matching[0].object);
+  const firstMatch = matching[0];
+
+  if (firstMatch === undefined) {
+    return undefined;
+  }
+
+  const narrowed = Lists.asQuadObject(firstMatch.object);
 
   return narrowed === undefined
     ? undefined
@@ -559,7 +565,8 @@ function liftSubject(args: LiftSubjectArgsType): LiftedObjectType {
     classId, ctx, graph, node, subjectQuads
   } = args;
   const obj: LiftedObjectType = {};
-  const subjectIri = subjectQuads.length > 0 ? subjectQuads[0].subject.value : classId;
+  const firstSubjectQuad = subjectQuads[0];
+  const subjectIri = firstSubjectQuad === undefined ? classId : firstSubjectQuad.subject.value;
   const effectiveProperties = collectEffectiveLiftProperties(graph, node, ctx.registry);
   const index = effectiveProperties.size > PREDICATE_INDEX_THRESHOLD
     ? buildPredicateIndex(subjectQuads)

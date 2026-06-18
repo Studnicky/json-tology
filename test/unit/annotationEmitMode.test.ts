@@ -199,7 +199,12 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const base = baseEdgeTriples(quads);
 
       assert.equal(base.length, 1, 'exactly one base flat edge triple');
-      assert.equal(base[0].object.value, BOOK_IRI);
+      const base0Star = base.at(0);
+
+      if (base0Star === undefined) {
+        throw new Error('expected base[0] to exist');
+      }
+      assert.equal(base0Star.object.value, BOOK_IRI);
 
       // Two star annotation quads (Quad subjects).
       const star = starAnnotationQuads(quads);
@@ -260,7 +265,12 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const base = baseEdgeTriples(quads);
 
       assert.equal(base.length, 1, 'exactly one base flat edge triple');
-      assert.equal(base[0].object.value, BOOK_IRI);
+      const base0Flat = base.at(0);
+
+      if (base0Flat === undefined) {
+        throw new Error('expected base[0] to exist');
+      }
+      assert.equal(base0Flat.object.value, BOOK_IRI);
 
       // Two flat annotation triples with the correct resolved predicates +
       // typed literal values. Subject is the review instance IRI (NamedNode),
@@ -278,8 +288,8 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 
       // Subject is the instance IRI (NamedNode), shared with the base triple.
       assert.equal(ratingFlat.subject.termType, 'NamedNode');
-      assert.equal(ratingFlat.subject.value, base[0].subject.value, 'flat annotation subject === instance subject');
-      assert.equal(verifiedFlat.subject.value, base[0].subject.value);
+      assert.equal(ratingFlat.subject.value, base0Flat.subject.value, 'flat annotation subject === instance subject');
+      assert.equal(verifiedFlat.subject.value, base0Flat.subject.value);
 
       // Typed literal values.
       assert.equal(ratingFlat.object.termType, 'Literal');

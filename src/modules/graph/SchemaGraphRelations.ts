@@ -184,7 +184,7 @@ function pushFormatPatternRelations(
 
   const pattern = FORMAT_PATTERNS[sem.format];
 
-  if (pattern) {
+  if (pattern !== undefined) {
     relations.push({
       'metadata': { 'fromFormat': true },
       'predicate': SH.pattern,

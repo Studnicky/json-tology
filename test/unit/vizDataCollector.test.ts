@@ -119,7 +119,11 @@ void describe('VizDataCollector good paths', () => {
     const payload = collector.collect();
 
     assert.equal(payload.edges.length, 1, 'should have one edge for the $ref');
-    const [edge] = payload.edges;
+    const edge = payload.edges.at(0);
+
+    if (edge === undefined) {
+      throw new Error('expected edges[0] to exist');
+    }
 
     assert.equal(edge.label, 'address', 'edge label should be the property name');
     assert.equal(edge.source, 'https://viz.io/User', 'edge source should be User');
@@ -226,7 +230,11 @@ void describe('VizDataCollector bad paths', () => {
     const payload = collector.collect();
 
     assert.equal(payload.nodes.length, 1, 'should have one node');
-    const [node] = payload.nodes;
+    const node = payload.nodes.at(0);
+
+    if (node === undefined) {
+      throw new Error('expected nodes[0] to exist');
+    }
 
     assert.equal(node.propertyCount, 0);
   });
@@ -375,7 +383,11 @@ void describe('VizDataCollector ugly paths', () => {
     const payload = collector.collect();
 
     assert.equal(payload.schemas.length, 1, 'should have one schema entry');
-    const [schema] = payload.schemas;
+    const schema = payload.schemas.at(0);
+
+    if (schema === undefined) {
+      throw new Error('expected schemas[0] to exist');
+    }
 
     assert.ok(typeof schema.typescript === 'string');
     assert.ok(schema.typescript.length > 0, 'typescript field should not be empty');

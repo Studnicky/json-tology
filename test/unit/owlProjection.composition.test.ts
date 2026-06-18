@@ -56,7 +56,12 @@ void describe('anyOf composition', () => {
       'anyOf should emit owl:equivalentClass from the Pet subject'
     );
 
-    const eqBnode = equivalentClassQuads[0].object.value;
+    const eqQuad0 = equivalentClassQuads.at(0);
+
+    if (eqQuad0 === undefined) {
+      throw new Error('expected equivalentClass quad at index 0');
+    }
+    const eqBnode = eqQuad0.object.value;
     const unionOfQuads = quads.filter((quad) => {
       return quad.subject.value === eqBnode
         && quad.predicate.value === OWL.unionOf;

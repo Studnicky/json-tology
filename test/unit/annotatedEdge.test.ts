@@ -123,7 +123,12 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
     });
 
     assert.equal(baseTriples.length, 1, 'exactly one base triple');
-    assert.equal(baseTriples[0].object.value, BOOK_IRI);
+    const baseTriple0 = baseTriples.at(0);
+
+    if (baseTriple0 === undefined) {
+      throw new Error('expected baseTriples[0] to exist');
+    }
+    assert.equal(baseTriple0.object.value, BOOK_IRI);
 
     const annotationQuads = quads.filter((quad) => {
       return isTripleTermSubject(quad);
@@ -389,7 +394,12 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
       assert.equal(baseTriples.length, 1, 'exactly one base triple for the annotated edge');
 
-      const objectIri = baseTriples[0].object.value;
+      const baseTriple0Nested = baseTriples.at(0);
+
+      if (baseTriple0Nested === undefined) {
+        throw new Error('expected baseTriples[0] to exist');
+      }
+      const objectIri = baseTriple0Nested.object.value;
 
       // With the fix (depth+1): iriFor is called with depth>0 → returns NESTED_IRI.
       // Without the fix (depth 0): iriFor is called with depth===0 → returns ROOT_IRI.
@@ -430,9 +440,14 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
       assert.equal(baseTriples.length, 1, 'exactly one base triple for the string-target edge');
 
+      const baseTriple0String = baseTriples.at(0);
+
+      if (baseTriple0String === undefined) {
+        throw new Error('expected baseTriples[0] to exist');
+      }
       // String targets bypass iriFor entirely; the literal IRI is used as-is.
       assert.equal(
-        baseTriples[0].object.value,
+        baseTriple0String.object.value,
         EXPLICIT_ARTICLE_IRI,
         'string target is passed through verbatim regardless of iriFor'
       );
@@ -510,8 +525,13 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
     });
 
     assert.equal(annotationQuads.length, 1, 'one annotation quad for ratingValue');
+    const annotationQuad0 = annotationQuads.at(0);
+
+    if (annotationQuad0 === undefined) {
+      throw new Error('expected annotationQuads[0] to exist');
+    }
     assert.equal(
-      annotationQuads[0].predicate.value,
+      annotationQuad0.predicate.value,
       'https://schema.org/ratingValue',
       'x-jt-predicate binding is honoured for annotation predicate'
     );

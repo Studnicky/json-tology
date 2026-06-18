@@ -148,7 +148,12 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       // jt:config is on the additions block (allOf[1]) in the allOf+$ref shape
       const allOf = ChildSchema.allOf as Array<Record<string, unknown>>;
-      const config = allOf[1]['jt:config'] as Record<string, unknown>;
+      const allOf1 = allOf.at(1);
+
+      if (allOf1 === undefined) {
+        throw new Error('expected allOf[1] to exist');
+      }
+      const config = allOf1['jt:config'] as Record<string, unknown>;
 
       assert.equal(config.extra, 'forbid');
       assert.equal(config.strict, false);
@@ -163,7 +168,12 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       // jt:config from parent is carried into the additions block (allOf[1])
       const allOf = ChildNoConfig.allOf as Array<Record<string, unknown>>;
-      const config = allOf[1]['jt:config'] as Record<string, unknown>;
+      const allOf1 = allOf.at(1);
+
+      if (allOf1 === undefined) {
+        throw new Error('expected allOf[1] to exist');
+      }
+      const config = allOf1['jt:config'] as Record<string, unknown>;
 
       assert.equal(config.extra, 'allow');
       assert.equal(config.strict, false);
@@ -304,7 +314,11 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       registry.set(PersonSchema);
 
       const dups = registry.findDuplicates();
-      const dup = dups[0];
+      const dup = dups.at(0);
+
+      if (dup === undefined) {
+        throw new Error('expected at least one duplicate');
+      }
 
       assert.ok(typeof dup.schemaId === 'string', 'schemaId is string');
       assert.ok(typeof dup.equivalentTo === 'string', 'equivalentTo is string');
@@ -799,7 +813,12 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const result = reg.validator(rangeSchema.$id as string).validate(5, { 'collectErrors': true });
 
-      assert.equal(result.errors[0].message, 'must be >= 10');
+      const firstError = result.errors.at(0);
+
+      if (firstError === undefined) {
+        throw new Error('expected at least one validation error');
+      }
+      assert.equal(firstError.message, 'must be >= 10');
     });
   });
 

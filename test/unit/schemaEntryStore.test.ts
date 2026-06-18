@@ -253,8 +253,13 @@ void describe('SchemaEntryStore', { 'concurrency': true }, () => {
     const pairs = [...store.entries()];
 
     assert.equal(pairs.length, 1);
-    assert.equal(pairs[0][0], 'https://example.io/J');
-    assert.deepEqual(pairs[0][1].schema, schema);
+    const pair0 = pairs.at(0);
+
+    if (pair0 === undefined) {
+      throw new Error('expected pairs[0] to exist');
+    }
+    assert.equal(pair0[0], 'https://example.io/J');
+    assert.deepEqual(pair0[1].schema, schema);
   });
 
   void it('findDuplicates detects structurally identical sub-schemas', () => {
@@ -291,7 +296,11 @@ void describe('SchemaEntryStore', { 'concurrency': true }, () => {
     const duplicates = store.findDuplicates();
 
     assert.ok(duplicates.length > 0, 'expected duplicate entries to be detected');
-    const dup = duplicates[0];
+    const dup = duplicates.at(0);
+
+    if (dup === undefined) {
+      throw new Error('expected at least one duplicate');
+    }
 
     assert.ok(typeof dup.schemaId === 'string');
     assert.ok(typeof dup.pointer === 'string');
@@ -332,9 +341,15 @@ void describe('SchemaEntryStore', { 'concurrency': true }, () => {
     revisions.push(store.revision);
 
     for (let i = 1; i < revisions.length; i++) {
+      const curr = revisions.at(i);
+      const prev = revisions.at(i - 1);
+
+      if (curr === undefined || prev === undefined) {
+        throw new Error(`missing revision at step ${i}`);
+      }
       assert.ok(
-        revisions[i] > revisions[i - 1],
-        `revision did not increase at step ${i}: ${revisions[i - 1]} → ${revisions[i]}`
+        curr > prev,
+        `revision did not increase at step ${i}: ${prev} → ${curr}`
       );
     }
   });

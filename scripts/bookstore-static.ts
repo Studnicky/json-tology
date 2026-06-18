@@ -98,8 +98,12 @@ const quads = JsonTology.toQuads(
 console.log('toQuads count:', quads.length);
 
 if (quads.length > 0) {
-  console.log('toQuads[0] subject:', quads[0].subject);
-  console.log('toQuads[0] predicate:', quads[0].predicate);
+  const firstQuad = quads[0];
+  if (firstQuad === undefined) {
+    throw new Error('expected quad');
+  }
+  console.log('toQuads[0] subject:', firstQuad.subject);
+  console.log('toQuads[0] predicate:', firstQuad.predicate);
 }
 
 // ---------------------------------------------------------------------------

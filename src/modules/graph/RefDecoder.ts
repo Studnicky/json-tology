@@ -252,7 +252,13 @@ export class RefDecoder {
 
     if (positionalNodes.length > 0) {
       for (let index = 0; index < positionalNodes.length && index < value.length; index += 1) {
-        const next = RefDecoder.walk(graph, positionalNodes[index], value[index], registry, visited);
+        const positionalNode = positionalNodes[index];
+
+        if (positionalNode === undefined) {
+          continue;
+        }
+
+        const next = RefDecoder.walk(graph, positionalNode, value[index], registry, visited);
 
         if (next !== value[index]) {
           value[index] = next;

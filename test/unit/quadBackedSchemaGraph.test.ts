@@ -60,10 +60,23 @@ void describe('QuadBackedSchemaGraph.collectList', { 'concurrency': true }, () =
     const items = graph.collectList(listHead);
 
     assert.equal(items.length, 3, 'three list items collected');
-    assert.equal(items[0].termType, 'NamedNode');
-    assert.equal(items[0].target, itemA);
-    assert.equal(items[1].target, itemB);
-    assert.equal(items[2].target, itemC);
+    const item0 = items.at(0);
+    const item1 = items.at(1);
+    const item2 = items.at(2);
+
+    if (item0 === undefined) {
+      throw new Error('expected item at index 0');
+    }
+    if (item1 === undefined) {
+      throw new Error('expected item at index 1');
+    }
+    if (item2 === undefined) {
+      throw new Error('expected item at index 2');
+    }
+    assert.equal(item0.termType, 'NamedNode');
+    assert.equal(item0.target, itemA);
+    assert.equal(item1.target, itemB);
+    assert.equal(item2.target, itemC);
   });
 
   void it('returns an empty array for rdf:nil heads', () => {
@@ -94,11 +107,20 @@ void describe('QuadBackedSchemaGraph.collectList', { 'concurrency': true }, () =
     const items = graph.collectList(head);
 
     assert.equal(items.length, 2);
-    assert.equal(items[0].termType, 'Literal');
-    assert.equal(items[0].datatype, XSD_INTEGER);
-    assert.equal(items[1].termType, 'Literal');
-    assert.equal(items[1].datatype, XSD_STRING);
-    assert.equal(items[1].target, 'hello');
+    const litItem0 = items.at(0);
+    const litItem1 = items.at(1);
+
+    if (litItem0 === undefined) {
+      throw new Error('expected item at index 0');
+    }
+    if (litItem1 === undefined) {
+      throw new Error('expected item at index 1');
+    }
+    assert.equal(litItem0.termType, 'Literal');
+    assert.equal(litItem0.datatype, XSD_INTEGER);
+    assert.equal(litItem1.termType, 'Literal');
+    assert.equal(litItem1.datatype, XSD_STRING);
+    assert.equal(litItem1.target, 'hello');
   });
 });
 
@@ -218,10 +240,15 @@ void describe('QuadBackedSchemaGraph literal-tag preservation', { 'concurrency':
     const relations = graph.relationsForSubject(subject);
 
     assert.equal(relations.length, 1);
-    assert.equal(relations[0].termType, 'Literal');
-    assert.equal(relations[0].datatype, XSD_INTEGER);
+    const rel0 = relations.at(0);
+
+    if (rel0 === undefined) {
+      throw new Error('expected relation at index 0');
+    }
+    assert.equal(rel0.termType, 'Literal');
+    assert.equal(rel0.datatype, XSD_INTEGER);
     assert.equal(
-      typeof relations[0].target === 'string' ? relations[0].target : relations[0].target.id,
+      typeof rel0.target === 'string' ? rel0.target : rel0.target.id,
       '5'
     );
   });

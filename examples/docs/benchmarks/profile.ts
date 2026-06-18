@@ -133,11 +133,11 @@ async function profileScenario(scenario: Scenario): Promise<void> {
 
 async function main(): Promise<void> {
   const filter = process.argv[2];
-  const toRun = filter
-    ? scenarios.filter((scenario) => {
+  const toRun = filter === undefined
+    ? scenarios
+    : scenarios.filter((scenario) => {
       return scenario.name === filter;
-    })
-    : scenarios;
+    });
 
   console.log('Profiling...');
   for (const scenario of toRun) {

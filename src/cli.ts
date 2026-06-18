@@ -190,9 +190,15 @@ function derivePrefixFromIRI(iri: URL): string {
   segments.pop();
 
   for (let i = segments.length - 1; i >= 0; i--) {
-    const candidate = segments[i].replaceAll(/\W/gu, '').toLowerCase();
+    const segment = segments[i];
 
-    if (candidate !== '' && !/^\d[\d.]*$/u.test(segments[i])) {
+    if (segment === undefined) {
+      continue;
+    }
+
+    const candidate = segment.replaceAll(/\W/gu, '').toLowerCase();
+
+    if (candidate !== '' && !/^\d[\d.]*$/u.test(segment)) {
       return candidate;
     }
   }

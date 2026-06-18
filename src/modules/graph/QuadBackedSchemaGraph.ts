@@ -369,6 +369,11 @@ function resolveRestrictionBnode(opts: ResolveRestrictionOptionsType): OptionalR
     return undefined;
   }
   const onPropertyQuad = onPropertyQuads[0];
+
+  if (onPropertyQuad === undefined) {
+    return undefined;
+  }
+
   const onPropertyIri = curie.compact(onPropertyQuad.object.termType === 'NamedNode' ? onPropertyQuad.object.value : '');
 
   // Find the constraint predicate

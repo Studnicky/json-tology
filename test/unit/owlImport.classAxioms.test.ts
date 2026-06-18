@@ -140,7 +140,12 @@ void describe('importClassAxioms', () => {
       const allOf = delta.allOf as Array<Record<string, unknown>>;
 
       assert.equal(allOf.length, 1, 'exactly one allOf entry');
-      assert.equal(allOf[0].$ref, CLASS_A, '$ref must point to parent CLASS_A');
+      const allOf0 = allOf.at(0);
+
+      if (allOf0 === undefined) {
+        throw new Error('expected allOf entry at index 0');
+      }
+      assert.equal(allOf0.$ref, CLASS_A, '$ref must point to parent CLASS_A');
     });
   });
 

@@ -84,8 +84,13 @@ function expandIri(value: string): string {
           assert.ok(result.$defs !== undefined);
           const defs = result.$defs as Record<string, Record<string, unknown>>;
 
-          assert.equal(defs.Address.type, 'object');
-          const addrProps = defs.Address.properties as Record<string, Record<string, unknown>>;
+          const defsAddress = defs.Address;
+
+          if (defsAddress === undefined) {
+            throw new Error('defs.Address missing');
+          }
+          assert.equal(defsAddress.type, 'object');
+          const addrProps = defsAddress.properties as Record<string, Record<string, unknown>>;
 
           assert.deepEqual(addrProps.street, { 'type': 'string' });
         },
@@ -106,7 +111,12 @@ function expandIri(value: string): string {
         'check': (result) => {
           const anchorProps = result.properties as Record<string, Record<string, unknown>>;
 
-          assert.equal(anchorProps.tag.$anchor, 'tag-node');
+          const anchorTag = anchorProps.tag;
+
+          if (anchorTag === undefined) {
+            throw new Error('anchorProps.tag missing');
+          }
+          assert.equal(anchorTag.$anchor, 'tag-node');
         },
         'name': 'roundtrips $anchor on properties',
         'schema': {
@@ -354,10 +364,25 @@ function expandIri(value: string): string {
 
         const props = first.properties as Record<string, Record<string, unknown>>;
 
-        assert.equal(props.localRef.$ref, '#/$defs/Foo');
-        assert.equal(props.anchorRef.$ref, '#MyAnchor');
-        assert.equal(props.nested.type, 'object');
-        const nestedProps = props.nested.properties as Record<string, Record<string, unknown>>;
+        const propsLocalRef = props.localRef;
+
+        if (propsLocalRef === undefined) {
+          throw new Error('props.localRef missing');
+        }
+        assert.equal(propsLocalRef.$ref, '#/$defs/Foo');
+        const propsAnchorRef = props.anchorRef;
+
+        if (propsAnchorRef === undefined) {
+          throw new Error('props.anchorRef missing');
+        }
+        assert.equal(propsAnchorRef.$ref, '#MyAnchor');
+        const propsNested = props.nested;
+
+        if (propsNested === undefined) {
+          throw new Error('props.nested missing');
+        }
+        assert.equal(propsNested.type, 'object');
+        const nestedProps = propsNested.properties as Record<string, Record<string, unknown>>;
 
         assert.deepEqual(nestedProps.deep, { 'type': 'integer' });
       },
@@ -430,7 +455,12 @@ function expandIri(value: string): string {
           assert.equal(commented.$comment, 'Root comment');
           const commentedProps = commented.properties as Record<string, Record<string, unknown>>;
 
-          assert.equal(commentedProps.name.$comment, 'Name field comment');
+          const commentedName = commentedProps.name;
+
+          if (commentedName === undefined) {
+            throw new Error('commentedProps.name missing');
+          }
+          assert.equal(commentedName.$comment, 'Name field comment');
         },
         'name': 'preserves $comment on root and nested'
       },
@@ -472,7 +502,12 @@ function expandIri(value: string): string {
           assert.equal(first['x-table'], 'products');
           const priceProps = first.properties as Record<string, Record<string, unknown>>;
 
-          assert.equal(priceProps.price['x-currency'], 'USD');
+          const pricePrice = priceProps.price;
+
+          if (pricePrice === undefined) {
+            throw new Error('priceProps.price missing');
+          }
+          assert.equal(pricePrice['x-currency'], 'USD');
         },
         'name': 'custom keywords roundtrip through two passes'
       },
@@ -509,7 +544,12 @@ function expandIri(value: string): string {
           const objResult = serializer.serialize(new SchemaGraph(objSchema));
           const objProps = objResult.properties as Record<string, Record<string, unknown>>;
 
-          assert.deepEqual(objProps.name.examples, [
+          const objPropsName = objProps.name;
+
+          if (objPropsName === undefined) {
+            throw new Error('objProps.name missing');
+          }
+          assert.deepEqual(objPropsName.examples, [
             'Alice',
             'Bob'
           ]);
@@ -533,8 +573,13 @@ function expandIri(value: string): string {
           Record<string, Record<string, unknown>> | undefined;
 
           assert.ok(defDefs !== undefined);
-          assert.equal(defDefs.Addr.type, 'object');
-          const defAddrProps = defDefs.Addr.properties as Record<string, Record<string, unknown>>;
+          const defDefsAddr = defDefs.Addr;
+
+          if (defDefsAddr === undefined) {
+            throw new Error('defDefs.Addr missing');
+          }
+          assert.equal(defDefsAddr.type, 'object');
+          const defAddrProps = defDefsAddr.properties as Record<string, Record<string, unknown>>;
 
           assert.deepEqual(defAddrProps.street, { 'type': 'string' });
         },
@@ -575,7 +620,17 @@ function expandIri(value: string): string {
           assert.equal(recResult.$recursiveAnchor, true);
           const recProps = recResult.properties as Record<string, Record<string, Record<string, unknown>>>;
 
-          assert.equal(recProps.children.items.$recursiveRef, '#');
+          const recChildren = recProps.children;
+
+          if (recChildren === undefined) {
+            throw new Error('recProps.children missing');
+          }
+          const recChildrenItems = recChildren.items;
+
+          if (recChildrenItems === undefined) {
+            throw new Error('recProps.children.items missing');
+          }
+          assert.equal(recChildrenItems.$recursiveRef, '#');
         },
         'name': 'preserves $recursiveAnchor and $recursiveRef'
       }
@@ -702,7 +757,12 @@ function expandIri(value: string): string {
           assert.equal(result['x-api-version'], 2);
           const scoreProps = result.properties as Record<string, Record<string, unknown>>;
 
-          assert.equal(scoreProps.score['x-widget'], 'gauge');
+          const scoreScore = scoreProps.score;
+
+          if (scoreScore === undefined) {
+            throw new Error('scoreProps.score missing');
+          }
+          assert.equal(scoreScore['x-widget'], 'gauge');
           assert.equal(result.type, 'object');
           assert.deepEqual(result.required, ['score']);
         },
@@ -897,7 +957,12 @@ function expandIri(value: string): string {
 
             assert.ok(typeQuads.length > 0, 'should have at least one rdf:type quad');
 
-            const instIRI = typeQuads[0].subject.value;
+            const typeQuadFirst = typeQuads.at(0);
+
+            if (typeQuadFirst === undefined) {
+              throw new Error('typeQuads[0] missing');
+            }
+            const instIRI = typeQuadFirst.subject.value;
 
             assert.ok(instIRI.startsWith('https://data.example.com/'));
             assert.ok(hasIriQuad(quads, instIRI, 'rdf:type', 'https://example.com/User'));
@@ -1051,14 +1116,24 @@ function expandIri(value: string): string {
           });
 
           assert.equal(parentTypeQuads.length, 1);
-          const parentIRI = parentTypeQuads[0].subject.value;
+          const parentTypeQuadFirst = parentTypeQuads.at(0);
+
+          if (parentTypeQuadFirst === undefined) {
+            throw new Error('parentTypeQuads[0] missing');
+          }
+          const parentIRI = parentTypeQuadFirst.subject.value;
 
           const addrQuads = findQuadsForSubject(quads, parentIRI, 'https://data.example.com/address');
 
           assert.equal(addrQuads.length, 1);
-          assert.equal(addrQuads[0].object.termType, 'NamedNode');
+          const addrQuadFirst = addrQuads.at(0);
 
-          const nestedIRI = addrQuads[0].object.value;
+          if (addrQuadFirst === undefined) {
+            throw new Error('addrQuads[0] missing');
+          }
+          assert.equal(addrQuadFirst.object.termType, 'NamedNode');
+
+          const nestedIRI = addrQuadFirst.object.value;
 
           assert.ok(
             hasLiteralQuad(quads, nestedIRI, 'https://data.example.com/street', 'Springfield', 'xsd:string')
@@ -4819,11 +4894,16 @@ function expandIri(value: string): string {
 
         assert.equal(props.length, 1, `${label}: one property`);
 
+        const propsFirst = props.at(0);
+
+        if (propsFirst === undefined) {
+          throw new Error('props[0] missing');
+        }
         for (const [
           key,
           value
         ] of Object.entries(expected)) {
-          assert.deepEqual(props[0][key], value, `${label}: ${key}`);
+          assert.deepEqual(propsFirst[key], value, `${label}: ${key}`);
         }
       }
     });
@@ -5029,8 +5109,13 @@ function expandIri(value: string): string {
       const shape = findShape(shapes, 'https://example.com/Thing') as Record<string, unknown>;
       const props = shape['http://www.w3.org/ns/shacl#property'] as Array<Record<string, unknown>>;
 
-      assert.deepEqual(props[0]['http://www.w3.org/ns/shacl#node'], { '@id': 'https://example.com/Thing' });
-      assert.equal(props[0]['http://www.w3.org/ns/shacl#datatype'], undefined);
+      const propsRef = props.at(0);
+
+      if (propsRef === undefined) {
+        throw new Error('props[0] missing');
+      }
+      assert.deepEqual(propsRef['http://www.w3.org/ns/shacl#node'], { '@id': 'https://example.com/Thing' });
+      assert.equal(propsRef['http://www.w3.org/ns/shacl#datatype'], undefined);
     });
 
     void it('emits dash:readOnly and dash:writeOnly for property shapes', () => {
@@ -5155,7 +5240,11 @@ function expandIri(value: string): string {
       assert.ok(implication !== undefined, 'dependentSchemas should produce sh:or implication');
 
       const orList = (implication['http://www.w3.org/ns/shacl#or'] as Record<string, unknown>)['@list'] as Array<Record<string, unknown>>;
-      const depShape = orList[1];
+      const depShape = orList.at(1);
+
+      if (depShape === undefined) {
+        throw new Error('orList[1] missing');
+      }
 
       assert.equal(depShape['@type'], 'http://www.w3.org/ns/shacl#NodeShape');
 
@@ -5209,7 +5298,11 @@ function expandIri(value: string): string {
       assert.ok(implication !== undefined);
 
       const orList = (implication['http://www.w3.org/ns/shacl#or'] as Record<string, unknown>)['@list'] as Array<Record<string, unknown>>;
-      const depShape = orList[1];
+      const depShape = orList.at(1);
+
+      if (depShape === undefined) {
+        throw new Error('orList[1] missing');
+      }
 
       assert.equal(depShape['@type'], 'http://www.w3.org/ns/shacl#NodeShape');
       assert.equal(depShape['http://www.w3.org/ns/shacl#closed'], true, 'dependent schema with additionalProperties: false should be sh:closed');
@@ -5317,8 +5410,18 @@ function expandIri(value: string): string {
           const graph = builder.jsonLdObject()['@graph'] as Array<Record<string, unknown>>;
 
           assert.strictEqual(graph.length, 2);
-          assert.strictEqual(graph[0]['@id'], 'https://example.io/ns#Thing');
-          assert.strictEqual(graph[1]['@id'], 'https://example.io/ns#SubThing');
+          const graphFirst = graph.at(0);
+
+          if (graphFirst === undefined) {
+            throw new Error('graph[0] missing');
+          }
+          const graphSecond = graph.at(1);
+
+          if (graphSecond === undefined) {
+            throw new Error('graph[1] missing');
+          }
+          assert.strictEqual(graphFirst['@id'], 'https://example.io/ns#Thing');
+          assert.strictEqual(graphSecond['@id'], 'https://example.io/ns#SubThing');
         },
         'name': 'builds graph from addFromQuads'
       },
@@ -5464,12 +5567,27 @@ function expandIri(value: string): string {
 
           assert.strictEqual(branches.length, 2, 'must have then and else branches');
 
-          assert.ok(branches[0]['http://www.w3.org/2002/07/owl#intersectionOf'] !== undefined, 'first branch must be intersection');
-          assert.ok(branches[1]['http://www.w3.org/2002/07/owl#intersectionOf'] !== undefined, 'second branch must be intersection');
-          const elseIntersection = branches[1]['http://www.w3.org/2002/07/owl#intersectionOf'] as JsonLdNode;
+          const branchFirst = branches.at(0);
+
+          if (branchFirst === undefined) {
+            throw new Error('branches[0] missing');
+          }
+          const branchSecond = branches.at(1);
+
+          if (branchSecond === undefined) {
+            throw new Error('branches[1] missing');
+          }
+          assert.ok(branchFirst['http://www.w3.org/2002/07/owl#intersectionOf'] !== undefined, 'first branch must be intersection');
+          assert.ok(branchSecond['http://www.w3.org/2002/07/owl#intersectionOf'] !== undefined, 'second branch must be intersection');
+          const elseIntersection = branchSecond['http://www.w3.org/2002/07/owl#intersectionOf'] as JsonLdNode;
           const elseParts = elseIntersection['@list'] as JsonLdNode[];
 
-          assert.ok(elseParts[0]['http://www.w3.org/2002/07/owl#complementOf'] !== undefined, 'else branch must negate the condition');
+          const elsePartsFirst = elseParts.at(0);
+
+          if (elsePartsFirst === undefined) {
+            throw new Error('elseParts[0] missing');
+          }
+          assert.ok(elsePartsFirst['http://www.w3.org/2002/07/owl#complementOf'] !== undefined, 'else branch must negate the condition');
         },
         'name': 'serializes if/then/else as owl:unionOf(intersectionOf(A,B), intersectionOf(complementOf(A),C))'
       },
@@ -5659,12 +5777,22 @@ function expandIri(value: string): string {
           const reqUnion = depReq['http://www.w3.org/2002/07/owl#unionOf'] as JsonLdNode;
           const reqBranches = reqUnion['@list'] as JsonLdNode[];
 
-          assert.ok(reqBranches[0]['http://www.w3.org/2002/07/owl#complementOf'] !== undefined, 'first branch must negate trigger');
+          const reqBranchFirst = reqBranches.at(0);
+
+          if (reqBranchFirst === undefined) {
+            throw new Error('reqBranches[0] missing');
+          }
+          const reqBranchSecond = reqBranches.at(1);
+
+          if (reqBranchSecond === undefined) {
+            throw new Error('reqBranches[1] missing');
+          }
+          assert.ok(reqBranchFirst['http://www.w3.org/2002/07/owl#complementOf'] !== undefined, 'first branch must negate trigger');
           assert.strictEqual(
-            (reqBranches[0]['http://www.w3.org/2002/07/owl#complementOf'] as JsonLdNode)['@type'],
+            (reqBranchFirst['http://www.w3.org/2002/07/owl#complementOf'] as JsonLdNode)['@type'],
             'http://www.w3.org/2002/07/owl#Restriction'
           );
-          assert.ok(reqBranches[1]['http://www.w3.org/2002/07/owl#intersectionOf'] !== undefined, 'second branch must intersect required props');
+          assert.ok(reqBranchSecond['http://www.w3.org/2002/07/owl#intersectionOf'] !== undefined, 'second branch must intersect required props');
 
           // dependentSchemas: not-hasBilling or SchemaRef
           const depSchema = implications.find((imp) => {
@@ -5681,8 +5809,18 @@ function expandIri(value: string): string {
           const schemaUnion = depSchema['http://www.w3.org/2002/07/owl#unionOf'] as JsonLdNode;
           const schemaBranches = schemaUnion['@list'] as JsonLdNode[];
 
-          assert.ok(schemaBranches[0]['http://www.w3.org/2002/07/owl#complementOf'] !== undefined, 'first branch must negate trigger');
-          assert.ok(schemaBranches[1]['@id'] !== undefined, 'second branch must be a class reference');
+          const schemaBranchFirst = schemaBranches.at(0);
+
+          if (schemaBranchFirst === undefined) {
+            throw new Error('schemaBranches[0] missing');
+          }
+          const schemaBranchSecond = schemaBranches.at(1);
+
+          if (schemaBranchSecond === undefined) {
+            throw new Error('schemaBranches[1] missing');
+          }
+          assert.ok(schemaBranchFirst['http://www.w3.org/2002/07/owl#complementOf'] !== undefined, 'first branch must negate trigger');
+          assert.ok(schemaBranchSecond['@id'] !== undefined, 'second branch must be a class reference');
         },
         'name': 'serializes dependentRequired and dependentSchemas as owl:unionOf implications'
       },
@@ -5968,8 +6106,18 @@ function expandIri(value: string): string {
           const orList = shOr['@list'] as JsonLdNode[];
 
           assert.strictEqual(orList.length, 2);
-          assert.ok(orList[0]['http://www.w3.org/ns/shacl#not'] !== undefined, 'first branch must negate trigger');
-          assert.ok(orList[1]['http://www.w3.org/ns/shacl#property'] !== undefined, 'second branch must require property');
+          const orListFirst = orList.at(0);
+
+          if (orListFirst === undefined) {
+            throw new Error('orList[0] missing');
+          }
+          const orListSecond = orList.at(1);
+
+          if (orListSecond === undefined) {
+            throw new Error('orList[1] missing');
+          }
+          assert.ok(orListFirst['http://www.w3.org/ns/shacl#not'] !== undefined, 'first branch must negate trigger');
+          assert.ok(orListSecond['http://www.w3.org/ns/shacl#property'] !== undefined, 'second branch must require property');
         },
         'name': 'emits sh:or implication for dependentRequired'
       },

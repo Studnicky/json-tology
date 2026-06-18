@@ -132,7 +132,11 @@ function resolveBlankNodeExpression(options: ResolveBnodeOptionsType): JsonSchem
   const intersection = relationsByPredicate(graph, bnodeId, INTERSECTION_OF_IRIS);
 
   if (intersection.length > 0) {
-    const intersection0 = intersection[0];
+    const intersection0 = intersection.at(0);
+
+    if (intersection0 === undefined) {
+      return undefined;
+    }
 
     return resolveIntersectionBnode({
       allClassIris,
@@ -145,7 +149,11 @@ function resolveBlankNodeExpression(options: ResolveBnodeOptionsType): JsonSchem
   const union = relationsByPredicate(graph, bnodeId, UNION_OF_IRIS);
 
   if (union.length > 0) {
-    const union0 = union[0];
+    const union0 = union.at(0);
+
+    if (union0 === undefined) {
+      return undefined;
+    }
 
     return resolveUnionBnode({
       allClassIris,
@@ -279,7 +287,11 @@ function extractHasValueDiscriminator(
     return undefined;
   }
 
-  const propertyRel = onPropertyRelations[0];
+  const propertyRel = onPropertyRelations.at(0);
+
+  if (propertyRel === undefined) {
+    return undefined;
+  }
 
   if (propertyRel.termType !== 'NamedNode') {
     return undefined;
@@ -287,7 +299,11 @@ function extractHasValueDiscriminator(
   const propertyIri = targetValue(propertyRel);
   const localName = SchemaIri.propertyName(propertyIri);
 
-  const valueRel = hasValueRelations[0];
+  const valueRel = hasValueRelations.at(0);
+
+  if (valueRel === undefined) {
+    return undefined;
+  }
 
   if (valueRel.termType !== 'NamedNode' && valueRel.termType !== 'BlankNode' && valueRel.termType !== 'Literal') {
     return undefined;
@@ -325,7 +341,11 @@ function extractEnumValues(
         const hvRelations = relationsByPredicate(graph, item.target, HAS_VALUE_IRIS);
 
         if (hvRelations.length > 0) {
-          const hv = hvRelations[0];
+          const hv = hvRelations.at(0);
+
+          if (hv === undefined) {
+            break;
+          }
 
           if (hv.termType === 'Literal') {
             const literalTerm = Terms.literal(targetValue(hv), {

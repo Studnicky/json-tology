@@ -107,7 +107,11 @@ class OwlVocabProjection extends VocabProjection {
     const unionMembers: QuadObjectType[] = [withoutTrigger];
 
     if (reqRestrictions.length === 1) {
-      unionMembers.push(reqRestrictions[0]);
+      const firstRestriction = reqRestrictions.at(0);
+
+      if (firstRestriction !== undefined) {
+        unionMembers.push(firstRestriction);
+      }
     } else {
       const interBnode = QuadFactory.nextBnode(issuer);
 
@@ -311,8 +315,12 @@ function emitDatatypeQuads(
   let xsdType: string | undefined;
 
   if (datatypeRels.length > 0) {
-    xsdType = ProjectionIndex.relationTargetId(datatypeRels[0]);
-    quads.push(QuadFactory.quad(subject, OWL.onDatatype, QuadFactory.iri(xsdType, { curie }), { curie }));
+    const firstDatatypeRel = datatypeRels.at(0);
+
+    if (firstDatatypeRel !== undefined) {
+      xsdType = ProjectionIndex.relationTargetId(firstDatatypeRel);
+      quads.push(QuadFactory.quad(subject, OWL.onDatatype, QuadFactory.iri(xsdType, { curie }), { curie }));
+    }
   }
 
   emitDatatypeFacetBnodes(subject, entry, ctx);
@@ -390,24 +398,32 @@ function emitDatatypeMetadata(
   const multipleOfRels = entry.byPredicate.get(JT.multipleOf) ?? [];
 
   if (multipleOfRels.length > 0) {
-    quads.push(QuadFactory.quad(
-      subject,
-      JT.multipleOf,
-      QuadFactory.literal(Number(ProjectionIndex.relationTargetId(multipleOfRels[0])), XSD.decimal, { curie }),
-      { curie }
-    ));
+    const firstMultipleOfRel = multipleOfRels.at(0);
+
+    if (firstMultipleOfRel !== undefined) {
+      quads.push(QuadFactory.quad(
+        subject,
+        JT.multipleOf,
+        QuadFactory.literal(Number(ProjectionIndex.relationTargetId(firstMultipleOfRel)), XSD.decimal, { curie }),
+        { curie }
+      ));
+    }
   }
 
   // H-2: read format from JT.format graph relation, not from source.schema.format
   const formatRels = entry.byPredicate.get(JT.format) ?? [];
 
   if (formatRels.length > 0) {
-    quads.push(QuadFactory.quad(
-      subject,
-      JT.format,
-      QuadFactory.literal(ProjectionIndex.relationTargetId(formatRels[0]), XSD.string, { curie }),
-      { curie }
-    ));
+    const firstFormatRel = formatRels.at(0);
+
+    if (firstFormatRel !== undefined) {
+      quads.push(QuadFactory.quad(
+        subject,
+        JT.format,
+        QuadFactory.literal(ProjectionIndex.relationTargetId(firstFormatRel), XSD.string, { curie }),
+        { curie }
+      ));
+    }
   }
 
   QuadEmit.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, { curie });
@@ -601,17 +617,25 @@ function emitClassEquivalencesAndDisjoint(
   const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
 
   if (complementRels.length > 0) {
-    const complementIri = QuadFactory.iri(ProjectionIndex.relationTargetId(complementRels[0]), { curie });
+    const firstComplementRel = complementRels.at(0);
 
-    quads.push(QuadFactory.quad(subject, OWL.complementOf, complementIri, { curie }));
+    if (firstComplementRel !== undefined) {
+      const complementIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstComplementRel), { curie });
+
+      quads.push(QuadFactory.quad(subject, OWL.complementOf, complementIri, { curie }));
+    }
   }
 
   const disjointRels = entry.byPredicate.get(OWL.disjointWith) ?? [];
 
   if (disjointRels.length > 0) {
-    const disjointIri = QuadFactory.iri(ProjectionIndex.relationTargetId(disjointRels[0]), { curie });
+    const firstDisjointRel = disjointRels.at(0);
 
-    quads.push(QuadFactory.quad(subject, OWL.disjointWith, disjointIri, { curie }));
+    if (firstDisjointRel !== undefined) {
+      const disjointIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstDisjointRel), { curie });
+
+      quads.push(QuadFactory.quad(subject, OWL.disjointWith, disjointIri, { curie }));
+    }
   }
 
   const disjointUnionRels = entry.byPredicate.get(OWL.disjointUnionOf) ?? [];
@@ -647,10 +671,14 @@ function emitClassEnumerations(
   const hasValueRels = entry.byPredicate.get(OWL.hasValue) ?? [];
 
   if (hasValueRels.length > 0) {
-    const hasValueTarget = typedLiteralObject(ProjectionIndex.relationTargetId(hasValueRels[0]));
-    const valueLit = QuadFactory.literal(hasValueTarget, RDF.JSON, { curie });
+    const firstHasValueRel = hasValueRels.at(0);
 
-    quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList([valueLit], quads, issuer), { curie }));
+    if (firstHasValueRel !== undefined) {
+      const hasValueTarget = typedLiteralObject(ProjectionIndex.relationTargetId(firstHasValueRel));
+      const valueLit = QuadFactory.literal(hasValueTarget, RDF.JSON, { curie });
+
+      quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList([valueLit], quads, issuer), { curie }));
+    }
   }
 }
 
@@ -774,13 +802,21 @@ function emitPropertyRangeAndUnion(
   if (!hasMaxCount) {
     quads.push(QuadFactory.quad(canonicalId, RDFS.range, QuadFactory.iri(RDF.List, { curie }), { curie }));
   } else if (rangeRels.length > 0) {
-    const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
+    const firstRangeRel = rangeRels.at(0);
 
-    quads.push(QuadFactory.quad(canonicalId, RDFS.range, rangeIri, { curie }));
+    if (firstRangeRel !== undefined) {
+      const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstRangeRel), { curie });
+
+      quads.push(QuadFactory.quad(canonicalId, RDFS.range, rangeIri, { curie }));
+    }
   } else if (datatypeRels.length > 0) {
-    const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), { curie });
+    const firstDatatypeRangeRel = datatypeRels.at(0);
 
-    quads.push(QuadFactory.quad(canonicalId, RDFS.range, datatypeIri, { curie }));
+    if (firstDatatypeRangeRel !== undefined) {
+      const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstDatatypeRangeRel), { curie });
+
+      quads.push(QuadFactory.quad(canonicalId, RDFS.range, datatypeIri, { curie }));
+    }
   }
 
   for (const rel of entry.all.filter((relation: SchemaGraphRelationType): boolean => {
@@ -801,9 +837,13 @@ function emitPropertyRangeAndUnion(
   const inverseRels = entry.byPredicate.get(OWL.inverseOf) ?? [];
 
   if (inverseRels.length > 0) {
-    const inverseIri = QuadFactory.iri(ProjectionIndex.relationTargetId(inverseRels[0]), { curie });
+    const firstInverseRel = inverseRels.at(0);
 
-    quads.push(QuadFactory.quad(canonicalId, OWL.inverseOf, inverseIri, { curie }));
+    if (firstInverseRel !== undefined) {
+      const inverseIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstInverseRel), { curie });
+
+      quads.push(QuadFactory.quad(canonicalId, OWL.inverseOf, inverseIri, { curie }));
+    }
   }
 }
 
@@ -855,9 +895,10 @@ function emitPropertyQuads(
   }
 
   const domainRels = entry.byPredicate.get(RDFS.domain) ?? [];
-  const classId = domainRels.length > 0
-    ? ProjectionIndex.relationTargetId(domainRels[0])
-    : SchemaIri.structuralParent(subject);
+  const firstDomainRel = domainRels.at(0);
+  const classId = firstDomainRel === undefined
+    ? SchemaIri.structuralParent(subject)
+    : ProjectionIndex.relationTargetId(firstDomainRel);
 
   const canonicalId = resolveCanonicalPropertyIri({
     'fallback': canonicalPropertyIri,
@@ -916,10 +957,15 @@ function emitQualifiedCardinalityRestriction(args: EmitQualifiedCardinalityRestr
   if (rels.length === 0) {
     return;
   }
+  const firstRel = rels.at(0);
+
+  if (firstRel === undefined) {
+    return;
+  }
   const {
     curie, issuer, quads
   } = ctx;
-  const val = Number(ProjectionIndex.relationTargetId(rels[0]));
+  const val = Number(ProjectionIndex.relationTargetId(firstRel));
   const lit = QuadFactory.literal(val, XSD.nonNegativeInteger, { curie });
   const rBnode = emitRestriction({
     'constraint': cardinalityPredicate,
@@ -1033,7 +1079,11 @@ function resolveItemTypeId(
   const propRangeRels = propEntry.byPredicate.get(RDFS.range) ?? [];
 
   if (propRangeRels.length > 0) {
-    return ProjectionIndex.relationTargetId(propRangeRels[0]);
+    const firstPropRangeRel = propRangeRels.at(0);
+
+    if (firstPropRangeRel !== undefined) {
+      return ProjectionIndex.relationTargetId(firstPropRangeRel);
+    }
   }
 
   const itemsSubject = `${propSubject}/items`;
@@ -1047,11 +1097,19 @@ function resolveItemTypeId(
   const dtRels = itemsEntry.byPredicate.get(SH.datatype) ?? [];
 
   if (rangeRels.length > 0) {
-    return ProjectionIndex.relationTargetId(rangeRels[0]);
+    const firstRangeRel = rangeRels.at(0);
+
+    if (firstRangeRel !== undefined) {
+      return ProjectionIndex.relationTargetId(firstRangeRel);
+    }
   }
 
   if (dtRels.length > 0) {
-    return ProjectionIndex.relationTargetId(dtRels[0]);
+    const firstDtRel = dtRels.at(0);
+
+    if (firstDtRel !== undefined) {
+      return ProjectionIndex.relationTargetId(firstDtRel);
+    }
   }
 
   return itemsSubject;
@@ -1149,15 +1207,23 @@ function emitPatternPropertyEntry(args: EmitPatternPropertyEntryArgsType): void 
   quads.push(QuadFactory.quad(propIri, SH.pattern, QuadFactory.literal(pattern, XSD.string, { curie }), { curie }));
 
   if (hasDatatype) {
-    const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), { curie });
+    const firstDatatypeRel = datatypeRels.at(0);
 
-    quads.push(QuadFactory.quad(propIri, RDFS.range, datatypeIri, { curie }));
+    if (firstDatatypeRel !== undefined) {
+      const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstDatatypeRel), { curie });
+
+      quads.push(QuadFactory.quad(propIri, RDFS.range, datatypeIri, { curie }));
+    }
   }
 
   if (hasRange) {
-    const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
+    const firstRangeRel = rangeRels.at(0);
 
-    quads.push(QuadFactory.quad(propIri, RDFS.range, rangeIri, { curie }));
+    if (firstRangeRel !== undefined) {
+      const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstRangeRel), { curie });
+
+      quads.push(QuadFactory.quad(propIri, RDFS.range, rangeIri, { curie }));
+    }
   }
 
   if (patternEntry !== undefined) {

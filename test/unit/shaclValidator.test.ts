@@ -1345,8 +1345,13 @@ function rdfList(prefix: string, items: QuadObjectType[]): {
   for (let idx = 0; idx < items.length; idx++) {
     const node = Terms.blank(`${prefix}${idx}`);
     const rest = idx + 1 < items.length ? Terms.blank(`${prefix}${idx + 1}`) : Terms.iri(RDF.nil);
+    const item = items.at(idx);
 
-    quads.push(Terms.quad(node, Terms.iri(RDF.first), items[idx]));
+    if (item === undefined) {
+      throw new Error(`expected items[${idx}] to exist`);
+    }
+
+    quads.push(Terms.quad(node, Terms.iri(RDF.first), item));
     quads.push(Terms.quad(node, Terms.iri(RDF.rest), rest));
   }
 

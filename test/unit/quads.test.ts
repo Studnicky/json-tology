@@ -77,7 +77,12 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
     });
 
     assert.ok(rootHits.length > 0, 'root override should be applied');
-    assert.equal(rootHits[0].subject.value, 'https://example.com/teams/platform');
+    const rootHit0 = rootHits.at(0);
+
+    if (rootHit0 === undefined) {
+      throw new Error('expected root hit at index 0');
+    }
+    assert.equal(rootHit0.subject.value, 'https://example.com/teams/platform');
 
     const nestedSubjects = new Set(quads.map((quad) => {
       return quad.subject.value;
@@ -118,8 +123,17 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
     const quadsA = jtUser.toQuads(UserSchema, { 'name': 'Alice' }, { 'iriFor': 'blank-node' });
     const quadsB = jtUser.toQuads(UserSchema, { 'name': 'Bob' }, { 'iriFor': 'blank-node' });
 
-    assert.equal(quadsA[0].subject.value, '_:b0');
-    assert.equal(quadsB[0].subject.value, '_:b0');
+    const quadsA0 = quadsA.at(0);
+    const quadsB0 = quadsB.at(0);
+
+    if (quadsA0 === undefined) {
+      throw new Error('expected quad in quadsA at index 0');
+    }
+    if (quadsB0 === undefined) {
+      throw new Error('expected quad in quadsB at index 0');
+    }
+    assert.equal(quadsA0.subject.value, '_:b0');
+    assert.equal(quadsB0.subject.value, '_:b0');
   });
 
   void it('Skolemize.fromProperty + wellKnownGenid strategies', () => {
@@ -288,8 +302,19 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
       'schemas': [UserSchema]
     });
 
-    assert.equal(jt5.toQuads(UserSchema, { 'name': 'A' })[0].subject.value, '_:b0');
-    assert.equal(jt5.toQuads(UserSchema, { 'name': 'B' })[0].subject.value, '_:b0');
+    const jt5QuadsA = jt5.toQuads(UserSchema, { 'name': 'A' });
+    const jt5QuadsB = jt5.toQuads(UserSchema, { 'name': 'B' });
+    const jt5QuadsA0 = jt5QuadsA.at(0);
+    const jt5QuadsB0 = jt5QuadsB.at(0);
+
+    if (jt5QuadsA0 === undefined) {
+      throw new Error('expected quad in jt5 quads A at index 0');
+    }
+    if (jt5QuadsB0 === undefined) {
+      throw new Error('expected quad in jt5 quads B at index 0');
+    }
+    assert.equal(jt5QuadsA0.subject.value, '_:b0');
+    assert.equal(jt5QuadsB0.subject.value, '_:b0');
 
     // noopSkolemize falls back to default IRI minter
     const jtTeam = JsonTology.create({

@@ -141,8 +141,14 @@ void describe('VocabularyPlugin', () => {
           });
 
           assert.equal(acmeRelations.length, 1);
-          assert.equal(acmeRelations[0]?.target, 'high');
-          assert.equal(acmeRelations[0]?.source.pointer, '');
+
+          const acmeFirst = acmeRelations.at(0);
+
+          if (acmeFirst === undefined) {
+            throw new Error('acmeRelations[0] missing');
+          }
+          assert.equal(acmeFirst.target, 'high');
+          assert.equal(acmeFirst.source.pointer, '');
         },
         'name': 'includes custom relations from plugin during graph construction'
       },

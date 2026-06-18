@@ -48,8 +48,14 @@ void describe('OntologyBuilder.quads()', () => {
     const result = builder.quads();
 
     assert.equal(result.length, 2);
-    assert.equal(result[0].subject.value, q1.subject.value);
-    assert.equal(result[1].subject.value, q2.subject.value);
+    const result0 = result.at(0);
+    const result1 = result.at(1);
+
+    if (result0 === undefined || result1 === undefined) {
+      throw new Error('expected result to have 2 elements');
+    }
+    assert.equal(result0.subject.value, q1.subject.value);
+    assert.equal(result1.subject.value, q2.subject.value);
   });
 
   void it('concatenates quads from multiple addFromQuads calls', () => {
@@ -60,8 +66,14 @@ void describe('OntologyBuilder.quads()', () => {
     const result = builder.quads();
 
     assert.equal(result.length, 2);
-    assert.equal(result[0].subject.value, qa.subject.value);
-    assert.equal(result[1].subject.value, qb.subject.value);
+    const resultA = result.at(0);
+    const resultB = result.at(1);
+
+    if (resultA === undefined || resultB === undefined) {
+      throw new Error('expected result to have 2 elements');
+    }
+    assert.equal(resultA.subject.value, qa.subject.value);
+    assert.equal(resultB.subject.value, qb.subject.value);
   });
 
   void it('returns a fresh array each call', () => {
@@ -102,8 +114,14 @@ void describe('OntologyBuilder.shaclQuads()', () => {
     const result = builder.shaclQuads();
 
     assert.equal(result.length, 2);
-    assert.equal(result[0].subject.value, q1.subject.value);
-    assert.equal(result[1].subject.value, q2.subject.value);
+    const shacl0 = result.at(0);
+    const shacl1 = result.at(1);
+
+    if (shacl0 === undefined || shacl1 === undefined) {
+      throw new Error('expected result to have 2 elements');
+    }
+    assert.equal(shacl0.subject.value, q1.subject.value);
+    assert.equal(shacl1.subject.value, q2.subject.value);
   });
 
   void it('concatenates quads from multiple addShaclFromQuads calls', () => {
@@ -114,8 +132,14 @@ void describe('OntologyBuilder.shaclQuads()', () => {
     const result = builder.shaclQuads();
 
     assert.equal(result.length, 2);
-    assert.equal(result[0].subject.value, qa.subject.value);
-    assert.equal(result[1].subject.value, qb.subject.value);
+    const shaclA = result.at(0);
+    const shaclB = result.at(1);
+
+    if (shaclA === undefined || shaclB === undefined) {
+      throw new Error('expected result to have 2 elements');
+    }
+    assert.equal(shaclA.subject.value, qa.subject.value);
+    assert.equal(shaclB.subject.value, qb.subject.value);
   });
 
   void it('shaclObject @graph reflects quads added via addShaclFromQuads', () => {

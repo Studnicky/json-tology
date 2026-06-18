@@ -340,6 +340,10 @@ function parseNQuadLine(body: string): NQuadLineResultType {
   const predicateToken = tokens[1];
   const objectToken = tokens[2];
 
+  if (subjectToken === undefined || predicateToken === undefined || objectToken === undefined) {
+    return undefined;
+  }
+
   const subjectTerm = subjectToken.startsWith('_:')
     ? Terms.blank(subjectToken.slice(2))
     : Terms.iri(subjectToken.slice(1, -1));
@@ -515,6 +519,8 @@ function tokenizeNQuadLine(line: string): string[] {
 
         break;
       }
+      case undefined:
+        break;
       default:
       // Unknown token character — skip
         pos++;

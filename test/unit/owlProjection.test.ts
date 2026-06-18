@@ -83,7 +83,12 @@ void describe('OwlProjection.graph()', { 'concurrency': true }, () => {
     });
 
     assert.ok(dtPropQuads.length > 0, 'string property should produce owl:DatatypeProperty quad');
-    const propSubject = dtPropQuads[0].subject.value;
+    const dtPropQuad0 = dtPropQuads.at(0);
+
+    if (dtPropQuad0 === undefined) {
+      throw new Error('expected DatatypeProperty quad at index 0');
+    }
+    const propSubject = dtPropQuad0.subject.value;
 
     assert.ok(
       typeof propSubject === 'string' && propSubject.includes('title'),
@@ -104,7 +109,12 @@ void describe('OwlProjection.graph()', { 'concurrency': true }, () => {
     });
 
     assert.ok(objPropQuads.length > 0, '$ref property should produce owl:ObjectProperty quad');
-    const propSubject = objPropQuads[0].subject.value;
+    const objPropQuad0 = objPropQuads.at(0);
+
+    if (objPropQuad0 === undefined) {
+      throw new Error('expected ObjectProperty quad at index 0');
+    }
+    const propSubject = objPropQuad0.subject.value;
 
     assert.ok(
       typeof propSubject === 'string' && propSubject.includes('customer'),

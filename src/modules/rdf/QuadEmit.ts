@@ -27,9 +27,11 @@ export const QuadEmit = {
   ): void {
     const rels = entry.byPredicate.get(predicate) ?? [];
 
-    if (rels.length > 0) {
+    const firstRel = rels[0];
+
+    if (firstRel !== undefined) {
       const curie = options?.curie;
-      const numLit = QuadFactory.literal(Number(ProjectionIndex.relationTargetId(rels[0])), datatype, { curie });
+      const numLit = QuadFactory.literal(Number(ProjectionIndex.relationTargetId(firstRel)), datatype, { curie });
 
       quads.push(QuadFactory.quad(subject, predicate, numLit, { curie }));
     }

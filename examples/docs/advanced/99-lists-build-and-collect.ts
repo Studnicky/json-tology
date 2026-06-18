@@ -39,8 +39,15 @@ console.assert(head.termType === 'BlankNode', 'head is a blank node');
 const items = Lists.collect(head, quads);
 
 console.assert(items.length === 2, 'walked two items');
-console.assert(items[0].termType === 'NamedNode' && items[0].value === 'https://example.com/Circle');
-console.assert(items[1].termType === 'NamedNode' && items[1].value === 'https://example.com/Square');
+const item0 = items[0];
+const item1 = items[1];
+
+if (item0 === undefined || item1 === undefined) {
+  throw new Error('expected two walked items');
+}
+
+console.assert(item0.termType === 'NamedNode' && item0.value === 'https://example.com/Circle');
+console.assert(item1.termType === 'NamedNode' && item1.value === 'https://example.com/Square');
 
 console.log('list head:', head.value);
 console.log('walked items:', items.map((item) => {

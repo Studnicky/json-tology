@@ -390,6 +390,10 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
           const iriA = memberIris[i];
           const iriB = memberIris[j];
 
+          if (iriA === undefined || iriB === undefined) {
+            continue;
+          }
+
           const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
 
           if (seenDifferentFrom.has(pairKey)) {

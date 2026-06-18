@@ -308,7 +308,12 @@ function writeMarkdownReport(
     const sorted = [...others].sort((first, second) => {
       return first.opsPerSec - second.opsPerSec;
     });
-    const medianOps = sorted[Math.floor(sorted.length / 2)].opsPerSec;
+    const medianResult = sorted[Math.floor(sorted.length / 2)];
+
+    if (medianResult === undefined) {
+      continue;
+    }
+    const medianOps = medianResult.opsPerSec;
     const ratio = medianOps / ours.opsPerSec;
 
     if (ratio >= 5) {

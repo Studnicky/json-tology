@@ -206,7 +206,13 @@ function build(
   let current: BnodeTermType = head;
 
   for (let i = 0; i < items.length; i++) {
-    triples.push(Terms.quad(current, Terms.iri(RDF.first), items[i]));
+    const item = items[i];
+
+    if (item === undefined) {
+      continue;
+    }
+
+    triples.push(Terms.quad(current, Terms.iri(RDF.first), item));
 
     if (i < items.length - 1) {
       const next = nextListBnodeWithFallback(issuer);

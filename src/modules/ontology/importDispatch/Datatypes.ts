@@ -279,12 +279,13 @@ function applyOnDatatype(
   delta: Record<string, unknown>
 ): 'boolean' | 'integer' | 'number' | 'string' | undefined {
   const onDatatype = relationsByPredicate(graph, subjectIri, OWL_ON_DATATYPE_IRIS);
+  const firstOnDatatype = onDatatype[0];
 
-  if (onDatatype.length === 0 || onDatatype[0].termType !== 'NamedNode') {
+  if (firstOnDatatype?.termType !== 'NamedNode') {
     return undefined;
   }
 
-  const onDt = targetValue(onDatatype[0]);
+  const onDt = targetValue(firstOnDatatype);
   const mappedType = XSD_TO_SCHEMA_TYPE.get(onDt);
 
   if (mappedType !== undefined) {
@@ -374,9 +375,10 @@ function applyExtensionAnnotations(
   delta: Record<string, unknown>
 ): void {
   const multipleOf = relationsByPredicate(graph, subjectIri, JT_MULTIPLE_OF_IRIS);
+  const firstMultipleOf = multipleOf[0];
 
-  if (multipleOf.length > 0) {
-    const moNum = literalNumber(multipleOf[0]);
+  if (firstMultipleOf !== undefined) {
+    const moNum = literalNumber(firstMultipleOf);
 
     if (moNum !== null) {
       delta.multipleOf = moNum;
@@ -384,9 +386,10 @@ function applyExtensionAnnotations(
   }
 
   const formatRels = relationsByPredicate(graph, subjectIri, JT_FORMAT_IRIS);
+  const firstFormatRel = formatRels[0];
 
-  if (formatRels.length > 0) {
-    const fmtStr = literalString(formatRels[0]);
+  if (firstFormatRel !== undefined) {
+    const fmtStr = literalString(firstFormatRel);
 
     if (fmtStr !== null) {
       delta.format = fmtStr;

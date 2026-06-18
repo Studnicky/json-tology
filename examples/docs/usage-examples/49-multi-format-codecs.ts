@@ -738,6 +738,10 @@ for (const {
 // to the branded type toQuads requires.
 if (sourcedRecords.length > 0) {
   const first = sourcedRecords[0];
+
+  if (first === undefined) {
+    throw new Error('expected sourced record');
+  }
   const firstIri = recordIri(first.record.isbn);
   const firstTyped = jt.instantiate(BibliographicRecordSchema, first.record);
 
@@ -797,7 +801,12 @@ if (wikiRaw !== null) {
 
 if (sourcedRecords.length > 0) {
   console.log('\n── Fan-out re-encode: canonical record → Google Books volume ──');
-  const toReEncode = sourcedRecords[0].record;
+  const toReEncode0 = sourcedRecords[0];
+
+  if (toReEncode0 === undefined) {
+    throw new Error('expected sourced record');
+  }
+  const toReEncode = toReEncode0.record;
 
   // jt.encode runs the GoogleVolumeCodec encoder, transforming canonical→wire.
   const reEncoded = jt.encode(GoogleVolumeCodec, toReEncode) as {

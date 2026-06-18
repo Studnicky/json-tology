@@ -146,8 +146,13 @@ void describe('invariants', { 'concurrency': true }, () => {
     const errors = jt.validate(OrderSchema.$id, data);
 
     assert.equal(errors.length, 1);
-    assert.equal(errors.items[0].message, 'total must equal sum of items');
-    assert.equal(errors.items[0].keyword, 'jt:invariant');
+    const errItem0 = errors.items.at(0);
+
+    if (errItem0 === undefined) {
+      throw new Error('expected errors.items[0] to exist');
+    }
+    assert.equal(errItem0.message, 'total must equal sum of items');
+    assert.equal(errItem0.keyword, 'jt:invariant');
   });
 
   void it('failing invariant causes coerce() to throw InstantiationError', () => {
@@ -183,7 +188,12 @@ void describe('invariants', { 'concurrency': true }, () => {
       },
       (err: unknown) => {
         assert.ok(err instanceof InstantiationError, 'is InstantiationError');
-        assert.equal(err.errors.items[0].message, 'total mismatch');
+        const instErrItem0 = err.errors.items.at(0);
+
+        if (instErrItem0 === undefined) {
+          throw new Error('expected err.errors.items[0] to exist');
+        }
+        assert.equal(instErrItem0.message, 'total mismatch');
 
         return true;
       }
@@ -434,6 +444,11 @@ void describe('invariants', { 'concurrency': true }, () => {
     });
 
     assert.equal(errors.length, 1);
-    assert.equal(errors.items[0].path, '/total');
+    const pathErrItem0 = errors.items.at(0);
+
+    if (pathErrItem0 === undefined) {
+      throw new Error('expected errors.items[0] to exist');
+    }
+    assert.equal(pathErrItem0.path, '/total');
   });
 });

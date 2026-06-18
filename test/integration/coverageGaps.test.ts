@@ -1221,8 +1221,19 @@ void describe('Mixed $defs + cross-schema $ref', () => {
     const reconstructed = jt.toSchema(Mixed.$id) as Record<string, unknown>;
     const properties = reconstructed.properties as Record<string, Record<string, unknown>>;
 
-    assert.equal(properties.tag.$ref, 'urn:mixed:Tag', 'cross-schema ref preserved');
-    assert.ok(typeof properties.local.$ref === 'string', 'local $defs ref preserved as string');
-    assert.match(properties.local.$ref, /\$defs\/Local|Doc/u, 'local ref points into $defs');
+    const tagProp = properties.tag;
+
+    if (tagProp === undefined) {
+      throw new Error('properties.tag missing');
+    }
+    assert.equal(tagProp.$ref, 'urn:mixed:Tag', 'cross-schema ref preserved');
+
+    const localProp = properties.local;
+
+    if (localProp === undefined) {
+      throw new Error('properties.local missing');
+    }
+    assert.ok(typeof localProp.$ref === 'string', 'local $defs ref preserved as string');
+    assert.match(localProp.$ref, /\$defs\/Local|Doc/u, 'local ref points into $defs');
   });
 });

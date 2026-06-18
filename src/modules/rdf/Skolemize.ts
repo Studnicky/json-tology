@@ -51,6 +51,21 @@ const HEX_LOOKUP: readonly string[] = Array.from({ 'length': UUID_BYTE_MAX_PLUS_
   return i.toString(HEX_RADIX).padStart(UUID_HEX_PAD_LENGTH, '0');
 });
 
+/** Return the hex string for a byte value, throwing if out of range. */
+function hexAt(byte: number | undefined): string {
+  if (byte === undefined) {
+    throw new Error('UUID byte index out of bounds');
+  }
+
+  const hex = HEX_LOOKUP.at(byte);
+
+  if (hex === undefined) {
+    throw new Error(`HEX_LOOKUP out of bounds: ${byte}`);
+  }
+
+  return hex;
+}
+
 function stripTrailingSlash(iri: string): string {
   let result = iri;
 
@@ -79,18 +94,25 @@ function randomUuidV4(): string {
     cryptoObj.getRandomValues(bytes);
   }
 
-  bytes[UUID_VERSION_BYTE_INDEX] = (bytes[UUID_VERSION_BYTE_INDEX] & UUID_VERSION_MASK) | UUID_VERSION_SET;
-  bytes[UUID_VARIANT_BYTE_INDEX] = (bytes[UUID_VARIANT_BYTE_INDEX] & UUID_VARIANT_MASK) | UUID_VARIANT_SET;
+  const versionByte = bytes.at(UUID_VERSION_BYTE_INDEX);
+  const variantByte = bytes.at(UUID_VARIANT_BYTE_INDEX);
+
+  if (versionByte === undefined || variantByte === undefined) {
+    throw new Error('UUID byte array too short');
+  }
+
+  bytes[UUID_VERSION_BYTE_INDEX] = (versionByte & UUID_VERSION_MASK) | UUID_VERSION_SET;
+  bytes[UUID_VARIANT_BYTE_INDEX] = (variantByte & UUID_VARIANT_MASK) | UUID_VARIANT_SET;
 
   return (
-    `${HEX_LOOKUP[bytes[UUID_SEG0_B0]] + HEX_LOOKUP[bytes[UUID_SEG0_B1]]
-    + HEX_LOOKUP[bytes[UUID_SEG0_B2]] + HEX_LOOKUP[bytes[UUID_SEG0_B3]]}-${
-      HEX_LOOKUP[bytes[UUID_SEG1_B0]]}${HEX_LOOKUP[bytes[UUID_SEG1_B1]]}-${
-      HEX_LOOKUP[bytes[UUID_SEG2_B0]]}${HEX_LOOKUP[bytes[UUID_SEG2_B1]]}-${
-      HEX_LOOKUP[bytes[UUID_SEG3_B0]]}${HEX_LOOKUP[bytes[UUID_SEG3_B1]]}-${
-      HEX_LOOKUP[bytes[UUID_SEG4_B0]]}${HEX_LOOKUP[bytes[UUID_SEG4_B1]]
-    }${HEX_LOOKUP[bytes[UUID_SEG4_B2]]}${HEX_LOOKUP[bytes[UUID_SEG4_B3]]
-    }${HEX_LOOKUP[bytes[UUID_SEG4_B4]]}${HEX_LOOKUP[bytes[UUID_SEG4_B5]]}`
+    `${hexAt(bytes.at(UUID_SEG0_B0)) + hexAt(bytes.at(UUID_SEG0_B1))
+    + hexAt(bytes.at(UUID_SEG0_B2)) + hexAt(bytes.at(UUID_SEG0_B3))}-${
+      hexAt(bytes.at(UUID_SEG1_B0))}${hexAt(bytes.at(UUID_SEG1_B1))}-${
+      hexAt(bytes.at(UUID_SEG2_B0))}${hexAt(bytes.at(UUID_SEG2_B1))}-${
+      hexAt(bytes.at(UUID_SEG3_B0))}${hexAt(bytes.at(UUID_SEG3_B1))}-${
+      hexAt(bytes.at(UUID_SEG4_B0))}${hexAt(bytes.at(UUID_SEG4_B1))
+    }${hexAt(bytes.at(UUID_SEG4_B2))}${hexAt(bytes.at(UUID_SEG4_B3))
+    }${hexAt(bytes.at(UUID_SEG4_B4))}${hexAt(bytes.at(UUID_SEG4_B5))}`
   );
 }
 

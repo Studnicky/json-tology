@@ -24,6 +24,9 @@ if (synthetic instanceof CoercionError) {
   console.log('synthetic.errors.length:', synthetic.errors.length);
   const first = synthetic.errors.items[0];
 
+  if (first === undefined) {
+    throw new Error('expected validation error');
+  }
   console.log('errors[0].path:', first.path);
   console.log('errors[0].keyword:', first.keyword);
   console.log('errors[0].message:', first.message);

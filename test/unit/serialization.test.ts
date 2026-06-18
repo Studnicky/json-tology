@@ -66,9 +66,19 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 2);
-          assert.equal(result[0]['@id'], 'ex:Person');
-          assert.equal(result[0]['rdfs:comment'], 'A person');
-          assert.equal(result[1]['@id'], 'ex:Animal');
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          const r1 = result.at(1);
+
+          if (r1 === undefined) {
+            throw new Error('expected element at 1');
+          }
+          assert.equal(r0['@id'], 'ex:Person');
+          assert.equal(r0['rdfs:comment'], 'A person');
+          assert.equal(r1['@id'], 'ex:Animal');
         },
         'name': 'happy: groups quads by subject into separate nodes',
         'quads': [
@@ -79,15 +89,25 @@ import {
       },
       {
         'check': (result) => {
-          assert.equal(result[0]['@type'], OWL.Class);
-          assert.equal(result[0][RDF.type], undefined);
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['@type'], OWL.Class);
+          assert.equal(r0[RDF.type], undefined);
         },
         'name': 'happy: converts rdf:type to @type',
         'quads': [quad('ex:Person', RDF.type, named(OWL.Class))]
       },
       {
         'check': (result) => {
-          assert.deepEqual(result[0]['rdfs:label'], [
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.deepEqual(r0['rdfs:label'], [
             'Person',
             'Human'
           ]);
@@ -100,7 +120,12 @@ import {
       },
       {
         'check': (result) => {
-          assert.deepEqual(result[0]['@type'], [
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.deepEqual(r0['@type'], [
             OWL.Class,
             'http://www.w3.org/2000/01/rdf-schema#Resource'
           ]);
@@ -121,8 +146,13 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 1);
-          assert.equal(result[0]['@id'], 'ex:Widget');
-          assert.equal(result[0]['rdfs:label'], 'Widget');
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['@id'], 'ex:Widget');
+          assert.equal(r0['rdfs:label'], 'Widget');
         },
         'name': 'edge: single quad produces single node',
         'quads': [quad('ex:Widget', 'rdfs:label', literal('Widget'))]
@@ -130,8 +160,13 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 1);
-          assert.equal(result[0]['@id'], 'ex:Person');
-          assert.equal(result[0]['ex:age'], 30);
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['@id'], 'ex:Person');
+          assert.equal(r0['ex:age'], 30);
         },
         'name': 'edge: duplicate subjects with different predicates merge into one node',
         'quads': [
@@ -166,8 +201,13 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 1);
-          assert.equal(result[0]['@id'], 'ex:Person');
-          const address = result[0]['ex:address'] as Record<string, unknown>;
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['@id'], 'ex:Person');
+          const address = r0['ex:address'] as Record<string, unknown>;
 
           assert.equal(address['ex:city'], 'Portland');
           assert.equal(address['@id'], undefined);
@@ -181,8 +221,13 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 3);
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
           assert.equal(
-            (result[0]['ex:address'] as Record<string, unknown>)['@id'],
+            (r0['ex:address'] as Record<string, unknown>)['@id'],
             '_:b0'
           );
         },
@@ -262,9 +307,14 @@ import {
       },
       {
         'check': (result) => {
-          assert.equal(result[0]['ex:count'], 42);
-          assert.equal(result[0]['ex:active'], true);
-          assert.equal(result[0]['ex:name'], 'Widget');
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['ex:count'], 42);
+          assert.equal(r0['ex:active'], true);
+          assert.equal(r0['ex:name'], 'Widget');
         },
         'name': 'happy: literal types preserved (integer, boolean, string)',
         'quads': [
@@ -275,7 +325,12 @@ import {
       },
       {
         'check': (result) => {
-          assert.deepEqual(result[0]['rdfs:subClassOf'], { '@id': 'ex:Agent' });
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.deepEqual(r0['rdfs:subClassOf'], { '@id': 'ex:Agent' });
         },
         'name': 'happy: NamedNode becomes @id reference',
         'quads': [quad('ex:Person', 'rdfs:subClassOf', named('ex:Agent'))]
@@ -536,8 +591,19 @@ import {
       };
 
       BaseGraphSerializer.normalizeArrays(n4, ['label']);
-      assert.deepEqual((n4.items as Array<Record<string, unknown>>)[0].label, ['First']);
-      assert.deepEqual((n4.items as Array<Record<string, unknown>>)[1].label, ['Second']);
+      const n4Items = n4.items as Array<Record<string, unknown>>;
+      const n4Item0 = n4Items.at(0);
+
+      if (n4Item0 === undefined) {
+        throw new Error('expected element at 0');
+      }
+      const n4Item1 = n4Items.at(1);
+
+      if (n4Item1 === undefined) {
+        throw new Error('expected element at 1');
+      }
+      assert.deepEqual(n4Item0.label, ['First']);
+      assert.deepEqual(n4Item1.label, ['Second']);
 
       // Ugly: leaves non-matching keys unchanged
       const n5: Record<string, unknown> = {

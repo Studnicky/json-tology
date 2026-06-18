@@ -121,7 +121,13 @@ function extractEquivalentMembersFromGraph(
     return [];
   }
 
-  const listHead = targetValue(unionRelations[0]);
+  const firstUnionRelation = unionRelations[0];
+
+  if (firstUnionRelation === undefined) {
+    return [];
+  }
+
+  const listHead = targetValue(firstUnionRelation);
   const members: string[] = [];
 
   for (const item of graph.collectList(listHead)) {
@@ -383,11 +389,17 @@ function applyEquivalentClassBlankNode(
       'anyOf': anyOf
     });
   } else if (members.length === 1) {
+    const singleMember = members[0];
+
+    if (singleMember === undefined) {
+      return;
+    }
+
     const existing = options.axiomCtx.schemaDeltas.get(subjectIri) ?? {};
 
     options.axiomCtx.schemaDeltas.set(subjectIri, {
       ...existing,
-      '$ref': members[0]
+      '$ref': singleMember
     });
   }
 }
@@ -406,11 +418,19 @@ function applyEquivalentClassLiteral(
   const members = parseUnionLiteralWrapper(targetValue(relation));
 
   if (members.length > 0) {
+    const firstMember = members[0];
+
+    if (firstMember === undefined) {
+      reportUnsupported(OWL.equivalentClass, subjectIri);
+
+      return;
+    }
+
     const existing = schemaDeltas.get(subjectIri) ?? {};
 
     schemaDeltas.set(subjectIri, {
       ...existing,
-      '$ref': members[0]
+      '$ref': firstMember
     });
 
     return;

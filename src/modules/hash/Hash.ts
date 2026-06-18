@@ -38,7 +38,10 @@ function keySortReplacer(_: string, value: unknown): unknown {
     let alreadySorted = true;
 
     for (let i = 1; i < keys.length; i++) {
-      if (keys[i - 1] > keys[i]) {
+      const prev = keys[i - 1];
+      const curr = keys[i];
+
+      if (prev !== undefined && curr !== undefined && prev > curr) {
         alreadySorted = false;
         break;
       }

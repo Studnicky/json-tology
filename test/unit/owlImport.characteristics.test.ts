@@ -141,8 +141,13 @@ void describe('importCharacteristics — full IRI characteristic detection', { '
       const fragment = importCharacteristics(quads, ctx);
 
       assert.strictEqual(fragment.characteristics.length, 1);
-      assert.strictEqual(fragment.characteristics[0].propertyIri, PROPERTY_IRI);
-      assert.strictEqual(fragment.characteristics[0].characteristic, characteristicName);
+      const char0 = fragment.characteristics.at(0);
+
+      if (char0 === undefined) {
+        throw new Error('expected characteristic at index 0');
+      }
+      assert.strictEqual(char0.propertyIri, PROPERTY_IRI);
+      assert.strictEqual(char0.characteristic, characteristicName);
     });
   }
 });
@@ -193,8 +198,13 @@ void describe('importCharacteristics — curie IRI characteristic detection', { 
       const fragment = importCharacteristics(quads, ctx);
 
       assert.strictEqual(fragment.characteristics.length, 1);
-      assert.strictEqual(fragment.characteristics[0].propertyIri, PROPERTY_IRI);
-      assert.strictEqual(fragment.characteristics[0].characteristic, characteristicName);
+      const curieChar0 = fragment.characteristics.at(0);
+
+      if (curieChar0 === undefined) {
+        throw new Error('expected characteristic at index 0');
+      }
+      assert.strictEqual(curieChar0.propertyIri, PROPERTY_IRI);
+      assert.strictEqual(curieChar0.characteristic, characteristicName);
     });
   }
 });
@@ -266,8 +276,13 @@ void describe('importCharacteristics — unknown property IRI', () => {
 
     assert.strictEqual(fragment.characteristics.length, 0);
     assert.strictEqual(collectedUnsupported.length, 1);
-    assert.ok(collectedUnsupported[0].axiomIri.includes('FunctionalProperty'));
-    assert.strictEqual(collectedUnsupported[0].subjectIri, unknownProp);
+    const unsupported0 = collectedUnsupported.at(0);
+
+    if (unsupported0 === undefined) {
+      throw new Error('expected unsupported entry at index 0');
+    }
+    assert.ok(unsupported0.axiomIri.includes('FunctionalProperty'));
+    assert.strictEqual(unsupported0.subjectIri, unknownProp);
   });
 });
 
@@ -441,8 +456,13 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
-    assert.strictEqual(fragment.characteristics[0].characteristic, 'Functional');
-    assert.strictEqual(fragment.characteristics[0].propertyIri, propIri);
+    const reviewChar0 = fragment.characteristics.at(0);
+
+    if (reviewChar0 === undefined) {
+      throw new Error('expected characteristic at index 0');
+    }
+    assert.strictEqual(reviewChar0.characteristic, 'Functional');
+    assert.strictEqual(reviewChar0.propertyIri, propIri);
   });
 
   void it('Customer.id — InverseFunctional round-trips via fragment.characteristics', () => {
@@ -452,7 +472,12 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
-    assert.strictEqual(fragment.characteristics[0].characteristic, 'InverseFunctional');
+    const custChar0 = fragment.characteristics.at(0);
+
+    if (custChar0 === undefined) {
+      throw new Error('expected characteristic at index 0');
+    }
+    assert.strictEqual(custChar0.characteristic, 'InverseFunctional');
   });
 
   void it('Order.placedAt — Transitive + Irreflexive round-trips', () => {
@@ -502,7 +527,12 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
-    assert.strictEqual(fragment.characteristics[0].characteristic, 'Asymmetric');
+    const sequelChar0 = fragment.characteristics.at(0);
+
+    if (sequelChar0 === undefined) {
+      throw new Error('expected characteristic at index 0');
+    }
+    assert.strictEqual(sequelChar0.characteristic, 'Asymmetric');
   });
 });
 

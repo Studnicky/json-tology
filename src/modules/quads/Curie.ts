@@ -142,7 +142,7 @@ export class Curie implements CurieInterface {
 
     const namespace = this.prefixes[split.prefix];
 
-    if (!namespace) {
+    if (namespace === undefined) {
       this.expandCache.set(value, value);
 
       return value;

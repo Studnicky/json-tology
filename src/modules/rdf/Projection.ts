@@ -288,7 +288,7 @@ function unwrapSingleRef(
     if (meaningful.length === 1) {
       const member = meaningful[0];
 
-      if (graph.semantics(member).ref !== undefined) {
+      if (member !== undefined && graph.semantics(member).ref !== undefined) {
         return resolveNode(graph, member, lookupGraph);
       }
     }
@@ -303,7 +303,7 @@ function unwrapSingleRef(
   if (semantics.allOf.length === 1) {
     const member = semantics.allOf[0];
 
-    if (graph.semantics(member).ref !== undefined) {
+    if (member !== undefined && graph.semantics(member).ref !== undefined) {
       return resolveNode(graph, member, lookupGraph);
     }
   }

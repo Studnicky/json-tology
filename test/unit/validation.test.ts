@@ -2903,8 +2903,13 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
       assert.equal(invalidResult.ok, false, 'invalid data fails');
       assert.equal(invalidResult.length, 1, 'invalid data has exactly one type error');
-      assert.equal(invalidResult.items[0].keyword, 'type');
-      assert.equal(invalidResult.items[0].path, '/value');
+      const invalidItem0 = invalidResult.items.at(0);
+
+      if (invalidItem0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(invalidItem0.keyword, 'type');
+      assert.equal(invalidItem0.path, '/value');
     });
   });
 
@@ -4331,7 +4336,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r2, false);
       assert.equal(e2.length, 1);
-      assert.equal(e2[0].keyword, 'minItems');
+      const e2item0 = e2.at(0);
+
+      if (e2item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(e2item0.keyword, 'minItems');
 
       // Bad: above maxItems
       const e3: ValidationErrorType[] = [];
@@ -4344,7 +4354,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r3, false);
       assert.equal(e3.length, 1);
-      assert.equal(e3[0].keyword, 'maxItems');
+      const e3item0 = e3.at(0);
+
+      if (e3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(e3item0.keyword, 'maxItems');
 
       // Ugly: uniqueItems with duplicates
       const e4: ValidationErrorType[] = [];
@@ -4357,7 +4372,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r4, false);
       assert.equal(e4.length, 1);
-      assert.equal(e4[0].keyword, 'uniqueItems');
+      const e4item0 = e4.at(0);
+
+      if (e4item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(e4item0.keyword, 'uniqueItems');
 
       // Good: uniqueItems all unique
       const e5: ValidationErrorType[] = [];
@@ -4403,7 +4423,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r3, false);
       assert.equal(e3.length, 1);
-      assert.equal(e3[0].keyword, 'contains');
+      const e3c0 = e3.at(0);
+
+      if (e3c0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(e3c0.keyword, 'contains');
 
       // Bad: below minContains
       const e4: ValidationErrorType[] = [];
@@ -4415,7 +4440,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r4, false);
       assert.equal(e4.length, 1);
-      assert.match(e4[0].message, /at least 2/u);
+      const e4c0 = e4.at(0);
+
+      if (e4c0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.match(e4c0.message, /at least 2/u);
 
       // Bad: above maxContains
       const e5: ValidationErrorType[] = [];
@@ -4427,7 +4457,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r5, false);
       assert.equal(e5.length, 1);
-      assert.match(e5[0].message, /at most 2/u);
+      const e5c0 = e5.at(0);
+
+      if (e5c0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.match(e5c0.message, /at most 2/u);
     });
 
     void it('validateItems: undefined validator, all-pass, earlyExit, collect-errors, prefix-skip', () => {
@@ -4858,8 +4893,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(rc3, false);
       assert.equal(ec3.length, 1);
-      assert.equal(ec3[0].keyword, 'const');
-      assert.equal(ec3[0].path, '/x');
+      const ec3item0 = ec3.at(0);
+
+      if (ec3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(ec3item0.keyword, 'const');
+      assert.equal(ec3item0.path, '/x');
 
       // validateEnum
       const ee1: ValidationErrorType[] = [];
@@ -4875,8 +4915,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(re3, false);
       assert.equal(ee3.length, 1);
-      assert.equal(ee3[0].keyword, 'enum');
-      assert.equal(ee3[0].path, '/x');
+      const ee3item0 = ee3.at(0);
+
+      if (ee3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(ee3item0.keyword, 'enum');
+      assert.equal(ee3item0.path, '/x');
 
       // validateFormat
       const ef1: ValidationErrorType[] = [];
@@ -4892,8 +4937,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(rf3, false);
       assert.equal(ef3.length, 1);
-      assert.equal(ef3[0].keyword, 'format');
-      assert.match(ef3[0].message, /email/u);
+      const ef3item0 = ef3.at(0);
+
+      if (ef3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(ef3item0.keyword, 'format');
+      assert.match(ef3item0.message, /email/u);
     });
 
     void it('validateString + validateNumber + validateType: table-driven', () => {
@@ -4908,13 +4958,23 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       const rs2 = Scalars.validateString('/x', 'hi', 5, undefined, undefined, undefined, es2);
 
       assert.equal(rs2, false);
-      assert.equal(es2[0].keyword, 'minLength');
+      const es2item0 = es2.at(0);
+
+      if (es2item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(es2item0.keyword, 'minLength');
 
       const es3: ValidationErrorType[] = [];
       const rs3 = Scalars.validateString('/x', 'hello world', undefined, 5, undefined, undefined, es3);
 
       assert.equal(rs3, false);
-      assert.equal(es3[0].keyword, 'maxLength');
+      const es3item0 = es3.at(0);
+
+      if (es3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(es3item0.keyword, 'maxLength');
 
       const es4: ValidationErrorType[] = [];
       const rs4 = Scalars.validateString('/x', 'abc123', undefined, undefined, /^[a-z]+\d+$/u, '^[a-z]+\\d+$', es4);
@@ -4925,7 +4985,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       const rs5 = Scalars.validateString('/x', '!!!', undefined, undefined, /^[a-z]+$/u, '^[a-z]+$', es5);
 
       assert.equal(rs5, false);
-      assert.equal(es5[0].keyword, 'pattern');
+      const es5item0 = es5.at(0);
+
+      if (es5item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(es5item0.keyword, 'pattern');
 
       const es6: ValidationErrorType[] = [];
 
@@ -4939,29 +5004,54 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       const en2: ValidationErrorType[] = [];
 
       Scalars.validateNumber('/x', 3, 5, undefined, undefined, undefined, undefined, en2);
-      assert.equal(en2[0].keyword, 'minimum');
+      const en2item0 = en2.at(0);
+
+      if (en2item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en2item0.keyword, 'minimum');
 
       const en3: ValidationErrorType[] = [];
 
       Scalars.validateNumber('/x', 20, undefined, 10, undefined, undefined, undefined, en3);
-      assert.equal(en3[0].keyword, 'maximum');
+      const en3item0 = en3.at(0);
+
+      if (en3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en3item0.keyword, 'maximum');
 
       const en4: ValidationErrorType[] = [];
 
       Scalars.validateNumber('/x', 5, undefined, undefined, 5, undefined, undefined, en4);
-      assert.equal(en4[0].keyword, 'exclusiveMinimum');
+      const en4item0 = en4.at(0);
+
+      if (en4item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en4item0.keyword, 'exclusiveMinimum');
 
       const en5: ValidationErrorType[] = [];
 
       Scalars.validateNumber('/x', 10, undefined, undefined, undefined, 10, undefined, en5);
-      assert.equal(en5[0].keyword, 'exclusiveMaximum');
+      const en5item0 = en5.at(0);
+
+      if (en5item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en5item0.keyword, 'exclusiveMaximum');
 
       const en6: ValidationErrorType[] = [];
       const rn6 = Scalars.validateNumber('/x', 7, undefined, undefined, undefined, undefined, 3, en6);
 
       assert.equal(rn6, false);
       assert.equal(en6.length, 1);
-      assert.equal(en6[0].keyword, 'multipleOf');
+      const en6item0 = en6.at(0);
+
+      if (en6item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en6item0.keyword, 'multipleOf');
 
       // validateType
       const et1: ValidationErrorType[] = [];
@@ -4984,8 +5074,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(rt4, false);
       assert.equal(et4.length, 1);
-      assert.equal(et4[0].keyword, 'type');
-      assert.equal(et4[0].path, '/x');
+      const et4item0 = et4.at(0);
+
+      if (et4item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(et4item0.keyword, 'type');
+      assert.equal(et4item0.path, '/x');
     });
   });
 }
