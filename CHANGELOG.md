@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-06-18
+
 A repo-wide technical-debt sweep: strict layering, naming consistency, type-safety
 hardening, and enforcement lint rules. The internal architecture is materially
 cleaner; several public surfaces changed name or shape.
