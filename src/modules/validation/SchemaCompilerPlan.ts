@@ -513,20 +513,8 @@ function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithError
   ): ValidateWithErrorsResultType => {
     // Direct construction avoids the spread overhead on the hot validation path.
     const strictCtx: ExecContextType = {
-      'applyDefaults': ctx.applyDefaults,
-      'collectErrors': ctx.collectErrors,
-      'depth': ctx.depth,
-      'doCoerce': false,
-      'dynamicScope': ctx.dynamicScope,
-      'errors': ctx.errors,
-      'evaluatedItems': ctx.evaluatedItems,
-      'evaluatedProperties': ctx.evaluatedProperties,
-      'ignoreAdditionalProperties': ctx.ignoreAdditionalProperties,
-      'maxDepth': ctx.maxDepth,
-      'refStack': ctx.refStack,
-      'stripUnknown': ctx.stripUnknown,
-      'synthesizeDefaults': ctx.synthesizeDefaults,
-      'trackEvaluated': ctx.trackEvaluated
+      ...ctx,
+      'doCoerce': false
     };
 
     return inner(value, path, strictCtx);

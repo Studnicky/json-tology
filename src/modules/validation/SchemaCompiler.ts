@@ -24,6 +24,7 @@ import type {
 import { isRecord } from '../data/DataTypes.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 import { logScope } from '../data/LogScope.js';
+import { ExecContext } from './ExecContext.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
@@ -53,40 +54,6 @@ import {
   VS_EARLY_EXIT, VS_INVALID, VS_VALID
 } from '../../types/ValidatorStatusType.js';
 import type { ValidatorStatusType } from '../../types/ValidatorStatusType.js';
-
-// ---------------------------------------------------------------------------
-// Local helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Build an ExecContextType with all fields set to their standard defaults,
- * overlaid with the supplied partial overrides.
- *
- * Defaults:
- *   applyDefaults=false, collectErrors=true, depth=0, doCoerce=false,
- *   dynamicScope=[], errors=[], evaluatedItems=undefined,
- *   evaluatedProperties=undefined, ignoreAdditionalProperties=false,
- *   maxDepth=100, refStack=new Set(), stripUnknown=false,
- *   synthesizeDefaults=false, trackEvaluated=false
- */
-function buildExecContext(partial: Partial<ExecContextType>): ExecContextType {
-  return {
-    'applyDefaults': partial.applyDefaults ?? false,
-    'collectErrors': partial.collectErrors ?? true,
-    'depth': partial.depth ?? 0,
-    'doCoerce': partial.doCoerce ?? false,
-    'dynamicScope': partial.dynamicScope ?? [],
-    'errors': partial.errors ?? [],
-    'evaluatedItems': partial.evaluatedItems,
-    'evaluatedProperties': partial.evaluatedProperties,
-    'ignoreAdditionalProperties': partial.ignoreAdditionalProperties ?? false,
-    'maxDepth': partial.maxDepth ?? 100,
-    'refStack': partial.refStack ?? new Set(),
-    'stripUnknown': partial.stripUnknown ?? false,
-    'synthesizeDefaults': partial.synthesizeDefaults ?? false,
-    'trackEvaluated': partial.trackEvaluated ?? false
-  };
-}
 
 // ---------------------------------------------------------------------------
 // SchemaCompiler
@@ -179,20 +146,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       // Hoist scratch ctx outside the per-element loop. check-mode (collectErrors:false)
       // means no errors are pushed, so the errors array is never mutated.
       const scratchCtx: ExecContextType = {
+        ...ctx,
         'applyDefaults': false,
         'collectErrors': false,
-        'depth': ctx.depth,
         'doCoerce': false,
-        'dynamicScope': ctx.dynamicScope,
         'errors': [],
         'evaluatedItems': undefined,
         'evaluatedProperties': undefined,
-        'ignoreAdditionalProperties': ctx.ignoreAdditionalProperties,
-        'maxDepth': ctx.maxDepth,
-        'refStack': ctx.refStack,
         'stripUnknown': false,
-        'synthesizeDefaults': false,
-        'trackEvaluated': ctx.trackEvaluated
+        'synthesizeDefaults': false
       };
 
       for (const [
@@ -306,7 +268,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return (data: unknown): boolean => {
       const errors: ValidationErrorType[] = [];
       // This path is only used for schemas that declare unevaluated*, so tracking is required.
-      const ctx: ExecContextType = buildExecContext({
+      const ctx: ExecContextType = ExecContext.build({
         'collectErrors': false,
         errors,
         'trackEvaluated': true
@@ -707,7 +669,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const errors: ValidationErrorType[] = [];
-    const ctx: ExecContextType = buildExecContext({
+    const ctx: ExecContextType = ExecContext.build({
       errors,
       'trackEvaluated': trackEvaluated
     });
@@ -856,22 +818,16 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): CompiledValidationResultType {
     const errors: ValidationErrorType[] = [];
     const stripUnk = (options.enforceSchemaProperties ?? false) || (options.removeAdditionalProperties ?? false);
-    const ctx: ExecContextType = {
+    const ctx: ExecContextType = ExecContext.build({
       'applyDefaults': options.applyDefaults ?? false,
       'collectErrors': options.collectErrors ?? true,
-      'depth': 0,
       'doCoerce': options.castTypes ?? false,
-      'dynamicScope': [],
       errors,
-      'evaluatedItems': undefined,
-      'evaluatedProperties': undefined,
       'ignoreAdditionalProperties': options.ignoreAdditionalProperties ?? false,
-      'maxDepth': 100,
-      'refStack': new Set(),
       'stripUnknown': stripUnk,
       'synthesizeDefaults': options.synthesizeDefaults ?? false,
       'trackEvaluated': trackEvaluated
-    };
+    });
     const result = validateWithErrors(workingValue, '', ctx);
 
     return {
@@ -909,22 +865,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const errors: ValidationErrorType[] = [];
-    const ctx: ExecContextType = {
-      'applyDefaults': false,
-      'collectErrors': true,
-      'depth': 0,
-      'doCoerce': false,
-      'dynamicScope': [],
+    const ctx: ExecContextType = ExecContext.build({
       errors,
-      'evaluatedItems': undefined,
-      'evaluatedProperties': undefined,
       'ignoreAdditionalProperties': options?.ignoreAdditionalProperties ?? false,
-      'maxDepth': 100,
-      'refStack': new Set(),
-      'stripUnknown': false,
       'synthesizeDefaults': options?.synthesizeDefaults ?? false,
       'trackEvaluated': trackEvaluated
-    };
+    });
     const result = validateWithErrors(workingValue, '', ctx);
 
     return {
@@ -1770,18 +1716,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const depCtx: ExecContextType = {
-      'applyDefaults': ctx.applyDefaults,
-      'collectErrors': ctx.collectErrors,
+      ...ctx,
       'depth': 0,
-      'doCoerce': ctx.doCoerce,
       'dynamicScope': [],
-      'errors': ctx.errors,
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
       'ignoreAdditionalProperties': false,
       'maxDepth': 100,
       'refStack': new Set(),
-      'stripUnknown': ctx.stripUnknown,
       'synthesizeDefaults': false,
       'trackEvaluated': true
     };
@@ -1847,22 +1789,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       };
     }
 
-    const pnCtx: ExecContextType = {
-      'applyDefaults': false,
+    const pnCtx: ExecContextType = ExecContext.build({
       'collectErrors': collectErrors,
-      'depth': 0,
-      'doCoerce': false,
-      'dynamicScope': [],
       errors,
-      'evaluatedItems': undefined,
-      'evaluatedProperties': undefined,
-      'ignoreAdditionalProperties': false,
-      'maxDepth': 100,
-      'refStack': new Set(),
-      'stripUnknown': false,
-      'synthesizeDefaults': false,
       'trackEvaluated': true
-    };
+    });
     const pnResult = Objects.validatePropertyNames(path, workingValue, propertyNamesValidator, pnCtx);
 
     if (pnResult.earlyExit) {
