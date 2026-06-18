@@ -13,6 +13,7 @@ import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
+import type { AboxProjectorInterface } from '../../interfaces/AboxProjectorInterface.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import {
@@ -23,7 +24,6 @@ import { isRecord } from '../data/DataTypes.js';
 import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
 import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
 import { GraphEngineDefaults } from '../graph/GraphEngineDefaults.js';
-import { Projection } from '../rdf/Projection.js';
 import { Terms } from '../quads/Terms.js';
 import { OWL } from '../../constants/IRI.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
@@ -79,6 +79,10 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     return false;
   }
 
+  // Injected by the facade (JsonTology) so this layer need not import rdf/.
+  // undefined when no projector was supplied — ABox projection then errors.
+  private readonly aboxProjector: AboxProjectorInterface | undefined;
+
   // When true, additionalProperties:false enforcement is bypassed via ignoreAdditionalProperties.
   private readonly allowAdditionalProperties: boolean;
 
@@ -133,6 +137,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     const allowAdditionalProperties = options.passAdditionalProperties === true;
     const castTypes = registry.castTypes;
 
+    this.aboxProjector = options.aboxProjector;
     this.allowAdditionalProperties = allowAdditionalProperties;
     this.logger = options.logger ?? SILENT_LOGGER;
 
@@ -428,7 +433,18 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     baseIRI: string,
     options?: AboxOptionsType
   ): QuadInterface[] {
-    const quads = Projection.abox(graph, materialized, baseIRI, {
+    if (this.aboxProjector === undefined) {
+      throw new MaterializationError(
+        entryNode.id,
+        {
+          'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
+          'message': 'ABox projection requires an aboxProjector. Construct the Materializer with { aboxProjector } (the facade injects Projection) so this layer need not import rdf/.',
+          'validationErrors': ['no aboxProjector injected into Materializer']
+        }
+      );
+    }
+
+    const quads = this.aboxProjector.abox(graph, materialized, baseIRI, {
       'annotationEmitMode': options?.annotationEmitMode,
       'curie': options?.curie,
       entryNode,

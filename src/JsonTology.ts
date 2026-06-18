@@ -64,6 +64,7 @@ import type { CurieInterface } from './interfaces/CurieInterface.js';
 import { Curie } from './modules/quads/Curie.js';
 import { OwlImporter } from './modules/ontology/OwlImporter.js';
 import { Skolemize } from './modules/rdf/Skolemize.js';
+import { Projection } from './modules/rdf/Projection.js';
 import { Terms } from './modules/quads/Terms.js';
 import { Dumper } from './modules/graph/Dumper.js';
 import { FormatRegistry } from './modules/format/FormatRegistry.js';
@@ -854,7 +855,10 @@ export class JsonTology<TRefs = Record<never, never>> {
     this.registry = new SchemaRegistry({
       ...registryOptions,
       'defaultCreatorFactory': (registry): Materializer => {
-        return new Materializer(registry, { 'logger': this.logger });
+        return new Materializer(registry, {
+          'aboxProjector': Projection,
+          'logger': this.logger
+        });
       }
     });
     this.refLoader = new RefResolutionLoader(this.registry);
@@ -869,6 +873,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     this.value = new Value(this.registry) as unknown as ValueInterface<TRefs>;
     this.materializer = new Materializer(this.registry, {
       ...options.materializer,
+      'aboxProjector': Projection,
       'logger': this.logger
     });
 
