@@ -12,7 +12,7 @@
 export type SubjectPredicateIndexType = Map<string, Map<string, string[]>>;
 
 /** Predicate-to-object-literals index for a single subject. */
-export type PredicateIndexType = Map<string, string[]>;
+export type PredicateValuesIndexType = Map<string, string[]>;
 
 /** Per-subject type set for rdf:type lookups. */
 export type TypeIndexType = Map<string, Set<string>>;
@@ -23,14 +23,14 @@ export type DatatypeIndexType = Map<string, Map<string, string[]>>;
 /** A parsed property shape. */
 export type PropertyShapeIndexType = {
   readonly 'bnodeId': string;
-  readonly 'constraints': PredicateIndexType;
+  readonly 'constraints': PredicateValuesIndexType;
   readonly 'isDeactivated': boolean;
   readonly 'path': string;
 };
 
 /** A parsed node shape. */
 export type NodeShapeIndexType = {
-  readonly 'constraints': PredicateIndexType;
+  readonly 'constraints': PredicateValuesIndexType;
   readonly 'isDeactivated': boolean;
   readonly 'propertyShapes': PropertyShapeIndexType[];
   readonly 'shapeIri': string;
@@ -54,7 +54,7 @@ export type ValidationContextType = {
 
 /** Arguments shared across all constraint evaluators. */
 export type EvalArgsType = {
-  readonly 'constraints': PredicateIndexType;
+  readonly 'constraints': PredicateValuesIndexType;
   readonly 'dataIndex': SubjectPredicateIndexType;
   readonly 'datatypeBySubjectPredicate': DatatypeIndexType;
   readonly 'dataTypeIndex': TypeIndexType;

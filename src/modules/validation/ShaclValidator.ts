@@ -17,6 +17,17 @@
  * dash:readOnly, dash:writeOnly) are recognised and ignored.
  * Shapes and property shapes with sh:deactivated true are skipped.
  *
+ * Architectural boundary: this engine indexes RDF quads (subject -> predicate ->
+ * object-value-strings via SubjectPredicateIndexType, plus rdf:type and datatype
+ * indexes). That is intentionally a distinct model from the canonical
+ * SchemaGraph, which is a node/relation graph over a JSON Schema document. SHACL
+ * conformance is defined over RDF triples, so it cannot be evaluated against the
+ * JSON-Schema graph without re-deriving the SHACL vocabulary (the inverse of
+ * ShaclProjection) -- these indexes are therefore not a duplication of
+ * SchemaGraph and are not consolidated onto it. Their shapes are SHACL-specific
+ * (they hold extracted `.value` strings, not QuadInterface[]) and are not shared
+ * with the rdf/ quad-grouping utilities.
+ *
  * @module ShaclValidator
  * @category SHACL
  * @since 0.20.0
@@ -29,7 +40,7 @@ import type {
   DatatypeIndexType,
   EvalArgsType,
   NodeShapeIndexType,
-  PredicateIndexType,
+  PredicateValuesIndexType,
   PropertyShapeIndexType,
   SubjectPredicateIndexType,
   TypeIndexType,
@@ -197,9 +208,9 @@ function isDeactivated(bnodeId: string, shapeIndex: SubjectPredicateIndexType): 
 }
 
 /**
- * Extract the `PredicateIndexType` for a subject from the shape quad index.
+ * Extract the `PredicateValuesIndexType` for a subject from the shape quad index.
  */
-function extractConstraints(id: string, shapeIndex: SubjectPredicateIndexType): PredicateIndexType {
+function extractConstraints(id: string, shapeIndex: SubjectPredicateIndexType): PredicateValuesIndexType {
   const node = shapeIndex.get(id);
 
   return node ?? new Map<string, string[]>();
@@ -936,7 +947,7 @@ function evalQualifiedValueShape(
 /** Evaluate sh:and — the focus node must conform to every member shape. */
 function evalAnd(
   focusNode: string,
-  shapeConstraints: PredicateIndexType,
+  shapeConstraints: PredicateValuesIndexType,
   ctx: ValidationContextType,
   shapeIri: string
 ): ShaclValidationResultType[] {
@@ -968,7 +979,7 @@ function evalAnd(
 /** Evaluate sh:or — the focus node must conform to at least one member shape. */
 function evalOr(
   focusNode: string,
-  shapeConstraints: PredicateIndexType,
+  shapeConstraints: PredicateValuesIndexType,
   ctx: ValidationContextType,
   shapeIri: string
 ): ShaclValidationResultType[] {
@@ -1003,7 +1014,7 @@ function evalOr(
 /** Evaluate sh:not — the focus node must NOT conform to the referenced shape. */
 function evalNot(
   focusNode: string,
-  shapeConstraints: PredicateIndexType,
+  shapeConstraints: PredicateValuesIndexType,
   ctx: ValidationContextType,
   shapeIri: string
 ): ShaclValidationResultType[] {
@@ -1040,7 +1051,7 @@ function buildEvalArgs(
   focusNode: string,
   path: string,
   shapeId: string,
-  constraints: PredicateIndexType,
+  constraints: PredicateValuesIndexType,
   values: string[],
   ctx: ValidationContextType
 ): EvalArgsType {

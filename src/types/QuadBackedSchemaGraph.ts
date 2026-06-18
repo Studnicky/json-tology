@@ -27,7 +27,7 @@ import type { QuadInterface } from '../interfaces/Quad.js';
  *
  * @example
  * ```ts
- * const idx: PredicateIndexType = buildPredicateIndex(subjectIndex);
+ * const idx: SubjectPredicateQuadsIndexType = buildPredicateIndex(subjectIndex);
  * ```
  *
  * @category Graph
@@ -35,7 +35,7 @@ import type { QuadInterface } from '../interfaces/Quad.js';
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type PredicateIndexType = Map<string, Map<string, QuadInterface[]>>;
+export type SubjectPredicateQuadsIndexType = Map<string, Map<string, QuadInterface[]>>;
 
 /**
  * Named return type for {@link buildNodeMap}.

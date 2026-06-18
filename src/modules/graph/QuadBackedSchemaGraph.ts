@@ -50,10 +50,10 @@ import type {
   OptionalChildNodeType,
   OptionalNodeType,
   OptionalRestrictionType,
-  PredicateIndexType,
   ResolveRestrictionOptionsType,
   RootSchemaRecordType,
   SubjectIndexType,
+  SubjectPredicateQuadsIndexType,
   SubjectRelationsType
 } from '../../types/QuadBackedSchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
@@ -76,8 +76,8 @@ import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
 
 // OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
 
-function buildPredicateIndex(subjectIndex: SubjectIndexType): PredicateIndexType {
-  const index: PredicateIndexType = new Map();
+function buildPredicateIndex(subjectIndex: SubjectIndexType): SubjectPredicateQuadsIndexType {
+  const index: SubjectPredicateQuadsIndexType = new Map();
 
   for (const [
     subject,
@@ -107,7 +107,7 @@ function buildPredicateIndex(subjectIndex: SubjectIndexType): PredicateIndexType
 
 function buildNodeMap(
   subjectIndex: SubjectIndexType,
-  predicateIndex: PredicateIndexType,
+  predicateIndex: SubjectPredicateQuadsIndexType,
   curie: CurieInterface
 ): NodeMapType {
   const nodeMap: NodeMapType = new Map();
