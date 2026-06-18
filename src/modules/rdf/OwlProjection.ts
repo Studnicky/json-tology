@@ -46,6 +46,8 @@ import {
   resolvePropertySchema,
   resolveRestrictionOnProperty
 } from './ProjectionHelpers.js';
+import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 
 function emitRestriction(args: EmitRestrictionArgsType): string {
   const {
@@ -550,8 +552,13 @@ function emitClassRestrictionRelations(
         'propertyName': meta.propertyName,
         'propertySchema': resolvePropertySchema(graph, propSubject)
       });
+    } else if (typeof meta.onProperty === 'string' && meta.onProperty !== '') {
+      onProperty = meta.onProperty;
     } else {
-      onProperty = typeof meta.onProperty === 'string' ? meta.onProperty : '';
+      throw new GraphError(
+        `OWL restriction on subject <${subject}> has no resolvable onProperty IRI`,
+        { 'code': GraphErrorCode.INVALID_PREDICATE_IRI }
+      );
     }
 
     const minCardLit = QuadFactory.literal(minCard, XSD.nonNegativeInteger, { curie });

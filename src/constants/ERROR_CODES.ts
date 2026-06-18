@@ -5,6 +5,7 @@ import type {
   MaterializationErrorCodeType,
   OwlImportErrorCodeType,
   SchemaErrorCodeType,
+  SchemaLoadErrorCodeType,
   TransformErrorCodeType
 } from '../types/ErrorCodes.js';
 
@@ -55,6 +56,7 @@ export const SchemaErrorCode = {
   'DUPLICATE_ANCHOR': 'SCHEMA_DUPLICATE_ANCHOR',
   'DUPLICATE_ID': 'SCHEMA_DUPLICATE_ID',
   'DUPLICATE_SHAPE': 'SCHEMA_DUPLICATE_SHAPE',
+  'IDENTITY_CONTRADICTION': 'SCHEMA_IDENTITY_CONTRADICTION',
   'INVALID_INPUT': 'SCHEMA_INVALID_INPUT',
   'MISSING_ID': 'SCHEMA_MISSING_ID',
   'NOT_REGISTERED': 'SCHEMA_NOT_REGISTERED',
@@ -152,25 +154,28 @@ export const MaterializationErrorCode = {
 } as const satisfies Record<string, MaterializationErrorCodeType>;
 
 /**
- * Error codes for OWL import operations that are not yet implemented.
+ * Error codes for OWL import failures.
  *
  * @remarks
- * Thrown by `OwlImportError` when an OWL import path is invoked but has not
- * been implemented. Acts as a sentinel to surface unimplemented import branches
- * at runtime rather than silently no-oping.
+ * Thrown by `OwlImportError`. `PARSE_FAILED` indicates malformed JSON-LD input.
+ * `PEER_DEPENDENCY_MISSING` indicates that processing non-quad JSON-LD input
+ * requires the optional `jsonld` peer dependency, which is not installed.
  *
  * @example
  * ```ts
- * throw new OwlImportError(OwlImportErrorCode.NOT_IMPLEMENTED, feature);
+ * throw new OwlImportError(message, { code: OwlImportErrorCode.PARSE_FAILED, axiomIri, subjectIri });
  * ```
  *
  * @category Error Codes
  * @since 0.1.0
  * @see {@link OwlImportErrorCodeType}
- * @defaultValue `{ NOT_IMPLEMENTED: 'OWL_IMPORT_NOT_IMPLEMENTED' }`
+ * @defaultValue `{ PARSE_FAILED: 'OWL_IMPORT_PARSE_FAILED', PEER_DEPENDENCY_MISSING: 'OWL_IMPORT_PEER_DEPENDENCY_MISSING' }`
  * @group Constants
  */
-export const OwlImportErrorCode = { 'NOT_IMPLEMENTED': 'OWL_IMPORT_NOT_IMPLEMENTED' } as const satisfies Record<string, OwlImportErrorCodeType>;
+export const OwlImportErrorCode = {
+  'PARSE_FAILED': 'OWL_IMPORT_PARSE_FAILED',
+  'PEER_DEPENDENCY_MISSING': 'OWL_IMPORT_PEER_DEPENDENCY_MISSING'
+} as const satisfies Record<string, OwlImportErrorCodeType>;
 
 /**
  * Error codes for codec transform encode and decode failures.
@@ -195,3 +200,35 @@ export const TransformErrorCode = {
   'TRANSFORM_DECODE_FAILED': 'TRANSFORM_DECODE_FAILED',
   'TRANSFORM_ENCODE_FAILED': 'TRANSFORM_ENCODE_FAILED'
 } as const satisfies Record<string, TransformErrorCodeType>;
+
+/**
+ * Error codes for schema load failures.
+ *
+ * @remarks
+ * Thrown by `SchemaLoadError` when the schema loader cannot fetch or parse a
+ * remote schema. Covers HTTP 5xx transient failures (`fetch-failed`), schemas
+ * returned without a `$id` (`missing-id`), and structurally invalid content
+ * (`invalid-schema`).
+ *
+ * @example
+ * ```ts
+ * throw new SchemaLoadError(message, { code: SchemaLoadErrorCode.LOAD_FAILED, file: url, reason: 'fetch-failed', status: 503, retryable: true });
+ * ```
+ *
+ * @category Error Codes
+ * @since 0.25.0
+ * @see {@link SchemaLoadErrorCodeType}
+ * @defaultValue `{ LOAD_FAILED: 'SCHEMA_LOAD_FAILED' }`
+ * @group Constants
+ */
+export const SchemaLoadErrorCode = { 'LOAD_FAILED': 'SCHEMA_LOAD_FAILED' } as const satisfies Record<string, SchemaLoadErrorCodeType>;
+
+/**
+ * Sentinel code used when serializing a non-BaseError instance into the
+ * structured error JSON format. The underlying error has no machine-readable code.
+ *
+ * @category Error Codes
+ * @since 0.1.0
+ * @group Constants
+ */
+export const UNKNOWN_ERROR_CODE = 'UNKNOWN' as const;

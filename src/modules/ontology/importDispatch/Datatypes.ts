@@ -477,6 +477,7 @@ function extractEnumValues(listHead: string, graph: SchemaGraphInterface): unkno
 function emptyFragment(): OwlImportFragmentType {
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],
@@ -556,6 +557,7 @@ export function importDatatypes(_quads: QuadInterface[], ctx: OwlImportContextTy
 
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],

@@ -419,6 +419,7 @@ export function importProperties(_quads: QuadInterface[], ctx: OwlImportContextT
 
   return {
     characteristics,
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],

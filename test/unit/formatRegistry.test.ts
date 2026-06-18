@@ -141,6 +141,20 @@ void describe('idn-hostname format', () => {
       'name': 'non-string',
       'valid': false,
       'value': 123
+    },
+    {
+      // domainToAscii returns null for an unparseable input; the validator
+      // must return false rather than treating '' (empty string) as valid.
+      'name': 'domain with spaces (unparseable — domainToAscii null path)',
+      'valid': false,
+      'value': 'not a valid domain'
+    },
+    {
+      // URL constructor rejects hostnames with raw control characters; another
+      // null path exercise for domainToAscii.
+      'name': 'domain with null byte (unparseable — domainToAscii null path)',
+      'valid': false,
+      'value': 'bad\x00host.com'
     }
   ];
 
@@ -838,6 +852,13 @@ void describe('idn-email format', () => {
       'name': 'number value',
       'valid': false,
       'value': 42
+    },
+    {
+      // domainToAscii returns null for an unparseable domain; idn-email must
+      // return false rather than accepting it as a non-empty ASCII domain.
+      'name': 'domain with spaces (unparseable — domainToAscii null path)',
+      'valid': false,
+      'value': 'user@not a valid domain'
     }
   ];
 

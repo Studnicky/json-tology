@@ -8,11 +8,13 @@ import type { ResolvedRefTargetType } from '../../types/RefDecoderCache.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
+import { TransformErrorCode } from '../../constants/ERROR_CODES.js';
 import { Transform } from '../transform/Transform.js';
 import { isRecord } from '../data/DataTypes.js';
+import { logScope } from '../data/LogScope.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
 import { SchemaIri } from './SchemaIri.js';
-
-export type { RefDecoderRegistryType } from '../../types/RefDecoderRegistry.js';
 
 /**
  * Per-graph cache: source node → resolved cross-schema ref target (or null sentinel).
@@ -81,13 +83,13 @@ export class RefDecoder {
         schemaId === undefined
           ? {
             'cause': causeError,
-            'code': 'TRANSFORM_DECODE_FAILED',
+            'code': TransformErrorCode.TRANSFORM_DECODE_FAILED,
             'direction': 'decode',
             'path': ''
           }
           : {
             'cause': causeError,
-            'code': 'TRANSFORM_DECODE_FAILED',
+            'code': TransformErrorCode.TRANSFORM_DECODE_FAILED,
             'direction': 'decode',
             'path': '',
             'schemaId': schemaId
@@ -101,13 +103,21 @@ export class RefDecoder {
   public static run(
     graph: SchemaGraphInterface,
     value: unknown,
-    registry: RefDecoderRegistryType
+    registry: RefDecoderRegistryType,
+    logger: LoggerInterface = SILENT_LOGGER
   ): unknown {
     if (value === null || value === undefined) {
       return value;
     }
 
-    return RefDecoder.walk(graph, graph.rootNode, value, registry, new Set());
+    try {
+      return RefDecoder.walk(graph, graph.rootNode, value, registry, new Set());
+    } catch (error) {
+      if (error instanceof DecodeError) {
+        logger.error(logScope('RefDecoder', 'run', `ref decode failed: ${error.message}`));
+      }
+      throw error;
+    }
   }
 
   private static walk(

@@ -11,8 +11,12 @@ import type { AboxOptionsType } from '../../types/AboxOptions.js';
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
+import {
+  InstantiationErrorCode, MaterializationErrorCode
+} from '../../constants/ERROR_CODES.js';
 import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
 import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
@@ -23,6 +27,8 @@ import { OWL } from '../../constants/IRI.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { SchemaCompilerDefaults } from '../validation/SchemaCompilerDefaults.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
+import { logScope } from '../data/LogScope.js';
 
 /**
  * Materializer — runtime projection over validation execution results.
@@ -102,6 +108,8 @@ export class Materializer implements MaterializerInterface {
     EffectivePropertyMapType
   >();
 
+  private readonly logger: LoggerInterface;
+
   // Bound once in the constructor; passed as `lookupGraph` to avoid a trivial
   // per-call arrow allocation in projectAboxFromExecution.
   private readonly lookupGraphFn: (schemaId: string) => SchemaGraphInterface | undefined;
@@ -125,6 +133,7 @@ export class Materializer implements MaterializerInterface {
     const castTypes = registry.castTypes;
 
     this.allowAdditionalProperties = allowAdditionalProperties;
+    this.logger = options.logger ?? SILENT_LOGGER;
 
     this.cachedOverridesNoDefaults = {
       'applyDefaults': true,
@@ -200,7 +209,7 @@ export class Materializer implements MaterializerInterface {
           }]),
           {
             'cause': causeError,
-            'code': 'INSTANTIATION_FAILED'
+            'code': InstantiationErrorCode.INSTANTIATION_FAILED
           }
         );
       }
@@ -346,7 +355,7 @@ export class Materializer implements MaterializerInterface {
 
     if (!result.valid) {
       throw new MaterializationError(schema.$id, {
-        'code': 'MATERIALIZATION_FAILED',
+        'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
         'validationErrors': result.errors
       });
     }
@@ -401,7 +410,7 @@ export class Materializer implements MaterializerInterface {
 
     if (!result.valid) {
       throw new MaterializationError(schema.$id, {
-        'code': 'MATERIALIZATION_FAILED',
+        'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
         'validationErrors': result.errors
       });
     }
@@ -451,12 +460,17 @@ export class Materializer implements MaterializerInterface {
       ];
     }
 
-    const resolved = canonicalResolveRef(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn });
+    try {
+      const resolved = canonicalResolveRef(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn });
 
-    return [
-      resolved.graph,
-      resolved.node
-    ];
+      return [
+        resolved.graph,
+        resolved.node
+      ];
+    } catch (error) {
+      this.logger.error(logScope('Materializer', 'resolveTargetGraphAndNode', `ref resolution failed for "${semantics.ref}"`));
+      throw error;
+    }
   }
 
   private run(
@@ -477,7 +491,7 @@ export class Materializer implements MaterializerInterface {
 
       if (graph === undefined) {
         throw new MaterializationError(id, {
-          'code': 'MATERIALIZATION_FAILED',
+          'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
           'validationErrors': [`No graph found for schema: ${id}`]
         });
       }
@@ -498,9 +512,15 @@ export class Materializer implements MaterializerInterface {
         ? []
         : this.projectAboxFromExecution(graph, entryNode, materialized, baseIRI, aboxOptions);
 
+      const errors = this.formatErrors(compiledResult.errors);
+
+      if (!compiledResult.valid) {
+        this.logger.warn(logScope('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
+      }
+
       return {
         abox,
-        'errors': this.formatErrors(compiledResult.errors),
+        errors,
         'valid': compiledResult.valid,
         'value': materialized
       };
@@ -514,7 +534,7 @@ export class Materializer implements MaterializerInterface {
 
     if (graph === undefined) {
       throw new MaterializationError(id, {
-        'code': 'MATERIALIZATION_FAILED',
+        'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
         'validationErrors': [`No graph found for schema: ${id}`]
       });
     }
@@ -526,9 +546,15 @@ export class Materializer implements MaterializerInterface {
       ? []
       : this.projectAboxFromExecution(graph, entryNode, materialized, baseIRI, aboxOptions);
 
+    const errors = this.formatErrors(compiledResult.errors);
+
+    if (!compiledResult.valid) {
+      this.logger.warn(logScope('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
+    }
+
     return {
       abox,
-      'errors': this.formatErrors(compiledResult.errors),
+      errors,
       'valid': compiledResult.valid,
       'value': materialized
     };

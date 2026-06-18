@@ -37,6 +37,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { JsonTology } from '../../src/index.js';
+import { SILENT_LOGGER } from '../../src/constants/LOGGER.js';
 import {
   bookstoreEntities, bookstoreSchemas
 } from '../../examples/docs/bookstore/index.js';
@@ -470,6 +471,7 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
       'isDatatype': () => {
         return false;
       },
+      'logger': SILENT_LOGGER,
       'prefixes': STANDARD_PREFIXES,
       'reportUnsupported': () => { /* noop */ }
     };

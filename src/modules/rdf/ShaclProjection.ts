@@ -30,7 +30,7 @@ import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { OWL_CARDINALITY_PREDICATE_IRIS } from '../../constants/ONTOLOGY_PREDICATES.js';
-import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
+import { XSD_IRI_PREFIX } from '../../constants/STANDARD_PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
 import {
@@ -41,8 +41,6 @@ import {
 import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexType } from '../../types/RelationIndex.js';
 import { VocabProjection } from './VocabProjection.js';
-
-const XSD_IRI_PREFIX = STANDARD_PREFIXES.xsd;
 
 function relationToEquivIri(
   rel: SchemaGraphRelationType,
@@ -331,12 +329,17 @@ class ShaclVocabProjection extends VocabProjection {
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
+    // Emit a PropertyShape that asserts the trigger property is present (minCount 1),
+    // wrap it in a NodeShape-like container, then negate the container with sh:not.
+    // The result is "trigger property is absent".
+    //
+    // Chain: withoutWrapperBnode -sh:not-> withoutContainerBnode -sh:property-> withoutPsBnode
+    //
+    // The previous implementation also allocated innerBnode/complementBnode and pushed
+    // a complementBnode -sh:not-> innerBnode triple. innerBnode was never populated
+    // (no quads referenced it as subject) and neither bnode appeared in the return
+    // chain, making the entire complementBnode subtree dead output. Removed.
     const withoutPsBnode = emitMinCountOnePropertyShape(triggerPropIri, quads, curie, issuer);
-
-    const innerBnode = QuadFactory.nextBnode(issuer);
-    const complementBnode = QuadFactory.nextBnode(issuer);
-
-    quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.bnode(innerBnode), { curie }));
 
     const withoutContainerBnode = QuadFactory.nextBnode(issuer);
 
@@ -556,11 +559,13 @@ function emitRestrictionPropertyShape(
     return undefined;
   }
 
+  // Collect-then-commit: build the constraint triples into a local buffer FIRST.
+  // Each entry is [predicate IRI, object term]. Only after we confirm the constraint
+  // is representable do we allocate the bnode and append everything (type + path +
+  // constraint) to the shared quads array.
+  // Any early return below produces no quads — no orphaned PropertyShape nodes.
+  const pending: Array<[string, QuadObjectType]> = [];
   const flatOnProperty = resolveRestrictionOnProperty(onProperty, graph, predicateResolver);
-  const psBnode = QuadFactory.nextBnode(issuer);
-
-  quads.push(QuadFactory.quad(psBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
-  quads.push(QuadFactory.quad(psBnode, SH.path, QuadFactory.iri(flatOnProperty, { curie }), { curie }));
 
   if (OWL_CARDINALITY_PREDICATE_IRIS.has(constraint)) {
     const n = finiteNumber(value);
@@ -572,40 +577,63 @@ function emitRestrictionPropertyShape(
     const countLit = QuadFactory.literal(n, XSD.integer, { curie });
 
     if (constraint === OWL.minCardinality) {
-      quads.push(QuadFactory.quad(psBnode, SH.minCount, countLit, { curie }));
+      pending.push([
+        SH.minCount,
+        countLit
+      ]);
     } else if (constraint === OWL.maxCardinality) {
-      quads.push(QuadFactory.quad(psBnode, SH.maxCount, countLit, { curie }));
+      pending.push([
+        SH.maxCount,
+        countLit
+      ]);
     } else {
       // owl:cardinality → both minCount and maxCount
-      quads.push(QuadFactory.quad(psBnode, SH.minCount, countLit, { curie }));
-      quads.push(QuadFactory.quad(psBnode, SH.maxCount, countLit, { curie }));
+      pending.push([
+        SH.minCount,
+        countLit
+      ]);
+      pending.push([
+        SH.maxCount,
+        countLit
+      ]);
     }
-
-    return psBnode;
-  }
-
-  if (constraint === OWL.hasValue) {
+  } else if (constraint === OWL.hasValue) {
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
       const hasValueLit = QuadFactory.literal(String(value), XSD.string, { curie });
 
-      quads.push(QuadFactory.quad(psBnode, SH.hasValue, hasValueLit, { curie }));
-
-      return psBnode;
+      pending.push([
+        SH.hasValue,
+        hasValueLit
+      ]);
+    } else {
+      return undefined;
     }
-
-    return undefined;
-  }
-
-  if (constraint === OWL.allValuesFrom && typeof value === 'string' && value !== '') {
+  } else if (constraint === OWL.allValuesFrom && typeof value === 'string' && value !== '') {
     const valueIri = QuadFactory.iri(value, { curie });
     const rangePred = value.startsWith(XSD_IRI_PREFIX) ? SH.datatype : SH.node;
 
-    quads.push(QuadFactory.quad(psBnode, rangePred, valueIri, { curie }));
-
-    return psBnode;
+    pending.push([
+      rangePred,
+      valueIri
+    ]);
+  } else {
+    return undefined;
   }
 
-  return undefined;
+  // Constraint is representable — commit: allocate bnode and push all quads.
+  const psBnode = QuadFactory.nextBnode(issuer);
+
+  quads.push(QuadFactory.quad(psBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
+  quads.push(QuadFactory.quad(psBnode, SH.path, QuadFactory.iri(flatOnProperty, { curie }), { curie }));
+
+  for (const [
+    pred,
+    obj
+  ] of pending) {
+    quads.push(QuadFactory.quad(psBnode, pred, obj, { curie }));
+  }
+
+  return psBnode;
 }
 
 function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsType): void {

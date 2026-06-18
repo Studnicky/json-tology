@@ -102,6 +102,7 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
 function emptyFragment(): OwlImportFragmentType {
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],

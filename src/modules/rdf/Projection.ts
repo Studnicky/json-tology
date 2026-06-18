@@ -163,7 +163,7 @@ function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
     throw new MaterializationError(
       resolved.node.id,
       {
-        'code': 'CYCLIC_DATA',
+        'code': MaterializationErrorCode.CYCLIC_DATA,
         'message': `Cyclic data detected during projection of ${resolved.node.id}`,
         'validationErrors': ['cyclic data detected at root']
       }
@@ -481,7 +481,7 @@ function projectInstance(args: ProjectInstanceArgsType): string {
     throw new MaterializationError(
       node.id,
       {
-        'code': 'CYCLIC_DATA',
+        'code': MaterializationErrorCode.CYCLIC_DATA,
         'message': `Cyclic data detected during projection of ${node.id} at ${path === '' ? 'root' : path}`,
         'validationErrors': [`cyclic data detected at ${path === '' ? 'root' : path}`]
       }
@@ -701,7 +701,7 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
     throw new MaterializationError(
       sourceId,
       {
-        'code': 'MATERIALIZATION_FAILED',
+        'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
         'message': `Annotated edge ${edge.edgePredicate} at ${path} expects { target, annotations }, received ${typeof value}.`,
         'validationErrors': [`annotated edge ${edge.edgePredicate} value must be an object with target + annotations`]
       }

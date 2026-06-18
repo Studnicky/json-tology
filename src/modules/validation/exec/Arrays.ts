@@ -1,7 +1,7 @@
 import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
 import type { ExecContextType } from '../../../types/ExecContext.js';
 import { BaseError } from '../../../errors/BaseError.js';
-import { Predicates } from '../Predicates.js';
+import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**
@@ -68,20 +68,15 @@ export class Arrays {
     // are ever pushed, so the errors array is never mutated and can be shared across elements.
     // evaluatedItems/evaluatedProperties are reset to undefined since they are per-element.
     const scratchCtx: ExecContextType = {
+      ...ctx,
       'applyDefaults': false,
       'collectErrors': false,
-      'depth': ctx.depth,
       'doCoerce': false,
-      'dynamicScope': ctx.dynamicScope,
       'errors': [],
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
-      'ignoreAdditionalProperties': ctx.ignoreAdditionalProperties,
-      'maxDepth': ctx.maxDepth,
-      'refStack': ctx.refStack,
       'stripUnknown': false,
-      'synthesizeDefaults': false,
-      'trackEvaluated': ctx.trackEvaluated
+      'synthesizeDefaults': false
     };
 
     for (const item of arr) {

@@ -6,6 +6,7 @@
  */
 
 import { HEX_RADIX } from '../../constants/NUMERIC.js';
+import { isRecord } from '../data/DataTypes.js';
 
 export class Hash {
   /**
@@ -29,8 +30,8 @@ export class Hash {
 }
 
 function keySortReplacer(_: string, value: unknown): unknown {
-  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-    const rec = value as Record<string, unknown>;
+  if (isRecord(value)) {
+    const rec = value;
     const keys = Object.keys(rec);
 
     // Fast-path: already sorted (common case for compiled schemas).

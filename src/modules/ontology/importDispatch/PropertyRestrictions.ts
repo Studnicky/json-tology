@@ -302,6 +302,7 @@ export function importPropertyRestrictions(_quads: QuadInterface[], ctx: OwlImpo
 
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     invariants,
     'sameAs': [],

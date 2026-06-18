@@ -1,8 +1,9 @@
 /**
  * OwlImportError — thrown by the OWL 2 TBox import pipeline.
  *
- * Covers unknown axiom predicates, malformed class nodes, unresolved IRI
- * references, unsupported datatypes, and not-yet-implemented dispatcher stubs.
+ * Covers malformed JSON-LD input (`PARSE_FAILED`) and the absence of the
+ * optional `jsonld` peer dependency required for non-quad JSON-LD input
+ * (`PEER_DEPENDENCY_MISSING`).
  */
 
 import type { OwlImportErrorOptionsType } from '../types/ErrorOptions.js';

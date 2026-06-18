@@ -9,8 +9,13 @@
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { LoaderType } from '../../types/Loader.js';
 import type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptions.js';
+import { SchemaLoadError } from '../../errors/SchemaLoadError.js';
+import { SchemaLoadErrorCode } from '../../constants/ERROR_CODES.js';
 
 export type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptions.js';
+
+/** Lowest HTTP status treated as a transient (retryable) server-side failure. */
+const HTTP_SERVER_ERROR_MIN = 500;
 
 /**
  * Namespace of universal schema-loading helpers.
@@ -112,6 +117,22 @@ export const Loaders = {
 
       if (response.ok) {
         return response.json() as Promise<JsonSchemaType>;
+      }
+
+      // 5xx responses indicate a transient server-side failure — throw a
+      // SchemaLoadError so callers can distinguish infrastructure failures
+      // (retryable) from unknown-IRI signals (not retryable).
+      // 4xx responses collapse to null per the LoaderType contract: null signals
+      // "IRI unknown to this loader" so the next layer (GraphError REF_UNRESOLVED)
+      // carries the full IRI with no status noise.
+      if (response.status >= HTTP_SERVER_ERROR_MIN) {
+        throw new SchemaLoadError(`HTTP ${response.status} loading ${url}`, {
+          'code': SchemaLoadErrorCode.LOAD_FAILED,
+          'file': url,
+          'reason': 'fetch-failed',
+          'retryable': true,
+          'status': response.status
+        });
       }
 
       return null;

@@ -12,21 +12,11 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { RDF } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
-import { Lists } from './Lists.js';
+import {
+  isRdfFirst, isRdfNil, isRdfRest, Lists
+} from './Lists.js';
 import { decodeLiteral } from './Terms.js';
 import { QuadFactory } from './QuadFactory.js';
-
-function isRdfFirst(value: string): boolean {
-  return value === RDF.first;
-}
-
-function isRdfRest(value: string): boolean {
-  return value === RDF.rest;
-}
-
-function isRdfNil(value: string): boolean {
-  return value === RDF.nil;
-}
 
 /**
  * Walk an `rdf:first` / `rdf:rest` chain rooted at `headValue` (the `.value`

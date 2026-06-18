@@ -9,7 +9,7 @@ import {
   isRecord
 } from '../../data/DataTypes.js';
 import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
-import { Predicates } from '../Predicates.js';
+import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**

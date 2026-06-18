@@ -15,12 +15,12 @@
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type {
-  DispatcherFnInterface,
+  DispatcherFnType,
   OwlImportContextType,
   OwlImporterOptionsType,
   OwlImportFragmentType,
   OwlImportResultType,
-  PrefixMap
+  PrefixMapType
 } from '../../types/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../types/Schema.js';
 import type { InvariantType } from '../../types/Invariant.js';
@@ -29,12 +29,16 @@ import type { JsonLdModuleType } from '../../types/JsonLdModuleType.js';
 import type { ExternalRdfJsQuadType } from '../../types/ExternalRdfJsQuadType.js';
 import { Curie } from '../rdf/Curie.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
+import { logScope } from '../data/LogScope.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import {
   OWL, RDF, RDFS, XSD
 } from '../../constants/IRI.js';
 import { SUPPORTED_XSD_DATATYPES } from '../../constants/XSD_REVERSE_MAPS.js';
 import { OwlImportError } from '../../errors/OwlImportError.js';
+import { OwlImportErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { Terms } from '../rdf/Terms.js';
 import {
@@ -50,17 +54,6 @@ import { importIndividuals } from './importDispatch/Individuals.js';
 import { importProperties } from './importDispatch/Properties.js';
 import { importPropertyRestrictions } from './importDispatch/PropertyRestrictions.js';
 
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-function isOwlImportNotImplemented(err: unknown): err is OwlImportError {
-  return (
-    err instanceof OwlImportError
-    && err.code === 'OWL_IMPORT_NOT_IMPLEMENTED'
-  );
-}
 
 // ---------------------------------------------------------------------------
 // mergeFragments helpers
@@ -116,9 +109,30 @@ function mergeFragments(fragments: OwlImportFragmentType[]): OwlImportFragmentTy
     'properties': Record<string, unknown>;
     'types': readonly string[];
   }>(fragments, 'individuals');
+  const differentFromRaw = flattenFragmentArrays<readonly [string, string]>(fragments, 'differentFrom');
+
+  // Deduplicate differentFrom pairs by canonical key
+  const seenDiff = new Set<string>();
+  const differentFrom: Array<readonly [string, string]> = [];
+
+  for (const [
+    a,
+    b
+  ] of differentFromRaw) {
+    const key = a < b ? `${a}\0${b}` : `${b}\0${a}`;
+
+    if (!seenDiff.has(key)) {
+      seenDiff.add(key);
+      differentFrom.push([
+        a,
+        b
+      ] as const);
+    }
+  }
 
   return {
     characteristics,
+    differentFrom,
     individuals,
     invariants,
     sameAs,
@@ -376,12 +390,39 @@ function normalizeInput(jsonLd: object | QuadInterface[] | string): QuadInterfac
 
     try {
       parsed = JSON.parse(jsonLd);
-    } catch {
-      return [];
+    } catch (error) {
+      const msg = `Failed to parse JSON-LD string: ${error instanceof Error ? error.message : String(error)}`;
+      const base = {
+        'axiomIri': 'https://www.w3.org/TR/json-ld/',
+        'code': OwlImportErrorCode.PARSE_FAILED,
+        'subjectIri': null
+      } as const;
+
+      throw error instanceof Error
+        ? new OwlImportError(msg, {
+          ...base,
+          'cause': error
+        })
+        : new OwlImportError(msg, base);
     }
 
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return [];
+      let parsedKind: string = typeof parsed;
+
+      if (parsed === null) {
+        parsedKind = 'null';
+      } else if (Array.isArray(parsed)) {
+        parsedKind = 'array';
+      }
+
+      throw new OwlImportError(
+        `JSON-LD string must parse to a JSON object; got ${parsedKind}`,
+        {
+          'axiomIri': 'https://www.w3.org/TR/json-ld/',
+          'code': OwlImportErrorCode.PARSE_FAILED,
+          'subjectIri': null
+        }
+      );
     }
 
     return normalizeJsonLdInput(parsed);
@@ -394,7 +435,7 @@ function normalizeInput(jsonLd: object | QuadInterface[] | string): QuadInterfac
 // Dispatcher table
 // ---------------------------------------------------------------------------
 
-const DISPATCHERS: readonly DispatcherFnInterface[] = [
+const DISPATCHERS: readonly DispatcherFnType[] = [
   importClassAxioms,
   importClassExpressions,
   importPropertyRestrictions,
@@ -433,10 +474,12 @@ const DISPATCHERS: readonly DispatcherFnInterface[] = [
 export class OwlImporter {
   private readonly baseIRI: string;
   private readonly curie: CurieInterface;
-  private readonly prefixes: PrefixMap;
+  private readonly logger: LoggerInterface;
+  private readonly prefixes: PrefixMapType;
 
   public constructor(options: OwlImporterOptionsType) {
     this.baseIRI = options.baseIRI;
+    this.logger = options.logger ?? SILENT_LOGGER;
     this.prefixes = {
       ...STANDARD_PREFIXES,
       ...options.prefixes
@@ -497,26 +540,23 @@ export class OwlImporter {
 
     const fragments: OwlImportFragmentType[] = [];
 
+    // Every dispatcher is fully implemented; valid-but-unsupported constructs are
+    // recorded via ctx.reportUnsupported (into `unsupported`). A dispatcher that
+    // throws signals a real failure (e.g. malformed input) and propagates.
     for (const dispatcher of DISPATCHERS) {
-      try {
-        fragments.push(dispatcher(quads, ctx));
-      } catch (error) {
-        if (isOwlImportNotImplemented(error)) {
-          unsupported.push({
-            'axiomIri': error.axiomIri,
-            'subjectIri': error.subjectIri
-          });
-        } else {
-          throw error;
-        }
-      }
+      fragments.push(dispatcher(quads, ctx));
     }
 
     const merged = mergeFragments(fragments);
     const schemas = resolveSchemaDeltas(merged, allClassIris);
 
+    if (unsupported.length > 0) {
+      this.logger.warn(logScope('OwlImporter', 'import', `${unsupported.length} unsupported construct(s) recorded`));
+    }
+
     return {
       'characteristics': merged.characteristics,
+      'differentFrom': merged.differentFrom,
       'individuals': merged.individuals,
       'invariants': merged.invariants,
       'sameAs': merged.sameAs,
@@ -553,12 +593,13 @@ export class OwlImporter {
         const jsonLdModule = await tryLoadJsonLd();
 
         if (jsonLdModule === null) {
+          this.logger.error(logScope('OwlImporter', 'importAsync', 'optional jsonld peerDependency not installed; cannot process non-quad JSON-LD input'));
           throw new OwlImportError(
             'importAsync() with non-quad JSON-LD input requires the optional `jsonld` peerDependency. '
             + 'Install it with: npm install jsonld',
             {
               'axiomIri': 'https://www.w3.org/TR/json-ld/',
-              'code': 'OWL_IMPORT_NOT_IMPLEMENTED',
+              'code': OwlImportErrorCode.PEER_DEPENDENCY_MISSING,
               'subjectIri': null
             }
           );

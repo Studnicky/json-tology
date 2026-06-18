@@ -7,6 +7,7 @@
 
 import type { InvariantType } from './Invariant.js';
 import type { CurieInterface } from '../interfaces/Curie.js';
+import type { LoggerInterface } from '../interfaces/Logger.js';
 import type { QuadInterface } from '../interfaces/Quad.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
 import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
@@ -32,8 +33,10 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 export type OwlImporterOptionsType = {
   /** Base IRI for the import session. Used when building OwlImportContextType. */
   readonly 'baseIRI': string;
+  /** Optional logger; defaults to SILENT_LOGGER. */
+  readonly 'logger'?: LoggerInterface;
   /** Additional prefix mappings merged with STANDARD_PREFIXES. */
-  readonly 'prefixes'?: PrefixMap;
+  readonly 'prefixes'?: PrefixMapType;
 };
 
 /**
@@ -47,7 +50,7 @@ export type OwlImporterOptionsType = {
  *
  * @example
  * ```ts
- * const prefixes: PrefixMap = { schema: 'https://schema.org/', ex: 'https://example.com/' };
+ * const prefixes: PrefixMapType = { schema: 'https://schema.org/', ex: 'https://example.com/' };
  * ```
  *
  * @category OWL Import
@@ -55,7 +58,7 @@ export type OwlImporterOptionsType = {
  * @see {@link OwlImporterOptionsType}
  * @group Import
  */
-export type PrefixMap = Record<string, string>;
+export type PrefixMapType = Record<string, string>;
 
 /**
  * Map from subject IRI / blank-node ID to all quads with that subject.
@@ -78,7 +81,7 @@ export type PrefixMap = Record<string, string>;
  *
  * @category OWL Import
  * @since 0.15.0
- * @see {@link DispatcherFnInterface}
+ * @see {@link DispatcherFnType}
  * @group Import
  */
 export type SubjectIndexType = Map<string, QuadInterface[]>;
@@ -95,7 +98,7 @@ export type SubjectIndexType = Map<string, QuadInterface[]>;
  *
  * @example
  * ```ts
- * const dispatcher: DispatcherFnInterface = (quads, ctx) => {
+ * const dispatcher: DispatcherFnType = (quads, ctx) => {
  *   return { characteristics: [], individuals: [], invariants: [], sameAs: [], schemaDeltas: new Map() };
  * };
  * ```
@@ -105,7 +108,7 @@ export type SubjectIndexType = Map<string, QuadInterface[]>;
  * @see {@link OwlImportFragmentType}
  * @group Dispatchers
  */
-export type DispatcherFnInterface = (quads: QuadInterface[], ctx: OwlImportContextType) => OwlImportFragmentType;
+export type DispatcherFnType = (quads: QuadInterface[], ctx: OwlImportContextType) => OwlImportFragmentType;
 
 /**
  * The value returned by each dispatcher after processing its axiom group.
@@ -136,6 +139,9 @@ export type OwlImportFragmentType = {
   /** OWL property characteristics discovered during import (e.g. Functional, Transitive). */
   'characteristics': ReadonlyArray<{ 'characteristic': string;
     'propertyIri': string; }>;
+
+  /** owl:differentFrom pairs (individual IRI pairs asserted distinct). */
+  'differentFrom': ReadonlyArray<readonly [string, string]>;
 
   /** Named individuals (ABox assertions) found in the TBox input. */
   'individuals': ReadonlyArray<{
@@ -204,7 +210,7 @@ export type OwlImportContextType = {
   'isDatatype': (iri: string) => boolean;
 
   /** Prefix-to-IRI map in effect for the import session. */
-  'prefixes': PrefixMap;
+  'prefixes': PrefixMapType;
 
   /**
    * Record an axiom or predicate IRI that the dispatcher does not handle.
@@ -241,6 +247,9 @@ export type OwlImportResultType = {
   'characteristics': ReadonlyArray<{ 'characteristic': string;
     'propertyIri': string; }>;
 
+  /** owl:differentFrom pairs extracted from the input graph. */
+  'differentFrom': ReadonlyArray<readonly [string, string]>;
+
   /** Named individuals (ABox assertions) found in the TBox input. */
   'individuals': ReadonlyArray<{
     'iri': string;
@@ -259,8 +268,8 @@ export type OwlImportResultType = {
   'schemas': readonly JsonSchemaDocumentObjectType[];
 
   /**
-   * Axiom/predicate IRIs that no dispatcher handled.
-   * Phase-0: all dispatcher stubs contribute here via NOT_IMPLEMENTED.
+   * Axiom/predicate IRIs for valid constructs a dispatcher recognized but does
+   * not project into the schema graph. Populated via `ctx.reportUnsupported`.
    */
   'unsupported': ReadonlyArray<{ 'axiomIri': string;
     'subjectIri': null | string }>;

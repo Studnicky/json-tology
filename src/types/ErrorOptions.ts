@@ -17,13 +17,20 @@ import type {
   MaterializationErrorCodeType,
   OwlImportErrorCodeType,
   SchemaErrorCodeType,
+  SchemaLoadErrorCodeType,
   TransformErrorCodeType
 } from './ErrorCodes.js';
+import type { SchemaLoadReasonType } from './Loader.js';
 import type { TransformDirectionType } from './TransformDirection.js';
 
 export type BaseErrorOptionsType = {
   readonly 'cause'?: Error;
   readonly 'code': string;
+  /**
+   * Set `true` only for transient failures whose cause is external and may clear
+   * on retry (e.g. HTTP 5xx). Omit (defaults to `false`) for deterministic
+   * failures that recur on identical input. See {@link BaseError.retryable}.
+   */
   readonly 'retryable'?: boolean;
 };
 
@@ -70,4 +77,12 @@ export type TransformErrorOptionsType
     readonly 'direction': TransformDirectionType;
     readonly 'path'?: string;
     readonly 'schemaId'?: string;
+  };
+
+export type SchemaLoadErrorOptionsType
+  = Omit<BaseErrorOptionsType, 'code'> & {
+    readonly 'code': SchemaLoadErrorCodeType;
+    readonly 'file': string;
+    readonly 'reason': SchemaLoadReasonType;
+    readonly 'status'?: number;
   };

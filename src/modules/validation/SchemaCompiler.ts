@@ -16,13 +16,19 @@ import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImp
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
 import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
 import { isRecord } from '../data/DataTypes.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
+import { logScope } from '../data/LogScope.js';
+import { ExecContext } from './ExecContext.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { BaseError } from '../../errors/BaseError.js';
+import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaCompilerDefaults } from './SchemaCompilerDefaults.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import type {
@@ -48,10 +54,6 @@ import {
   VS_EARLY_EXIT, VS_INVALID, VS_VALID
 } from '../../types/ValidatorStatusType.js';
 import type { ValidatorStatusType } from '../../types/ValidatorStatusType.js';
-
-// ---------------------------------------------------------------------------
-// Local constants
-// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // SchemaCompiler
@@ -87,18 +89,22 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private activeCustomKeywords: KeywordDefinitionType[] = [];
   private activeLookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
   private readonly compilingValidateNodes = new Map<SchemaGraphNodeType, ValidateWithErrorsFnType>();
+  private readonly logger: LoggerInterface;
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorType | undefined) | undefined;
 
   private readonly validatePlanContext: SchemaCompilerValidatePlanContextType;
 
   /**
-   * Create a SchemaCompiler with an optional cross-schema lookup for compiled validators.
+   * Create a SchemaCompiler with an optional cross-schema lookup for compiled validators
+   * and an optional logger for observability of compile-time failures.
    *
-   * @param options - Optional cross-schema lookup for resolving already-compiled validators by schema ID
+   * @param options - Optional cross-schema lookup and logger
    */
   public constructor(options?: {
+    'logger'?: LoggerInterface;
     'lookupCompiled'?: (schemaId: string) => CompiledValidatorType | undefined;
   }) {
+    this.logger = options?.logger ?? SILENT_LOGGER;
     this.lookupCompiled = options?.lookupCompiled;
     this.validatePlanContext = this.buildValidatePlanContext();
   }
@@ -140,20 +146,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       // Hoist scratch ctx outside the per-element loop. check-mode (collectErrors:false)
       // means no errors are pushed, so the errors array is never mutated.
       const scratchCtx: ExecContextType = {
+        ...ctx,
         'applyDefaults': false,
         'collectErrors': false,
-        'depth': ctx.depth,
         'doCoerce': false,
-        'dynamicScope': ctx.dynamicScope,
         'errors': [],
         'evaluatedItems': undefined,
         'evaluatedProperties': undefined,
-        'ignoreAdditionalProperties': ctx.ignoreAdditionalProperties,
-        'maxDepth': ctx.maxDepth,
-        'refStack': ctx.refStack,
         'stripUnknown': false,
-        'synthesizeDefaults': false,
-        'trackEvaluated': ctx.trackEvaluated
+        'synthesizeDefaults': false
       };
 
       for (const [
@@ -266,23 +267,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private buildCheckFromValidate(validateFn: ValidateWithErrorsFnType): (data: unknown) => boolean {
     return (data: unknown): boolean => {
       const errors: ValidationErrorType[] = [];
-      const ctx: ExecContextType = {
-        'applyDefaults': false,
+      // This path is only used for schemas that declare unevaluated*, so tracking is required.
+      const ctx: ExecContextType = ExecContext.build({
         'collectErrors': false,
-        'depth': 0,
-        'doCoerce': false,
-        'dynamicScope': [],
         errors,
-        'evaluatedItems': undefined,
-        'evaluatedProperties': undefined,
-        'ignoreAdditionalProperties': false,
-        'maxDepth': 100,
-        'refStack': new Set(),
-        'stripUnknown': false,
-        'synthesizeDefaults': false,
-        // This path is only used for schemas that declare unevaluated*, so tracking is required.
         'trackEvaluated': true
-      };
+      });
       const result = validateFn(data, '', ctx);
 
       return result.valid;
@@ -647,12 +637,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const graphNode = graph.node(schema);
 
     if (graphNode === undefined) {
-      return (_value: unknown, _path: string, _ctx: ExecContextType): ValidateWithErrorsResultType => {
-        return {
-          'valid': true,
-          'value': _value
-        };
-      };
+      this.logger.error(logScope('SchemaCompiler', 'compileValidateWithErrors', 'Schema not found in graph — cannot compile validator'));
+      throw new GraphError(
+        'Schema not found in graph — cannot compile validator',
+        { 'code': GraphErrorCode.REF_NOT_FOUND }
+      );
     }
 
     return this.compileNodeValidateWithErrors(graphNode, formatRegistry, graph, lookupSchema);
@@ -680,22 +669,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const errors: ValidationErrorType[] = [];
-    const ctx: ExecContextType = {
-      'applyDefaults': false,
-      'collectErrors': true,
-      'depth': 0,
-      'doCoerce': false,
-      'dynamicScope': [],
+    const ctx: ExecContextType = ExecContext.build({
       errors,
-      'evaluatedItems': undefined,
-      'evaluatedProperties': undefined,
-      'ignoreAdditionalProperties': false,
-      'maxDepth': 100,
-      'refStack': new Set(),
-      'stripUnknown': false,
-      'synthesizeDefaults': false,
       'trackEvaluated': trackEvaluated
-    };
+    });
     const result = validateWithErrorsFn(data, '', ctx);
 
     return {
@@ -841,22 +818,16 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): CompiledValidationResultType {
     const errors: ValidationErrorType[] = [];
     const stripUnk = (options.enforceSchemaProperties ?? false) || (options.removeAdditionalProperties ?? false);
-    const ctx: ExecContextType = {
+    const ctx: ExecContextType = ExecContext.build({
       'applyDefaults': options.applyDefaults ?? false,
       'collectErrors': options.collectErrors ?? true,
-      'depth': 0,
       'doCoerce': options.castTypes ?? false,
-      'dynamicScope': [],
       errors,
-      'evaluatedItems': undefined,
-      'evaluatedProperties': undefined,
       'ignoreAdditionalProperties': options.ignoreAdditionalProperties ?? false,
-      'maxDepth': 100,
-      'refStack': new Set(),
       'stripUnknown': stripUnk,
       'synthesizeDefaults': options.synthesizeDefaults ?? false,
       'trackEvaluated': trackEvaluated
-    };
+    });
     const result = validateWithErrors(workingValue, '', ctx);
 
     return {
@@ -894,22 +865,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const errors: ValidationErrorType[] = [];
-    const ctx: ExecContextType = {
-      'applyDefaults': false,
-      'collectErrors': true,
-      'depth': 0,
-      'doCoerce': false,
-      'dynamicScope': [],
+    const ctx: ExecContextType = ExecContext.build({
       errors,
-      'evaluatedItems': undefined,
-      'evaluatedProperties': undefined,
       'ignoreAdditionalProperties': options?.ignoreAdditionalProperties ?? false,
-      'maxDepth': 100,
-      'refStack': new Set(),
-      'stripUnknown': false,
       'synthesizeDefaults': options?.synthesizeDefaults ?? false,
       'trackEvaluated': trackEvaluated
-    };
+    });
     const result = validateWithErrors(workingValue, '', ctx);
 
     return {
@@ -1755,18 +1716,14 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     const depCtx: ExecContextType = {
-      'applyDefaults': ctx.applyDefaults,
-      'collectErrors': ctx.collectErrors,
+      ...ctx,
       'depth': 0,
-      'doCoerce': ctx.doCoerce,
       'dynamicScope': [],
-      'errors': ctx.errors,
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
       'ignoreAdditionalProperties': false,
       'maxDepth': 100,
       'refStack': new Set(),
-      'stripUnknown': ctx.stripUnknown,
       'synthesizeDefaults': false,
       'trackEvaluated': true
     };
@@ -1832,22 +1789,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       };
     }
 
-    const pnCtx: ExecContextType = {
-      'applyDefaults': false,
+    const pnCtx: ExecContextType = ExecContext.build({
       'collectErrors': collectErrors,
-      'depth': 0,
-      'doCoerce': false,
-      'dynamicScope': [],
       errors,
-      'evaluatedItems': undefined,
-      'evaluatedProperties': undefined,
-      'ignoreAdditionalProperties': false,
-      'maxDepth': 100,
-      'refStack': new Set(),
-      'stripUnknown': false,
-      'synthesizeDefaults': false,
       'trackEvaluated': true
-    };
+    });
     const pnResult = Objects.validatePropertyNames(path, workingValue, propertyNamesValidator, pnCtx);
 
     if (pnResult.earlyExit) {

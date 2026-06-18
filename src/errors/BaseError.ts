@@ -9,6 +9,7 @@
 import type { ErrorJsonType } from '../types/Error.js';
 import type { BaseErrorOptionsType } from '../types/ErrorOptions.js';
 import type { ValidationErrorType } from '../types/Validation.js';
+import { UNKNOWN_ERROR_CODE } from '../constants/ERROR_CODES.js';
 
 export class BaseError extends Error {
   private static readonly EMPTY_PARAMS: Record<string, unknown> = Object.freeze({});
@@ -23,7 +24,7 @@ export class BaseError extends Error {
     }
 
     return {
-      'code': 'UNKNOWN',
+      'code': UNKNOWN_ERROR_CODE,
       'message': error.message,
       'retryable': false
     };
@@ -70,6 +71,17 @@ export class BaseError extends Error {
 
   public override name = 'BaseError';
 
+  /**
+   * Whether retrying the failed operation could plausibly succeed.
+   *
+   * `true` marks a **transient** failure whose cause is external and may clear
+   * on retry — e.g. an HTTP 5xx while loading a remote schema
+   * ({@link SchemaLoadError} with `retryable: true`). `false` (the default)
+   * marks a **deterministic** failure that will recur on identical input — every
+   * validation, coercion, graph-resolution, materialization, transform, and
+   * schema-registration error — so callers should not retry. `flatten()` and
+   * `toJson()` preserve this flag for each link in the cause chain.
+   */
   public readonly retryable: boolean;
 
   /**
@@ -117,7 +129,7 @@ export class BaseError extends Error {
       json.cause = this.cause.toJson();
     } else if (this.cause instanceof Error) {
       json.cause = {
-        'code': 'UNKNOWN',
+        'code': UNKNOWN_ERROR_CODE,
         'message': this.cause.message,
         'retryable': false
       };

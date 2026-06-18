@@ -26,6 +26,7 @@ import type { OwlImportResultType } from '../../src/types/OwlImport.js';
 function emptyResult(): OwlImportResultType {
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],
@@ -37,6 +38,7 @@ function emptyResult(): OwlImportResultType {
 function resultFromSchemas(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultType {
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],
@@ -274,6 +276,7 @@ void describe('OwlCodegen — Ugly: sameAs + characteristics in result', () => {
   void it('emits sameAs calls when result contains sameAs pairs', () => {
     const result: OwlImportResultType = {
       'characteristics': [],
+      'differentFrom': [],
       'individuals': [],
       'invariants': [],
       'sameAs': [[
@@ -297,6 +300,7 @@ void describe('OwlCodegen — Ugly: sameAs + characteristics in result', () => {
         'characteristic': 'Functional',
         'propertyIri': 'urn:prop:id'
       }],
+      'differentFrom': [],
       'individuals': [],
       'invariants': [],
       'sameAs': [],
