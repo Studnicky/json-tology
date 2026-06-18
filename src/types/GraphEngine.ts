@@ -1,4 +1,5 @@
 import type { FormatRegistryInterface } from '../interfaces/FormatRegistryInterface.js';
+import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 
@@ -111,6 +112,7 @@ export type GraphEngineOptionsType = {
   'enforceSchemaProperties'?: boolean;
   'formatRegistry'?: FormatRegistryInterface;
   'keywords'?: KeywordDefinitionType[];
+  'logger'?: LoggerInterface;
   'lookupGraph'?: (schemaId: string) => SchemaGraphInterface | undefined;
   'lookupSchema'?: (schemaId: string) => Record<string, unknown> | undefined;
   'materializeContainers'?: boolean;

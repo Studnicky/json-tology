@@ -504,6 +504,7 @@ export class OwlImporter {
       'isDatatype': (iri: string): boolean => {
         return isDatatypeIri(iri) || allDatatypeIris.has(iri);
       },
+      'logger': this.logger,
       'prefixes': this.prefixes,
       'reportUnsupported': (axiomIri: string, subjectIri: null | string): void => {
         unsupported.push({

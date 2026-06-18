@@ -224,6 +224,7 @@ function derivePrefixesFromSchemas(schemas: ReadonlyArray<Record<string, unknown
     try {
       parsed = new URL(id);
     } catch {
+      writer.err(`Skipping prefix derivation for unparseable $id URL: ${id}`);
       continue;
     }
 

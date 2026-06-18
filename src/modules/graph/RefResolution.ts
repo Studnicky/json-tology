@@ -21,12 +21,15 @@
 
 import type { RefTargetType } from '../../types/RefTargetType.js';
 import type { RefResolutionOptionsType } from '../../types/RefResolutionOptionsType.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaIri } from './SchemaIri.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { DataType } from '../data/DataType.js';
+import { LogScope } from '../data/LogScope.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
 /**
  * RefResolution — canonical `$ref` → `{ graph, node }` resolver.
@@ -47,8 +50,11 @@ export class RefResolution {
   public static resolve(
     ref: string,
     graph: SchemaGraphInterface,
-    options: RefResolutionOptionsType = {}
+    options: RefResolutionOptionsType = {},
+    logger: LoggerInterface = SILENT_LOGGER
   ): RefTargetType {
+    logger.trace(LogScope.format('RefResolution', 'resolve', `resolving $ref: ${ref}`));
+
     // Step 1: fragment-only ref — resolve within the current graph.
     if (ref.startsWith('#')) {
       return {
@@ -103,6 +109,8 @@ export class RefResolution {
     }
 
     // Step 6: unresolvable.
+    logger.debug(LogScope.format('RefResolution', 'resolve', `resolution miss for $ref: ${ref}`));
+
     throw new GraphError(`Unresolved schema reference: ${ref}`, {
       'code': GraphErrorCode.REF_NOT_FOUND,
       'pointer': ref

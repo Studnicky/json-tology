@@ -27,6 +27,7 @@
  */
 
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
+import type { LoggerInterface } from '../../../interfaces/LoggerInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
@@ -49,6 +50,8 @@ import {
   UNION_OF_IRIS
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
 import { ImportRelation } from './ImportRelation.js';
+import { LogScope } from '../../data/LogScope.js';
+import { SILENT_LOGGER } from '../../../constants/LOGGER.js';
 
 /**
  * Parse the legacy `owl:equivalentClass = <JSON-LD wrapper literal>` form.
@@ -59,12 +62,14 @@ import { ImportRelation } from './ImportRelation.js';
  * `target` carries the lexical string. We parse it once here and return
  * the embedded `@id` IRIs.
  */
-function parseUnionLiteralWrapper(lexical: string): string[] {
+function parseUnionLiteralWrapper(lexical: string, logger: LoggerInterface): string[] {
   let parsed: unknown;
 
   try {
     parsed = JSON.parse(lexical);
   } catch {
+    logger.debug(LogScope.format('ClassAxioms', 'parseUnionLiteralWrapper', 'JSON.parse failed for union-literal wrapper; treating as empty'));
+
     return [];
   }
 
@@ -413,9 +418,10 @@ function applyEquivalentClassLiteral(
   schemaDeltas: Map<string, Partial<JsonSchemaDocumentObjectType>>,
   relation: SchemaGraphRelationType,
   subjectIri: string,
-  reportUnsupported: OwlImportContextType['reportUnsupported']
+  reportUnsupported: OwlImportContextType['reportUnsupported'],
+  logger: LoggerInterface
 ): void {
-  const members = parseUnionLiteralWrapper(ImportRelation.targetValue(relation));
+  const members = parseUnionLiteralWrapper(ImportRelation.targetValue(relation), logger);
 
   if (members.length > 0) {
     const firstMember = members[0];
@@ -498,7 +504,7 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContextType, axiomCtx: AxiomConte
         continue;
       }
       if (relation.termType === 'Literal') {
-        applyEquivalentClassLiteral(axiomCtx.schemaDeltas, relation, subjectIri, ctx.reportUnsupported);
+        applyEquivalentClassLiteral(axiomCtx.schemaDeltas, relation, subjectIri, ctx.reportUnsupported, ctx.logger ?? SILENT_LOGGER);
       }
       continue;
     }

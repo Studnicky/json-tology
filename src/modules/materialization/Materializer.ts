@@ -480,7 +480,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     }
 
     try {
-      const resolved = RefResolution.resolve(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn });
+      const resolved = RefResolution.resolve(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn }, this.logger);
 
       return [
         resolved.graph,

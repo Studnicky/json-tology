@@ -202,7 +202,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.curie = Object.keys(mergedPrefixes).length > 0 ? new Curie(mergedPrefixes) : undefined;
     this.computedStore = new ComputedStore();
-    this.refs = new SchemaRefWalker();
+    this.refs = new SchemaRefWalker({ 'logger': this.logger });
     this.store = new SchemaEntryStore();
     this.sameAsStore = new SameAsStore();
     this.differentFromStore = new DifferentFromStore();
@@ -1038,6 +1038,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       const entryGraph = this.graphOf(entry);
 
       const engineOptions: GraphEngineOptionsType = {
+        'logger': this.logger,
         'lookupGraph': this.lookupGraphFn,
         'lookupSchema': (lookupSchemaId: string): Record<string, unknown> | undefined => {
           // 1. Cross-registry lookup: other top-level registered schemas.

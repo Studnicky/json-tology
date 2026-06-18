@@ -209,6 +209,9 @@ export type OwlImportContextType = {
    */
   'isDatatype': (iri: string) => boolean;
 
+  /** Optional logger; defaults to SILENT_LOGGER at the call site. */
+  readonly 'logger'?: LoggerInterface;
+
   /** Prefix-to-IRI map in effect for the import session. */
   'prefixes': PrefixMapType;
 
