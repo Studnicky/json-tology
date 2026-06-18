@@ -819,24 +819,6 @@ const NUMBER_FORMAT_VALIDATORS: Record<string, FormatPredicateType> = {
 const TRUSTED_MARKER = 'trusted' as const;
 
 /**
- * Returns `true` when `fn` is a built-in format validator registered via
- * {@link FormatRegistry.builtin}.  Built-in validators are total functions
- * that never throw, so callers can omit the try/catch guard on the hot path.
- *
- * User-supplied validators registered via {@link FormatRegistry.set} are never
- * trusted — the try/catch guard is preserved for them.
- *
- * @param fn - Format predicate to test
- * @returns `true` when the function carries the built-in trust marker
- * @category Validation
- * @since 0.25.0
- * @group Format
- */
-export function isTrustedFormatPredicate(fn: FormatPredicateType): boolean {
-  return Object.hasOwn(fn, TRUSTED_MARKER);
-}
-
-/**
  * Pluggable registry for JSON Schema `format` validators.
  *
  * Each validator receives `unknown` so it can handle both string and number
@@ -885,6 +867,24 @@ export class FormatRegistry implements FormatRegistryInterface {
     }
 
     return registry;
+  }
+
+  /**
+   * Returns `true` when `fn` is a built-in format validator registered via
+   * {@link FormatRegistry.builtin}.  Built-in validators are total functions
+   * that never throw, so callers can omit the try/catch guard on the hot path.
+   *
+   * User-supplied validators registered via {@link FormatRegistry.set} are never
+   * trusted — the try/catch guard is preserved for them.
+   *
+   * @param fn - Format predicate to test
+   * @returns `true` when the function carries the built-in trust marker
+   * @category Validation
+   * @since 0.25.0
+   * @group Format
+   */
+  static isTrustedFormatPredicate(fn: FormatPredicateType): boolean {
+    return Object.hasOwn(fn, TRUSTED_MARKER);
   }
 
   private readonly validators = new Map<string, FormatPredicateType>();

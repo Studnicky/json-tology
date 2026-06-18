@@ -14,7 +14,6 @@ import type {
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
 import type { OwlImportFragmentType } from '../../../types/OwlImport.js';
 import { Terms } from '../../quads/Terms.js';
-import { decodeLiteral } from '../../quads/Terms.js';
 
 export class ImportRelation {
   /**
@@ -35,7 +34,7 @@ export class ImportRelation {
 
   /**
    * Decode a Literal `ListItemType` back to its typed JS value via the canonical
-   * `Terms.literal` / `decodeLiteral` round-trip.
+   * `Terms.literal` / `Terms.decodeLiteral` round-trip.
    *
    * Preserves XSD-typed integers, booleans, Dates, etc.
    */
@@ -45,7 +44,7 @@ export class ImportRelation {
       'language': item.language ?? ''
     });
 
-    return decodeLiteral(literalTerm);
+    return Terms.decodeLiteral(literalTerm);
   }
 
   /**

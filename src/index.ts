@@ -58,9 +58,7 @@ export * from './modules/ontology/GraphOntologySerializer.js';
 export * from './modules/ontology/OntologyBuilder.js';
 export * from './modules/quads/Curie.js';
 export * from './modules/quads/Lists.js';
-export {
-  decodeLiteral, Terms
-} from './modules/quads/Terms.js';
+export * from './modules/quads/Terms.js';
 export * from './modules/rdf/Lift.js';
 export * from './modules/rdf/Projection.js';
 export * from './modules/rdf/Skolemize.js';

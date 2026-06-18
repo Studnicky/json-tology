@@ -8,8 +8,8 @@
  *
  * Literal values are typed as `string` per the rdf/js spec, with the JS type
  * tag carried in `.datatype.value` (e.g. `xsd:integer`, `xsd:boolean`,
- * `xsd:dateTime`). To decode back to a typed JS value, use `decodeLiteral`
- * from `src/modules/rdf/Terms.ts` — `fromQuads` does this automatically.
+ * `xsd:dateTime`). To decode back to a typed JS value, use `Terms.decodeLiteral`
+ * from `src/modules/quads/Terms.ts` — `fromQuads` does this automatically.
  *
  * @see {@link https://rdf.js.org/data-model-spec/#quad-interface rdf/js Quad spec}
  */

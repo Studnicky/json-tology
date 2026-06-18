@@ -39,7 +39,7 @@ import {
 } from '../../constants/IRI.js';
 import { Cursor } from './Cursor.js';
 import { SchemaCursor } from './SchemaCursor.js';
-import { decodeLiteral } from '../quads/Terms.js';
+import { Terms } from '../quads/Terms.js';
 
 
 function isLiteralObject(termType: AboxPredicateObjectType['objectTermType']): boolean {
@@ -52,7 +52,7 @@ function isLiteralObject(termType: AboxPredicateObjectType['objectTermType']): b
  */
 function quadObjectValue(quad: QuadInterface): unknown {
   if (quad.object.termType === 'Literal') {
-    return decodeLiteral(quad.object);
+    return Terms.decodeLiteral(quad.object);
   }
 
   return quad.object.value;

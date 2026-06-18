@@ -13,8 +13,8 @@ import type { QuadObjectType } from '../../types/Quad.js';
 import { RDF } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { Lists } from '../quads/Lists.js';
-import { decodeLiteral } from '../quads/Terms.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
+import { Terms } from '../quads/Terms.js';
 
 /**
  * Walk an `rdf:first` / `rdf:rest` chain rooted at `headValue` (the `.value`
@@ -263,7 +263,7 @@ function objectToJsonLd(obj: QuadObjectType): unknown {
 
   // Literal — decode the rdf/js spec `value: string` back to its typed JS
   // value (number, boolean, Date) based on `datatype.value`.
-  return decodeLiteral(obj);
+  return Terms.decodeLiteral(obj);
 }
 
 function countBnodeRefs(obj: QuadObjectType, counts: Map<string, number>): void {

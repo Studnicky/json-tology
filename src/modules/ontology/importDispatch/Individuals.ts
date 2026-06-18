@@ -29,7 +29,6 @@ import type {
 } from '../../../types/OwlImport.js';
 import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
 import { Terms } from '../../quads/Terms.js';
-import { decodeLiteral } from '../../quads/Terms.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { DataType } from '../../data/DataType.js';
@@ -77,7 +76,7 @@ function targetIriIn(relation: SchemaGraphRelationType, set: ReadonlySet<string>
 /**
  * Extract the typed JS value of a Literal relation target. Reconstructs the
  * literal from the relation's preserved `datatype` and `language` fields and
- * decodes via the canonical `decodeLiteral` helper, returning a number /
+ * decodes via the canonical `Terms.decodeLiteral` helper, returning a number /
  * boolean / Date / string per the XSD datatype.
  */
 function literalTarget(relation: SchemaGraphRelationType): unknown {
@@ -88,7 +87,7 @@ function literalTarget(relation: SchemaGraphRelationType): unknown {
       'language': relation.language ?? ''
     });
 
-    return decodeLiteral(literalTerm);
+    return Terms.decodeLiteral(literalTerm);
   }
 
   return undefined;

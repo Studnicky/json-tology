@@ -96,7 +96,7 @@ Nine package entry points control what consumers import. Internal imports refere
 
 | Entry point | Exports |
 |---|---|
-| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Lists`, `Projection`, `Skolemize`, `Terms`, `decodeLiteral`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders`, `OwlImportError`, `OwlImportErrorCode` |
+| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Lists`, `Projection`, `Skolemize`, `Terms`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders`, `OwlImportError`, `OwlImportErrorCode` |
 | `json-tology/value` | `Changeset`, `Operations`, `Value`, `Hash` |
 | `json-tology/schema` | `Compose`, `FormatRegistry`, `SchemaRegistry`, `Transform` |
 | `json-tology/ontology` | `GraphOntologySerializer`, `GraphSchemaSerializer`, `GraphShaclSerializer`, `OntologyBuilder` |
@@ -419,7 +419,7 @@ RDF/JSON-LD output (projection layer). Projections read `graph.allRelations()` a
 
 - `JsonLdFormatter.ts` — converts quads to JSON-LD nodes; detects rdf:first/rdf:rest list heads and emits `@list`
 - `JsonLdToQuads.ts` — inverse of `JsonLdFormatter`; converts compact JSON-LD back to `QuadInterface[]`
-- `Lift.ts` — lifts external rdf/js quads into typed JS objects; decodes literals via `decodeLiteral`
+- `Lift.ts` — lifts external rdf/js quads into typed JS objects; decodes literals via `Terms.decodeLiteral`
 - `OwlProjection.ts` — OWL-specific quad projection
 - `Projection.ts` — shared RDF projection base; predicate and handler maps
 - `ProjectionHelpers.ts` — shared helpers for `OwlProjection` and `ShaclProjection`: `propertySubjectIri`, `resolvePropertySchema`, `resolveRestrictionOnProperty`, `findAnnotatedEdgeStructure`

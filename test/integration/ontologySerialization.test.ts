@@ -23,9 +23,7 @@ import { GraphSchemaSerializer } from '../../src/modules/ontology/GraphSchemaSer
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
-import {
-  decodeLiteral, Terms
-} from '../../src/modules/quads/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 
@@ -860,7 +858,7 @@ function expandIri(value: string): string {
       return quad.subject.value === subject
     && quad.predicate.value === expandedPredicate
     && quad.object.termType === 'Literal'
-    && decodeLiteral(quad.object) === value
+    && Terms.decodeLiteral(quad.object) === value
     && (expandedDatatype === undefined || quad.object.datatype.value === expandedDatatype);
     });
   }

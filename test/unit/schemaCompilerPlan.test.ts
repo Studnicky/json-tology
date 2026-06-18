@@ -1,7 +1,7 @@
 /**
- * Direct unit tests for buildNodePlan (SchemaCompilerPlan).
+ * Direct unit tests for SchemaCompilerPlan.buildNodePlan.
  *
- * buildNodePlan produces a CompiledNodeValidationPlanType by reading
+ * SchemaCompilerPlan.buildNodePlan produces a CompiledNodeValidationPlanType by reading
  * graph semantics for a given node. Tests drive it with real SchemaGraph
  * instances and a minimal-but-functional SchemaCompilerValidatePlanContext.
  *
@@ -14,7 +14,7 @@ import {
   describe, it
 } from 'node:test';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { buildNodePlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
+import { SchemaCompilerPlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
 import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistryInterface.js';
 import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContextType.js';
 import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
@@ -67,7 +67,7 @@ function makeContext(): SchemaCompilerValidatePlanContextType {
 // Tests
 // ---------------------------------------------------------------------------
 
-void describe('buildNodePlan', { 'concurrency': true }, () => {
+void describe('SchemaCompilerPlan.buildNodePlan', { 'concurrency': true }, () => {
   void it('builds plan for object schema — types, required, allowedKeys', () => {
     const schema = {
       '$id': 'https://example.io/User',
@@ -80,7 +80,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.deepEqual(plan.types, ['object']);
     assert.ok(Array.isArray(plan.required) && plan.required.includes('name'), 'required should include "name"');
@@ -100,7 +100,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.deepEqual(plan.types, ['array']);
     assert.equal(plan.minItems, 1);
@@ -118,7 +118,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.deepEqual(plan.types, ['array']);
     assert.ok(Array.isArray(plan.prefixValidators) && plan.prefixValidators.length === 2, 'prefixValidators should have 2 entries');
@@ -135,7 +135,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.ok(Array.isArray(plan.allOfValidators) && plan.allOfValidators.length === 2, 'allOfValidators should have 2 entries');
     assert.equal(plan.anyOfValidators, undefined);
@@ -152,7 +152,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.ok(Array.isArray(plan.anyOfValidators) && plan.anyOfValidators.length === 2, 'anyOfValidators should have 2 entries');
     assert.equal(plan.allOfValidators, undefined);
@@ -168,7 +168,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.ok(Array.isArray(plan.oneOfValidators) && plan.oneOfValidators.length === 2, 'oneOfValidators should have 2 entries');
     assert.equal(plan.allOfValidators, undefined);
@@ -183,7 +183,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.deepEqual(plan.types, ['number']);
     assert.equal(plan.minimum, 0);
@@ -200,7 +200,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.deepEqual(plan.types, ['string']);
     assert.equal(plan.pattern, '^[^@]+@[^@]+$');
@@ -214,7 +214,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.equal(plan.hasConst, true);
     assert.equal(plan.constVal, 42);
@@ -232,7 +232,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.ok(Array.isArray(plan.enumValues) && plan.enumValues.length === 3, 'enumValues should have 3 entries');
     assert.ok(plan.enumSet instanceof Set, 'enumSet should be a Set for primitive-only enums');
@@ -254,7 +254,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(parentSchema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     // Root plan has no direct $ref — the address property node has it
     // Verify that the propValidators map includes address
@@ -265,7 +265,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     const schema: Record<string, unknown> = { '$id': 'https://example.io/Any' };
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.equal(plan.hasConst, false);
     assert.equal(plan.enumValues, undefined);
@@ -288,7 +288,7 @@ void describe('buildNodePlan', { 'concurrency': true }, () => {
     } as const;
 
     const graph = new SchemaGraph(schema);
-    const plan = buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
+    const plan = SchemaCompilerPlan.buildNodePlan(makeContext(), graph.rootNode, stubFormatRegistry, graph);
 
     assert.equal(plan.additionalIsFalse, true);
   });

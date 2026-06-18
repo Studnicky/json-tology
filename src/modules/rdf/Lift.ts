@@ -45,7 +45,7 @@ import { RDF } from '../../constants/IRI.js';
 import { GraphError } from '../../errors/GraphError.js';
 
 import { Lists } from '../quads/Lists.js';
-import { decodeLiteral } from '../quads/Terms.js';
+import { Terms } from '../quads/Terms.js';
 import { PropertyProjection } from './PropertyProjection.js';
 
 // ---------------------------------------------------------------------------
@@ -430,7 +430,7 @@ function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsType): OptionalLiftedObjec
     }
 
     annotations[propName] = narrowed.termType === 'Literal'
-      ? decodeLiteral(narrowed)
+      ? Terms.decodeLiteral(narrowed)
       : narrowed.value;
   }
 
@@ -600,7 +600,7 @@ function liftSingleValue(args: LiftSingleValueArgsType): unknown {
   } = args;
 
   if (obj.termType === 'Literal') {
-    return decodeLiteral(obj);
+    return Terms.decodeLiteral(obj);
   }
 
   // Follow IRI / BlankNode references via the subject group index.

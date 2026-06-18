@@ -69,9 +69,9 @@ import {
   RDF_TYPE_PREDICATES
 } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { Curie } from '../quads/Curie.js';
-import { decodeLiteral } from '../quads/Terms.js';
 import { Lists } from '../quads/Lists.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
+import { Terms } from '../quads/Terms.js';
 import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
 
 // OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
@@ -404,7 +404,7 @@ function resolveRestrictionBnode(opts: ResolveRestrictionOptionsType): OptionalR
         break;
 
       case 'Literal':
-        value = decodeLiteral(constraintQuad.object);
+        value = Terms.decodeLiteral(constraintQuad.object);
         targetIri = String(constraintQuad.object.value);
 
         break;
@@ -512,7 +512,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
    * case when the list is the value of `owl:withRestrictions`, `owl:hasKey`,
    * `owl:unionOf`, etc.).
    *
-   * Returns the typed JS value for Literal items (via `decodeLiteral`) and
+   * Returns the typed JS value for Literal items (via `Terms.decodeLiteral`) and
    * the IRI / bnode-id string for NamedNode / BlankNode items, preserving
    * the term-type so dispatchers can branch on the kind.
    */
@@ -560,11 +560,11 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
           });
           break;
         case 'Literal': {
-          const decoded = decodeLiteral(item);
+          const decoded = Terms.decodeLiteral(item);
 
           // Encode the typed JS value via String() so the `target` field
           // remains a plain string per the ListItemType contract; callers
-          // recover the typed value by re-applying decodeLiteral semantics
+          // recover the typed value by re-applying Terms.decodeLiteral semantics
           // through the `datatype` IRI we preserve below.
           result.push({
             'datatype': item.datatype.value,

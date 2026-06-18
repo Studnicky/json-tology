@@ -2,7 +2,7 @@
  * SchemaCompilerPlan — plan-time graph helpers and node validation plan builder.
  *
  * Exports:
- *   buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
+ *   SchemaCompilerPlan.buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
  */
 
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
@@ -1257,7 +1257,7 @@ function compileRdfsRangeValidator(
  *
  * @example
  * ```ts
- * const plan = buildNodePlan(context, graphNode, formatRegistry, graph);
+ * const plan = SchemaCompilerPlan.buildNodePlan(context, graphNode, formatRegistry, graph);
  * // plan.propValidators, plan.allOfValidators, etc. are ready for execution
  * ```
  *
@@ -1266,244 +1266,246 @@ function compileRdfsRangeValidator(
  * @see {@link CompiledNodeValidationPlanType}
  * @group SchemaCompiler
  */
-export function buildNodePlan(
-  context: SchemaCompilerValidatePlanContextType,
-  graphNode: SchemaGraphNodeType,
-  formatRegistry: FormatRegistryInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema?: LookupSchemaFnType,
-  lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
-): CompiledNodeValidationPlanType {
-  const sem = graph.semantics(graphNode);
-  const propertyEntries = sem.properties;
+export class SchemaCompilerPlan {
+  static buildNodePlan(
+    context: SchemaCompilerValidatePlanContextType,
+    graphNode: SchemaGraphNodeType,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
+    lookupSchema?: LookupSchemaFnType,
+    lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
+  ): CompiledNodeValidationPlanType {
+    const sem = graph.semantics(graphNode);
+    const propertyEntries = sem.properties;
 
-  const planSemOpts: PlanCompileWithSemanticsType = {
-    context,
-    formatRegistry,
-    graph,
-    'lookupSchema': lookupSchema,
-    sem
-  };
+    const planSemOpts: PlanCompileWithSemanticsType = {
+      context,
+      formatRegistry,
+      graph,
+      'lookupSchema': lookupSchema,
+      sem
+    };
 
-  const {
-    additionalValidator,
-    complementValidator,
-    depRequiredEntries,
-    formatValidator,
-    patternRegex,
-    propertyNamesValidator
-  } = buildPlanPrelude(planSemOpts);
+    const {
+      additionalValidator,
+      complementValidator,
+      depRequiredEntries,
+      formatValidator,
+      patternRegex,
+      propertyNamesValidator
+    } = buildPlanPrelude(planSemOpts);
 
-  const patternPropValidators = buildPlanPatternPropValidators(planSemOpts);
+    const patternPropValidators = buildPlanPatternPropValidators(planSemOpts);
 
-  const {
-    containsValidator,
-    itemValidator,
-    prefixValidators
-  } = buildPlanArrayValidators(planSemOpts);
+    const {
+      containsValidator,
+      itemValidator,
+      prefixValidators
+    } = buildPlanArrayValidators(planSemOpts);
 
-  const {
-    allOfValidators,
-    anyOfValidators,
-    oneOfValidators
-  } = buildPlanCompositionValidators(planSemOpts);
+    const {
+      allOfValidators,
+      anyOfValidators,
+      oneOfValidators
+    } = buildPlanCompositionValidators(planSemOpts);
 
-  const {
-    elseValidator,
-    ifValidator,
-    thenValidator
-  } = buildPlanConditionalValidators(planSemOpts);
+    const {
+      elseValidator,
+      ifValidator,
+      thenValidator
+    } = buildPlanConditionalValidators(planSemOpts);
 
-  const depSchemaValidators = buildPlanDependentSchemaValidators(planSemOpts);
-  const enumSet = buildEnumSet(sem.enumValues);
+    const depSchemaValidators = buildPlanDependentSchemaValidators(planSemOpts);
+    const enumSet = buildEnumSet(sem.enumValues);
 
-  const {
-    allowedKeys,
-    allowedKeysForStrip,
-    propertyAliases
-  } = buildPlanAllowedKeys({
-    graph,
-    lookupGraph,
-    'propertyEntries': propertyEntries,
-    sem
-  });
+    const {
+      allowedKeys,
+      allowedKeysForStrip,
+      propertyAliases
+    } = buildPlanAllowedKeys({
+      graph,
+      lookupGraph,
+      'propertyEntries': propertyEntries,
+      sem
+    });
 
-  const jtExtra = sem.jtConfig?.extra;
-  const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
+    const jtExtra = sem.jtConfig?.extra;
+    const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
 
-  const propertyZeroValueSynthesizers = new Map<string, () => unknown>();
-  const semRequired = sem.required;
+    const propertyZeroValueSynthesizers = new Map<string, () => unknown>();
+    const semRequired = sem.required;
 
-  if (semRequired.length > 0) {
-    for (const key of semRequired) {
-      const propNode = sem.properties.get(key);
+    if (semRequired.length > 0) {
+      for (const key of semRequired) {
+        const propNode = sem.properties.get(key);
 
-      if (propNode === undefined) {
-        propertyZeroValueSynthesizers.set(key, (): unknown => {
-          return null;
-        });
-      } else {
-        const capturedNode = propNode;
-        const capturedGraph = graph;
-        const capturedLookup = lookupSchema;
-        const capturedLookupGraph = lookupGraph;
+        if (propNode === undefined) {
+          propertyZeroValueSynthesizers.set(key, (): unknown => {
+            return null;
+          });
+        } else {
+          const capturedNode = propNode;
+          const capturedGraph = graph;
+          const capturedLookup = lookupSchema;
+          const capturedLookupGraph = lookupGraph;
 
-        propertyZeroValueSynthesizers.set(key, (): unknown => {
-          return context.synthesizeZeroValue(capturedNode, capturedGraph, capturedLookup, capturedLookupGraph);
-        });
+          propertyZeroValueSynthesizers.set(key, (): unknown => {
+            return context.synthesizeZeroValue(capturedNode, capturedGraph, capturedLookup, capturedLookupGraph);
+          });
+        }
       }
     }
-  }
 
-  const additionalIsFalse = sem.additionalPropertiesNode === false;
-  const propValidators = compilePropertyValidators({
-    'configStrict': sem.jtConfig?.strict,
-    context,
-    formatRegistry,
-    graph,
-    'lookupSchema': lookupSchema,
-    'propertyEntries': propertyEntries
-  });
-  const propertyDefaults = buildPropertyDefaults({
-    context,
-    graph,
-    'lookupSchema': lookupSchema,
-    'propertyEntries': propertyEntries
-  });
-  const requiredArr = sem.required.length > 0 ? sem.required : undefined;
+    const additionalIsFalse = sem.additionalPropertiesNode === false;
+    const propValidators = compilePropertyValidators({
+      'configStrict': sem.jtConfig?.strict,
+      context,
+      formatRegistry,
+      graph,
+      'lookupSchema': lookupSchema,
+      'propertyEntries': propertyEntries
+    });
+    const propertyDefaults = buildPropertyDefaults({
+      context,
+      graph,
+      'lookupSchema': lookupSchema,
+      'propertyEntries': propertyEntries
+    });
+    const requiredArr = sem.required.length > 0 ? sem.required : undefined;
 
-  // Precompute option bags once at compile time — avoids per-value object allocation.
-  const arrOpts: ArrayValidationOptionsType = {
-    containsValidator,
-    itemValidator,
-    'maxContains': sem.maxContains,
-    'maxItems': sem.maxItems,
-    'minContains': sem.minContains,
-    'minItems': sem.minItems,
-    prefixValidators,
-    'uniqueItems': sem.uniqueItems
-  };
+    // Precompute option bags once at compile time — avoids per-value object allocation.
+    const arrOpts: ArrayValidationOptionsType = {
+      containsValidator,
+      itemValidator,
+      'maxContains': sem.maxContains,
+      'maxItems': sem.maxItems,
+      'minContains': sem.minContains,
+      'minItems': sem.minItems,
+      prefixValidators,
+      'uniqueItems': sem.uniqueItems
+    };
 
-  const objOpts: ObjectValidationOptionsType = {
-    additionalIsFalse,
-    additionalValidator,
-    allowedKeys,
-    allowedKeysForStrip,
-    jtExtra,
-    'maxProperties': sem.maxProperties,
-    'minProperties': sem.minProperties,
-    patternPropValidators,
-    propertyAliases,
-    propertyDefaults,
-    propertyZeroValueSynthesizers,
-    propValidators,
-    'required': requiredArr
-  };
+    const objOpts: ObjectValidationOptionsType = {
+      additionalIsFalse,
+      additionalValidator,
+      allowedKeys,
+      allowedKeysForStrip,
+      jtExtra,
+      'maxProperties': sem.maxProperties,
+      'minProperties': sem.minProperties,
+      patternPropValidators,
+      propertyAliases,
+      propertyDefaults,
+      propertyZeroValueSynthesizers,
+      propValidators,
+      'required': requiredArr
+    };
 
-  return {
-    additionalIsFalse,
-    additionalValidator,
-    allOfValidators,
-    allowedKeys,
-    allowedKeysForStrip,
-    anyOfValidators,
-    arrOpts,
-    complementValidator,
-    'constVal': sem.constValue,
-    containsValidator,
-    'contentAssertionsEnabled': context.appliesFormatAssertions(sem),
-    'contentEncoding': sem.contentEncoding,
-    'contentMediaType': sem.contentMediaType,
-    'customKeywordEntries': buildCustomKeywordEntries(context.activeCustomKeywords, sem),
-    'defaultValue': sem.defaultValue,
-    depRequiredEntries,
-    depSchemaValidators,
-    'dynamicRefValidator': typeof sem.dynamicRef === 'string'
-      ? compileDynamicRefValidator({
+    return {
+      additionalIsFalse,
+      additionalValidator,
+      allOfValidators,
+      allowedKeys,
+      allowedKeysForStrip,
+      anyOfValidators,
+      arrOpts,
+      complementValidator,
+      'constVal': sem.constValue,
+      containsValidator,
+      'contentAssertionsEnabled': context.appliesFormatAssertions(sem),
+      'contentEncoding': sem.contentEncoding,
+      'contentMediaType': sem.contentMediaType,
+      'customKeywordEntries': buildCustomKeywordEntries(context.activeCustomKeywords, sem),
+      'defaultValue': sem.defaultValue,
+      depRequiredEntries,
+      depSchemaValidators,
+      'dynamicRefValidator': typeof sem.dynamicRef === 'string'
+        ? compileDynamicRefValidator({
+          context,
+          'dynamicRef': sem.dynamicRef,
+          formatRegistry,
+          graph,
+          lookupGraph,
+          'lookupSchema': lookupSchema
+        })
+        : undefined,
+      'dynamicScopeEntry': typeof sem.dynamicAnchor === 'string'
+        ? {
+          'anchor': sem.dynamicAnchor,
+          graph,
+          'node': graphNode
+        }
+        : undefined,
+      elseValidator,
+      enumSet,
+      'enumValues': sem.enumValues,
+      'exclusiveMaximum': sem.exclusiveMaximum,
+      'exclusiveMinimum': sem.exclusiveMinimum,
+      'format': sem.format,
+      formatValidator,
+      'hasConst': sem.hasConst,
+      'hasDefault': sem.hasDefault,
+      ifValidator,
+      itemValidator,
+      'jtExtra': jtExtra,
+      'jtStrictPerField': jtStrictPerField,
+      'maxContains': sem.maxContains,
+      'maximum': sem.maximum,
+      'maxItems': sem.maxItems,
+      'maxLength': sem.maxLength,
+      'maxProperties': sem.maxProperties,
+      'minContains': sem.minContains,
+      'minimum': sem.minimum,
+      'minItems': sem.minItems,
+      'minLength': sem.minLength,
+      'minProperties': sem.minProperties,
+      'multipleOf': sem.multipleOf,
+      objOpts,
+      oneOfValidators,
+      'pattern': sem.pattern,
+      patternPropValidators,
+      patternRegex,
+      prefixValidators,
+      propertyAliases,
+      propertyDefaults,
+      propertyNamesValidator,
+      propertyZeroValueSynthesizers,
+      propValidators,
+      'rdfsRangeValidator': compileRdfsRangeValidator(
+        sem.rdfsRange,
         context,
-        'dynamicRef': sem.dynamicRef,
+        formatRegistry,
+        graph,
+        lookupSchema,
+        lookupGraph
+      ),
+      'refValidator': compileRefValidator({
+        context,
         formatRegistry,
         graph,
         lookupGraph,
-        'lookupSchema': lookupSchema
-      })
-      : undefined,
-    'dynamicScopeEntry': typeof sem.dynamicAnchor === 'string'
-      ? {
-        'anchor': sem.dynamicAnchor,
+        'lookupSchema': lookupSchema,
+        'ref': sem.ref
+      }),
+      'required': requiredArr,
+      thenValidator,
+      'typePredicate': buildTypePredicate(sem.schemaTypes),
+      'types': sem.schemaTypes,
+      'unevaluatedItemsValidator': compileUnevaluatedNode(
+        sem.unevaluatedItemsNode,
+        context,
+        formatRegistry,
         graph,
-        'node': graphNode
-      }
-      : undefined,
-    elseValidator,
-    enumSet,
-    'enumValues': sem.enumValues,
-    'exclusiveMaximum': sem.exclusiveMaximum,
-    'exclusiveMinimum': sem.exclusiveMinimum,
-    'format': sem.format,
-    formatValidator,
-    'hasConst': sem.hasConst,
-    'hasDefault': sem.hasDefault,
-    ifValidator,
-    itemValidator,
-    'jtExtra': jtExtra,
-    'jtStrictPerField': jtStrictPerField,
-    'maxContains': sem.maxContains,
-    'maximum': sem.maximum,
-    'maxItems': sem.maxItems,
-    'maxLength': sem.maxLength,
-    'maxProperties': sem.maxProperties,
-    'minContains': sem.minContains,
-    'minimum': sem.minimum,
-    'minItems': sem.minItems,
-    'minLength': sem.minLength,
-    'minProperties': sem.minProperties,
-    'multipleOf': sem.multipleOf,
-    objOpts,
-    oneOfValidators,
-    'pattern': sem.pattern,
-    patternPropValidators,
-    patternRegex,
-    prefixValidators,
-    propertyAliases,
-    propertyDefaults,
-    propertyNamesValidator,
-    propertyZeroValueSynthesizers,
-    propValidators,
-    'rdfsRangeValidator': compileRdfsRangeValidator(
-      sem.rdfsRange,
-      context,
-      formatRegistry,
-      graph,
-      lookupSchema,
-      lookupGraph
-    ),
-    'refValidator': compileRefValidator({
-      context,
-      formatRegistry,
-      graph,
-      lookupGraph,
-      'lookupSchema': lookupSchema,
-      'ref': sem.ref
-    }),
-    'required': requiredArr,
-    thenValidator,
-    'typePredicate': buildTypePredicate(sem.schemaTypes),
-    'types': sem.schemaTypes,
-    'unevaluatedItemsValidator': compileUnevaluatedNode(
-      sem.unevaluatedItemsNode,
-      context,
-      formatRegistry,
-      graph,
-      lookupSchema
-    ),
-    'unevaluatedPropertiesValidator': compileUnevaluatedNode(
-      sem.unevaluatedPropertiesNode,
-      context,
-      formatRegistry,
-      graph,
-      lookupSchema
-    ),
-    'uniqueItems': sem.uniqueItems
-  };
+        lookupSchema
+      ),
+      'unevaluatedPropertiesValidator': compileUnevaluatedNode(
+        sem.unevaluatedPropertiesNode,
+        context,
+        formatRegistry,
+        graph,
+        lookupSchema
+      ),
+      'uniqueItems': sem.uniqueItems
+    };
+  }
 }

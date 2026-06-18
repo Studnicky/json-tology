@@ -28,8 +28,8 @@
  * - The JS type is preserved through `datatype.value` (xsd:integer for numbers,
  *   xsd:boolean for booleans, xsd:dateTime for Date, xsd:string otherwise).
  *   If `datatype` is provided in options, it overrides type inference.
- * - `decodeLiteral(literal)` reverses the encoding — reads `datatype.value` and
- *   parses the string back into a typed JS value. Used by `Lift` and
+ * - `Terms.decodeLiteral(literal)` reverses the encoding — reads `datatype.value`
+ *   and parses the string back into a typed JS value. Used by `Lift` and
  *   `fromQuads` so consumers never have to hand-decode.
  *
  * DefaultGraph is a singleton (frozen shared instance).
@@ -192,6 +192,44 @@ export const Terms = {
     return term;
   },
 
+  /**
+   * Decode an rdf/js Literal back to its typed JS value.
+   *
+   * Reads `literal.datatype.value` and parses `literal.value` accordingly.
+   * Unknown datatypes pass the raw string through unchanged. Inverse of
+   * `Terms.literal`. Used by `Lift` and `fromQuads` so consumers never have to
+   * hand-decode XSD-tagged literals.
+   */
+  decodeLiteral(literal: LiteralTermType): unknown {
+    const raw = literal.value;
+    const dt = localXsdName(literal.datatype.value);
+
+    if (dt === 'boolean') {
+      return raw === 'true' || raw === '1';
+    }
+    if (INTEGER_XSD_TYPE_NAMES.has(dt)) {
+      const num = Number.parseInt(raw, DECIMAL_RADIX);
+
+      return Number.isFinite(num) ? num : raw;
+    }
+    if (DECIMAL_XSD_TYPE_NAMES.has(dt)) {
+      const num = Number.parseFloat(raw);
+
+      return Number.isFinite(num) ? num : raw;
+    }
+    // Return the original lexical string for temporal types.
+    // Schemas represent dates/times as `type: 'string'` with a `format`
+    // validator; returning a Date object would fail the format check inside
+    // fromQuads→instantiate. Preserving the raw lexical value guarantees an
+    // exact round-trip (e.g. '1979-09-01' stays '1979-09-01', not
+    // '1979-09-01T00:00:00.000Z').
+    if (dt === 'dateTime' || dt === 'date' || dt === 'time') {
+      return raw;
+    }
+
+    return raw;
+  },
+
   defaultGraph(): DefaultGraphTermType {
     return DEFAULT_GRAPH_SINGLETON;
   },
@@ -306,7 +344,7 @@ export const Terms = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Literal decoding — inverse of `Terms.literal`.
+// Literal decoding helpers — used by `Terms.decodeLiteral`.
 //
 // Reads `literal.datatype.value` and parses the string `literal.value` back
 // into the canonical JS type (number, boolean, Date, string). Used by `Lift`
@@ -328,39 +366,3 @@ function localXsdName(iri: string): string {
 }
 
 // INTEGER_XSD_TYPE_NAMES and DECIMAL_XSD_TYPE_NAMES imported from XSD_MAPS
-
-/**
- * Decode an rdf/js Literal back to its typed JS value.
- *
- * Reads `literal.datatype.value` and parses `literal.value` accordingly.
- * Unknown datatypes pass the raw string through unchanged.
- */
-export function decodeLiteral(literal: LiteralTermType): unknown {
-  const raw = literal.value;
-  const dt = localXsdName(literal.datatype.value);
-
-  if (dt === 'boolean') {
-    return raw === 'true' || raw === '1';
-  }
-  if (INTEGER_XSD_TYPE_NAMES.has(dt)) {
-    const num = Number.parseInt(raw, DECIMAL_RADIX);
-
-    return Number.isFinite(num) ? num : raw;
-  }
-  if (DECIMAL_XSD_TYPE_NAMES.has(dt)) {
-    const num = Number.parseFloat(raw);
-
-    return Number.isFinite(num) ? num : raw;
-  }
-  // Return the original lexical string for temporal types.
-  // Schemas represent dates/times as `type: 'string'` with a `format`
-  // validator; returning a Date object would fail the format check inside
-  // fromQuads→instantiate. Preserving the raw lexical value guarantees an
-  // exact round-trip (e.g. '1979-09-01' stays '1979-09-01', not
-  // '1979-09-01T00:00:00.000Z').
-  if (dt === 'dateTime' || dt === 'date' || dt === 'time') {
-    return raw;
-  }
-
-  return raw;
-}

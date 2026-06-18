@@ -21,7 +21,7 @@ import {
 import assert from 'node:assert/strict';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaCompiler } from '../../src/modules/validation/SchemaCompiler.js';
-import { buildNodePlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
+import { SchemaCompilerPlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
 import { SchemaCompilerDefaults } from '../../src/modules/validation/SchemaCompilerDefaults.js';
 import { GraphError } from '../../src/errors/GraphError.js';
 import { GraphErrorCode } from '../../src/constants/ERROR_CODES.js';
@@ -214,7 +214,7 @@ void describe('Fix 3 — SchemaCompilerDefaults.resolveDynamicRef: unresolvable 
 void describe('Fix 4a — compileDynamicRefValidator: bad $dynamicRef throws', () => {
   void it('throws GraphError(REF_NOT_FOUND) when $dynamicRef static target is missing', () => {
     // A schema where the root node carries a $dynamicRef to a non-existent external schema.
-    // buildNodePlan calls compileDynamicRefValidator, which must throw GraphError(REF_NOT_FOUND)
+    // SchemaCompilerPlan.buildNodePlan calls compileDynamicRefValidator, which must throw GraphError(REF_NOT_FOUND)
     // at compile time rather than producing a pass-all validator at runtime.
     const schema = {
       '$dynamicRef': 'https://hardening.test/NoSuchSchema#items',
@@ -225,7 +225,7 @@ void describe('Fix 4a — compileDynamicRefValidator: bad $dynamicRef throws', (
 
     assert.throws(
       () => {
-        buildNodePlan(
+        SchemaCompilerPlan.buildNodePlan(
           makeStubContext(),
           graph.rootNode,
           stubFormatRegistry,

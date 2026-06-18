@@ -167,12 +167,12 @@ as-is because the project's accepted shape is the canonical rdf/js spec.
 `Literal.value` is `string` per the rdf/js spec. The original JS type
 (number, boolean, Date) is carried in `Literal.datatype.value`
 (`xsd:integer`, `xsd:boolean`, `xsd:dateTime`, …). To recover the typed JS
-value, call `decodeLiteral(literal)`:
+value, call `Terms.decodeLiteral(literal)`:
 
 <RunnableExample src="examples/docs/advanced/98-decode-literal-typed-values" />
 
 `fromQuads`, the internal `Lift` pipeline, and the OWL import dispatchers call
-`decodeLiteral` automatically, so consumers using those entry points never have
+`Terms.decodeLiteral` automatically, so consumers using those entry points never have
 to hand-decode.
 
 ### RDF lists

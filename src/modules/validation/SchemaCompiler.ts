@@ -40,7 +40,7 @@ import { Arrays } from './exec/Arrays.js';
 import { Composition } from './exec/Composition.js';
 import { Objects } from './exec/Objects.js';
 import { Scalars } from './exec/Scalars.js';
-import { buildNodePlan } from './SchemaCompilerPlan.js';
+import { SchemaCompilerPlan } from './SchemaCompilerPlan.js';
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -580,7 +580,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     this.compilingValidateNodes.set(graphNode, deferred);
 
     try {
-      const plan = buildNodePlan(
+      const plan = SchemaCompilerPlan.buildNodePlan(
         this.validatePlanContext,
         graphNode,
         formatRegistry,

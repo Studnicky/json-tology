@@ -33,7 +33,6 @@ import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterf
 import type { ExtractFacetOptionsType } from '../../../types/ExtractFacetOptionsType.js';
 import type { ApplyRestrictionsOptionsType } from '../../../types/ApplyRestrictionsOptionsType.js';
 import { Terms } from '../../quads/Terms.js';
-import { decodeLiteral } from '../../quads/Terms.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { FACET_MAP } from '../../../constants/XSD_FACETS.js';
 import { XSD_TO_SCHEMA_TYPE } from '../../../constants/XSD_REVERSE_MAPS.js';
@@ -80,7 +79,7 @@ function decodeListItemLiteral(item: ListItemType): unknown {
     'language': item.language ?? ''
   });
 
-  return decodeLiteral(literalTerm);
+  return Terms.decodeLiteral(literalTerm);
 }
 
 // ---------------------------------------------------------------------------
@@ -427,7 +426,7 @@ function resolveDatatypeIri(
 /**
  * Extract enum values from an RDF list head (owl:oneOf of literals or IRIs).
  *
- * - Literal item → typed JS value via decodeLiteral.
+ * - Literal item → typed JS value via Terms.decodeLiteral.
  * - NamedNode item → IRI string.
  * - BlankNode enum members are not standard OWL 2 — skipped.
  */

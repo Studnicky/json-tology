@@ -22,7 +22,7 @@
  * - Blank-node class expressions are resolved recursively by treating their
  *   bnode id as a subject and re-entering the same per-subject helpers.
  * - Literal list items carry their typed JS value via `ListItemType.datatype`,
- *   so `decodeLiteral` semantics survive through `Terms.literal` reconstruction.
+ *   so `Terms.decodeLiteral` semantics survive through `Terms.literal` reconstruction.
  */
 
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
@@ -41,7 +41,6 @@ import type { ClassExprContextType } from '../../../types/ClassExprContextType.j
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
 import { Terms } from '../../quads/Terms.js';
-import { decodeLiteral } from '../../quads/Terms.js';
 import {
   DISJOINT_UNION_OF_IRIS,
   HAS_VALUE_IRIS,
@@ -319,7 +318,7 @@ function extractHasValueDiscriminator(
  * Extract enum values from an owl:oneOf list where members are named
  * individuals or literals.
  *
- * - Literal item → typed JS value via decodeLiteral.
+ * - Literal item → typed JS value via Terms.decodeLiteral.
  * - NamedNode item → IRI string.
  * - BlankNode item with owl:hasValue → the hasValue literal / IRI.
  */
@@ -349,7 +348,7 @@ function extractEnumValues(
               'language': hv.language ?? ''
             });
 
-            values.push(decodeLiteral(literalTerm));
+            values.push(Terms.decodeLiteral(literalTerm));
           } else {
             values.push(ImportRelation.targetValue(hv));
           }
