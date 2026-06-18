@@ -91,9 +91,6 @@ function isStringItem(value: unknown): boolean {
   return typeof value === 'string';
 }
 
-// Re-exported so existing consumers of SchemaRegistry keep their import paths.
-export type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryType.js';
-
 
 /**
  * Central registry for JSON Schemas used by validation, instantiation, materialization,
