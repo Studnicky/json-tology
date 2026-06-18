@@ -43,6 +43,7 @@ export * from './errors/ValidationErrors.js';
 // single type.
 export * from './JsonTology.js';
 export * from './modules/composition/Compose.js';
+export { BaseTypes } from './modules/data/BaseTypes.js';
 export * from './modules/data/Changeset.js';
 export * from './modules/data/Operations.js';
 export * from './modules/data/Path.js';

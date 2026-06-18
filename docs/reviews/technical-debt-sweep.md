@@ -14,13 +14,33 @@ are confirmed still intact here (0 bare `throw new Error`, 0 live `console.*`,
 cover — naming, type-safety hardening, the remaining structural couplings, the
 dead `Result<T>` idiom, and logging *coverage* (as opposed to style).
 
-## Status: in progress — resolutions recorded, executing on `feature/technical-debt-sweep`
+## Status: complete — all six waves landed and verified on `feature/technical-debt-sweep`
 
-Open questions resolved: OQ1 → delete `Result<T>` (keep throws); OQ2 → every
-data-shape alias ends `*Type` with a structural-utility allowlist exception;
-OQ2b → interface filename === exported symbol, one per file; OQ3 → new
-`src/modules/quads/` sublayer. All six waves execute on a single branch with a
-full `type-check:all` + `eslint .` + test + `build` gate at each wave boundary.
+Open questions resolved: OQ1 → deleted `Result<T>` (keep throws); OQ2 → every
+data-shape alias ends `*Type` (interfaces/types location gates enforced by lint;
+the `*Type` suffix itself remains a documented convention, not yet a custom lint
+rule); OQ2b → interface filename === exported symbol (now lint-enforced via
+`filename-export/match-named-export`); OQ3 → new `src/modules/quads/` sublayer.
+
+Committed as a wave-per-commit sequence (each green at `type-check:all` + `eslint`
++ `test:all` 3532 pass + `build`): quads extraction + naming migration; Wave 0
+dedup/constants; Wave 1 `noUncheckedIndexedAccess` (~830 guard sites); Wave 1
+narrowing completion; Wave 4 logging; Wave 5 enforcement.
+
+Deliberately deferred (documented, not done): the three Wave-2 middle-layer
+couplings (registry→materialization, materialization→validation,
+materialization→rdf) — genuine runtime dependencies needing a deliberate API
+decision; the IRI local-variable casing and `*Helpers.ts` renames (lowest-value
+cosmetic); deep-core `trace` threading into `GraphEngine`/`RefResolution`
+(logger-less hot paths). The `errors/ → modules/data/Path` import is permitted
+(one-way use of the data substrate); the `constants/ → modules/` ban is the
+lint gate that prevents the `XSD_MAPS`↔`XsdTypes` circular from returning.
+
+A mid-sweep incident: a subagent running in a stale git worktree (forked from a
+commit predating this work) leaked its edits back into the main tree, silently
+reverting parts of Waves 0–1. Root cause: no commit checkpoint existed, so the
+worktree forked from `HEAD` (which lacked the uncommitted work). Remediation:
+commit each wave as it goes green so worktree agents fork from a correct base.
 
 ## Verified baseline (current state, directly confirmed)
 

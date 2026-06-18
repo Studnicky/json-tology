@@ -3,7 +3,6 @@
  */
 
 export type * from '../interfaces/QuadInterface.js';
-export { BaseTypes } from '../modules/data/BaseTypes.js';
 export type * from './AboxGraph.js';
 export type * from './AboxLiftSubjectFnType.js';
 export type * from './AllowedKeysResultType.js';

@@ -27,7 +27,9 @@ const filenameMatchesExportRule = {
         const filename = context.filename;
         const filenameSansExt = basename(filename, extname(filename));
         if (['index', 'types'].includes(filenameSansExt) || /\.(test|spec|stories)$/.test(filenameSansExt)) { return; }
-        if (/[/\\](types|interfaces|errors|constants)[/\\]/.test(filename)) { return; }
+        // interfaces/ IS enforced (filename must match the exported *Interface symbol);
+        // types/errors/constants are exempt (multi-export / suffix-convention files).
+        if (/[/\\](types|errors|constants)[/\\]/.test(filename)) { return; }
         if (node.body.some((item) => { return item.type === 'ExportDefaultDeclaration'; })) { return; }
         const namedExports = node.body.filter((item) => { return item.type === 'ExportNamedDeclaration'; });
         if (namedExports.length === 0) { return; }
@@ -706,7 +708,15 @@ export default [
           message: 'interfaces belong in src/interfaces/',
           selector: 'TSInterfaceDeclaration'
         }
-      ]
+      ],
+      // Leaf layer: types/ must not value-import from modules/ (type-only refs allowed).
+      '@typescript-eslint/no-restricted-imports': ['error', {
+        patterns: [{
+          allowTypeImports: true,
+          group: ['**/modules/**'],
+          message: 'src/types/ is a leaf layer — do not import runtime code from src/modules/ (import type is allowed).'
+        }]
+      }]
     }
   },
 
@@ -720,7 +730,34 @@ export default [
           message: 'object-type aliases belong in src/types/',
           selector: 'TSTypeAliasDeclaration > TSTypeLiteral'
         }
-      ]
+      ],
+      // Leaf layer: interfaces/ must not value-import from modules/ (type-only refs allowed).
+      '@typescript-eslint/no-restricted-imports': ['error', {
+        patterns: [{
+          allowTypeImports: true,
+          group: ['**/modules/**'],
+          message: 'src/interfaces/ is a leaf layer — do not import runtime code from src/modules/ (import type is allowed).'
+        }]
+      }],
+      // Filename must match the exported *Interface symbol (one interface per file).
+      'filename-export/match-named-export': ['error', { casing: 'strict' }]
+    }
+  },
+
+  // Leaf layer: constants/ must not import from modules/ at all — this is the gate
+  // that prevents the constants -> modules/rdf runtime circular from returning.
+  // (errors/ is permitted to use the modules/data substrate, e.g. Path; that is a
+  // one-way dependency on the lowest module layer, not a cycle.)
+  {
+    files: ['src/constants/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': ['error', {
+        patterns: [{
+          allowTypeImports: true,
+          group: ['**/modules/**'],
+          message: 'src/constants/ is a leaf layer — do not import from src/modules/ (this gate prevents the XSD_MAPS<->XsdTypes circular).'
+        }]
+      }]
     }
   }
 ];
