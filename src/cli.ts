@@ -438,7 +438,7 @@ async function runOwlGen(
     ? await readStdin()
     : fs.readFileSync(resolve(input), 'utf8');
 
-  const parsed = JSON.parse(jsonLdSource) as object;
+  const parsed = JSON.parse(jsonLdSource) as Record<string, unknown>;
   const inferredName = opts.name ?? basename(input, path.extname(input)).replaceAll(/[^a-zA-Z0-9]+/gu, '_');
   const outPath = opts.out;
   const isDirectoryMode = opts.mode === 'directory'

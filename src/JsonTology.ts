@@ -467,7 +467,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    *   characteristics, sameAs pairs, individuals, and unsupported axiom log.
    */
   public static fromTbox(
-    jsonLd: object | QuadInterface[] | string,
+    jsonLd: QuadInterface[] | Record<string, unknown> | string,
     options?: { 'baseIRI'?: string;
       'prefixes'?: Record<string, string> }
   ): OwlImportResultType {
@@ -1267,7 +1267,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @throws {GraphError} code DIALECT_UNSUPPORTED when the input contains an unsupported JSON Schema dialect.
    */
   public fromTbox(
-    jsonLd: object | QuadInterface[] | string,
+    jsonLd: QuadInterface[] | Record<string, unknown> | string,
     options?: { 'register'?: boolean }
   ): OwlImportResultType {
     const register = options?.register !== false;

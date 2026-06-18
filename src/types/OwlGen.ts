@@ -35,7 +35,7 @@ export type GenerateFromTboxOptionsType = {
    * The OWL 2 TBox source — a JSON-LD object, a JSON-LD string, or an
    * array of {@link QuadInterface} quads.
    */
-  readonly 'input': object | QuadInterface[] | string;
+  readonly 'input': QuadInterface[] | Record<string, unknown> | string;
 
   /**
    * Registry constant name (e.g. `'acl'` → `aclSchemas`, `acl`).
@@ -72,7 +72,7 @@ export type GenerateRegistryDirectoryOptionsType = {
    * The OWL 2 TBox source — a JSON-LD object, a JSON-LD string, or an
    * array of {@link QuadInterface} quads.
    */
-  readonly 'input': object | QuadInterface[] | string;
+  readonly 'input': QuadInterface[] | Record<string, unknown> | string;
 
   /**
    * Registry constant name (e.g. `'acl'` → `aclSchemas`, `acl`).

@@ -324,9 +324,8 @@ function fromJsonLdRdfOutput(rdfOutput: unknown): QuadInterface[] {
  *
  * For arbitrary JSON-LD documents, use importAsync() with jsonld.toRDF.
  */
-function normalizeJsonLdInput(doc: object): QuadInterface[] {
-  const docRecord = doc as Record<string, unknown>;
-  const rawContext = docRecord['@context'];
+function normalizeJsonLdInput(doc: Record<string, unknown>): QuadInterface[] {
+  const rawContext = doc['@context'];
   const context: Record<string, string> = (
     typeof rawContext === 'object'
     && rawContext !== null
@@ -335,7 +334,7 @@ function normalizeJsonLdInput(doc: object): QuadInterface[] {
     ? (rawContext as Record<string, string>)
     : {};
 
-  const rawGraph = docRecord['@graph'];
+  const rawGraph = doc['@graph'];
 
   if (Array.isArray(rawGraph)) {
     return jsonLdNodesToQuads(rawGraph as Array<Record<string, unknown>>, context);
@@ -359,7 +358,7 @@ function normalizeJsonLdInput(doc: object): QuadInterface[] {
  * OntologyBuilder emit. For arbitrary JSON-LD documents use importAsync()
  * which calls jsonld.toRDF via the optional peerDependency.
  */
-function normalizeInput(jsonLd: object | QuadInterface[] | string): QuadInterface[] {
+function normalizeInput(jsonLd: QuadInterface[] | Record<string, unknown> | string): QuadInterface[] {
   if (Array.isArray(jsonLd)) {
     return jsonLd;
   }
@@ -486,7 +485,7 @@ export class OwlImporter {
    * @returns OwlImportResultType with schemas, invariants, characteristics,
    *   sameAs, individuals, and unsupported entries.
    */
-  public import(jsonLd: object | QuadInterface[] | string): OwlImportResultType {
+  public import(jsonLd: QuadInterface[] | Record<string, unknown> | string): OwlImportResultType {
     const quads = normalizeInput(jsonLd);
     const graph = SchemaGraph.fromQuads(quads, {
       'baseIRI': this.baseIRI,
