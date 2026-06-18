@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **CI: `publish-gpr.yml` now triggers on tag push** (`v*.*.*`), not only `release: published`. A release created by `release.yml` runs under `GITHUB_TOKEN` and does not cascade the `release` event, so GPR publish never auto-fired; the tag-push trigger (a human/CLI `git push origin vX.Y.Z`) fixes it. A concurrency guard prevents a double-publish when both triggers fire for a human/PAT release.
+- **Release flow documented** in `docs/releasing.md`: merge-commit-based release/back-merge keeps `main` and `develop` convergent (the prior squash-only + linear-history policy made them diverge at every release).
+
 ## [0.26.0] - 2026-06-18
 
 A repo-wide technical-debt sweep: strict layering, naming consistency, type-safety
