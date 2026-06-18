@@ -71,6 +71,17 @@ export class BaseError extends Error {
 
   public override name = 'BaseError';
 
+  /**
+   * Whether retrying the failed operation could plausibly succeed.
+   *
+   * `true` marks a **transient** failure whose cause is external and may clear
+   * on retry — e.g. an HTTP 5xx while loading a remote schema
+   * ({@link SchemaLoadError} with `retryable: true`). `false` (the default)
+   * marks a **deterministic** failure that will recur on identical input — every
+   * validation, coercion, graph-resolution, materialization, transform, and
+   * schema-registration error — so callers should not retry. `flatten()` and
+   * `toJson()` preserve this flag for each link in the cause chain.
+   */
   public readonly retryable: boolean;
 
   /**

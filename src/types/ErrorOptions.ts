@@ -26,6 +26,11 @@ import type { TransformDirectionType } from './TransformDirection.js';
 export type BaseErrorOptionsType = {
   readonly 'cause'?: Error;
   readonly 'code': string;
+  /**
+   * Set `true` only for transient failures whose cause is external and may clear
+   * on retry (e.g. HTTP 5xx). Omit (defaults to `false`) for deterministic
+   * failures that recur on identical input. See {@link BaseError.retryable}.
+   */
   readonly 'retryable'?: boolean;
 };
 
