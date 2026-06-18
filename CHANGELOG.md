@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-06-18
+
 ### Added
 
 - **`SchemaLoadError` and `SchemaLoadErrorCode`.** A typed error (exported from the package root) for schema-load failures, carrying `file`, `reason`, optional HTTP `status`, `toJson()`, and `toLoadError(): SchemaLoadErrorType`. `SchemaLoadErrorType` gains an optional `status` and a `fetch-failed` reason; `prefetch` now attaches a `SchemaLoadResultType` load summary to its returned `SnapshotType.loadResult`.
