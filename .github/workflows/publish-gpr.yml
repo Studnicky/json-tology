@@ -1,6 +1,13 @@
 name: Publish to GitHub Packages
 
 on:
+  # A release created by release.yml runs under GITHUB_TOKEN and does NOT cascade
+  # `release: published` to this workflow, so the tag push is the reliable trigger:
+  # `git push origin vX.Y.Z` (a human/CLI push) fires this job. `release:` is kept
+  # for releases created by a human/PAT; `workflow_dispatch` for manual re-runs.
+  push:
+    tags:
+      - 'v*.*.*'
   release:
     types: [published]
   workflow_dispatch:
@@ -9,6 +16,12 @@ permissions:
   contents: read
   packages: write
   id-token: write
+
+# Dedupe: if a human/PAT release fires both `push: tags` and `release: published`
+# for the same version, serialize so only one publish attempt runs per ref.
+concurrency:
+  group: publish-gpr-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   publish-gpr:
