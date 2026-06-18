@@ -14,7 +14,7 @@
 import type { RefTargetType } from '../../types/RefTargetType.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { RefResolutionOptionsType } from '../../types/RefResolutionOptionsType.js';
-import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
+import { resolveRef as canonicalResolveRef } from './RefResolution.js';
 import { GraphError } from '../../errors/GraphError.js';
 
 export class RefResolver {

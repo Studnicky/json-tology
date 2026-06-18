@@ -57,7 +57,7 @@ import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOp
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
-import { RefResolver } from './RefResolver.js';
+import { RefResolver } from '../graph/RefResolver.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';

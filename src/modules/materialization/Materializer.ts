@@ -22,12 +22,12 @@ import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
 import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
 import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
+import { GraphEngineDefaults } from '../graph/GraphEngineDefaults.js';
 import { Projection } from '../rdf/Projection.js';
 import { Terms } from '../quads/Terms.js';
 import { OWL } from '../../constants/IRI.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
-import { SchemaCompilerDefaults } from '../validation/SchemaCompilerDefaults.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 import { logScope } from '../data/LogScope.js';
 
@@ -504,7 +504,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       const opts = synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults;
       const validator = this.registry.validator(id);
       const seedData = synthesizeDefaults && data === undefined
-        ? SchemaCompilerDefaults.synthesizeZeroValue(entryNode, graph, this.lookupSchemaFn, this.lookupGraphFn)
+        ? GraphEngineDefaults.synthesizeZeroValueForLookups(entryNode, graph, this.lookupSchemaFn, this.lookupGraphFn)
         : data;
       const compiledResult = validator.validate(seedData, opts);
 
