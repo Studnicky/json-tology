@@ -10,16 +10,16 @@
  * @group OWL Codegen
  */
 
-export type { BuildEntityFileOptionsType } from '../types/BuildEntityFileOptions.js';
-export type { BuildIndexSourceOptionsType } from '../types/BuildIndexSourceOptions.js';
-export type { BuildNameMapResultType } from '../types/BuildNameMapResult.js';
-export type { EmitBannerOptionsType } from '../types/EmitBannerOptions.js';
-export type { EmitRegistryOptionsType } from '../types/EmitRegistryOptions.js';
-export type { EmitSchemaConstantsOptionsType } from '../types/EmitSchemaConstantsOptions.js';
-export type { KahnStepOptionsType } from '../types/KahnStepOptions.js';
-export type { RegistryDirContextType } from '../types/RegistryDirContext.js';
-export type { SerializeContextType } from '../types/SerializeContext.js';
-export type { SingleFileBodyOptionsType } from '../types/SingleFileBodyOptions.js';
+export type { BuildEntityFileOptionsType } from '../types/BuildEntityFileOptionsType.js';
+export type { BuildIndexSourceOptionsType } from '../types/BuildIndexSourceOptionsType.js';
+export type { BuildNameMapResultType } from '../types/BuildNameMapResultType.js';
+export type { EmitBannerOptionsType } from '../types/EmitBannerOptionsType.js';
+export type { EmitRegistryOptionsType } from '../types/EmitRegistryOptionsType.js';
+export type { EmitSchemaConstantsOptionsType } from '../types/EmitSchemaConstantsOptionsType.js';
+export type { KahnStepOptionsType } from '../types/KahnStepOptionsType.js';
+export type { RegistryDirContextType } from '../types/RegistryDirContextType.js';
+export type { SerializeContextType } from '../types/SerializeContextType.js';
+export type { SingleFileBodyOptionsType } from '../types/SingleFileBodyOptionsType.js';
 
 /**
  * Named return type for {@link buildDepsMap}.

@@ -15,8 +15,8 @@ import {
 } from 'node:test';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { buildNodePlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
-import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistry.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContext.js';
+import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistryInterface.js';
+import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContextType.js';
 import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
 
 // ---------------------------------------------------------------------------

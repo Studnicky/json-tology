@@ -14,7 +14,7 @@ import {
   describe, it
 } from 'node:test';
 // XsdTypes resolvers power schema-to-XSD mapping; no public surface.
-import { XsdTypes } from '../../src/modules/rdf/XsdTypes.js';
+import { XsdTypes } from '../../src/modules/quads/XsdTypes.js';
 import {
   OWL, XSD
 } from '../../src/constants/IRI.js';

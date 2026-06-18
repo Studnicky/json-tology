@@ -12,19 +12,19 @@
  * For arbitrary JSON-LD documents use importAsync() with the optional jsonld peer.
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { TokenParseResultType } from '../../types/TokenParseResultType.js';
 import type { NQuadLineResultType } from '../../types/NQuadLineResultType.js';
-import type { ParsedLiteralType } from '../../types/ParsedLiteral.js';
-import type { ConversionContextType } from '../../types/ConversionContext.js';
+import type { ParsedLiteralType } from '../../types/ParsedLiteralType.js';
+import type { ConversionContextType } from '../../types/ConversionContextType.js';
 import {
   RDF, XSD
 } from '../../constants/IRI.js';
-import { Lists } from './Lists.js';
-import { Terms } from './Terms.js';
-import { IdentifierIssuer } from './IdentifierIssuer.js';
-import { Curie } from './Curie.js';
+import { Lists } from '../quads/Lists.js';
+import { Terms } from '../quads/Terms.js';
+import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
+import { Curie } from '../quads/Curie.js';
 
 // ---------------------------------------------------------------------------
 // Constants

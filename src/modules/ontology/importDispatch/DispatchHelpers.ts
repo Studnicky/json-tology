@@ -10,10 +10,42 @@ import type {
   ListItemType,
   SchemaGraphRelationType
 } from '../../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
 import type { OwlImportFragmentType } from '../../../types/OwlImport.js';
-import { Terms } from '../../rdf/Terms.js';
-import { decodeLiteral } from '../../rdf/Terms.js';
+import { Terms } from '../../quads/Terms.js';
+import { decodeLiteral } from '../../quads/Terms.js';
+
+// ---------------------------------------------------------------------------
+// literalString
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the string value of a Literal-typed relation target.
+ * Returns null when the relation does not carry a Literal target.
+ */
+export function literalString(relation: SchemaGraphRelationType): null | string {
+  if (relation.termType !== 'Literal') {
+    return null;
+  }
+
+  return typeof relation.target === 'string' ? relation.target : relation.target.id;
+}
+
+// ---------------------------------------------------------------------------
+// namedNodeIri
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the IRI of a NamedNode-typed relation target.
+ * Returns null when the relation does not carry a NamedNode target.
+ */
+export function namedNodeIri(relation: SchemaGraphRelationType): null | string {
+  if (relation.termType !== 'NamedNode') {
+    return null;
+  }
+
+  return typeof relation.target === 'string' ? relation.target : relation.target.id;
+}
 
 // ---------------------------------------------------------------------------
 // targetValue

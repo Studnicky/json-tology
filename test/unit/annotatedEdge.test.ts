@@ -26,8 +26,8 @@ import {
 } from '../../src/index.js';
 import { MaterializationError } from '../../src/errors/MaterializationError.js';
 import { isRecord } from '../../src/modules/data/DataTypes.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
-import type { SkolemizeFnType } from '../../src/types/Skolemize.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
+import type { SkolemizeFnType } from '../../src/types/SkolemizeFnType.js';
 
 type TripleTermQuad = QuadInterface & { 'subject': QuadInterface };
 

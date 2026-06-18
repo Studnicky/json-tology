@@ -26,7 +26,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { XSD } from '../../src/constants/IRI.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 

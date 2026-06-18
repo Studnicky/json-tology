@@ -8,7 +8,7 @@
 
 import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
 import type { RelationStructure } from '../../types/SchemaGraph.js';
-import type { RelationIndexType } from '../../types/RelationIndex.js';
+import type { RelationIndexType } from '../../types/RelationIndexType.js';
 
 import {
   OWL, RDF

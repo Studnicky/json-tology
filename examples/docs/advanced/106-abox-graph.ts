@@ -22,7 +22,7 @@ import {
   RareBookSchema,
   ReviewSchema
 } from '../bookstore/index.js';
-import type { QuadInterface } from '../../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../../src/interfaces/QuadInterface.js';
 
 // ---------------------------------------------------------------------------
 // Build the ABox quad set from the customer + order fixtures.

@@ -1,5 +1,5 @@
 import type { SchemaGraphNodeType } from './SchemaGraph.js';
-import type { ProjectBaseArgsType } from './ProjectBaseArgs.js';
+import type { ProjectBaseArgsType } from './ProjectBaseArgsType.js';
 
 /**
  * Arguments passed to the property-level ABox projection entry point.

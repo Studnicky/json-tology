@@ -6,26 +6,26 @@
  */
 
 import type { CompiledValidatorType } from '../../types/Compiler.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
 import type {
   GraphEngineOptionsType, KeywordDefinitionType
 } from '../../types/GraphEngine.js';
-import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
+import type { GraphEngineInterface } from '../../interfaces/GraphEngineInterface.js';
 import type { InvariantType } from '../../types/Invariant.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { RegistryOptionsType } from '../../types/Registry.js';
-import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
+import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerInterface.js';
 import type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryType.js';
-import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStore.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStoreInterface.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { StructureWarningType } from '../../types/SchemaGraph.js';
-import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.js';
-import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntry.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalkerInterface.js';
+import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntryType.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
-import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
-import type { SchemaRegistryForEachCallback } from '../../types/SchemaRegistryForEachCallback.js';
+import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPluginInterface.js';
+import type { SchemaRegistryForEachCallbackType } from '../../types/SchemaRegistryForEachCallbackType.js';
 import type { SetEntryType } from '../../types/SetEntryType.js';
 
 import { BaseError } from '../../errors/BaseError.js';
@@ -38,7 +38,7 @@ import { SchemaEntryStore } from './SchemaEntryStore.js';
 import { SchemaRefWalker } from './SchemaRefWalker.js';
 import { DifferentFromStore } from './DifferentFromStore.js';
 import { SameAsStore } from './SameAsStore.js';
-import { Curie } from '../rdf/Curie.js';
+import { Curie } from '../quads/Curie.js';
 import {
   isRecord
 } from '../data/DataTypes.js';
@@ -1089,7 +1089,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.store.findDuplicates();
   }
 
-  public forEach(callback: SchemaRegistryForEachCallback): void {
+  public forEach(callback: SchemaRegistryForEachCallbackType): void {
     for (const [
       iri,
       entry

@@ -28,7 +28,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { JsonTology } from '../../src/index.js';
 
 // ---------------------------------------------------------------------------

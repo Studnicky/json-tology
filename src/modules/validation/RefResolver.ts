@@ -11,9 +11,9 @@
  * Both semantics are preserved here: the throw is caught and `undefined` is returned.
  */
 
-import type { RefTargetType } from '../../types/RefTarget.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { RefResolutionOptionsType } from '../../types/RefResolution.js';
+import type { RefTargetType } from '../../types/RefTargetType.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { RefResolutionOptionsType } from '../../types/RefResolutionOptionsType.js';
 import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
 import { GraphError } from '../../errors/GraphError.js';
 

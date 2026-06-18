@@ -1,7 +1,7 @@
 import type { JsonSchemaType } from './Schema.js';
 import type { AnnotatedEdgeDescriptorType } from './AnnotatedEdgeDescriptorType.js';
 import type { JtConfigType } from './JtConfig.js';
-import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptor.js';
+import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptorType.js';
 
 /**
  * Item produced by `SchemaGraphInterface.collectList` when walking an

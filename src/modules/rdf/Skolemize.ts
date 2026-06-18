@@ -13,7 +13,7 @@
  * RDF 1.1 §3.5 (Replacing Blank Nodes with IRIs).
  */
 
-import type { SkolemizeFnType } from '../../types/Skolemize.js';
+import type { SkolemizeFnType } from '../../types/SkolemizeFnType.js';
 import { Hash } from '../hash/Hash.js';
 import {
   UUID_BYTE_LENGTH,

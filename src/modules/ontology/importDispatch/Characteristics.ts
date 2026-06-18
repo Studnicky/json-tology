@@ -19,7 +19,7 @@
  * (full or compact form). The relation source is the property IRI.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType,
   OwlImportFragmentType

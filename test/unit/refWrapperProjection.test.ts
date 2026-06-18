@@ -25,7 +25,7 @@ import {
 } from 'node:test';
 import { JsonTology } from '../../src/index.js';
 import { XSD } from '../../src/constants/IRI.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 

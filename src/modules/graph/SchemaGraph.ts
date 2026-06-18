@@ -4,16 +4,16 @@ import type {
   SchemaGraphNodeType, SchemaGraphRelationType,
   SchemaGraphSemanticsType, StructureWarningType
 } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPluginInterface.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { PrefixMapType } from '../../types/OwlImport.js';
 import { isRecord } from '../data/DataTypes.js';
 import { logScope } from '../data/LogScope.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import { SchemaGraphRelations } from './SchemaGraphRelations.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import { QuadBackedSchemaGraph } from './QuadBackedSchemaGraph.js';

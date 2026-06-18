@@ -1,6 +1,6 @@
-import type { ComputedFnType } from '../../types/Computed.js';
-import type { ComputedStoreInterface } from '../../interfaces/ComputedStore.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { ComputedFnType } from '../../types/ComputedFnType.js';
+import type { ComputedStoreInterface } from '../../interfaces/ComputedStoreInterface.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { SchemaErrorCode } from '../../constants/ERROR_CODES.js';
 import { isRecord } from '../data/DataTypes.js';

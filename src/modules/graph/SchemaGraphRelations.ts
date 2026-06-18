@@ -5,8 +5,8 @@ import type {
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { SchemaIri } from './SchemaIri.js';
-import { XsdTypes } from '../rdf/XsdTypes.js';
-import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
+import { XsdTypes } from '../quads/XsdTypes.js';
+import type { GraphAccessorInterface } from '../../interfaces/GraphAccessorInterface.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import { isRecord } from '../data/DataTypes.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
@@ -182,9 +182,9 @@ function pushFormatPatternRelations(
     return;
   }
 
-  const pattern = FORMAT_PATTERNS[sem.format] as string | undefined;
+  const pattern = FORMAT_PATTERNS[sem.format];
 
-  if (pattern !== undefined) {
+  if (pattern) {
     relations.push({
       'metadata': { 'fromFormat': true },
       'predicate': SH.pattern,

@@ -25,7 +25,7 @@
  *   so `decodeLiteral` semantics survive through `Terms.literal` reconstruction.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
@@ -33,15 +33,15 @@ import type {
   ListItemType,
   SchemaGraphRelationType
 } from '../../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
 import type { ResolveItemOptionsType } from '../../../types/ResolveItemOptionsType.js';
 import type { ResolveBnodeOptionsType } from '../../../types/ResolveBnodeOptionsType.js';
 import type { ResolveListOptionsType } from '../../../types/ResolveListOptionsType.js';
 import type { ClassExprContextType } from '../../../types/ClassExprContextType.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
-import { Terms } from '../../rdf/Terms.js';
-import { decodeLiteral } from '../../rdf/Terms.js';
+import { Terms } from '../../quads/Terms.js';
+import { decodeLiteral } from '../../quads/Terms.js';
 import {
   DISJOINT_UNION_OF_IRIS,
   HAS_VALUE_IRIS,
@@ -52,43 +52,14 @@ import {
   RESTRICTION_IRIS,
   UNION_OF_IRIS
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
+import {
+  decodeListItemLiteral,
+  relationsByPredicate,
+  targetValue
+} from './DispatchHelpers.js';
 
 /** Maximum recursion depth for blank-node class expression resolution. */
 const MAX_BNODE_DEPTH = 20;
-
-// ---------------------------------------------------------------------------
-// Graph-native helpers
-// ---------------------------------------------------------------------------
-
-/** Resolve the IRI / bnode-id form of a relation target. */
-function targetValue(relation: SchemaGraphRelationType): string {
-  return typeof relation.target === 'string' ? relation.target : relation.target.id;
-}
-
-/** Filter outgoing relations on a subject by predicate set. */
-function relationsByPredicate(
-  graph: SchemaGraphInterface,
-  subject: string,
-  predicates: ReadonlySet<string>
-): readonly SchemaGraphRelationType[] {
-  return graph.relationsForSubject(subject).filter((rel: SchemaGraphRelationType): boolean => {
-    return predicates.has(rel.predicate);
-  });
-}
-
-/**
- * Decode a Literal ListItemType back to its typed JS value via the canonical
- * Terms.literal / decodeLiteral round-trip. Preserves XSD-typed integers,
- * booleans, Dates, etc.
- */
-function decodeListItemLiteral(item: ListItemType): unknown {
-  const literalTerm = Terms.literal(item.target, {
-    'datatype': Terms.iri(item.datatype ?? ''),
-    'language': item.language ?? ''
-  });
-
-  return decodeLiteral(literalTerm);
-}
 
 // ---------------------------------------------------------------------------
 // Blank-node restriction detection
@@ -161,22 +132,26 @@ function resolveBlankNodeExpression(options: ResolveBnodeOptionsType): JsonSchem
   const intersection = relationsByPredicate(graph, bnodeId, INTERSECTION_OF_IRIS);
 
   if (intersection.length > 0) {
+    const intersection0 = intersection[0];
+
     return resolveIntersectionBnode({
       allClassIris,
       depth,
       graph,
-      'listHead': targetValue(intersection[0])
+      'listHead': targetValue(intersection0)
     });
   }
 
   const union = relationsByPredicate(graph, bnodeId, UNION_OF_IRIS);
 
   if (union.length > 0) {
+    const union0 = union[0];
+
     return resolveUnionBnode({
       allClassIris,
       depth,
       graph,
-      'listHead': targetValue(union[0])
+      'listHead': targetValue(union0)
     });
   }
 

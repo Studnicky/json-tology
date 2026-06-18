@@ -5,11 +5,11 @@
  * modules. Callers import directly from this file, not from a barrel.
  */
 
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { RelationIndexType } from '../../types/RelationIndex.js';
+import type { RelationIndexType } from '../../types/RelationIndexType.js';
 import type { OptionalAnnotatedEdgeType } from '../../types/OptionalAnnotatedEdgeType.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphError } from '../../errors/GraphError.js';

@@ -3,10 +3,10 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 // Type-only imports of internal interfaces — required by the SchemaGraph + SchemaRegistry assertions below; not surfaced publicly.
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
-import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
-import type { VocabularyPluginInterface } from '../../src/interfaces/VocabularyPlugin.js';
+import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistryInterface.js';
+import type { VocabularyPluginInterface } from '../../src/interfaces/VocabularyPluginInterface.js';
 import {
   Curie, GraphOntologySerializer, JsonTology
 } from '../../src/index.js';
@@ -18,7 +18,7 @@ import {
 // public JsonTology API and constitute the contract for vocabulary-plugin integration.
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 // STANDARD_PREFIXES is the canonical constant injected by JsonTology when constructing prefix maps; not re-exported.

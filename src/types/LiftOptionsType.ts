@@ -6,8 +6,8 @@
  * the default property → predicate IRI derivation during reverse projection.
  */
 
-import type { CurieInterface } from '../interfaces/Curie.js';
-import type { PredicateResolverFnType } from '../types/PredicateResolverFn.js';
+import type { CurieInterface } from '../interfaces/CurieInterface.js';
+import type { PredicateResolverFnType } from '../types/PredicateResolverFnType.js';
 
 export type LiftOptionsType = {
   readonly 'curie'?: CurieInterface | undefined;

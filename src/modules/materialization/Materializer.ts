@@ -1,17 +1,17 @@
 import type {
   MaterializationResultType, MaterializerOptionsType
 } from '../../types/Materializer.js';
-import type { MaterializerInterface } from '../../interfaces/MaterializerImpl.js';
+import type { MaterializerInterface } from '../../interfaces/MaterializerInterface.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import type { InferSchemaType } from '../../types/Infer.js';
-import type { AboxOptionsType } from '../../types/AboxOptions.js';
+import type { AboxOptionsType } from '../../types/AboxOptionsType.js';
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import {
@@ -22,7 +22,7 @@ import { isRecord } from '../data/DataTypes.js';
 import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
 import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
 import { Projection } from '../rdf/Projection.js';
-import { Terms } from '../rdf/Terms.js';
+import { Terms } from '../quads/Terms.js';
 import { OWL } from '../../constants/IRI.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';

@@ -26,10 +26,10 @@ import { SchemaCompilerDefaults } from '../../src/modules/validation/SchemaCompi
 import { GraphError } from '../../src/errors/GraphError.js';
 import { GraphErrorCode } from '../../src/constants/ERROR_CODES.js';
 import { JsonTology } from '../../src/index.js';
-import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistry.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContext.js';
+import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistryInterface.js';
+import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContextType.js';
 import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
-import type { GraphEngineInterface } from '../../src/interfaces/GraphEngineImpl.js';
+import type { GraphEngineInterface } from '../../src/interfaces/GraphEngineInterface.js';
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures

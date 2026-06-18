@@ -6,7 +6,7 @@
  * via callbacks so the walker remains pure and independently testable.
  */
 
-import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.js';
+import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalkerInterface.js';
 
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';

@@ -14,7 +14,7 @@ import {
 } from 'node:test';
 
 import type { JsonSchemaType } from '../../src/types/Schema.js';
-import type { PredicateResolverFnType } from '../../src/types/PredicateResolverFn.js';
+import type { PredicateResolverFnType } from '../../src/types/PredicateResolverFnType.js';
 
 // ---------------------------------------------------------------------------
 // Bidirectional equality helper

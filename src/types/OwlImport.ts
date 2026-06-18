@@ -6,10 +6,10 @@
  */
 
 import type { InvariantType } from './Invariant.js';
-import type { CurieInterface } from '../interfaces/Curie.js';
-import type { LoggerInterface } from '../interfaces/Logger.js';
-import type { QuadInterface } from '../interfaces/Quad.js';
-import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
+import type { CurieInterface } from '../interfaces/CurieInterface.js';
+import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
+import type { QuadInterface } from '../interfaces/QuadInterface.js';
+import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 
 /**

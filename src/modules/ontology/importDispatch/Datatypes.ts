@@ -21,7 +21,7 @@
  * preserved on relations and list items.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
@@ -29,11 +29,11 @@ import type {
   ListItemType,
   SchemaGraphRelationType
 } from '../../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
 import type { ExtractFacetOptionsType } from '../../../types/ExtractFacetOptionsType.js';
 import type { ApplyRestrictionsOptionsType } from '../../../types/ApplyRestrictionsOptionsType.js';
-import { Terms } from '../../rdf/Terms.js';
-import { decodeLiteral } from '../../rdf/Terms.js';
+import { Terms } from '../../quads/Terms.js';
+import { decodeLiteral } from '../../quads/Terms.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { FACET_MAP } from '../../../constants/XSD_FACETS.js';
 import { XSD_TO_SCHEMA_TYPE } from '../../../constants/XSD_REVERSE_MAPS.js';
@@ -422,7 +422,7 @@ function applyExtensionAnnotations(
 /**
  * Process a single `rdfs:Datatype` subject and return its schema delta.
  */
-function processDatatypeIri(
+function resolveDatatypeIri(
   subjectIri: string,
   graph: SchemaGraphInterface,
   reportUnsupported: (axiomIri: string, subjectIri: null | string) => void
@@ -550,7 +550,7 @@ export function importDatatypes(_quads: QuadInterface[], ctx: OwlImportContextTy
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
 
   for (const datatypeIri of datatypeIris) {
-    const delta = processDatatypeIri(datatypeIri, graph, ctx.reportUnsupported);
+    const delta = resolveDatatypeIri(datatypeIri, graph, ctx.reportUnsupported);
 
     schemaDeltas.set(datatypeIri, delta);
   }

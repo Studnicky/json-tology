@@ -1,4 +1,4 @@
-import type { LoggerInterface } from '../interfaces/Logger.js';
+import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 
 export type OntologyBuilderOptionsType = {
   /**

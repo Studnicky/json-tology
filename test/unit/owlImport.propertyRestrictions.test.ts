@@ -26,9 +26,9 @@ import type {
   OwlImportContextType,
   OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Compose } from '../../src/index.js';
 import { OwlProjection } from '../../src/modules/rdf/OwlProjection.js';

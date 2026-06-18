@@ -34,7 +34,7 @@ const Outer = {
 void Inner;
 void Outer;
 
-declare module '../../src/interfaces/JsonTologyReferences.js' {
+declare module '../../src/interfaces/JsonTologyReferencesInterface.js' {
   interface JsonTologyReferencesInterface {
     readonly 'urn:tr:Inner': typeof Inner;
     readonly 'urn:tr:Outer': typeof Outer;

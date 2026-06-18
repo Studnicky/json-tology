@@ -7,8 +7,8 @@
  */
 
 import type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryType.js';
-import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStore.js';
-import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntry.js';
+import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStoreInterface.js';
+import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntryType.js';
 
 import { isRecord } from '../data/DataTypes.js';
 import { StructuralHash } from '../data/StructuralHash.js';

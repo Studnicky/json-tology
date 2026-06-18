@@ -1,5 +1,5 @@
-import type { QuadInterface } from '../interfaces/Quad.js';
-import type { LoggerInterface } from '../interfaces/Logger.js';
+import type { QuadInterface } from '../interfaces/QuadInterface.js';
+import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 
 export type MaterializationResultType = {
   'abox': QuadInterface[];

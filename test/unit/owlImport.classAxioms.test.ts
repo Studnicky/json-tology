@@ -20,11 +20,11 @@ import {
 } from 'node:test';
 import { importClassAxioms } from '../../src/modules/ontology/importDispatch/ClassAxioms.js';
 import type { OwlImportContextType } from '../../src/types/OwlImport.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { listQuad } from '../helpers/listQuad.js';
 
 // ---------------------------------------------------------------------------

@@ -21,7 +21,7 @@ import { JsonTology } from '../../src/index.js';
 import {
   SH, XSD
 } from '../../src/constants/IRI.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 function objectNamedNodeValue(quad: QuadInterface): string | undefined {
   const obj = quad.object;

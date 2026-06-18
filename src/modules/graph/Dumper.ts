@@ -1,7 +1,7 @@
-import type { DumpOptionsType } from '../../types/Dump.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { DumpOptionsType } from '../../types/DumpOptionsType.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import { isRecord } from '../data/DataTypes.js';
 import { Transform } from '../transform/Transform.js';
 import { BaseError } from '../../errors/BaseError.js';

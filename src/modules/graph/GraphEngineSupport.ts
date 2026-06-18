@@ -9,7 +9,7 @@ import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from './SchemaIri.js';
 
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
-import type { RootDialectPlanType } from '../../types/RootDialectPlan.js';
+import type { RootDialectPlanType } from '../../types/RootDialectPlanType.js';
 
 export const GraphEngineSupport = {
   buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanType {

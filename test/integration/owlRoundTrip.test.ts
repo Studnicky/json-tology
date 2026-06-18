@@ -440,7 +440,7 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
     const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
     const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
     const { importPropertyRestrictions } = await import('../../src/modules/ontology/importDispatch/PropertyRestrictions.js');
-    const { Curie } = await import('../../src/modules/rdf/Curie.js');
+    const { Curie } = await import('../../src/modules/quads/Curie.js');
     const { STANDARD_PREFIXES } = await import('../../src/constants/STANDARD_PREFIXES.js');
 
     const CLASS_IRI = 'urn:test:H1Class';

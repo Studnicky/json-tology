@@ -10,7 +10,7 @@
  */
 
 import { Skolemize } from '../../../src/index.js';
-import type { JsonTologyOptionsType } from '../../../src/types/Config.js';
+import type { JsonTologyOptionsType } from '../../../src/types/JsonTologyOptionsType.js';
 import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';

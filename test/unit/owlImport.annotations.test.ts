@@ -22,11 +22,11 @@ import {
   describe, it
 } from 'node:test';
 import { importAnnotations } from '../../src/modules/ontology/importDispatch/Annotations.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../src/types/OwlImport.js';

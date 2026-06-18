@@ -26,7 +26,7 @@
  * preserved without scanning raw quads.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
@@ -294,7 +294,7 @@ function getOrCreateAccumulator(
 }
 
 /** Process a single label relation and append to the accumulator. */
-function processLabelRelation(
+function applyLabelRelation(
   relation: SchemaGraphRelationType,
   acc: AnnotationAccumulatorType
 ): void {
@@ -306,7 +306,7 @@ function processLabelRelation(
 }
 
 /** Process a single comment relation and append to the accumulator. */
-function processCommentRelation(
+function applyCommentRelation(
   relation: SchemaGraphRelationType,
   acc: AnnotationAccumulatorType
 ): void {
@@ -324,12 +324,12 @@ function dispatchLiteralRelation(
   acc: AnnotationAccumulatorType
 ): void {
   if (LABEL_PREDICATES.has(predicateIri)) {
-    processLabelRelation(relation, acc);
+    applyLabelRelation(relation, acc);
 
     return;
   }
   if (COMMENT_PREDICATES.has(predicateIri)) {
-    processCommentRelation(relation, acc);
+    applyCommentRelation(relation, acc);
 
     return;
   }

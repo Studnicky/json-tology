@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import {
   BaseError, DecodeError, EncodeError, JsonTology, Transform, TransformError
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 
 // ---------------------------------------------------------------------------

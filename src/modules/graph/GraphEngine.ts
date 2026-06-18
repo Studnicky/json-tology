@@ -2,10 +2,10 @@ import type {
   GraphEngineOptionsType,
   KeywordDefinitionType
 } from '../../types/GraphEngine.js';
-import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { EffectiveOptionsType } from '../../types/EffectiveOptions.js';
+import type { GraphEngineInterface } from '../../interfaces/GraphEngineInterface.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { EffectiveOptionsType } from '../../types/EffectiveOptionsType.js';
 
 import { isRecord } from '../data/DataTypes.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';

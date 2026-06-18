@@ -21,8 +21,8 @@ import {
 import { ShaclValidator } from '../../src/modules/validation/ShaclValidator.js';
 import { ShaclProjection } from '../../src/modules/rdf/ShaclProjection.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 // ---------------------------------------------------------------------------
 // Quad construction helpers

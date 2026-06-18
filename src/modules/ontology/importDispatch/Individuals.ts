@@ -23,16 +23,20 @@
  *   (`relation.termType === 'Literal'`, `relation.datatype`, `relation.language`).
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
 import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
-import { Terms } from '../../rdf/Terms.js';
-import { decodeLiteral } from '../../rdf/Terms.js';
+import { Terms } from '../../quads/Terms.js';
+import { decodeLiteral } from '../../quads/Terms.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { isRecord } from '../../data/DataTypes.js';
+import {
+  namedNodeIri,
+  targetValue
+} from './DispatchHelpers.js';
 import {
   ALL_DIFFERENT_IRIS,
   ASSERTION_PROPERTY_IRIS,
@@ -74,17 +78,6 @@ function targetIriIn(relation: SchemaGraphRelationType, set: ReadonlySet<string>
 }
 
 /**
- * Extract the IRI string of a NamedNode relation target, or null.
- */
-function namedNodeTarget(relation: SchemaGraphRelationType): null | string {
-  if (relation.termType !== 'NamedNode') {
-    return null;
-  }
-
-  return typeof relation.target === 'string' ? relation.target : relation.target.id;
-}
-
-/**
  * Extract the typed JS value of a Literal relation target. Reconstructs the
  * literal from the relation's preserved `datatype` and `language` fields and
  * decodes via the canonical `decodeLiteral` helper, returning a number /
@@ -102,13 +95,6 @@ function literalTarget(relation: SchemaGraphRelationType): unknown {
   }
 
   return undefined;
-}
-
-/**
- * Resolve the IRI/bnode-id form of a relation target regardless of shape.
- */
-function targetValue(relation: SchemaGraphRelationType): string {
-  return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
 /**
@@ -275,7 +261,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
 
     for (const relation of subjectRelations) {
       if (predicateIn(relation, RDF_TYPE_PREDICATES)) {
-        const objectIri = namedNodeTarget(relation);
+        const objectIri = namedNodeIri(relation);
 
         if (objectIri === null || NAMED_INDIVIDUAL_IRIS.has(objectIri)) {
           continue;
@@ -296,7 +282,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
       if (relation.termType === 'Literal') {
         value = literalTarget(relation);
       } else if (relation.termType === 'NamedNode') {
-        value = namedNodeTarget(relation);
+        value = namedNodeIri(relation);
       } else {
         continue;
       }
@@ -332,7 +318,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
       continue;
     }
     const iriA = relation.source.id;
-    const iriB = namedNodeTarget(relation);
+    const iriB = namedNodeIri(relation);
 
     if (iriB === null || iriA === iriB || iriA.startsWith('_:') || iriB.startsWith('_:')) {
       continue;
@@ -358,7 +344,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
       continue;
     }
     const iriA = relation.source.id;
-    const iriB = namedNodeTarget(relation);
+    const iriB = namedNodeIri(relation);
 
     if (iriB === null || iriA.startsWith('_:') || iriB.startsWith('_:')) {
       continue;
@@ -403,6 +389,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
         for (let j = i + 1; j < memberIris.length; j++) {
           const iriA = memberIris[i];
           const iriB = memberIris[j];
+
           const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
 
           if (seenDifferentFrom.has(pairKey)) {
@@ -434,13 +421,13 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
 
     for (const sibling of siblings) {
       if (predicateIn(sibling, SOURCE_INDIVIDUAL_IRIS)) {
-        sourceIndividual = namedNodeTarget(sibling);
+        sourceIndividual = namedNodeIri(sibling);
       } else if (predicateIn(sibling, ASSERTION_PROPERTY_IRIS)) {
-        assertionProperty = namedNodeTarget(sibling);
+        assertionProperty = namedNodeIri(sibling);
       } else if (predicateIn(sibling, TARGET_INDIVIDUAL_IRIS)) {
-        target = namedNodeTarget(sibling);
+        target = namedNodeIri(sibling);
       } else if (predicateIn(sibling, TARGET_VALUE_IRIS)) {
-        target = sibling.termType === 'Literal' ? literalTarget(sibling) : namedNodeTarget(sibling);
+        target = sibling.termType === 'Literal' ? literalTarget(sibling) : namedNodeIri(sibling);
       }
     }
 

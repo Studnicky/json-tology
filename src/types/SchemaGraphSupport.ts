@@ -13,7 +13,7 @@ import type {
   SchemaGraphNodeType,
   SchemaGraphSemanticsType
 } from './SchemaGraph.js';
-import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptor.js';
+import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptorType.js';
 import type { AnnotatedEdgeDescriptorType } from '../types/AnnotatedEdgeDescriptorType.js';
 import type { JtConfigType } from './JtConfig.js';
 
@@ -410,7 +410,7 @@ export type SemanticsGraphPartType = Pick<
   | 'unevaluatedPropertiesNode'
 >;
 
-export type { SemanticsBuildContextType } from '../types/SemanticsBuildContext.js';
+export type { SemanticsBuildContextType } from '../types/SemanticsBuildContextType.js';
 
 /**
  * Named return type for {@link extractBooleanFlags}.

@@ -30,7 +30,7 @@ import {
 import { Compose } from '../../src/modules/composition/Compose.js';
 import { JsonTology } from '../../src/index.js';
 import { isRecord } from '../../src/modules/data/DataTypes.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 // ---------------------------------------------------------------------------
 // Fixture schemas

@@ -19,7 +19,7 @@
 
 import { JsonTology } from '../../src/JsonTology.js';
 import { Transform } from '../../src/modules/transform/Transform.js';
-import { brand } from '../../src/types/Brand.js';
+import { brand } from '../../src/modules/data/Brand.js';
 import type {
   ContainsBrandType,
   ContentEncodingBrandType,

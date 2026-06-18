@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 // Graph-node identity tests are inherently white-box — interfaces and internal classes below
 // are not surfaced by the public API, but the tests need them to assert graph structure.
-import type { GraphArtifactType } from '../../src/types/GraphArtifact.js';
+import type { GraphArtifactType } from '../../src/types/GraphArtifactType.js';
 import type { NormIRType } from '../../src/types/SchemaGraph.js';
 import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 import {

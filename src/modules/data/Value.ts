@@ -10,8 +10,8 @@
  */
 
 import type { DiffOpType } from '../../types/Diff.js';
-import type { ValueInterface } from '../../interfaces/ValueImpl.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { ValueInterface } from '../../interfaces/ValueInterface.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import { isRecord } from './DataTypes.js';
 import { Changeset } from './Changeset.js';
 

@@ -38,8 +38,8 @@ import type {
   SchemaGraphNodeType, SchemaGraphRelationType,
   SchemaGraphSemanticsType, StructureWarningType
 } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { PrefixMapType } from '../../types/OwlImport.js';
 import type {
   BuildRelationsOptionsType,
@@ -56,7 +56,7 @@ import type {
   SubjectPredicateQuadsIndexType,
   SubjectRelationsType
 } from '../../types/QuadBackedSchemaGraph.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import {
@@ -68,10 +68,10 @@ import {
   OWL_RESTRICTION_CONSTRAINT_IRIS,
   RDF_TYPE_PREDICATES
 } from '../../constants/ONTOLOGY_PREDICATES.js';
-import { Curie } from '../rdf/Curie.js';
-import { decodeLiteral } from '../rdf/Terms.js';
-import { Lists } from '../rdf/Lists.js';
-import { QuadFactory } from '../rdf/QuadFactory.js';
+import { Curie } from '../quads/Curie.js';
+import { decodeLiteral } from '../quads/Terms.js';
+import { Lists } from '../quads/Lists.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
 import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
 
 // OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
@@ -368,7 +368,8 @@ function resolveRestrictionBnode(opts: ResolveRestrictionOptionsType): OptionalR
   if (onPropertyQuads.length === 0) {
     return undefined;
   }
-  const onPropertyIri = curie.compact(onPropertyQuads[0].object.termType === 'NamedNode' ? onPropertyQuads[0].object.value : '');
+  const onPropertyQuad = onPropertyQuads[0];
+  const onPropertyIri = curie.compact(onPropertyQuad.object.termType === 'NamedNode' ? onPropertyQuad.object.value : '');
 
   // Find the constraint predicate
   for (const [

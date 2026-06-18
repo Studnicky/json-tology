@@ -22,7 +22,7 @@ import { DecodeError } from '../../src/errors/DecodeError.js';
 import {
   GraphErrorCode, TransformErrorCode
 } from '../../src/constants/ERROR_CODES.js';
-import type { LoggerInterface } from '../../src/interfaces/Logger.js';
+import type { LoggerInterface } from '../../src/interfaces/LoggerInterface.js';
 
 type CapturedType = {
   'level': string;

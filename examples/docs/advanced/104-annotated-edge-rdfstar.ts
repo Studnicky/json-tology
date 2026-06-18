@@ -16,7 +16,7 @@
  * required — the default graph cannot carry triple-term quads.
  */
 
-import type { QuadInterface } from '../../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../../src/interfaces/QuadInterface.js';
 import {
   aboxFixtures,
   bookstoreEntities,

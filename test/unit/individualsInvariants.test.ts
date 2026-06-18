@@ -16,13 +16,13 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
 import type { InvariantType } from '../../src/types/Invariant.js';
 import { importIndividuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
 

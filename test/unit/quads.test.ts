@@ -18,7 +18,7 @@ import {
   JsonTology, Skolemize
 } from '../../src/index.js';
 // SkolemizeFnType is the function-shape contract for IRI minting; consumed via the public iriFor option but the type alias itself is internal.
-import type { SkolemizeFnType } from '../../src/types/Skolemize.js';
+import type { SkolemizeFnType } from '../../src/types/SkolemizeFnType.js';
 
 const UserSchema = {
   '$id': 'https://example.com/User',

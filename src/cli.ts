@@ -21,7 +21,7 @@ import {
 import { Command } from 'commander';
 import pkg from '../package.json' with { 'type': 'json' };
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
-import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
+import type { SchemaRegistryInterface } from './interfaces/SchemaRegistryInterface.js';
 import { isRecord } from './modules/data/DataTypes.js';
 import { SchemaErrorCode } from './constants/ERROR_CODES.js';
 import { GraphArtifact } from './modules/graph/GraphArtifact.js';
@@ -31,10 +31,10 @@ import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { VizDataCollector } from './modules/viz/VizDataCollector.js';
 import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
-import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
-import type { BuildOptionsType } from './types/BuildOptions.js';
-import type { VizOptionsType } from './types/VizOptions.js';
-import type { BuildOutputOptionsType } from './types/BuildOutputOptions.js';
+import type { SchemaGraphInterface } from './interfaces/SchemaGraphInterface.js';
+import type { BuildOptionsType } from './types/BuildOptionsType.js';
+import type { VizOptionsType } from './types/VizOptionsType.js';
+import type { BuildOutputOptionsType } from './types/BuildOutputOptionsType.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';

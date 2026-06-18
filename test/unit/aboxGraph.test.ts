@@ -9,7 +9,7 @@ import {
   RareBookSchema,
   ReviewSchema
 } from '../../examples/docs/bookstore/index.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 const ABOX_GRAPH_IRI = 'https://bookstore.example/graph/abox';
 

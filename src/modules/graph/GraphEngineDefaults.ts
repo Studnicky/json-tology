@@ -2,12 +2,12 @@ import type {
   SchemaGraphNodeType,
   SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
-import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
-import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContext.js';
+import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntryType.js';
+import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContextType.js';
 import { MAX_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
-import type { DefaultResolutionStateType } from '../../types/DefaultResolutionState.js';
+import type { DefaultResolutionStateType } from '../../types/DefaultResolutionStateType.js';
 
 function propertiesFromSemantics(sem: SchemaGraphSemanticsType): ReadonlyMap<string, SchemaGraphNodeType> {
   return sem.properties;

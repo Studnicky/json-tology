@@ -224,7 +224,7 @@ function buildInitialQueue(iris: readonly string[], fwdInDegree: Map<string, num
 }
 
 /** Reduce the in-degree of dependents and enqueue newly-zero entries. */
-function processKahnStep(opts: KahnStepOptionsType): void {
+function advanceKahnStep(opts: KahnStepOptionsType): void {
   const {
     current,
     deps,
@@ -265,7 +265,7 @@ function kahnSort(iris: readonly string[], deps: BuildDepsMapType): string[] {
 
     visited.add(current);
     sorted.push(current);
-    processKahnStep({
+    advanceKahnStep({
       current,
       deps,
       fwdInDegree,

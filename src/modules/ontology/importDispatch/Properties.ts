@@ -25,7 +25,7 @@
  * accepted by the downstream XSD/datatype/class membership checks.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
@@ -113,7 +113,7 @@ function indexPropertyType(
 }
 
 /** Handle an rdf:type relation — record object or datatype property declarations. */
-function handleTypeRelation(
+function applyTypeRelation(
   propertyIndex: Map<string, PropertyIndexValueType>,
   subjectIri: string,
   targetIri: string
@@ -144,7 +144,7 @@ function collectPropertyDeclarations(ctx: OwlImportContextType): PropertyCollect
     const targetIri = ctx.curie.expandIfNeeded(raw);
 
     if (predicate === RDF.type) {
-      handleTypeRelation(propertyIndex, subjectIri, targetIri);
+      applyTypeRelation(propertyIndex, subjectIri, targetIri);
       continue;
     }
 

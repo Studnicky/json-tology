@@ -35,10 +35,10 @@ import {
   Skolemize,
   Transform
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 
 // ---------------------------------------------------------------------------
 // Bookstore fixtures (used across multiple sections)

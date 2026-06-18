@@ -1,12 +1,12 @@
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { GraphSerializerInterface } from '../../interfaces/Serializer.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
-import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
-import { Curie } from '../rdf/Curie.js';
-import { IdentifierIssuer } from '../rdf/IdentifierIssuer.js';
-import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { GraphSerializerInterface } from '../../interfaces/GraphSerializerInterface.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPluginInterface.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import { Curie } from '../quads/Curie.js';
+import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
+import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 
 /**

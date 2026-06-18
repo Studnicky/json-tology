@@ -19,9 +19,9 @@
  * of this module.
  */
 
-import type { RefTargetType } from '../../types/RefTarget.js';
-import type { RefResolutionOptionsType } from '../../types/RefResolution.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { RefTargetType } from '../../types/RefTargetType.js';
+import type { RefResolutionOptionsType } from '../../types/RefResolutionOptionsType.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaIri } from './SchemaIri.js';

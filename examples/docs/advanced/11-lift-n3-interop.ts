@@ -10,7 +10,7 @@
 
 import { Parser } from 'n3';
 import { Lists } from '../../../src/index.js';
-import type { QuadInterface } from '../../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../../src/interfaces/QuadInterface.js';
 import { aboxFixtures } from '../bookstore/index.js';
 
 const isbn = aboxFixtures.rareBook.isbn;

@@ -1,5 +1,5 @@
 import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
-import type { ExecContextType } from '../../../types/ExecContext.js';
+import type { ExecContextType } from '../../../types/ExecContextType.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import {
   isRecord

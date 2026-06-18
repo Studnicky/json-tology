@@ -33,7 +33,7 @@
  * @since 0.20.0
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { ShaclValidationReportType } from '../../types/ShaclValidationReportType.js';
 import type { ShaclValidationResultType } from '../../types/ShaclValidationResultType.js';
 import type {

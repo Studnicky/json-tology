@@ -17,11 +17,11 @@ import {
 import {
   JsonTology, Transform
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { RefDecoder } from '../../src/modules/graph/RefDecoder.js';
-import type { RefDecoderRegistryType } from '../../src/types/RefDecoderRegistry.js';
+import type { RefDecoderRegistryType } from '../../src/types/RefDecoderRegistryType.js';
 
 // ---------------------------------------------------------------------------
 // Minimal registry stubs — used when we drive RefDecoder.run directly

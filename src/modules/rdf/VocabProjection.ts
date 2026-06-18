@@ -9,13 +9,13 @@
  * attach them (OWL: rdfs:subClassOf, SHACL: push to andItems).
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { RelationIndexType } from '../../types/RelationIndex.js';
-import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { RelationIndexType } from '../../types/RelationIndexType.js';
+import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { JT } from '../../constants/IRI.js';
 import { resolvePredicateIriForClass } from './ProjectionHelpers.js';
 
@@ -70,58 +70,7 @@ export abstract class VocabProjection {
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType;
 
-  /**
-   * Emit the "then" branch of a conditional (if/then).
-   * OWL: owl:intersectionOf(if, then) wrapped in a Class bnode.
-   * SHACL: sh:or([sh:not(if), then]) bnode.
-   */
-  abstract emitConditionalThenBranch(
-    ifRef: string,
-    thenRef: string,
-    quads: QuadInterface[],
-    curie: CurieInterface | undefined,
-    issuer?: IdentifierIssuerInterface
-  ): QuadObjectType;
-
-  /**
-   * Emit a dependent-schema implication (triggerProp present => schema applies).
-   * OWL: union of complement-of-restriction and schema ref.
-   * SHACL: sh:or of not-property-present and node shape with properties.
-   */
-  abstract emitDependentSchemaBranch(
-    subject: string,
-    ifRef: string,
-    thenRef: string,
-    quads: QuadInterface[],
-    curie: CurieInterface | undefined,
-    issuer?: IdentifierIssuerInterface
-  ): QuadObjectType;
-
-  /**
-   * Emit the "trigger property absent" branch for dependentRequired / dependentSchemas.
-   * OWL: owl:complementOf on an owl:Restriction with minCardinality 1.
-   * SHACL: sh:not wrapping a PropertyShape with minCount 1.
-   */
-  abstract emitNotTriggerBranch(
-    triggerPropIri: string,
-    quads: QuadInterface[],
-    curie: CurieInterface | undefined,
-    issuer?: IdentifierIssuerInterface
-  ): QuadObjectType;
-
-  /**
-   * Emit a single required-property restriction.
-   * OWL: owl:Restriction with minCardinality 1.
-   * SHACL: sh:PropertyShape with minCount 1.
-   */
-  abstract emitRequiredPropertyBranch(
-    propIri: string,
-    quads: QuadInterface[],
-    curie: CurieInterface | undefined,
-    issuer?: IdentifierIssuerInterface
-  ): QuadObjectType;
-
-  processConditionals(
+  emitConditionals(
     entry: RelationIndexType,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
@@ -160,7 +109,20 @@ export abstract class VocabProjection {
     return results;
   }
 
-  processDependentRequired(
+  /**
+   * Emit the "then" branch of a conditional (if/then).
+   * OWL: owl:intersectionOf(if, then) wrapped in a Class bnode.
+   * SHACL: sh:or([sh:not(if), then]) bnode.
+   */
+  abstract emitConditionalThenBranch(
+    ifRef: string,
+    thenRef: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
+  ): QuadObjectType;
+
+  emitDependentRequired(
     subject: string,
     entry: RelationIndexType,
     quads: QuadInterface[],
@@ -192,7 +154,21 @@ export abstract class VocabProjection {
     return results;
   }
 
-  processDependentSchemas(
+  /**
+   * Emit a dependent-schema implication (triggerProp present => schema applies).
+   * OWL: union of complement-of-restriction and schema ref.
+   * SHACL: sh:or of not-property-present and node shape with properties.
+   */
+  abstract emitDependentSchemaBranch(
+    subject: string,
+    ifRef: string,
+    thenRef: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
+  ): QuadObjectType;
+
+  emitDependentSchemas(
     subject: string,
     entry: RelationIndexType,
     quads: QuadInterface[],
@@ -219,6 +195,30 @@ export abstract class VocabProjection {
 
     return results;
   }
+
+  /**
+   * Emit the "trigger property absent" branch for dependentRequired / dependentSchemas.
+   * OWL: owl:complementOf on an owl:Restriction with minCardinality 1.
+   * SHACL: sh:not wrapping a PropertyShape with minCount 1.
+   */
+  abstract emitNotTriggerBranch(
+    triggerPropIri: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
+  ): QuadObjectType;
+
+  /**
+   * Emit a single required-property restriction.
+   * OWL: owl:Restriction with minCardinality 1.
+   * SHACL: sh:PropertyShape with minCount 1.
+   */
+  abstract emitRequiredPropertyBranch(
+    propIri: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
+  ): QuadObjectType;
 
   /**
    * Resolve the flat property IRI for a given property name on `subject`.

@@ -1,5 +1,5 @@
-import type { FormatRegistryInterface } from '../interfaces/FormatRegistry.js';
-import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
+import type { FormatRegistryInterface } from '../interfaces/FormatRegistryInterface.js';
+import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 
 /**

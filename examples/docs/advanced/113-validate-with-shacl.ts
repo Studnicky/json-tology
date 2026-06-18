@@ -22,10 +22,10 @@
  * @since 0.20.0
  */
 
-import type { QuadInterface } from '../../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../../src/interfaces/QuadInterface.js';
 import type { ShaclValidationReportType } from '../../../src/types/ShaclValidationReportType.js';
 import { JsonTology } from '../../../src/index.js';
-import { Terms } from '../../../src/modules/rdf/Terms.js';
+import { Terms } from '../../../src/modules/quads/Terms.js';
 import {
   RDF, SH
 } from '../../../src/constants/IRI.js';

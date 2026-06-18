@@ -1,6 +1,6 @@
 import type { JsonSchemaType } from '../../types/Schema.js';
-import type { PredicateForType } from '../../types/PredicateFor.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
+import type { PredicateForType } from '../../types/PredicateForType.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
 import { isRecord } from '../data/DataTypes.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';

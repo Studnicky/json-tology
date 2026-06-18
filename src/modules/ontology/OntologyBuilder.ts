@@ -6,12 +6,12 @@
  * an internal rdf/js quad store. Every output derives from that store.
  */
 
-import type { OntologyBuilderInterface } from '../../interfaces/Ontology.js';
-import type { JsonLdDocInput } from '../../types/JsonLdDocInput.js';
+import type { OntologyBuilderInterface } from '../../interfaces/OntologyBuilderInterface.js';
+import type { JsonLdDocInputType } from '../../types/JsonLdDocInputType.js';
 import type { OntologyBuilderOptionsType } from '../../types/OntologyBuilderOptionsType.js';
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import jsonld from 'jsonld';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { RDFS } from '../../constants/IRI.js';
@@ -21,7 +21,7 @@ import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 import { logScope } from '../data/LogScope.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
 import { JsonLdFormatter } from '../rdf/JsonLdFormatter.js';
-import { QuadFactory } from '../rdf/QuadFactory.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
 
 /**
  * Ontology Builder
@@ -51,7 +51,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Parse a JSON-LD document to rdf/js quads via `jsonld.toRDF` and append
    * them to the canonical ontology store.
    */
-  public async addFromJsonLd(doc: JsonLdDocInput): Promise<this> {
+  public async addFromJsonLd(doc: JsonLdDocInputType): Promise<this> {
     const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
     const quads = dataset.map((datasetQuad) => {
       return QuadFactory.fromDatasetQuad(datasetQuad);
@@ -79,7 +79,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Parse a JSON-LD document to rdf/js quads via `jsonld.toRDF` and append
    * them to the SHACL store.
    */
-  public async addShaclFromJsonLd(doc: JsonLdDocInput): Promise<this> {
+  public async addShaclFromJsonLd(doc: JsonLdDocInputType): Promise<this> {
     const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
     const quads = dataset.map((datasetQuad) => {
       return QuadFactory.fromDatasetQuad(datasetQuad);

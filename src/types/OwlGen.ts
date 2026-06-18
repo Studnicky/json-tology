@@ -11,7 +11,7 @@
  * output format and option shapes may evolve as the codegen path matures.
  */
 
-import type { QuadInterface } from '../interfaces/Quad.js';
+import type { QuadInterface } from '../interfaces/QuadInterface.js';
 
 /**
  * Options accepted by {@link generateFromTbox} (browser-safe).

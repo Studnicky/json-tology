@@ -17,7 +17,7 @@ import { OwlProjection } from '../../src/modules/rdf/OwlProjection.js';
 import {
   OWL, RDF, RDFS
 } from '../../src/constants/IRI.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -28,8 +28,8 @@ import { Compose } from '../../src/index.js';
 import {
   OWL, RDF, SH
 } from '../../src/constants/IRI.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
-import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphImpl.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
+import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphInterface.js';
 import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 
 // ---------------------------------------------------------------------------
@@ -163,7 +163,7 @@ void describe('Fix 1 — ShaclProjection: no orphaned sh:PropertyShape on abort'
 void describe('Fix 2 — ShaclProjection: emitNotTriggerBranch emits only reachable bnodes', { 'concurrency': true }, () => {
   void it('dependentRequired schema produces no unreachable bnodes', () => {
     // A schema with dependentRequired triggers emitNotTriggerBranch inside
-    // processDependentRequired. Pre-fix: two extra bnodes (innerBnode, complementBnode)
+    // emitDependentRequired. Pre-fix: two extra bnodes (innerBnode, complementBnode)
     // were allocated and one (complementBnode) was pushed with sh:not → innerBnode,
     // but neither appeared in the return chain or as an object referenced by a
     // reachable quad. Post-fix: those two bnodes are absent.

@@ -14,7 +14,7 @@ import type {
   SchemaGraphNodeType,
   SchemaGraphRelationType
 } from './SchemaGraph.js';
-import type { QuadInterface } from '../interfaces/Quad.js';
+import type { QuadInterface } from '../interfaces/QuadInterface.js';
 
 /**
  * Named return type for {@link buildPredicateIndex}.
@@ -270,7 +270,7 @@ export type SubjectRelationsType = readonly SchemaGraphRelationType[];
  */
 export type RootSchemaRecordType = Record<string, unknown>;
 
-export type { BuildRelationsOptionsType } from '../types/BuildRelationsOptions.js';
+export type { BuildRelationsOptionsType } from '../types/BuildRelationsOptionsType.js';
 export { type SubjectIndexType } from '../types/OwlImport.js';
 
-export type { ResolveRestrictionOptionsType } from '../types/ResolveRestrictionOptions.js';
+export type { ResolveRestrictionOptionsType } from '../types/ResolveRestrictionOptionsType.js';

@@ -18,13 +18,13 @@
  *   ];
  */
 
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
   BnodeTermType, DefaultGraphTermType, IriTermType, QuadObjectType
 } from '../../src/types/Quad.js';
 
-import { Lists } from '../../src/modules/rdf/Lists.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Lists } from '../../src/modules/quads/Lists.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 
 export function listQuad(
   subject: BnodeTermType | IriTermType,

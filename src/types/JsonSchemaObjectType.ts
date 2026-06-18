@@ -16,7 +16,7 @@
  */
 
 import type { JsonSchema } from '../types/JsonSchema.js';
-import type { JsonSchemaTypeName } from '../types/JsonSchemaTypeName.js';
+import type { JsonSchemaTypeNameType } from '../types/Schema.js';
 
 export type JsonSchemaObjectType = {
   readonly '$anchor'?: string;
@@ -71,7 +71,7 @@ export type JsonSchemaObjectType = {
   readonly 'required'?: readonly string[];
   readonly 'then'?: JsonSchema;
   readonly 'title'?: string;
-  readonly 'type'?: JsonSchemaTypeName | readonly JsonSchemaTypeName[];
+  readonly 'type'?: JsonSchemaTypeNameType | readonly JsonSchemaTypeNameType[];
   readonly 'unevaluatedItems'?: JsonSchema;
   readonly 'unevaluatedProperties'?: JsonSchema;
   readonly 'uniqueItems'?: boolean;

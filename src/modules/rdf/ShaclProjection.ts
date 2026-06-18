@@ -9,37 +9,38 @@
  * The output quads can be passed directly to JsonLdFormatter.fromQuads().
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { ProjectionEmitContextType } from '../../types/ProjectionEmitContext.js';
-import type { EmitNodeShapeArgsType } from '../../types/EmitNodeShapeArgs.js';
-import type { EmitPropertyShapeArgsType } from '../../types/EmitPropertyShapeArgs.js';
-import type { EmitNodeShapePropertiesArgsType } from '../../types/EmitNodeShapePropertiesArgs.js';
-import type { EmitNodeShapeCompositionArgsType } from '../../types/EmitNodeShapeCompositionArgs.js';
-import type { EmitPropertyShapeConstraintsArgsType } from '../../types/EmitPropertyShapeConstraintsArgs.js';
-import type { EmitCountConstraintArgsType } from '../../types/EmitCountConstraintArgs.js';
-import type { EmitRangeConstraintArgsType } from '../../types/EmitRangeConstraintArgs.js';
-import type { EmitContainsQualifiedCardinalityArgsType } from '../../types/EmitContainsQualifiedCardinalityArgs.js';
-import { IdentifierIssuer } from './IdentifierIssuer.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
+import type { ProjectionEmitContextType } from '../../types/ProjectionEmitContextType.js';
+import type { EmitNodeShapeArgsType } from '../../types/EmitNodeShapeArgsType.js';
+import type { EmitPropertyShapeArgsType } from '../../types/EmitPropertyShapeArgsType.js';
+import type { EmitNodeShapePropertiesArgsType } from '../../types/EmitNodeShapePropertiesArgsType.js';
+import type { EmitNodeShapeCompositionArgsType } from '../../types/EmitNodeShapeCompositionArgsType.js';
+import type { EmitPropertyShapeConstraintsArgsType } from '../../types/EmitPropertyShapeConstraintsArgsType.js';
+import type { EmitCountConstraintArgsType } from '../../types/EmitCountConstraintArgsType.js';
+import type { EmitRangeConstraintArgsType } from '../../types/EmitRangeConstraintArgsType.js';
+import type { EmitContainsQualifiedCardinalityArgsType } from '../../types/EmitContainsQualifiedCardinalityArgsType.js';
+import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { OWL_CARDINALITY_PREDICATE_IRIS } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { XSD_IRI_PREFIX } from '../../constants/STANDARD_PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
-import { QuadFactory } from './QuadFactory.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
+import { QuadEmit } from './QuadEmit.js';
 import {
   finiteNumber,
   resolvePropertySchema,
   resolveRestrictionOnProperty
 } from './ProjectionHelpers.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
-import type { RelationIndexType } from '../../types/RelationIndex.js';
+import type { RelationIndexType } from '../../types/RelationIndexType.js';
 import { VocabProjection } from './VocabProjection.js';
 
 function relationToEquivIri(
@@ -479,8 +480,8 @@ function emitNodeShapeMetadata(subject: string, entry: RelationIndexType, ctx: P
     curie, quads
   } = ctx;
 
-  QuadFactory.emitLiterals(subject, entry, RDFS.label, SH.name, quads, { curie });
-  QuadFactory.emitLiterals(subject, entry, RDFS.comment, SH.description, quads, { curie });
+  QuadEmit.emitLiterals(subject, entry, RDFS.label, SH.name, quads, { curie });
+  QuadEmit.emitLiterals(subject, entry, RDFS.comment, SH.description, quads, { curie });
 
   if (entry.byPredicate.has(OWL.deprecated)) {
     quads.push(QuadFactory.quad(subject, SH.deactivated, QuadFactory.literal(true, XSD.boolean, { curie }), { curie }));
@@ -490,8 +491,8 @@ function emitNodeShapeMetadata(subject: string, entry: RelationIndexType, ctx: P
     quads.push(QuadFactory.quad(subject, SH.closed, QuadFactory.literal(true, XSD.boolean, { curie }), { curie }));
   }
 
-  QuadFactory.emitConstraintLiteral(subject, entry, SH.minCount, XSD.integer, quads, { curie });
-  QuadFactory.emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, { curie });
+  QuadEmit.emitConstraintLiteral(subject, entry, SH.minCount, XSD.integer, quads, { curie });
+  QuadEmit.emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, { curie });
 }
 
 function emitNodeShapeProperties(args: EmitNodeShapePropertiesArgsType): void {
@@ -672,7 +673,7 @@ function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsType): void 
     }
   }
 
-  const depReqItems = shaclVocab.processDependentRequired(
+  const depReqItems = shaclVocab.emitDependentRequired(
     subject,
     entry,
     quads,
@@ -681,8 +682,8 @@ function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsType): void 
     graph,
     predicateResolver
   );
-  const depSchemaItems = shaclVocab.processDependentSchemas(subject, entry, quads, curie, issuer);
-  const conditionalItems = shaclVocab.processConditionals(entry, quads, curie, issuer);
+  const depSchemaItems = shaclVocab.emitDependentSchemas(subject, entry, quads, curie, issuer);
+  const conditionalItems = shaclVocab.emitConditionals(entry, quads, curie, issuer);
 
   andItems.push(...depReqItems, ...depSchemaItems, ...conditionalItems);
 
@@ -847,13 +848,13 @@ function emitPropertyShapeValueConstraints(args: EmitPropertyShapeConstraintsArg
     quads.push(QuadFactory.quad(bnodeId, SH.pattern, patternLit, opts));
   }
 
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxInclusive, XSD.decimal, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minExclusive, XSD.decimal, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.maxInclusive, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.minExclusive, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, opts);
 
   if (entry.byPredicate.has(DASH.readOnly)) {
     quads.push(QuadFactory.quad(bnodeId, DASH.readOnly, QuadFactory.literal(true, XSD.boolean, opts), opts));
@@ -889,7 +890,7 @@ function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
     });
 
   quads.push(QuadFactory.quad(bnodeId, SH.path, QuadFactory.iri(canonicalId, opts), opts));
-  QuadFactory.emitLiterals(bnodeId, entry, RDFS.label, SH.name, quads, opts);
+  QuadEmit.emitLiterals(bnodeId, entry, RDFS.label, SH.name, quads, opts);
   emitPropertyShapeTypeConstraints({
     bnodeId,
     entry,
@@ -923,8 +924,8 @@ function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
     opts,
     quads
   });
-  QuadFactory.emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, opts);
-  QuadFactory.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, opts);
+  QuadEmit.emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, opts);
+  QuadEmit.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, opts);
 }
 
 function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinalityArgsType): void {

@@ -8,15 +8,15 @@
  */
 
 import type { ValidationErrorType } from '../../types/Validation.js';
-import type { ExecContextType } from '../../types/ExecContext.js';
+import type { ExecContextType } from '../../types/ExecContextType.js';
 import type {
   CompiledValidateOptionsType, CompiledValidationResultType, CompiledValidatorType
 } from '../../types/Compiler.js';
-import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerInterface.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
+import type { GraphEngineInterface } from '../../interfaces/GraphEngineInterface.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
@@ -35,7 +35,7 @@ import type {
   ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../types/Validation.js';
 import { VOCABULARY_FORMAT_ASSERTION } from '../../constants/DIALECT.js';
-import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
+import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlanType.js';
 import { Arrays } from './exec/Arrays.js';
 import { Composition } from './exec/Composition.js';
 import { Objects } from './exec/Objects.js';
@@ -46,7 +46,7 @@ import { buildNodePlan } from './SchemaCompilerPlan.js';
 // Internal types
 // ---------------------------------------------------------------------------
 
-import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContext.js';
+import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContextType.js';
 import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
 import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
 import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
@@ -148,8 +148,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       const scratchCtx: ExecContextType = {
         ...ctx,
         'applyDefaults': false,
+        'coerce': false,
         'collectErrors': false,
-        'doCoerce': false,
         'errors': [],
         'evaluatedItems': undefined,
         'evaluatedProperties': undefined,
@@ -229,7 +229,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       workingValue = GraphEngineSupport.cloneDefault(plan.defaultValue);
     }
 
-    if (ctx.doCoerce && plan.types.length > 0) {
+    if (ctx.coerce && plan.types.length > 0) {
       workingValue = SchemaCompilerSupport.coerceCompiledValue(plan.types, workingValue);
     }
 
@@ -820,8 +820,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const stripUnk = (options.enforceSchemaProperties ?? false) || (options.removeAdditionalProperties ?? false);
     const ctx: ExecContextType = ExecContext.build({
       'applyDefaults': options.applyDefaults ?? false,
+      'coerce': options.castTypes ?? false,
       'collectErrors': options.collectErrors ?? true,
-      'doCoerce': options.castTypes ?? false,
       errors,
       'ignoreAdditionalProperties': options.ignoreAdditionalProperties ?? false,
       'stripUnknown': stripUnk,

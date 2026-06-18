@@ -12,10 +12,10 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { JsonTology } from '../../src/index.js';
 import { SchemaError } from '../../src/errors/SchemaError.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { listQuad } from '../helpers/listQuad.js';
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';

@@ -19,10 +19,10 @@ import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { OwlProjection } from '../../src/modules/rdf/OwlProjection.js';
 import {

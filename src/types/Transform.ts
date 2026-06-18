@@ -1,5 +1,5 @@
-import type { ComputedExtensionBrandType } from '../types/ComputedExtension.js';
-import type { TransformBrandType } from '../types/TransformBrand.js';
+import type { ComputedExtensionBrandType } from '../types/ComputedExtensionBrandType.js';
+import type { TransformBrandType } from '../types/TransformBrandType.js';
 import type { AnyTransformStageType } from '../types/TransformStage.js';
 import type { InferSchemaType } from './Infer.js';
 import type { JsonTologyReferencesInterface } from './SchemaReferences.js';

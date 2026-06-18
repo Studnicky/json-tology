@@ -3,7 +3,7 @@
  * blank-node descriptor in the Datatypes dispatcher.
  */
 
-import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 
 export type ExtractFacetOptionsType = {
   'bnodeId': string;

@@ -9,33 +9,33 @@
  * it maps validated instance data to quads, not schema structure.
  */
 
-import type { AnnotationEmitModeType } from '../../types/AnnotationEmitMode.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { AnnotationEmitModeType } from '../../types/AnnotationEmitModeType.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
-import type { SkolemizeFnType } from '../../types/Skolemize.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { SkolemizeFnType } from '../../types/SkolemizeFnType.js';
 import type { ProjectInstanceArgsType } from '../../types/ProjectInstanceArgsType.js';
 import type { ProjectPropertyArgsType } from '../../types/ProjectPropertyArgsType.js';
-import type { RefTargetType } from '../../types/RefTarget.js';
+import type { RefTargetType } from '../../types/RefTargetType.js';
 import type { LookupGraphFn } from '../../types/LookupGraphFn.js';
-import type { ProjectInstancePropertyArgsType } from '../../types/ProjectInstancePropertyArgs.js';
-import type { ProjectAnnotatedEdgeArgsType } from '../../types/ProjectAnnotatedEdgeArgs.js';
-import type { ResolveEdgeTargetIriArgsType } from '../../types/ResolveEdgeTargetIriArgs.js';
-import type { EmitAnnotationQuadsArgsType } from '../../types/EmitAnnotationQuadsArgs.js';
-import type { EmitFlatAnnotationQuadsArgsType } from '../../types/EmitFlatAnnotationQuadsArgs.js';
-import type { ProjectScalarValueArgsType } from '../../types/ProjectScalarValueArgs.js';
-import type { ProjectAboxArgsType } from '../../types/ProjectAboxArgs.js';
+import type { ProjectInstancePropertyArgsType } from '../../types/ProjectInstancePropertyArgsType.js';
+import type { ProjectAnnotatedEdgeArgsType } from '../../types/ProjectAnnotatedEdgeArgsType.js';
+import type { ResolveEdgeTargetIriArgsType } from '../../types/ResolveEdgeTargetIriArgsType.js';
+import type { EmitAnnotationQuadsArgsType } from '../../types/EmitAnnotationQuadsArgsType.js';
+import type { EmitFlatAnnotationQuadsArgsType } from '../../types/EmitFlatAnnotationQuadsArgsType.js';
+import type { ProjectScalarValueArgsType } from '../../types/ProjectScalarValueArgsType.js';
+import type { ProjectAboxArgsType } from '../../types/ProjectAboxArgsType.js';
 import { collectEffectiveProperties } from '../graph/EffectiveProperties.js';
-import { Terms } from './Terms.js';
-import { Curie } from './Curie.js';
+import { Terms } from '../quads/Terms.js';
+import { Curie } from '../quads/Curie.js';
 
 import {
   RDF, XSD
 } from '../../constants/IRI.js';
-import { XsdTypes } from './XsdTypes.js';
+import { XsdTypes } from '../quads/XsdTypes.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { MaterializationErrorCode } from '../../constants/ERROR_CODES.js';
 import {
@@ -44,7 +44,7 @@ import {
 import { PredicateResolver } from '../graph/PredicateResolver.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Hash } from '../hash/Hash.js';
-import { QuadFactory } from './QuadFactory.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
 import { findAnnotatedEdgeStructure } from './ProjectionHelpers.js';
 import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
 

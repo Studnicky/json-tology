@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import type {
   ValidateWithErrorsFnType, ValidationErrorType
 } from '../../src/types/Validation.js';
-import type { ExecContextType } from '../../src/types/ExecContext.js';
+import type { ExecContextType } from '../../src/types/ExecContextType.js';
 import {
   describe, it
 } from 'node:test';
@@ -4265,12 +4265,12 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // Test helpers — exec context factory
 // ===========================================================================
 
-function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefaults = false, doCoerce = false, stripUnknown = false): ExecContextType {
+function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefaults = false, coerce = false, stripUnknown = false): ExecContextType {
   return {
     applyDefaults,
+    coerce,
     collectErrors,
     'depth': 0,
-    doCoerce,
     'dynamicScope': [],
     errors,
     'evaluatedItems': undefined,

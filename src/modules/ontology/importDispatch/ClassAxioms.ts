@@ -26,14 +26,14 @@
  * - `owl:disjointUnionOf` lists are walked via `ctx.graph.collectList`.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
 import type { AxiomContextType } from '../../../types/AxiomContextType.js';
 import type { ApplyRelationOptionsType } from '../../../types/ApplyRelationOptionsType.js';
 import type { ApplyBnodeLiteralOptionsType } from '../../../types/ApplyBnodeLiteralOptionsType.js';

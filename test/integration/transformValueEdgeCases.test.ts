@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import {
   Hash, Operations, Transform, Value
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 // ---------------------------------------------------------------------------
 // Transform edge cases

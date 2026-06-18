@@ -4,7 +4,7 @@ import {
 } from 'node:test';
 
 import type { JsonSchemaType } from '../../src/types/Schema.js';
-import type { PredicateForType } from '../../src/types/PredicateFor.js';
+import type { PredicateForType } from '../../src/types/PredicateForType.js';
 // PredicateResolver is the single authority for property predicate IRIs; not public surface.
 import { PredicateResolver } from '../../src/modules/graph/PredicateResolver.js';
 

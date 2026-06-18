@@ -10,9 +10,6 @@ import {
 import {
   BaseError, Compose, InstantiationError, JsonTology, ValidationErrors
 } from '../../src/index.js';
-// Result monad is an internal validation primitive not surfaced via the public API;
-// the Result.pass/fail/map/orElse/unwrap tests below exercise its monadic contract directly.
-import { Result } from '../../src/modules/data/Result.js';
 
 // ===========================================================================
 // Source: composition.test.ts
@@ -1046,135 +1043,6 @@ import { Result } from '../../src/modules/data/Result.js';
   });
 
   // ---------------------------------------------------------------------------
-  // Result monad
-  // ---------------------------------------------------------------------------
-
-  void describe('Result', { 'concurrency': true }, () => {
-    const resultScenarios: Array<{
-      'check': () => void;
-      'name': string;
-    }> = [
-      {
-        'check': () => {
-          const ok = Result.pass(42);
-
-          assert.equal(ok.success, true);
-          assert.equal(ok.data, 42);
-          assert.equal(ok.errors, undefined);
-        },
-        'name': 'pass: success=true, data present, no errors'
-      },
-      {
-        'check': () => {
-          const errs = new ValidationErrors([{
-            'keyword': 'type',
-            'message': 'bad',
-            'params': {},
-            'path': '/x'
-          }]);
-          const fail = Result.fail<number>(errs);
-
-          assert.equal(fail.success, false);
-          assert.equal(fail.data, undefined);
-          assert.equal(fail.errors, errs);
-        },
-        'name': 'fail: success=false, errors present, no data'
-      },
-      {
-        'check': () => {
-          const ok = Result.pass(42);
-          const mapped = ok.map((val) => {
-            return val * 2;
-          });
-
-          assert.equal(mapped.success, true);
-          assert.equal(mapped.data, 84);
-        },
-        'name': 'map transforms success value'
-      },
-      {
-        'check': () => {
-          const errs = new ValidationErrors([{
-            'keyword': 'type',
-            'message': 'bad',
-            'params': {},
-            'path': '/x'
-          }]);
-          const fail = Result.fail<number>(errs);
-          const failMapped = fail.map((val) => {
-            return val * 2;
-          });
-
-          assert.equal(failMapped.success, false);
-          assert.equal(failMapped.data, undefined);
-        },
-        'name': 'map passes failure through unchanged'
-      },
-      {
-        'check': () => {
-          const ok = Result.pass(42);
-
-          assert.equal(ok.orElse(() => {
-            return -1;
-          }), 42);
-        },
-        'name': 'orElse returns data on success'
-      },
-      {
-        'check': () => {
-          const errs = new ValidationErrors([{
-            'keyword': 'type',
-            'message': 'bad',
-            'params': {},
-            'path': '/x'
-          }]);
-          const fail = Result.fail<number>(errs);
-
-          assert.equal(fail.orElse(() => {
-            return -1;
-          }), -1);
-        },
-        'name': 'orElse returns fallback on failure'
-      },
-      {
-        'check': () => {
-          assert.equal(Result.pass(42).unwrap(), 42);
-        },
-        'name': 'unwrap returns data on success'
-      },
-      {
-        'check': () => {
-          const errs = new ValidationErrors([{
-            'keyword': 'type',
-            'message': 'bad',
-            'params': {},
-            'path': '/x'
-          }]);
-          const fail = Result.fail<number>(errs);
-
-          assert.throws(
-            () => {
-              return fail.unwrap();
-            },
-            (err: unknown) => {
-              return err instanceof InstantiationError;
-            }
-          );
-        },
-        'name': 'unwrap throws InstantiationError on failure'
-      }
-    ];
-
-    for (const {
-      'check': checkFn, 'name': scenarioName
-    } of resultScenarios) {
-      void it(scenarioName, () => {
-        checkFn();
-      });
-    }
-  });
-
-  // ---------------------------------------------------------------------------
   // Error class toJson(), flatten(), and cause chain
   // ---------------------------------------------------------------------------
 
@@ -2062,7 +1930,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
   void describe('Compose.subClassOf()', { 'concurrency': true }, () => {
     void it('single parent emits allOf with $ref to parent + body keywords block', () => {
-      // interop: SubClassOfSchemaInterface lacks index signature; unknown intermediate required.
+      // interop: SubClassOfSchemaType lacks index signature; unknown intermediate required.
       const Weapon = Compose.subClassOf(EquipmentSchema, {
         '$id': 'aonprd:WeaponSub',
         'properties': { 'damage': { 'type': 'string' } },
@@ -2083,7 +1951,7 @@ import { Result } from '../../src/modules/data/Result.js';
     });
 
     void it('multiple parents emit one $ref per parent in allOf', () => {
-      // interop: SubClassOfSchemaInterface lacks index signature; unknown intermediate required.
+      // interop: SubClassOfSchemaType lacks index signature; unknown intermediate required.
       const Scoped = Compose.subClassOf(
         [
           BearerTokenSchema,
@@ -2106,7 +1974,7 @@ import { Result } from '../../src/modules/data/Result.js';
     });
 
     void it('omits body block when only $id is supplied', () => {
-      // interop: SubClassOfSchemaInterface lacks index signature; unknown intermediate required.
+      // interop: SubClassOfSchemaType lacks index signature; unknown intermediate required.
       const result = Compose.subClassOf(EquipmentSchema, { '$id': 'aonprd:BareEquipmentSub' } as const) as unknown as {
         '$id': string;
         'allOf': Array<Record<string, unknown>>;
@@ -2161,7 +2029,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
   void describe('Compose.disjointWith()', { 'concurrency': true }, () => {
     void it('emits disjointWith annotation pointing at other.$id', () => {
-      // interop: DisjointWithSchemaInterface lacks index signature; unknown intermediate required.
+      // interop: DisjointWithSchemaType lacks index signature; unknown intermediate required.
       const Armor = Compose.disjointWith(WeaponSchema, {
         '$id': 'aonprd:Armor',
         'properties': { 'ac': { 'type': 'integer' } },
@@ -2231,7 +2099,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
       // Value matches BOTH Armor and Weapon (same shape) — must fail.
       const both = { 'damage': '1d8' };
-      // interop: DisjointWithSchemaInterface lacks index signature; validate() requires
+      // interop: DisjointWithSchemaType lacks index signature; validate() requires
       // Record<string,unknown> & { '$id': string } — unknown intermediate required.
       const errs = jt.validate(Armor as unknown as { '$id': string }, both);
 
@@ -2285,7 +2153,7 @@ import { Result } from '../../src/modules/data/Result.js';
         'ac': 14,
         'kind': 'armor'
       };
-      // interop: DisjointWithSchemaInterface lacks index signature; validate() requires
+      // interop: DisjointWithSchemaType lacks index signature; validate() requires
       // Record<string,unknown> & { '$id': string } — unknown intermediate required.
       const errs = jt.validate(ArmorB as unknown as { '$id': string }, armorOnly);
 
@@ -2295,7 +2163,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
   void describe('Compose.complementOf()', { 'concurrency': true }, () => {
     void it('emits not: { $ref: other.$id } and carries body keywords', () => {
-      // interop: ComplementOfSchemaInterface lacks index signature; unknown intermediate required.
+      // interop: ComplementOfSchemaType lacks index signature; unknown intermediate required.
       const NonHuman = Compose.complementOf(HumanRaceSchema, {
         '$id': 'aonprd:NonHumanRace',
         'type': 'object'

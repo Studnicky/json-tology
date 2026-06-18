@@ -18,11 +18,11 @@ import { ShaclProjection } from '../../src/modules/rdf/ShaclProjection.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { ShaclValidator } from '../../src/modules/validation/ShaclValidator.js';
 import { JsonTology } from '../../src/JsonTology.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import {
   RDF, SH, XSD
 } from '../../src/constants/IRI.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
   BnodeTermType, IriTermType, QuadObjectType
 } from '../../src/types/Quad.js';

@@ -39,4 +39,4 @@
  *
  * @category Type Inference
  */
-export type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferences.js';
+export type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';

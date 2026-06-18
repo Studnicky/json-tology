@@ -5,18 +5,18 @@
  *   buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
  */
 
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
-import type { ExecContextType } from '../../types/ExecContext.js';
-import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
-import type { CustomKeywordEntryType } from '../../types/CustomKeywordEntry.js';
-import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContext.js';
+import type { ExecContextType } from '../../types/ExecContextType.js';
+import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntryType.js';
+import type { CustomKeywordEntryType } from '../../types/CustomKeywordEntryType.js';
+import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlanType.js';
+import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContextType.js';
 import type {
   AllowedKeysResultType,
   BranchRefResultType,
@@ -38,20 +38,20 @@ import type {
   PropValidatorsMapType,
   ValidateWithErrorsResultType
 } from '../../types/Validation.js';
-import type { LookupSchemaFnType } from '../../types/LookupSchema.js';
-import type { PlanCompileWithSemanticsType } from '../../types/PlanCompileOptions.js';
-import type { CollectBranchOptionsType } from '../../types/CollectBranchOptions.js';
-import type { PlanAllowedKeysOptionsType } from '../../types/PlanAllowedKeysOptions.js';
-import type { PlanPreludeType } from '../../types/PlanPrelude.js';
-import type { PropertyDefaultsOptionsType } from '../../types/PropertyDefaultsOptions.js';
-import type { PropertyValidatorsOptionsType } from '../../types/PropertyValidatorsOptions.js';
-import type { RefValidatorOptionsType } from '../../types/RefValidatorOptions.js';
-import type { RefTargetType } from '../../types/RefTarget.js';
-import type { DynamicRefValidatorOptionsType } from '../../types/DynamicRefValidatorOptions.js';
-import type { ResolveScanRefOptionsType } from '../../types/ResolveScanRefOptions.js';
-import type { ScanConditionalOptionsType } from '../../types/ScanConditionalOptions.js';
-import type { WalkInheritedRefOptionsType } from '../../types/WalkInheritedRefOptions.js';
-import type { ConstraintValidatorsResult } from '../../types/ConstraintValidatorsResult.js';
+import type { LookupSchemaFnType } from '../../types/LookupSchemaFnType.js';
+import type { PlanCompileWithSemanticsType } from '../../types/PlanCompileWithSemanticsType.js';
+import type { CollectBranchOptionsType } from '../../types/CollectBranchOptionsType.js';
+import type { PlanAllowedKeysOptionsType } from '../../types/PlanAllowedKeysOptionsType.js';
+import type { PlanPreludeType } from '../../types/PlanPreludeType.js';
+import type { PropertyDefaultsOptionsType } from '../../types/PropertyDefaultsOptionsType.js';
+import type { PropertyValidatorsOptionsType } from '../../types/PropertyValidatorsOptionsType.js';
+import type { RefValidatorOptionsType } from '../../types/RefValidatorOptionsType.js';
+import type { RefTargetType } from '../../types/RefTargetType.js';
+import type { DynamicRefValidatorOptionsType } from '../../types/DynamicRefValidatorOptionsType.js';
+import type { ResolveScanRefOptionsType } from '../../types/ResolveScanRefOptionsType.js';
+import type { ScanConditionalOptionsType } from '../../types/ScanConditionalOptionsType.js';
+import type { WalkInheritedRefOptionsType } from '../../types/WalkInheritedRefOptionsType.js';
+import type { ConstraintValidatorsResultType } from '../../types/ConstraintValidatorsResultType.js';
 import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
 import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
 import { isRecord } from '../data/DataTypes.js';
@@ -514,7 +514,7 @@ function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithError
     // Direct construction avoids the spread overhead on the hot validation path.
     const strictCtx: ExecContextType = {
       ...ctx,
-      'doCoerce': false
+      'coerce': false
     };
 
     return inner(value, path, strictCtx);
@@ -1020,7 +1020,7 @@ function buildPlanDepRequired(dependentRequired: Readonly<Record<string, unknown
   return entries;
 }
 
-function buildPlanConstraintValidators(opts: PlanCompileWithSemanticsType): ConstraintValidatorsResult {
+function buildPlanConstraintValidators(opts: PlanCompileWithSemanticsType): ConstraintValidatorsResultType {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;

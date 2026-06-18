@@ -1,5 +1,5 @@
 import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
-import type { ExecContextType } from '../../../types/ExecContext.js';
+import type { ExecContextType } from '../../../types/ExecContextType.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
@@ -70,8 +70,8 @@ export class Arrays {
     const scratchCtx: ExecContextType = {
       ...ctx,
       'applyDefaults': false,
+      'coerce': false,
       'collectErrors': false,
-      'doCoerce': false,
       'errors': [],
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,

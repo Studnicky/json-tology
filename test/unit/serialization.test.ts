@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 // QuadInterface is the canonical RDF triple shape; surfaced via toQuads but type-import is internal here.
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 // QuadObjectType is the project's narrow quad-object union (IRI | blank | literal),
 // matching what Terms.iri/Terms.literal return and what Terms.quad/listQuad accept.
 import type { QuadObjectType } from '../../src/types/Quad.js';
@@ -20,13 +20,13 @@ import { BaseGraphSerializer } from '../../src/modules/ontology/BaseGraphSeriali
 import {
   JsonTology, Transform
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { bookstoreEntities as entities } from '../../examples/docs/bookstore/index.js';
 // JsonLdFormatter is a low-level JSON-LD formatter used by serializers; not surfaced by the public API.
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 // Terms factory — produces rdf/js-compliant term objects for test quad construction.
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { listQuad } from '../helpers/listQuad.js';
 import {
   OWL, RDF, XSD

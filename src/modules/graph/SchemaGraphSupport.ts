@@ -16,10 +16,10 @@ import {
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from './SchemaIri.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
-import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
+import type { GraphAccessorInterface } from '../../interfaces/GraphAccessorInterface.js';
 import type { JtConfigType } from '../../types/JtConfig.js';
 import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
-import type { RawRestrictionDescriptorType } from '../../types/RawRestrictionDescriptor.js';
+import type { RawRestrictionDescriptorType } from '../../types/RawRestrictionDescriptorType.js';
 import type {
   AdditionalNodesResultType,
   AdditionalSchemaNodeType,

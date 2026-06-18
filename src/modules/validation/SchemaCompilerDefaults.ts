@@ -1,14 +1,14 @@
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContext.js';
-import type { RefTargetType } from '../../types/RefTarget.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContextType.js';
+import type { RefTargetType } from '../../types/RefTargetType.js';
 import { GraphEngineDefaults } from '../graph/GraphEngineDefaults.js';
 import { RefResolver } from './RefResolver.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 
-import type { LookupSchemaFnType } from '../../types/LookupSchema.js';
+import type { LookupSchemaFnType } from '../../types/LookupSchemaFnType.js';
 
 function buildCompilerDefaultContext(
   lookupSchema: LookupSchemaFnType | undefined,

@@ -12,14 +12,14 @@
  */
 
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { GraphArtifactType } from '../../types/GraphArtifact.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { GraphArtifactType } from '../../types/GraphArtifactType.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { isRecord } from '../data/DataTypes.js';
 import { logScope } from '../data/LogScope.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './SchemaGraph.js';
 

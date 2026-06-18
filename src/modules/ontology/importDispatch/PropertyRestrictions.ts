@@ -25,14 +25,14 @@
  * The parent class IRI is `relation.source.id`.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType,
   OwlImportFragmentType
 } from '../../../types/OwlImport.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-import type { RestrictionStructure } from '../../../types/RestrictionStructure.js';
+import type { RestrictionStructureType } from '../../../types/RestrictionStructureType.js';
 import type { MutablePropertySchemaType } from '../../../types/MutablePropertySchemaType.js';
 import {
   OWL,
@@ -247,7 +247,7 @@ export function importPropertyRestrictions(_quads: QuadInterface[], ctx: OwlImpo
       continue;
     }
 
-    const restriction: RestrictionStructure = structure;
+    const restriction: RestrictionStructureType = structure;
     const classIri = relation.source.id;
     const propIri = restriction.onProperty;
     const constraint = restriction.constraint;

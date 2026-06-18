@@ -17,7 +17,7 @@ import {
   SH, XSD
 } from './IRI.js';
 import { STANDARD_PREFIXES } from './STANDARD_PREFIXES.js';
-import type { FacetEntryType } from '../types/FacetEntry.js';
+import type { FacetEntryType } from '../types/FacetEntryType.js';
 
 const XSD_NS = STANDARD_PREFIXES.xsd;
 

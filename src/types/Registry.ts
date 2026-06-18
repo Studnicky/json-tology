@@ -1,10 +1,10 @@
 import type { DuplicateSchemaIdType } from './TypeErrors.js';
 import type { ParseOutputType } from './Transform.js';
-import type { FormatRegistryInterface } from '../interfaces/FormatRegistry.js';
+import type { FormatRegistryInterface } from '../interfaces/FormatRegistryInterface.js';
 import type { InvariantType } from './Invariant.js';
 import type { KeywordDefinitionType } from './GraphEngine.js';
-import type { LoggerInterface } from '../interfaces/Logger.js';
-import type { VocabularyPluginInterface } from '../interfaces/VocabularyPlugin.js';
+import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
+import type { VocabularyPluginInterface } from '../interfaces/VocabularyPluginInterface.js';
 
 /** Build a cross-schema references map: `{ [$id]: SchemaType }` for $ref resolution.
  *

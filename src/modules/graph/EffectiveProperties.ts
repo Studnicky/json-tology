@@ -1,5 +1,5 @@
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 
 /**

@@ -1,5 +1,5 @@
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-import type { FormatPredicateType } from '../../types/FormatPredicate.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
+import type { FormatPredicateType } from '../../types/FormatPredicateType.js';
 import {
   IPV6_FULL, IPV6_MIXED, IPV6_MIXED_COMPRESSED, IPV6_WITH_DOUBLE_COLON
 } from '../../constants/FORMAT_REGEXES.js';

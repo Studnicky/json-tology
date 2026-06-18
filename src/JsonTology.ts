@@ -20,23 +20,23 @@
 import type { JsonSchemaDocumentType } from './types/Schema.js';
 
 import type { OwlImportResultType } from './types/OwlImport.js';
-import type { DumpOptionsType } from './types/Dump.js';
+import type { DumpOptionsType } from './types/DumpOptionsType.js';
 import type { InvariantType } from './types/Invariant.js';
-import type { ComputedFnType } from './types/Computed.js';
-import type { JsonTologyOptionsType } from './types/Config.js';
+import type { ComputedFnType } from './types/ComputedFnType.js';
+import type { JsonTologyOptionsType } from './types/JsonTologyOptionsType.js';
 import type { JsonSchemaType } from './types/Schema.js';
 import type {
   LoaderType, SchemaLoadResultType
 } from './types/Loader.js';
-import type { LoggerInterface } from './interfaces/Logger.js';
-import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
-import type { PrefetchOptionsType } from './types/Prefetch.js';
-import type { QuadInterface } from './interfaces/Quad.js';
+import type { LoggerInterface } from './interfaces/LoggerInterface.js';
+import type { MaterializerInterface } from './interfaces/MaterializerInterface.js';
+import type { PrefetchOptionsType } from './types/PrefetchOptionsType.js';
+import type { QuadInterface } from './interfaces/QuadInterface.js';
 import type { RegistryOptionsType } from './types/Registry.js';
-import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
+import type { SchemaRegistryInterface } from './interfaces/SchemaRegistryInterface.js';
 import type { SnapshotType } from './types/Snapshot.js';
-import type { TransformFnsType } from './types/TransformFns.js';
-import type { ValueInterface } from './interfaces/ValueImpl.js';
+import type { TransformFnsType } from './types/TransformFnsType.js';
+import type { ValueInterface } from './interfaces/ValueInterface.js';
 import type { ValidationErrors } from './errors/ValidationErrors.js';
 import type {
   CanonicalShapeType, InferSchemaType, MaterializedSchemaType, SchemaPointerPathsType
@@ -44,27 +44,27 @@ import type {
 import type {
   ParseOutputType, TransformedType
 } from './types/Transform.js';
-import type { ComputedExtensionBrandType } from './types/ComputedExtension.js';
+import type { ComputedExtensionBrandType } from './types/ComputedExtensionBrandType.js';
 import type {
   SchemaReferencesMapType, UniqueSchemaIdsType
 } from './types/Registry.js';
-import type { PredicateForType } from './types/PredicateFor.js';
-import type { PredicateResolverFnType } from './types/PredicateResolverFn.js';
-import type { SchemaRefType } from './types/SchemaRef.js';
-import type { SkolemizeFnType } from './types/Skolemize.js';
-import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOptions.js';
-import type { ToQuadsOptionsType } from './types/ToQuadsOptions.js';
+import type { PredicateForType } from './types/PredicateForType.js';
+import type { PredicateResolverFnType } from './types/PredicateResolverFnType.js';
+import type { SchemaRefType } from './types/SchemaRefType.js';
+import type { SkolemizeFnType } from './types/SkolemizeFnType.js';
+import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOptionsType.js';
+import type { ToQuadsOptionsType } from './types/ToQuadsOptionsType.js';
 
 import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
 import { AboxGraph } from './modules/graph/AboxGraph.js';
 import type { AboxGraphInterface } from './interfaces/AboxGraphInterface.js';
 import type { AboxIdentityDescriptorType } from './types/AboxGraph.js';
 import { isRecord } from './modules/data/DataTypes.js';
-import type { CurieInterface } from './interfaces/Curie.js';
-import { Curie } from './modules/rdf/Curie.js';
+import type { CurieInterface } from './interfaces/CurieInterface.js';
+import { Curie } from './modules/quads/Curie.js';
 import { OwlImporter } from './modules/ontology/OwlImporter.js';
 import { Skolemize } from './modules/rdf/Skolemize.js';
-import { Terms } from './modules/rdf/Terms.js';
+import { Terms } from './modules/quads/Terms.js';
 import { Dumper } from './modules/graph/Dumper.js';
 import { FormatRegistry } from './modules/format/FormatRegistry.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
@@ -81,7 +81,7 @@ import { SchemaError } from './errors/SchemaError.js';
 import type { DuplicateReportEntryType } from './types/DuplicateReportEntryType.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
-import { brand } from './types/Brand.js';
+import { brand } from './modules/data/Brand.js';
 import { Value } from './modules/data/Value.js';
 import { ShaclValidator } from './modules/validation/ShaclValidator.js';
 import type { ShaclValidationReportType } from './types/ShaclValidationReportType.js';
@@ -92,7 +92,7 @@ import {
   SchemaErrorCode, TransformErrorCode
 } from './constants/ERROR_CODES.js';
 
-const STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
+const JT_STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
 
 /**
  * The literal string `'blank-node'` requests anonymous-node subjects
@@ -429,7 +429,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     // whatever schema is passed without imposing graph-integrity constraints; the
     // caller is responsible for schema quality in production code.
     return JsonTology.create({
-      'baseIRI': STATIC_BASE_IRI,
+      'baseIRI': JT_STATIC_BASE_IRI,
       'enableStrictGraph': false,
       'schemas': [schema] as const
     });
@@ -472,7 +472,7 @@ export class JsonTology<TRefs = Record<never, never>> {
       'prefixes'?: Record<string, string> }
   ): OwlImportResultType {
     const importer = new OwlImporter({
-      'baseIRI': options?.baseIRI ?? STATIC_BASE_IRI,
+      'baseIRI': options?.baseIRI ?? JT_STATIC_BASE_IRI,
       ...(!(options?.prefixes === undefined) && { 'prefixes': options.prefixes })
     });
 
@@ -585,7 +585,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param options - `loader`, optional `rootIds`, optional `schemas`, optional `baseIRI`.
    */
   public static async prefetch(options: PrefetchOptionsType): Promise<SnapshotType> {
-    const baseIRI = options.baseIRI ?? STATIC_BASE_IRI;
+    const baseIRI = options.baseIRI ?? JT_STATIC_BASE_IRI;
     const tmp = new JsonTology({ 'baseIRI': baseIRI });
 
     if (options.schemas) {
@@ -655,7 +655,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     options?: { readonly 'enableStrictGraph'?: boolean }
   ): JsonTology<SchemaReferencesMapType<ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>>> {
     const jt = JsonTology.create({
-      'baseIRI': STATIC_BASE_IRI,
+      'baseIRI': JT_STATIC_BASE_IRI,
       ...options
     });
 

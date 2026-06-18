@@ -33,12 +33,12 @@ import type {
   ValidateChainType
 } from '../../types/Transform.js';
 import type { BrandedType } from '../../types/Brand.js';
-import { brand } from '../../types/Brand.js';
+import { brand } from '../data/Brand.js';
 import type {
   CanonicalShapeType
 } from '../../types/Infer.js';
 import type { JsonTologyReferencesInterface } from '../../types/SchemaReferences.js';
-import type { TransformFnsType } from '../../types/TransformFns.js';
+import type { TransformFnsType } from '../../types/TransformFnsType.js';
 import type {
   AnyTransformStageType,
   TransformStageType

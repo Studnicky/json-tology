@@ -10,19 +10,19 @@
  * The output quads can be passed directly to JsonLdFormatter.fromQuads().
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { ProjectionEmitContextType } from '../../types/ProjectionEmitContext.js';
-import type { EmitQualifiedCardinalityRestrictionArgsType } from '../../types/EmitQualifiedCardinalityRestrictionArgs.js';
-import type { EmitRestrictionArgsType } from '../../types/EmitRestrictionArgs.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
+import type { ProjectionEmitContextType } from '../../types/ProjectionEmitContextType.js';
+import type { EmitQualifiedCardinalityRestrictionArgsType } from '../../types/EmitQualifiedCardinalityRestrictionArgsType.js';
+import type { EmitRestrictionArgsType } from '../../types/EmitRestrictionArgsType.js';
 import type { OptionalQuadObjectType } from '../../types/OptionalQuadObjectType.js';
 import type { TypedLiteralObjectType } from '../../types/TypedLiteralObjectType.js';
-import type { EmitPatternPropertyEntryArgsType } from '../../types/EmitPatternPropertyEntryArgs.js';
+import type { EmitPatternPropertyEntryArgsType } from '../../types/EmitPatternPropertyEntryArgsType.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
@@ -31,13 +31,14 @@ import {
   SHACL_TO_XSD_FACET,
   XSD_FACET_DATATYPE
 } from '../../constants/XSD_FACETS.js';
-import { XsdTypes } from './XsdTypes.js';
+import { XsdTypes } from '../quads/XsdTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
-import { QuadFactory } from './QuadFactory.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
+import { QuadEmit } from './QuadEmit.js';
 
 import { ProjectionIndex } from './ProjectionIndex.js';
-import type { RelationIndexType } from '../../types/RelationIndex.js';
-import { IdentifierIssuer } from './IdentifierIssuer.js';
+import type { RelationIndexType } from '../../types/RelationIndexType.js';
+import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
 import { VocabProjection } from './VocabProjection.js';
 import {
   finiteNumber,
@@ -409,8 +410,8 @@ function emitDatatypeMetadata(
     ));
   }
 
-  QuadFactory.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, { curie });
-  QuadFactory.emitLiterals(subject, entry, RDFS.comment, RDFS.comment, quads, { curie });
+  QuadEmit.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, { curie });
+  QuadEmit.emitLiterals(subject, entry, RDFS.comment, RDFS.comment, quads, { curie });
 }
 
 // ---------------------------------------------------------------------------
@@ -668,8 +669,8 @@ function emitClassQuads(
 
   quads.push(QuadFactory.quad(subject, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
 
-  QuadFactory.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, { curie });
-  QuadFactory.emitLiterals(subject, entry, RDFS.comment, RDFS.comment, quads, { curie });
+  QuadEmit.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, { curie });
+  QuadEmit.emitLiterals(subject, entry, RDFS.comment, RDFS.comment, quads, { curie });
 
   const deprecated = entry.byPredicate.get(OWL.deprecated);
 
@@ -682,9 +683,9 @@ function emitClassQuads(
   emitClassEquivalencesAndDisjoint(subject, entry, ctx);
   emitClassEnumerations(subject, entry, ctx);
 
-  const conditionalItems = owlVocab.processConditionals(entry, quads, curie, issuer);
-  const depSchemaItems = owlVocab.processDependentSchemas(subject, entry, quads, curie, issuer);
-  const depReqItems = owlVocab.processDependentRequired(subject, entry, quads, curie, issuer, graph, predicateResolver);
+  const conditionalItems = owlVocab.emitConditionals(entry, quads, curie, issuer);
+  const depSchemaItems = owlVocab.emitDependentSchemas(subject, entry, quads, curie, issuer);
+  const depReqItems = owlVocab.emitDependentRequired(subject, entry, quads, curie, issuer, graph, predicateResolver);
 
   for (const item of [
     ...conditionalItems,
@@ -815,7 +816,7 @@ function emitPropertyAnnotations(
     curie, quads
   } = ctx;
 
-  QuadFactory.emitLiterals(canonicalId, entry, RDFS.comment, RDFS.comment, quads, { curie });
+  QuadEmit.emitLiterals(canonicalId, entry, RDFS.comment, RDFS.comment, quads, { curie });
 
   if (entry.byPredicate.has(DASH.readOnly)) {
     const readOnlyLit = QuadFactory.literal(true, XSD.boolean, { curie });
@@ -829,7 +830,7 @@ function emitPropertyAnnotations(
     quads.push(QuadFactory.quad(canonicalId, DASH.writeOnly, writeOnlyLit, { curie }));
   }
 
-  QuadFactory.emitLiterals(canonicalId, entry, DCT.format, DCT.format, quads, { curie });
+  QuadEmit.emitLiterals(canonicalId, entry, DCT.format, DCT.format, quads, { curie });
 }
 
 // ---------------------------------------------------------------------------
@@ -1160,7 +1161,7 @@ function emitPatternPropertyEntry(args: EmitPatternPropertyEntryArgsType): void 
   }
 
   if (patternEntry !== undefined) {
-    QuadFactory.emitLiterals(propIri, patternEntry, RDFS.comment, RDFS.comment, quads, { curie });
+    QuadEmit.emitLiterals(propIri, patternEntry, RDFS.comment, RDFS.comment, quads, { curie });
   }
 }
 

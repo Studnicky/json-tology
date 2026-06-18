@@ -22,7 +22,7 @@ import {
   describe, it
 } from 'node:test';
 import { JsonTology } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { brand } from '../../src/modules/data/Brand.js';
 import type {
   MinimumBrandType, MinLengthBrandType
 } from '../../src/types/ConstraintBrands.js';

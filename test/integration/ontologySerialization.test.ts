@@ -3,8 +3,8 @@
 
 import assert from 'node:assert/strict';
 // QuadInterface and SchemaRegistryInterface are graph-level type-only contracts not surfaced by the public API.
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
-import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
+import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistryInterface.js';
 import {
   describe, it
 } from 'node:test';
@@ -25,8 +25,8 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 import {
   decodeLiteral, Terms
-} from '../../src/modules/rdf/Terms.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+} from '../../src/modules/quads/Terms.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 
 const TEST_CURIE = new Curie(STANDARD_PREFIXES);

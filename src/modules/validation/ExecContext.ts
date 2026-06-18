@@ -1,4 +1,4 @@
-import type { ExecContextType } from '../../types/ExecContext.js';
+import type { ExecContextType } from '../../types/ExecContextType.js';
 
 /**
  * ExecContext — constructs validation execution contexts.
@@ -12,7 +12,7 @@ export class ExecContext {
    * Construct an {@link ExecContextType}, filling every omitted field with its
    * standard default.
    *
-   * Defaults: applyDefaults=false, collectErrors=true, depth=0, doCoerce=false,
+   * Defaults: applyDefaults=false, collectErrors=true, depth=0, coerce=false,
    * dynamicScope=[], errors=[], evaluatedItems=undefined,
    * evaluatedProperties=undefined, ignoreAdditionalProperties=false,
    * maxDepth=100, refStack=new Set(), stripUnknown=false,
@@ -24,9 +24,9 @@ export class ExecContext {
   public static build(partial: Partial<ExecContextType>): ExecContextType {
     return {
       'applyDefaults': partial.applyDefaults ?? false,
+      'coerce': partial.coerce ?? false,
       'collectErrors': partial.collectErrors ?? true,
       'depth': partial.depth ?? 0,
-      'doCoerce': partial.doCoerce ?? false,
       'dynamicScope': partial.dynamicScope ?? [],
       'errors': partial.errors ?? [],
       'evaluatedItems': partial.evaluatedItems,

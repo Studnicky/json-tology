@@ -8,13 +8,13 @@
 
 import type {
   AnnotatedEdgeSchemaType,
-  ComplementOfSchemaInterface,
+  ComplementOfSchemaType,
   DiscriminatedUnionSchemaType,
-  DisjointWithSchemaInterface,
+  DisjointWithSchemaType,
   IntersectionSchemaType,
   OmitSchemaType,
   PickSchemaType,
-  SubClassOfSchemaInterface
+  SubClassOfSchemaType
 } from '../../types/Compose.js';
 import type {
   ExtendSchemaType,
@@ -34,7 +34,7 @@ import {
   isRestrictionRef, RESTRICTION_TAG
 } from '../../types/Restriction.js';
 import { isRecord } from '../data/DataTypes.js';
-import { brand } from '../../types/Brand.js';
+import { brand } from '../../modules/data/Brand.js';
 import {
   CLASS_AXIOM_BODY_SKIP_KEYS,
   EXTEND_SKIP_KEYS,
@@ -281,7 +281,7 @@ export class Compose {
   public static complementOf<
     TOther extends { readonly '$id': string },
     const TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(other: TOther, body: ValidateSchemaType<TBody>): ComplementOfSchemaInterface<TOther, TBody> {
+  >(other: TOther, body: ValidateSchemaType<TBody>): ComplementOfSchemaType<TOther, TBody> {
     const result: Record<string, unknown> = {
       '$id': body.$id,
       'not': { '$ref': other.$id }
@@ -296,7 +296,7 @@ export class Compose {
       }
     }
 
-    return brand<ComplementOfSchemaInterface<TOther, TBody>>(result);
+    return brand<ComplementOfSchemaType<TOther, TBody>>(result);
   }
 
   /**
@@ -352,7 +352,7 @@ export class Compose {
   public static disjointWith<
     TOther extends { readonly '$id': string },
     const TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(other: TOther, body: ValidateSchemaType<TBody>): DisjointWithSchemaInterface<TOther, TBody> {
+  >(other: TOther, body: ValidateSchemaType<TBody>): DisjointWithSchemaType<TOther, TBody> {
     const result: Record<string, unknown> = {
       '$id': body.$id,
       'disjointWith': other.$id
@@ -367,7 +367,7 @@ export class Compose {
       }
     }
 
-    return brand<DisjointWithSchemaInterface<TOther, TBody>>(result);
+    return brand<DisjointWithSchemaType<TOther, TBody>>(result);
   }
 
   /**
@@ -806,13 +806,13 @@ export class Compose {
   >(
     parent: TParent,
     body: ValidateSchemaType<TBody> & ValidateSubClassOfBodyType<TParent, TBody>
-  ): SubClassOfSchemaInterface<TParent, TBody>;
+  ): SubClassOfSchemaType<TParent, TBody>;
   public static subClassOf<
     TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
     parent: ReadonlyArray<{ readonly '$id': string }> | RestrictionRefType | { readonly '$id': string },
     body: TBody
-  ): SubClassOfSchemaInterface<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody> | TBody {
+  ): SubClassOfSchemaType<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody> | TBody {
     if (isRestrictionRef(parent)) {
       const bodyCopy: Record<string, unknown> = { ...(body as Record<string, unknown>) };
       const existing = bodyCopy[RESTRICTIONS_KEY];
@@ -851,7 +851,7 @@ export class Compose {
       allOf.push(bodySchema);
     }
 
-    return brand<SubClassOfSchemaInterface<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody>>({
+    return brand<SubClassOfSchemaType<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody>>({
       '$id': body.$id,
       allOf
     });
