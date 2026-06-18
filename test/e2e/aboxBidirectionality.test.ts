@@ -107,7 +107,11 @@ void describe('B-1: Customer toQuads → fromQuads', () => {
 
     assert.equal(lifted.length, 1, 'one customer lifted');
 
-    const output = lifted[0];
+    const output = lifted.at(0);
+
+    if (output === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
 
     assert.equal(output.customerId, aboxFixtures.customer.customerId, 'customerId round-trips');
     assert.equal(output.email, aboxFixtures.customer.email, 'email round-trips');
@@ -118,8 +122,17 @@ void describe('B-1: Customer toQuads → fromQuads', () => {
     assert.ok(addresses !== undefined, 'addresses present after round-trip');
     assert.equal(addresses.length, 1, 'one address round-trips');
 
-    const roundTrippedAddress = addresses[0];
-    const expected = aboxFixtures.customer.addresses[0];
+    const roundTrippedAddress = addresses.at(0);
+
+    if (roundTrippedAddress === undefined) {
+      throw new Error('addresses[0] is undefined');
+    }
+
+    const expected = aboxFixtures.customer.addresses.at(0);
+
+    if (expected === undefined) {
+      throw new Error('aboxFixtures.customer.addresses[0] is undefined');
+    }
 
     assert.equal(roundTrippedAddress.street, expected.street, 'address.street round-trips');
     assert.equal(roundTrippedAddress.city, expected.city, 'address.city round-trips');
@@ -196,10 +209,17 @@ void describe('B-2: Order toQuads → fromQuads', () => {
     const lifted = bookstoreEntities.fromQuads(OrderLineSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'one orderLine lifted');
-    assert.equal(typeof lifted[0].bookIsbn, 'string', 'bookIsbn is a string after round-trip');
-    assert.equal(lifted[0].bookIsbn, input.bookIsbn, 'bookIsbn round-trips');
-    assert.equal(typeof lifted[0].quantity, 'number', 'quantity is a number after round-trip');
-    assert.equal(lifted[0].quantity, input.quantity, 'quantity round-trips');
+
+    const liftedLine = lifted.at(0);
+
+    if (liftedLine === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    assert.equal(typeof liftedLine.bookIsbn, 'string', 'bookIsbn is a string after round-trip');
+    assert.equal(liftedLine.bookIsbn, input.bookIsbn, 'bookIsbn round-trips');
+    assert.equal(typeof liftedLine.quantity, 'number', 'quantity is a number after round-trip');
+    assert.equal(liftedLine.quantity, input.quantity, 'quantity round-trips');
   });
 
   void it('full Order fromQuads losslessly reconstructs date-time + nested Money', () => {
@@ -214,7 +234,11 @@ void describe('B-2: Order toQuads → fromQuads', () => {
 
     assert.equal(lifted.length, 1, 'one order lifted');
 
-    const output = lifted[0];
+    const output = lifted.at(0);
+
+    if (output === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
 
     assert.equal(output.orderId, aboxFixtures.order.orderId, 'orderId round-trips');
     assert.equal(output.customerId, aboxFixtures.order.customerId, 'customerId round-trips');
@@ -236,13 +260,26 @@ void describe('B-2: Order toQuads → fromQuads', () => {
     const orderLines = output.orderLines;
 
     assert.equal(orderLines.length, 1, 'one orderLine round-trips');
-    assert.equal(orderLines[0].bookIsbn, aboxFixtures.order.orderLines[0].bookIsbn, 'orderLine.bookIsbn round-trips');
-    assert.equal(orderLines[0].quantity, aboxFixtures.order.orderLines[0].quantity, 'orderLine.quantity round-trips');
+
+    const firstOrderLine = orderLines.at(0);
+
+    if (firstOrderLine === undefined) {
+      throw new Error('orderLines[0] is undefined');
+    }
+
+    const firstFixtureOrderLine = aboxFixtures.order.orderLines.at(0);
+
+    if (firstFixtureOrderLine === undefined) {
+      throw new Error('aboxFixtures.order.orderLines[0] is undefined');
+    }
+
+    assert.equal(firstOrderLine.bookIsbn, firstFixtureOrderLine.bookIsbn, 'orderLine.bookIsbn round-trips');
+    assert.equal(firstOrderLine.quantity, firstFixtureOrderLine.quantity, 'orderLine.quantity round-trips');
     assert.deepEqual(
-      orderLines[0].unitPrice,
+      firstOrderLine.unitPrice,
       {
-        'amount': aboxFixtures.order.orderLines[0].unitPrice.amount,
-        'currency': aboxFixtures.order.orderLines[0].unitPrice.currency
+        'amount': firstFixtureOrderLine.unitPrice.amount,
+        'currency': firstFixtureOrderLine.unitPrice.currency
       },
       'orderLine.unitPrice Money round-trips: amount number + currency enum'
     );
@@ -345,7 +382,11 @@ void describe('B-3: Review toQuads → fromQuads', () => {
 
     assert.equal(lifted.length, 1, 'one review lifted');
 
-    const output = lifted[0];
+    const output = lifted.at(0);
+
+    if (output === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
 
     assert.equal(output.reviewId, aboxFixtures.review.reviewId, 'reviewId round-trips');
     assert.equal(output.bookIsbn, aboxFixtures.review.bookIsbn, 'bookIsbn round-trips');
@@ -387,14 +428,18 @@ void describe('B-4: EBook — iri-ref NamedNode and round-trip', () => {
     const lifted = bookstoreEntities.fromQuads(EBookSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'one ebook lifted');
-    assert.equal(lifted[0].isbn, aboxFixtures.ebook.isbn, 'isbn round-trips');
-    assert.equal(lifted[0].title, aboxFixtures.ebook.title, 'title round-trips');
-    assert.equal(lifted[0].fileFormat, aboxFixtures.ebook.fileFormat, 'fileFormat round-trips');
-    assert.equal(lifted[0].fileSizeBytes, aboxFixtures.ebook.fileSizeBytes, 'fileSizeBytes round-trips');
-    assert.equal(lifted[0].downloadUrl, aboxFixtures.ebook.downloadUrl, 'downloadUrl (iri-ref) round-trips');
 
-    const liftedEbook = lifted[0];
+    const liftedEbook = lifted.at(0);
 
+    if (liftedEbook === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    assert.equal(liftedEbook.isbn, aboxFixtures.ebook.isbn, 'isbn round-trips');
+    assert.equal(liftedEbook.title, aboxFixtures.ebook.title, 'title round-trips');
+    assert.equal(liftedEbook.fileFormat, aboxFixtures.ebook.fileFormat, 'fileFormat round-trips');
+    assert.equal(liftedEbook.fileSizeBytes, aboxFixtures.ebook.fileSizeBytes, 'fileSizeBytes round-trips');
+    assert.equal(liftedEbook.downloadUrl, aboxFixtures.ebook.downloadUrl, 'downloadUrl (iri-ref) round-trips');
     assert.ok('epubVersion' in liftedEbook, 'conditional then-branch property epubVersion present');
     assert.equal(liftedEbook.epubVersion, aboxFixtures.ebook.epubVersion, 'epubVersion round-trips');
   });
@@ -411,13 +456,20 @@ void describe('B-5: PrintBook toQuads → fromQuads', () => {
     const lifted = bookstoreEntities.fromQuads(PrintBookSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'one printBook lifted');
-    assert.equal(lifted[0].isbn, aboxFixtures.printBook.isbn, 'isbn round-trips');
-    assert.equal(lifted[0].title, aboxFixtures.printBook.title, 'title round-trips');
-    assert.equal(lifted[0].binding, aboxFixtures.printBook.binding, 'binding round-trips');
-    assert.equal(lifted[0].pageCount, aboxFixtures.printBook.pageCount, 'pageCount round-trips');
-    assert.equal(lifted[0].weightGrams, aboxFixtures.printBook.weightGrams, 'weightGrams round-trips');
-    assert.equal(lifted[0].printStatus, aboxFixtures.printBook.printStatus, 'printStatus round-trips');
-    assert.deepEqual(lifted[0].authors, [...aboxFixtures.printBook.authors], 'authors array round-trips');
+
+    const liftedPrintBook = lifted.at(0);
+
+    if (liftedPrintBook === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    assert.equal(liftedPrintBook.isbn, aboxFixtures.printBook.isbn, 'isbn round-trips');
+    assert.equal(liftedPrintBook.title, aboxFixtures.printBook.title, 'title round-trips');
+    assert.equal(liftedPrintBook.binding, aboxFixtures.printBook.binding, 'binding round-trips');
+    assert.equal(liftedPrintBook.pageCount, aboxFixtures.printBook.pageCount, 'pageCount round-trips');
+    assert.equal(liftedPrintBook.weightGrams, aboxFixtures.printBook.weightGrams, 'weightGrams round-trips');
+    assert.equal(liftedPrintBook.printStatus, aboxFixtures.printBook.printStatus, 'printStatus round-trips');
+    assert.deepEqual(liftedPrintBook.authors, [...aboxFixtures.printBook.authors], 'authors array round-trips');
   });
 });
 
@@ -432,16 +484,23 @@ void describe('B-6: RareBook toQuads → fromQuads', () => {
     const lifted = bookstoreEntities.fromQuads(RareBookSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'one rareBook lifted');
-    assert.equal(lifted[0].isbn, aboxFixtures.rareBook.isbn, 'isbn round-trips');
-    assert.equal(lifted[0].title, aboxFixtures.rareBook.title, 'title round-trips');
-    assert.equal(lifted[0].binding, aboxFixtures.rareBook.binding, 'binding round-trips');
-    assert.equal(lifted[0].pageCount, aboxFixtures.rareBook.pageCount, 'pageCount round-trips');
-    assert.equal(lifted[0].weightGrams, aboxFixtures.rareBook.weightGrams, 'weightGrams round-trips');
-    assert.equal(lifted[0].printStatus, aboxFixtures.rareBook.printStatus, 'printStatus round-trips');
-    assert.equal(lifted[0].firstEditionYear, aboxFixtures.rareBook.firstEditionYear, 'firstEditionYear round-trips');
-    assert.equal(lifted[0].estimatedAgeYears, aboxFixtures.rareBook.estimatedAgeYears, 'estimatedAgeYears round-trips');
-    assert.equal(lifted[0].inStock, aboxFixtures.rareBook.inStock, 'inStock round-trips');
-    assert.equal(lifted[0].stockLevel, aboxFixtures.rareBook.stockLevel, 'stockLevel round-trips');
+
+    const liftedRareBook = lifted.at(0);
+
+    if (liftedRareBook === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    assert.equal(liftedRareBook.isbn, aboxFixtures.rareBook.isbn, 'isbn round-trips');
+    assert.equal(liftedRareBook.title, aboxFixtures.rareBook.title, 'title round-trips');
+    assert.equal(liftedRareBook.binding, aboxFixtures.rareBook.binding, 'binding round-trips');
+    assert.equal(liftedRareBook.pageCount, aboxFixtures.rareBook.pageCount, 'pageCount round-trips');
+    assert.equal(liftedRareBook.weightGrams, aboxFixtures.rareBook.weightGrams, 'weightGrams round-trips');
+    assert.equal(liftedRareBook.printStatus, aboxFixtures.rareBook.printStatus, 'printStatus round-trips');
+    assert.equal(liftedRareBook.firstEditionYear, aboxFixtures.rareBook.firstEditionYear, 'firstEditionYear round-trips');
+    assert.equal(liftedRareBook.estimatedAgeYears, aboxFixtures.rareBook.estimatedAgeYears, 'estimatedAgeYears round-trips');
+    assert.equal(liftedRareBook.inStock, aboxFixtures.rareBook.inStock, 'inStock round-trips');
+    assert.equal(liftedRareBook.stockLevel, aboxFixtures.rareBook.stockLevel, 'stockLevel round-trips');
   });
 
   void it('RareBook.publishedOn (xsd:date) lifts back to the exact lexical date string', () => {
@@ -454,8 +513,15 @@ void describe('B-6: RareBook toQuads → fromQuads', () => {
     const lifted = bookstoreEntities.fromQuads(RareBookSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'one rareBook lifted');
+
+    const liftedRareBookForDate = lifted.at(0);
+
+    if (liftedRareBookForDate === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
     assert.equal(
-      lifted[0].publishedOn,
+      liftedRareBookForDate.publishedOn,
       aboxFixtures.rareBook.publishedOn,
       'publishedOn round-trips as the exact lexical date string'
     );
@@ -490,11 +556,18 @@ void describe('B-7: SignedFirstEdition — language-tagged literal and round-tri
     const lifted = bookstoreEntities.fromQuads(SignedFirstEditionSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'one signedFirstEdition lifted');
-    assert.equal(lifted[0].isbn, aboxFixtures.signedFirstEdition.isbn, 'isbn round-trips');
-    assert.equal(lifted[0].signedBy, aboxFixtures.signedFirstEdition.signedBy, 'signedBy round-trips');
-    assert.equal(lifted[0].provenance, aboxFixtures.signedFirstEdition.provenance, 'provenance (lang-tagged) round-trips');
-    assert.equal(lifted[0].firstEditionYear, aboxFixtures.signedFirstEdition.firstEditionYear, 'firstEditionYear round-trips');
-    assert.equal(lifted[0].binding, aboxFixtures.signedFirstEdition.binding, 'binding round-trips');
+
+    const liftedSfe = lifted.at(0);
+
+    if (liftedSfe === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    assert.equal(liftedSfe.isbn, aboxFixtures.signedFirstEdition.isbn, 'isbn round-trips');
+    assert.equal(liftedSfe.signedBy, aboxFixtures.signedFirstEdition.signedBy, 'signedBy round-trips');
+    assert.equal(liftedSfe.provenance, aboxFixtures.signedFirstEdition.provenance, 'provenance (lang-tagged) round-trips');
+    assert.equal(liftedSfe.firstEditionYear, aboxFixtures.signedFirstEdition.firstEditionYear, 'firstEditionYear round-trips');
+    assert.equal(liftedSfe.binding, aboxFixtures.signedFirstEdition.binding, 'binding round-trips');
   });
 });
 
@@ -510,8 +583,14 @@ void describe('B-8: SimilarBook toQuads → fromQuads', () => {
 
     assert.equal(lifted.length, 1, 'one similarBook lifted');
 
-    const bookA = lifted[0].a;
-    const bookB = lifted[0].b;
+    const liftedSimilarBook = lifted.at(0);
+
+    if (liftedSimilarBook === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    const bookA = liftedSimilarBook.a;
+    const bookB = liftedSimilarBook.b;
 
     assert.equal(bookA.isbn, aboxFixtures.similarBook.a.isbn, 'a.isbn round-trips');
     assert.equal(bookA.title, aboxFixtures.similarBook.a.title, 'a.title round-trips');
@@ -532,8 +611,14 @@ void describe('B-9: Sequel toQuads → fromQuads', () => {
 
     assert.equal(lifted.length, 1, 'one sequel lifted');
 
-    const book = lifted[0].book;
-    const predecessor = lifted[0].predecessor;
+    const liftedSequel = lifted.at(0);
+
+    if (liftedSequel === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    const book = liftedSequel.book;
+    const predecessor = liftedSequel.predecessor;
 
     assert.equal(book.isbn, aboxFixtures.sequel.book.isbn, 'book.isbn round-trips');
     assert.equal(book.title, aboxFixtures.sequel.book.title, 'book.title round-trips');
@@ -553,12 +638,19 @@ void describe('B-10: BookListPage toQuads → fromQuads', () => {
     const lifted = bookstoreEntities.fromQuads(BookListPageSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'one bookListPage lifted');
-    assert.equal(lifted[0].resultCount, aboxFixtures.bookListPage.resultCount, 'resultCount round-trips');
-    assert.equal(lifted[0].page, aboxFixtures.bookListPage.page, 'page round-trips');
-    assert.equal(lifted[0].pageSize, aboxFixtures.bookListPage.pageSize, 'pageSize round-trips');
-    assert.equal(lifted[0].totalPages, aboxFixtures.bookListPage.totalPages, 'totalPages round-trips');
-    assert.equal(lifted[0].hasNext, aboxFixtures.bookListPage.hasNext, 'hasNext round-trips');
-    assert.equal(lifted[0].hasPrev, aboxFixtures.bookListPage.hasPrev, 'hasPrev round-trips');
+
+    const liftedPage = lifted.at(0);
+
+    if (liftedPage === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    assert.equal(liftedPage.resultCount, aboxFixtures.bookListPage.resultCount, 'resultCount round-trips');
+    assert.equal(liftedPage.page, aboxFixtures.bookListPage.page, 'page round-trips');
+    assert.equal(liftedPage.pageSize, aboxFixtures.bookListPage.pageSize, 'pageSize round-trips');
+    assert.equal(liftedPage.totalPages, aboxFixtures.bookListPage.totalPages, 'totalPages round-trips');
+    assert.equal(liftedPage.hasNext, aboxFixtures.bookListPage.hasNext, 'hasNext round-trips');
+    assert.equal(liftedPage.hasPrev, aboxFixtures.bookListPage.hasPrev, 'hasPrev round-trips');
   });
 });
 
@@ -572,7 +664,7 @@ void describe('B-11: reviewWithAnnotatedEdge — RDF-star annotated edge', () =>
 
   void it('emits the base reviews triple targeting the book IRI', () => {
     const validated = bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge);
-    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIri': REVIEWS_GRAPH });
 
     const baseTriples = quads.filter((quad) => {
       return quad.predicate.value === EDGE_PREDICATE
@@ -580,17 +672,24 @@ void describe('B-11: reviewWithAnnotatedEdge — RDF-star annotated edge', () =>
     });
 
     assert.equal(baseTriples.length, 1, 'one base triple for the reviews edge');
+
+    const baseTriple = baseTriples.at(0);
+
+    if (baseTriple === undefined) {
+      throw new Error('baseTriples[0] is undefined');
+    }
+
     assert.equal(
-      baseTriples[0].object.value,
+      baseTriple.object.value,
       aboxFixtures.reviewWithAnnotatedEdge.reviewsBook.target,
       'base triple object is the book IRI (reviewsBook.target)'
     );
-    assert.equal(baseTriples[0].object.termType, 'NamedNode', 'reviews object is a NamedNode');
+    assert.equal(baseTriple.object.termType, 'NamedNode', 'reviews object is a NamedNode');
   });
 
   void it('emits triple-term annotation quads for ratingGiven and verifiedPurchase with grounded predicates', () => {
     const validated = bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge);
-    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIri': REVIEWS_GRAPH });
 
     const annotationQuads = quads.filter((quad) => {
       return quad.subject.termType === 'Quad';
@@ -613,7 +712,7 @@ void describe('B-11: reviewWithAnnotatedEdge — RDF-star annotated edge', () =>
 
   void it('base Review scalars are still present alongside the annotated edge', () => {
     const validated = bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge);
-    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIri': REVIEWS_GRAPH });
 
     const reviewIdQuad = quads.find((quad) => {
       return quad.predicate.value === 'https://bookstore.example/reviewId';
@@ -730,7 +829,11 @@ void describe('B-14: BookCatalogEntry embedded-$id projection', () => {
 
     assert.equal(lifted.length, 1, 'one bookCatalogEntry lifted');
 
-    const output = lifted[0];
+    const output = lifted.at(0);
+
+    if (output === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
 
     assert.equal(output.isbn, aboxFixtures.bookCatalogEntry.isbn, 'isbn round-trips');
     assert.equal(output.variants.length, 2, 'both variants round-trip');
@@ -758,17 +861,33 @@ void describe('B-14: BookCatalogEntry embedded-$id projection', () => {
 
     assert.equal(lifted.length, 1, 'one bookCatalogEntryWithVariant lifted');
 
-    const output = lifted[0];
+    const output = lifted.at(0);
+
+    if (output === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
 
     assert.equal(output.isbn, aboxFixtures.bookCatalogEntryWithVariant.isbn, 'isbn round-trips');
     assert.equal(output.variants.length, 1, 'single variant round-trips');
 
-    const variant = readVariant(output.variants[0]);
+    const firstVariant = output.variants.at(0);
 
-    assert.equal(variant.kind, aboxFixtures.bookCatalogEntryWithVariant.variants[0].kind, 'variant.kind round-trips');
+    if (firstVariant === undefined) {
+      throw new Error('output.variants[0] is undefined');
+    }
+
+    const variant = readVariant(firstVariant);
+
+    const firstFixtureVariant = aboxFixtures.bookCatalogEntryWithVariant.variants.at(0);
+
+    if (firstFixtureVariant === undefined) {
+      throw new Error('aboxFixtures.bookCatalogEntryWithVariant.variants[0] is undefined');
+    }
+
+    assert.equal(variant.kind, firstFixtureVariant.kind, 'variant.kind round-trips');
     assert.equal(
       variant.variantPrice,
-      aboxFixtures.bookCatalogEntryWithVariant.variants[0].variantPrice,
+      firstFixtureVariant.variantPrice,
       'variant.variantPrice round-trips'
     );
   });

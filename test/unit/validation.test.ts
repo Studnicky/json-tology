@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import type {
   ValidateWithErrorsFnType, ValidationErrorType
 } from '../../src/types/Validation.js';
-import type { ExecContextType } from '../../src/types/ExecContext.js';
+import type { ExecContextType } from '../../src/types/ExecContextType.js';
 import {
   describe, it
 } from 'node:test';
@@ -53,7 +53,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
   void describe('if/then/else validation', () => {
     // then branch: if condition matches
-    const ite1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const ite1Registry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const ite1SchemaId = 'https://cond.test/ITE1';
 
     ite1Registry.set(makeThenElseSchema(ite1SchemaId, { 'properties': { 'kind': { 'const': 'person' } } }, {
@@ -117,7 +117,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     // else branch: if condition does not match, else required
-    const ite2Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const ite2Registry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const ite2SchemaId = 'https://cond.test/ITE2';
 
     ite2Registry.set(makeThenElseSchema(ite2SchemaId, { 'properties': { 'kind': { 'const': 'org' } } }, {
@@ -186,7 +186,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     // no else branch: if does not match, no else — passes
-    const ite3Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const ite3Registry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const ite3SchemaId = 'https://cond.test/ITE3';
 
     ite3Registry.set(makeThenElseSchema(ite3SchemaId, { 'properties': { 'kind': { 'const': 'special' } } }, {
@@ -239,7 +239,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
   void describe('allOf validation', () => {
     // all subschemas must match
-    const allOf1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const allOf1Registry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const allOf1SchemaId = 'https://cond.test/AllOf1';
 
     allOf1Registry.set({
@@ -297,7 +297,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     // overlapping numeric constraints
-    const allOfOverlapRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const allOfOverlapRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const allOfOverlapSchemaId = 'https://cond.test/AllOfOverlap';
 
     allOfOverlapRegistry.set({
@@ -366,7 +366,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
   void describe('anyOf, oneOf, not validation', () => {
     // anyOf: any branch
-    const anyOf1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const anyOf1Registry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const anyOf1SchemaId = 'https://cond.test/AnyOf1';
 
     anyOf1Registry.set({
@@ -421,7 +421,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     // oneOf: exactly one branch
     // enableStrictGraph: false — synthetic oneOf branches with inline constraints
     const oneOf1Registry = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
     const oneOf1SchemaId = 'https://cond.test/OneOf1';
@@ -482,7 +482,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     // not: negation
-    const not1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const not1Registry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const not1SchemaId = 'https://cond.test/Not1';
 
     not1Registry.set({
@@ -537,7 +537,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
   void describe('dependentRequired and dependentSchemas validation', () => {
     // dependentRequired: mutual dependency
-    const depReq1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const depReq1Registry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const depReq1SchemaId = 'https://cond.test/DepReq1';
 
     depReq1Registry.set({
@@ -598,7 +598,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     // dependentSchemas: trigger activates schema constraint
-    const depSchema1Registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const depSchema1Registry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const depSchema1SchemaId = 'https://cond.test/DepSchema1';
 
     depSchema1Registry.set({
@@ -734,7 +734,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
     for (const scenario of uniqueScenarios) {
       void it(scenario.name, () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
         registry.set(scenario.schema);
         const errors = registry.validate(scenario.schema.$id, scenario.data);
@@ -766,7 +766,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // ---------------------------------------------------------------------------
 
   void describe('oneOf edge cases', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://disc.test/BranchA',
@@ -876,7 +876,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('anyOf edge cases', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://disc.test/AnyBranchX',
@@ -975,7 +975,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('Discriminated union validation', () => {
-    const shapeRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const shapeRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     shapeRegistry.set({
       '$id': 'https://disc.test/Circle',
@@ -1110,7 +1110,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       });
     }
 
-    const eventRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const eventRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     eventRegistry.set({
       '$id': 'https://disc.test/MessageEvent',
@@ -1245,7 +1245,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // ---------------------------------------------------------------------------
 
   void describe('contains validation', () => {
-    const containsBasicRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const containsBasicRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const containsBasicSchemaId = 'https://contains.test/Basic';
 
     containsBasicRegistry.set({
@@ -1440,7 +1440,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       }
     ]) {
       void it(scenario.name, () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
         registry.set(scenario.schema);
         const errors = registry.validate(scenario.schema.$id, scenario.data);
@@ -1466,7 +1466,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
   void describe('minContains validation', () => {
     // minContains=0 — array without matches is still valid
-    const minZeroRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const minZeroRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const minZeroSchemaId = 'https://contains.test/MinZero';
 
     minZeroRegistry.set({
@@ -1508,7 +1508,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     // minContains=2 — requires at least 2 matching items
-    const minTwoRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const minTwoRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const minTwoSchemaId = 'https://contains.test/MinTwo';
 
     minTwoRegistry.set({
@@ -1590,7 +1590,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     // minContains=5 exceeds array length — always fails
-    const minExceedsRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const minExceedsRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const minExceedsSchemaId = 'https://contains.test/MinExceedsLength';
 
     minExceedsRegistry.set({
@@ -1651,7 +1651,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
   void describe('maxContains validation', () => {
     // maxContains=1 — at most 1 matching item
-    const maxOneRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const maxOneRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const maxOneSchemaId = 'https://contains.test/MaxOne';
 
     maxOneRegistry.set({
@@ -1710,7 +1710,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     // maxContains=0 (combined with minContains=0) — no matches allowed
-    const maxZeroRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const maxZeroRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const maxZeroSchemaId = 'https://contains.test/MaxZero';
 
     maxZeroRegistry.set({
@@ -1776,7 +1776,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
   void describe('minContains and maxContains range', () => {
     // minContains=2 maxContains=4 range
-    const rangeRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const rangeRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const rangeSchemaId = 'https://contains.test/Range';
 
     rangeRegistry.set({
@@ -1876,7 +1876,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     // impossible constraint maxContains < minContains — always fails
-    const impossibleRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const impossibleRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
     const impossibleSchemaId = 'https://contains.test/Impossible';
 
     impossibleRegistry.set({
@@ -1948,7 +1948,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // ---------------------------------------------------------------------------
 
   void describe('patternProperties basic matching', () => {
-    const basicStringRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const basicStringRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     basicStringRegistry.set({
       '$id': 'https://pattern.test/BasicString',
@@ -2017,7 +2017,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       });
     }
 
-    const multiPatternRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const multiPatternRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     multiPatternRegistry.set({
       '$id': 'https://pattern.test/MultiPattern',
@@ -2068,7 +2068,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     }
 
     void it('allows keys that match no pattern when additionalProperties is not restricted', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
       registry.set({
         '$id': 'https://pattern.test/Unrestricted',
@@ -2086,7 +2086,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with overlapping patterns', () => {
-    const overlapRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const overlapRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     overlapRegistry.set({
       '$id': 'https://pattern.test/Overlap',
@@ -2144,7 +2144,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties combined with properties on the same key', () => {
-    const propAndPatternRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const propAndPatternRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     propAndPatternRegistry.set({
       '$id': 'https://pattern.test/PropAndPattern',
@@ -2200,7 +2200,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with additionalProperties schema', () => {
-    const additionalSchemaRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const additionalSchemaRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     additionalSchemaRegistry.set({
       '$id': 'https://pattern.test/AdditionalSchema',
@@ -2244,7 +2244,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       });
     }
 
-    const explicitAndPatternRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const explicitAndPatternRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     explicitAndPatternRegistry.set({
       '$id': 'https://pattern.test/ExplicitAndPattern',
@@ -2304,7 +2304,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with additionalProperties false', () => {
-    const patternFalseRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const patternFalseRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     patternFalseRegistry.set({
       '$id': 'https://pattern.test/PatternFalse',
@@ -2344,7 +2344,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with complex regex patterns', () => {
-    const digitKeysRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const digitKeysRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     digitKeysRegistry.set({
       '$id': 'https://pattern.test/DigitKeys',
@@ -2395,7 +2395,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       });
     }
 
-    const dotSepRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const dotSepRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     dotSepRegistry.set({
       '$id': 'https://pattern.test/DotSep',
@@ -2442,7 +2442,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties where every key matches the pattern', () => {
-    const allMatchRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const allMatchRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     allMatchRegistry.set({
       '$id': 'https://pattern.test/AllMatch',
@@ -2493,7 +2493,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with no matching keys', () => {
-    const noMatchRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const noMatchRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     noMatchRegistry.set({
       '$id': 'https://pattern.test/NoMatch',
@@ -2535,7 +2535,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       });
     }
 
-    const noMatchEmptyRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const noMatchEmptyRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     noMatchEmptyRegistry.set({
       '$id': 'https://pattern.test/NoMatchEmpty',
@@ -2556,7 +2556,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with nested object schemas', () => {
-    const nestedRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const nestedRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     nestedRegistry.set({
       '$defs': {
@@ -2642,7 +2642,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties interaction with required', () => {
-    const withRequiredRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const withRequiredRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     withRequiredRegistry.set({
       '$id': 'https://pattern.test/WithRequired',
@@ -2705,7 +2705,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('patternProperties with exclusive non-overlapping patterns', () => {
-    const exclusiveRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const exclusiveRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     exclusiveRegistry.set({
       '$id': 'https://pattern.test/Exclusive',
@@ -2763,7 +2763,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       });
     }
 
-    const exclusiveMixedRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const exclusiveMixedRegistry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     exclusiveMixedRegistry.set({
       '$id': 'https://pattern.test/ExclusiveMixed',
@@ -2824,7 +2824,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('GBU: empty $id throws, minimal schemas accept valid data, anonymous synthetic ID works', () => {
       // Bad: rejects schema with empty string $id
       {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
         assert.throws(() => {
           registry.set({
@@ -2873,7 +2873,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         for (const {
           data, name, schema
         } of acceptScenarios) {
-          const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+          const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
           registry.set(schema);
           const validateResult = registry.validate(schema.$id, data);
@@ -2885,7 +2885,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     });
 
     void it('handles registerAnonymous and validates against synthetic ID', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
       const syntheticId = registry.registerAnonymous({
         'properties': { 'value': { 'type': 'number' } },
         'required': ['value'],
@@ -2903,8 +2903,13 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
       assert.equal(invalidResult.ok, false, 'invalid data fails');
       assert.equal(invalidResult.length, 1, 'invalid data has exactly one type error');
-      assert.equal(invalidResult.items[0].keyword, 'type');
-      assert.equal(invalidResult.items[0].path, '/value');
+      const invalidItem0 = invalidResult.items.at(0);
+
+      if (invalidItem0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(invalidItem0.keyword, 'type');
+      assert.equal(invalidItem0.path, '/value');
     });
   });
 
@@ -2950,7 +2955,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         // enableStrictGraph: false — synthetic fixture with inline numeric bounds
         const registry = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -3003,7 +3008,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         // enableStrictGraph: false — synthetic fixture with inline exclusiveMinimum/Maximum
         const registry = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -3056,7 +3061,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         // enableStrictGraph: false — synthetic fixture with inline multipleOf
         const registry = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -3121,7 +3126,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         // enableStrictGraph: false — synthetic fixture with inline string length constraints
         const registry = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -3179,7 +3184,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         // enableStrictGraph: false — synthetic fixture with inline pattern constraint
         const registry = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -3258,7 +3263,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'valid': false
         }
       ];
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
       registry.set({
         '$id': 'https://edge.test/ArrayItems',
@@ -3312,7 +3317,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         // enableStrictGraph: false — synthetic fixture with inline enum constraint
         const registry = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -3368,7 +3373,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         // enableStrictGraph: false — synthetic fixture with inline const constraint
         const registry = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -3445,7 +3450,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'valid': false
         }
       ];
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
       registry.set({
         '$id': 'https://edge.test/NoReq',
@@ -3501,7 +3506,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'value': 'settings.volume'
         }
       ];
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
       registry.set({
         '$defs': {
@@ -3550,7 +3555,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('coerce: does not mutate input, throws InstantiationError with path on nested failure', () => {
       // no mutation
       {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
         registry.set({
           '$id': 'https://edge.test/NoMutate',
@@ -3570,7 +3575,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
       // nested failure throws InstantiationError with path
       {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
         registry.set({
           '$defs': {
@@ -3627,7 +3632,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
     void it('castTypes coercion: string-number coerced to number', () => {
       const registry = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'enableTypeCast': true
       });
 
@@ -3693,7 +3698,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         // enableStrictGraph: false — cross-schema fixtures with inline length constraints
         const registry = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -3757,7 +3762,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
             'valid': false
           }
         ];
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
         registry.set([
           {
@@ -3891,7 +3896,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('GBU: OWL class, SHACL shape, and recursive self-ref serialization scenarios', () => {
       for (const scenario of scenarios) {
         const jt = JsonTology.create({
-          'baseIRI': 'https://edge.test',
+          'baseIri': 'https://edge.test',
           'schemas': scenario.schemas
         });
 
@@ -3938,7 +3943,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
       void it('unregistered schema lookups: list/has/get/toSchema all return empty/false/undefined', () => {
         for (const scenario of scenarios) {
-          const jt = JsonTology.create({ 'baseIRI': 'https://edge.test' });
+          const jt = JsonTology.create({ 'baseIri': 'https://edge.test' });
 
           scenario.check(jt);
         }
@@ -3948,7 +3953,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('register() chains/accumulates schemas and invalidates ontology cache', () => {
       // chains and accumulates
       {
-        const jt = JsonTology.create({ 'baseIRI': 'https://edge.test' });
+        const jt = JsonTology.create({ 'baseIri': 'https://edge.test' });
 
         jt.set({
           '$id': 'https://edge.test/First',
@@ -3970,7 +3975,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       // ontology cache invalidates after register
       {
         const jt = JsonTology.create({
-          'baseIRI': 'https://edge.test',
+          'baseIri': 'https://edge.test',
           'schemas': [{
             '$id': 'https://edge.test/A',
             'type': 'object'
@@ -4265,12 +4270,12 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // Test helpers — exec context factory
 // ===========================================================================
 
-function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefaults = false, doCoerce = false, stripUnknown = false): ExecContextType {
+function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefaults = false, coerce = false, stripUnknown = false): ExecContextType {
   return {
     applyDefaults,
+    coerce,
     collectErrors,
     'depth': 0,
-    doCoerce,
     'dynamicScope': [],
     errors,
     'evaluatedItems': undefined,
@@ -4331,7 +4336,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r2, false);
       assert.equal(e2.length, 1);
-      assert.equal(e2[0].keyword, 'minItems');
+      const e2item0 = e2.at(0);
+
+      if (e2item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(e2item0.keyword, 'minItems');
 
       // Bad: above maxItems
       const e3: ValidationErrorType[] = [];
@@ -4344,7 +4354,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r3, false);
       assert.equal(e3.length, 1);
-      assert.equal(e3[0].keyword, 'maxItems');
+      const e3item0 = e3.at(0);
+
+      if (e3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(e3item0.keyword, 'maxItems');
 
       // Ugly: uniqueItems with duplicates
       const e4: ValidationErrorType[] = [];
@@ -4357,7 +4372,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r4, false);
       assert.equal(e4.length, 1);
-      assert.equal(e4[0].keyword, 'uniqueItems');
+      const e4item0 = e4.at(0);
+
+      if (e4item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(e4item0.keyword, 'uniqueItems');
 
       // Good: uniqueItems all unique
       const e5: ValidationErrorType[] = [];
@@ -4403,7 +4423,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r3, false);
       assert.equal(e3.length, 1);
-      assert.equal(e3[0].keyword, 'contains');
+      const e3c0 = e3.at(0);
+
+      if (e3c0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(e3c0.keyword, 'contains');
 
       // Bad: below minContains
       const e4: ValidationErrorType[] = [];
@@ -4415,7 +4440,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r4, false);
       assert.equal(e4.length, 1);
-      assert.match(e4[0].message, /at least 2/u);
+      const e4c0 = e4.at(0);
+
+      if (e4c0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.match(e4c0.message, /at least 2/u);
 
       // Bad: above maxContains
       const e5: ValidationErrorType[] = [];
@@ -4427,7 +4457,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(r5, false);
       assert.equal(e5.length, 1);
-      assert.match(e5[0].message, /at most 2/u);
+      const e5c0 = e5.at(0);
+
+      if (e5c0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.match(e5c0.message, /at most 2/u);
     });
 
     void it('validateItems: undefined validator, all-pass, earlyExit, collect-errors, prefix-skip', () => {
@@ -4858,8 +4893,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(rc3, false);
       assert.equal(ec3.length, 1);
-      assert.equal(ec3[0].keyword, 'const');
-      assert.equal(ec3[0].path, '/x');
+      const ec3item0 = ec3.at(0);
+
+      if (ec3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(ec3item0.keyword, 'const');
+      assert.equal(ec3item0.path, '/x');
 
       // validateEnum
       const ee1: ValidationErrorType[] = [];
@@ -4875,8 +4915,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(re3, false);
       assert.equal(ee3.length, 1);
-      assert.equal(ee3[0].keyword, 'enum');
-      assert.equal(ee3[0].path, '/x');
+      const ee3item0 = ee3.at(0);
+
+      if (ee3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(ee3item0.keyword, 'enum');
+      assert.equal(ee3item0.path, '/x');
 
       // validateFormat
       const ef1: ValidationErrorType[] = [];
@@ -4892,8 +4937,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(rf3, false);
       assert.equal(ef3.length, 1);
-      assert.equal(ef3[0].keyword, 'format');
-      assert.match(ef3[0].message, /email/u);
+      const ef3item0 = ef3.at(0);
+
+      if (ef3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(ef3item0.keyword, 'format');
+      assert.match(ef3item0.message, /email/u);
     });
 
     void it('validateString + validateNumber + validateType: table-driven', () => {
@@ -4908,13 +4958,23 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       const rs2 = Scalars.validateString('/x', 'hi', 5, undefined, undefined, undefined, es2);
 
       assert.equal(rs2, false);
-      assert.equal(es2[0].keyword, 'minLength');
+      const es2item0 = es2.at(0);
+
+      if (es2item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(es2item0.keyword, 'minLength');
 
       const es3: ValidationErrorType[] = [];
       const rs3 = Scalars.validateString('/x', 'hello world', undefined, 5, undefined, undefined, es3);
 
       assert.equal(rs3, false);
-      assert.equal(es3[0].keyword, 'maxLength');
+      const es3item0 = es3.at(0);
+
+      if (es3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(es3item0.keyword, 'maxLength');
 
       const es4: ValidationErrorType[] = [];
       const rs4 = Scalars.validateString('/x', 'abc123', undefined, undefined, /^[a-z]+\d+$/u, '^[a-z]+\\d+$', es4);
@@ -4925,7 +4985,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       const rs5 = Scalars.validateString('/x', '!!!', undefined, undefined, /^[a-z]+$/u, '^[a-z]+$', es5);
 
       assert.equal(rs5, false);
-      assert.equal(es5[0].keyword, 'pattern');
+      const es5item0 = es5.at(0);
+
+      if (es5item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(es5item0.keyword, 'pattern');
 
       const es6: ValidationErrorType[] = [];
 
@@ -4939,29 +5004,54 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       const en2: ValidationErrorType[] = [];
 
       Scalars.validateNumber('/x', 3, 5, undefined, undefined, undefined, undefined, en2);
-      assert.equal(en2[0].keyword, 'minimum');
+      const en2item0 = en2.at(0);
+
+      if (en2item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en2item0.keyword, 'minimum');
 
       const en3: ValidationErrorType[] = [];
 
       Scalars.validateNumber('/x', 20, undefined, 10, undefined, undefined, undefined, en3);
-      assert.equal(en3[0].keyword, 'maximum');
+      const en3item0 = en3.at(0);
+
+      if (en3item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en3item0.keyword, 'maximum');
 
       const en4: ValidationErrorType[] = [];
 
       Scalars.validateNumber('/x', 5, undefined, undefined, 5, undefined, undefined, en4);
-      assert.equal(en4[0].keyword, 'exclusiveMinimum');
+      const en4item0 = en4.at(0);
+
+      if (en4item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en4item0.keyword, 'exclusiveMinimum');
 
       const en5: ValidationErrorType[] = [];
 
       Scalars.validateNumber('/x', 10, undefined, undefined, undefined, 10, undefined, en5);
-      assert.equal(en5[0].keyword, 'exclusiveMaximum');
+      const en5item0 = en5.at(0);
+
+      if (en5item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en5item0.keyword, 'exclusiveMaximum');
 
       const en6: ValidationErrorType[] = [];
       const rn6 = Scalars.validateNumber('/x', 7, undefined, undefined, undefined, undefined, 3, en6);
 
       assert.equal(rn6, false);
       assert.equal(en6.length, 1);
-      assert.equal(en6[0].keyword, 'multipleOf');
+      const en6item0 = en6.at(0);
+
+      if (en6item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(en6item0.keyword, 'multipleOf');
 
       // validateType
       const et1: ValidationErrorType[] = [];
@@ -4984,8 +5074,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(rt4, false);
       assert.equal(et4.length, 1);
-      assert.equal(et4[0].keyword, 'type');
-      assert.equal(et4[0].path, '/x');
+      const et4item0 = et4.at(0);
+
+      if (et4item0 === undefined) {
+        throw new Error('expected item at 0');
+      }
+      assert.equal(et4item0.keyword, 'type');
+      assert.equal(et4item0.path, '/x');
     });
   });
 }

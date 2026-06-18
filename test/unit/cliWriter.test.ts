@@ -7,7 +7,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { CliWriter } from '../../src/modules/cli/CliWriter.js';
-import type { CliWriterInterface } from '../../src/interfaces/CliWriter.js';
+import type { CliWriterInterface } from '../../src/interfaces/CliWriterInterface.js';
 
 // ---------------------------------------------------------------------------
 // Good — normal stdout / stderr writes succeed

@@ -1,5 +1,5 @@
 import type { ValidationErrorType } from '../../types/Validation.js';
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
 import type { SchemaGraphSemanticsType } from '../../types/SchemaGraph.js';
 import { Predicates } from '../data/Predicates.js';
 import { BaseError } from '../../errors/BaseError.js';

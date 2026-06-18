@@ -2,7 +2,7 @@
  * Canonical (flat) vs legacy (class-scoped) predicate IRIs.
  *
  * By default (`enableCanonicalPredicates: true`, the default), `toQuads`
- * emits flat predicates derived from the registry `baseIRI`:
+ * emits flat predicates derived from the registry `baseIri`:
  *
  *   https://bookstore.example/name
  *   https://bookstore.example/email
@@ -28,7 +28,7 @@ import {
 
 // ── Default: canonical flat predicates ────────────────────────────────────
 const canonicalJt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableCanonicalPredicates': true,
   'schemas': bookstoreSchemas
 });
@@ -64,7 +64,7 @@ for (const predicate of canonicalSorted) {
 
 // ── Opt-out: legacy class-scoped predicates ───────────────────────────────
 const legacyJt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableCanonicalPredicates': false,
   'schemas': bookstoreSchemas
 });

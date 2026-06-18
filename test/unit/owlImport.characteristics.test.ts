@@ -14,12 +14,12 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importCharacteristics } from '../../src/modules/ontology/importDispatch/Characteristics.js';
+import { Characteristics } from '../../src/modules/ontology/importDispatch/Characteristics.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type { OwlImportContextType } from '../../src/types/OwlImport.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
@@ -59,12 +59,12 @@ function makeCtx(allPropertyIris?: ReadonlySet<string>, quads: QuadInterface[] =
     'axiomIri': string;
     'subjectIri': null | string;
   }> = [];
-  const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
+  const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' });
 
   return {
     'allClassIris': new Set<string>(),
     'allPropertyIris': allPropertyIris ?? new Set([PROPERTY_IRI]),
-    'baseIRI': 'urn:test',
+    'baseIri': 'urn:test',
     curie,
     graph,
     'isDatatype': () => {
@@ -138,11 +138,16 @@ void describe('importCharacteristics — full IRI characteristic detection', { '
     void it(`detects ${characteristicName} from full IRI quad`, () => {
       const quads: QuadInterface[] = [typeQuad(PROPERTY_IRI, fullIri)];
       const ctx = makeCtx(undefined, quads);
-      const fragment = importCharacteristics(quads, ctx);
+      const fragment = Characteristics.dispatch(quads, ctx);
 
       assert.strictEqual(fragment.characteristics.length, 1);
-      assert.strictEqual(fragment.characteristics[0].propertyIri, PROPERTY_IRI);
-      assert.strictEqual(fragment.characteristics[0].characteristic, characteristicName);
+      const char0 = fragment.characteristics.at(0);
+
+      if (char0 === undefined) {
+        throw new Error('expected characteristic at index 0');
+      }
+      assert.strictEqual(char0.propertyIri, PROPERTY_IRI);
+      assert.strictEqual(char0.characteristic, characteristicName);
     });
   }
 });
@@ -190,11 +195,16 @@ void describe('importCharacteristics — curie IRI characteristic detection', { 
     void it(`detects ${characteristicName} from curie form quad`, () => {
       const quads: QuadInterface[] = [typeQuad(PROPERTY_IRI, curieIri)];
       const ctx = makeCtx(undefined, quads);
-      const fragment = importCharacteristics(quads, ctx);
+      const fragment = Characteristics.dispatch(quads, ctx);
 
       assert.strictEqual(fragment.characteristics.length, 1);
-      assert.strictEqual(fragment.characteristics[0].propertyIri, PROPERTY_IRI);
-      assert.strictEqual(fragment.characteristics[0].characteristic, characteristicName);
+      const curieChar0 = fragment.characteristics.at(0);
+
+      if (curieChar0 === undefined) {
+        throw new Error('expected characteristic at index 0');
+      }
+      assert.strictEqual(curieChar0.propertyIri, PROPERTY_IRI);
+      assert.strictEqual(curieChar0.characteristic, characteristicName);
     });
   }
 });
@@ -210,7 +220,7 @@ void describe('importCharacteristics — multiple characteristics on one propert
       typeQuad(PROPERTY_IRI, OWL_REFLEXIVE)
     ];
     const ctx = makeCtx(undefined, quads);
-    const fragment = importCharacteristics(quads, ctx);
+    const fragment = Characteristics.dispatch(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 2);
     const chars = fragment.characteristics.map((entry) => {
@@ -235,7 +245,7 @@ void describe('importCharacteristics — deduplication', () => {
       typeQuad(PROPERTY_IRI, OWL_TRANSITIVE)
     ];
     const ctx = makeCtx(undefined, quads);
-    const fragment = importCharacteristics(quads, ctx);
+    const fragment = Characteristics.dispatch(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
   });
@@ -262,12 +272,17 @@ void describe('importCharacteristics — unknown property IRI', () => {
         });
       }
     };
-    const fragment = importCharacteristics(quads, ctx);
+    const fragment = Characteristics.dispatch(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 0);
     assert.strictEqual(collectedUnsupported.length, 1);
-    assert.ok(collectedUnsupported[0].axiomIri.includes('FunctionalProperty'));
-    assert.strictEqual(collectedUnsupported[0].subjectIri, unknownProp);
+    const unsupported0 = collectedUnsupported.at(0);
+
+    if (unsupported0 === undefined) {
+      throw new Error('expected unsupported entry at index 0');
+    }
+    assert.ok(unsupported0.axiomIri.includes('FunctionalProperty'));
+    assert.strictEqual(unsupported0.subjectIri, unknownProp);
   });
 });
 
@@ -278,7 +293,7 @@ void describe('importCharacteristics — unknown property IRI', () => {
 void describe('importCharacteristics — empty input', () => {
   void it('returns an empty fragment for zero quads', () => {
     const ctx = makeCtx();
-    const fragment = importCharacteristics([], ctx);
+    const fragment = Characteristics.dispatch([], ctx);
 
     assert.strictEqual(fragment.characteristics.length, 0);
     assert.strictEqual(fragment.invariants.length, 0);
@@ -301,7 +316,7 @@ void describe('importCharacteristics — non-type quads', () => {
     );
     const quads: QuadInterface[] = [subClassOfQuad];
     const ctx = makeCtx(undefined, quads);
-    const fragment = importCharacteristics(quads, ctx);
+    const fragment = Characteristics.dispatch(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 0);
   });
@@ -438,21 +453,31 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
     const propIri = 'urn:bookstore:Review#customerId';
     const quads: QuadInterface[] = [typeQuad(propIri, OWL_FUNCTIONAL)];
     const ctx = makeCtx(new Set([propIri]), quads);
-    const fragment = importCharacteristics(quads, ctx);
+    const fragment = Characteristics.dispatch(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
-    assert.strictEqual(fragment.characteristics[0].characteristic, 'Functional');
-    assert.strictEqual(fragment.characteristics[0].propertyIri, propIri);
+    const reviewChar0 = fragment.characteristics.at(0);
+
+    if (reviewChar0 === undefined) {
+      throw new Error('expected characteristic at index 0');
+    }
+    assert.strictEqual(reviewChar0.characteristic, 'Functional');
+    assert.strictEqual(reviewChar0.propertyIri, propIri);
   });
 
   void it('Customer.id — InverseFunctional round-trips via fragment.characteristics', () => {
     const propIri = 'urn:bookstore:Customer#id';
     const quads: QuadInterface[] = [typeQuad(propIri, OWL_INVERSE_FUNCTIONAL)];
     const ctx = makeCtx(new Set([propIri]), quads);
-    const fragment = importCharacteristics(quads, ctx);
+    const fragment = Characteristics.dispatch(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
-    assert.strictEqual(fragment.characteristics[0].characteristic, 'InverseFunctional');
+    const custChar0 = fragment.characteristics.at(0);
+
+    if (custChar0 === undefined) {
+      throw new Error('expected characteristic at index 0');
+    }
+    assert.strictEqual(custChar0.characteristic, 'InverseFunctional');
   });
 
   void it('Order.placedAt — Transitive + Irreflexive round-trips', () => {
@@ -462,7 +487,7 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
       typeQuad(propIri, OWL_IRREFLEXIVE)
     ];
     const ctx = makeCtx(new Set([propIri]), quads);
-    const fragment = importCharacteristics(quads, ctx);
+    const fragment = Characteristics.dispatch(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 2);
     const chars = fragment.characteristics.map((entry) => {
@@ -482,7 +507,7 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
       typeQuad(propIri, OWL_REFLEXIVE)
     ];
     const ctx = makeCtx(new Set([propIri]), quads);
-    const fragment = importCharacteristics(quads, ctx);
+    const fragment = Characteristics.dispatch(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 2);
     const chars = fragment.characteristics.map((entry) => {
@@ -499,10 +524,15 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
     const propIri = 'urn:bookstore:Sequel#predecessor';
     const quads: QuadInterface[] = [typeQuad(propIri, OWL_ASYMMETRIC)];
     const ctx = makeCtx(new Set([propIri]), quads);
-    const fragment = importCharacteristics(quads, ctx);
+    const fragment = Characteristics.dispatch(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
-    assert.strictEqual(fragment.characteristics[0].characteristic, 'Asymmetric');
+    const sequelChar0 = fragment.characteristics.at(0);
+
+    if (sequelChar0 === undefined) {
+      throw new Error('expected characteristic at index 0');
+    }
+    assert.strictEqual(sequelChar0.characteristic, 'Asymmetric');
   });
 });
 

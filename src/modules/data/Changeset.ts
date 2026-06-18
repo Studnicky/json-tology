@@ -4,7 +4,7 @@
  * Returned by Value.diff(). Call the apply() method to produce a new value.
  */
 
-import type { ChangesetInterface } from '../../interfaces/Changeset.js';
+import type { ChangesetInterface } from '../../interfaces/ChangesetInterface.js';
 import type { DiffOpType } from '../../types/Diff.js';
 import { Operations } from './Operations.js';
 

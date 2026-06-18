@@ -38,7 +38,7 @@ const CustomerSchema = {
 type Customer = InferType<typeof CustomerSchema>;
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:landing-02',
+  'baseIri': 'urn:landing-02',
   // doc example with synthetic fixture schemas
   'enableStrictGraph': false,
   'schemas': [CustomerSchema] as const

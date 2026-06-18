@@ -680,7 +680,7 @@ describe('ontology round-trip: bookstore domain', () => {
       } as const;
 
       const localJt = JsonTology.create({
-        'baseIRI': BOOKSTORE_BASE_IRI,
+        'baseIri': BOOKSTORE_BASE_IRI,
         'enableStrictGraph': false,
         'schemas': [InlineSchema]
       });
@@ -936,11 +936,21 @@ describe('C-4: cross-schema $ref toQuads/fromQuads round-trip', () => {
     assert.ok(Array.isArray(addresses), 'addresses is an array after round-trip');
     assert.equal(addresses.length, 1, 'one address round-trips');
 
-    const address = addresses[0];
+    const address = addresses.at(0);
 
-    assert.equal(address.street, input.addresses[0].street, 'address.street round-trips');
-    assert.equal(address.city, input.addresses[0].city, 'address.city round-trips');
-    assert.equal(address.country, input.addresses[0].country, 'address.country round-trips');
-    assert.equal(address.postalCode, input.addresses[0].postalCode, 'address.postalCode round-trips');
+    if (address === undefined) {
+      throw new Error('addresses[0] is undefined');
+    }
+
+    const inputAddress = input.addresses.at(0);
+
+    if (inputAddress === undefined) {
+      throw new Error('input.addresses[0] is undefined');
+    }
+
+    assert.equal(address.street, inputAddress.street, 'address.street round-trips');
+    assert.equal(address.city, inputAddress.city, 'address.city round-trips');
+    assert.equal(address.country, inputAddress.country, 'address.country round-trips');
+    assert.equal(address.postalCode, inputAddress.postalCode, 'address.postalCode round-trips');
   });
 });

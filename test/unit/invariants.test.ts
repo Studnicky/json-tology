@@ -82,7 +82,7 @@ function sumItems(items: OrderItem[]): number {
 void describe('invariants', { 'concurrency': true }, () => {
   void it('passing invariant returns no error', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
@@ -119,7 +119,7 @@ void describe('invariants', { 'concurrency': true }, () => {
 
   void it('failing invariant adds error to errors() output and ValidationErrors', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
@@ -146,13 +146,18 @@ void describe('invariants', { 'concurrency': true }, () => {
     const errors = jt.validate(OrderSchema.$id, data);
 
     assert.equal(errors.length, 1);
-    assert.equal(errors.items[0].message, 'total must equal sum of items');
-    assert.equal(errors.items[0].keyword, 'jt:invariant');
+    const errItem0 = errors.items.at(0);
+
+    if (errItem0 === undefined) {
+      throw new Error('expected errors.items[0] to exist');
+    }
+    assert.equal(errItem0.message, 'total must equal sum of items');
+    assert.equal(errItem0.keyword, 'jt:invariant');
   });
 
   void it('failing invariant causes coerce() to throw InstantiationError', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
@@ -183,7 +188,12 @@ void describe('invariants', { 'concurrency': true }, () => {
       },
       (err: unknown) => {
         assert.ok(err instanceof InstantiationError, 'is InstantiationError');
-        assert.equal(err.errors.items[0].message, 'total mismatch');
+        const instErrItem0 = err.errors.items.at(0);
+
+        if (instErrItem0 === undefined) {
+          throw new Error('expected err.errors.items[0] to exist');
+        }
+        assert.equal(instErrItem0.message, 'total mismatch');
 
         return true;
       }
@@ -192,7 +202,7 @@ void describe('invariants', { 'concurrency': true }, () => {
 
   void it('failing invariant causes is() to return false', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
@@ -234,7 +244,7 @@ void describe('invariants', { 'concurrency': true }, () => {
 
   void it('multiple invariants on the same schema all run; all failures collected', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [
@@ -280,7 +290,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('invariants do not run if structural validation fails', () => {
     let invariantRan = false;
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
@@ -313,7 +323,7 @@ void describe('invariants', { 'concurrency': true }, () => {
 
   void it('imperative addInvariant registers post-construction', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'schemas': [
         OrderItemSchema,
@@ -346,7 +356,7 @@ void describe('invariants', { 'concurrency': true }, () => {
 
   void it('removeInvariant by name removes the invariant', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'schemas': [
         OrderItemSchema,
@@ -382,7 +392,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('invariant on Parent fires once for the parent value (not duplicated per-field)', () => {
     let callCount = 0;
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'schemas': [
         ChildSchema,
@@ -409,7 +419,7 @@ void describe('invariants', { 'concurrency': true }, () => {
 
   void it('error pointer reflects configured pointer when supplied', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://test.dev',
+      'baseIri': 'https://test.dev',
       'enableStrictGraph': false,
       'schemas': [
         OrderItemSchema,
@@ -434,6 +444,11 @@ void describe('invariants', { 'concurrency': true }, () => {
     });
 
     assert.equal(errors.length, 1);
-    assert.equal(errors.items[0].path, '/total');
+    const pathErrItem0 = errors.items.at(0);
+
+    if (pathErrItem0 === undefined) {
+      throw new Error('expected errors.items[0] to exist');
+    }
+    assert.equal(pathErrItem0.path, '/total');
   });
 });

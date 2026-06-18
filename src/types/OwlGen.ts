@@ -11,7 +11,7 @@
  * output format and option shapes may evolve as the codegen path matures.
  */
 
-import type { QuadInterface } from '../interfaces/Quad.js';
+import type { QuadInterface } from '../interfaces/QuadInterface.js';
 
 /**
  * Options accepted by {@link generateFromTbox} (browser-safe).
@@ -24,7 +24,7 @@ export type GenerateFromTboxOptionsType = {
    * Override the base IRI. When omitted the generator derives it from
    * the first schema `$id` in the import result.
    */
-  readonly 'baseIRI'?: string | undefined;
+  readonly 'baseIri'?: string | undefined;
 
   /**
    * Extra header comment lines inserted after the banner.
@@ -35,7 +35,7 @@ export type GenerateFromTboxOptionsType = {
    * The OWL 2 TBox source — a JSON-LD object, a JSON-LD string, or an
    * array of {@link QuadInterface} quads.
    */
-  readonly 'input': object | QuadInterface[] | string;
+  readonly 'input': QuadInterface[] | Record<string, unknown> | string;
 
   /**
    * Registry constant name (e.g. `'acl'` → `aclSchemas`, `acl`).
@@ -61,7 +61,7 @@ export type GenerateRegistryDirectoryOptionsType = {
    * Override the base IRI. When omitted the generator derives it from
    * the first schema `$id` in the import result.
    */
-  readonly 'baseIRI'?: string | undefined;
+  readonly 'baseIri'?: string | undefined;
 
   /**
    * Extra header comment lines inserted after the banner in `index.ts`.
@@ -72,7 +72,7 @@ export type GenerateRegistryDirectoryOptionsType = {
    * The OWL 2 TBox source — a JSON-LD object, a JSON-LD string, or an
    * array of {@link QuadInterface} quads.
    */
-  readonly 'input': object | QuadInterface[] | string;
+  readonly 'input': QuadInterface[] | Record<string, unknown> | string;
 
   /**
    * Registry constant name (e.g. `'acl'` → `aclSchemas`, `acl`).

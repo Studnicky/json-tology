@@ -18,13 +18,13 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importClassAxioms } from '../../src/modules/ontology/importDispatch/ClassAxioms.js';
+import { ClassAxioms } from '../../src/modules/ontology/importDispatch/ClassAxioms.js';
 import type { OwlImportContextType } from '../../src/types/OwlImport.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { listQuad } from '../helpers/listQuad.js';
 
 // ---------------------------------------------------------------------------
@@ -84,13 +84,13 @@ function makeCtx(quads: QuadInterface[]): OwlImportContextType {
     }
   }
 
-  const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:example' });
+  const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:example' });
   const curie = new Curie(STANDARD_PREFIXES);
 
   return {
     allClassIris,
     'allPropertyIris': new Set(),
-    'baseIRI': 'urn:example',
+    'baseIri': 'urn:example',
     curie,
     graph,
     'isDatatype': () => {
@@ -112,7 +112,7 @@ void describe('importClassAxioms', () => {
     void it('produces a minimal object stub for each named class', () => {
       const quads = [typeQuad(CLASS_A)];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_A);
 
@@ -131,7 +131,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_B, RDFS_SUBCLASSOF, CLASS_A)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_B);
 
@@ -140,7 +140,12 @@ void describe('importClassAxioms', () => {
       const allOf = delta.allOf as Array<Record<string, unknown>>;
 
       assert.equal(allOf.length, 1, 'exactly one allOf entry');
-      assert.equal(allOf[0].$ref, CLASS_A, '$ref must point to parent CLASS_A');
+      const allOf0 = allOf.at(0);
+
+      if (allOf0 === undefined) {
+        throw new Error('expected allOf entry at index 0');
+      }
+      assert.equal(allOf0.$ref, CLASS_A, '$ref must point to parent CLASS_A');
     });
   });
 
@@ -154,7 +159,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_C, RDFS_SUBCLASSOF, CLASS_B)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_C);
       const allOf = delta?.allOf as Array<Record<string, unknown>> | undefined;
@@ -180,7 +185,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_B, OWL_EQUIVALENT_CLASS, CLASS_A)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_B);
 
@@ -218,7 +223,7 @@ void describe('importClassAxioms', () => {
         )
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_B);
 
@@ -234,7 +239,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_A, OWL_DISJOINT_WITH, CLASS_B)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const deltaA = fragment.schemaDeltas.get(CLASS_A);
       const deltaB = fragment.schemaDeltas.get(CLASS_B);
@@ -260,7 +265,7 @@ void describe('importClassAxioms', () => {
         )
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_A);
       const oneOf = delta?.oneOf as Array<Record<string, unknown>> | undefined;
@@ -285,7 +290,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_A, OWL_COMPLEMENT_OF, CLASS_B)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_A);
       const notSchema = delta?.not as Record<string, unknown> | undefined;
@@ -301,7 +306,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_A, OWL_COMPLEMENT_OF, CLASS_B)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const inv = fragment.invariants.find((entry) => {
         return entry.schemaId === CLASS_A;
@@ -322,7 +327,7 @@ void describe('importClassAxioms', () => {
     void it('characteristics, sameAs, and individuals are always empty', () => {
       const quads = [typeQuad(CLASS_A)];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       assert.deepEqual([...fragment.characteristics], [], 'characteristics must be empty');
       assert.deepEqual([...fragment.sameAs], [], 'sameAs must be empty');

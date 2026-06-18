@@ -47,7 +47,7 @@ const _check: ValidateSchemaType<typeof BookKindSchema> = BookKindSchema;
 void _check;
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:docs-compile-time-04',
+  'baseIri': 'urn:docs-compile-time-04',
   // doc example with synthetic fixture schemas
   'enableStrictGraph': false,
   'schemas': [BookKindSchema] as const

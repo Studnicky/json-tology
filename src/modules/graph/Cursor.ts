@@ -93,7 +93,13 @@ export class Cursor implements CursorInterface {
       return undefined;
     }
 
-    return this.lift(this.iriList[0]);
+    const firstIri = this.iriList[0];
+
+    if (firstIri === undefined) {
+      return undefined;
+    }
+
+    return this.lift(firstIri);
   }
 
   public having(predicate: string, value: unknown): CursorInterface {
@@ -159,7 +165,16 @@ export class Cursor implements CursorInterface {
       );
     }
 
-    return this.lift(this.iriList[0]);
+    const onlyIri = this.iriList[0];
+
+    if (onlyIri === undefined) {
+      throw new GraphError(
+        'Cursor.one() internal error: iriList[0] undefined',
+        { 'code': GraphErrorCode.CURSOR_CARDINALITY }
+      );
+    }
+
+    return this.lift(onlyIri);
   }
 
   public orderBy(compare: (left: unknown, right: unknown) => number): CursorInterface {

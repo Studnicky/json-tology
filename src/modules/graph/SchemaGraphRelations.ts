@@ -5,13 +5,13 @@ import type {
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { SchemaIri } from './SchemaIri.js';
-import { XsdTypes } from '../rdf/XsdTypes.js';
-import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
+import { XsdTypes } from '../quads/XsdTypes.js';
+import type { GraphAccessorInterface } from '../../interfaces/GraphAccessorInterface.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
-  DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
+  DASH, DCT, JT, OWL, RDF, rdfMemberIri, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { RESTRICTION_PREDICATE_MAP } from '../../constants/ONTOLOGY_PREDICATES.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
@@ -182,7 +182,7 @@ function pushFormatPatternRelations(
     return;
   }
 
-  const pattern = FORMAT_PATTERNS[sem.format] as string | undefined;
+  const pattern = FORMAT_PATTERNS[sem.format];
 
   if (pattern !== undefined) {
     relations.push({
@@ -286,7 +286,7 @@ function pushPrefixItemRelations(ctx: RelationsPushContextType): void {
 
     relations.push({
       'metadata': {
-        'memberProperty': `rdf:_${index + 1}`,
+        'memberProperty': rdfMemberIri(index + 1),
         'position': index
       },
       'predicate': RDFS.member,
@@ -414,7 +414,7 @@ function pushAnnotatedEdgeRelations(ctx: RelationsPushContextType): void {
   ] of Object.entries(descriptor.annotations)) {
     // The descriptor extraction already validated a string `$ref`; narrow again
     // for the type system before reading it and carrying the full sub-schema.
-    if (!isRecord(propSchema) || typeof propSchema.$ref !== 'string') {
+    if (!DataType.isRecord(propSchema) || typeof propSchema.$ref !== 'string') {
       continue;
     }
 
@@ -697,17 +697,17 @@ export const SchemaGraphRelations = {
 
     for (const propertyName of sem.required) {
       const propNode = sem.properties.get(propertyName);
-      const propIRI = `${node.id}#${propertyName}`;
+      const propIri = `${node.id}#${propertyName}`;
 
       relations.push({
         'metadata': {
           'minCardinality': 1,
-          'onProperty': propIRI,
+          'onProperty': propIri,
           'propertyName': propertyName
         },
         'predicate': OWL.Restriction,
         'source': node,
-        'target': propNode ?? propIRI
+        'target': propNode ?? propIri
       });
     }
 

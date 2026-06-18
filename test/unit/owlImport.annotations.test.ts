@@ -21,12 +21,12 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importAnnotations } from '../../src/modules/ontology/importDispatch/Annotations.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Annotations } from '../../src/modules/ontology/importDispatch/Annotations.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
@@ -45,10 +45,10 @@ function makeCtx(quads: QuadInterface[] = []): OwlImportContextType & { 'unsuppo
   return {
     'allClassIris': new Set(),
     'allPropertyIris': new Set(),
-    'baseIRI': 'https://example.com/',
+    'baseIri': 'https://example.com/',
     curie,
     'graph': SchemaGraph.fromQuads(quads, {
-      'baseIRI': 'https://example.com/',
+      'baseIri': 'https://example.com/',
       'prefixes': STANDARD_PREFIXES
     }),
     'isDatatype': () => {
@@ -67,7 +67,7 @@ function makeCtx(quads: QuadInterface[] = []): OwlImportContextType & { 'unsuppo
 
 /** Run the Annotations dispatcher with a graph derived from the same quads. */
 function runAnnotations(quads: QuadInterface[]): OwlImportFragmentType {
-  return importAnnotations(quads, makeCtx(quads));
+  return Annotations.dispatch(quads, makeCtx(quads));
 }
 
 // ---------------------------------------------------------------------------

@@ -19,6 +19,10 @@ console.assert(internalQuads.length > 0, 'quads produced');
 
 const first = internalQuads[0];
 
+if (first === undefined) {
+  throw new Error('expected quads');
+}
+
 console.assert(
   typeof first.subject.value === 'string',
   'quad subject is an rdf/js term object with a .value string'

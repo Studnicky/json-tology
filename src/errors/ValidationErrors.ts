@@ -9,6 +9,7 @@ import type {
 } from '../types/Validation.js';
 
 import { Path } from '../modules/data/Path.js';
+import { JT_VALIDATION_PROBLEM_TYPE } from '../constants/IRI.js';
 
 /**
  * An ordered collection of ValidationErrorType items.
@@ -154,7 +155,7 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
       }),
       'status': 422,
       'title': 'Validation failed',
-      'type': 'https://json-tology.dev/problems/validation'
+      'type': JT_VALIDATION_PROBLEM_TYPE
     };
 
     return {

@@ -117,7 +117,7 @@ export const schemaOrgSchemas = [
 ] as const;
 
 export const schemaOrg = JsonTology.create({
-  "baseIRI": "https://schema.org",
+  "baseIri": "https://schema.org",
   "schemas": schemaOrgSchemas,
 } as const);
 

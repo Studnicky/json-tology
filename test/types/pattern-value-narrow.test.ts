@@ -22,7 +22,7 @@ import type { PatternBrandType } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
 // Confirm the tightStringLengths flag is on (default) so pattern narrowing fires.
-declare module '../../src/interfaces/JsonTologyTypeConfig.js' {
+declare module '../../src/interfaces/JsonTologyTypeConfigInterface.js' {
   interface JsonTologyTypeConfigInterface { 'tightStringLengths': true }
 }
 

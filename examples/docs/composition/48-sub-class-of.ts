@@ -26,7 +26,7 @@ const GenreBookSchema = Compose.subClassOf(BookSchema, {
 
 // Register both schemas — GenreBook $refs Book so Book must come first.
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [
     BookSchema,
     GenreBookSchema

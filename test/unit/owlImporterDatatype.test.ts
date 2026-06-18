@@ -26,7 +26,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { XSD } from '../../src/constants/IRI.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 
@@ -101,7 +101,7 @@ void describe('Terms.literal — datatype and language contract', () => {
 // ---------------------------------------------------------------------------
 
 void describe('OwlImporter — annotation literal round-trip', () => {
-  const importer = new OwlImporter({ 'baseIRI': 'https://example.com/' });
+  const importer = new OwlImporter({ 'baseIri': 'https://example.com/' });
 
   void it('imports a compact JSON-LD document with an owl:versionInfo annotation', () => {
     // Minimal OWL annotation document — synchronous compact JSON-LD path

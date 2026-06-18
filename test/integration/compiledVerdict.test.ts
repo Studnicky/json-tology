@@ -35,7 +35,7 @@ function assertParityScenarios(
 
 void describe('compiled-path verdict', () => {
   void it('keyword: dependentSchemas', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/dependent-schemas',
@@ -86,7 +86,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('edge: null data, empty object, empty array, undefined properties, NaN/Infinity', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/basic-object',
@@ -147,7 +147,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: dependentRequired', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/dependent-required',
@@ -188,7 +188,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: if/then/else', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     const ifThenElseSchema: Record<string, unknown> & { readonly '$id': string } = {
       '$id': 'https://parity.test/if-then-else',
@@ -251,7 +251,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: allOf with conflicting constraints', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/allof-conflict',
@@ -310,7 +310,7 @@ void describe('compiled-path verdict', () => {
   void it('keyword: anyOf with overlapping branches', () => {
     // enableStrictGraph: false — synthetic anyOf branches with inline minimum constraints
     const registry = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -367,7 +367,7 @@ void describe('compiled-path verdict', () => {
   void it('keyword: oneOf with overlapping branches', () => {
     // enableStrictGraph: false — synthetic oneOf branches with inline min/max constraints
     const registry = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -429,7 +429,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: patternProperties + additionalProperties=false', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/pattern-props',
@@ -479,7 +479,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: $ref to another schema', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set([
       {
@@ -543,7 +543,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: self-referencing schema (recursive tree)', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$defs': {
@@ -614,7 +614,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: nested objects via $defs', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$defs': {
@@ -681,7 +681,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: array with items + minItems + uniqueItems', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/array-constraints',
@@ -750,7 +750,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: enum with complex objects', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/enum-complex',
@@ -817,7 +817,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: const with null value', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/const-null',
@@ -880,7 +880,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: Infinity/NaN rejection for type number', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/number',
@@ -943,7 +943,7 @@ void describe('compiled-path verdict', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: multipleOf with floating-point and zero', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const registry = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     registry.set({
       '$id': 'https://parity.test/multiple-three',

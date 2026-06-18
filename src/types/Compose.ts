@@ -587,7 +587,7 @@ type SubClassOfAllOfType<TParent, TBody>
  * @see {@link https://www.w3.org/TR/owl2-primer/#Class_Hierarchies OWL 2 Subclass Axioms}
  * @group Compose
  */
-export type SubClassOfSchemaInterface<
+export type SubClassOfSchemaType<
   TParent,
   TBody extends Record<string, unknown> & { readonly '$id': string }
 >
@@ -620,7 +620,7 @@ export type SubClassOfSchemaInterface<
  * @see {@link https://www.w3.org/TR/owl2-primer/#Disjoint_Classes OWL 2 Disjoint Classes}
  * @group Compose
  */
-export type DisjointWithSchemaInterface<
+export type DisjointWithSchemaType<
   TOther extends { readonly '$id': string },
   TBody extends Record<string, unknown> & { readonly '$id': string }
 >
@@ -653,7 +653,7 @@ export type DisjointWithSchemaInterface<
  * @see {@link https://www.w3.org/TR/owl2-primer/#Complement_Classes OWL 2 Complement Classes}
  * @group Compose
  */
-export type ComplementOfSchemaInterface<
+export type ComplementOfSchemaType<
   TOther extends { readonly '$id': string },
   TBody extends Record<string, unknown> & { readonly '$id': string }
 >

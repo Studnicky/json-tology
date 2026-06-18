@@ -21,7 +21,7 @@ import type {
   TransformErrorCodeType
 } from './ErrorCodes.js';
 import type { SchemaLoadReasonType } from './Loader.js';
-import type { TransformDirectionType } from './TransformDirection.js';
+import type { TransformDirectionType } from './TransformDirectionType.js';
 
 export type BaseErrorOptionsType = {
   readonly 'cause'?: Error;

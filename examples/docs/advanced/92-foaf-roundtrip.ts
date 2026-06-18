@@ -92,7 +92,7 @@ console.assert(agentSchema !== undefined, 'foaf:Agent schema must be present');
 if (agentSchema !== undefined && typeof agentSchema.$id === 'string') {
   const agentSchemaRec = agentSchema as Record<string, unknown> & { '$id': string };
   const jt = JsonTology.create({
-    'baseIRI': 'http://xmlns.com/foaf/0.1/',
+    'baseIri': 'http://xmlns.com/foaf/0.1/',
     'enableStrictGraph': false,
     'schemas': [agentSchemaRec]
   });

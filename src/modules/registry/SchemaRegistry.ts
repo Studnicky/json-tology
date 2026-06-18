@@ -6,26 +6,26 @@
  */
 
 import type { CompiledValidatorType } from '../../types/Compiler.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
 import type {
   GraphEngineOptionsType, KeywordDefinitionType
 } from '../../types/GraphEngine.js';
-import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
+import type { GraphEngineInterface } from '../../interfaces/GraphEngineInterface.js';
 import type { InvariantType } from '../../types/Invariant.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { RegistryOptionsType } from '../../types/Registry.js';
-import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
+import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerInterface.js';
 import type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryType.js';
-import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStore.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStoreInterface.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { StructureWarningType } from '../../types/SchemaGraph.js';
-import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.js';
-import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntry.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalkerInterface.js';
+import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntryType.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
-import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
-import type { SchemaRegistryForEachCallback } from '../../types/SchemaRegistryForEachCallback.js';
+import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPluginInterface.js';
+import type { SchemaRegistryForEachCallbackType } from '../../types/SchemaRegistryForEachCallbackType.js';
 import type { SetEntryType } from '../../types/SetEntryType.js';
 
 import { BaseError } from '../../errors/BaseError.js';
@@ -38,16 +38,14 @@ import { SchemaEntryStore } from './SchemaEntryStore.js';
 import { SchemaRefWalker } from './SchemaRefWalker.js';
 import { DifferentFromStore } from './DifferentFromStore.js';
 import { SameAsStore } from './SameAsStore.js';
-import { Curie } from '../rdf/Curie.js';
-import {
-  isRecord
-} from '../data/DataTypes.js';
+import { Curie } from '../quads/Curie.js';
+import { DataType } from '../data/DataType.js';
 import { Frozen } from '../data/Frozen.js';
-import { logScope } from '../data/LogScope.js';
+import { LogScope } from '../data/LogScope.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
-import { Materializer } from '../materialization/Materializer.js';
+import type { DefaultCreatorInterface } from '../../interfaces/DefaultCreatorInterface.js';
 import { RefDecoder } from '../graph/RefDecoder.js';
 import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
@@ -160,6 +158,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly computedStore: ComputedStore;
 
   public readonly curie: CurieInterface | undefined;
+  private readonly defaultCreatorFactory: ((registry: SchemaRegistryInterface) => DefaultCreatorInterface) | undefined;
   public readonly differentFromStore: DifferentFromStore;
   private readonly enableDuplicateDetection: boolean;
   private readonly enableInlineWarnings: boolean;
@@ -179,12 +178,14 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   };
   private readonly refs: SchemaRefWalkerInterface;
   public readonly sameAsStore: SameAsStore;
+
   private readonly store: SchemaEntryStoreInterface;
 
   private readonly vocabularies: readonly VocabularyPluginInterface[];
 
   public constructor(options?: RegistryOptionsType) {
     this.logger = options?.logger ?? SILENT_LOGGER;
+    this.defaultCreatorFactory = options?.defaultCreatorFactory;
 
     const config = SchemaRegistry.resolveOptions(options);
 
@@ -201,7 +202,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.curie = Object.keys(mergedPrefixes).length > 0 ? new Curie(mergedPrefixes) : undefined;
     this.computedStore = new ComputedStore();
-    this.refs = new SchemaRefWalker();
+    this.refs = new SchemaRefWalker({ 'logger': this.logger });
     this.store = new SchemaEntryStore();
     this.sameAsStore = new SameAsStore();
     this.differentFromStore = new DifferentFromStore();
@@ -276,8 +277,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return;
     }
 
-    const existingProperties = isRecord(existing.properties) ? existing.properties : {};
-    const existingProp = isRecord(existingProperties[propertyName]) ? existingProperties[propertyName] : {};
+    const existingProperties = DataType.isRecord(existing.properties) ? existing.properties : {};
+    const existingProp = DataType.isRecord(existingProperties[propertyName]) ? existingProperties[propertyName] : {};
 
     // Skip if the characteristic is already set (idempotent)
     if (existingProp[schemaKey] === true) {
@@ -321,7 +322,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     computedMap: Record<string, (data: Record<string, unknown>) => unknown>,
     coerced: unknown
   ): void {
-    if (computedNames.length === 0 || !isRecord(coerced)) {
+    if (computedNames.length === 0 || !DataType.isRecord(coerced)) {
       return;
     }
 
@@ -356,7 +357,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    */
   private applyFrozenSeal(schemaObj: Record<string, unknown>, decoded: unknown): unknown {
     const isFrozen = schemaObj['jt:frozen'] === true
-      || (isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true);
+      || (DataType.isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true);
 
     return isFrozen ? Frozen.deepFreeze(decoded) : decoded;
   }
@@ -498,7 +499,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         schemaId
       });
     }
-    this.logger.warn(logScope('SchemaRegistry', 'assertNoDuplicateShapes', message));
+    this.logger.warn(LogScope.format('SchemaRegistry', 'assertNoDuplicateShapes', message));
   }
 
   /**
@@ -515,7 +516,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     schema: Record<string, unknown>,
     schemaId: string
   ): void {
-    if (!isRecord(schema.properties)) {
+    if (!DataType.isRecord(schema.properties)) {
       return;
     }
 
@@ -523,7 +524,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       propName,
       propSchema
     ] of Object.entries(schema.properties)) {
-      if (!isRecord(propSchema)) {
+      if (!DataType.isRecord(propSchema)) {
         continue;
       }
 
@@ -640,7 +641,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       existing.schema = canonicalSchema;
       existing.hasTransform = true;
     }
-    this.logger.trace(logScope('SchemaRegistry', 'assertSchemaNotDuplicate', `Schema already registered (identical): ${schemaId}`));
+    this.logger.trace(LogScope.format('SchemaRegistry', 'assertSchemaNotDuplicate', `Schema already registered (identical): ${schemaId}`));
 
     return true;
   }
@@ -670,7 +671,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         schemaId
       });
     }
-    this.logger.warn(logScope('SchemaRegistry', 'assertStructureValid', message));
+    this.logger.warn(LogScope.format('SchemaRegistry', 'assertStructureValid', message));
   }
 
   /**
@@ -881,7 +882,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     for (const value of Object.values(schema)) {
-      if (isRecord(value)) {
+      if (DataType.isRecord(value)) {
         this.collectAnchors(value, seen, schemaId);
       }
     }
@@ -970,9 +971,17 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.assertRefsResolvable(entry);
 
-    const materializer = new Materializer(this, { 'logger': this.logger });
+    if (this.defaultCreatorFactory === undefined) {
+      throw new SchemaError(
+        `Cannot create a default instance for "${schemaId}": no default creator configured. Use JsonTology, or pass options.defaultCreatorFactory.`,
+        {
+          'code': SchemaErrorCode.DEFAULT_CREATOR_MISSING,
+          schemaId
+        }
+      );
+    }
 
-    return materializer.createDefault(entry.schema as Record<string, unknown> & { '$id': string });
+    return this.defaultCreatorFactory(this).createDefault(entry.schema as Record<string, unknown> & { '$id': string });
   }
 
   /**
@@ -1029,6 +1038,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       const entryGraph = this.graphOf(entry);
 
       const engineOptions: GraphEngineOptionsType = {
+        'logger': this.logger,
         'lookupGraph': this.lookupGraphFn,
         'lookupSchema': (lookupSchemaId: string): Record<string, unknown> | undefined => {
           // 1. Cross-registry lookup: other top-level registered schemas.
@@ -1049,7 +1059,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
           const embeddedNode = entryGraph.embeddedNode(lookupSchemaId)
             ?? entryGraph.embeddedNode(resolvedId);
 
-          if (embeddedNode !== undefined && isRecord(embeddedNode.schema)) {
+          if (embeddedNode !== undefined && DataType.isRecord(embeddedNode.schema)) {
             return embeddedNode.schema;
           }
 
@@ -1089,7 +1099,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.store.findDuplicates();
   }
 
-  public forEach(callback: SchemaRegistryForEachCallback): void {
+  public forEach(callback: SchemaRegistryForEachCallbackType): void {
     for (const [
       iri,
       entry
@@ -1302,7 +1312,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.store.add(schemaId, entry);
     this.computedStore.validateAgainstGraph(graph);
     this.assertNoDuplicateShapes(schemaId);
-    this.logger.trace(logScope('SchemaRegistry', 'registerSingle', `Schema registered: ${schemaId}`));
+    this.logger.trace(LogScope.format('SchemaRegistry', 'registerSingle', `Schema registered: ${schemaId}`));
   }
 
   public removeInvariant(schemaId: string, name: string): void {
@@ -1417,7 +1427,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     // Defensive guard for untyped (JS) callers that bypass the typed `set()`
     // surface. `isRecord` is a type predicate, so no suppression is needed and
     // the parameter keeps its honest `Record<string, unknown>` type.
-    if (!isRecord(schema)) {
+    if (!DataType.isRecord(schema)) {
       throw new SchemaError(
         `set() requires a plain object schema, received ${Array.isArray(schema) ? 'array' : typeof schema}`,
         { 'code': SchemaErrorCode.INVALID_INPUT }
@@ -1513,7 +1523,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Throws `InstantiationError` if any computed property name is present in `data`.
    */
   private validateComputedInput(computedNames: string[], data: unknown): void {
-    if (computedNames.length === 0 || !isRecord(data)) {
+    if (computedNames.length === 0 || !DataType.isRecord(data)) {
       return;
     }
 
@@ -1562,7 +1572,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const existingId = this.store.getByHash(hash);
 
     if (existingId !== undefined && existingId !== schemaId) {
-      this.logger.warn(logScope('SchemaRegistry', 'warnOnHashConflict', `Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`));
+      this.logger.warn(LogScope.format('SchemaRegistry', 'warnOnHashConflict', `Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`));
     }
   }
 }

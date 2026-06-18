@@ -25,7 +25,7 @@ import {
 
 void describe('Value.create() bad paths', () => {
   void it('throws SchemaError(SCHEMA_NOT_REGISTERED) for unknown $id', () => {
-    const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const tology = JsonTology.create({ 'baseIri': 'urn:test:' });
     const value = tology.value;
 
     assert.throws(
@@ -45,7 +45,7 @@ void describe('Value.create() bad paths', () => {
 
   void it('throws SchemaError for second unregistered $id in same registry', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'schemas': [{
         '$id': 'urn:test:real',
         'type': 'string'
@@ -74,7 +74,7 @@ void describe('Value.create() bad paths', () => {
   });
 
   void it('SchemaError carries the missing schemaId in the error object', () => {
-    const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const tology = JsonTology.create({ 'baseIri': 'urn:test:' });
     const missingId = 'urn:test:missing-schema-id';
 
     let caught: SchemaError | undefined;
@@ -112,7 +112,7 @@ void describe('Value.instantiate() bad paths', () => {
   } as const;
 
   const tology = JsonTology.create({
-    'baseIRI': 'urn:test:',
+    'baseIri': 'urn:test:',
     'schemas': [schema]
   });
   const value = tology.value;
@@ -177,7 +177,7 @@ void describe('Value.instantiate() bad paths', () => {
 
 void describe('Value.cast() bad paths', () => {
   void it('cast for unregistered $id throws SchemaError', () => {
-    const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const tology = JsonTology.create({ 'baseIri': 'urn:test:' });
 
     assert.throws(
       () => {
@@ -194,7 +194,7 @@ void describe('Value.cast() bad paths', () => {
 
   void it('cast returns value even for partial type mismatch (coercion mode)', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'schemas': [{
         '$id': 'urn:test:cast-str',
         'type': 'string'
@@ -323,7 +323,7 @@ void describe('Changeset conflicting ops in sequence', () => {
 
 void describe('Value — registry modification after Value creation', () => {
   void it('value instance reflects newly registered schema after register()', () => {
-    const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const tology = JsonTology.create({ 'baseIri': 'urn:test:' });
     const value = tology.value;
 
     // Before registration: throws
@@ -349,7 +349,7 @@ void describe('Value — registry modification after Value creation', () => {
   });
 
   void it('value.instantiate() uses schemas registered after value instance obtained', () => {
-    const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const tology = JsonTology.create({ 'baseIri': 'urn:test:' });
     const value = tology.value;
 
     tology.set({
@@ -363,7 +363,7 @@ void describe('Value — registry modification after Value creation', () => {
   });
 
   void it('calling create() with a $id that matches base-IRI prefix still requires registration', () => {
-    const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const tology = JsonTology.create({ 'baseIri': 'urn:test:' });
     const value = tology.value;
 
     // Having the right base IRI doesn't auto-register

@@ -7,7 +7,7 @@
  * predicate IRIs in ABox data (both go through JsonTology's predicateResolver).
  *
  * Hand-crafted data quads for non-conforming cases use the same predicate IRIs
- * that `toQuads()` produces: `<baseIRI>/<propertyName>` (no fragment).
+ * that `toQuads()` produces: `<baseIri>/<propertyName>` (no fragment).
  */
 
 import assert from 'node:assert/strict';
@@ -18,11 +18,11 @@ import { ShaclProjection } from '../../src/modules/rdf/ShaclProjection.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { ShaclValidator } from '../../src/modules/validation/ShaclValidator.js';
 import { JsonTology } from '../../src/JsonTology.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import {
   RDF, SH, XSD
 } from '../../src/constants/IRI.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
   BnodeTermType, IriTermType, QuadObjectType
 } from '../../src/types/Quad.js';
@@ -112,7 +112,7 @@ void describe('ShaclValidator — minCount (required property)', () => {
 
   // Use JsonTology so predicateResolver aligns sh:path with toQuads predicates
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       TitleSchema,
       BookSchema
@@ -163,7 +163,7 @@ void describe('ShaclValidator — maxCount', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [BookSchema] as const
   });
   const shapeQuads = jt.toShacl().shaclQuads();
@@ -201,7 +201,7 @@ void describe('ShaclValidator — datatype', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [YearBook] as const
   });
   const shapeQuads = jt.toShacl().shaclQuads();
@@ -253,7 +253,7 @@ void describe('ShaclValidator — pattern', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       IsbnSchema,
       PatternBook
@@ -455,7 +455,7 @@ void describe('ShaclValidator — minLength / maxLength', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       CodeSchema,
       LenBook
@@ -669,7 +669,7 @@ void describe('ShaclValidator — minInclusive / maxInclusive', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       PriceSchema,
       RangeBook
@@ -882,7 +882,7 @@ void describe('ShaclValidator — minExclusive / maxExclusive', () => {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': BASE,
+    'baseIri': BASE,
     'schemas': [
       YearExclSchema,
       ExclBook
@@ -1270,7 +1270,7 @@ void describe('ShaclValidator — accepts raw quad array', () => {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [RawBook] as const
     });
 
@@ -1294,7 +1294,7 @@ void describe('ShaclValidator — accepts raw quad array', () => {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [RawBook2] as const
     });
 
@@ -1345,8 +1345,13 @@ function rdfList(prefix: string, items: QuadObjectType[]): {
   for (let idx = 0; idx < items.length; idx++) {
     const node = Terms.blank(`${prefix}${idx}`);
     const rest = idx + 1 < items.length ? Terms.blank(`${prefix}${idx + 1}`) : Terms.iri(RDF.nil);
+    const item = items.at(idx);
 
-    quads.push(Terms.quad(node, Terms.iri(RDF.first), items[idx]));
+    if (item === undefined) {
+      throw new Error(`expected items[${idx}] to exist`);
+    }
+
+    quads.push(Terms.quad(node, Terms.iri(RDF.first), item));
     quads.push(Terms.quad(node, Terms.iri(RDF.rest), rest));
   }
 
@@ -1368,7 +1373,7 @@ void describe('ShaclValidator — composition, node-level, and recursion (audit 
       'type': 'object'
     } as const;
     const jt = JsonTology.create({
-      'baseIRI': BASE,
+      'baseIri': BASE,
       'schemas': [Person]
     });
     const shapes = jt.toShacl().shaclQuads();

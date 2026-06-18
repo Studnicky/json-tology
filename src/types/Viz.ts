@@ -2,6 +2,8 @@
  * Schema visualization data structures.
  */
 
+import type { QuadInterface } from '../interfaces/QuadInterface.js';
+
 /**
  * Node in the schema relationship graph.
  */
@@ -64,12 +66,12 @@ export type VizSchemaDataType = {
   /**
    * OWL ontology representation (RDF quads).
    */
-  readonly 'owl': unknown[];
+  readonly 'owl': readonly QuadInterface[];
 
   /**
    * SHACL shapes representation (RDF quads).
    */
-  readonly 'shacl': unknown[];
+  readonly 'shacl': readonly QuadInterface[];
 
   /**
    * Generated TypeScript type definition.

@@ -15,7 +15,7 @@ const UuidSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:brands:',
+  'baseIri': 'urn:brands:',
   'enableStrictGraph': false,
   'schemas': [
     EmailSchema,

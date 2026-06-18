@@ -41,7 +41,7 @@ const PriceCentsSchema = {
 // ── Registry ──────────────────────────────────────────────────────────────
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableStrictGraph': false,
   'schemas': [
     CurrencySchema,

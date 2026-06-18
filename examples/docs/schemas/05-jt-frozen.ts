@@ -35,7 +35,7 @@ const MoneySchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:docs-schemas-05',
+  'baseIri': 'urn:docs-schemas-05',
   // doc example with synthetic fixture schemas
   'enableStrictGraph': false,
   'schemas': [MoneySchema] as const

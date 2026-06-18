@@ -48,7 +48,7 @@ const TreeSchema = {
 void describe('registry.validate — cyclic-data safety', () => {
   void it('returns without throwing on a self-referential (cyclic) linked-list', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:cyclic-safety:',
+      'baseIri': 'urn:cyclic-safety:',
       'enableStrictGraph': false,
       'schemas': [NodeSchema] as const
     });
@@ -77,7 +77,7 @@ void describe('registry.validate — cyclic-data safety', () => {
 
   void it('returns without throwing on a structurally-cyclic tree', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:cyclic-safety:',
+      'baseIri': 'urn:cyclic-safety:',
       'enableStrictGraph': false,
       'schemas': [TreeSchema] as const
     });
@@ -95,7 +95,7 @@ void describe('registry.validate — cyclic-data safety', () => {
 
   void it('parity: compiled fallback verdict matches interpreter for non-cyclic recursive data', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:cyclic-safety:',
+      'baseIri': 'urn:cyclic-safety:',
       'enableStrictGraph': false,
       'schemas': [NodeSchema] as const
     });

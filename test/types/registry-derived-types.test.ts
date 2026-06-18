@@ -59,7 +59,7 @@ const MessageSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:demo:',
+  'baseIri': 'urn:demo:',
   'schemas': [
     ChannelSchema,
     MessageSchema

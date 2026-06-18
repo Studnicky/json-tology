@@ -10,7 +10,7 @@
  * within one emission.
  */
 
-import type { SkolemizeFnType } from '../../../src/types/Skolemize.js';
+import type { SkolemizeFnType } from '../../../src/types/SkolemizeFnType.js';
 
 // ctx.path is a JSON-Pointer-style path to the current value.
 // ctx.value is the object being projected.

@@ -19,7 +19,7 @@
 
 import { JsonTology } from '../../src/JsonTology.js';
 import { Transform } from '../../src/modules/transform/Transform.js';
-import { brand } from '../../src/types/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type {
   ContainsBrandType,
   ContentEncodingBrandType,
@@ -121,7 +121,7 @@ const OrderSchema = {
 // ---------------------------------------------------------------------------
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.io',
+  'baseIri': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [
     AddressSchema,
@@ -203,7 +203,7 @@ void _matCity;
 
 // materialize() returns MaterializedSchemaType
 const jt2 = JsonTology.create({
-  'baseIRI': 'https://example.io',
+  'baseIri': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [AddressSchema] as const
 });
@@ -228,7 +228,7 @@ const DateSchema = {
 // schema's canonical (branded, date-time) string; encode is the inverse.
 const _TransformedDateSchema = Transform.create(DateSchema, {
   'decode': (raw: { 'epoch': number }) => {
-    return brand(new Date(raw.epoch).toISOString());
+    return Brand.cast(new Date(raw.epoch).toISOString());
   },
   'encode': (value) => {
     return { 'epoch': new Date(value).getTime() };
@@ -308,7 +308,7 @@ const _DupB = {
 
 if (false as boolean) {
   JsonTology.create({
-    'baseIRI': 'https://example.io',
+    'baseIri': 'https://example.io',
     'enableStrictGraph': false,
     'schemas': [
       // @ts-expect-error — duplicate $id: both schemas share 'https://example.io/Dup'
@@ -632,7 +632,7 @@ void _emailBad;
 
 // Coerce returns the branded type
 const jtBrand = JsonTology.create({
-  'baseIRI': 'https://example.io',
+  'baseIri': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [_EmailSchema] as const
 });
@@ -888,7 +888,7 @@ void _rBad2;
 // ---------------------------------------------------------------------------
 
 const _ValJt = JsonTology.create({
-  'baseIRI': 'https://example.io',
+  'baseIri': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [AddressSchema] as const
 });

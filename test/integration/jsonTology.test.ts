@@ -82,7 +82,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [UserSchema]
           });
 
@@ -95,7 +95,7 @@ import {
       },
       {
         'check': () => {
-          const empty = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+          const empty = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
           assert.ok(empty instanceof JsonTology);
         },
@@ -103,7 +103,7 @@ import {
       },
       {
         'check': () => {
-          const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+          const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
           const result = jt.set(UserSchema);
 
           assert.strictEqual(result, jt);
@@ -113,7 +113,7 @@ import {
       },
       {
         'check': () => {
-          const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+          const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
           jt.set(UserSchema);
           jt.set([RoleSchema]);
@@ -123,7 +123,7 @@ import {
       },
       {
         'check': () => {
-          const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+          const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
           jt.set(UserSchema);
           jt.set(UserSchema);
@@ -197,8 +197,13 @@ import {
           const errs = jt.validate(UserSchema, { 'name': 'Alice' });
 
           assert.ok(errs.length > 0);
-          assert.ok(typeof errs.items[0].path === 'string');
-          assert.ok(typeof errs.items[0].message === 'string');
+          const errsFirst = errs.items[0];
+
+          if (errsFirst === undefined) {
+            throw new Error('errs.items[0] missing');
+          }
+          assert.ok(typeof errsFirst.path === 'string');
+          assert.ok(typeof errsFirst.message === 'string');
         },
         'data': { 'name': 'Alice' },
         'method': 'validate',
@@ -288,7 +293,7 @@ import {
     ];
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [UserSchema]
     });
 
@@ -340,7 +345,7 @@ import {
       }
     ];
 
-    const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+    const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
     for (const {
       check, data, 'name': scenarioName
@@ -365,7 +370,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [UserSchema]
           });
           const onto = jt.ontology();
@@ -379,7 +384,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'prefixes': { 'myns': 'https://myapp.io/ns#' },
             'schemas': [UserSchema]
           });
@@ -395,7 +400,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [UserSchema]
           });
 
@@ -414,7 +419,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [
               UserSchema,
               RoleSchema
@@ -445,7 +450,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [
               UserSchema,
               RoleSchema
@@ -481,7 +486,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [DirectorySchema]
           });
           const graph = (jt.ontology().jsonLdObject()['@graph']) as Array<Record<string, unknown>>;
@@ -542,7 +547,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [UserSchema]
           });
           const graph = (jt.ontology().addFromQuads(jt.toQuads(UserSchema, {
@@ -589,7 +594,7 @@ import {
             'type': 'object'
           } as const;
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [schema]
           });
           const teamGraph = (jt.ontology().addFromQuads(jt.toQuads(schema, {
@@ -651,7 +656,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [
               UserSchema,
               DirectorySchema
@@ -668,7 +673,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [
               UserSchema,
               DirectorySchema
@@ -683,7 +688,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [
               UserSchema,
               DirectorySchema
@@ -702,7 +707,7 @@ import {
       },
       {
         'check': () => {
-          const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+          const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
           const anonSchema = {
             'properties': { 'x': { 'type': 'number' } },
             'type': 'object'
@@ -717,7 +722,7 @@ import {
       },
       {
         'check': () => {
-          const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+          const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
           const namedSchema = {
             '$id': 'https://myapp.io/Named',
             'type': 'string'
@@ -734,7 +739,7 @@ import {
           // enableStrictGraph: false — subschemaAt registers extracted sub-schema
           // which triggers duplicate detection against the parent schema's shapes.
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'enableStrictGraph': false,
             'schemas': [UserSchema] as const
           });
@@ -750,7 +755,7 @@ import {
           // enableStrictGraph: false — subschemaAt registers extracted sub-schema
           // which triggers duplicate detection against the parent schema's shapes.
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'enableStrictGraph': false,
             'schemas': [UserSchema] as const
           });
@@ -764,7 +769,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({
-            'baseIRI': 'https://myapp.io',
+            'baseIri': 'https://myapp.io',
             'schemas': [UserSchema] as const
           });
           const quads = jt.materializer.projectAbox(
@@ -787,7 +792,7 @@ import {
       },
       {
         'check': () => {
-          const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+          const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
           assert.deepEqual([...jt.registry.keys()], []);
         },
@@ -795,7 +800,7 @@ import {
       },
       {
         'check': () => {
-          const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+          const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
           assert.equal(jt.registry.has('https://anything.io/Foo'), false);
         },
@@ -836,7 +841,7 @@ import {
 
   void describe('Item 1: validate() returns ValidationErrors', () => {
     const entities = JsonTology.create({
-      'baseIRI': 'https://api-unification.test',
+      'baseIri': 'https://api-unification.test',
       'schemas': [UserSchema]
     });
 
@@ -864,9 +869,14 @@ import {
 
       assert.equal(result.ok, false);
       assert.ok(result.length > 0);
-      assert.ok(typeof result.items[0].path === 'string');
-      assert.ok(typeof result.items[0].keyword === 'string');
-      assert.ok(typeof result.items[0].message === 'string');
+      const resultFirst = result.items[0];
+
+      if (resultFirst === undefined) {
+        throw new Error('result.items[0] missing');
+      }
+      assert.ok(typeof resultFirst.path === 'string');
+      assert.ok(typeof resultFirst.keyword === 'string');
+      assert.ok(typeof resultFirst.message === 'string');
     });
 
     void it('is iterable over ValidationErrorType items', () => {
@@ -874,7 +884,12 @@ import {
       const collected = [...result];
 
       assert.equal(collected.length, result.length);
-      assert.ok(typeof collected[0].keyword === 'string');
+      const collectedFirst = collected[0];
+
+      if (collectedFirst === undefined) {
+        throw new Error('collected[0] missing');
+      }
+      assert.ok(typeof collectedFirst.keyword === 'string');
     });
   });
 
@@ -1083,7 +1098,7 @@ import {
     void it('return shape matches instance method return shape', () => {
       // enableStrictGraph: false — PersonSchema has inline minimum constraint
       const jt = JsonTology.create({
-        'baseIRI': 'https://static-counterparts.test',
+        'baseIri': 'https://static-counterparts.test',
         'enableStrictGraph': false,
         'schemas': [PersonSchema] as const
       });
@@ -1132,7 +1147,7 @@ import {
 
     void it('return shape matches instance method return shape', () => {
       const jt = JsonTology.create({
-        'baseIRI': 'https://static-counterparts.test',
+        'baseIri': 'https://static-counterparts.test',
         'enableStrictGraph': false,
         'schemas': [PersonSchema] as const
       });
@@ -1173,7 +1188,7 @@ import {
 
     void it('return shape matches instance method return shape', () => {
       const jt = JsonTology.create({
-        'baseIRI': 'https://static-counterparts.test',
+        'baseIri': 'https://static-counterparts.test',
         'enableStrictGraph': false,
         'schemas': [PersonSchema] as const
       });
@@ -1210,7 +1225,7 @@ import {
 
     void it('return shape matches instance method return shape', () => {
       const jt = JsonTology.create({
-        'baseIRI': 'https://static-counterparts.test',
+        'baseIri': 'https://static-counterparts.test',
         'enableStrictGraph': false,
         'schemas': [PersonSchema] as const
       });

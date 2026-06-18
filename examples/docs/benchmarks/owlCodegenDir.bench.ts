@@ -1,15 +1,15 @@
 /**
- * OWL codegen registry-directory benchmarks: `generateRegistryFiles` throughput.
+ * OWL codegen registry-directory benchmarks: `OwlCodegen.toRegistryFiles` throughput.
  *
  * Measures the directory-mode code-generation pipeline — OWL 2 TBox JSON-LD →
  * axiom dispatch → per-entity source strings — under two scenarios:
  *
  *   1. owl-codegen-dir bookstore tbox  — full bookstore TBox (~62 classes);
- *      serialised once, only the generateRegistryFiles call is timed.
+ *      serialised once, only the OwlCodegen.toRegistryFiles call is timed.
  *   2. owl-codegen-dir minimal class   — a 3-class synthetic ontology
  *      representing the smallest non-trivial codegen unit.
  *
- * `generateRegistryFiles` is the pure in-memory path (no I/O). Writing to disk
+ * `OwlCodegen.toRegistryFiles` is the pure in-memory path (no I/O). Writing to disk
  * is benchmarked separately if needed; the I/O cost depends on the OS and
  * filesystem, not the codegen logic.
  */
@@ -18,7 +18,7 @@ import { bookstoreEntities } from '../bookstore/index.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';
-import { generateRegistryFiles } from '../../../src/modules/codegen/OwlCodegen.js';
+import { OwlCodegen } from '../../../src/modules/codegen/OwlCodegen.js';
 import { JsonTology } from '../../../src/index.js';
 
 // ---------------------------------------------------------------------------
@@ -67,11 +67,11 @@ const minimalImportResult = JsonTology.fromTbox(minimalTboxJsonLd);
 // Warm — allow V8 to compile before measuring
 // ---------------------------------------------------------------------------
 
-generateRegistryFiles(bookstoreImportResult, {
+OwlCodegen.toRegistryFiles(bookstoreImportResult, {
   'registryConstName': 'bookstore',
   'sourceLabel': 'bookstore-tbox'
 });
-generateRegistryFiles(minimalImportResult, {
+OwlCodegen.toRegistryFiles(minimalImportResult, {
   'registryConstName': 'minimal',
   'sourceLabel': 'minimal-tbox'
 });
@@ -89,7 +89,7 @@ export function runOwlCodegenDirBench(): BenchResult[] {
     'owl-codegen-dir bookstore tbox',
     'json-tology',
     () => {
-      return generateRegistryFiles(bookstoreImportResult, {
+      return OwlCodegen.toRegistryFiles(bookstoreImportResult, {
         'registryConstName': 'bookstore',
         'sourceLabel': 'bookstore-tbox'
       });
@@ -106,7 +106,7 @@ export function runOwlCodegenDirBench(): BenchResult[] {
     'owl-codegen-dir minimal class',
     'json-tology',
     () => {
-      return generateRegistryFiles(minimalImportResult, {
+      return OwlCodegen.toRegistryFiles(minimalImportResult, {
         'registryConstName': 'minimal',
         'sourceLabel': 'minimal-tbox'
       });

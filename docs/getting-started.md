@@ -95,7 +95,7 @@ Import only what you need. Every sub-path is tree-shakable.
 
 ## Configuring `JsonTology.create`
 
-The full option reference lives at [Static helpers](/static-helpers#jsontology-create-options). Briefly, you supply `baseIRI` (string), `schemas` (array `as const`), and optional dialect / format-registry / strict / coercion controls.
+The full option reference lives at [Static helpers](/static-helpers#jsontology-create-options). Briefly, you supply `baseIri` (string), `schemas` (array `as const`), and optional dialect / format-registry / strict / coercion controls.
 
 ## Next steps
 

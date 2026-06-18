@@ -19,7 +19,7 @@ const curie = new Curie({
   'xsd': 'http://www.w3.org/2001/XMLSchema#'
 });
 
-// Use the registered bookstore baseIRI prefix for compacting display names
+// Use the registered bookstore baseIri prefix for compacting display names
 const bookIri = `https://bookstore.example/${BookSchema.$id.replace('urn:bookstore:', '')}`;
 const customerIri = `https://bookstore.example/${CustomerSchema.$id.replace('urn:bookstore:', '')}`;
 const orderIri = `https://bookstore.example/${OrderSchema.$id.replace('urn:bookstore:', '')}`;

@@ -6,7 +6,7 @@
  * and flatten() for structured consumption.
  */
 
-import type { ErrorJsonType } from '../types/Error.js';
+import type { ErrorJsonType } from '../types/ErrorJsonType.js';
 import type { BaseErrorOptionsType } from '../types/ErrorOptions.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 import { UNKNOWN_ERROR_CODE } from '../constants/ERROR_CODES.js';

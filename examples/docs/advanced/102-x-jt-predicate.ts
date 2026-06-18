@@ -3,7 +3,7 @@
  *
  * Adding `x-jt-predicate: '<IRI>'` directly to a property schema pins
  * that property to a specific predicate IRI regardless of the registry
- * `baseIRI`, `enableCanonicalPredicates`, or `predicateFor` settings.
+ * `baseIri`, `enableCanonicalPredicates`, or `predicateFor` settings.
  * It is the highest-precedence predicate binding — only the property
  * `$id` (when it is an absolute IRI) takes precedence over it.
  *
@@ -42,7 +42,7 @@ const TitleSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableStrictGraph': false,
   'schemas': [
     IsbnSchema,

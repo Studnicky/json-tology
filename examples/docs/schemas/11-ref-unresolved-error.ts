@@ -29,7 +29,7 @@ const OrderLineSchema = {
 
 // BookSchema is intentionally NOT registered.
 const jt = JsonTology.create({
-  'baseIRI': 'urn:docs-schemas-11',
+  'baseIri': 'urn:docs-schemas-11',
   // doc example with synthetic fixture schemas
   'enableStrictGraph': false,
   'schemas': [OrderLineSchema] as const

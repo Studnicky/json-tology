@@ -18,6 +18,10 @@ console.assert(quads.length > 0, 'order projected to RDF quads');
 
 const first = quads[0];
 
+if (first === undefined) {
+  throw new Error('expected at least one quad');
+}
+
 console.assert(typeof first.subject.value === 'string', 'first quad carries subject term');
 console.assert(typeof first.predicate.value === 'string', 'first quad carries predicate term');
 

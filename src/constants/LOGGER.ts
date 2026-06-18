@@ -1,4 +1,4 @@
-import type { LoggerInterface } from '../interfaces/Logger.js';
+import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 
 /** No-op logger used as default when no logger is provided. */
 export const SILENT_LOGGER: LoggerInterface = {

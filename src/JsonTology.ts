@@ -6,7 +6,7 @@
  *
  * @example
  * const jt = JsonTology.create({
- *   baseIRI: 'https://myapp.io',
+ *   baseIri: 'https://myapp.io',
  *   schemas: [UserSchema, OrderSchema] as const,
  * });
  *
@@ -20,23 +20,23 @@
 import type { JsonSchemaDocumentType } from './types/Schema.js';
 
 import type { OwlImportResultType } from './types/OwlImport.js';
-import type { DumpOptionsType } from './types/Dump.js';
+import type { DumpOptionsType } from './types/DumpOptionsType.js';
 import type { InvariantType } from './types/Invariant.js';
-import type { ComputedFnType } from './types/Computed.js';
-import type { JsonTologyOptionsType } from './types/Config.js';
+import type { ComputedFnType } from './types/ComputedFnType.js';
+import type { JsonTologyOptionsType } from './types/JsonTologyOptionsType.js';
 import type { JsonSchemaType } from './types/Schema.js';
 import type {
   LoaderType, SchemaLoadResultType
 } from './types/Loader.js';
-import type { LoggerInterface } from './interfaces/Logger.js';
-import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
-import type { PrefetchOptionsType } from './types/Prefetch.js';
-import type { QuadInterface } from './interfaces/Quad.js';
+import type { LoggerInterface } from './interfaces/LoggerInterface.js';
+import type { MaterializerInterface } from './interfaces/MaterializerInterface.js';
+import type { PrefetchOptionsType } from './types/PrefetchOptionsType.js';
+import type { QuadInterface } from './interfaces/QuadInterface.js';
 import type { RegistryOptionsType } from './types/Registry.js';
-import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
+import type { SchemaRegistryInterface } from './interfaces/SchemaRegistryInterface.js';
 import type { SnapshotType } from './types/Snapshot.js';
-import type { TransformFnsType } from './types/TransformFns.js';
-import type { ValueInterface } from './interfaces/ValueImpl.js';
+import type { TransformFnsType } from './types/TransformFnsType.js';
+import type { ValueInterface } from './interfaces/ValueInterface.js';
 import type { ValidationErrors } from './errors/ValidationErrors.js';
 import type {
   CanonicalShapeType, InferSchemaType, MaterializedSchemaType, SchemaPointerPathsType
@@ -44,27 +44,28 @@ import type {
 import type {
   ParseOutputType, TransformedType
 } from './types/Transform.js';
-import type { ComputedExtensionBrandType } from './types/ComputedExtension.js';
+import type { ComputedExtensionBrandType } from './types/ComputedExtensionBrandType.js';
 import type {
   SchemaReferencesMapType, UniqueSchemaIdsType
 } from './types/Registry.js';
-import type { PredicateForType } from './types/PredicateFor.js';
-import type { PredicateResolverFnType } from './types/PredicateResolverFn.js';
-import type { SchemaRefType } from './types/SchemaRef.js';
-import type { SkolemizeFnType } from './types/Skolemize.js';
-import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOptions.js';
-import type { ToQuadsOptionsType } from './types/ToQuadsOptions.js';
+import type { PredicateForType } from './types/PredicateForType.js';
+import type { PredicateResolverFnType } from './types/PredicateResolverFnType.js';
+import type { SchemaRefType } from './types/SchemaRefType.js';
+import type { SkolemizeFnType } from './types/SkolemizeFnType.js';
+import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOptionsType.js';
+import type { ToQuadsOptionsType } from './types/ToQuadsOptionsType.js';
 
 import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
 import { AboxGraph } from './modules/graph/AboxGraph.js';
 import type { AboxGraphInterface } from './interfaces/AboxGraphInterface.js';
 import type { AboxIdentityDescriptorType } from './types/AboxGraph.js';
-import { isRecord } from './modules/data/DataTypes.js';
-import type { CurieInterface } from './interfaces/Curie.js';
-import { Curie } from './modules/rdf/Curie.js';
+import { DataType } from './modules/data/DataType.js';
+import type { CurieInterface } from './interfaces/CurieInterface.js';
+import { Curie } from './modules/quads/Curie.js';
 import { OwlImporter } from './modules/ontology/OwlImporter.js';
 import { Skolemize } from './modules/rdf/Skolemize.js';
-import { Terms } from './modules/rdf/Terms.js';
+import { Projection } from './modules/rdf/Projection.js';
+import { Terms } from './modules/quads/Terms.js';
 import { Dumper } from './modules/graph/Dumper.js';
 import { FormatRegistry } from './modules/format/FormatRegistry.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
@@ -77,11 +78,12 @@ import { BaseError } from './errors/BaseError.js';
 import { EncodeError } from './errors/EncodeError.js';
 import { TransformError } from './errors/TransformError.js';
 import { PredicateResolver } from './modules/graph/PredicateResolver.js';
+import { SchemaIri } from './modules/graph/SchemaIri.js';
 import { SchemaError } from './errors/SchemaError.js';
 import type { DuplicateReportEntryType } from './types/DuplicateReportEntryType.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
-import { brand } from './types/Brand.js';
+import { Brand } from './modules/data/Brand.js';
 import { Value } from './modules/data/Value.js';
 import { ShaclValidator } from './modules/validation/ShaclValidator.js';
 import type { ShaclValidationReportType } from './types/ShaclValidationReportType.js';
@@ -91,8 +93,7 @@ import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import {
   SchemaErrorCode, TransformErrorCode
 } from './constants/ERROR_CODES.js';
-
-const STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
+import { JT_STATIC_BASE_IRI } from './constants/IRI.js';
 
 /**
  * The literal string `'blank-node'` requests anonymous-node subjects
@@ -216,12 +217,12 @@ function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): Norma
   }
 
   const annotationEmitMode = options.annotationEmitMode;
-  const graphIRI = options.graphIRI;
+  const graphIri = options.graphIri;
   const iriFor = liftIriForOption(options.iriFor);
 
-  const base: NormalizedToQuadsOptionsType = graphIRI === undefined
+  const base: NormalizedToQuadsOptionsType = graphIri === undefined
     ? {}
-    : { graphIRI };
+    : { graphIri };
 
   const withIriFor: NormalizedToQuadsOptionsType = iriFor === undefined
     ? base
@@ -253,7 +254,7 @@ function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): Norma
  *
  * @example
  * ```ts
- * const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] as const });
+ * const jt = JsonTology.create({ baseIri: 'https://myapp.io', schemas: [UserSchema] as const });
  * type User = InferType<typeof UserSchema>;
  * const user = jt.instantiate(UserSchema.$id, data);
  * ```
@@ -356,7 +357,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    * fill in any IRIs not already in the registry; IRIs already registered are
    * skipped, so `schemas` wins on collision.
    *
-   * @param options - `baseIRI`, optional `schemas`, optional `prefetched`, prefixes, dialect.
+   * @param options - `baseIri`, optional `schemas`, optional `prefetched`, prefixes, dialect.
    */
   public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsType<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaReferencesMapType<TSchemas>> {
     const jt = new JsonTology(options);
@@ -429,7 +430,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     // whatever schema is passed without imposing graph-integrity constraints; the
     // caller is responsible for schema quality in production code.
     return JsonTology.create({
-      'baseIRI': STATIC_BASE_IRI,
+      'baseIri': JT_STATIC_BASE_IRI,
       'enableStrictGraph': false,
       'schemas': [schema] as const
     });
@@ -462,17 +463,17 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param jsonLd - The OWL 2 TBox input as a QuadInterface array, a JSON-LD
    *   object, or a JSON-LD string.
-   * @param options - Optional baseIRI and prefix overrides for the import session.
+   * @param options - Optional baseIri and prefix overrides for the import session.
    * @returns OwlImportResultType with reconstructed schemas, invariants,
    *   characteristics, sameAs pairs, individuals, and unsupported axiom log.
    */
   public static fromTbox(
-    jsonLd: object | QuadInterface[] | string,
-    options?: { 'baseIRI'?: string;
+    jsonLd: QuadInterface[] | Record<string, unknown> | string,
+    options?: { 'baseIri'?: string;
       'prefixes'?: Record<string, string> }
   ): OwlImportResultType {
     const importer = new OwlImporter({
-      'baseIRI': options?.baseIRI ?? STATIC_BASE_IRI,
+      'baseIri': options?.baseIri ?? JT_STATIC_BASE_IRI,
       ...(!(options?.prefixes === undefined) && { 'prefixes': options.prefixes })
     });
 
@@ -582,11 +583,11 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * Pass the result to {@link JsonTology.create} via `prefetched` for sync consumption.
    *
-   * @param options - `loader`, optional `rootIds`, optional `schemas`, optional `baseIRI`.
+   * @param options - `loader`, optional `rootIds`, optional `schemas`, optional `baseIri`.
    */
   public static async prefetch(options: PrefetchOptionsType): Promise<SnapshotType> {
-    const baseIRI = options.baseIRI ?? STATIC_BASE_IRI;
-    const tmp = new JsonTology({ 'baseIRI': baseIRI });
+    const baseIri = options.baseIri ?? JT_STATIC_BASE_IRI;
+    const tmp = new JsonTology({ 'baseIri': baseIri });
 
     if (options.schemas) {
       for (const schema of options.schemas) {
@@ -655,7 +656,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     options?: { readonly 'enableStrictGraph'?: boolean }
   ): JsonTology<SchemaReferencesMapType<ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>>> {
     const jt = JsonTology.create({
-      'baseIRI': STATIC_BASE_IRI,
+      'baseIri': JT_STATIC_BASE_IRI,
       ...options
     });
 
@@ -770,11 +771,11 @@ export class JsonTology<TRefs = Record<never, never>> {
       }
     }
   }
-  private readonly baseIRI: string;
+  private readonly baseIri: string;
   private readonly curie: CurieInterface;
   private readonly defaultDeskolemize: boolean;
 
-  private readonly defaultGraphIRI: string | undefined;
+  private readonly defaultGraphIri: string | undefined;
   private readonly defaultIriForRaw: SkolemizeFnType | string | undefined;
   private readonly enableCanonicalPredicates: boolean | undefined;
   private readonly graphSchemaSerializer: GraphSchemaSerializer;
@@ -826,24 +827,19 @@ export class JsonTology<TRefs = Record<never, never>> {
   /**
    * Constructs a new {@link JsonTology} instance (use {@link JsonTology.create} for the public API).
    *
-   * @param options - Configuration including `baseIRI`, prefixes, format validators, `enableTypeCast`, `enableStrictTypes`, and logger.
+   * @param options - Configuration including `baseIri`, prefixes, format validators, `enableTypeCast`, `enableStrictTypes`, and logger.
    */
   private constructor(options: JsonTologyOptionsType) {
-    let baseIRI = options.baseIRI;
-
-    while (baseIRI.endsWith('/')) {
-      baseIRI = baseIRI.slice(0, -1);
-    }
-    this.baseIRI = baseIRI;
+    this.baseIri = SchemaIri.normalizeBase(options.baseIri);
     this.logger = options.logger ?? SILENT_LOGGER;
 
-    this.defaultGraphIRI = options.defaultGraphIRI;
+    this.defaultGraphIri = options.defaultGraphIri;
     this.defaultDeskolemize = options.defaultDeskolemize === true;
     this.defaultIriForRaw = options.iriFor;
     this.enableCanonicalPredicates = options.enableCanonicalPredicates;
     this.predicateFor = options.predicateFor;
     this.predicateResolver = PredicateResolver.forConfig({
-      'baseIRI': this.baseIRI,
+      'baseIri': this.baseIri,
       'enableCanonicalPredicates': this.enableCanonicalPredicates,
       'predicateFor': this.predicateFor
     });
@@ -856,7 +852,15 @@ export class JsonTology<TRefs = Record<never, never>> {
     const formatRegistry = JsonTology.buildFormatRegistry(options.formats);
     const registryOptions = JsonTology.buildRegistryOptions(options, formatRegistry);
 
-    this.registry = new SchemaRegistry(registryOptions);
+    this.registry = new SchemaRegistry({
+      ...registryOptions,
+      'defaultCreatorFactory': (registry): Materializer => {
+        return new Materializer(registry, {
+          'aboxProjector': Projection,
+          'logger': this.logger
+        });
+      }
+    });
     this.refLoader = new RefResolutionLoader(this.registry);
 
     // Curie with merged prefixes from registry. Assigned before any CURIE
@@ -869,6 +873,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     this.value = new Value(this.registry) as unknown as ValueInterface<TRefs>;
     this.materializer = new Materializer(this.registry, {
       ...options.materializer,
+      'aboxProjector': Projection,
       'logger': this.logger
     });
 
@@ -992,7 +997,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     // (identical to Transform.create), not a widening.
     Transform.register(schema, fns as TransformFnsType);
 
-    return brand<TransformedType<TSchema, TWire>>(schema);
+    return Brand.cast<TransformedType<TSchema, TWire>>(schema);
   }
   /**
    * Build the ABox identity descriptor list and schema-by-IRI index for `aboxGraph`.
@@ -1011,7 +1016,7 @@ export class JsonTology<TRefs = Record<never, never>> {
 
       const properties = schema.properties;
 
-      if (!isRecord(properties)) {
+      if (!DataType.isRecord(properties)) {
         continue;
       }
 
@@ -1019,7 +1024,7 @@ export class JsonTology<TRefs = Record<never, never>> {
         propertyName,
         rawPropertySchema
       ] of Object.entries(properties)) {
-        if (!isRecord(rawPropertySchema) || rawPropertySchema.inverseFunctional !== true) {
+        if (!DataType.isRecord(rawPropertySchema) || rawPropertySchema.inverseFunctional !== true) {
           continue;
         }
 
@@ -1272,12 +1277,12 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @throws {GraphError} code DIALECT_UNSUPPORTED when the input contains an unsupported JSON Schema dialect.
    */
   public fromTbox(
-    jsonLd: object | QuadInterface[] | string,
+    jsonLd: QuadInterface[] | Record<string, unknown> | string,
     options?: { 'register'?: boolean }
   ): OwlImportResultType {
     const register = options?.register !== false;
     const importer = new OwlImporter({
-      'baseIRI': this.baseIRI,
+      'baseIri': this.baseIri,
       'logger': this.logger,
       'prefixes': this.prefixes
     });
@@ -1461,7 +1466,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     const shaclQuads = this.shaclSerializer.serializeQuads(this.registry.listGraphs());
 
     const builder = new OntologyBuilder({
-      'baseIRI': this.baseIRI,
+      'baseIri': this.baseIri,
       'logger': this.logger,
       'prefixes': this.prefixes
     })
@@ -1634,8 +1639,8 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param schema - The schema describing the data shape.
    * @param data - The instance data to project into quads.
    * @param options - Per-call overrides typed as {@link ToQuadsOptionsType}:
-   *   - `graphIRI` — when set, every emitted quad's `graph` field is stamped
-   *     with this IRI. Falls back to the instance-level `defaultGraphIRI`.
+   *   - `graphIri` — when set, every emitted quad's `graph` field is stamped
+   *     with this IRI. Falls back to the instance-level `defaultGraphIri`.
    *   - `iriFor` — overrides root subject IRI minting. If a string, sets the
    *     depth-0 subject IRI. If the literal `'blank-node'`
    *     ({@link BLANK_NODE_IRI_FOR}), every object subject is emitted as an
@@ -1661,7 +1666,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     const effective = {
       'annotationEmitMode': normalized.annotationEmitMode,
       'curie': this.curie,
-      'graphIRI': normalized.graphIRI ?? this.defaultGraphIRI,
+      'graphIri': normalized.graphIri ?? this.defaultGraphIri,
       'iriFor': normalized.iriFor ?? liftIriForOption(this.defaultIriForRaw),
       'predicateResolver': this.predicateResolver
     };
@@ -1669,7 +1674,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     return this.materializer.projectAbox(
       JsonTology.asNamedSchema(schema),
       data,
-      this.baseIRI,
+      this.baseIri,
       effective
     );
   }
@@ -1711,7 +1716,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     const shaclQuads = this.shaclSerializer.serializeQuads(this.registry.listGraphs());
 
     return new OntologyBuilder({
-      'baseIRI': this.baseIRI,
+      'baseIri': this.baseIri,
       'logger': this.logger,
       'prefixes': this.prefixes
     }).addShaclFromQuads(shaclQuads);
@@ -1732,7 +1737,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     const tboxQuads = this.ontologySerializer.serializeQuads(this.registry.listGraphs());
 
     return new OntologyBuilder({
-      'baseIRI': this.baseIRI,
+      'baseIri': this.baseIri,
       'logger': this.logger,
       'prefixes': this.prefixes
     }).addFromQuads(tboxQuads);
@@ -1791,7 +1796,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @example
    * ```ts
-   * const jt = JsonTology.create({ baseIRI: 'https://example.com', schemas: [BookSchema] });
+   * const jt = JsonTology.create({ baseIri: 'https://example.com', schemas: [BookSchema] });
    * const shapeQuads = jt.toShacl();                           // OntologyBuilder
    * const dataQuads  = jt.toQuads(BookSchema, bookInstance);   // QuadInterface[]
    * const report = jt.validateWithShacl(shapeQuads, dataQuads);

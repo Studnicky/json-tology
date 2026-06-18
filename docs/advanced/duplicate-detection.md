@@ -28,7 +28,7 @@ import { CustomerSchema } from './bookstore/entities/Customer.js';
 // Detection fires because the inline shape hashes identically to EmailSchema.
 
 const entities = JsonTology.create({
-  baseIRI: 'urn:bookstore:',
+  baseIri: 'urn:bookstore:',
   schemas: [EmailSchema, CustomerSchema] as const,
 });
 // throws SchemaError('SCHEMA_DUPLICATE_SHAPE') if CustomerSchema has inline email shape
@@ -67,7 +67,7 @@ Turns all graph-integrity violations into `logger.warn` calls. Neither inline sh
 <!-- inline-ts-ok: create-options sketch; `schemas: [...]` is a placeholder, not a standalone runnable program. -->
 ```ts
 const entities = JsonTology.create({
-  baseIRI: 'urn:bookstore:',
+  baseIri: 'urn:bookstore:',
   schemas: [...] as const,
   enableStrictGraph: false,
 });
@@ -80,7 +80,7 @@ Stops `findDuplicates()` from running after each `register()` call. Inline-shape
 <!-- inline-ts-ok: create-options sketch; `schemas: [...]` is a placeholder, not a standalone runnable program. -->
 ```ts
 const entities = JsonTology.create({
-  baseIRI: 'urn:bookstore:',
+  baseIri: 'urn:bookstore:',
   schemas: [...] as const,
   enableDuplicateDetection: false,
 });
@@ -93,7 +93,7 @@ Stops registration-time warnings for inline constrained shapes when `enableStric
 <!-- inline-ts-ok: create-options sketch; `schemas: [...]` is a placeholder, not a standalone runnable program. -->
 ```ts
 const entities = JsonTology.create({
-  baseIRI: 'urn:bookstore:',
+  baseIri: 'urn:bookstore:',
   schemas: [...] as const,
   enableStrictGraph: false,
   enableInlineWarnings: false,
@@ -135,7 +135,7 @@ import { JsonTology } from 'json-tology';
 import * as schemas from './bookstore/index.js';
 
 const entities = JsonTology.create({
-  baseIRI: 'urn:bookstore:',
+  baseIri: 'urn:bookstore:',
   schemas: Object.values(schemas) as const,
   enableStrictGraph: false,
 });

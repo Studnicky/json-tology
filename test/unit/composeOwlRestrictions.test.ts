@@ -12,9 +12,9 @@ const PARENT_IRI = 'urn:example:Person#parent';
 const NAME_IRI = 'urn:example:Person#name';
 
 // Restrictions author onProperty in the class-scoped form above, but the TBox
-// projection resolves onProperty to the FLAT canonical predicate IRI (baseIRI +
+// projection resolves onProperty to the FLAT canonical predicate IRI (baseIri +
 // propertyName) so restrictions stay connected to the flat property declarations
-// and ABox assertions. baseIRI is `urn:example`, so `parent`/`name` flatten to:
+// and ABox assertions. baseIri is `urn:example`, so `parent`/`name` flatten to:
 const PARENT_FLAT_IRI = 'urn:example/parent';
 const NAME_FLAT_IRI = 'urn:example/name';
 
@@ -32,7 +32,7 @@ type JsonLdNodeType = Record<string, unknown>;
 
 function tboxNodes(schema: Record<string, unknown> & { '$id': string }): readonly JsonLdNodeType[] {
   const jt = JsonTology.create({
-    'baseIRI': 'urn:example',
+    'baseIri': 'urn:example',
     'enableStrictGraph': false,
     'schemas': [schema] as const
   });
@@ -153,9 +153,14 @@ void describe('Compose OWL restrictions', () => {
       const list = restrictions as Array<Record<string, unknown>>;
 
       assert.equal(list.length, 1);
-      assert.equal(list[0].kind, 'cardinality');
-      assert.equal(list[0].onProperty, PARENT_IRI);
-      assert.equal(list[0].value, 2);
+      const item0 = list.at(0);
+
+      if (item0 === undefined) {
+        throw new Error('expected restriction at index 0');
+      }
+      assert.equal(item0.kind, 'cardinality');
+      assert.equal(item0.onProperty, PARENT_IRI);
+      assert.equal(item0.value, 2);
     });
 
     void it('does not mutate the body schema', () => {
@@ -201,7 +206,12 @@ void describe('Compose OWL restrictions', () => {
       const restrictions = findRestrictionsOnProperty(nodes, PARENT_FLAT_IRI);
 
       assert.equal(restrictions.length, 1, 'one owl:Restriction node emitted');
-      assert.equal(literalValue(restrictions[0], OWL_CARDINALITY), 2);
+      const restriction0 = restrictions.at(0);
+
+      if (restriction0 === undefined) {
+        throw new Error('expected restriction node at index 0');
+      }
+      assert.equal(literalValue(restriction0, OWL_CARDINALITY), 2);
 
       const classNode = nodes.find((node) => {
         return node['@id'] === 'urn:example:PersonExactly2Parents';
@@ -279,7 +289,12 @@ void describe('Compose OWL restrictions', () => {
       const restrictions = findRestrictionsOnProperty(nodes, NAME_FLAT_IRI);
 
       assert.equal(restrictions.length, 1);
-      assert.equal(literalValue(restrictions[0], OWL_HAS_VALUE), 'Alice');
+      const hasValueNode = restrictions.at(0);
+
+      if (hasValueNode === undefined) {
+        throw new Error('expected restriction node at index 0');
+      }
+      assert.equal(literalValue(hasValueNode, OWL_HAS_VALUE), 'Alice');
     });
   });
 });

@@ -20,7 +20,7 @@ type Email = InferType<typeof EmailSchema>;
 // Email: string & FormatBrandType<'email'>
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:brands:',
+  'baseIri': 'urn:brands:',
   'enableStrictGraph': false,
   'schemas': [EmailSchema]
 });

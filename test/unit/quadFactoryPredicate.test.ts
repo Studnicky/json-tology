@@ -13,9 +13,9 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { QuadFactory } from '../../src/modules/rdf/QuadFactory.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { QuadFactory } from '../../src/modules/quads/QuadFactory.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { XSD } from '../../src/constants/IRI.js';
 
 const SUBJECT = 'https://example.com/subject';

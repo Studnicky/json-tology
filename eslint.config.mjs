@@ -2,104 +2,15 @@ import js from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import { basename, extname } from 'node:path';
 import perfectionist from 'eslint-plugin-perfectionist';
 import regexpPlugin from 'eslint-plugin-regexp';
 import unicornPlugin from 'eslint-plugin-unicorn';
 import ymlPlugin from 'eslint-plugin-yml';
 import globals from 'globals';
+import { noocodec } from './eslint-rules/noocodec.mjs';
 
-// Custom rule: filename must match a named export
-// Replaces deprecated eslint-plugin-filename-export (uses removed context.getFilename)
-const filenameMatchesExportRule = {
-  meta: {
-    docs: { description: 'Enforce filename matches named export' },
-    messages: { noMatchingExport: 'Filename does not match any named exports' },
-    schema: [{ properties: { casing: { enum: ['strict', 'loose'], type: 'string' }, stripextra: { type: 'boolean' } }, type: 'object' }],
-    type: 'suggestion'
-  },
-  create(context) {
-    const options = context.options[0] ?? {};
-    const isStrict = options.casing === 'strict';
-    const stripExtra = options.stripextra === true;
-    return {
-      Program(node) {
-        const filename = context.filename;
-        const filenameSansExt = basename(filename, extname(filename));
-        if (['index', 'types'].includes(filenameSansExt) || /\.(test|spec|stories)$/.test(filenameSansExt)) { return; }
-        if (/[/\\](types|interfaces|errors|constants)[/\\]/.test(filename)) { return; }
-        if (node.body.some((item) => { return item.type === 'ExportDefaultDeclaration'; })) { return; }
-        const namedExports = node.body.filter((item) => { return item.type === 'ExportNamedDeclaration'; });
-        if (namedExports.length === 0) { return; }
-        const exportNames = namedExports.flatMap((exp) => {
-          if (exp.declaration) {
-            if ('declarations' in exp.declaration && exp.declaration.declarations) {
-              return exp.declaration.declarations.map((decl) => { return decl.id?.name ?? ''; });
-            }
-            return [exp.declaration.id?.name ?? ''];
-          }
-          if (exp.specifiers) { return exp.specifiers.map((spec) => { return 'name' in spec.exported ? spec.exported.name : spec.exported.value; }); }
-          return [];
-        });
-        const normalize = (name) => {
-          let result = name;
-          if (stripExtra) { result = result.replace(/[^a-zA-Z0-9]/g, ''); }
-          if (!isStrict) { result = result.toLowerCase(); }
-          return result;
-        };
-        if (!exportNames.some((name) => { return normalize(name) === normalize(filenameSansExt); })) {
-          context.report({ messageId: 'noMatchingExport', node });
-        }
-      }
-    };
-  }
-};
-
-const filenameExportPlugin = { rules: { 'match-named-export': filenameMatchesExportRule } };
-
-// Custom rule: interface must bear at least one method/call/construct signature
-// (the type-substrate rule: data shapes belong in src/types/ as `type`, not `interface`)
-const interfaceMustBeContractRule = {
-  meta: {
-    messages: {
-      dataShapeMustBeType:
-        "Interface '{{name}}' has no method/call/construct signatures. Per the type-substrate rule, data shapes must be declared as `type` in src/types/; `interface` is reserved for behavioral/class contracts and the allowlisted augmentation points."
-    },
-    schema: [],
-    type: 'problem'
-  },
-  create(context) {
-    const ALLOW = new Set([
-      'JsonTologyReferencesInterface',
-      'JsonTologyTypeConfigInterface'
-    ]);
-
-    return {
-      TSInterfaceDeclaration(node) {
-        if (ALLOW.has(node.id.name)) { return; }
-
-        const hasBehavioralMember = node.body.body.some(
-          (member) =>
-            member.type === 'TSMethodSignature'
-            || member.type === 'TSCallSignatureDeclaration'
-            || member.type === 'TSConstructSignatureDeclaration'
-          // NOTE: TSPropertySignature with TSFunctionType typeAnnotation is a
-          // function-valued FIELD (data), NOT behavioral. Do NOT count it.
-        );
-
-        if (!hasBehavioralMember) {
-          context.report({
-            data: { name: node.id.name },
-            messageId: 'dataShapeMustBeType',
-            node: node.id
-          });
-        }
-      }
-    };
-  }
-};
-
-const contractPlugin = { rules: { 'interface-must-be-contract': interfaceMustBeContractRule } };
+// Custom @noocodec rules live in the portable extension `eslint-rules/noocodec.mjs`
+// (canonical home: noocodec-bot; copied verbatim between @noocodec projects).
 
 // ---------------------------------------------------------------------------
 // Rule sets
@@ -177,7 +88,7 @@ const syntaxRestrictions = [
   { message: 'Function.prototype.call() is forbidden. Use direct function calls.', selector: 'CallExpression[callee.property.name="call"]' },
   { message: 'Function.prototype.apply() is forbidden. Use spread operator.', selector: 'CallExpression[callee.property.name="apply"]' },
   { message: 'Class names must be PascalCase.', selector: 'ClassDeclaration[id.name=/^[a-z]/]' },
-  { message: 'Exported const/function names must be camelCase, PascalCase, or UPPER_CASE.', selector: 'ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name=/^[a-z]+$|^[a-z][a-zA-Z0-9]*_/]' },
+  { message: 'Exported const/function names must be camelCase, PascalCase, or UPPER_CASE.', selector: 'ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name=/^[a-z][a-zA-Z0-9]*_/]' },
   { message: 'Single-letter variables are forbidden (except i,j,k,m,n in loops, _ for unused). Use descriptive names.', selector: 'VariableDeclarator[id.name=/^[a-hlo-rt-z]$/]:not([id.name="_"])' },
   { message: 'Single-letter function parameters are forbidden (except _ for unused). Use descriptive names.', selector: ':matches(FunctionDeclaration, FunctionExpression, ArrowFunctionExpression) > Identifier[name=/^[a-z]$/]:not([name="_"]):not([name="i"]):not([name="j"]):not([name="k"]):not([name="m"]):not([name="n"])' },
   { message: 'Use named imports instead of namespace imports (import * as).', selector: 'ImportNamespaceSpecifier' }
@@ -547,8 +458,7 @@ const jsModulePlugins = {
 const typeScriptPlugins = {
   '@stylistic': stylistic,
   '@typescript-eslint': tsPlugin,
-  'contract': contractPlugin,
-  'filename-export': filenameExportPlugin,
+  'noocodec': noocodec,
   'perfectionist': perfectionist,
   'regexp': regexpPlugin,
   'unicorn': unicornPlugin
@@ -636,7 +546,7 @@ export default [
       ...typeScriptPluginRules,
       ...unicornPluginRules,
       ...regexpPluginRules,
-      'contract/interface-must-be-contract': 'error'
+      'noocodec/interface-must-be-contract': ['error', { 'allow': ['JsonTologyReferencesInterface', 'JsonTologyTypeConfigInterface'] }]
     }
   },
 
@@ -699,6 +609,7 @@ export default [
   {
     files: ['src/types/**/*.ts'],
     rules: {
+      'noocodec/type-alias-must-end-type': 'error',
       'no-restricted-syntax': [
         'error',
         ...syntaxRestrictions,
@@ -706,7 +617,15 @@ export default [
           message: 'interfaces belong in src/interfaces/',
           selector: 'TSInterfaceDeclaration'
         }
-      ]
+      ],
+      // Leaf layer: types/ must not value-import from modules/ (type-only refs allowed).
+      '@typescript-eslint/no-restricted-imports': ['error', {
+        patterns: [{
+          allowTypeImports: true,
+          group: ['**/modules/**'],
+          message: 'src/types/ is a leaf layer — do not import runtime code from src/modules/ (import type is allowed).'
+        }]
+      }]
     }
   },
 
@@ -720,7 +639,34 @@ export default [
           message: 'object-type aliases belong in src/types/',
           selector: 'TSTypeAliasDeclaration > TSTypeLiteral'
         }
-      ]
+      ],
+      // Leaf layer: interfaces/ must not value-import from modules/ (type-only refs allowed).
+      '@typescript-eslint/no-restricted-imports': ['error', {
+        patterns: [{
+          allowTypeImports: true,
+          group: ['**/modules/**'],
+          message: 'src/interfaces/ is a leaf layer — do not import runtime code from src/modules/ (import type is allowed).'
+        }]
+      }],
+      // Filename must match the exported *Interface symbol (one interface per file).
+      'noocodec/filename-matches-export': ['error', { casing: 'strict' }]
+    }
+  },
+
+  // Leaf layer: constants/ must not import from modules/ at all — this is the gate
+  // that prevents the constants -> modules/rdf runtime circular from returning.
+  // (errors/ is permitted to use the modules/data substrate, e.g. Path; that is a
+  // one-way dependency on the lowest module layer, not a cycle.)
+  {
+    files: ['src/constants/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': ['error', {
+        patterns: [{
+          allowTypeImports: true,
+          group: ['**/modules/**'],
+          message: 'src/constants/ is a leaf layer — do not import from src/modules/ (this gate prevents the XSD_MAPS<->XsdTypes circular).'
+        }]
+      }]
     }
   }
 ];

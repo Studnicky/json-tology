@@ -29,8 +29,15 @@ const customers = bookstoreEntities.fromQuads(CustomerSchema.$id, abox);
 
 console.assert(Array.isArray(customers), 'customers is array');
 console.assert(customers.length > 0, 'at least one customer');
-console.assert(customers[0].name === 'Bastian Balthazar Bux', 'name preserved');
+
+const first = customers[0];
+
+if (first === undefined) {
+  throw new Error('expected at least one customer');
+}
+
+console.assert(first.name === 'Bastian Balthazar Bux', 'name preserved');
 
 console.log('Round-trip: toQuads quad count:', abox.length);
 console.log('Round-trip: fromQuads customer count:', customers.length);
-console.log('Recovered customer name:', customers[0].name);
+console.log('Recovered customer name:', first.name);

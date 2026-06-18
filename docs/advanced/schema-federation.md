@@ -18,7 +18,7 @@ Async work is isolated to a single entry point: `JsonTology.prefetch`, which bui
 - `loader`: required.
 - `schemas`: seed schemas whose refs are followed.
 - `rootIds`: IRIs to load directly from the loader (no local seed required).
-- `baseIRI`: used by the ephemeral walker; defaults to a static placeholder when omitted.
+- `baseIri`: used by the ephemeral walker; defaults to a static placeholder when omitted.
 
 ## How the resolution walk works
 

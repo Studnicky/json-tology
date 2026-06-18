@@ -17,11 +17,11 @@ import {
 import {
   JsonTology, Transform
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { RefDecoder } from '../../src/modules/graph/RefDecoder.js';
-import type { RefDecoderRegistryType } from '../../src/types/RefDecoderRegistry.js';
+import type { RefDecoderRegistryType } from '../../src/types/RefDecoderRegistryType.js';
 
 // ---------------------------------------------------------------------------
 // Minimal registry stubs — used when we drive RefDecoder.run directly
@@ -54,7 +54,7 @@ const DateRawSchema = {
 // canonical (branded) ISO date-time form; encode is the inverse pass-through.
 const DateSchema = Transform.create(DateRawSchema, {
   'decode': (raw: string) => {
-    return brand<InferSchemaType<typeof DateRawSchema>>(new Date(raw).toISOString());
+    return Brand.cast<InferSchemaType<typeof DateRawSchema>>(new Date(raw).toISOString());
   },
   'encode': (value) => {
     return value;
@@ -140,7 +140,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
 
   void it('applies cross-schema decoder at $ref boundary (via instantiate)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       'schemas': [
         DateSchema,
         EventSchema
@@ -203,7 +203,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
 
   void it('walks nested $ref in wrapping object schema (via instantiate)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       'schemas': [
         DateSchema,
         EventSchema,
@@ -274,7 +274,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       'schemas': [
         TagSchema,
         ListSchema

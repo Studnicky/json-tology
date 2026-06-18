@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import {
   Hash, Operations, Transform, Value
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 // ---------------------------------------------------------------------------
 // Transform edge cases
@@ -108,7 +108,7 @@ const transformScenarios: TransformScenario[] = [
       // form; encode is the inverse, recovering the original wire value.
       Transform.create(RoundTripSchema, {
         'decode': (source: string) => {
-          return brand<InferSchemaType<typeof RoundTripSchema>>(source.toLowerCase());
+          return Brand.cast<InferSchemaType<typeof RoundTripSchema>>(source.toLowerCase());
         },
         'encode': (value) => {
           return value.toUpperCase();
@@ -235,14 +235,34 @@ const cloneScenarios: CloneScenario[] = [
 
       assert.deepEqual(cl, or, 'array clone — deep equal');
       assert.notEqual(cl, or, 'array clone — root ref');
-      assert.notEqual(cl[0], or[0], 'array clone — element 0 ref');
-      assert.notEqual(cl[1], or[1], 'array clone — element 1 ref');
-      assert.notEqual(cl[0].scores, or[0].scores, 'array clone — scores ref');
+      assert.notEqual(cl.at(0), or.at(0), 'array clone — element 0 ref');
+      assert.notEqual(cl.at(1), or.at(1), 'array clone — element 1 ref');
+      assert.notEqual(cl.at(0)?.scores, or.at(0)?.scores, 'array clone — scores ref');
 
-      cl[0].name = 'Charlie';
-      cl[1].scores.push(5);
-      assert.equal(or[0].name, 'Alice', 'array clone — name isolation');
-      assert.deepEqual(or[1].scores, [
+      const cl0 = cl.at(0);
+
+      if (cl0 === undefined) {
+        throw new Error('cl[0] missing');
+      }
+      const cl1 = cl.at(1);
+
+      if (cl1 === undefined) {
+        throw new Error('cl[1] missing');
+      }
+      const or0 = or.at(0);
+
+      if (or0 === undefined) {
+        throw new Error('or[0] missing');
+      }
+      const or1 = or.at(1);
+
+      if (or1 === undefined) {
+        throw new Error('or[1] missing');
+      }
+      cl0.name = 'Charlie';
+      cl1.scores.push(5);
+      assert.equal(or0.name, 'Alice', 'array clone — name isolation');
+      assert.deepEqual(or1.scores, [
         3,
         4
       ], 'array clone — scores isolation');
@@ -352,7 +372,11 @@ void describe('Hash.value consistency', () => {
         return Hash.value(input);
       });
 
-      const first = hashes[0];
+      const first = hashes.at(0);
+
+      if (first === undefined) {
+        throw new Error('hashes[0] missing');
+      }
 
       assert.equal(typeof first, 'string', `${scenario.name} — type`);
       assert.ok(first.length > 0, `${scenario.name} — non-empty`);
@@ -408,23 +432,38 @@ const diffScenarios: DiffScenario[] = [
       });
 
       assert.equal(modifyOps.length, 1, 'add/remove/modify — modify count');
-      assert.equal(modifyOps[0].op, 'set', 'add/remove/modify — modify op');
-      assert.equal((modifyOps[0] as { 'value': unknown }).value, 'new', 'add/remove/modify — modify value');
+      const modifyOp = modifyOps.at(0);
+
+      if (modifyOp === undefined) {
+        throw new Error('modifyOps[0] missing');
+      }
+      assert.equal(modifyOp.op, 'set', 'add/remove/modify — modify op');
+      assert.equal((modifyOp as { 'value': unknown }).value, 'new', 'add/remove/modify — modify value');
 
       const removeOps = cs.operations.filter((op) => {
         return op.path === '/remove';
       });
 
       assert.equal(removeOps.length, 1, 'add/remove/modify — remove count');
-      assert.equal(removeOps[0].op, 'delete', 'add/remove/modify — remove op');
+      const removeOp = removeOps.at(0);
+
+      if (removeOp === undefined) {
+        throw new Error('removeOps[0] missing');
+      }
+      assert.equal(removeOp.op, 'delete', 'add/remove/modify — remove op');
 
       const addOps = cs.operations.filter((op) => {
         return op.path === '/add';
       });
 
       assert.equal(addOps.length, 1, 'add/remove/modify — add count');
-      assert.equal(addOps[0].op, 'set', 'add/remove/modify — add op');
-      assert.equal((addOps[0] as { 'value': unknown }).value, 42, 'add/remove/modify — add value');
+      const addOp = addOps.at(0);
+
+      if (addOp === undefined) {
+        throw new Error('addOps[0] missing');
+      }
+      assert.equal(addOp.op, 'set', 'add/remove/modify — add op');
+      assert.equal((addOp as { 'value': unknown }).value, 42, 'add/remove/modify — add value');
 
       const keepOps = cs.operations.filter((op) => {
         return op.path === '/keep';
@@ -451,9 +490,14 @@ const diffScenarios: DiffScenario[] = [
     },
     'assertions': (cs) => {
       assert.equal(cs.length, 1, 'nested change — length');
-      assert.equal(cs.operations[0].op, 'set', 'nested change — op');
-      assert.equal(cs.operations[0].path, '/user/address/city', 'nested change — path');
-      assert.equal((cs.operations[0] as { 'value': unknown }).value, 'Portland', 'nested change — value');
+      const nestedOp = cs.operations.at(0);
+
+      if (nestedOp === undefined) {
+        throw new Error('cs.operations[0] missing');
+      }
+      assert.equal(nestedOp.op, 'set', 'nested change — op');
+      assert.equal(nestedOp.path, '/user/address/city', 'nested change — path');
+      assert.equal((nestedOp as { 'value': unknown }).value, 'Portland', 'nested change — value');
     },
     'before': {
       'user': {
@@ -500,9 +544,14 @@ const arrayDiffScenarios: ArrayDiffScenario[] = [
     },
     'assertions': (cs) => {
       assert.equal(cs.length, 1, 'modified element — length');
-      assert.equal(cs.operations[0].path, '/items/1', 'modified element — path');
-      assert.equal(cs.operations[0].op, 'set', 'modified element — op');
-      assert.equal((cs.operations[0] as { 'value': unknown }).value, 'X', 'modified element — value');
+      const modifiedOp = cs.operations.at(0);
+
+      if (modifiedOp === undefined) {
+        throw new Error('cs.operations[0] missing');
+      }
+      assert.equal(modifiedOp.path, '/items/1', 'modified element — path');
+      assert.equal(modifiedOp.op, 'set', 'modified element — op');
+      assert.equal((modifiedOp as { 'value': unknown }).value, 'X', 'modified element — value');
     },
     'before': {
       'items': [
@@ -570,9 +619,14 @@ const arrayDiffScenarios: ArrayDiffScenario[] = [
     },
     'assertions': (cs) => {
       assert.equal(cs.length, 1, 'nested array object — length');
-      assert.equal(cs.operations[0].path, '/users/1/name', 'nested array object — path');
-      assert.equal(cs.operations[0].op, 'set', 'nested array object — op');
-      assert.equal((cs.operations[0] as { 'value': unknown }).value, 'Charlie', 'nested array object — value');
+      const nestedArrOp = cs.operations.at(0);
+
+      if (nestedArrOp === undefined) {
+        throw new Error('cs.operations[0] missing');
+      }
+      assert.equal(nestedArrOp.path, '/users/1/name', 'nested array object — path');
+      assert.equal(nestedArrOp.op, 'set', 'nested array object — op');
+      assert.equal((nestedArrOp as { 'value': unknown }).value, 'Charlie', 'nested array object — value');
     },
     'before': {
       'users': [

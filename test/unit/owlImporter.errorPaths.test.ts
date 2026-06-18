@@ -19,13 +19,13 @@ import {
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 import { OwlImportError } from '../../src/errors/OwlImportError.js';
 import { OwlImportErrorCode } from '../../src/constants/ERROR_CODES.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import {
   OWL, RDF
 } from '../../src/constants/IRI.js';
 
 const BASE = 'https://example.com/';
-const importer = new OwlImporter({ 'baseIRI': BASE });
+const importer = new OwlImporter({ 'baseIri': BASE });
 
 // ---------------------------------------------------------------------------
 // Fix 1 — normalizeInput: malformed JSON-LD string throws OwlImportError

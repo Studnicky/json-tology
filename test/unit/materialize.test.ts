@@ -360,7 +360,7 @@ import {
       } of scenarios) {
         void it(n, () => {
           const opts: Parameters<typeof JsonTology.create>[0] = {
-            'baseIRI': 'urn:test:',
+            'baseIri': 'urn:test:',
             ...rOpts,
             ...(mOpts && { 'materializer': mOpts })
           };
@@ -373,7 +373,7 @@ import {
 
       void it('auto-registered schema is accessible from registry', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -484,7 +484,7 @@ import {
         void it(n, () => {
           // enableStrictGraph: false — synthetic fixture schemas with inline enum
           const tology = JsonTology.create({
-            'baseIRI': 'urn:test:',
+            'baseIri': 'urn:test:',
             'enableStrictGraph': false
           });
 
@@ -497,7 +497,7 @@ import {
 
       void it('registry.create() delegates to createDefault', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false,
           'schemas': [ConfigSchema] as const
         });
@@ -528,7 +528,7 @@ import {
         };
 
         const tology = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -551,7 +551,7 @@ import {
         };
 
         const tology = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
 
@@ -595,10 +595,10 @@ import {
       } of scenarios) {
         void it(n, () => {
           const tology = JsonTology.create({
-            'baseIRI': 'urn:test:',
+            'baseIri': 'urn:test:',
             'enableStrictGraph': false
           });
-          const result = tology.materializer.execute(ConfigSchema, inp, { 'baseIRI': 'https://example.io' });
+          const result = tology.materializer.execute(ConfigSchema, inp, { 'baseIri': 'https://example.io' });
 
           assert.equal(result.valid, valid);
           if (errs) {
@@ -611,10 +611,10 @@ import {
 
       void it('valid execution returns value and abox', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
-        const ok = tology.materializer.execute(ConfigSchema, { 'name': 'test' }, { 'baseIRI': 'https://example.io' });
+        const ok = tology.materializer.execute(ConfigSchema, { 'name': 'test' }, { 'baseIri': 'https://example.io' });
 
         assert.equal((ok.value as Record<string, unknown>).name, 'test');
         assert.ok(Array.isArray(ok.abox));
@@ -624,7 +624,7 @@ import {
     void describe('execute -> materialize -> abox projection contract', () => {
       void it('projectAbox returns well-formed quads with rdf:type and property literals', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'https://example.io',
+          'baseIri': 'https://example.io',
           'enableStrictGraph': false,
           'schemas': [ConfigSchema] as const
         });
@@ -681,7 +681,7 @@ import {
         } of scenarios) {
           void it(n, () => {
             const tology = JsonTology.create({
-              'baseIRI': 'https://example.io',
+              'baseIri': 'https://example.io',
               'enableStrictGraph': false,
               'schemas': [ConfigSchema] as const
             });
@@ -706,7 +706,7 @@ import {
 
       void it('ABox instance types reference TBox classes', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'https://example.io',
+          'baseIri': 'https://example.io',
           'enableStrictGraph': false,
           'schemas': [ConfigSchema] as const
         });
@@ -1099,7 +1099,7 @@ import {
       void it(scenario.name, () => {
         if (scenario.useFacade === true) {
           const jt = JsonTology.create({
-            'baseIRI': 'https://edge.io',
+            'baseIri': 'https://edge.io',
             'schemas': [scenario.schema] as const
           });
           const result = jt.materialize(scenario.schema, scenario.input) as Record<string, unknown>;
@@ -1107,7 +1107,7 @@ import {
           scenario.assertions(result);
         } else {
           const tology = JsonTology.create({
-            'baseIRI': 'https://edge.io',
+            'baseIri': 'https://edge.io',
             'enableStrictGraph': false
           });
 
@@ -1177,7 +1177,7 @@ import {
     for (const scenario of rejectionScenarios) {
       void it(scenario.name, () => {
         const tology = JsonTology.create({
-          'baseIRI': 'urn:test:',
+          'baseIri': 'urn:test:',
           'enableStrictGraph': false,
           ...(scenario.options && { 'materializer': scenario.options })
         });
@@ -1211,7 +1211,7 @@ import {
       } as const;
 
       const tology = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'enableStrictGraph': false,
         'materializer': { 'passAdditionalProperties': true }
       });
@@ -1287,7 +1287,7 @@ import {
       } of scenarios) {
         void it(n, () => {
           const tology = JsonTology.create({
-            'baseIRI': 'https://ugly.io',
+            'baseIri': 'https://ugly.io',
             'enableStrictGraph': false,
             'schemas': [BaseSchema] as const
           });
@@ -1317,7 +1317,7 @@ import {
     void describe('IRI collision via deterministic content-based minting', () => {
       void it('same data produces the same IRI on separate toQuads calls', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'https://ugly.io',
+          'baseIri': 'https://ugly.io',
           'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });
@@ -1342,7 +1342,7 @@ import {
 
       void it('two objects with different data produce different subject IRIs', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'https://ugly.io',
+          'baseIri': 'https://ugly.io',
           'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });
@@ -1367,7 +1367,7 @@ import {
 
       void it('custom iriFor function overrides the default minter', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'https://ugly.io',
+          'baseIri': 'https://ugly.io',
           'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });
@@ -1392,7 +1392,7 @@ import {
 
       void it('BLANK_NODE_IRI_FOR produces blank-node subjects (_:b prefix)', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'https://ugly.io',
+          'baseIri': 'https://ugly.io',
           'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });
@@ -1416,7 +1416,7 @@ import {
     void describe('iriFor that throws propagates the error', () => {
       void it('iriFor function that throws propagates raw error', () => {
         const tology = JsonTology.create({
-          'baseIRI': 'https://ugly.io',
+          'baseIri': 'https://ugly.io',
           'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });

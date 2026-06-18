@@ -9,7 +9,7 @@ import {
   RareBookSchema,
   ReviewSchema
 } from '../../examples/docs/bookstore/index.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 const ABOX_GRAPH_IRI = 'https://bookstore.example/graph/abox';
 
@@ -24,12 +24,12 @@ function bookstoreAboxQuads(): QuadInterface[] {
   quads.push(...jt.toQuads(
     CustomerSchema,
     jt.instantiate(CustomerSchema, aboxFixtures.customer),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIri': ABOX_GRAPH_IRI }
   ));
   quads.push(...jt.toQuads(
     OrderSchema,
     jt.instantiate(OrderSchema, aboxFixtures.order),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIri': ABOX_GRAPH_IRI }
   ));
 
   return quads;
@@ -41,7 +41,13 @@ function record(value: unknown): Record<string, unknown> {
 
 void test('aboxGraph: objects(foreign key) resolves to the typed target entity', () => {
   const graph = bookstoreEntities.aboxGraph(bookstoreAboxQuads());
-  const orderIri = graph.instances(OrderSchema.$id).iris()[0];
+  const orderIri = graph.instances(OrderSchema.$id)
+    .iris()
+    .at(0);
+
+  if (orderIri === undefined) {
+    throw new Error('expected order IRI at index 0');
+  }
 
   const customer = record(graph.resource(orderIri).objects('customerId')
     .one());
@@ -52,8 +58,19 @@ void test('aboxGraph: objects(foreign key) resolves to the typed target entity',
 
 void test('aboxGraph: subjects(foreign key) is the inverse — what references this entity', () => {
   const graph = bookstoreEntities.aboxGraph(bookstoreAboxQuads());
-  const customerIri = graph.instances(CustomerSchema.$id).iris()[0];
-  const orderIri = graph.instances(OrderSchema.$id).iris()[0];
+  const customerIri = graph.instances(CustomerSchema.$id)
+    .iris()
+    .at(0);
+  const orderIri = graph.instances(OrderSchema.$id)
+    .iris()
+    .at(0);
+
+  if (customerIri === undefined) {
+    throw new Error('expected customer IRI at index 0');
+  }
+  if (orderIri === undefined) {
+    throw new Error('expected order IRI at index 0');
+  }
 
   const referrers = graph.resource(customerIri).subjects('customerId')
     .iris();
@@ -63,7 +80,13 @@ void test('aboxGraph: subjects(foreign key) is the inverse — what references t
 
 void test('aboxGraph: objects(object property) follows a $ref edge to the typed target', () => {
   const graph = bookstoreEntities.aboxGraph(bookstoreAboxQuads());
-  const orderIri = graph.instances(OrderSchema.$id).iris()[0];
+  const orderIri = graph.instances(OrderSchema.$id)
+    .iris()
+    .at(0);
+
+  if (orderIri === undefined) {
+    throw new Error('expected order IRI at index 0');
+  }
 
   const address = record(graph.resource(orderIri).objects('shippingAddress')
     .one());
@@ -106,7 +129,13 @@ void test('aboxGraph: one() throws CURSOR_CARDINALITY on an empty selection', ()
 
 void test('aboxGraph: subgraph(depth) expands the bounded neighbourhood', () => {
   const graph = bookstoreEntities.aboxGraph(bookstoreAboxQuads());
-  const orderIri = graph.instances(OrderSchema.$id).iris()[0];
+  const orderIri = graph.instances(OrderSchema.$id)
+    .iris()
+    .at(0);
+
+  if (orderIri === undefined) {
+    throw new Error('expected order IRI at index 0');
+  }
 
   const oneHop = graph.resource(orderIri).subgraph(1)
     .iris();
@@ -176,11 +205,17 @@ void test('aboxGraph: schema cursors walk rdfs:domain / range / subClassOf', () 
 void test('aboxGraph: a differently-named foreign key resolves via the shared identity range', () => {
   const jt = bookstoreEntities;
   const quads: QuadInterface[] = [
-    ...jt.toQuads(RareBookSchema, jt.instantiate(RareBookSchema, aboxFixtures.rareBook), { 'graphIRI': ABOX_GRAPH_IRI }),
-    ...jt.toQuads(ReviewSchema, jt.instantiate(ReviewSchema, aboxFixtures.review), { 'graphIRI': ABOX_GRAPH_IRI })
+    ...jt.toQuads(RareBookSchema, jt.instantiate(RareBookSchema, aboxFixtures.rareBook), { 'graphIri': ABOX_GRAPH_IRI }),
+    ...jt.toQuads(ReviewSchema, jt.instantiate(ReviewSchema, aboxFixtures.review), { 'graphIri': ABOX_GRAPH_IRI })
   ];
   const graph = jt.aboxGraph(quads);
-  const reviewIri = graph.instances(ReviewSchema.$id).iris()[0];
+  const reviewIri = graph.instances(ReviewSchema.$id)
+    .iris()
+    .at(0);
+
+  if (reviewIri === undefined) {
+    throw new Error('expected review IRI at index 0');
+  }
 
   // Review.bookIsbn (range Isbn) resolves to the Book identified by its
   // inverse-functional isbn (also range Isbn), despite the different key name —
@@ -190,7 +225,14 @@ void test('aboxGraph: a differently-named foreign key resolves via the shared id
 
   assert.equal(book.isbn, record(aboxFixtures.review).bookIsbn);
 
-  const referrers = graph.resource(graph.instances(RareBookSchema.$id).iris()[0]).subjects('bookIsbn')
+  const rareBookIri = graph.instances(RareBookSchema.$id)
+    .iris()
+    .at(0);
+
+  if (rareBookIri === undefined) {
+    throw new Error('expected rare book IRI at index 0');
+  }
+  const referrers = graph.resource(rareBookIri).subjects('bookIsbn')
     .iris();
 
   assert.ok(referrers.includes(reviewIri), 'the Review references the Book via bookIsbn (inverse)');

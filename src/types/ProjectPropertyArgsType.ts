@@ -1,5 +1,5 @@
 import type { SchemaGraphNodeType } from './SchemaGraph.js';
-import type { ProjectBaseArgsType } from './ProjectBaseArgs.js';
+import type { ProjectBaseArgsType } from './ProjectBaseArgsType.js';
 
 /**
  * Arguments passed to the property-level ABox projection entry point.
@@ -15,7 +15,7 @@ import type { ProjectBaseArgsType } from './ProjectBaseArgs.js';
  * ```ts
  * const args: ProjectPropertyArgsType = {
  *   curie, depth: 1, graph, graphTerm, instanceIri, minter, path: '/name',
- *   predicateResolver, propertyIRI, propertyNode, propertySemantics,
+ *   predicateResolver, propertyIri, propertyNode, propertySemantics,
  *   quadOpts, quads, value, visited,
  * };
  * ```
@@ -28,7 +28,7 @@ import type { ProjectBaseArgsType } from './ProjectBaseArgs.js';
 export type ProjectPropertyArgsType = {
   readonly 'instanceIri': string;
   /** Single predicate-derivation authority — forwarded to the recursive nested-instance projection. */
-  readonly 'propertyIRI': string;
+  readonly 'propertyIri': string;
   readonly 'propertyNode': SchemaGraphNodeType;
   readonly 'propertySemantics': { 'format': string | undefined;
     'iriRef': boolean;

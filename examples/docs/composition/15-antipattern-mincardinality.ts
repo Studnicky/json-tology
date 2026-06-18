@@ -26,7 +26,7 @@ const AuthoredBook2Schema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [AuthoredBook2Schema] as const
 });
 

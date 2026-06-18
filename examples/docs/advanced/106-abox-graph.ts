@@ -22,7 +22,7 @@ import {
   RareBookSchema,
   ReviewSchema
 } from '../bookstore/index.js';
-import type { QuadInterface } from '../../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../../src/interfaces/QuadInterface.js';
 
 // ---------------------------------------------------------------------------
 // Build the ABox quad set from the customer + order fixtures.
@@ -40,24 +40,24 @@ function bookstoreAboxQuads(): QuadInterface[] {
   quads.push(...bookstoreEntities.toQuads(
     CustomerSchema,
     bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIri': ABOX_GRAPH_IRI }
   ));
   quads.push(...bookstoreEntities.toQuads(
     OrderSchema,
     bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIri': ABOX_GRAPH_IRI }
   ));
   // A RareBook (subclass of Book) and a Review that references it via bookIsbn —
   // a differently-named FK that resolves through Book's inverse-functional isbn.
   quads.push(...bookstoreEntities.toQuads(
     RareBookSchema,
     bookstoreEntities.instantiate(RareBookSchema, aboxFixtures.rareBook),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIri': ABOX_GRAPH_IRI }
   ));
   quads.push(...bookstoreEntities.toQuads(
     ReviewSchema,
     bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.review),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIri': ABOX_GRAPH_IRI }
   ));
 
   return quads;

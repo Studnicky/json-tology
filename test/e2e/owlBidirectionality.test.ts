@@ -38,7 +38,7 @@ import { JsonTology } from '../../src/index.js';
 
 const tboxJsonLd = bookstoreEntities.toTbox().jsonLdObject();
 const tboxQuads = bookstoreEntities.toTbox().quads();
-const fromTboxResult = JsonTology.fromTbox(tboxJsonLd, { 'baseIRI': 'urn:bookstore' });
+const fromTboxResult = JsonTology.fromTbox(tboxJsonLd, { 'baseIri': 'urn:bookstore' });
 
 /** Find a schema in the round-trip result by $id. */
 function findRt(id: string): Record<string, unknown> | undefined {
@@ -508,7 +508,7 @@ void describe('A-9: property characteristics preserved in fromTbox characteristi
 //
 // This test guards that invariant: every owl:onProperty target is a flat
 // property IRI that also appears as the subject of an rdfs:domain declaration,
-// never a class-scoped `<ClassIRI>#<prop>` form.
+// never a class-scoped `<ClassIri>#<prop>` form.
 // ---------------------------------------------------------------------------
 
 void describe('A-10: owl:onProperty restriction IRIs match flat property IRIs', () => {

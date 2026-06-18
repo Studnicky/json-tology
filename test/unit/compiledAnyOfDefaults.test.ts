@@ -27,7 +27,7 @@ function runCompiled(
   deps?: Array<Record<string, unknown> & { '$id': string }>
 ): unknown {
   const jt = JsonTology.create({
-    'baseIRI': 'urn:test:anyof-defaults:',
+    'baseIri': 'urn:test:anyof-defaults:',
     'enableStrictGraph': false
   });
 

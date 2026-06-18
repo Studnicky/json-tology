@@ -233,7 +233,7 @@ const schemas = [
 // strict-graph is off: this fixture exists to stress declaration EMIT and type
 // resolution, not registration hygiene, so inline primitive shapes are fine here.
 export const deepRegistry = JsonTology.create({
-  'baseIRI': 'urn:decl:',
+  'baseIri': 'urn:decl:',
   'enableStrictGraph': false,
   schemas
 });

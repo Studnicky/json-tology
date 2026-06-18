@@ -169,7 +169,7 @@ export const aboxFixtures = {
    * Both annotation predicates are grounded to schema.org IRIs via
    * `x-jt-predicate` on the annotation sub-schemas in ReviewsBookEdge.
    *
-   * This fixture requires a `graphIRI` option when calling `toQuads`
+   * This fixture requires a `graphIri` option when calling `toQuads`
    * (see the smoke test and bookstoreGraphData ABox projection).
    */
   'reviewWithAnnotatedEdge': {

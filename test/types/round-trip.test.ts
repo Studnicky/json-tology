@@ -59,7 +59,7 @@ const ObjectSchema = {
 type ObjectExpected = InferType<typeof ObjectSchema>;
 
 const jtObject = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [ObjectSchema] as const
 });
@@ -83,7 +83,7 @@ const ArraySchema = {
 type ArrayExpected = InferType<typeof ArraySchema>;
 
 const jtArray = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [ArraySchema] as const
 });
@@ -110,7 +110,7 @@ const StringSchema = {
 type StringExpected = InferType<typeof StringSchema>;
 
 const jtString = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [StringSchema] as const
 });
@@ -134,7 +134,7 @@ const NumberSchema = {
 type NumberExpected = InferType<typeof NumberSchema>;
 
 const jtNumber = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [NumberSchema] as const
 });
@@ -158,7 +158,7 @@ const IntegerSchema = {
 type IntegerExpected = InferType<typeof IntegerSchema>;
 
 const jtInteger = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [IntegerSchema] as const
 });
@@ -182,7 +182,7 @@ const BooleanSchema = {
 type BooleanExpected = InferType<typeof BooleanSchema>;
 
 const jtBoolean = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [BooleanSchema] as const
 });
@@ -210,7 +210,7 @@ const EnumSchema = {
 type EnumExpected = InferType<typeof EnumSchema>;
 
 const jtEnum = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [EnumSchema] as const
 });
@@ -234,7 +234,7 @@ const ConstSchema = {
 type ConstExpected = InferType<typeof ConstSchema>;
 
 const jtConst = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [ConstSchema] as const
 });
@@ -290,7 +290,7 @@ const ShapeSchema = Compose.discriminatedUnion(
 type ShapeExpected = InferType<typeof ShapeSchema>;
 
 const jtShape = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [
     CircleSchema,
@@ -333,7 +333,7 @@ const TransformedDateSchema = Transform.create(RawDateSchema, {
 type TransformedExpected = ParseOutputType<typeof TransformedDateSchema>;
 
 const jtDate = JsonTology.create({
-  'baseIRI': 'https://rt.test',
+  'baseIri': 'https://rt.test',
   'enableStrictGraph': false,
   'schemas': [TransformedDateSchema] as const
 });

@@ -96,7 +96,7 @@ Nine package entry points control what consumers import. Internal imports refere
 
 | Entry point | Exports |
 |---|---|
-| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Lists`, `Projection`, `Skolemize`, `Terms`, `decodeLiteral`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders`, `OwlImportError`, `OwlImportErrorCode` |
+| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Lists`, `Projection`, `Skolemize`, `Terms`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders`, `OwlImportError`, `OwlImportErrorCode` |
 | `json-tology/value` | `Changeset`, `Operations`, `Value`, `Hash` |
 | `json-tology/schema` | `Compose`, `FormatRegistry`, `SchemaRegistry`, `Transform` |
 | `json-tology/ontology` | `GraphOntologySerializer`, `GraphSchemaSerializer`, `GraphShaclSerializer`, `OntologyBuilder` |
@@ -398,26 +398,36 @@ Axiom dispatchers for `OwlImporter`. Each dispatcher handles a subset of OWL 2 a
 - `Properties.ts` — `owl:ObjectProperty`, `owl:DatatypeProperty` with `rdfs:domain` / `rdfs:range` → JSON Schema `properties` entries
 - `PropertyRestrictions.ts` — `owl:Restriction` with `owl:someValuesFrom`, `owl:allValuesFrom`, `owl:minCardinality`, `owl:maxCardinality`
 
-### Module: rdf (`src/modules/rdf/`)
+### Module: quads (`src/modules/quads/`)
 
-RDF/JSON-LD output. Projections read `graph.allRelations()` and emit vocabulary-specific quads.
+rdf/js quad and term primitives. This is a low layer (above `data/`, below `graph/`):
+`graph/`, `registry/`, `materialization/`, and `rdf/` all import these primitives; the
+primitives import only `data/`, `constants/`, `types/`, `interfaces/`, and `errors/`. They
+never import `rdf/` (projection) or any higher module — this is the boundary that keeps the
+onion intact and is what the `XSD_MAPS`/`XsdTypes` circular violated before extraction.
 
 - `Curie.ts` — CURIE prefix manager
 - `IdentifierIssuer.ts` — per-call blank-node counter; each projector call constructs its own issuer so concurrent serializations never share mutable counter state
+- `Lists.ts` — RDF list construction (`Lists.build`), walking (`Lists.collect`), `Quad_Object` narrowing (`Lists.asQuadObject`), and external-quad narrowing (`Lists.narrowExternalQuads`). All access is through the `Lists` namespace object.
+- `QuadFactory.ts` — quad/term construction with CURIE expansion and predicate-IRI validation. The boundary rule: `Terms.*` is the plain rdf/js term factory (no validation); `QuadFactory.*` is the graph-serialization-aware layer (CURIE expansion + predicate validation). Use `Terms` for raw term construction, `QuadFactory` for projection output.
+- `Terms.ts` — rdf/js-spec term factory; produces `NamedNode` / `BlankNode` / `Literal` / `DefaultGraph` / `Quad` without requiring `@rdfjs/data-model` at runtime; exports `decodeLiteral(literal)` for typed-JS recovery
+- `XsdTypes.ts` — XSD type resolution helpers (consume the pure-data maps in `src/constants/XSD_MAPS.ts`)
+
+### Module: rdf (`src/modules/rdf/`)
+
+RDF/JSON-LD output (projection layer). Projections read `graph.allRelations()` and emit vocabulary-specific quads, building terms via `quads/QuadFactory`.
+
 - `JsonLdFormatter.ts` — converts quads to JSON-LD nodes; detects rdf:first/rdf:rest list heads and emits `@list`
 - `JsonLdToQuads.ts` — inverse of `JsonLdFormatter`; converts compact JSON-LD back to `QuadInterface[]`
-- `Lift.ts` — lifts external rdf/js quads into typed JS objects; decodes literals via `decodeLiteral`
-- `Lists.ts` — RDF list construction (`Lists.build`), walking (`Lists.collect`), `Quad_Object` narrowing (`Lists.asQuadObject`), and external-quad narrowing (`Lists.narrowExternalQuads`)
+- `Lift.ts` — lifts external rdf/js quads into typed JS objects; decodes literals via `Terms.decodeLiteral`
 - `OwlProjection.ts` — OWL-specific quad projection
 - `Projection.ts` — shared RDF projection base; predicate and handler maps
 - `ProjectionHelpers.ts` — shared helpers for `OwlProjection` and `ShaclProjection`: `propertySubjectIri`, `resolvePropertySchema`, `resolveRestrictionOnProperty`, `findAnnotatedEdgeStructure`
 - `ProjectionIndex.ts` — relation-to-predicate index
-- `QuadFactory.ts` — quad construction helpers
+- `QuadEmit.ts` — relation-index → literal-quad emit helpers (`emitLiterals`, `emitConstraintLiteral`) used by the OWL/SHACL projectors; delegates term construction to `quads/QuadFactory`
 - `ShaclProjection.ts` — SHACL-specific quad projection
 - `Skolemize.ts` — blank-node skolemization
-- `Terms.ts` — rdf/js-spec term factory; produces `NamedNode` / `BlankNode` / `Literal` / `DefaultGraph` / `Quad` without requiring `@rdfjs/data-model` at runtime; exports `decodeLiteral(literal)` for typed-JS recovery
 - `VocabProjection.ts` — vocabulary plugin projection
-- `XsdTypes.ts` — XSD type resolution helpers
 
 ### Module: registry (`src/modules/registry/`)
 

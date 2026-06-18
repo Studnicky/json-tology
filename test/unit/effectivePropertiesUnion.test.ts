@@ -14,9 +14,7 @@ import {
   describe, it
 } from 'node:test';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import {
-  collectEffectiveProperties
-} from '../../src/modules/graph/EffectiveProperties.js';
+import { EffectiveProperties } from '../../src/modules/graph/EffectiveProperties.js';
 
 void describe('collectEffectiveProperties — anyOf/oneOf members', { 'concurrency': false }, () => {
   void it('collects properties from anyOf members', () => {
@@ -36,7 +34,7 @@ void describe('collectEffectiveProperties — anyOf/oneOf members', { 'concurren
       'type': 'object'
     };
     const graph = new SchemaGraph(schema);
-    const map = collectEffectiveProperties(graph, graph.rootNode);
+    const map = EffectiveProperties.collect(graph, graph.rootNode);
 
     const names = new Set([...map.keys()].sort());
 
@@ -62,7 +60,7 @@ void describe('collectEffectiveProperties — anyOf/oneOf members', { 'concurren
       'type': 'object'
     };
     const graph = new SchemaGraph(schema);
-    const map = collectEffectiveProperties(graph, graph.rootNode);
+    const map = EffectiveProperties.collect(graph, graph.rootNode);
 
     const names = new Set([...map.keys()].sort());
 
@@ -82,7 +80,7 @@ void describe('collectEffectiveProperties — anyOf/oneOf members', { 'concurren
       'type': 'object'
     };
     const graph = new SchemaGraph(schema);
-    const map = collectEffectiveProperties(graph, graph.rootNode);
+    const map = EffectiveProperties.collect(graph, graph.rootNode);
 
     assert.equal(map.size, 1, 'only one property named "name" should be in the map');
     const entry = map.get('name');
@@ -108,7 +106,7 @@ void describe('collectEffectiveProperties — anyOf/oneOf members', { 'concurren
     };
 
     // Should complete without infinite recursion
-    const map = collectEffectiveProperties(graph, graph.rootNode, resolveGraph);
+    const map = EffectiveProperties.collect(graph, graph.rootNode, resolveGraph);
 
     assert.ok(map.has('value'), 'own property should still be collected despite cycle');
   });

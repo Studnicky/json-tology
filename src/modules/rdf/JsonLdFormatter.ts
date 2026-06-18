@@ -8,15 +8,13 @@
  * Pure function, no graph/schema access.
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { RDF } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
-import {
-  isRdfFirst, isRdfNil, isRdfRest, Lists
-} from './Lists.js';
-import { decodeLiteral } from './Terms.js';
-import { QuadFactory } from './QuadFactory.js';
+import { Lists } from '../quads/Lists.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
+import { Terms } from '../quads/Terms.js';
 
 /**
  * Walk an `rdf:first` / `rdf:rest` chain rooted at `headValue` (the `.value`
@@ -29,7 +27,7 @@ function walkListHead(
   subjectQuads: ReadonlyMap<string, QuadInterface[]>,
   visited: Set<string>
 ): undefined | unknown[] {
-  if (isRdfNil(headValue)) {
+  if (Lists.isRdfNil(headValue)) {
     return [];
   }
 
@@ -40,10 +38,10 @@ function walkListHead(
     visited.add(cursor);
     const segmentQuads: QuadInterface[] = subjectQuads.get(cursor) ?? [];
     const firstQuad = segmentQuads.find((segment: QuadInterface): boolean => {
-      return isRdfFirst(segment.predicate.value);
+      return Lists.isRdfFirst(segment.predicate.value);
     });
     const restQuad = segmentQuads.find((segment: QuadInterface): boolean => {
-      return isRdfRest(segment.predicate.value);
+      return Lists.isRdfRest(segment.predicate.value);
     });
 
     if (firstQuad === undefined) {
@@ -63,7 +61,7 @@ function walkListHead(
     }
     const rest: QuadInterface['object'] = restQuad.object;
 
-    if (rest.termType === 'NamedNode' && isRdfNil(rest.value)) {
+    if (rest.termType === 'NamedNode' && Lists.isRdfNil(rest.value)) {
       break;
     }
     if (rest.termType !== 'NamedNode' && rest.termType !== 'BlankNode') {
@@ -91,7 +89,7 @@ function buildSubjectIndex(quads: QuadInterface[]): {
     entries
   ] of subjectQuads) {
     const hasFirst = entries.some((quad: QuadInterface): boolean => {
-      return isRdfFirst(quad.predicate.value);
+      return Lists.isRdfFirst(quad.predicate.value);
     });
 
     if (hasFirst) {
@@ -139,7 +137,7 @@ function resolveNonTypeObjectValue(
     return listItems === undefined ? objectToJsonLd(narrowed) : { [JSONLD.list]: listItems };
   }
 
-  if (narrowed.termType === 'NamedNode' && isRdfNil(narrowed.value)) {
+  if (narrowed.termType === 'NamedNode' && Lists.isRdfNil(narrowed.value)) {
     return { [JSONLD.list]: [] };
   }
 
@@ -265,7 +263,7 @@ function objectToJsonLd(obj: QuadObjectType): unknown {
 
   // Literal — decode the rdf/js spec `value: string` back to its typed JS
   // value (number, boolean, Date) based on `datatype.value`.
-  return decodeLiteral(obj);
+  return Terms.decodeLiteral(obj);
 }
 
 function countBnodeRefs(obj: QuadObjectType, counts: Map<string, number>): void {

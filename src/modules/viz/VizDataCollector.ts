@@ -1,4 +1,4 @@
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import type {
   VizEdgeType, VizNodeType, VizPayloadType, VizSchemaDataType
 } from '../../types/Viz.js';
@@ -7,7 +7,7 @@ import { GraphSchemaSerializer } from '../ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from '../ontology/GraphShaclSerializer.js';
 import { RDFS } from '../../constants/IRI.js';
 import { TypeStringEmitter } from './TypeStringEmitter.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 
 /**
  * Collects visualization data — nodes, edges, and per-schema serializations — from a

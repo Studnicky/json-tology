@@ -24,7 +24,7 @@
  * a TBox/class-level construct).
  */
 
-import type { SameAsStoreInterface } from '../../interfaces/SameAsStore.js';
+import type { SameAsStoreInterface } from '../../interfaces/SameAsStoreInterface.js';
 
 export class SameAsStore implements SameAsStoreInterface {
   private readonly pairs: Array<readonly [string, string]> = [];

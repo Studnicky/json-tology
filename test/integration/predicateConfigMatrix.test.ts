@@ -28,7 +28,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { JsonTology } from '../../src/index.js';
 
 // ---------------------------------------------------------------------------
@@ -88,13 +88,13 @@ const FIXTURE_SCHEMAS = [
 
 /** C1 — flat canonical (default, enableCanonicalPredicates omitted) */
 const jtC1 = JsonTology.create({
-  'baseIRI': BASE,
+  'baseIri': BASE,
   'schemas': FIXTURE_SCHEMAS
 });
 
 /** C2 — class-scoped (enableCanonicalPredicates: false) */
 const jtC2 = JsonTology.create({
-  'baseIRI': BASE,
+  'baseIri': BASE,
   'enableCanonicalPredicates': false,
   'schemas': FIXTURE_SCHEMAS
 });
@@ -106,7 +106,7 @@ const jtC2 = JsonTology.create({
 const SCHEMA_ORG_VOCAB: Record<string, string | undefined> = { 'title': 'https://schema.org/name' };
 
 const jtC3 = JsonTology.create({
-  'baseIRI': BASE,
+  'baseIri': BASE,
   'predicateFor': ({ propertyName }) => {
     return SCHEMA_ORG_VOCAB[propertyName];
   },
@@ -259,21 +259,21 @@ void describe('C1 — flat canonical predicates', () => {
   const shaclQuads = jtC1.toShacl().shaclQuads();
   const aboxQuads = jtC1.toQuads(CatalogSchema, CATALOG_INSTANCE);
 
-  void it('C1-1: ABox — title predicate is flat (baseIRI/title)', () => {
+  void it('C1-1: ABox — title predicate is flat (baseIri/title)', () => {
     assert.ok(
       hasQuadWithPredicate(aboxQuads, C1.title),
       `C1 ABox must use flat predicate ${C1.title}`
     );
   });
 
-  void it('C1-1: ABox — tags predicate is flat (baseIRI/tags)', () => {
+  void it('C1-1: ABox — tags predicate is flat (baseIri/tags)', () => {
     assert.ok(
       hasQuadWithPredicate(aboxQuads, C1.tags),
       `C1 ABox must use flat predicate ${C1.tags}`
     );
   });
 
-  void it('C1-1: ABox — rating predicate is flat (baseIRI/rating)', () => {
+  void it('C1-1: ABox — rating predicate is flat (baseIri/rating)', () => {
     assert.ok(
       hasQuadWithPredicate(aboxQuads, C1.rating),
       `C1 ABox must use flat predicate ${C1.rating}`

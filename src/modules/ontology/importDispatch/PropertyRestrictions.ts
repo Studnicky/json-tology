@@ -25,14 +25,14 @@
  * The parent class IRI is `relation.source.id`.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType,
   OwlImportFragmentType
 } from '../../../types/OwlImport.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-import type { RestrictionStructure } from '../../../types/RestrictionStructure.js';
+import type { RestrictionStructureType } from '../../../types/RestrictionStructureType.js';
 import type { MutablePropertySchemaType } from '../../../types/MutablePropertySchemaType.js';
 import {
   OWL,
@@ -227,85 +227,87 @@ function buildSomeValuesFromInvariant(
  * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragmentType with schemaDeltas and invariants populated.
  */
-export function importPropertyRestrictions(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-  const invariants: Array<{
-    'invariant': InvariantType;
-    'schemaId': string;
-  }> = [];
+export class PropertyRestrictions {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+    const invariants: Array<{
+      'invariant': InvariantType;
+      'schemaId': string;
+    }> = [];
 
-  const allRelations = ctx.graph.allRelations();
+    const allRelations = ctx.graph.allRelations();
 
-  for (const relation of allRelations) {
-    if (relation.predicate !== RDFS.subClassOf) {
-      continue;
-    }
-
-    const structure = relation.structure;
-
-    if (structure?.kind !== 'restriction') {
-      continue;
-    }
-
-    const restriction: RestrictionStructure = structure;
-    const classIri = relation.source.id;
-    const propIri = restriction.onProperty;
-    const constraint = restriction.constraint;
-    const value = restriction.value;
-
-    // Skip blank-node or empty source (not a named class)
-    if (classIri.startsWith('_:') || classIri === '') {
-      continue;
-    }
-
-    // Skip empty property IRI
-    if (propIri === '') {
-      ctx.reportUnsupported(constraint, classIri);
-      continue;
-    }
-
-    const propName = SchemaIri.propertyName(propIri);
-
-    if (propName === '') {
-      ctx.reportUnsupported(constraint, classIri);
-      continue;
-    }
-
-    // Handle someValuesFrom → invariant
-    if (constraint === OWL.someValuesFrom) {
-      if (typeof value === 'string' && value !== '') {
-        const inv = buildSomeValuesFromInvariant(propName, value);
-
-        invariants.push({
-          'invariant': inv,
-          'schemaId': classIri
-        });
-      } else {
-        ctx.reportUnsupported(constraint, classIri);
+    for (const relation of allRelations) {
+      if (relation.predicate !== RDFS.subClassOf) {
+        continue;
       }
-      continue;
+
+      const structure = relation.structure;
+
+      if (structure?.kind !== 'restriction') {
+        continue;
+      }
+
+      const restriction: RestrictionStructureType = structure;
+      const classIri = relation.source.id;
+      const propIri = restriction.onProperty;
+      const constraint = restriction.constraint;
+      const value = restriction.value;
+
+      // Skip blank-node or empty source (not a named class)
+      if (classIri.startsWith('_:') || classIri === '') {
+        continue;
+      }
+
+      // Skip empty property IRI
+      if (propIri === '') {
+        ctx.reportUnsupported(constraint, classIri);
+        continue;
+      }
+
+      const propName = SchemaIri.propertyName(propIri);
+
+      if (propName === '') {
+        ctx.reportUnsupported(constraint, classIri);
+        continue;
+      }
+
+      // Handle someValuesFrom → invariant
+      if (constraint === OWL.someValuesFrom) {
+        if (typeof value === 'string' && value !== '') {
+          const inv = buildSomeValuesFromInvariant(propName, value);
+
+          invariants.push({
+            'invariant': inv,
+            'schemaId': classIri
+          });
+        } else {
+          ctx.reportUnsupported(constraint, classIri);
+        }
+        continue;
+      }
+
+      // All other constraints → structural schema delta
+      const patch = structuralPatch(constraint, value);
+
+      if (patch === null) {
+        ctx.reportUnsupported(constraint, classIri);
+        continue;
+      }
+
+      const existing = schemaDeltas.get(classIri) ?? {};
+      const updated = mergePropertyPatch(existing, propName, patch);
+
+      schemaDeltas.set(classIri, updated);
     }
 
-    // All other constraints → structural schema delta
-    const patch = structuralPatch(constraint, value);
-
-    if (patch === null) {
-      ctx.reportUnsupported(constraint, classIri);
-      continue;
-    }
-
-    const existing = schemaDeltas.get(classIri) ?? {};
-    const updated = mergePropertyPatch(existing, propName, patch);
-
-    schemaDeltas.set(classIri, updated);
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      invariants,
+      'sameAs': [],
+      schemaDeltas
+    };
   }
-
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    invariants,
-    'sameAs': [],
-    schemaDeltas
-  };
 }

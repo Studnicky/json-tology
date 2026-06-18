@@ -26,14 +26,15 @@
  * - `owl:disjointUnionOf` lists are walked via `ctx.graph.collectList`.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
+import type { LoggerInterface } from '../../../interfaces/LoggerInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
 import type { AxiomContextType } from '../../../types/AxiomContextType.js';
 import type { ApplyRelationOptionsType } from '../../../types/ApplyRelationOptionsType.js';
 import type { ApplyBnodeLiteralOptionsType } from '../../../types/ApplyBnodeLiteralOptionsType.js';
@@ -48,15 +49,9 @@ import {
   EQUIVALENT_CLASS_PREDICATES,
   UNION_OF_IRIS
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
-
-// ---------------------------------------------------------------------------
-// Graph-native helpers
-// ---------------------------------------------------------------------------
-
-/** Resolve the IRI / bnode-id / lexical form of a relation target. */
-function targetValue(relation: SchemaGraphRelationType): string {
-  return typeof relation.target === 'string' ? relation.target : relation.target.id;
-}
+import { ImportRelation } from './ImportRelation.js';
+import { LogScope } from '../../data/LogScope.js';
+import { SILENT_LOGGER } from '../../../constants/LOGGER.js';
 
 /**
  * Parse the legacy `owl:equivalentClass = <JSON-LD wrapper literal>` form.
@@ -67,12 +62,14 @@ function targetValue(relation: SchemaGraphRelationType): string {
  * `target` carries the lexical string. We parse it once here and return
  * the embedded `@id` IRIs.
  */
-function parseUnionLiteralWrapper(lexical: string): string[] {
+function parseUnionLiteralWrapper(lexical: string, logger: LoggerInterface): string[] {
   let parsed: unknown;
 
   try {
     parsed = JSON.parse(lexical);
   } catch {
+    logger.debug(LogScope.format('ClassAxioms', 'parseUnionLiteralWrapper', 'JSON.parse failed for union-literal wrapper; treating as empty'));
+
     return [];
   }
 
@@ -129,7 +126,13 @@ function extractEquivalentMembersFromGraph(
     return [];
   }
 
-  const listHead = targetValue(unionRelations[0]);
+  const firstUnionRelation = unionRelations[0];
+
+  if (firstUnionRelation === undefined) {
+    return [];
+  }
+
+  const listHead = ImportRelation.targetValue(firstUnionRelation);
   const members: string[] = [];
 
   for (const item of graph.collectList(listHead)) {
@@ -378,7 +381,7 @@ function applyEquivalentClassBlankNode(
   relation: SchemaGraphRelationType,
   subjectIri: string
 ): void {
-  const members = extractEquivalentMembersFromGraph(targetValue(relation), options.graph);
+  const members = extractEquivalentMembersFromGraph(ImportRelation.targetValue(relation), options.graph);
 
   if (members.length > 1) {
     const anyOf = members.map((memberIri: string): { '$ref': string } => {
@@ -391,11 +394,17 @@ function applyEquivalentClassBlankNode(
       'anyOf': anyOf
     });
   } else if (members.length === 1) {
+    const singleMember = members[0];
+
+    if (singleMember === undefined) {
+      return;
+    }
+
     const existing = options.axiomCtx.schemaDeltas.get(subjectIri) ?? {};
 
     options.axiomCtx.schemaDeltas.set(subjectIri, {
       ...existing,
-      '$ref': members[0]
+      '$ref': singleMember
     });
   }
 }
@@ -409,16 +418,25 @@ function applyEquivalentClassLiteral(
   schemaDeltas: Map<string, Partial<JsonSchemaDocumentObjectType>>,
   relation: SchemaGraphRelationType,
   subjectIri: string,
-  reportUnsupported: OwlImportContextType['reportUnsupported']
+  reportUnsupported: OwlImportContextType['reportUnsupported'],
+  logger: LoggerInterface
 ): void {
-  const members = parseUnionLiteralWrapper(targetValue(relation));
+  const members = parseUnionLiteralWrapper(ImportRelation.targetValue(relation), logger);
 
   if (members.length > 0) {
+    const firstMember = members[0];
+
+    if (firstMember === undefined) {
+      reportUnsupported(OWL.equivalentClass, subjectIri);
+
+      return;
+    }
+
     const existing = schemaDeltas.get(subjectIri) ?? {};
 
     schemaDeltas.set(subjectIri, {
       ...existing,
-      '$ref': members[0]
+      '$ref': firstMember
     });
 
     return;
@@ -439,7 +457,7 @@ function applyDisjointUnionOf(
     return;
   }
 
-  const listHead = targetValue(relation);
+  const listHead = ImportRelation.targetValue(relation);
   const members: string[] = [];
 
   for (const item of options.graph.collectList(listHead)) {
@@ -486,7 +504,7 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContextType, axiomCtx: AxiomConte
         continue;
       }
       if (relation.termType === 'Literal') {
-        applyEquivalentClassLiteral(axiomCtx.schemaDeltas, relation, subjectIri, ctx.reportUnsupported);
+        applyEquivalentClassLiteral(axiomCtx.schemaDeltas, relation, subjectIri, ctx.reportUnsupported, ctx.logger ?? SILENT_LOGGER);
       }
       continue;
     }
@@ -525,7 +543,7 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContextType, axiomCtx: AxiomConte
  *
  * @example
  * ```ts
- * const fragment = importClassAxioms(quads, ctx);
+ * const fragment = ClassAxioms.dispatch(quads, ctx);
  * // fragment.schemaDeltas contains $ref / allOf / not / disjointWith patches
  * ```
  *
@@ -534,35 +552,37 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContextType, axiomCtx: AxiomConte
  * @see OwlImportContextType
  * @group importDispatch
  */
-export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-  const invariants: Array<{ 'invariant': InvariantType;
-    'schemaId': string; }> = [];
+export class ClassAxioms {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+    const invariants: Array<{ 'invariant': InvariantType;
+      'schemaId': string; }> = [];
 
-  const axiomCtx: AxiomContextType = {
-    'allClassIris': ctx.allClassIris,
-    invariants,
-    // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
-    // map. Expand them back so $ref / disjointWith values match the full-IRI
-    // schema $id form used throughout the importer.
-    'resolveIri': (target: string | { 'id': string }): string => {
-      const raw = typeof target === 'string' ? target : target.id;
+    const axiomCtx: AxiomContextType = {
+      'allClassIris': ctx.allClassIris,
+      invariants,
+      // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
+      // map. Expand them back so $ref / disjointWith values match the full-IRI
+      // schema $id form used throughout the importer.
+      'resolveIri': (target: string | { 'id': string }): string => {
+        const raw = typeof target === 'string' ? target : target.id;
 
-      return ctx.curie.expandIfNeeded(raw);
-    },
-    schemaDeltas
-  };
+        return ctx.curie.expandIfNeeded(raw);
+      },
+      schemaDeltas
+    };
 
-  emitClassStubs(ctx, schemaDeltas);
-  applyNamedNodeAxioms(ctx, axiomCtx);
-  applyBnodeLiteralAxioms(ctx, axiomCtx);
+    emitClassStubs(ctx, schemaDeltas);
+    applyNamedNodeAxioms(ctx, axiomCtx);
+    applyBnodeLiteralAxioms(ctx, axiomCtx);
 
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    invariants,
-    'sameAs': [],
-    'schemaDeltas': schemaDeltas
-  };
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      invariants,
+      'sameAs': [],
+      'schemaDeltas': schemaDeltas
+    };
+  }
 }

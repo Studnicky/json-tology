@@ -9,37 +9,34 @@
  * The output quads can be passed directly to JsonLdFormatter.fromQuads().
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import type { ProjectionEmitContextType } from '../../types/ProjectionEmitContext.js';
-import type { EmitNodeShapeArgsType } from '../../types/EmitNodeShapeArgs.js';
-import type { EmitPropertyShapeArgsType } from '../../types/EmitPropertyShapeArgs.js';
-import type { EmitNodeShapePropertiesArgsType } from '../../types/EmitNodeShapePropertiesArgs.js';
-import type { EmitNodeShapeCompositionArgsType } from '../../types/EmitNodeShapeCompositionArgs.js';
-import type { EmitPropertyShapeConstraintsArgsType } from '../../types/EmitPropertyShapeConstraintsArgs.js';
-import type { EmitCountConstraintArgsType } from '../../types/EmitCountConstraintArgs.js';
-import type { EmitRangeConstraintArgsType } from '../../types/EmitRangeConstraintArgs.js';
-import type { EmitContainsQualifiedCardinalityArgsType } from '../../types/EmitContainsQualifiedCardinalityArgs.js';
-import { IdentifierIssuer } from './IdentifierIssuer.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
+import type { ProjectionEmitContextType } from '../../types/ProjectionEmitContextType.js';
+import type { EmitNodeShapeArgsType } from '../../types/EmitNodeShapeArgsType.js';
+import type { EmitPropertyShapeArgsType } from '../../types/EmitPropertyShapeArgsType.js';
+import type { EmitNodeShapePropertiesArgsType } from '../../types/EmitNodeShapePropertiesArgsType.js';
+import type { EmitNodeShapeCompositionArgsType } from '../../types/EmitNodeShapeCompositionArgsType.js';
+import type { EmitPropertyShapeConstraintsArgsType } from '../../types/EmitPropertyShapeConstraintsArgsType.js';
+import type { EmitCountConstraintArgsType } from '../../types/EmitCountConstraintArgsType.js';
+import type { EmitRangeConstraintArgsType } from '../../types/EmitRangeConstraintArgsType.js';
+import type { EmitContainsQualifiedCardinalityArgsType } from '../../types/EmitContainsQualifiedCardinalityArgsType.js';
+import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { OWL_CARDINALITY_PREDICATE_IRIS } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { XSD_IRI_PREFIX } from '../../constants/STANDARD_PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
-import { QuadFactory } from './QuadFactory.js';
-import {
-  finiteNumber,
-  resolvePropertySchema,
-  resolveRestrictionOnProperty
-} from './ProjectionHelpers.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
+import { QuadEmit } from './QuadEmit.js';
+import { PropertyProjection } from './PropertyProjection.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
-import type { RelationIndexType } from '../../types/RelationIndex.js';
+import type { RelationIndexType } from '../../types/RelationIndexType.js';
 import { VocabProjection } from './VocabProjection.js';
 
 function relationToEquivIri(
@@ -69,7 +66,13 @@ function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndex
   const rangeRels = targetEntry.byPredicate.get(RDFS.range) ?? [];
 
   if (rangeRels.length > 0) {
-    return ProjectionIndex.relationTargetId(rangeRels[0]);
+    const rangeRel0 = rangeRels.at(0);
+
+    if (rangeRel0 === undefined) {
+      return targetNodeId;
+    }
+
+    return ProjectionIndex.relationTargetId(rangeRel0);
   }
 
   return targetNodeId;
@@ -288,7 +291,9 @@ class ShaclVocabProjection extends VocabProjection {
 
       const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
 
-      if (domainRels.length === 0 || ProjectionIndex.relationTargetId(domainRels[0]) !== thenRef) {
+      const domainRel0 = domainRels.at(0);
+
+      if (domainRels.length === 0 || domainRel0 === undefined || ProjectionIndex.relationTargetId(domainRel0) !== thenRef) {
         continue;
       }
 
@@ -479,8 +484,8 @@ function emitNodeShapeMetadata(subject: string, entry: RelationIndexType, ctx: P
     curie, quads
   } = ctx;
 
-  QuadFactory.emitLiterals(subject, entry, RDFS.label, SH.name, quads, { curie });
-  QuadFactory.emitLiterals(subject, entry, RDFS.comment, SH.description, quads, { curie });
+  QuadEmit.emitLiterals(subject, entry, RDFS.label, SH.name, quads, { curie });
+  QuadEmit.emitLiterals(subject, entry, RDFS.comment, SH.description, quads, { curie });
 
   if (entry.byPredicate.has(OWL.deprecated)) {
     quads.push(QuadFactory.quad(subject, SH.deactivated, QuadFactory.literal(true, XSD.boolean, { curie }), { curie }));
@@ -490,8 +495,8 @@ function emitNodeShapeMetadata(subject: string, entry: RelationIndexType, ctx: P
     quads.push(QuadFactory.quad(subject, SH.closed, QuadFactory.literal(true, XSD.boolean, { curie }), { curie }));
   }
 
-  QuadFactory.emitConstraintLiteral(subject, entry, SH.minCount, XSD.integer, quads, { curie });
-  QuadFactory.emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, { curie });
+  QuadEmit.emitConstraintLiteral(subject, entry, SH.minCount, XSD.integer, quads, { curie });
+  QuadEmit.emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, { curie });
 }
 
 function emitNodeShapeProperties(args: EmitNodeShapePropertiesArgsType): void {
@@ -565,10 +570,10 @@ function emitRestrictionPropertyShape(
   // constraint) to the shared quads array.
   // Any early return below produces no quads — no orphaned PropertyShape nodes.
   const pending: Array<[string, QuadObjectType]> = [];
-  const flatOnProperty = resolveRestrictionOnProperty(onProperty, graph, predicateResolver);
+  const flatOnProperty = PropertyProjection.resolveRestriction(onProperty, graph, predicateResolver);
 
   if (OWL_CARDINALITY_PREDICATE_IRIS.has(constraint)) {
-    const n = finiteNumber(value);
+    const n = PropertyProjection.finiteNumber(value);
 
     if (n === undefined) {
       return undefined;
@@ -672,7 +677,7 @@ function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsType): void 
     }
   }
 
-  const depReqItems = shaclVocab.processDependentRequired(
+  const depReqItems = shaclVocab.emitDependentRequired(
     subject,
     entry,
     quads,
@@ -681,8 +686,8 @@ function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsType): void 
     graph,
     predicateResolver
   );
-  const depSchemaItems = shaclVocab.processDependentSchemas(subject, entry, quads, curie, issuer);
-  const conditionalItems = shaclVocab.processConditionals(entry, quads, curie, issuer);
+  const depSchemaItems = shaclVocab.emitDependentSchemas(subject, entry, quads, curie, issuer);
+  const conditionalItems = shaclVocab.emitConditionals(entry, quads, curie, issuer);
 
   andItems.push(...depReqItems, ...depSchemaItems, ...conditionalItems);
 
@@ -712,15 +717,24 @@ function emitNodeShapeEquivalences(
   const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
 
   if (complementRels.length > 0) {
-    const compRef = resolveTargetRef(ProjectionIndex.relationTargetId(complementRels[0]), index);
+    const complementRel0 = complementRels.at(0);
 
-    quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(compRef, { curie }), { curie }));
+    if (complementRel0 !== undefined) {
+      const compRef = resolveTargetRef(ProjectionIndex.relationTargetId(complementRel0), index);
+
+      quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(compRef, { curie }), { curie }));
+    }
   }
 
   const disjointRels = entry.byPredicate.get(OWL.disjointWith) ?? [];
 
   if (complementRels.length === 0 && disjointRels.length > 0) {
-    const disjRef = resolveTargetRef(ProjectionIndex.relationTargetId(disjointRels[0]), index);
+    const disjointRel0 = disjointRels.at(0);
+
+    if (disjointRel0 === undefined) {
+      return;
+    }
+    const disjRef = resolveTargetRef(ProjectionIndex.relationTargetId(disjointRel0), index);
 
     quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(disjRef, { curie }), { curie }));
   }
@@ -770,7 +784,12 @@ function emitCountConstraint(args: EmitCountConstraintArgsType): void {
   if (rels.length === 0) {
     return;
   }
-  const count = Number(ProjectionIndex.relationTargetId(rels[0]));
+  const rel0 = rels.at(0);
+
+  if (rel0 === undefined) {
+    return;
+  }
+  const count = Number(ProjectionIndex.relationTargetId(rel0));
 
   quads.push(QuadFactory.quad(bnodeId, predicate, QuadFactory.literal(count, XSD.integer, opts), opts));
 }
@@ -784,7 +803,12 @@ function emitRangeConstraint(args: EmitRangeConstraintArgsType): void {
   if (rangeRels.length === 0) {
     return;
   }
-  const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), opts);
+  const rangeRel0 = rangeRels.at(0);
+
+  if (rangeRel0 === undefined) {
+    return;
+  }
+  const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRel0), opts);
   const rangePredicate = datatypeRels.length > 0 || rangeRels.length > 1 ? SH.class : SH.node;
 
   quads.push(QuadFactory.quad(bnodeId, rangePredicate, rangeIri, opts));
@@ -798,7 +822,12 @@ function emitPropertyShapeTypeConstraints(args: EmitPropertyShapeConstraintsArgs
   const rangeRels = entry.byPredicate.get(RDFS.range) ?? [];
 
   if (datatypeRels.length > 0 && rangeRels.length === 0) {
-    const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), opts);
+    const datatypeRel0 = datatypeRels.at(0);
+
+    if (datatypeRel0 === undefined) {
+      return;
+    }
+    const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRel0), opts);
 
     quads.push(QuadFactory.quad(bnodeId, SH.datatype, datatypeIri, opts));
   }
@@ -833,7 +862,12 @@ function emitPropertyShapeValueConstraints(args: EmitPropertyShapeConstraintsArg
   const hasValueRels = entry.byPredicate.get(OWL.hasValue) ?? [];
 
   if (hasValueRels.length > 0) {
-    const hasValueLit = QuadFactory.literal(ProjectionIndex.relationTargetId(hasValueRels[0]), XSD.string, opts);
+    const hasValueRel0 = hasValueRels.at(0);
+
+    if (hasValueRel0 === undefined) {
+      return;
+    }
+    const hasValueLit = QuadFactory.literal(ProjectionIndex.relationTargetId(hasValueRel0), XSD.string, opts);
 
     quads.push(QuadFactory.quad(bnodeId, SH.hasValue, hasValueLit, opts));
   }
@@ -847,13 +881,13 @@ function emitPropertyShapeValueConstraints(args: EmitPropertyShapeConstraintsArg
     quads.push(QuadFactory.quad(bnodeId, SH.pattern, patternLit, opts));
   }
 
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxInclusive, XSD.decimal, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minExclusive, XSD.decimal, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, opts);
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.maxInclusive, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.minExclusive, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, opts);
+  QuadEmit.emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, opts);
 
   if (entry.byPredicate.has(DASH.readOnly)) {
     quads.push(QuadFactory.quad(bnodeId, DASH.readOnly, QuadFactory.literal(true, XSD.boolean, opts), opts));
@@ -876,10 +910,11 @@ function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
   quads.push(QuadFactory.quad(bnodeId, RDF.type, QuadFactory.iri(SH.PropertyShape, opts), opts));
 
   const domainRels = entry.byPredicate.get(RDFS.domain) ?? [];
+  const domainRel0 = domainRels.at(0);
   const pathClassId = overridePathClassId
-    ?? (domainRels.length > 0 ? ProjectionIndex.relationTargetId(domainRels[0]) : classId);
+    ?? (domainRels.length > 0 && domainRel0 !== undefined ? ProjectionIndex.relationTargetId(domainRel0) : classId);
   const propName = SchemaIri.lastSegment(subject);
-  const propertySchema = resolvePropertySchema(graph, subject);
+  const propertySchema = PropertyProjection.resolveSchema(graph, subject);
   const canonicalId = predicateResolver === undefined
     ? SchemaIri.propertyIri(pathClassId, propName)
     : predicateResolver({
@@ -889,7 +924,7 @@ function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
     });
 
   quads.push(QuadFactory.quad(bnodeId, SH.path, QuadFactory.iri(canonicalId, opts), opts));
-  QuadFactory.emitLiterals(bnodeId, entry, RDFS.label, SH.name, quads, opts);
+  QuadEmit.emitLiterals(bnodeId, entry, RDFS.label, SH.name, quads, opts);
   emitPropertyShapeTypeConstraints({
     bnodeId,
     entry,
@@ -923,8 +958,8 @@ function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
     opts,
     quads
   });
-  QuadFactory.emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, opts);
-  QuadFactory.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, opts);
+  QuadEmit.emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, opts);
+  QuadEmit.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, opts);
 }
 
 function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinalityArgsType): void {
@@ -934,16 +969,25 @@ function emitContainsQualifiedCardinality(args: EmitContainsQualifiedCardinality
   const minQualRels = entry.byPredicate.get(OWL.minQualifiedCardinality) ?? [];
 
   if (minQualRels.length > 0) {
-    const minQual = Number(ProjectionIndex.relationTargetId(minQualRels[0]));
-    const minQualLit = QuadFactory.literal(minQual, XSD.integer, { curie });
+    const minQualRel0 = minQualRels.at(0);
 
-    quads.push(QuadFactory.quad(psBnode, SH.qualifiedMinCount, minQualLit, { curie }));
+    if (minQualRel0 !== undefined) {
+      const minQual = Number(ProjectionIndex.relationTargetId(minQualRel0));
+      const minQualLit = QuadFactory.literal(minQual, XSD.integer, { curie });
+
+      quads.push(QuadFactory.quad(psBnode, SH.qualifiedMinCount, minQualLit, { curie }));
+    }
   }
 
   const maxQualRels = entry.byPredicate.get(OWL.maxQualifiedCardinality) ?? [];
 
   if (maxQualRels.length > 0) {
-    const maxQual = Number(ProjectionIndex.relationTargetId(maxQualRels[0]));
+    const maxQualRel0 = maxQualRels.at(0);
+
+    if (maxQualRel0 === undefined) {
+      return;
+    }
+    const maxQual = Number(ProjectionIndex.relationTargetId(maxQualRel0));
     const maxQualLit = QuadFactory.literal(maxQual, XSD.integer, { curie });
 
     quads.push(QuadFactory.quad(psBnode, SH.qualifiedMaxCount, maxQualLit, { curie }));
@@ -967,7 +1011,13 @@ function emitContainsPropertyShape(
     return;
   }
 
-  const structure = containsRels[0].structure;
+  const containsRel0 = containsRels.at(0);
+
+  if (containsRel0 === undefined) {
+    return;
+  }
+
+  const structure = containsRel0.structure;
 
   if (!ProjectionIndex.isRestrictionStructure(structure)) {
     return;

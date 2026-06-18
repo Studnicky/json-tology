@@ -50,10 +50,10 @@ void describe('SameAsStore — Good/Bad/Ugly', () => {
 });
 
 void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
-  void it('records assertions, emits symmetric quads, handles graphIRI, no quads without assertions', () => {
+  void it('records assertions, emits symmetric quads, handles graphIri, no quads without assertions', () => {
     // Good: records single assertion, emits symmetric quad pair
     const jt = JsonTology.create({
-      'baseIRI': 'urn:example',
+      'baseIri': 'urn:example',
       'schemas': [PersonSchema] as const
     });
 
@@ -81,7 +81,7 @@ void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
 
     // Bad: no sameAs quads when no assertions recorded
     const jt2 = JsonTology.create({
-      'baseIRI': 'urn:example',
+      'baseIri': 'urn:example',
       'schemas': [PersonSchema] as const
     });
     const noSameAsQuads = jt2.toQuads(PersonSchema, { 'id': 'a1' }).filter((quad) => {
@@ -92,7 +92,7 @@ void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
 
     // Ugly: multiple distinct assertions → 4 quads (two pairs, symmetric)
     const jt3 = JsonTology.create({
-      'baseIRI': 'urn:example',
+      'baseIri': 'urn:example',
       'schemas': [PersonSchema] as const
     });
 
@@ -105,15 +105,15 @@ void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
 
     assert.equal(multiQuads.length, 4, 'two pairs, symmetric → 4 quads');
 
-    // graphIRI stamping on sameAs quads
+    // graphIri stamping on sameAs quads
     const jt4 = JsonTology.create({
-      'baseIRI': 'urn:example',
+      'baseIri': 'urn:example',
       'schemas': [PersonSchema] as const
     });
 
     jt4.sameAs('urn:a', 'urn:b');
     const graphQuads = jt4.toQuads(PersonSchema, { 'id': 'x1' }, {
-      'graphIRI': 'urn:example:graph1',
+      'graphIri': 'urn:example:graph1',
       'iriFor': 'urn:example:x'
     }).filter((quad) => {
       return quad.predicate.value === OWL_SAME_AS;
@@ -127,7 +127,7 @@ void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
 
   void it('direct materializer.projectAbox calls include sameAs quads (no facade bypass)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:example',
+      'baseIri': 'urn:example',
       'schemas': [PersonSchema] as const
     });
 

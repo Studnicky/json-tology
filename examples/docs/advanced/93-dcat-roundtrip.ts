@@ -98,7 +98,7 @@ const distributionSchema = result.schemas.find((schema) => {
 if (distributionSchema !== undefined && typeof distributionSchema.$id === 'string') {
   const distributionRec = distributionSchema as Record<string, unknown> & { '$id': string };
   const distJt = JsonTology.create({
-    'baseIRI': 'http://www.w3.org/ns/dcat#',
+    'baseIri': 'http://www.w3.org/ns/dcat#',
     'enableStrictGraph': false,
     'schemas': [distributionRec]
   });
@@ -113,7 +113,7 @@ if (distributionSchema !== undefined && typeof distributionSchema.$id === 'strin
 if (resourceSchema !== undefined && typeof resourceSchema.$id === 'string') {
   const resourceRec = resourceSchema as Record<string, unknown> & { '$id': string };
   const resourceJt = JsonTology.create({
-    'baseIRI': 'http://purl.org/dc/terms',
+    'baseIri': 'http://purl.org/dc/terms',
     'enableStrictGraph': false,
     'schemas': [resourceRec]
   });

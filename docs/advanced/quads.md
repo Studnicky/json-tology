@@ -41,7 +41,7 @@ A `SubjectGroup` is a convenience wrapper that groups all quads sharing the same
 
 ### Subject minting with `iriFor`
 
-The default minter assigns `<baseIRI>/instances/<classId>-<contentHash>` to every projected object. To override that, pass `iriFor` to `toQuads`:
+The default minter assigns `<baseIri>/instances/<classId>-<contentHash>` to every projected object. To override that, pass `iriFor` to `toQuads`:
 
 <RunnableExample src="examples/docs/advanced/36-toquads-irifor-strategies" />
 
@@ -55,11 +55,11 @@ Pass `{ iriFor: BLANK_NODE_IRI_FOR }` to produce anonymous blank-node subjects i
 
 ### Graph IRI
 
-Set the `graph` field on every emitted quad with `graphIRI`:
+Set the `graph` field on every emitted quad with `graphIri`:
 
 <RunnableExample src="examples/docs/advanced/37-toquads-graph-iri" />
 
-Both options can be paired with registry-level defaults via `JsonTology.create({ iriFor, defaultGraphIRI })`: see [Static helpers - graph emission options](/static-helpers#graph-emission-options).
+Both options can be paired with registry-level defaults via `JsonTology.create({ iriFor, defaultGraphIri })`: see [Static helpers - graph emission options](/static-helpers#graph-emission-options).
 
 ## `jt.fromQuads` {#jt-fromquads}
 
@@ -144,7 +144,7 @@ install.
 ```ts
 import { Writer } from 'n3';
 
-const jt = JsonTology.create({ baseIRI: 'https://bookstore.example', schemas: [CustomerSchema] as const });
+const jt = JsonTology.create({ baseIri: 'https://bookstore.example', schemas: [CustomerSchema] as const });
 const quads = jt.toQuads(CustomerSchema, { id: 'cust-1', name: 'Alice', email: 'alice@example.com' });
 
 // No cast required — QuadInterface is @rdfjs/types#Quad.
@@ -167,12 +167,12 @@ as-is because the project's accepted shape is the canonical rdf/js spec.
 `Literal.value` is `string` per the rdf/js spec. The original JS type
 (number, boolean, Date) is carried in `Literal.datatype.value`
 (`xsd:integer`, `xsd:boolean`, `xsd:dateTime`, …). To recover the typed JS
-value, call `decodeLiteral(literal)`:
+value, call `Terms.decodeLiteral(literal)`:
 
 <RunnableExample src="examples/docs/advanced/98-decode-literal-typed-values" />
 
 `fromQuads`, the internal `Lift` pipeline, and the OWL import dispatchers call
-`decodeLiteral` automatically, so consumers using those entry points never have
+`Terms.decodeLiteral` automatically, so consumers using those entry points never have
 to hand-decode.
 
 ### RDF lists

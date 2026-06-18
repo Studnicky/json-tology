@@ -71,8 +71,14 @@ console.assert(
 const duplicates = registry.findDuplicates();
 
 console.assert(duplicates.length > 0, 'findDuplicates returns the inline duplicate pair');
+const firstDup = duplicates[0];
+
+if (firstDup === undefined) {
+  throw new Error('expected duplicate entry');
+}
+
 console.assert(
-  duplicates[0].equivalentTo === IsbnSchema.$id,
+  firstDup.equivalentTo === IsbnSchema.$id,
   'duplicate points back to the named IsbnSchema'
 );
 

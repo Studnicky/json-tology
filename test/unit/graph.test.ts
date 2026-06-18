@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 // Graph-node identity tests are inherently white-box — interfaces and internal classes below
 // are not surfaced by the public API, but the tests need them to assert graph structure.
-import type { GraphArtifactType } from '../../src/types/GraphArtifact.js';
+import type { GraphArtifactType } from '../../src/types/GraphArtifactType.js';
 import type { NormIRType } from '../../src/types/SchemaGraph.js';
 import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 import {
@@ -226,8 +226,13 @@ function expandCurie(value: string): string {
       assert.equal(addressPropNode.pointer, '/properties/address');
       assert.equal((addressPropNode.schema as Record<string, unknown>).$ref, '#/$defs/Address');
       assert.deepEqual(rootSemantics.dependentRequired, { 'name': ['address'] });
-      assert.equal(rootSemantics.dependentSchemaEntries[0]?.[0], 'address');
-      assert.equal(rootSemantics.dependentSchemaEntries[0]?.[1].pointer, '/dependentSchemas/address');
+      const depEntry0 = rootSemantics.dependentSchemaEntries.at(0);
+
+      if (depEntry0 === undefined) {
+        throw new Error('expected dependentSchemaEntries at 0');
+      }
+      assert.equal(depEntry0[0], 'address');
+      assert.equal(depEntry0[1].pointer, '/dependentSchemas/address');
       assert.equal(addressSemantics.dynamicAnchor, 'addressNode');
       assert.deepEqual(addressSemantics.required, ['street']);
       assert.equal(graph.semantics(addressPropNode).refTargetNode?.id, 'https://example.io/root#/$defs/Address');
@@ -542,7 +547,12 @@ function expandCurie(value: string): string {
 
         assert.equal(rels.length, count);
         if (target !== undefined) {
-          assert.equal(rels[0].target, target);
+          const rel0 = rels.at(0);
+
+          if (rel0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(rel0.target, target);
         }
       }
     });
@@ -566,7 +576,12 @@ function expandCurie(value: string): string {
       });
 
       assert.equal(restrictions.length, 2);
-      assert.equal((restrictions[0].metadata as Record<string, unknown>).minCardinality, 1);
+      const restriction0 = restrictions.at(0);
+
+      if (restriction0 === undefined) {
+        throw new Error('expected element at 0');
+      }
+      assert.equal((restriction0.metadata as Record<string, unknown>).minCardinality, 1);
 
       // rdfs:domain and rdfs:range
       const drSchema = {
@@ -733,7 +748,12 @@ function expandCurie(value: string): string {
 
         assert.equal(rels.length > 0, true);
         if (target !== undefined) {
-          assert.equal(rels[0].target, target);
+          const rel0 = rels.at(0);
+
+          if (rel0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(rel0.target, target);
         }
       }
     });
@@ -797,8 +817,17 @@ function expandCurie(value: string): string {
       const oneOfSem = oneOfGraph.semantics(oneOfGraph.rootNode);
 
       assert.equal(oneOfSem.oneOf.length, 2);
-      assert.deepEqual(oneOfGraph.semantics(oneOfSem.oneOf[0]).schemaTypes, ['string']);
-      assert.deepEqual(oneOfGraph.semantics(oneOfSem.oneOf[1]).schemaTypes, ['integer']);
+      const oneOf0 = oneOfSem.oneOf.at(0);
+      const oneOf1 = oneOfSem.oneOf.at(1);
+
+      if (oneOf0 === undefined) {
+        throw new Error('expected oneOf element at 0');
+      }
+      if (oneOf1 === undefined) {
+        throw new Error('expected oneOf element at 1');
+      }
+      assert.deepEqual(oneOfGraph.semantics(oneOf0).schemaTypes, ['string']);
+      assert.deepEqual(oneOfGraph.semantics(oneOf1).schemaTypes, ['integer']);
 
       // if/then/else children are graph nodes
       const iteSchema = JSON.parse('{"if":{"type":"string"},"then":{"minLength":1},"else":{"type":"number"}}') as Record<string, unknown>;
@@ -923,10 +952,15 @@ function expandCurie(value: string): string {
         });
 
         assert.equal(conditionals.length, 1, `${label}: expected 1 conditional`);
-        assert.ok(conditionals[0].structure, `${label}: expected structure`);
-        assert.equal(conditionals[0].structure.kind, 'conditional', `${label}: expected conditional kind`);
+        const conditional0 = conditionals.at(0);
 
-        const struct = conditionals[0].structure;
+        if (conditional0 === undefined) {
+          throw new Error('expected conditional at 0');
+        }
+        assert.ok(conditional0.structure, `${label}: expected structure`);
+        assert.equal(conditional0.structure.kind, 'conditional', `${label}: expected conditional kind`);
+
+        const struct = conditional0.structure;
 
         assert.ok(struct.ifRef !== '', `${label}: expected ifRef`);
         assert.ok(struct.thenRef !== undefined && struct.thenRef !== '', `${label}: expected thenRef`);
@@ -958,16 +992,21 @@ function expandCurie(value: string): string {
       });
 
       assert.equal(depConditionals.length, 1);
-      assert.notStrictEqual(depConditionals[0].metadata, undefined);
-      if (depConditionals[0].metadata === undefined) {
+      const depConditional0 = depConditionals.at(0);
+
+      if (depConditional0 === undefined) {
+        throw new Error('expected depConditional at 0');
+      }
+      assert.notStrictEqual(depConditional0.metadata, undefined);
+      if (depConditional0.metadata === undefined) {
         throw new Error('unreachable');
       }
-      assert.equal(depConditionals[0].metadata.propertyName, 'address');
-      assert.notStrictEqual(depConditionals[0].structure, undefined);
-      if (depConditionals[0].structure === undefined) {
+      assert.equal(depConditional0.metadata.propertyName, 'address');
+      assert.notStrictEqual(depConditional0.structure, undefined);
+      if (depConditional0.structure === undefined) {
         throw new Error('unreachable');
       }
-      assert.equal(depConditionals[0].structure.kind, 'conditional');
+      assert.equal(depConditional0.structure.kind, 'conditional');
 
       // contains → someValuesFrom restriction
       const containsRels = nodeRelations({
@@ -979,14 +1018,19 @@ function expandCurie(value: string): string {
       const svf = findRelations(containsRels, expandCurie('owl:someValuesFrom'));
 
       assert.equal(svf.length, 1);
-      assert.equal(svf[0].target, expandCurie('xsd:decimal'));
-      assert.notStrictEqual(svf[0].structure, undefined);
-      if (svf[0].structure === undefined) {
+      const svf0 = svf.at(0);
+
+      if (svf0 === undefined) {
+        throw new Error('expected svf element at 0');
+      }
+      assert.equal(svf0.target, expandCurie('xsd:decimal'));
+      assert.notStrictEqual(svf0.structure, undefined);
+      if (svf0.structure === undefined) {
         throw new Error('unreachable');
       }
-      assert.equal(svf[0].structure.kind, 'restriction');
+      assert.equal(svf0.structure.kind, 'restriction');
 
-      const svfStruct = svf[0].structure;
+      const svfStruct = svf0.structure;
 
       assert.equal(svfStruct.onProperty, expandCurie('rdfs:member'));
 
@@ -1003,9 +1047,19 @@ function expandCurie(value: string): string {
       const maxCard = findRelations(cardRels, expandCurie('owl:maxQualifiedCardinality'));
 
       assert.equal(minCard.length, 1);
-      assert.equal(minCard[0].target, '2');
+      const minCard0 = minCard.at(0);
+
+      if (minCard0 === undefined) {
+        throw new Error('expected minCard element at 0');
+      }
+      assert.equal(minCard0.target, '2');
       assert.equal(maxCard.length, 1);
-      assert.equal(maxCard[0].target, '5');
+      const maxCard0 = maxCard.at(0);
+
+      if (maxCard0 === undefined) {
+        throw new Error('expected maxCard element at 0');
+      }
+      assert.equal(maxCard0.target, '5');
 
       // prefixItems → rdfs:member with positional metadata
       const tupleRels = nodeRelations({
@@ -1044,7 +1098,12 @@ function expandCurie(value: string): string {
         i,
         expected
       ] of expectedMembers.entries()) {
-        const memberMeta = members[i].metadata;
+        const member = members.at(i);
+
+        if (member === undefined) {
+          throw new Error(`expected member at ${i}`);
+        }
+        const memberMeta = member.metadata;
 
         assert.notStrictEqual(memberMeta, undefined);
         if (memberMeta === undefined) {
@@ -1052,7 +1111,7 @@ function expandCurie(value: string): string {
         }
         assert.equal(memberMeta.position, expected.position);
         assert.equal(memberMeta.memberProperty, expected.memberProperty);
-        assert.equal(members[i].target, expected.target);
+        assert.equal(member.target, expected.target);
       }
 
       // patternProperties → sh:pattern with pattern metadata
@@ -1070,16 +1129,25 @@ function expandCurie(value: string): string {
       });
 
       assert.equal(patterns.length, 2);
-      assert.notStrictEqual(patterns[0].metadata, undefined);
-      if (patterns[0].metadata === undefined) {
+      const pattern0 = patterns.at(0);
+      const pattern1 = patterns.at(1);
+
+      if (pattern0 === undefined) {
+        throw new Error('expected pattern at 0');
+      }
+      if (pattern1 === undefined) {
+        throw new Error('expected pattern at 1');
+      }
+      assert.notStrictEqual(pattern0.metadata, undefined);
+      if (pattern0.metadata === undefined) {
         throw new Error('unreachable');
       }
-      assert.equal(patterns[0].metadata.pattern, '^x-');
-      assert.notStrictEqual(patterns[1].metadata, undefined);
-      if (patterns[1].metadata === undefined) {
+      assert.equal(pattern0.metadata.pattern, '^x-');
+      assert.notStrictEqual(pattern1.metadata, undefined);
+      if (pattern1.metadata === undefined) {
         throw new Error('unreachable');
       }
-      assert.equal(patterns[1].metadata.pattern, '^y-');
+      assert.equal(pattern1.metadata.pattern, '^y-');
     });
 
     void it('produces value and access predicates for const, readOnly, writeOnly, and sh:closed', () => {
@@ -1115,7 +1183,12 @@ function expandCurie(value: string): string {
         const hasValue = findRelations(nodeRelations(schema), expandCurie('owl:hasValue'));
 
         assert.equal(hasValue.length, 1);
-        assert.equal(hasValue[0].target, expected);
+        const hasValue0 = hasValue.at(0);
+
+        if (hasValue0 === undefined) {
+          throw new Error('expected hasValue element at 0');
+        }
+        assert.equal(hasValue0.target, expected);
       }
 
       // readOnly → dash:readOnly
@@ -1125,7 +1198,12 @@ function expandCurie(value: string): string {
       });
 
       assert.strictEqual(findRelations(roRels, expandCurie('dash:readOnly')).length, 1);
-      assert.strictEqual(findRelations(roRels, expandCurie('dash:readOnly'))[0].target, 'true');
+      const roReadOnly = findRelations(roRels, expandCurie('dash:readOnly')).at(0);
+
+      if (roReadOnly === undefined) {
+        throw new Error('expected roReadOnly element at 0');
+      }
+      assert.strictEqual(roReadOnly.target, 'true');
 
       // writeOnly → dash:writeOnly
       const woRels = nodeRelations({
@@ -1134,7 +1212,12 @@ function expandCurie(value: string): string {
       });
 
       assert.strictEqual(findRelations(woRels, expandCurie('dash:writeOnly')).length, 1);
-      assert.strictEqual(findRelations(woRels, expandCurie('dash:writeOnly'))[0].target, 'true');
+      const woWriteOnly = findRelations(woRels, expandCurie('dash:writeOnly')).at(0);
+
+      if (woWriteOnly === undefined) {
+        throw new Error('expected woWriteOnly element at 0');
+      }
+      assert.strictEqual(woWriteOnly.target, 'true');
 
       // plain schema → no dash predicates
       const plainRels = nodeRelations({ 'type': 'string' });
@@ -1177,7 +1260,12 @@ function expandCurie(value: string): string {
 
         assert.equal(closed.length, expectedCount);
         if (expectedCount === 1) {
-          assert.equal(closed[0].target, 'true');
+          const closed0 = closed.at(0);
+
+          if (closed0 === undefined) {
+            throw new Error('expected closed element at 0');
+          }
+          assert.equal(closed0.target, 'true');
         }
       }
     });
@@ -1270,8 +1358,13 @@ function expandCurie(value: string): string {
       const ranges = findRelations(refRels, expandCurie('rdfs:range'));
 
       assert.equal(ranges.length, 1);
-      assert.equal(ranges[0].target, 'https://example.com/Other');
-      assert.equal(ranges[0].metadata?.fromRef, true);
+      const range0 = ranges.at(0);
+
+      if (range0 === undefined) {
+        throw new Error('expected range element at 0');
+      }
+      assert.equal(range0.target, 'https://example.com/Other');
+      assert.equal(range0.metadata?.fromRef, true);
 
       // Also verify standalone $ref range
       const friendRels = nodeRelations({
@@ -1283,8 +1376,13 @@ function expandCurie(value: string): string {
       const friendRanges = findRelations(friendRels, expandCurie('rdfs:range'));
 
       assert.equal(friendRanges.length, 1);
-      assert.equal(friendRanges[0].target, 'https://example.com/Person');
-      assert.equal(friendRanges[0].metadata?.fromRef, true);
+      const friendRange0 = friendRanges.at(0);
+
+      if (friendRange0 === undefined) {
+        throw new Error('expected friendRange element at 0');
+      }
+      assert.equal(friendRange0.target, 'https://example.com/Person');
+      assert.equal(friendRange0.metadata?.fromRef, true);
 
       // sh:datatype for various types
       const datatypeScenarios: Array<[Record<string, unknown>, string, string]> = [
@@ -1330,7 +1428,12 @@ function expandCurie(value: string): string {
         const datatypes = findRelations(nodeRelations(schema, pointer), expandCurie('sh:datatype'));
 
         assert.equal(datatypes.length, 1, `expected sh:datatype for ${JSON.stringify(schema)}`);
-        assert.equal(datatypes[0].target, expected);
+        const datatype0 = datatypes.at(0);
+
+        if (datatype0 === undefined) {
+          throw new Error('expected datatype element at 0');
+        }
+        assert.equal(datatype0.target, expected);
       }
 
       // No sh:datatype for $ref, object, or array
@@ -1414,7 +1517,12 @@ function expandCurie(value: string): string {
           : findRelations(rels, predicate);
 
         assert.equal(found.length, 1);
-        assert.equal(found[0].target, expected);
+        const found0 = found.at(0);
+
+        if (found0 === undefined) {
+          throw new Error('expected found element at 0');
+        }
+        assert.equal(found0.target, expected);
       }
     });
 
@@ -1428,7 +1536,12 @@ function expandCurie(value: string): string {
       }, '/properties/name');
 
       assert.equal(findRelations(reqRels, expandCurie('sh:minCount')).length, 1);
-      assert.equal(findRelations(reqRels, expandCurie('sh:minCount'))[0].target, '1');
+      const reqMinCount0 = findRelations(reqRels, expandCurie('sh:minCount')).at(0);
+
+      if (reqMinCount0 === undefined) {
+        throw new Error('expected sh:minCount element at 0');
+      }
+      assert.equal(reqMinCount0.target, '1');
 
       // Non-required → no sh:minCount, but sh:maxCount 1 for non-array
       const optRels = nodeRelations({
@@ -1439,7 +1552,12 @@ function expandCurie(value: string): string {
 
       assert.equal(findRelations(optRels, expandCurie('sh:minCount')).length, 0);
       assert.equal(findRelations(optRels, expandCurie('sh:maxCount')).length, 1);
-      assert.equal(findRelations(optRels, expandCurie('sh:maxCount'))[0].target, '1');
+      const optMaxCount0 = findRelations(optRels, expandCurie('sh:maxCount')).at(0);
+
+      if (optMaxCount0 === undefined) {
+        throw new Error('expected sh:maxCount element at 0');
+      }
+      assert.equal(optMaxCount0.target, '1');
 
       // Array property → no sh:maxCount
       const arrRels = nodeRelations({
@@ -1529,7 +1647,12 @@ function expandCurie(value: string): string {
           assert.equal(unions.length, 0, `${label}: expected no union`);
         } else {
           assert.equal(unions.length, 1, `${label}: expected 1 union`);
-          const struct = unions[0].structure as { 'kind': 'list';
+          const union0 = unions.at(0);
+
+          if (union0 === undefined) {
+            throw new Error('expected union element at 0');
+          }
+          const struct = union0.structure as { 'kind': 'list';
             'members': string[] };
 
           assert.deepEqual(struct.members, expectedMembers, `${label}: members mismatch`);
@@ -4677,7 +4800,7 @@ void describe('maxSchemaDepth — GraphEngine recursion depth parameter', () => 
 
   void it('instantiate (compiled validation path) does NOT enforce maxSchemaDepth (documented gap)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:depth:',
+      'baseIri': 'urn:depth:',
       'enableStrictGraph': false,
       'maxSchemaDepth': 1,
       'schemas': [SelfNode] as const

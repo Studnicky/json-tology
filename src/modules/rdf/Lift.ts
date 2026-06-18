@@ -16,37 +16,37 @@
  * be passed directly without a conversion bridge.
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
-import type { SubjectGroupType } from '../../types/SubjectGroup.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
+import type { SubjectGroupType } from '../../types/SubjectGroupType.js';
 import type { LiftOptionsType } from '../../types/LiftOptionsType.js';
-import type { RefTargetType } from '../../types/RefTarget.js';
+import type { RefTargetType } from '../../types/RefTargetType.js';
 import type { TripleTermIndexType } from '../../types/TripleTermIndexType.js';
 import type { PredicateIndexType } from '../../types/PredicateIndexType.js';
 import type { LiftedObjectType } from '../../types/LiftedObjectType.js';
-import type { SubjectTypeType } from '../../types/SubjectTypeType.js';
+import type { SubjectKindType } from '../../types/SubjectKindType.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 import type { ResolvedTypeNodeType } from '../../types/ResolvedTypeNodeType.js';
 import type { OptionalLiftedObjectType } from '../../types/OptionalLiftedObjectType.js';
-import type { FindPropertyQuadsArgsType } from '../../types/FindPropertyQuadsArgs.js';
-import type { LiftContextType } from '../../types/LiftContext.js';
-import type { LiftSubjectArgsType } from '../../types/LiftSubjectArgs.js';
-import type { LiftSingleValueArgsType } from '../../types/LiftSingleValueArgs.js';
-import type { LiftAnnotatedEdgeArgsType } from '../../types/LiftAnnotatedEdgeArgs.js';
-import type { LiftPropertyValueArgsType } from '../../types/LiftPropertyValueArgs.js';
-import type { LiftMatchingQuadsArgsType } from '../../types/LiftMatchingQuadsArgs.js';
-import type { LiftImplArgsType } from '../../types/LiftImplArgs.js';
-import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
+import type { FindPropertyQuadsArgsType } from '../../types/FindPropertyQuadsArgsType.js';
+import type { LiftContextType } from '../../types/LiftContextType.js';
+import type { LiftSubjectArgsType } from '../../types/LiftSubjectArgsType.js';
+import type { LiftSingleValueArgsType } from '../../types/LiftSingleValueArgsType.js';
+import type { LiftAnnotatedEdgeArgsType } from '../../types/LiftAnnotatedEdgeArgsType.js';
+import type { LiftPropertyValueArgsType } from '../../types/LiftPropertyValueArgsType.js';
+import type { LiftMatchingQuadsArgsType } from '../../types/LiftMatchingQuadsArgsType.js';
+import type { LiftImplArgsType } from '../../types/LiftImplArgsType.js';
+import { EffectiveProperties } from '../graph/EffectiveProperties.js';
 
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { RDF } from '../../constants/IRI.js';
 import { GraphError } from '../../errors/GraphError.js';
 
-import { asQuadObject } from './Lists.js';
-import { decodeLiteral } from './Terms.js';
-import { findAnnotatedEdgeStructure } from './ProjectionHelpers.js';
+import { Lists } from '../quads/Lists.js';
+import { Terms } from '../quads/Terms.js';
+import { PropertyProjection } from './PropertyProjection.js';
 
 // ---------------------------------------------------------------------------
 // Lift internals
@@ -147,7 +147,7 @@ function groupBySubject(quads: QuadInterface[]): SubjectGroupType {
   return groups;
 }
 
-function typeOf(quads: QuadInterface[]): SubjectTypeType {
+function typeOf(quads: QuadInterface[]): SubjectKindType {
   for (const quad of quads) {
     const predicateValue = quad.predicate.value;
 
@@ -423,14 +423,14 @@ function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsType): OptionalLiftedObjec
       continue;
     }
 
-    const narrowed = asQuadObject(match.object);
+    const narrowed = Lists.asQuadObject(match.object);
 
     if (narrowed === undefined) {
       continue;
     }
 
     annotations[propName] = narrowed.termType === 'Literal'
-      ? decodeLiteral(narrowed)
+      ? Terms.decodeLiteral(narrowed)
       : narrowed.value;
   }
 
@@ -454,7 +454,7 @@ function collectEffectiveLiftProperties(
   node: SchemaGraphNodeType,
   registry: SchemaRegistryInterface
 ): EffectivePropertyMapType {
-  return collectEffectivePropertiesMemo(
+  return EffectiveProperties.collectMemo(
     effectivePropertiesCache,
     graph,
     node,
@@ -470,7 +470,7 @@ function liftPropertyValue(pvArgs: LiftPropertyValueArgsType): unknown {
   } = pvArgs;
   const propNode = propEntry.node;
   const propGraph = propEntry.graph;
-  const edge = findAnnotatedEdgeStructure(propGraph, propNode);
+  const edge = PropertyProjection.findAnnotatedEdge(propGraph, propNode);
 
   if (edge !== undefined) {
     return liftAnnotatedEdge({
@@ -529,7 +529,7 @@ function liftMatchingQuads(mqArgs: LiftMatchingQuadsArgsType): unknown {
 
   if (isArray || matching.length > 1) {
     return matching.map((quad: QuadInterface): unknown => {
-      const narrowed = asQuadObject(quad.object);
+      const narrowed = Lists.asQuadObject(quad.object);
 
       return narrowed === undefined
         ? undefined
@@ -542,7 +542,13 @@ function liftMatchingQuads(mqArgs: LiftMatchingQuadsArgsType): unknown {
     });
   }
 
-  const narrowed = asQuadObject(matching[0].object);
+  const firstMatch = matching[0];
+
+  if (firstMatch === undefined) {
+    return undefined;
+  }
+
+  const narrowed = Lists.asQuadObject(firstMatch.object);
 
   return narrowed === undefined
     ? undefined
@@ -559,7 +565,8 @@ function liftSubject(args: LiftSubjectArgsType): LiftedObjectType {
     classId, ctx, graph, node, subjectQuads
   } = args;
   const obj: LiftedObjectType = {};
-  const subjectIri = subjectQuads.length > 0 ? subjectQuads[0].subject.value : classId;
+  const firstSubjectQuad = subjectQuads[0];
+  const subjectIri = firstSubjectQuad === undefined ? classId : firstSubjectQuad.subject.value;
   const effectiveProperties = collectEffectiveLiftProperties(graph, node, ctx.registry);
   const index = effectiveProperties.size > PREDICATE_INDEX_THRESHOLD
     ? buildPredicateIndex(subjectQuads)
@@ -593,7 +600,7 @@ function liftSingleValue(args: LiftSingleValueArgsType): unknown {
   } = args;
 
   if (obj.termType === 'Literal') {
-    return decodeLiteral(obj);
+    return Terms.decodeLiteral(obj);
   }
 
   // Follow IRI / BlankNode references via the subject group index.

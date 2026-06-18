@@ -13,7 +13,7 @@ type EvenDice = InferType<typeof EvenDiceSchema>;
 // 2 | 4 | 6
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:brands:',
+  'baseIri': 'urn:brands:',
   'enableStrictGraph': false,
   'schemas': [EvenDiceSchema]
 });

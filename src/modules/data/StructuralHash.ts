@@ -7,7 +7,7 @@
 
 import { Hash } from '../hash/Hash.js';
 import { METADATA_KEYS } from '../../constants/STRUCTURAL_HASH.js';
-import { isRecord } from './DataTypes.js';
+import { DataType } from './DataType.js';
 
 export class StructuralHash {
   public static of(schema: Record<string, unknown>): string {
@@ -21,7 +21,7 @@ export class StructuralHash {
       });
     }
 
-    if (!isRecord(value)) {
+    if (!DataType.isRecord(value)) {
       return value;
     }
 

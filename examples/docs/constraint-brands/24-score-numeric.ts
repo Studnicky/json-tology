@@ -21,7 +21,7 @@ const ScoreSchema = {
 type Score = InferType<typeof ScoreSchema>;
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:brands:',
+  'baseIri': 'urn:brands:',
   'enableStrictGraph': false,
   'schemas': [ScoreSchema]
 });

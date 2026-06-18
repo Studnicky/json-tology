@@ -21,7 +21,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const jt = JsonTology.create({
-  'baseIRI': 'http://xmlns.com/foaf',
+  'baseIri': 'http://xmlns.com/foaf',
   'enableTypeCast': true,
   'schemas': allSchemas
 });

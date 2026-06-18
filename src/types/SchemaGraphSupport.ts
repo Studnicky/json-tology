@@ -13,7 +13,7 @@ import type {
   SchemaGraphNodeType,
   SchemaGraphSemanticsType
 } from './SchemaGraph.js';
-import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptor.js';
+import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptorType.js';
 import type { AnnotatedEdgeDescriptorType } from '../types/AnnotatedEdgeDescriptorType.js';
 import type { JtConfigType } from './JtConfig.js';
 
@@ -410,7 +410,7 @@ export type SemanticsGraphPartType = Pick<
   | 'unevaluatedPropertiesNode'
 >;
 
-export type { SemanticsBuildContextType } from '../types/SemanticsBuildContext.js';
+export type { SemanticsBuildContextType } from '../types/SemanticsBuildContextType.js';
 
 /**
  * Named return type for {@link extractBooleanFlags}.
@@ -461,7 +461,7 @@ export type BooleanFlagsType = {
  *
  * @example
  * ```ts
- * const entries: PropertyEntry[] = graph.entries(node, 'properties');
+ * const entries: PropertyEntryType[] = graph.entries(node, 'properties');
  * ```
  *
  * @category Graph
@@ -469,7 +469,7 @@ export type BooleanFlagsType = {
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type PropertyEntry = [string, SchemaGraphNodeType];
+export type PropertyEntryType = [string, SchemaGraphNodeType];
 
 /**
  * An immutable map from property name to the resolved schema graph node.
@@ -480,7 +480,7 @@ export type PropertyEntry = [string, SchemaGraphNodeType];
  *
  * @example
  * ```ts
- * const map: PropertyMap = propertiesMap(entries);
+ * const map: PropertyMapType = propertiesMap(entries);
  * ```
  *
  * @category Graph
@@ -488,4 +488,4 @@ export type PropertyEntry = [string, SchemaGraphNodeType];
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type PropertyMap = ReadonlyMap<string, SchemaGraphNodeType>;
+export type PropertyMapType = ReadonlyMap<string, SchemaGraphNodeType>;

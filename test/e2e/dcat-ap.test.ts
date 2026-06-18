@@ -24,7 +24,7 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
   // Initialize with all DCAT-AP schemas
   it('registers all 9 schemas without error', async () => {
     jt = JsonTology.create({
-      'baseIRI': 'https://example.com/',
+      'baseIri': 'https://example.com/',
       'enableStrictGraph': false,
       'schemas': AllSchemas
     });
@@ -265,7 +265,7 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
       const generatedOntologyStr = JSON.stringify(owlQuads);
       const hasMinimalStructure = generatedOntologyStr.includes('ontology')
         || generatedOntologyStr.includes('Ontology')
-        || generatedOntologyStr.includes(AllSchemas[0].$id);
+        || generatedOntologyStr.includes(AllSchemas.at(0)?.$id ?? '');
 
       assert.ok(hasMinimalStructure, 'json-tology generates valid ontology structure');
     });
@@ -308,9 +308,7 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
       }) as Record<string, unknown> | undefined;
 
       if (!datasetShape) {
-        assert.ok(false, 'Dataset shape should exist in SHACL output');
-
-        return;
+        assert.fail('Dataset shape should exist in SHACL output');
       }
 
       const propValue = datasetShape['http://www.w3.org/ns/shacl#property'];
@@ -345,9 +343,7 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
       }) as Record<string, unknown> | undefined;
 
       if (!datasetShape) {
-        assert.ok(false, 'Dataset shape should exist');
-
-        return;
+        assert.fail('Dataset shape should exist');
       }
 
       const propValue = datasetShape['http://www.w3.org/ns/shacl#property'];

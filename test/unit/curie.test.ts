@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 
 const CTX = {
   'ex': 'https://example.com/',

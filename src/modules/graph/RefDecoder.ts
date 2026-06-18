@@ -1,19 +1,19 @@
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
-import type { RefDecoderRegistryType } from '../../types/RefDecoderRegistry.js';
-import type { ResolvedRefTargetType } from '../../types/RefDecoderCache.js';
+import type { RefDecoderRegistryType } from '../../types/RefDecoderRegistryType.js';
+import type { ResolvedRefTargetType } from '../../types/ResolvedRefTargetType.js';
 
 import { BaseError } from '../../errors/BaseError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { TransformErrorCode } from '../../constants/ERROR_CODES.js';
 import { Transform } from '../transform/Transform.js';
-import { isRecord } from '../data/DataTypes.js';
-import { logScope } from '../data/LogScope.js';
+import { DataType } from '../data/DataType.js';
+import { LogScope } from '../data/LogScope.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import { SchemaIri } from './SchemaIri.js';
 
 /**
@@ -114,7 +114,7 @@ export class RefDecoder {
       return RefDecoder.walk(graph, graph.rootNode, value, registry, new Set());
     } catch (error) {
       if (error instanceof DecodeError) {
-        logger.error(logScope('RefDecoder', 'run', `ref decode failed: ${error.message}`));
+        logger.error(LogScope.format('RefDecoder', 'run', `ref decode failed: ${error.message}`));
       }
       throw error;
     }
@@ -148,7 +148,7 @@ export class RefDecoder {
     registry: RefDecoderRegistryType,
     visited: Set<SchemaGraphNodeType>
   ): unknown {
-    if (!isRecord(value)) {
+    if (!DataType.isRecord(value)) {
       return value;
     }
     const additional = semantics.additionalPropertiesNode;
@@ -252,7 +252,13 @@ export class RefDecoder {
 
     if (positionalNodes.length > 0) {
       for (let index = 0; index < positionalNodes.length && index < value.length; index += 1) {
-        const next = RefDecoder.walk(graph, positionalNodes[index], value[index], registry, visited);
+        const positionalNode = positionalNodes[index];
+
+        if (positionalNode === undefined) {
+          continue;
+        }
+
+        const next = RefDecoder.walk(graph, positionalNode, value[index], registry, visited);
 
         if (next !== value[index]) {
           value[index] = next;
@@ -285,7 +291,7 @@ export class RefDecoder {
     registry: RefDecoderRegistryType,
     visited: Set<SchemaGraphNodeType>
   ): unknown {
-    if (!isRecord(value)) {
+    if (!DataType.isRecord(value)) {
       return value;
     }
 

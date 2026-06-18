@@ -276,7 +276,7 @@ export const SUPPORTED_VOCABULARIES = new Set([
  * @defaultValue `{...}`
  * @group Constants
  */
-export const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsType, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>> = {
+export const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsType, 'formatRegistry' | 'keywords' | 'logger' | 'lookupGraph' | 'lookupSchema'>> = {
   'allowAdditionalProperties': false,
   'applyDefaults': false,
   'castTypes': false,

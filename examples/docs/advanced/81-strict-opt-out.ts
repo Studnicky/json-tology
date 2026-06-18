@@ -24,7 +24,7 @@ const SchemaWithInlineShape = {
 // Facade: relax enforcement for the whole instance. With strict mode off, the
 // inline primitive shape registers with a warning instead of throwing.
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.com/',
+  'baseIri': 'https://example.com/',
   'enableStrictGraph': false,
   'schemas': [SchemaWithInlineShape]
 });

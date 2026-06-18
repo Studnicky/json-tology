@@ -299,7 +299,7 @@ void describe('format validator error handling', () => {
 
 void describe('null/undefined schema guard on public API', () => {
   const jt = JsonTology.create({
-    'baseIRI': 'urn:test',
+    'baseIri': 'urn:test',
     'enableStrictGraph': false,
     'schemas': [{
       '$id': 'urn:hardening:guard',

@@ -47,7 +47,7 @@ void describe('nominal duplicate detection — named primitive collision', { 'co
     } as const;
 
     assert.doesNotThrow(() => {
-      const jt = JsonTology.create({ 'baseIRI': 'urn:nd' });
+      const jt = JsonTology.create({ 'baseIri': 'urn:nd' });
 
       jt.registry.set(StringValue);
       jt.registry.set(IriString);
@@ -69,7 +69,7 @@ void describe('nominal duplicate detection — named primitive collision', { 'co
     } as const;
 
     assert.doesNotThrow(() => {
-      const jt = JsonTology.create({ 'baseIRI': 'urn:nd2' });
+      const jt = JsonTology.create({ 'baseIri': 'urn:nd2' });
 
       jt.registry.set(IriStr);
       jt.registry.set(SlugStr);
@@ -88,7 +88,7 @@ void describe('nominal duplicate detection — named primitive collision', { 'co
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'urn:nd3',
+      'baseIri': 'urn:nd3',
       'enableStrictGraph': false
     });
 
@@ -128,7 +128,7 @@ void describe('nominal duplicate detection — transform identity', { 'concurren
     });
 
     assert.doesNotThrow(() => {
-      const jt = JsonTology.create({ 'baseIRI': 'urn:nd4' });
+      const jt = JsonTology.create({ 'baseIri': 'urn:nd4' });
 
       // Plain schema registered first so it wins the uncontested hash.
       jt.registry.set(PlainToken);
@@ -159,7 +159,7 @@ void describe('nominal duplicate detection — transform identity', { 'concurren
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'urn:nd5',
+      'baseIri': 'urn:nd5',
       'enableStrictGraph': false
     });
 
@@ -199,7 +199,7 @@ void describe('nominal duplicate detection — genuine inline duplicate preserve
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'urn:nd6',
+      'baseIri': 'urn:nd6',
       'enableStrictGraph': false
     });
 
@@ -239,7 +239,7 @@ void describe('nominal duplicate detection — genuine inline duplicate preserve
 
     assert.throws(
       () => {
-        const jt = JsonTology.create({ 'baseIRI': 'urn:nd7' });
+        const jt = JsonTology.create({ 'baseIri': 'urn:nd7' });
 
         jt.registry.set(TagSchema);
         jt.registry.set(ArticleSchema);

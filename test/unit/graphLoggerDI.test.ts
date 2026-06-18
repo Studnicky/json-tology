@@ -22,7 +22,7 @@ import { DecodeError } from '../../src/errors/DecodeError.js';
 import {
   GraphErrorCode, TransformErrorCode
 } from '../../src/constants/ERROR_CODES.js';
-import type { LoggerInterface } from '../../src/interfaces/Logger.js';
+import type { LoggerInterface } from '../../src/interfaces/LoggerInterface.js';
 
 type CapturedType = {
   'level': string;
@@ -214,7 +214,7 @@ void describe('RefDecoder logger DI (end-to-end through the registry)', () => {
       logger, messages
     } = capturingLogger();
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.io',
+      'baseIri': 'https://example.io',
       logger,
       'schemas': [
         ThrowingDecodeSchema,

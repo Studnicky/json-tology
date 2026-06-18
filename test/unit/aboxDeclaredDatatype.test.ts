@@ -21,7 +21,7 @@ import { JsonTology } from '../../src/index.js';
 import {
   SH, XSD
 } from '../../src/constants/IRI.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 function objectNamedNodeValue(quad: QuadInterface): string | undefined {
   const obj = quad.object;
@@ -123,7 +123,7 @@ void describe('ABox literal datatype is derived from the declared graph type', {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [FreeformSchema]
     });
 
@@ -159,7 +159,7 @@ void describe('CURIE x-jt-predicate expands on toQuads and round-trips through f
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'prefixes': { 'bk': 'https://books.example.org/vocab#' },
       'schemas': [BookSchema]
     });
@@ -184,6 +184,11 @@ void describe('CURIE x-jt-predicate expands on toQuads and round-trips through f
     const lifted = jt.fromQuads(BookSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'fromQuads should recover exactly one Book');
-    assert.equal(lifted[0].title, 'Dune', 'CURIE predicate should round-trip back to the title property');
+    const lifted0 = lifted.at(0);
+
+    if (lifted0 === undefined) {
+      throw new Error('expected lifted[0] to exist');
+    }
+    assert.equal(lifted0.title, 'Dune', 'CURIE predicate should round-trip back to the title property');
   });
 });

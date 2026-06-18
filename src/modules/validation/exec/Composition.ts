@@ -2,12 +2,10 @@ import type { KeywordContextType } from '../../../types/GraphEngine.js';
 import type {
   ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../../types/Validation.js';
-import type { ExecContextType } from '../../../types/ExecContext.js';
-import type { CustomKeywordEntryType } from '../../../types/CustomKeywordEntry.js';
+import type { ExecContextType } from '../../../types/ExecContextType.js';
+import type { CustomKeywordEntryType } from '../../../types/CustomKeywordEntryType.js';
 import { BaseError } from '../../../errors/BaseError.js';
-import {
-  isRecord
-} from '../../data/DataTypes.js';
+import { DataType } from '../../data/DataType.js';
 import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
 import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
@@ -243,7 +241,7 @@ export class Composition {
    * Unified anyOf validation.
    *
    * Runs each anyOf branch as a full validator in an isolated scratch context.
-   * When `ctx.applyDefaults || ctx.doCoerce`, each branch gets a cloned candidate
+   * When `ctx.applyDefaults || ctx.coerce`, each branch gets a cloned candidate
    * value and the first passing branch's output is used. In check-mode (no value
    * production), branches run with collectErrors:false so they short-circuit on
    * first failure — cheap and avoids accumulating phantom errors.
@@ -267,7 +265,7 @@ export class Composition {
       };
     }
 
-    const needsValueProducing = ctx.applyDefaults || ctx.doCoerce;
+    const needsValueProducing = ctx.applyDefaults || ctx.coerce;
     let matched = false;
     let winnerValue: unknown = value;
     let winnerBranchCtx: ExecContextType | undefined;
@@ -308,8 +306,8 @@ export class Composition {
         const branchCtx: ExecContextType = {
           ...ctx,
           'applyDefaults': false,
+          'coerce': false,
           'collectErrors': false,
-          'doCoerce': false,
           'errors': [],
           'evaluatedItems': undefined,
           'evaluatedProperties': undefined,
@@ -422,7 +420,7 @@ export class Composition {
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
-    if (depSchemaValidators === undefined || !isRecord(workingValue)) {
+    if (depSchemaValidators === undefined || !DataType.isRecord(workingValue)) {
       return {
         'earlyExit': false,
         'valid': true,
@@ -485,8 +483,8 @@ export class Composition {
     const ifScratchCtx: ExecContextType = {
       ...ctx,
       'applyDefaults': false,
+      'coerce': false,
       'collectErrors': false,
-      'doCoerce': false,
       'errors': [],
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
@@ -529,8 +527,8 @@ export class Composition {
     const scratchCtx: ExecContextType = {
       ...ctx,
       'applyDefaults': false,
+      'coerce': false,
       'collectErrors': false,
-      'doCoerce': false,
       'errors': [],
       'evaluatedItems': undefined,
       'evaluatedProperties': undefined,
@@ -554,7 +552,7 @@ export class Composition {
    * Unified oneOf validation.
    *
    * Runs each oneOf branch as a full validator in an isolated scratch context.
-   * Exactly one branch must pass. When `ctx.applyDefaults || ctx.doCoerce`, each
+   * Exactly one branch must pass. When `ctx.applyDefaults || ctx.coerce`, each
    * branch gets a cloned candidate value and the unique winner's output is used.
    * In check-mode, branches run with collectErrors:false.
    *
@@ -576,7 +574,7 @@ export class Composition {
       };
     }
 
-    const needsValueProducing = ctx.applyDefaults || ctx.doCoerce;
+    const needsValueProducing = ctx.applyDefaults || ctx.coerce;
     let matchCount = 0;
     let winnerValue: unknown = value;
     let winnerBranchCtx: ExecContextType | undefined;
@@ -593,8 +591,8 @@ export class Composition {
         : {
           ...ctx,
           'applyDefaults': false,
+          'coerce': false,
           'collectErrors': false,
-          'doCoerce': false,
           'errors': [],
           'evaluatedItems': undefined,
           'evaluatedProperties': undefined,

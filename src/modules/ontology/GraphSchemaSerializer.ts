@@ -1,8 +1,8 @@
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
-import type { GraphSchemaSerializerInterface } from '../../interfaces/Serializer.js';
+import type { GraphSchemaSerializerInterface } from '../../interfaces/GraphSchemaSerializerInterface.js';
 
 
 /**

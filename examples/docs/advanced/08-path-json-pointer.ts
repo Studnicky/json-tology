@@ -7,7 +7,7 @@
 
 import { Path } from '../../../src/index.js';
 
-const tests = [
+const tests: Array<[string, string]> = [
   [
     '/items/0/quantity',
     'items[0].quantity'

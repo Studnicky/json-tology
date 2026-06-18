@@ -76,7 +76,7 @@ const ThrowingSchema = {
 
 function makeJt() {
   return JsonTology.create({
-    'baseIRI': 'https://ex.io',
+    'baseIri': 'https://ex.io',
     'computeds': {
       'https://ex.io/Item': {},
       'https://ex.io/Order': {
@@ -198,7 +198,7 @@ void describe('computed fields', { 'concurrency': true }, () => {
 
   void it('computed field on nested schema works via addComputed', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://ex.io',
+      'baseIri': 'https://ex.io',
       'computeds': {
         'https://ex.io/NestedOrder': {
           'label': (order: Record<string, unknown>) => {
@@ -229,7 +229,7 @@ void describe('computed fields', { 'concurrency': true }, () => {
 
   void it('compute function that throws is wrapped in InstantiationError', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://ex.io',
+      'baseIri': 'https://ex.io',
       'computeds': {
         'https://ex.io/Throwing': {
           'computed': () => {
@@ -281,7 +281,7 @@ void describe('computed fields', { 'concurrency': true }, () => {
     assert.throws(
       () => {
         JsonTology.create({
-          'baseIRI': 'https://ex.io',
+          'baseIri': 'https://ex.io',
           'enableStrictGraph': false,
           // No computeds provided
           'schemas': [

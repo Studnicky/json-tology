@@ -1,7 +1,7 @@
 import type {
   SchemaGraphNodeType, SchemaGraphRelationType, SchemaGraphSemanticsType
 } from './SchemaGraph.js';
-import type { GraphAccessorInterface } from '../interfaces/GraphAccessor.js';
+import type { GraphAccessorInterface } from '../interfaces/GraphAccessorInterface.js';
 
 /**
  * Common context bundle for relation-push helpers that need graph + node + semantics.
