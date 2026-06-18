@@ -47,7 +47,7 @@ import { logScope } from '../data/LogScope.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
-import { Materializer } from '../materialization/Materializer.js';
+import type { DefaultCreatorInterface } from '../../interfaces/DefaultCreatorInterface.js';
 import { RefDecoder } from '../graph/RefDecoder.js';
 import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
@@ -160,6 +160,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly computedStore: ComputedStore;
 
   public readonly curie: CurieInterface | undefined;
+  private readonly defaultCreatorFactory: ((registry: SchemaRegistryInterface) => DefaultCreatorInterface) | undefined;
   public readonly differentFromStore: DifferentFromStore;
   private readonly enableDuplicateDetection: boolean;
   private readonly enableInlineWarnings: boolean;
@@ -179,12 +180,14 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   };
   private readonly refs: SchemaRefWalkerInterface;
   public readonly sameAsStore: SameAsStore;
+
   private readonly store: SchemaEntryStoreInterface;
 
   private readonly vocabularies: readonly VocabularyPluginInterface[];
 
   public constructor(options?: RegistryOptionsType) {
     this.logger = options?.logger ?? SILENT_LOGGER;
+    this.defaultCreatorFactory = options?.defaultCreatorFactory;
 
     const config = SchemaRegistry.resolveOptions(options);
 
@@ -970,9 +973,17 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.assertRefsResolvable(entry);
 
-    const materializer = new Materializer(this, { 'logger': this.logger });
+    if (this.defaultCreatorFactory === undefined) {
+      throw new SchemaError(
+        `Cannot create a default instance for "${schemaId}": no default creator configured. Use JsonTology, or pass options.defaultCreatorFactory.`,
+        {
+          'code': SchemaErrorCode.DEFAULT_CREATOR_MISSING,
+          schemaId
+        }
+      );
+    }
 
-    return materializer.createDefault(entry.schema as Record<string, unknown> & { '$id': string });
+    return this.defaultCreatorFactory(this).createDefault(entry.schema as Record<string, unknown> & { '$id': string });
   }
 
   /**

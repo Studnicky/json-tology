@@ -1,7 +1,9 @@
 import type { DuplicateSchemaIdType } from './TypeErrors.js';
 import type { ParseOutputType } from './Transform.js';
+import type { DefaultCreatorInterface } from '../interfaces/DefaultCreatorInterface.js';
 import type { FormatRegistryInterface } from '../interfaces/FormatRegistryInterface.js';
 import type { InvariantType } from './Invariant.js';
+import type { SchemaRegistryInterface } from '../interfaces/SchemaRegistryInterface.js';
 import type { KeywordDefinitionType } from './GraphEngine.js';
 import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 import type { VocabularyPluginInterface } from '../interfaces/VocabularyPluginInterface.js';
@@ -127,6 +129,13 @@ export type UniqueSchemaIdsType<T extends readonly unknown[]>
   }[`${HasDuplicateIdsType<T>}`];
 
 export type RegistryOptionsType = {
+  /**
+   * Factory that builds the default-instance creator for `create()`. Injected
+   * by the facade so the registry depends on {@link DefaultCreatorInterface}
+   * rather than the higher `materialization` layer. When absent, `create()`
+   * throws `SchemaError('SCHEMA_DEFAULT_CREATOR_MISSING')`.
+   */
+  'defaultCreatorFactory'?: (registry: SchemaRegistryInterface) => DefaultCreatorInterface;
   'enableDebug'?: boolean;
   'enableDefaults'?: boolean;
   /**

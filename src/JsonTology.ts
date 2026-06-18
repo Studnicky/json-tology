@@ -851,7 +851,12 @@ export class JsonTology<TRefs = Record<never, never>> {
     const formatRegistry = JsonTology.buildFormatRegistry(options.formats);
     const registryOptions = JsonTology.buildRegistryOptions(options, formatRegistry);
 
-    this.registry = new SchemaRegistry(registryOptions);
+    this.registry = new SchemaRegistry({
+      ...registryOptions,
+      'defaultCreatorFactory': (registry): Materializer => {
+        return new Materializer(registry, { 'logger': this.logger });
+      }
+    });
     this.refLoader = new RefResolutionLoader(this.registry);
 
     // Curie with merged prefixes from registry. Assigned before any CURIE

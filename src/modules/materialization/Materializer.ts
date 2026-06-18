@@ -2,6 +2,7 @@ import type {
   MaterializationResultType, MaterializerOptionsType
 } from '../../types/Materializer.js';
 import type { MaterializerInterface } from '../../interfaces/MaterializerInterface.js';
+import type { DefaultCreatorInterface } from '../../interfaces/DefaultCreatorInterface.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
@@ -64,7 +65,7 @@ import { logScope } from '../data/LogScope.js';
  * @see {@link SchemaRegistryInterface}
  * @group Runtime
  */
-export class Materializer implements MaterializerInterface {
+export class Materializer implements DefaultCreatorInterface, MaterializerInterface {
   private static isEffectivelyFrozen(schema: Record<string, unknown>): boolean {
     if (schema['jt:frozen'] === true) {
       return true;
