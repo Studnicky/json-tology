@@ -17,6 +17,17 @@
  * dash:readOnly, dash:writeOnly) are recognised and ignored.
  * Shapes and property shapes with sh:deactivated true are skipped.
  *
+ * Architectural boundary: this engine indexes RDF quads (subject -> predicate ->
+ * object-value-strings via SubjectPredicateIndexType, plus rdf:type and datatype
+ * indexes). That is intentionally a distinct model from the canonical
+ * SchemaGraph, which is a node/relation graph over a JSON Schema document. SHACL
+ * conformance is defined over RDF triples, so it cannot be evaluated against the
+ * JSON-Schema graph without re-deriving the SHACL vocabulary (the inverse of
+ * ShaclProjection) -- these indexes are therefore not a duplication of
+ * SchemaGraph and are not consolidated onto it. Their shapes are SHACL-specific
+ * (they hold extracted `.value` strings, not QuadInterface[]) and are not shared
+ * with the rdf/ quad-grouping utilities.
+ *
  * @module ShaclValidator
  * @category SHACL
  * @since 0.20.0
@@ -25,22 +36,19 @@
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { ShaclValidationReportType } from '../../types/ShaclValidationReportType.js';
 import type { ShaclValidationResultType } from '../../types/ShaclValidationResultType.js';
+import type {
+  DatatypeIndexType,
+  EvalArgsType,
+  NodeShapeIndexType,
+  PredicateValuesIndexType,
+  PropertyShapeIndexType,
+  SubjectPredicateIndexType,
+  TypeIndexType,
+  ValidationContextType
+} from '../../types/Shacl.js';
 import {
   RDF, SH, XSD
 } from '../../constants/IRI.js';
-
-// ---------------------------------------------------------------------------
-// Internal index types
-// ---------------------------------------------------------------------------
-
-/** Subject-to-predicate-to-objects index for quad lookup. */
-type SubjectPredicateIndex = Map<string, Map<string, string[]>>;
-
-/** Predicate-to-object-literals index for a single subject. */
-type PredicateIndex = Map<string, string[]>;
-
-/** Per-subject type set for rdf:type lookups. */
-type TypeIndex = Map<string, Set<string>>;
 
 // ---------------------------------------------------------------------------
 // Index builders
@@ -50,8 +58,8 @@ type TypeIndex = Map<string, Set<string>>;
  * Build a subject → predicate → object-values index from a quad array.
  * Object values are the `.value` strings of the object terms.
  */
-function buildSubjectIndex(quads: readonly QuadInterface[]): SubjectPredicateIndex {
-  const index: SubjectPredicateIndex = new Map();
+function buildSubjectIndex(quads: readonly QuadInterface[]): SubjectPredicateIndexType {
+  const index: SubjectPredicateIndexType = new Map();
 
   for (const quad of quads) {
     const subjectId = quad.subject.value;
@@ -77,8 +85,8 @@ function buildSubjectIndex(quads: readonly QuadInterface[]): SubjectPredicateInd
 }
 
 /** Build a subject → rdf:type set index. */
-function buildTypeIndex(quads: readonly QuadInterface[]): TypeIndex {
-  const index: TypeIndex = new Map();
+function buildTypeIndex(quads: readonly QuadInterface[]): TypeIndexType {
+  const index: TypeIndexType = new Map();
 
   for (const quad of quads) {
     if (quad.predicate.value !== RDF.type) {
@@ -113,7 +121,7 @@ function buildTypeIndex(quads: readonly QuadInterface[]): TypeIndex {
  */
 function collectRdfListValues(
   headId: string,
-  shapeIndex: SubjectPredicateIndex
+  shapeIndex: SubjectPredicateIndexType
 ): string[] {
   const values: string[] = [];
   let current = headId;
@@ -147,15 +155,12 @@ function collectRdfListValues(
 // Datatype index — maps subject+predicate to the object's datatype IRI
 // ---------------------------------------------------------------------------
 
-/** Datatype IRI of each literal object per subject+predicate, for data quads. */
-type DatatypeIndex = Map<string, Map<string, string[]>>;
-
 /**
  * Build subject → predicate → datatype-IRI[] index from literal quads.
  * Non-literal objects produce no entry.
  */
-function buildDatatypeIndex(quads: readonly QuadInterface[]): DatatypeIndex {
-  const index: DatatypeIndex = new Map();
+function buildDatatypeIndex(quads: readonly QuadInterface[]): DatatypeIndexType {
+  const index: DatatypeIndexType = new Map();
 
   for (const quad of quads) {
     if (quad.object.termType !== 'Literal') {
@@ -189,26 +194,10 @@ function buildDatatypeIndex(quads: readonly QuadInterface[]): DatatypeIndex {
 // Shape index — parsed representation of SHACL shapes
 // ---------------------------------------------------------------------------
 
-/** A parsed property shape. */
-type PropertyShapeIndexType = {
-  readonly 'bnodeId': string;
-  readonly 'constraints': PredicateIndex;
-  readonly 'isDeactivated': boolean;
-  readonly 'path': string;
-};
-
-/** A parsed node shape. */
-type NodeShapeIndexType = {
-  readonly 'constraints': PredicateIndex;
-  readonly 'isDeactivated': boolean;
-  readonly 'propertyShapes': PropertyShapeIndexType[];
-  readonly 'shapeIri': string;
-};
-
 /**
  * Determine whether a blank node is marked sh:deactivated true.
  */
-function isDeactivated(bnodeId: string, shapeIndex: SubjectPredicateIndex): boolean {
+function isDeactivated(bnodeId: string, shapeIndex: SubjectPredicateIndexType): boolean {
   const node = shapeIndex.get(bnodeId);
 
   if (node === undefined) {
@@ -219,9 +208,9 @@ function isDeactivated(bnodeId: string, shapeIndex: SubjectPredicateIndex): bool
 }
 
 /**
- * Extract the `PredicateIndex` for a subject from the shape quad index.
+ * Extract the `PredicateValuesIndexType` for a subject from the shape quad index.
  */
-function extractConstraints(id: string, shapeIndex: SubjectPredicateIndex): PredicateIndex {
+function extractConstraints(id: string, shapeIndex: SubjectPredicateIndexType): PredicateValuesIndexType {
   const node = shapeIndex.get(id);
 
   return node ?? new Map<string, string[]>();
@@ -232,7 +221,7 @@ function extractConstraints(id: string, shapeIndex: SubjectPredicateIndex): Pred
  * anonymous blank-node shape used as an `sh:and`/`sh:or`/`sh:not`/`sh:node`
  * member. Returns `undefined` when the subject carries no shape content.
  */
-function buildShapeView(shapeId: string, shapeIndex: SubjectPredicateIndex): NodeShapeIndexType | undefined {
+function buildShapeView(shapeId: string, shapeIndex: SubjectPredicateIndexType): NodeShapeIndexType | undefined {
   const pmap = shapeIndex.get(shapeId);
 
   if (pmap === undefined) {
@@ -275,7 +264,7 @@ function buildShapeView(shapeId: string, shapeIndex: SubjectPredicateIndex): Nod
  * Parse all named (non-blank-node) NodeShape IRIs. These are the top-level
  * shapes whose focus nodes are selected by implicit class target (rdf:type).
  */
-function buildNodeShapes(shapeIndex: SubjectPredicateIndex): NodeShapeIndexType[] {
+function buildNodeShapes(shapeIndex: SubjectPredicateIndexType): NodeShapeIndexType[] {
   const shapes: NodeShapeIndexType[] = [];
 
   for (const [
@@ -301,28 +290,12 @@ function buildNodeShapes(shapeIndex: SubjectPredicateIndex): NodeShapeIndexType[
 }
 
 /**
- * Shared validation context threaded through every evaluator. `resolveShape`
- * returns the parsed view for any shape id (named NodeShape or anonymous
- * blank-node member shape), and `visited` guards `sh:node`/`sh:and`/`sh:or`/
- * `sh:not` recursion against cyclic data so a self-referential graph cannot
- * overflow the stack.
- */
-type ValidationContextType = {
-  readonly 'dataIndex': SubjectPredicateIndex;
-  readonly 'datatypeBySubjectPredicate': DatatypeIndex;
-  readonly 'dataTypeIndex': TypeIndex;
-  readonly 'resolveShape': (shapeId: string) => NodeShapeIndexType | undefined;
-  readonly 'shapeIndex': SubjectPredicateIndex;
-  readonly 'visited': Set<string>;
-};
-
-/**
  * Build a memoised shape resolver over the named shapes plus on-demand
  * blank-node member shapes.
  */
 function makeShapeResolver(
   namedShapes: NodeShapeIndexType[],
-  shapeIndex: SubjectPredicateIndex
+  shapeIndex: SubjectPredicateIndexType
 ): (shapeId: string) => NodeShapeIndexType | undefined {
   const byIri = new Map<string, NodeShapeIndexType>();
 
@@ -363,7 +336,7 @@ function makeShapeResolver(
  */
 function selectFocusNodes(
   shapeIri: string,
-  dataTypeIndex: TypeIndex
+  dataTypeIndex: TypeIndexType
 ): string[] {
   const nodes: string[] = [];
 
@@ -392,20 +365,6 @@ function parseNumeric(value: string): number {
 // ---------------------------------------------------------------------------
 // Constraint evaluation helpers
 // ---------------------------------------------------------------------------
-
-/** Arguments shared across all constraint evaluators. */
-type EvalArgsType = {
-  readonly 'constraints': PredicateIndex;
-  readonly 'dataIndex': SubjectPredicateIndex;
-  readonly 'datatypeBySubjectPredicate': DatatypeIndex;
-  readonly 'dataTypeIndex': TypeIndex;
-  readonly 'focusNode': string;
-  readonly 'path': string;
-  readonly 'shapeId': string;
-  readonly 'shapeIndex': SubjectPredicateIndex;
-  readonly 'valueCount': number;
-  readonly 'values': string[];
-};
 
 /**
  * Build a single violation result. A node-level constraint (no property path)
@@ -526,8 +485,15 @@ function evalPattern(args: EvalArgsType): ShaclValidationResultType[] {
       try {
         matches = new RegExp(pattern).test(value);
       } catch {
-        // Invalid regex — skip
-        matches = true;
+        results.push(violation(
+          args.focusNode,
+          args.path,
+          SH.PatternConstraintComponent,
+          `sh:pattern "${pattern}" is not a valid regular expression.`,
+          value,
+          args.shapeId
+        ));
+        continue;
       }
 
       if (!matches) {
@@ -856,7 +822,7 @@ function evalNode(
 function evalClosed(
   focusNode: string,
   shape: NodeShapeIndexType,
-  dataIndex: SubjectPredicateIndex
+  dataIndex: SubjectPredicateIndexType
 ): ShaclValidationResultType[] {
   const closedArr = shape.constraints.get(SH.closed);
 
@@ -981,7 +947,7 @@ function evalQualifiedValueShape(
 /** Evaluate sh:and — the focus node must conform to every member shape. */
 function evalAnd(
   focusNode: string,
-  shapeConstraints: PredicateIndex,
+  shapeConstraints: PredicateValuesIndexType,
   ctx: ValidationContextType,
   shapeIri: string
 ): ShaclValidationResultType[] {
@@ -1013,7 +979,7 @@ function evalAnd(
 /** Evaluate sh:or — the focus node must conform to at least one member shape. */
 function evalOr(
   focusNode: string,
-  shapeConstraints: PredicateIndex,
+  shapeConstraints: PredicateValuesIndexType,
   ctx: ValidationContextType,
   shapeIri: string
 ): ShaclValidationResultType[] {
@@ -1048,7 +1014,7 @@ function evalOr(
 /** Evaluate sh:not — the focus node must NOT conform to the referenced shape. */
 function evalNot(
   focusNode: string,
-  shapeConstraints: PredicateIndex,
+  shapeConstraints: PredicateValuesIndexType,
   ctx: ValidationContextType,
   shapeIri: string
 ): ShaclValidationResultType[] {
@@ -1085,7 +1051,7 @@ function buildEvalArgs(
   focusNode: string,
   path: string,
   shapeId: string,
-  constraints: PredicateIndex,
+  constraints: PredicateValuesIndexType,
   values: string[],
   ctx: ValidationContextType
 ): EvalArgsType {

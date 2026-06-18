@@ -687,7 +687,7 @@ export const SchemaGraphSupport = {
     }
     if (!pointer.startsWith('/')) {
       throw new GraphError(`Invalid JSON Pointer: ${pointer}`, {
-        'code': 'POINTER_INVALID',
+        'code': GraphErrorCode.POINTER_INVALID,
         pointer
       });
     }
@@ -702,7 +702,7 @@ export const SchemaGraphSupport = {
     for (const segment of segments) {
       if (!isRecord(current) && !Array.isArray(current)) {
         throw new GraphError(`Pointer not found: ${pointer}`, {
-          'code': 'POINTER_NOT_FOUND',
+          'code': GraphErrorCode.POINTER_NOT_FOUND,
           pointer
         });
       }
@@ -710,7 +710,7 @@ export const SchemaGraphSupport = {
     }
     if (typeof current !== 'boolean' && !isRecord(current)) {
       throw new GraphError(`Pointer does not resolve to a schema: ${pointer}`, {
-        'code': 'POINTER_NOT_SCHEMA',
+        'code': GraphErrorCode.POINTER_NOT_SCHEMA,
         pointer
       });
     }

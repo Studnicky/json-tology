@@ -467,6 +467,7 @@ export function importAnnotations(_quads: QuadInterface[], ctx: OwlImportContext
 
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],

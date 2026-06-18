@@ -1,6 +1,11 @@
 import type { InvariantType } from '../../types/Invariant.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
 
+import { InstantiationErrorCode } from '../../constants/ERROR_CODES.js';
+import { BaseError } from '../../errors/BaseError.js';
+import { InstantiationError } from '../../errors/InstantiationError.js';
+import { ValidationErrors } from '../../errors/ValidationErrors.js';
+
 export class InvariantStore {
   private readonly store = new Map<string, InvariantType[]>();
 
@@ -57,7 +62,26 @@ export class InvariantStore {
     const errors: ValidationErrorType[] = [];
 
     for (const invariant of invariants) {
-      const result = invariant.fn(value);
+      let result: null | string | undefined;
+
+      try {
+        result = invariant.fn(value);
+      } catch (error) {
+        const causeError = BaseError.toCause(error);
+
+        throw new InstantiationError(
+          new ValidationErrors([{
+            'keyword': 'jt:invariant',
+            'message': `Invariant "${invariant.name}" threw: ${causeError.message}`,
+            'params': { 'invariant': invariant.name },
+            'path': invariant.pointer ?? ''
+          }]),
+          {
+            'cause': causeError,
+            'code': InstantiationErrorCode.INSTANTIATION_FAILED
+          }
+        );
+      }
 
       if (result !== null && result !== undefined) {
         errors.push({

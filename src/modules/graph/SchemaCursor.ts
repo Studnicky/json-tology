@@ -13,6 +13,7 @@ import type { SchemaCursorInterface } from '../../interfaces/SchemaCursorInterfa
 import type { AboxGraph } from './AboxGraph.js';
 
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 
 export class SchemaCursor implements SchemaCursorInterface {
   private readonly graph: AboxGraph;
@@ -52,7 +53,7 @@ export class SchemaCursor implements SchemaCursorInterface {
     if (this.iriList.length !== 1) {
       throw new GraphError(
         `SchemaCursor.one() requires exactly one class, found ${this.iriList.length}`,
-        { 'code': 'CURSOR_CARDINALITY' }
+        { 'code': GraphErrorCode.CURSOR_CARDINALITY }
       );
     }
 

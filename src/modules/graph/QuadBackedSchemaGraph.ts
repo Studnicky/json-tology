@@ -40,7 +40,7 @@ import type {
 } from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { PrefixMap } from '../../types/OwlImport.js';
+import type { PrefixMapType } from '../../types/OwlImport.js';
 import type {
   BuildRelationsOptionsType,
   CollectedListType,
@@ -50,14 +50,15 @@ import type {
   OptionalChildNodeType,
   OptionalNodeType,
   OptionalRestrictionType,
-  PredicateIndexType,
   ResolveRestrictionOptionsType,
   RootSchemaRecordType,
   SubjectIndexType,
+  SubjectPredicateQuadsIndexType,
   SubjectRelationsType
 } from '../../types/QuadBackedSchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import {
   OWL, RDF, RDFS
 } from '../../constants/IRI.js';
@@ -75,8 +76,8 @@ import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
 
 // OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
 
-function buildPredicateIndex(subjectIndex: SubjectIndexType): PredicateIndexType {
-  const index: PredicateIndexType = new Map();
+function buildPredicateIndex(subjectIndex: SubjectIndexType): SubjectPredicateQuadsIndexType {
+  const index: SubjectPredicateQuadsIndexType = new Map();
 
   for (const [
     subject,
@@ -106,7 +107,7 @@ function buildPredicateIndex(subjectIndex: SubjectIndexType): PredicateIndexType
 
 function buildNodeMap(
   subjectIndex: SubjectIndexType,
-  predicateIndex: PredicateIndexType,
+  predicateIndex: SubjectPredicateQuadsIndexType,
   curie: CurieInterface
 ): NodeMapType {
   const nodeMap: NodeMapType = new Map();
@@ -461,9 +462,9 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
   public constructor(
     quads: readonly QuadInterface[],
     options?: { 'baseIRI'?: string;
-      'prefixes'?: PrefixMap }
+      'prefixes'?: PrefixMapType }
   ) {
-    const mergedPrefixes: PrefixMap = {
+    const mergedPrefixes: PrefixMapType = {
       ...STANDARD_PREFIXES,
       ...options?.prefixes
     };
@@ -686,7 +687,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
 
     if (node === undefined) {
       throw new GraphError(`Unknown fragment in quad-backed graph: #${fragment}`, {
-        'code': 'ANCHOR_NOT_FOUND',
+        'code': GraphErrorCode.ANCHOR_NOT_FOUND,
         'pointer': fragment
       });
     }
@@ -699,7 +700,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
 
     if (node === undefined) {
       throw new GraphError(`Node not found for pointer in quad-backed graph: ${pointer}`, {
-        'code': 'POINTER_NOT_FOUND',
+        'code': GraphErrorCode.POINTER_NOT_FOUND,
         pointer
       });
     }

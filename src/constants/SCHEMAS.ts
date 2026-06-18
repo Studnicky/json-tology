@@ -31,6 +31,7 @@ export const SchemaLoadErrorSchema = {
       'enum': [
         'duplicate-anchor',
         'duplicate-id',
+        'fetch-failed',
         'invalid-json',
         'invalid-schema',
         'missing-id',
@@ -38,7 +39,8 @@ export const SchemaLoadErrorSchema = {
         'unknown'
       ],
       'type': 'string'
-    }
+    },
+    'status': { 'type': 'number' }
   },
   'required': [
     'file',

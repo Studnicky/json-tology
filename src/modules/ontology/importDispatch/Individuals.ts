@@ -6,12 +6,13 @@
  *   rdf:type assertions on individuals — class membership (populates `types` array)
  *   Property assertion quads          — data/object property values on individuals
  *   owl:sameAs                        — individual identity assertions
- *   owl:differentFrom / owl:AllDifferent — individual distinctness
- *   owl:NegativePropertyAssertion     — negative property assertion invariants
- *   owl:hasKey                        — composite key uniqueness constraints
+ *   owl:differentFrom / owl:AllDifferent — individual distinctness (→ differentFrom array)
+ *   owl:NegativePropertyAssertion     — negative property assertion invariants (class-keyed)
+ *   owl:hasKey                        — per-object composite key well-formedness
  *
  * Bucket strategy: registry-level (named individuals are collected into the
- * `individuals` array; owl:sameAs pairs flow into `sameAs`).
+ * `individuals` array; owl:sameAs pairs flow into `sameAs`;
+ * owl:differentFrom pairs flow into `differentFrom`).
  *
  * Graph-native traversal:
  * - rdf:type / property-assertion quads → `ctx.graph.allRelations()`
@@ -31,6 +32,7 @@ import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
+import { isRecord } from '../../data/DataTypes.js';
 import {
   ALL_DIFFERENT_IRIS,
   ASSERTION_PROPERTY_IRIS,
@@ -109,28 +111,12 @@ function targetValue(relation: SchemaGraphRelationType): string {
   return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
-// ---------------------------------------------------------------------------
-// Build differentFrom invariant
-// ---------------------------------------------------------------------------
-
 /**
- * Build a registry-level invariant that asserts two IRIs are NOT marked
- * sameAs at materialise time.
- *
- * The invariant name encodes the pair so the caller can deduplicate pairs.
+ * Returns true when value is a primitive scalar (string, number, or boolean).
+ * Used by hasKeyInvariant to enforce per-object key well-formedness.
  */
-function differentFromInvariant(
-  iriA: string,
-  iriB: string
-): InvariantType {
-  return {
-    'fn': () => {
-      // Runtime check — at materialise time the registry sameAs store would
-      // be consulted. The invariant name carries the pair for downstream consumers.
-      return null;
-    },
-    'name': `differentFrom(${iriA},${iriB})`
-  };
+function isScalar(value: unknown): boolean {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 
 // ---------------------------------------------------------------------------
@@ -140,6 +126,15 @@ function differentFromInvariant(
 /**
  * Build a registry-level invariant that asserts a specific property assertion
  * does NOT hold for the given individual.
+ *
+ * The invariant is keyed to the individual's class IRI, so it runs for every
+ * instance of that class. An NPA targets one *specific* individual, so the `fn`
+ * guards on identity: it enforces the constraint only when the validated value
+ * carries that individual's IRI in `$id` (or `@id`). This is the convention for
+ * validating a named individual — the instance IS the individual, identified by
+ * `$id` — and is exercised end-to-end in `owlIndividualEnforcement.test.ts`. A
+ * value with no identity (typical anonymous data) is intentionally not subject
+ * to a per-individual NPA, since NPA does not constrain arbitrary class members.
  */
 function negativePropertyAssertionInvariant(
   sourceIri: string,
@@ -147,9 +142,33 @@ function negativePropertyAssertionInvariant(
   assertionValue: unknown
 ): InvariantType {
   return {
-    'fn': () => {
-      // Encodes the negative assertion as a named invariant.
-      // Downstream consumers inspect the name to enforce the constraint.
+    'fn': (value: unknown): null | string => {
+      if (!isRecord(value)) {
+        return null;
+      }
+      // Identity guard: an NPA binds one named individual, so enforce only when
+      // the value declares it is that individual (see the convention above).
+      const id = value['$id'] ?? value['@id'];
+
+      if (id !== sourceIri) {
+        return null;
+      }
+      const propVal = value[propertyIri];
+
+      if (propVal === undefined) {
+        return null;
+      }
+      if (Array.isArray(propVal)) {
+        if ((propVal as unknown[]).includes(assertionValue)) {
+          return `owl:NegativePropertyAssertion violation: <${sourceIri}> must not have <${propertyIri}> = ${JSON.stringify(assertionValue)}`;
+        }
+
+        return null;
+      }
+      if (propVal === assertionValue) {
+        return `owl:NegativePropertyAssertion violation: <${sourceIri}> must not have <${propertyIri}> = ${JSON.stringify(assertionValue)}`;
+      }
+
       return null;
     },
     'name': `negativePropertyAssertion(${sourceIri},${propertyIri},${String(assertionValue)})`
@@ -161,15 +180,29 @@ function negativePropertyAssertionInvariant(
 // ---------------------------------------------------------------------------
 
 /**
- * Build a registry-level invariant for composite key uniqueness on class C
+ * Build a registry-level invariant for composite key well-formedness on class C
  * over the given property IRIs.
+ *
+ * Enforces per-object key well-formedness: each present key property must be a scalar
+ * (string | number | boolean). Cross-instance uniqueness is a collection-level concern
+ * surfaced via the jt:hasKey annotation (schema delta).
  */
 function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantType {
   const key = propertyIris.join(',');
 
   return {
-    'fn': () => {
-      // Encodes the hasKey constraint. Downstream consumers inspect the name.
+    'fn': (value: unknown): null | string => {
+      if (!isRecord(value)) {
+        return null;
+      }
+      for (const propIri of propertyIris) {
+        const propVal = value[propIri];
+
+        if (propVal !== undefined && !isScalar(propVal)) {
+          return `owl:hasKey violation: class <${classIri}> key property <${propIri}> must be a scalar (string | number | boolean) for a well-formed composite key, got ${JSON.stringify(typeof propVal)}`;
+        }
+      }
+
       return null;
     },
     'name': `hasKey(${classIri},[${key}])`
@@ -187,9 +220,9 @@ function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantTyp
  * Handles:
  * - owl:NamedIndividual declarations with rdf:type class assertions and property values
  * - owl:sameAs identity pairs → fragment.sameAs
- * - owl:differentFrom → fragment.invariants (differentFrom invariant per pair)
- * - owl:AllDifferent + owl:distinctMembers → pairwise differentFrom invariants
- * - owl:NegativePropertyAssertion → fragment.invariants (negative assertion invariant)
+ * - owl:differentFrom → fragment.differentFrom (pairs, not invariants)
+ * - owl:AllDifferent + owl:distinctMembers → fragment.differentFrom (pairwise pairs)
+ * - owl:NegativePropertyAssertion → fragment.invariants keyed to class IRI
  * - owl:hasKey on a class → fragment.invariants + jt:hasKey annotation in schemaDeltas
  *
  * Graph-native: reads `ctx.graph.allRelations()` for subject/predicate/object
@@ -200,10 +233,11 @@ function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantTyp
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragmentType with individuals, sameAs, invariants, and schemaDeltas populated.
+ * @returns OwlImportFragmentType with individuals, sameAs, differentFrom, invariants, and schemaDeltas populated.
  */
 export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
   const sameAs: Array<readonly [string, string]> = [];
+  const differentFrom: Array<readonly [string, string]> = [];
   const invariants: Array<{
     'invariant': InvariantType;
     'schemaId': string;
@@ -279,6 +313,14 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
     });
   }
 
+  // ---- Build individualToClasses map for NPA invariant keying -------------
+
+  const individualToClasses = new Map<string, string[]>();
+
+  for (const individual of individuals) {
+    individualToClasses.set(individual.iri, [...individual.types]);
+  }
+
   // ---- owl:sameAs pairs ---------------------------------------------------
   // The forward projection emits both (a, b) and (b, a) directions;
   // deduplicate using a canonical order key so each logical pair appears once.
@@ -307,7 +349,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
     ] as const);
   }
 
-  // ---- owl:differentFrom --------------------------------------------------
+  // ---- owl:differentFrom — pairs flow to differentFrom array --------------
 
   const seenDifferentFrom = new Set<string>();
 
@@ -327,10 +369,10 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
       continue;
     }
     seenDifferentFrom.add(pairKey);
-    invariants.push({
-      'invariant': differentFromInvariant(iriA, iriB),
-      'schemaId': iriA
-    });
+    differentFrom.push([
+      iriA,
+      iriB
+    ] as const);
   }
 
   // ---- owl:AllDifferent + owl:distinctMembers (RDF list) ------------------
@@ -367,10 +409,10 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
             continue;
           }
           seenDifferentFrom.add(pairKey);
-          invariants.push({
-            'invariant': differentFromInvariant(iriA, iriB),
-            'schemaId': iriA
-          });
+          differentFrom.push([
+            iriA,
+            iriB
+          ] as const);
         }
       }
     }
@@ -407,10 +449,18 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
       continue;
     }
 
-    invariants.push({
-      'invariant': negativePropertyAssertionInvariant(sourceIndividual, assertionProperty, target),
-      'schemaId': sourceIndividual
-    });
+    const classIris = individualToClasses.get(sourceIndividual) ?? [];
+
+    if (classIris.length === 0) {
+      ctx.reportUnsupported('owl:NegativePropertyAssertion', sourceIndividual);
+      continue;
+    }
+    for (const classIri of classIris) {
+      invariants.push({
+        'invariant': negativePropertyAssertionInvariant(sourceIndividual, assertionProperty, target),
+        'schemaId': classIri
+      });
+    }
   }
 
   // ---- owl:hasKey (RDF list of property IRIs on a class) ------------------
@@ -458,6 +508,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
 
   return {
     'characteristics': [],
+    'differentFrom': differentFrom,
     individuals,
     'invariants': invariants,
     'sameAs': sameAs,

@@ -7,9 +7,13 @@ import type {
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { PrefixMap } from '../../types/OwlImport.js';
+import type { PrefixMapType } from '../../types/OwlImport.js';
 import { isRecord } from '../data/DataTypes.js';
+import { logScope } from '../data/LogScope.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
 import { SchemaGraphRelations } from './SchemaGraphRelations.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import { QuadBackedSchemaGraph } from './QuadBackedSchemaGraph.js';
@@ -73,6 +77,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     fields.entryMap = new WeakMap<SchemaGraphNodeType, Map<string, Array<[string, SchemaGraphNodeType]>>>();
     fields.identityMap = new WeakMap<object, SchemaGraphNodeType>();
     fields.indexedChildMap = new WeakMap<SchemaGraphNodeType, Map<string, SchemaGraphNodeType[]>>();
+    fields.logger = SILENT_LOGGER;
     fields.nodeMap = new Map<string, SchemaGraphNodeType>();
     fields.relationMap = new WeakMap<SchemaGraphNodeType, SchemaGraphRelationType[]>();
     fields.relationsForSubjectIndex = undefined;
@@ -119,7 +124,7 @@ export class SchemaGraph implements SchemaGraphInterface {
   public static fromQuads(
     quads: readonly QuadInterface[],
     options?: { 'baseIRI'?: string;
-      'prefixes'?: PrefixMap }
+      'prefixes'?: PrefixMapType }
   ): SchemaGraphInterface {
     return new QuadBackedSchemaGraph(quads, options);
   }
@@ -340,6 +345,8 @@ export class SchemaGraph implements SchemaGraphInterface {
 
   private readonly indexedChildMap = new WeakMap<SchemaGraphNodeType, Map<string, SchemaGraphNodeType[]>>();
 
+  private readonly logger: LoggerInterface;
+
   private readonly nodeMap = new Map<string, SchemaGraphNodeType>();
 
   private readonly relationMap = new WeakMap<SchemaGraphNodeType, SchemaGraphRelationType[]>();
@@ -350,7 +357,9 @@ export class SchemaGraph implements SchemaGraphInterface {
 
   private readonly vocabularies: readonly VocabularyPluginInterface[];
 
-  public constructor(public readonly rootSchema: JsonSchemaType, options?: { 'vocabularies'?: readonly VocabularyPluginInterface[] }) {
+  public constructor(public readonly rootSchema: JsonSchemaType, options?: { 'logger'?: LoggerInterface;
+    'vocabularies'?: readonly VocabularyPluginInterface[] }) {
+    this.logger = options?.logger ?? SILENT_LOGGER;
     this.vocabularies = options?.vocabularies ?? [];
     this.lower(rootSchema, '');
     this.cachedRootNode = this.nodeMap.get('');
@@ -615,8 +624,9 @@ export class SchemaGraph implements SchemaGraphInterface {
     const mapNode = this.nodeMap.get(pointer);
 
     if (mapNode === undefined) {
+      this.logger.debug(logScope('SchemaGraph', 'nodeForPointer', `node not found for pointer "${pointer}"`));
       throw new GraphError(`Schema graph node not found for pointer: ${pointer}`, {
-        'code': 'POINTER_NOT_FOUND',
+        'code': GraphErrorCode.POINTER_NOT_FOUND,
         pointer
       });
     }
@@ -672,8 +682,9 @@ export class SchemaGraph implements SchemaGraphInterface {
     const anchored = this.anchorMap.get(fragment);
 
     if (anchored === undefined) {
+      this.logger.debug(logScope('SchemaGraph', 'resolveFragment', `unknown schema anchor "#${fragment}"`));
       throw new GraphError(`Unknown schema anchor: #${fragment}`, {
-        'code': 'ANCHOR_NOT_FOUND',
+        'code': GraphErrorCode.ANCHOR_NOT_FOUND,
         'pointer': fragment
       });
     }
@@ -697,8 +708,9 @@ export class SchemaGraph implements SchemaGraphInterface {
       return this.rootNode;
     }
     if (!pointer.startsWith('/')) {
+      this.logger.debug(logScope('SchemaGraph', 'resolvePointer', `invalid JSON Pointer "${pointer}"`));
       throw new GraphError(`Invalid JSON Pointer: ${pointer}`, {
-        'code': 'POINTER_INVALID',
+        'code': GraphErrorCode.POINTER_INVALID,
         pointer
       });
     }
@@ -706,8 +718,9 @@ export class SchemaGraph implements SchemaGraphInterface {
     const resolved = this.nodeMap.get(pointer);
 
     if (resolved === undefined) {
+      this.logger.debug(logScope('SchemaGraph', 'resolvePointer', `pointer not found "${pointer}"`));
       throw new GraphError(`Pointer not found: ${pointer}`, {
-        'code': 'POINTER_NOT_FOUND',
+        'code': GraphErrorCode.POINTER_NOT_FOUND,
         pointer
       });
     }

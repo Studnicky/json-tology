@@ -60,6 +60,7 @@ import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { RefResolver } from './RefResolver.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 
@@ -512,20 +513,8 @@ function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithError
   ): ValidateWithErrorsResultType => {
     // Direct construction avoids the spread overhead on the hot validation path.
     const strictCtx: ExecContextType = {
-      'applyDefaults': ctx.applyDefaults,
-      'collectErrors': ctx.collectErrors,
-      'depth': ctx.depth,
-      'doCoerce': false,
-      'dynamicScope': ctx.dynamicScope,
-      'errors': ctx.errors,
-      'evaluatedItems': ctx.evaluatedItems,
-      'evaluatedProperties': ctx.evaluatedProperties,
-      'ignoreAdditionalProperties': ctx.ignoreAdditionalProperties,
-      'maxDepth': ctx.maxDepth,
-      'refStack': ctx.refStack,
-      'stripUnknown': ctx.stripUnknown,
-      'synthesizeDefaults': ctx.synthesizeDefaults,
-      'trackEvaluated': ctx.trackEvaluated
+      ...ctx,
+      'doCoerce': false
     };
 
     return inner(value, path, strictCtx);
@@ -571,7 +560,7 @@ function compileRefValidator(opts: RefValidatorOptionsType): OptionalValidateWit
 
   if (resolved === undefined) {
     throw new GraphError(`Cannot resolve $ref '${ref}' — schema not found`, {
-      'code': 'REF_NOT_FOUND',
+      'code': GraphErrorCode.REF_NOT_FOUND,
       'pointer': ref
     });
   }
@@ -677,11 +666,32 @@ function resolveDynamicRefTarget(
  *
  * The `ctx.refStack` guard (refKey = `${schemaId}::dynamic::${dynamicRef}`) prevents
  * infinite recursion, mirroring `Refs.resolveDynamicRef` (Refs.ts:22).
+ *
+ * Compile-time invariant: for non-`#` refs the static target MUST resolve. If
+ * `RefResolver.resolve` returns `undefined`, throw `GraphError(REF_NOT_FOUND)` now
+ * rather than silently producing an accept-all validator at runtime.
+ * A `dynamicRef === '#'` with no matching scope entry at runtime is a spec-legal
+ * no-op (no dynamic anchor in scope), so that path may remain `{valid:true}`.
  */
 function compileDynamicRefValidator(opts: DynamicRefValidatorOptionsType): ValidateWithErrorsFnType {
   const {
     context, dynamicRef, formatRegistry, graph, lookupGraph, lookupSchema
   } = opts;
+
+  // Verify static resolution at compile time for all non-# refs.
+  if (dynamicRef !== '#') {
+    const staticCheck = RefResolver.resolve(dynamicRef, graph, lookupSchema, lookupGraph);
+
+    if (staticCheck === undefined) {
+      throw new GraphError(
+        `Cannot resolve $dynamicRef '${dynamicRef}' — schema not found`,
+        {
+          'code': GraphErrorCode.REF_NOT_FOUND,
+          'pointer': dynamicRef
+        }
+      );
+    }
+  }
 
   const schemaId = GraphEngineSupport.schemaId(graph.rootSchema) ?? '<anonymous>';
   const refKey = `${schemaId}::dynamic::${dynamicRef}`;
@@ -704,6 +714,7 @@ function compileDynamicRefValidator(opts: DynamicRefValidatorOptionsType): Valid
     const target = resolveDynamicRefTarget(dynamicRef, graph, ctx.dynamicScope, lookupSchema, lookupGraph);
 
     if (target === undefined) {
+      // Spec-legal no-op: dynamicRef === '#' with no matching root anchor in scope.
       return {
         'valid': true,
         value

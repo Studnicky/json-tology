@@ -29,7 +29,6 @@ import type { RelationIndexType } from '../../types/RelationIndex.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
 import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
 
-export type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
 import { Lists } from './Lists.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import { Terms } from './Terms.js';

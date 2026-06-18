@@ -402,12 +402,14 @@ function applyEquivalentClassBlankNode(
 
 /**
  * Apply the Literal arm of `owl:equivalentClass`: parses the JSON-LD wrapper
- * literal and emits `$ref` for the first embedded IRI.
+ * literal and emits `$ref` for the first embedded IRI. Reports unsupported
+ * when the literal cannot be parsed as a valid union wrapper.
  */
 function applyEquivalentClassLiteral(
   schemaDeltas: Map<string, Partial<JsonSchemaDocumentObjectType>>,
   relation: SchemaGraphRelationType,
-  subjectIri: string
+  subjectIri: string,
+  reportUnsupported: OwlImportContextType['reportUnsupported']
 ): void {
   const members = parseUnionLiteralWrapper(targetValue(relation));
 
@@ -418,7 +420,11 @@ function applyEquivalentClassLiteral(
       ...existing,
       '$ref': members[0]
     });
+
+    return;
   }
+
+  reportUnsupported(OWL.equivalentClass, subjectIri);
 }
 
 /**
@@ -480,7 +486,7 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContextType, axiomCtx: AxiomConte
         continue;
       }
       if (relation.termType === 'Literal') {
-        applyEquivalentClassLiteral(axiomCtx.schemaDeltas, relation, subjectIri);
+        applyEquivalentClassLiteral(axiomCtx.schemaDeltas, relation, subjectIri, ctx.reportUnsupported);
       }
       continue;
     }
@@ -553,6 +559,7 @@ export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContext
 
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     invariants,
     'sameAs': [],

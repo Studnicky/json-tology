@@ -199,11 +199,11 @@ function isIPv6(value: string): boolean {
   return false;
 }
 
-function domainToAscii(value: string): string {
+function domainToAscii(value: string): null | string {
   try {
     return new URL(`https://${value}`).hostname;
   } catch {
-    return '';
+    return null;
   }
 }
 
@@ -582,8 +582,9 @@ function validateIdnEmail(value: string): boolean {
     }
   }
   const domain = value.slice(at + 1);
+  const ascii = domainToAscii(domain);
 
-  return domainToAscii(domain).length > 0;
+  return ascii !== null && ascii.length > 0;
 }
 
 function validateJsonPointer(value: string): boolean {
@@ -768,7 +769,12 @@ STRING_FORMAT_VALIDATORS['idn-email'] = (value: unknown): boolean => {
   return typeof value === 'string' && validateIdnEmail(value);
 };
 STRING_FORMAT_VALIDATORS['idn-hostname'] = (value: unknown): boolean => {
-  return typeof value === 'string' && domainToAscii(value).length > 0;
+  if (typeof value !== 'string') {
+    return false;
+  }
+  const ascii = domainToAscii(value);
+
+  return ascii !== null && ascii.length > 0;
 };
 STRING_FORMAT_VALIDATORS['iri-reference'] = (value: unknown): boolean => {
   return typeof value === 'string' && isUriReference(value);

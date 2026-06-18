@@ -4,6 +4,7 @@ export type * from './CliWriter.js';
 export type * from './ComputedStore.js';
 export type * from './Curie.js';
 export type * from './CursorInterface.js';
+export type * from './DifferentFromStore.js';
 export type * from './FormatRegistry.js';
 export type * from './GraphAccessor.js';
 export type * from './GraphEngineImpl.js';

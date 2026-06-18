@@ -9,9 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`SchemaLoadError` and `SchemaLoadErrorCode`.** A typed error (exported from the package root) for schema-load failures, carrying `file`, `reason`, optional HTTP `status`, `toJson()`, and `toLoadError(): SchemaLoadErrorType`. `SchemaLoadErrorType` gains an optional `status` and a `fetch-failed` reason; `prefetch` now attaches a `SchemaLoadResultType` load summary to its returned `SnapshotType.loadResult`.
+- **Graph-layer logging.** `SchemaGraph`, `GraphArtifact.fromArtifact`, and `RefDecoder.run` accept an optional `logger` (default silent) and emit `[Component.operation]`-scoped messages at notable failure branches. Logger DI is threaded end-to-end from `JsonTology` through the registry, compiler, materializer, OWL importer, and ontology builder via the canonical `logScope` helper.
+- **Enforced OWL individual assertions.** `owl:differentFrom` is enforced as a knowledge-base consistency check (`SchemaRegistry.assertIdentityConsistency` over the `sameAs` transitive closure, throwing `SCHEMA_IDENTITY_CONTRADICTION`) via a new `DifferentFromStore`; `owl:negativePropertyAssertion` and `owl:hasKey` are enforced as real per-instance invariants. These previously parsed but never fired.
+- **Real TypeScript emission for the visualization.** `TypeStringEmitter` derives a faithful TypeScript type from the schema graph instead of emitting `Record<string, unknown>` for every schema.
+- **`BaseError.retryable` is documented and tested** — `true` marks a transient failure (e.g. HTTP 5xx), `false` (default) a deterministic one; the flag is preserved through `toJson()` and `flatten()`.
+- **`OwlImportErrorCode.PARSE_FAILED`** (`'OWL_IMPORT_PARSE_FAILED'`) — thrown by `OwlImporter` when JSON-LD input is structurally malformed, distinct from `PEER_DEPENDENCY_MISSING`.
+
 ### Changed
 
+- **BREAKING: `Loaders.fetch` throws on HTTP 5xx.** A 5xx response now throws `SchemaLoadError` (`reason: 'fetch-failed'`, `status`, `retryable: true`) instead of returning `null`; 4xx still returns `null` (unknown IRI → `GraphError REF_UNRESOLVED`).
+- **BREAKING: `RefResolutionLoader` rejects a non-string `$id` with `SchemaLoadError`** (`reason: 'missing-id'`) rather than `GraphError REF_UNRESOLVED`. A loader returning `null` still throws `GraphError REF_UNRESOLVED`.
+- **BREAKING: `OwlImportErrorCode.NOT_IMPLEMENTED` → `PEER_DEPENDENCY_MISSING`** (value `'OWL_IMPORT_PEER_DEPENDENCY_MISSING'`), naming the real condition (the optional `jsonld` peer dependency is absent for non-quad JSON-LD input).
+- **BREAKING: exported type renames for single-definition.** `PrefixMap` → `PrefixMapType`; `DispatcherFnInterface` → `DispatcherFnType`; the subject→predicate→quads `PredicateIndexType` → `SubjectPredicateQuadsIndexType` and the SHACL predicate→values `PredicateIndexType` → `PredicateValuesIndexType` (the canonical predicate→quads `PredicateIndexType` is unchanged).
+- **BREAKING: `OwlImportFragmentType` and `OwlImportResultType` gain a required `differentFrom` field.** Custom `DispatcherFnType` implementations and any code constructing these objects must add `'differentFrom': []`.
+- **BREAKING: `DuplicateReportEntryType` is no longer re-exported from the `./schema` subpath** (the re-export on `SchemaRegistry` is removed). Import it from `json-tology/types` instead.
+- All inline error-code string literals route through the named `*ErrorCode` constants (no behavior change). `Predicates` moved `validation/` → `data/` and `Dumper` moved `data/` → `graph/` to remove a layering inversion (internal). Validation execution contexts build through `ExecContext.build()` (roots) and `{ ...ctx }` spread (derived).
+
 ### Fixed
+
+- **Errors are never swallowed.** Output-corruption and silent-pass bugs fixed: `ShaclProjection` orphaned bnodes, `OwlProjection` emitting an empty `owl:onProperty` IRI, the compiler returning an accept-all validator on a missing graph node, and `$ref`/`$dynamicRef` silently resolving to the root. Remaining swallow sites now discriminate-or-throw.
+- **Shipped stub eliminated.** `TypeStringEmitter` no longer returns `Record<string, unknown>` for every schema; the OWL individual invariants no longer return `null` unconditionally.
+- **`SchemaGraph.fromNormIR` no longer risks a crash** — the constructor-bypassing factory now initializes the `logger` field, so a resolution failure on an artifact-rebuilt graph cannot dereference an undefined logger.
+- `SchemaErrorCode.DIALECT_UNSUPPORTED`’s value mismatch with `GraphErrorCode.DIALECT_UNSUPPORTED` resolved; phantom type re-exports removed.
 
 ## [0.24.2] - 2026-06-17
 

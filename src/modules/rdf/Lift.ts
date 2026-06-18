@@ -40,7 +40,9 @@ import type { LiftMatchingQuadsArgsType } from '../../types/LiftMatchingQuadsArg
 import type { LiftImplArgsType } from '../../types/LiftImplArgs.js';
 import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
 
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { RDF } from '../../constants/IRI.js';
+import { GraphError } from '../../errors/GraphError.js';
 
 import { asQuadObject } from './Lists.js';
 import { decodeLiteral } from './Terms.js';
@@ -197,8 +199,12 @@ function resolveNodeForType(
       'graph': rootGraph,
       'node': rootGraph.resolvePointer(pointer)
     };
-  } catch {
-    return undefined;
+  } catch (error) {
+    if (error instanceof GraphError && error.code === GraphErrorCode.POINTER_NOT_FOUND) {
+      return undefined;
+    }
+
+    throw error;
   }
 }
 

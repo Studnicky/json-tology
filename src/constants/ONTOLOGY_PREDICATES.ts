@@ -441,3 +441,24 @@ export const OWL_CARDINALITY_PREDICATE_IRIS: ReadonlySet<string> = new Set([
   OWL.minCardinality,
   OWL.minQualifiedCardinality
 ]);
+
+// ---------------------------------------------------------------------------
+// OWL restriction kind → predicate IRI mapping
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps restriction kind strings (as stored in `SchemaGraphSemanticsType.restrictions`)
+ * to their canonical OWL 2 predicate IRIs.
+ *
+ * @category Ontology
+ * @since 0.1.0
+ * @group Constants
+ */
+export const RESTRICTION_PREDICATE_MAP: Readonly<Partial<Record<string, string>>> = Object.freeze({
+  'allValuesFrom': OWL.allValuesFrom,
+  'cardinality': OWL.cardinality,
+  'hasValue': OWL.hasValue,
+  'maxCardinality': OWL.maxCardinality,
+  'minCardinality': OWL.minCardinality,
+  'someValuesFrom': OWL.someValuesFrom
+});

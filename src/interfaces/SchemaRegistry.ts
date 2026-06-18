@@ -1,6 +1,7 @@
 import type { CompiledValidatorType } from '../types/Compiler.js';
 import type { ComputedStoreInterface } from './ComputedStore.js';
 import type { CurieInterface } from './Curie.js';
+import type { DifferentFromStoreInterface } from './DifferentFromStore.js';
 import type { GraphEngineInterface } from './GraphEngineImpl.js';
 import type { InvariantType } from '../types/Invariant.js';
 import type { SameAsStoreInterface } from './SameAsStore.js';
@@ -18,7 +19,14 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
    *   Transitive | Symmetric | Asymmetric | Reflexive | Irreflexive.
    */
   addCharacteristic(propertyIri: string, characteristic: string): void;
+  /** Add an owl:differentFrom assertion between two individual IRIs. Idempotent. */
+  addDifferentFrom(iriA: string, iriB: string): void;
   addInvariant(schemaId: string, invariant: InvariantType): void;
+  /**
+   * Assert identity consistency: throw SchemaError(IDENTITY_CONTRADICTION) if any
+   * differentFrom pair is in the same transitive sameAs component.
+   */
+  assertIdentityConsistency(): void;
   cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown;
   readonly 'castTypes': boolean;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
@@ -34,6 +42,7 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
   create(schemaId: string): unknown;
   readonly 'curie': CurieInterface | undefined;
   delete(schemaId: string): boolean;
+  readonly 'differentFromStore': DifferentFromStoreInterface;
   engine(schema: Record<string, unknown>): GraphEngineInterface;
   entries(): IterableIterator<[string, Record<string, unknown>]>;
   findDuplicates(): readonly DuplicateReportEntryType[];

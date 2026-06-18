@@ -1,4 +1,4 @@
-import { Predicates } from './Predicates.js';
+import { Predicates } from '../data/Predicates.js';
 
 export const SchemaCompilerSupport = {
   coerceCompiledValue(types: string[], value: unknown): unknown {

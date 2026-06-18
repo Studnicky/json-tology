@@ -321,30 +321,27 @@ void describe('OntologyBuilder.addShaclFromJsonLd() failure paths', () => {
 // ---------------------------------------------------------------------------
 // H-8: OwlImportError .code assertions
 //
-// OWL_IMPORT_NOT_IMPLEMENTED is the only live throw site (OntologyBuilder.addFromJsonLd
-// and OwlImporter.importAsync when jsonld peer dep is absent).
-// The four unreachable codes (INVALID_DATATYPE, MALFORMED_CLASS, UNKNOWN_AXIOM,
-// UNRESOLVED_REF) are never thrown in production code and are dead surface.
-//
-// The throw path for OWL_IMPORT_NOT_IMPLEMENTED requires jsonld to be absent;
-// since jsonld is installed in this environment, we assert the error class
-// carries the correct code by constructing it directly (verifying the error
-// contract without requiring the optional dependency to be uninstalled).
+// OWL_IMPORT_PEER_DEPENDENCY_MISSING is thrown when non-quad JSON-LD input is
+// supplied but the optional `jsonld` peer dependency is absent
+// (OntologyBuilder.addFromJsonLd / OwlImporter.importAsync). The throw path
+// requires jsonld to be absent; since jsonld is installed in this environment,
+// we assert the error class carries the correct code by constructing it
+// directly (verifying the error contract without uninstalling the dependency).
 // ---------------------------------------------------------------------------
 
 void describe('OwlImportError .code assertions', { 'concurrency': true }, () => {
-  void it('OWL_IMPORT_NOT_IMPLEMENTED: OwlImportError carries correct code', () => {
+  void it('OWL_IMPORT_PEER_DEPENDENCY_MISSING: OwlImportError carries correct code', () => {
     const err = new OwlImportError(
       'addFromJsonLd() requires the optional jsonld peerDependency',
       {
         'axiomIri': 'https://www.w3.org/TR/json-ld/',
-        'code': 'OWL_IMPORT_NOT_IMPLEMENTED',
+        'code': 'OWL_IMPORT_PEER_DEPENDENCY_MISSING',
         'subjectIri': null
       }
     );
 
     assert.ok(err instanceof OwlImportError, 'instanceof OwlImportError');
-    assert.equal(err.code, 'OWL_IMPORT_NOT_IMPLEMENTED', 'err.code === OWL_IMPORT_NOT_IMPLEMENTED');
+    assert.equal(err.code, 'OWL_IMPORT_PEER_DEPENDENCY_MISSING', 'err.code === OWL_IMPORT_PEER_DEPENDENCY_MISSING');
     assert.ok(err.message.length > 0, 'message is non-empty');
   });
 });

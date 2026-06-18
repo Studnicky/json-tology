@@ -367,7 +367,7 @@ void describe('importPropertyRestrictions', () => {
   // -------------------------------------------------------------------------
 
   void describe('OwlImporter integration', () => {
-    void it('PropertyRestrictions dispatcher no longer throws OWL_IMPORT_NOT_IMPLEMENTED', () => {
+    void it('PropertyRestrictions projects owl:maxCardinality without marking it unsupported', () => {
       const schema = Compose.subClassOf(
         Compose.maxCardinality(PROP_IRI, 3),
         {
@@ -383,8 +383,8 @@ void describe('importPropertyRestrictions', () => {
       const importer = new OwlImporter({ 'baseIRI': 'urn:example' });
       const result = importer.import(quads);
 
-      // Seven other dispatchers still throw NOT_IMPLEMENTED; PropertyRestrictions
-      // must NOT be in that list.
+      // PropertyRestrictions fully projects owl:maxCardinality; it must not
+      // appear in result.unsupported.
       const prUnsupported = result.unsupported.filter((unsup) => {
         return unsup.axiomIri === 'owl:maxCardinality';
       });

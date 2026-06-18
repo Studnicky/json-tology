@@ -2,6 +2,7 @@ import type { FailResultType } from '../../types/FailResultType.js';
 import type { PassResultType } from '../../types/PassResultType.js';
 import type { ResultInterface } from '../../interfaces/Result.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
+import { InstantiationErrorCode } from '../../constants/ERROR_CODES.js';
 import type { ValidationErrors } from '../../errors/ValidationErrors.js';
 
 export class Result<T> implements ResultInterface<T> {
@@ -81,7 +82,7 @@ export class Result<T> implements ResultInterface<T> {
    */
   unwrap(): T {
     if (!this.success) {
-      throw new InstantiationError(this.errors as ValidationErrors, { 'code': 'INSTANTIATION_FAILED' });
+      throw new InstantiationError(this.errors as ValidationErrors, { 'code': InstantiationErrorCode.INSTANTIATION_FAILED });
     }
 
     return this.data as T;

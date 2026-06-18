@@ -141,6 +141,7 @@ void describe('importIndividuals — empty input', () => {
 
     assert.equal(result.individuals.length, 0);
     assert.equal(result.sameAs.length, 0);
+    assert.equal(result.differentFrom.length, 0);
     assert.equal(result.invariants.length, 0);
     assert.equal(result.characteristics.length, 0);
     assert.equal(result.schemaDeltas.size, 0);
@@ -270,20 +271,19 @@ void describe('importIndividuals — owl:sameAs', () => {
 // ---------------------------------------------------------------------------
 
 void describe('importIndividuals — owl:differentFrom', () => {
-  void it('produces a named differentFrom invariant', () => {
+  void it('produces a differentFrom pair (not an invariant)', () => {
     const iriA = 'urn:test:alice';
     const iriB = 'urn:test:bob';
 
     const result = runIndividuals([makeIriQuad(iriA, `${OWL_NS}differentFrom`, iriB)]);
 
-    assert.equal(result.invariants.length, 1);
-    const inv = result.invariants.at(0);
+    assert.equal(result.differentFrom.length, 1);
+    assert.equal(result.invariants.length, 0, 'no invariants from differentFrom');
+    const pair = result.differentFrom.at(0);
 
-    assert.ok(inv, 'invariant present');
-    assert.ok(inv.invariant.name.includes('differentFrom'));
-    assert.ok(inv.invariant.name.includes(iriA));
-    assert.ok(inv.invariant.name.includes(iriB));
-    assert.equal(inv.schemaId, iriA);
+    assert.ok(pair, 'differentFrom pair present');
+    assert.ok(pair[0] === iriA || pair[1] === iriA, 'pair contains iriA');
+    assert.ok(pair[0] === iriB || pair[1] === iriB, 'pair contains iriB');
   });
 
   void it('deduplicates symmetric differentFrom assertions', () => {
@@ -295,7 +295,7 @@ void describe('importIndividuals — owl:differentFrom', () => {
       makeIriQuad(iriB, `${OWL_NS}differentFrom`, iriA)
     ]);
 
-    assert.equal(result.invariants.length, 1, 'symmetric pair is deduplicated');
+    assert.equal(result.differentFrom.length, 1, 'symmetric pair is deduplicated');
   });
 });
 
@@ -304,7 +304,7 @@ void describe('importIndividuals — owl:differentFrom', () => {
 // ---------------------------------------------------------------------------
 
 void describe('importIndividuals — owl:AllDifferent', () => {
-  void it('produces pairwise differentFrom invariants for three members', () => {
+  void it('produces pairwise differentFrom pairs for three members (not invariants)', () => {
     const iriA = 'urn:test:i1';
     const iriB = 'urn:test:i2';
     const iriC = 'urn:test:i3';
@@ -325,20 +325,24 @@ void describe('importIndividuals — owl:AllDifferent', () => {
     const result = runIndividuals(quads);
 
     // C(3, 2) = 3 pairs: (A,B), (A,C), (B,C)
-    assert.equal(result.invariants.length, 3, 'three pairwise differentFrom invariants');
+    assert.equal(result.differentFrom.length, 3, 'three pairwise differentFrom pairs');
+    assert.equal(result.invariants.length, 0, 'no invariants from AllDifferent');
 
-    const names = result.invariants.map((inv) => {
-      return inv.invariant.name;
+    const pairsStr = result.differentFrom.map(([
+      a,
+      b
+    ]) => {
+      return `${a},${b}`;
     });
 
-    assert.ok(names.some((n) => {
-      return n.includes(iriA) && n.includes(iriB);
+    assert.ok(pairsStr.some((pair) => {
+      return (pair.includes(iriA) && pair.includes(iriB));
     }), 'A-B pair present');
-    assert.ok(names.some((n) => {
-      return n.includes(iriA) && n.includes(iriC);
+    assert.ok(pairsStr.some((pair) => {
+      return (pair.includes(iriA) && pair.includes(iriC));
     }), 'A-C pair present');
-    assert.ok(names.some((n) => {
-      return n.includes(iriB) && n.includes(iriC);
+    assert.ok(pairsStr.some((pair) => {
+      return (pair.includes(iriB) && pair.includes(iriC));
     }), 'B-C pair present');
   });
 });
@@ -348,19 +352,24 @@ void describe('importIndividuals — owl:AllDifferent', () => {
 // ---------------------------------------------------------------------------
 
 void describe('importIndividuals — owl:NegativePropertyAssertion', () => {
-  void it('produces a named negativePropertyAssertion invariant for an object value', () => {
+  void it('produces a negativePropertyAssertion invariant keyed to class IRI for an object value', () => {
+    const classIri = 'urn:test:Person';
     const sourceIri = 'urn:test:alice';
     const propIri = 'urn:test:knows';
     const targetIri = 'urn:test:bob';
 
     const quads: QuadInterface[] = [
+      // Individual declaration with class type
+      makeTypeQuad(sourceIri, `${OWL_NS}NamedIndividual`),
+      makeTypeQuad(sourceIri, classIri),
+      // NPA
       Terms.quad(Terms.blank('npa1'), Terms.iri(RDF_TYPE), Terms.iri(`${OWL_NS}NegativePropertyAssertion`)),
       Terms.quad(Terms.blank('npa1'), Terms.iri(`${OWL_NS}sourceIndividual`), Terms.iri(sourceIri)),
       Terms.quad(Terms.blank('npa1'), Terms.iri(`${OWL_NS}assertionProperty`), Terms.iri(propIri)),
       Terms.quad(Terms.blank('npa1'), Terms.iri(`${OWL_NS}targetIndividual`), Terms.iri(targetIri))
     ];
 
-    const result = runIndividuals(quads);
+    const result = runIndividuals(quads, [classIri], []);
 
     assert.equal(result.invariants.length, 1);
     const inv = result.invariants.at(0);
@@ -370,26 +379,54 @@ void describe('importIndividuals — owl:NegativePropertyAssertion', () => {
     assert.ok(inv.invariant.name.includes(sourceIri));
     assert.ok(inv.invariant.name.includes(propIri));
     assert.ok(inv.invariant.name.includes(targetIri));
-    assert.equal(inv.schemaId, sourceIri);
+    assert.equal(inv.schemaId, classIri, 'invariant is keyed to class IRI, not individual IRI');
   });
 
   void it('produces a negativePropertyAssertion invariant for a datatype value', () => {
+    const classIri = 'urn:test:Person';
     const sourceIri = 'urn:test:alice';
     const propIri = 'urn:test:age';
 
     const quads: QuadInterface[] = [
+      makeTypeQuad(sourceIri, `${OWL_NS}NamedIndividual`),
+      makeTypeQuad(sourceIri, classIri),
       Terms.quad(Terms.blank('npa2'), Terms.iri(RDF_TYPE), Terms.iri(`${OWL_NS}NegativePropertyAssertion`)),
       Terms.quad(Terms.blank('npa2'), Terms.iri(`${OWL_NS}sourceIndividual`), Terms.iri(sourceIri)),
       Terms.quad(Terms.blank('npa2'), Terms.iri(`${OWL_NS}assertionProperty`), Terms.iri(propIri)),
       Terms.quad(Terms.blank('npa2'), Terms.iri(`${OWL_NS}targetValue`), Terms.literal(99))
     ];
 
-    const result = runIndividuals(quads);
+    const result = runIndividuals(quads, [classIri], []);
     const inv = result.invariants.at(0);
 
     assert.ok(inv, 'invariant present');
     assert.ok(inv.invariant.name.includes('negativePropertyAssertion'));
     assert.ok(inv.invariant.name.includes('99'));
+    assert.equal(inv.schemaId, classIri, 'invariant is keyed to class IRI');
+  });
+
+  void it('reports unsupported when the source individual has no known class', () => {
+    const sourceIri = 'urn:test:orphan';
+    const propIri = 'urn:test:age';
+    const captured: string[] = [];
+
+    const quads: QuadInterface[] = [
+      // Individual declared but no class type
+      makeTypeQuad(sourceIri, `${OWL_NS}NamedIndividual`),
+      Terms.quad(Terms.blank('npa3'), Terms.iri(RDF_TYPE), Terms.iri(`${OWL_NS}NegativePropertyAssertion`)),
+      Terms.quad(Terms.blank('npa3'), Terms.iri(`${OWL_NS}sourceIndividual`), Terms.iri(sourceIri)),
+      Terms.quad(Terms.blank('npa3'), Terms.iri(`${OWL_NS}assertionProperty`), Terms.iri(propIri)),
+      Terms.quad(Terms.blank('npa3'), Terms.iri(`${OWL_NS}targetValue`), Terms.literal(99))
+    ];
+
+    const result = runIndividuals(quads, [], [], (axiomIri) => {
+      captured.push(axiomIri);
+    });
+
+    assert.equal(result.invariants.length, 0, 'no invariant when individual has no class');
+    assert.ok(captured.some((axiom) => {
+      return axiom.includes('NegativePropertyAssertion');
+    }), 'unsupported reported');
   });
 });
 
