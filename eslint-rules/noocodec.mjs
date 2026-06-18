@@ -198,7 +198,7 @@ const typeAliasMustEndType = {
 };
 
 /** The @noocodec ESLint plugin — register under the `noocodec` namespace. */
-export const noocodecPlugin = {
+export const noocodec = {
   'meta': { 'name': 'noocodec' },
   'rules': {
     'filename-matches-export': filenameMatchesExport,

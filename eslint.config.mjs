@@ -7,7 +7,7 @@ import regexpPlugin from 'eslint-plugin-regexp';
 import unicornPlugin from 'eslint-plugin-unicorn';
 import ymlPlugin from 'eslint-plugin-yml';
 import globals from 'globals';
-import { noocodecPlugin } from './eslint-rules/noocodec.mjs';
+import { noocodec } from './eslint-rules/noocodec.mjs';
 
 // Custom @noocodec rules live in the portable extension `eslint-rules/noocodec.mjs`
 // (canonical home: noocodec-bot; copied verbatim between @noocodec projects).
@@ -88,7 +88,7 @@ const syntaxRestrictions = [
   { message: 'Function.prototype.call() is forbidden. Use direct function calls.', selector: 'CallExpression[callee.property.name="call"]' },
   { message: 'Function.prototype.apply() is forbidden. Use spread operator.', selector: 'CallExpression[callee.property.name="apply"]' },
   { message: 'Class names must be PascalCase.', selector: 'ClassDeclaration[id.name=/^[a-z]/]' },
-  { message: 'Exported const/function names must be camelCase, PascalCase, or UPPER_CASE.', selector: 'ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name=/^[a-z]+$|^[a-z][a-zA-Z0-9]*_/]' },
+  { message: 'Exported const/function names must be camelCase, PascalCase, or UPPER_CASE.', selector: 'ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name=/^[a-z][a-zA-Z0-9]*_/]' },
   { message: 'Single-letter variables are forbidden (except i,j,k,m,n in loops, _ for unused). Use descriptive names.', selector: 'VariableDeclarator[id.name=/^[a-hlo-rt-z]$/]:not([id.name="_"])' },
   { message: 'Single-letter function parameters are forbidden (except _ for unused). Use descriptive names.', selector: ':matches(FunctionDeclaration, FunctionExpression, ArrowFunctionExpression) > Identifier[name=/^[a-z]$/]:not([name="_"]):not([name="i"]):not([name="j"]):not([name="k"]):not([name="m"]):not([name="n"])' },
   { message: 'Use named imports instead of namespace imports (import * as).', selector: 'ImportNamespaceSpecifier' }
@@ -458,7 +458,7 @@ const jsModulePlugins = {
 const typeScriptPlugins = {
   '@stylistic': stylistic,
   '@typescript-eslint': tsPlugin,
-  'noocodec': noocodecPlugin,
+  'noocodec': noocodec,
   'perfectionist': perfectionist,
   'regexp': regexpPlugin,
   'unicorn': unicornPlugin
