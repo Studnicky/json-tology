@@ -8,13 +8,13 @@
 
 import type {
   AnnotatedEdgeSchemaType,
-  ComplementOfSchemaInterface,
+  ComplementOfSchemaType,
   DiscriminatedUnionSchemaType,
-  DisjointWithSchemaInterface,
+  DisjointWithSchemaType,
   IntersectionSchemaType,
   OmitSchemaType,
   PickSchemaType,
-  SubClassOfSchemaInterface
+  SubClassOfSchemaType
 } from '../../types/Compose.js';
 import type {
   ExtendSchemaType,
@@ -33,8 +33,8 @@ import type { ValidateSchemaType } from '../../types/SchemaValidation.js';
 import {
   isRestrictionRef, RESTRICTION_TAG
 } from '../../types/Restriction.js';
-import { isRecord } from '../data/DataTypes.js';
-import { brand } from '../../types/Brand.js';
+import { DataType } from '../data/DataType.js';
+import { Brand } from '../../modules/data/Brand.js';
 import {
   CLASS_AXIOM_BODY_SKIP_KEYS,
   EXTEND_SKIP_KEYS,
@@ -85,17 +85,17 @@ function makeRestriction<
  */
 export class Compose {
   /**
-   * Restrict a property so all values satisfy `rangeClassIRI`.
+   * Restrict a property so all values satisfy `rangeClassIri`.
    *
    * Compose with `Compose.subClassOf` to attach the restriction to a class. The
-   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
-   * owl:allValuesFrom <rangeClassIRI>` and links the class via `rdfs:subClassOf`.
+   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIri>;
+   * owl:allValuesFrom <rangeClassIri>` and links the class via `rdfs:subClassOf`.
    */
   public static allValuesFrom<TProp extends string, TRange extends string>(
-    propIRI: TProp,
-    rangeClassIRI: TRange
+    propIri: TProp,
+    rangeClassIri: TRange
   ): TypedRestrictionRefType<'allValuesFrom', TProp, TRange> {
-    return makeRestriction('allValuesFrom', propIRI, rangeClassIRI);
+    return makeRestriction('allValuesFrom', propIri, rangeClassIri);
   }
 
   /**
@@ -106,7 +106,7 @@ export class Compose {
    * its subject (a Quad-typed term / `<< s p o >>`), an annotation predicate,
    * and an annotation value. All quads share the same named graph.
    *
-   * ABox emission requires a `graphIRI` — supplying none raises an error.
+   * ABox emission requires a `graphIri` — supplying none raises an error.
    *
    * `predicate` and every `$ref` in `annotations` are preserved as literal types
    * so `$ref` resolution and graph keying operate on the concrete IRI.
@@ -153,7 +153,7 @@ export class Compose {
    * );
    */
   private static buildAdditionsProperties(additions: Record<string, unknown>): Record<string, unknown> | undefined {
-    if (isRecord(additions.properties)) {
+    if (DataType.isRecord(additions.properties)) {
       return additions.properties;
     }
 
@@ -178,14 +178,14 @@ export class Compose {
    * Restrict a property to exactly `n` values.
    *
    * Compose with `Compose.subClassOf` to attach the restriction to a class. The
-   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
+   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIri>;
    * owl:cardinality "n"^^xsd:nonNegativeInteger`.
    */
   public static cardinality<TProp extends string, TN extends number>(
-    propIRI: TProp,
+    propIri: TProp,
     n: TN
   ): TypedRestrictionRefType<'cardinality', TProp, TN> {
-    return makeRestriction('cardinality', propIRI, n);
+    return makeRestriction('cardinality', propIri, n);
   }
 
   /**
@@ -281,7 +281,7 @@ export class Compose {
   public static complementOf<
     TOther extends { readonly '$id': string },
     const TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(other: TOther, body: ValidateSchemaType<TBody>): ComplementOfSchemaInterface<TOther, TBody> {
+  >(other: TOther, body: ValidateSchemaType<TBody>): ComplementOfSchemaType<TOther, TBody> {
     const result: Record<string, unknown> = {
       '$id': body.$id,
       'not': { '$ref': other.$id }
@@ -296,7 +296,7 @@ export class Compose {
       }
     }
 
-    return brand<ComplementOfSchemaInterface<TOther, TBody>>(result);
+    return Brand.cast<ComplementOfSchemaType<TOther, TBody>>(result);
   }
 
   /**
@@ -352,7 +352,7 @@ export class Compose {
   public static disjointWith<
     TOther extends { readonly '$id': string },
     const TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(other: TOther, body: ValidateSchemaType<TBody>): DisjointWithSchemaInterface<TOther, TBody> {
+  >(other: TOther, body: ValidateSchemaType<TBody>): DisjointWithSchemaType<TOther, TBody> {
     const result: Record<string, unknown> = {
       '$id': body.$id,
       'disjointWith': other.$id
@@ -367,7 +367,7 @@ export class Compose {
       }
     }
 
-    return brand<DisjointWithSchemaInterface<TOther, TBody>>(result);
+    return Brand.cast<DisjointWithSchemaType<TOther, TBody>>(result);
   }
 
   /**
@@ -469,7 +469,7 @@ export class Compose {
       }
     }
 
-    return brand<ExtendSchemaType<TSchema, TAdditional, TId>>(child);
+    return Brand.cast<ExtendSchemaType<TSchema, TAdditional, TId>>(child);
   }
 
   public static getDefaults(schema: Record<string, unknown>): Record<string, unknown> {
@@ -495,15 +495,15 @@ export class Compose {
    * Restrict a property to a fixed value (`owl:hasValue`).
    *
    * Compose with `Compose.subClassOf` to attach the restriction. The OWL TBox
-   * emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
+   * emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIri>;
    * owl:hasValue <literal>`. Strings, numbers, and booleans are emitted as
    * typed literals.
    */
   public static hasValue<TProp extends string, TValue extends boolean | number | string>(
-    propIRI: TProp,
+    propIri: TProp,
     value: TValue
   ): TypedRestrictionRefType<'hasValue', TProp, TValue> {
-    return makeRestriction('hasValue', propIRI, value);
+    return makeRestriction('hasValue', propIri, value);
   }
 
   /**
@@ -536,10 +536,10 @@ export class Compose {
    * Restrict a property to at most `n` values (`owl:maxCardinality`).
    */
   public static maxCardinality<TProp extends string, TN extends number>(
-    propIRI: TProp,
+    propIri: TProp,
     n: TN
   ): TypedRestrictionRefType<'maxCardinality', TProp, TN> {
-    return makeRestriction('maxCardinality', propIRI, n);
+    return makeRestriction('maxCardinality', propIri, n);
   }
 
   private static mergeJtConfig(
@@ -550,10 +550,10 @@ export class Compose {
     const parentConfig = source['jt:config'];
     const childConfig = additions['jt:config'];
 
-    if (isRecord(parentConfig) || isRecord(childConfig)) {
+    if (DataType.isRecord(parentConfig) || DataType.isRecord(childConfig)) {
       additionsSchema['jt:config'] = {
-        ...(isRecord(parentConfig) && parentConfig),
-        ...(isRecord(childConfig) && childConfig)
+        ...(DataType.isRecord(parentConfig) && parentConfig),
+        ...(DataType.isRecord(childConfig) && childConfig)
       };
     }
   }
@@ -562,10 +562,10 @@ export class Compose {
    * Restrict a property to at least `n` values (`owl:minCardinality`).
    */
   public static minCardinality<TProp extends string, TN extends number>(
-    propIRI: TProp,
+    propIri: TProp,
     n: TN
   ): TypedRestrictionRefType<'minCardinality', TProp, TN> {
-    return makeRestriction('minCardinality', propIRI, n);
+    return makeRestriction('minCardinality', propIri, n);
   }
 
   /**
@@ -610,7 +610,7 @@ export class Compose {
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): OmitSchemaType<TSchema, TKeys, TId> {
     const source: Record<string, unknown> = schema;
     const rawOmitProps = source.properties;
-    const sourceProps = isRecord(rawOmitProps)
+    const sourceProps = DataType.isRecord(rawOmitProps)
       ? { ...rawOmitProps }
       : {};
     const sourceRequired = Array.isArray(source.required) ? (source.required as string[]) : [];
@@ -638,7 +638,7 @@ export class Compose {
       result['jt:config'] = source['jt:config'];
     }
 
-    return brand<OmitSchemaType<TSchema, TKeys, TId>>(result);
+    return Brand.cast<OmitSchemaType<TSchema, TKeys, TId>>(result);
   }
 
   /**
@@ -658,7 +658,7 @@ export class Compose {
     delete source.required;
     source.$id = newId;
 
-    return brand<PartialSchemaType<TSchema, TId>>(source);
+    return Brand.cast<PartialSchemaType<TSchema, TId>>(source);
   }
 
   /**
@@ -677,7 +677,7 @@ export class Compose {
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): PickSchemaType<TSchema, TKeys, TId> {
     const source: Record<string, unknown> = schema;
     const rawPickProps = source.properties;
-    const sourceProps = isRecord(rawPickProps)
+    const sourceProps = DataType.isRecord(rawPickProps)
       ? rawPickProps
       : {};
     const sourceRequired = Array.isArray(source.required) ? (source.required as string[]) : [];
@@ -708,7 +708,7 @@ export class Compose {
       result['jt:config'] = source['jt:config'];
     }
 
-    return brand<PickSchemaType<TSchema, TKeys, TId>>(result);
+    return Brand.cast<PickSchemaType<TSchema, TKeys, TId>>(result);
   }
 
   /**
@@ -724,11 +724,11 @@ export class Compose {
   >(schema: TSchema, newId: TId): RequiredSchemaType<TSchema, TId> {
     const source: Record<string, unknown> = schema;
     const rawRequiredProps = source.properties;
-    const props = isRecord(rawRequiredProps)
+    const props = DataType.isRecord(rawRequiredProps)
       ? rawRequiredProps
       : {};
 
-    return brand<RequiredSchemaType<TSchema, TId>>({
+    return Brand.cast<RequiredSchemaType<TSchema, TId>>({
       ...source,
       '$id': newId,
       'required': Object.keys(props)
@@ -736,17 +736,17 @@ export class Compose {
   }
 
   /**
-   * Restrict a property so at least one value satisfies `rangeClassIRI`.
+   * Restrict a property so at least one value satisfies `rangeClassIri`.
    *
    * Compose with `Compose.subClassOf` to attach the restriction to a class. The
-   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
-   * owl:someValuesFrom <rangeClassIRI>`.
+   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIri>;
+   * owl:someValuesFrom <rangeClassIri>`.
    */
   public static someValuesFrom<TProp extends string, TRange extends string>(
-    propIRI: TProp,
-    rangeClassIRI: TRange
+    propIri: TProp,
+    rangeClassIri: TRange
   ): TypedRestrictionRefType<'someValuesFrom', TProp, TRange> {
-    return makeRestriction('someValuesFrom', propIRI, rangeClassIRI);
+    return makeRestriction('someValuesFrom', propIri, rangeClassIri);
   }
 
   /**
@@ -806,13 +806,13 @@ export class Compose {
   >(
     parent: TParent,
     body: ValidateSchemaType<TBody> & ValidateSubClassOfBodyType<TParent, TBody>
-  ): SubClassOfSchemaInterface<TParent, TBody>;
+  ): SubClassOfSchemaType<TParent, TBody>;
   public static subClassOf<
     TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
     parent: ReadonlyArray<{ readonly '$id': string }> | RestrictionRefType | { readonly '$id': string },
     body: TBody
-  ): SubClassOfSchemaInterface<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody> | TBody {
+  ): SubClassOfSchemaType<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody> | TBody {
     if (isRestrictionRef(parent)) {
       const bodyCopy: Record<string, unknown> = { ...(body as Record<string, unknown>) };
       const existing = bodyCopy[RESTRICTIONS_KEY];
@@ -851,7 +851,7 @@ export class Compose {
       allOf.push(bodySchema);
     }
 
-    return brand<SubClassOfSchemaInterface<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody>>({
+    return Brand.cast<SubClassOfSchemaType<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody>>({
       '$id': body.$id,
       allOf
     });

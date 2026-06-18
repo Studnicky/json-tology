@@ -53,4 +53,9 @@ const customers = mixed.filter((item): item is Customer => {
 });
 
 console.assert(customers.length === 2);
-console.assert(customers[1].name === 'Carl Conrad Coreander');
+const secondCustomer = customers[1];
+
+if (secondCustomer === undefined) {
+  throw new Error('expected second customer');
+}
+console.assert(secondCustomer.name === 'Carl Conrad Coreander');

@@ -9,7 +9,7 @@
  * `add(a, b)` is idempotent (canonical-order dedup) and self-drops self-pairs.
  */
 
-import type { DifferentFromStoreInterface } from '../../interfaces/DifferentFromStore.js';
+import type { DifferentFromStoreInterface } from '../../interfaces/DifferentFromStoreInterface.js';
 
 export class DifferentFromStore implements DifferentFromStoreInterface {
   private readonly pairs: Array<readonly [string, string]> = [];

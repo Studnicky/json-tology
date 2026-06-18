@@ -41,10 +41,14 @@ console.assert(liftedEbooks.length === 1, 'exactly one EBook lifted from combine
 console.assert(liftedPrintBooks.length === 1, 'exactly one PrintBook lifted from combined quads');
 
 // ── Verify field values round-tripped correctly ───────────────────────────
+if (liftedEbooks.length === 0 || liftedPrintBooks.length === 0) {
+  throw new Error('expected lifted instances not found');
+}
+
 const liftedEbook = liftedEbooks[0];
 const liftedPrint = liftedPrintBooks[0];
 
-if (liftedEbooks.length === 0 || liftedPrintBooks.length === 0) {
+if (liftedEbook === undefined || liftedPrint === undefined) {
   throw new Error('expected lifted instances not found');
 }
 

@@ -133,7 +133,7 @@ void describe('CURIE $id facade integration', { 'concurrency': true }, () => {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://ex.io',
+      'baseIri': 'https://ex.io',
       'computeds': {
         'ex:Tagged': {
           'tag': (data: Record<string, unknown>) => {

@@ -20,7 +20,7 @@ import { JsonTology } from 'json-tology';
 
 const result: OwlImportResult = JsonTology.fromTbox(
   jsonLdStringOrQuads,   // string | object | QuadInterface[]
-  { baseIRI?: string; prefixes?: Record<string, string> }
+  { baseIri?: string; prefixes?: Record<string, string> }
 );
 ```
 
@@ -30,7 +30,7 @@ The static helper is stateless: it constructs a transient `OwlImporter` and disc
 
 <!-- inline-ts-ok: API signature pseudocode; optional parameters use ?: syntax which is not runnable standalone -->
 ```ts
-const jt = JsonTology.create({ baseIRI: 'https://example.org' });
+const jt = JsonTology.create({ baseIri: 'https://example.org' });
 const result: OwlImportResult = jt.fromTbox(
   jsonLdStringOrQuads,
   { register?: boolean }  // default: true
@@ -125,7 +125,7 @@ Options:
 |------|---------|-------------|
 | `--out <path>` | stdout | Write the generated TypeScript source to `<path>`. |
 | `--name <id>` | input filename basename (sanitized) | Identifier prefix used for namespace exports. |
-| `--base-iri <iri>` | (none) | Override `baseIRI` passed to `fromTbox`. |
+| `--base-iri <iri>` | (none) | Override `baseIri` passed to `fromTbox`. |
 
 ### Programmatic API
 
@@ -136,7 +136,7 @@ import { generateFromTbox } from 'json-tology/owl-gen';
 const source: string = generateFromTbox({
   input: jsonLdStringOrObject,  // string | object
   name?: string,                // identifier prefix (e.g. 'foaf')
-  baseIRI?: string,             // passed through to fromTbox
+  baseIri?: string,             // passed through to fromTbox
 });
 ```
 
@@ -187,7 +187,7 @@ For production canonical domains, the **registry-directory mode** generates the 
 | Single-file (`--out foo.ts`) | Quick demos, prototypes, CLI pipelines where one file is easier to handle |
 | Registry-directory (`--out foo/`) | Production canonical domains: mirrors the bookstore layout, each class gets its own file and type export |
 
-The registry-directory output is structurally identical to a hand-authored domain: entity files use `export const <Name>Schema = { ... } as const` and `export type <Name> = InferType<typeof <Name>Schema>`, while `index.ts` constructs `JsonTology.create({ baseIRI, schemas })` in dependency order.
+The registry-directory output is structurally identical to a hand-authored domain: entity files use `export const <Name>Schema = { ... } as const` and `export type <Name> = InferType<typeof <Name>Schema>`, while `index.ts` constructs `JsonTology.create({ baseIri, schemas })` in dependency order.
 
 ### CLI
 
@@ -209,7 +209,7 @@ const result = generateRegistryDirectory({
   input: jsonLdStringOrObject,  // string | object | QuadInterface[]
   outDir: './src/generated/foaf',
   name?: string,                // registry constant name (e.g. 'foaf')
-  baseIRI?: string,
+  baseIri?: string,
   sourceLabel?: string,
 });
 // result.entityFiles — [{ path, iri, name }, ...]

@@ -4,7 +4,7 @@
  */
 
 import type { ListItemType } from './SchemaGraph.js';
-import type { ClassExprResolveContextType } from './ClassExprResolveContext.js';
+import type { ClassExprResolveContextType } from './ClassExprResolveContextType.js';
 
 export type ResolveItemOptionsType = ClassExprResolveContextType & {
   'item': ListItemType;

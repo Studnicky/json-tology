@@ -18,7 +18,7 @@ import {
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { ShaclProjection } from '../../src/modules/rdf/ShaclProjection.js';
 import { SH } from '../../src/constants/IRI.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

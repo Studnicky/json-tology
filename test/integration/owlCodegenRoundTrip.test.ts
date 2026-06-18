@@ -22,7 +22,7 @@ import {
 } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { JsonTology } from '../../src/index.js';
-import { generateTypeScript } from '../../src/modules/codegen/OwlCodegen.js';
+import { OwlCodegen } from '../../src/modules/codegen/OwlCodegen.js';
 import { bookstoreEntities } from '../../examples/docs/bookstore/index.js';
 import type { OwlImportResultType } from '../../src/types/OwlImport.js';
 
@@ -135,7 +135,7 @@ void describe('OwlCodegen round-trip integration', () => {
   void it('generates valid TypeScript source from bookstore TBox', () => {
     const tbox = bookstoreEntities.toTbox().jsonLd();
     const result = JsonTology.fromTbox(tbox);
-    const src = generateTypeScript(result, {
+    const src = OwlCodegen.toTypeScript(result, {
       'registryConstName': 'bookstore',
       'sourceLabel': 'bookstore-tbox-round-trip-test'
     });
@@ -152,7 +152,7 @@ void describe('OwlCodegen round-trip integration', () => {
 
     const tbox = bookstoreEntities.toTbox().jsonLd();
     const result = JsonTology.fromTbox(tbox);
-    const src = generateTypeScript(result, {
+    const src = OwlCodegen.toTypeScript(result, {
       'registryConstName': 'bookstore',
       'sourceLabel': 'bookstore-tbox-round-trip-test'
     });
@@ -169,7 +169,7 @@ void describe('OwlCodegen round-trip integration', () => {
     // is 50 to tolerate minor OWL importer changes.
     const tbox = bookstoreEntities.toTbox().jsonLd();
     const result = JsonTology.fromTbox(tbox);
-    const src = generateTypeScript(result, { 'registryConstName': 'bookstore' });
+    const src = OwlCodegen.toTypeScript(result, { 'registryConstName': 'bookstore' });
 
     const constMatches = [...src.matchAll(/^export const \w+Schema = /gmu)];
 
@@ -182,7 +182,7 @@ void describe('OwlCodegen round-trip integration', () => {
   void it('generated source contains at least 50 export type declarations', () => {
     const tbox = bookstoreEntities.toTbox().jsonLd();
     const result = JsonTology.fromTbox(tbox);
-    const src = generateTypeScript(result, { 'registryConstName': 'bookstore' });
+    const src = OwlCodegen.toTypeScript(result, { 'registryConstName': 'bookstore' });
 
     const typeMatches = [...src.matchAll(/^export type \w+ = InferType</gmu)];
 
@@ -195,7 +195,7 @@ void describe('OwlCodegen round-trip integration', () => {
   void it('generated source compiles with tsc --noEmit (zero type errors)', () => {
     const tbox = bookstoreEntities.toTbox().jsonLd();
     const result = JsonTology.fromTbox(tbox);
-    const src = generateTypeScript(result, {
+    const src = OwlCodegen.toTypeScript(result, {
       'registryConstName': 'bookstore',
       'sourceLabel': 'bookstore-tbox-round-trip-test'
     });
@@ -226,7 +226,7 @@ void describe('OwlCodegen round-trip integration', () => {
       'type': 'object'
     };
 
-    let src = generateTypeScript(resultFromSchemas([
+    let src = OwlCodegen.toTypeScript(resultFromSchemas([
       schemaB,
       schemaA
     ]), { 'registryConstName': 'rt' });

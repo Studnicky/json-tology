@@ -98,12 +98,6 @@ export const NUMBER_FORMAT_MAP: Readonly<Record<string, string>> = {
   'int64': XSD.long
 };
 
-// ---------------------------------------------------------------------------
-// XSD type resolution is in src/modules/rdf/XsdTypes.ts (XsdTypes.resolve / resolveSingle).
-// Re-exported here for consumers that import from XSD_MAPS.ts.
-// ---------------------------------------------------------------------------
-
-export { XsdTypes } from '../modules/rdf/XsdTypes.js';
 
 // ---------------------------------------------------------------------------
 // XSD type name sets — local XSD name strings (without prefix or full IRI)

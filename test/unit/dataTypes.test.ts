@@ -4,17 +4,13 @@
 import assert from 'node:assert/strict';
 // SchemaGraphSemanticsType is graph-internal type structure not surfaced by the public API.
 import type { SchemaGraphSemanticsType } from '../../src/types/SchemaGraph.js';
-// DataTypes guards/equality helpers are pure utilities used internally; no public surface.
-import {
-  deepEqual,
-  isPlainObject,
-  isRecord
-} from '../../src/modules/data/DataTypes.js';
+// DataType guards/equality helpers are pure utilities used internally; no public surface.
+import { DataType } from '../../src/modules/data/DataType.js';
 import {
   describe, it
 } from 'node:test';
 // XsdTypes resolvers power schema-to-XSD mapping; no public surface.
-import { XsdTypes } from '../../src/modules/rdf/XsdTypes.js';
+import { XsdTypes } from '../../src/modules/quads/XsdTypes.js';
 import {
   OWL, XSD
 } from '../../src/constants/IRI.js';
@@ -419,7 +415,7 @@ import {
       for (const {
         expected, input, label
       } of cases) {
-        assert.equal(isRecord(input), expected, `isRecord(${label})`);
+        assert.equal(DataType.isRecord(input), expected, `DataType.isRecord(${label})`);
       }
     });
 
@@ -469,7 +465,7 @@ import {
       for (const {
         expected, input, label
       } of cases) {
-        assert.equal(isPlainObject(input), expected, `isPlainObject(${label})`);
+        assert.equal(DataType.isPlainObject(input), expected, `DataType.isPlainObject(${label})`);
       }
     });
   });
@@ -609,7 +605,7 @@ import {
       for (const {
         expected, label, left, right
       } of scenarios) {
-        assert.equal(deepEqual(left, right), expected, `deepEqual: ${label}`);
+        assert.equal(DataType.deepEqual(left, right), expected, `deepEqual: ${label}`);
       }
     });
   });
@@ -672,7 +668,7 @@ import {
     // properties intentionally: inline shapes (not $ref) ensure the projection
     // emits XSD IRIs as rdfs:range / sh:datatype rather than referenced schema IRIs.
     return JsonTology.create({
-      'baseIRI': 'https://xsd-test.example',
+      'baseIri': 'https://xsd-test.example',
       'enableStrictGraph': false,
       'schemas': [ArticleSchema]
     });

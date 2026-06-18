@@ -29,7 +29,7 @@ const MarkerSchema = {
 
 function makeJt(extraPrefixes?: Record<string, string>): ReturnType<typeof JsonTology.create> {
   return JsonTology.create({
-    'baseIRI': 'https://test.example',
+    'baseIri': 'https://test.example',
     'enableStrictGraph': false,
     ...(!(extraPrefixes === undefined) && { 'prefixes': extraPrefixes }),
     'schemas': [MarkerSchema] as const

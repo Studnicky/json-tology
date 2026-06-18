@@ -1,7 +1,7 @@
 /**
  * 06b-abox-stable-iri
  *
- * Demonstrates toQuads() with iriFor and graphIRI overrides.
+ * Demonstrates toQuads() with iriFor and graphIri overrides.
  * Stable canonical IRIs instead of hash-based instance IRIs.
  *
  * Run: npm run build && npx tsx examples/06b-abox-stable-iri.ts
@@ -23,7 +23,7 @@ const BookSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [BookSchema]
 });
 
@@ -33,7 +33,7 @@ const gatsby = {
 };
 
 const quads = jt.toQuads(BookSchema, gatsby, {
-  'graphIRI': 'https://bookstore.example/graph/catalog/books',
+  'graphIri': 'https://bookstore.example/graph/catalog/books',
   'iriFor': 'https://bookstore.example/book/the-great-gatsby'
 });
 
@@ -68,16 +68,16 @@ const allGraphs = [...new Set(quads.map((quad) => {
 if (!allGraphs.every((graph) => {
   return graph === expectedGraph;
 })) {
-  throw new Error(`Expected all quads to have graphIRI ${expectedGraph}. Got: ${allGraphs.join(', ')}`);
+  throw new Error(`Expected all quads to have graphIri ${expectedGraph}. Got: ${allGraphs.join(', ')}`);
 }
 
 console.log('\nAll assertions passed.');
 console.log('  iriFor:    ', expectedSubject);
-console.log('  graphIRI:  ', expectedGraph);
+console.log('  graphIri:  ', expectedGraph);
 
 // Also verify static variant works the same way
 const staticQuads = JsonTology.toQuads(BookSchema, gatsby, {
-  'graphIRI': 'https://bookstore.example/graph/catalog/books',
+  'graphIri': 'https://bookstore.example/graph/catalog/books',
   'iriFor': 'https://bookstore.example/book/the-great-gatsby'
 });
 

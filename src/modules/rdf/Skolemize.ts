@@ -5,7 +5,7 @@
  * `iriFor` option on `toQuads`. Strategies can be composed via
  * `Skolemize.compose(...)` — the first non-undefined return wins. When a
  * strategy returns `undefined`, the projection's built-in default IRI minter
- * takes over, emitting `<baseIRI>/instances/<classId>-<contentHash>`.
+ * takes over, emitting `<baseIri>/instances/<classId>-<contentHash>`.
  *
  * Background: in RDF, a node without an explicit IRI is typically a
  * blank node. Skolemization replaces blank nodes with deterministic
@@ -13,7 +13,7 @@
  * RDF 1.1 §3.5 (Replacing Blank Nodes with IRIs).
  */
 
-import type { SkolemizeFnType } from '../../types/Skolemize.js';
+import type { SkolemizeFnType } from '../../types/SkolemizeFnType.js';
 import { Hash } from '../hash/Hash.js';
 import {
   UUID_BYTE_LENGTH,
@@ -51,6 +51,21 @@ const HEX_LOOKUP: readonly string[] = Array.from({ 'length': UUID_BYTE_MAX_PLUS_
   return i.toString(HEX_RADIX).padStart(UUID_HEX_PAD_LENGTH, '0');
 });
 
+/** Return the hex string for a byte value, throwing if out of range. */
+function hexAt(byte: number | undefined): string {
+  if (byte === undefined) {
+    throw new Error('UUID byte index out of bounds');
+  }
+
+  const hex = HEX_LOOKUP.at(byte);
+
+  if (hex === undefined) {
+    throw new Error(`HEX_LOOKUP out of bounds: ${byte}`);
+  }
+
+  return hex;
+}
+
 function stripTrailingSlash(iri: string): string {
   let result = iri;
 
@@ -79,18 +94,25 @@ function randomUuidV4(): string {
     cryptoObj.getRandomValues(bytes);
   }
 
-  bytes[UUID_VERSION_BYTE_INDEX] = (bytes[UUID_VERSION_BYTE_INDEX] & UUID_VERSION_MASK) | UUID_VERSION_SET;
-  bytes[UUID_VARIANT_BYTE_INDEX] = (bytes[UUID_VARIANT_BYTE_INDEX] & UUID_VARIANT_MASK) | UUID_VARIANT_SET;
+  const versionByte = bytes.at(UUID_VERSION_BYTE_INDEX);
+  const variantByte = bytes.at(UUID_VARIANT_BYTE_INDEX);
+
+  if (versionByte === undefined || variantByte === undefined) {
+    throw new Error('UUID byte array too short');
+  }
+
+  bytes[UUID_VERSION_BYTE_INDEX] = (versionByte & UUID_VERSION_MASK) | UUID_VERSION_SET;
+  bytes[UUID_VARIANT_BYTE_INDEX] = (variantByte & UUID_VARIANT_MASK) | UUID_VARIANT_SET;
 
   return (
-    `${HEX_LOOKUP[bytes[UUID_SEG0_B0]] + HEX_LOOKUP[bytes[UUID_SEG0_B1]]
-    + HEX_LOOKUP[bytes[UUID_SEG0_B2]] + HEX_LOOKUP[bytes[UUID_SEG0_B3]]}-${
-      HEX_LOOKUP[bytes[UUID_SEG1_B0]]}${HEX_LOOKUP[bytes[UUID_SEG1_B1]]}-${
-      HEX_LOOKUP[bytes[UUID_SEG2_B0]]}${HEX_LOOKUP[bytes[UUID_SEG2_B1]]}-${
-      HEX_LOOKUP[bytes[UUID_SEG3_B0]]}${HEX_LOOKUP[bytes[UUID_SEG3_B1]]}-${
-      HEX_LOOKUP[bytes[UUID_SEG4_B0]]}${HEX_LOOKUP[bytes[UUID_SEG4_B1]]
-    }${HEX_LOOKUP[bytes[UUID_SEG4_B2]]}${HEX_LOOKUP[bytes[UUID_SEG4_B3]]
-    }${HEX_LOOKUP[bytes[UUID_SEG4_B4]]}${HEX_LOOKUP[bytes[UUID_SEG4_B5]]}`
+    `${hexAt(bytes.at(UUID_SEG0_B0)) + hexAt(bytes.at(UUID_SEG0_B1))
+    + hexAt(bytes.at(UUID_SEG0_B2)) + hexAt(bytes.at(UUID_SEG0_B3))}-${
+      hexAt(bytes.at(UUID_SEG1_B0))}${hexAt(bytes.at(UUID_SEG1_B1))}-${
+      hexAt(bytes.at(UUID_SEG2_B0))}${hexAt(bytes.at(UUID_SEG2_B1))}-${
+      hexAt(bytes.at(UUID_SEG3_B0))}${hexAt(bytes.at(UUID_SEG3_B1))}-${
+      hexAt(bytes.at(UUID_SEG4_B0))}${hexAt(bytes.at(UUID_SEG4_B1))
+    }${hexAt(bytes.at(UUID_SEG4_B2))}${hexAt(bytes.at(UUID_SEG4_B3))
+    }${hexAt(bytes.at(UUID_SEG4_B4))}${hexAt(bytes.at(UUID_SEG4_B5))}`
   );
 }
 
@@ -103,7 +125,7 @@ function randomUuidV4(): string {
  * option on `toQuads`. Strategies compose via `Skolemize.compose(...)` —
  * the first non-`undefined` return wins. When a strategy returns `undefined`,
  * the projection's built-in default IRI minter takes over, emitting
- * `<baseIRI>/instances/<contentHash>`.
+ * `<baseIri>/instances/<contentHash>`.
  *
  * In RDF a node without an explicit IRI is typically a blank node.
  * Skolemization replaces blank nodes with deterministic IRIs so downstream
@@ -113,7 +135,7 @@ function randomUuidV4(): string {
  * ```ts
  * const strategy = Skolemize.compose(
  *   Skolemize.fromProperty('id'),
- *   Skolemize.hash({ baseIRI: 'https://example.com' })
+ *   Skolemize.hash({ baseIri: 'https://example.com' })
  * );
  * ```
  *
@@ -155,17 +177,17 @@ export class Skolemize {
    * Mint an IRI from a property of the value object.
    *
    * If `value[name]` is a non-empty string, returns
-   * `<baseIRI>/<value[name]>` where the property value is
+   * `<baseIri>/<value[name]>` where the property value is
    * percent-encoded via `encodeURIComponent` before being appended.
    * Otherwise, delegates to `fallback` (defaults to `Skolemize.hash()`).
    */
   public static fromProperty(
     name: string,
-    options?: { 'baseIRI'?: string;
+    options?: { 'baseIri'?: string;
       'fallback'?: SkolemizeFnType }
   ): SkolemizeFnType {
     const fallback = options?.fallback
-      ?? Skolemize.hash(options?.baseIRI === undefined ? undefined : { 'baseIRI': options.baseIRI });
+      ?? Skolemize.hash(options?.baseIri === undefined ? undefined : { 'baseIri': options.baseIri });
 
     return (ctx: Parameters<SkolemizeFnType>[0]): string | undefined => {
       const { value } = ctx;
@@ -174,7 +196,7 @@ export class Skolemize {
         const candidate = (value as Record<string, unknown>)[name];
 
         if (typeof candidate === 'string' && candidate.length > 0) {
-          const base = options?.baseIRI;
+          const base = options?.baseIri;
 
           return base === undefined
             ? candidate
@@ -187,13 +209,13 @@ export class Skolemize {
   }
 
   /**
-   * Default strategy. Mints `<baseIRI>/instances/<contentHash>` from a
+   * Default strategy. Mints `<baseIri>/instances/<contentHash>` from a
    * deterministic hash of the value. Returns `undefined` when no
-   * baseIRI is configured at any layer (registry or strategy), letting
+   * baseIri is configured at any layer (registry or strategy), letting
    * the caller's default kick in.
    */
-  public static hash(options?: { 'baseIRI'?: string }): SkolemizeFnType {
-    const base = options?.baseIRI;
+  public static hash(options?: { 'baseIri'?: string }): SkolemizeFnType {
+    const base = options?.baseIri;
 
     return (ctx: Parameters<SkolemizeFnType>[0]): string | undefined => {
       let result: string | undefined;
@@ -231,13 +253,13 @@ export class Skolemize {
 
   /**
    * Mint an IRI matching the W3C RDF 1.1 §3.5 well-known genid pattern:
-   * `<baseIRI>/.well-known/genid/<contentHash>`.
+   * `<baseIri>/.well-known/genid/<contentHash>`.
    *
    * IRIs of this shape are reversible by `fromQuads({ deskolemize: true })`,
    * which treats them as blank nodes when reconstructing typed objects.
    */
-  public static wellKnownGenid(baseIRI: string): SkolemizeFnType {
-    const root = stripTrailingSlash(baseIRI);
+  public static wellKnownGenid(baseIri: string): SkolemizeFnType {
+    const root = stripTrailingSlash(baseIri);
 
     return (ctx: Parameters<SkolemizeFnType>[0]): string => {
       const contentHash = Hash.value(ctx.value);

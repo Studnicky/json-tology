@@ -18,7 +18,7 @@ const fromDisk: unknown = { 'type': 'object' };
 
 try {
   JsonTology.create({
-    'baseIRI': 'https://bookstore.example',
+    'baseIri': 'https://bookstore.example',
     'schemas': [fromDisk as { readonly '$id': string }]
   });
 } catch (error) {

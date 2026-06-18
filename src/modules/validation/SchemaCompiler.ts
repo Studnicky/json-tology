@@ -8,22 +8,22 @@
  */
 
 import type { ValidationErrorType } from '../../types/Validation.js';
-import type { ExecContextType } from '../../types/ExecContext.js';
+import type { ExecContextType } from '../../types/ExecContextType.js';
 import type {
   CompiledValidateOptionsType, CompiledValidationResultType, CompiledValidatorType
 } from '../../types/Compiler.js';
-import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerInterface.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
+import type { GraphEngineInterface } from '../../interfaces/GraphEngineInterface.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import { logScope } from '../data/LogScope.js';
+import { LogScope } from '../data/LogScope.js';
 import { ExecContext } from './ExecContext.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { BaseError } from '../../errors/BaseError.js';
@@ -35,18 +35,18 @@ import type {
   ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../types/Validation.js';
 import { VOCABULARY_FORMAT_ASSERTION } from '../../constants/DIALECT.js';
-import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
+import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlanType.js';
 import { Arrays } from './exec/Arrays.js';
 import { Composition } from './exec/Composition.js';
 import { Objects } from './exec/Objects.js';
 import { Scalars } from './exec/Scalars.js';
-import { buildNodePlan } from './SchemaCompilerPlan.js';
+import { SchemaCompilerPlan } from './SchemaCompilerPlan.js';
 
 // ---------------------------------------------------------------------------
 // Internal types
 // ---------------------------------------------------------------------------
 
-import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContext.js';
+import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContextType.js';
 import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
 import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
 import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
@@ -148,8 +148,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       const scratchCtx: ExecContextType = {
         ...ctx,
         'applyDefaults': false,
+        'coerce': false,
         'collectErrors': false,
-        'doCoerce': false,
         'errors': [],
         'evaluatedItems': undefined,
         'evaluatedProperties': undefined,
@@ -211,7 +211,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private appliesFormatAssertions(sem: SchemaGraphSemanticsType): boolean {
     const rootVocabulary = sem.schemaVocabulary;
-    const formatAssertionValue = isRecord(rootVocabulary) ? rootVocabulary[VOCABULARY_FORMAT_ASSERTION] : undefined;
+    const formatAssertionValue = DataType.isRecord(rootVocabulary) ? rootVocabulary[VOCABULARY_FORMAT_ASSERTION] : undefined;
 
     // Explicit opt-out: $vocabulary with format-assertion: false disables checking.
     // Default: format assertions ON (strict-by-default posture).
@@ -229,7 +229,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       workingValue = GraphEngineSupport.cloneDefault(plan.defaultValue);
     }
 
-    if (ctx.doCoerce && plan.types.length > 0) {
+    if (ctx.coerce && plan.types.length > 0) {
       workingValue = SchemaCompilerSupport.coerceCompiledValue(plan.types, workingValue);
     }
 
@@ -442,7 +442,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       return this.compileBooleanSchema(rootSchema);
     }
 
-    if (!isRecord(rootSchema)) {
+    if (!DataType.isRecord(rootSchema)) {
       return this.compileBooleanSchema(false);
     }
 
@@ -462,6 +462,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       return sem.unevaluatedPropertiesNode !== undefined || sem.unevaluatedItemsNode !== undefined;
     });
     const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn, treeHasUnevaluated);
+
+    this.logger.info(LogScope.format('SchemaCompiler', 'compile', `compiled validator for ${typeof schema.$id === 'string' ? schema.$id : '<anonymous>'}`));
 
     return {
       'check': checkFn,
@@ -578,7 +580,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     this.compilingValidateNodes.set(graphNode, deferred);
 
     try {
-      const plan = buildNodePlan(
+      const plan = SchemaCompilerPlan.buildNodePlan(
         this.validatePlanContext,
         graphNode,
         formatRegistry,
@@ -637,7 +639,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const graphNode = graph.node(schema);
 
     if (graphNode === undefined) {
-      this.logger.error(logScope('SchemaCompiler', 'compileValidateWithErrors', 'Schema not found in graph — cannot compile validator'));
+      this.logger.error(LogScope.format('SchemaCompiler', 'compileValidateWithErrors', 'Schema not found in graph — cannot compile validator'));
       throw new GraphError(
         'Schema not found in graph — cannot compile validator',
         { 'code': GraphErrorCode.REF_NOT_FOUND }
@@ -820,8 +822,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const stripUnk = (options.enforceSchemaProperties ?? false) || (options.removeAdditionalProperties ?? false);
     const ctx: ExecContextType = ExecContext.build({
       'applyDefaults': options.applyDefaults ?? false,
+      'coerce': options.castTypes ?? false,
       'collectErrors': options.collectErrors ?? true,
-      'doCoerce': options.castTypes ?? false,
       errors,
       'ignoreAdditionalProperties': options.ignoreAdditionalProperties ?? false,
       'stripUnknown': stripUnk,
@@ -920,7 +922,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     // unevaluatedProperties — object post-pass
-    if (isRecord(currentValue) && unevaluatedPropertiesValidator !== undefined) {
+    if (DataType.isRecord(currentValue) && unevaluatedPropertiesValidator !== undefined) {
       const upResult = this.executeUnevaluatedProperties(
         unevaluatedPropertiesValidator,
         currentValue,
@@ -1263,7 +1265,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): ValidatorStatusType {
     let valid = true;
 
-    if (isRecord(workingValue)) {
+    if (DataType.isRecord(workingValue)) {
       const objResult = this.validateObjectPlan(plan, workingValue, path, ctx);
 
       if (objResult.earlyExit) {

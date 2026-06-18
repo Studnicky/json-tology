@@ -17,7 +17,7 @@
  *
  * Fixture: a bookstore Review `reviews` a Book, annotated with `ratingGiven 5`
  * and `verifiedPurchase true`, asserted in the named graph
- * `https://bookstore.example/graph/reviews`. With `baseIRI`
+ * `https://bookstore.example/graph/reviews`. With `baseIri`
  * `https://bookstore.example`, the canonical predicate resolver maps the
  * annotation property names to flat IRIs `…/ratingGiven` and `…/verifiedPurchase`.
  */
@@ -29,8 +29,8 @@ import {
 
 import { Compose } from '../../src/modules/composition/Compose.js';
 import { JsonTology } from '../../src/index.js';
-import { isRecord } from '../../src/modules/data/DataTypes.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import { DataType } from '../../src/modules/data/DataType.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 // ---------------------------------------------------------------------------
 // Fixture schemas
@@ -95,7 +95,7 @@ const reviewInstance = {
 
 function freshJt(): ReturnType<typeof JsonTology.create> {
   const jt = JsonTology.create({
-    'baseIRI': BASE_IRI,
+    'baseIri': BASE_IRI,
     'enableStrictGraph': false
   });
 
@@ -165,7 +165,7 @@ function liftedReviewEdge(mode: 'both' | 'flat-only' | 'star-only'): Record<stri
   const jt = freshJt();
   const quads = jt.toQuads(ReviewSchema, reviewInstance, {
     'annotationEmitMode': mode,
-    'graphIRI': REVIEWS_GRAPH
+    'graphIri': REVIEWS_GRAPH
   });
   const lifted = jt.fromQuads(ReviewSchema, quads);
 
@@ -173,11 +173,11 @@ function liftedReviewEdge(mode: 'both' | 'flat-only' | 'star-only'): Record<stri
 
   const instance = lifted[0];
 
-  assert.ok(isRecord(instance), 'lifted instance is a record');
+  assert.ok(DataType.isRecord(instance), 'lifted instance is a record');
 
   const edge = instance.book;
 
-  assert.ok(isRecord(edge), 'book edge present');
+  assert.ok(DataType.isRecord(edge), 'book edge present');
 
   return edge;
 }
@@ -192,14 +192,19 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const jt = freshJt();
       const quads = jt.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'star-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       // Base flat edge triple present (exactly one).
       const base = baseEdgeTriples(quads);
 
       assert.equal(base.length, 1, 'exactly one base flat edge triple');
-      assert.equal(base[0].object.value, BOOK_IRI);
+      const base0Star = base.at(0);
+
+      if (base0Star === undefined) {
+        throw new Error('expected base[0] to exist');
+      }
+      assert.equal(base0Star.object.value, BOOK_IRI);
 
       // Two star annotation quads (Quad subjects).
       const star = starAnnotationQuads(quads);
@@ -232,10 +237,10 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const jt1 = freshJt();
       const jt2 = freshJt();
 
-      const unsetQuads = jt1.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+      const unsetQuads = jt1.toQuads(ReviewSchema, reviewInstance, { 'graphIri': REVIEWS_GRAPH });
       const starQuads = jt2.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'star-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       assert.equal(unsetQuads.length, starQuads.length, 'same quad count');
@@ -253,14 +258,19 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const jt = freshJt();
       const quads = jt.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'flat-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       // Base flat edge triple present (exactly one).
       const base = baseEdgeTriples(quads);
 
       assert.equal(base.length, 1, 'exactly one base flat edge triple');
-      assert.equal(base[0].object.value, BOOK_IRI);
+      const base0Flat = base.at(0);
+
+      if (base0Flat === undefined) {
+        throw new Error('expected base[0] to exist');
+      }
+      assert.equal(base0Flat.object.value, BOOK_IRI);
 
       // Two flat annotation triples with the correct resolved predicates +
       // typed literal values. Subject is the review instance IRI (NamedNode),
@@ -278,8 +288,8 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 
       // Subject is the instance IRI (NamedNode), shared with the base triple.
       assert.equal(ratingFlat.subject.termType, 'NamedNode');
-      assert.equal(ratingFlat.subject.value, base[0].subject.value, 'flat annotation subject === instance subject');
-      assert.equal(verifiedFlat.subject.value, base[0].subject.value);
+      assert.equal(ratingFlat.subject.value, base0Flat.subject.value, 'flat annotation subject === instance subject');
+      assert.equal(verifiedFlat.subject.value, base0Flat.subject.value);
 
       // Typed literal values.
       assert.equal(ratingFlat.object.termType, 'Literal');
@@ -295,11 +305,11 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       assert.equal(star.length, 0, 'flat-only emits NO Quad-subject (star) quads');
     });
 
-    void it("'flat-only' stamps the flat annotation triples with the same graphIRI", () => {
+    void it("'flat-only' stamps the flat annotation triples with the same graphIri", () => {
       const jt = freshJt();
       const quads = jt.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'flat-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       for (const quad of flatAnnotationTriples(quads)) {
@@ -314,7 +324,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       const jt = freshJt();
       const quads = jt.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'both',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       const base = baseEdgeTriples(quads);
@@ -347,11 +357,11 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 
       const starQuads = jtStar.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'star-only',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
       const bothQuads = jtBoth.toQuads(ReviewSchema, reviewInstance, {
         'annotationEmitMode': 'both',
-        'graphIRI': REVIEWS_GRAPH
+        'graphIri': REVIEWS_GRAPH
       });
 
       assert.equal(
@@ -374,7 +384,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 
       const annotations = edge.annotations;
 
-      assert.ok(isRecord(annotations), 'annotations present');
+      assert.ok(DataType.isRecord(annotations), 'annotations present');
       assert.equal(annotations.ratingGiven, 5);
       assert.equal(annotations.verifiedPurchase, true);
     });
@@ -386,7 +396,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 
       const annotations = edge.annotations;
 
-      assert.ok(isRecord(annotations), 'annotations present');
+      assert.ok(DataType.isRecord(annotations), 'annotations present');
       assert.equal(annotations.ratingGiven, 5);
       assert.equal(annotations.verifiedPurchase, true);
     });
@@ -402,7 +412,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       // limitation as a behavioural test (not just prose in the TSDoc).
       const annotations = edge.annotations;
 
-      assert.ok(isRecord(annotations), 'annotations object present (empty)');
+      assert.ok(DataType.isRecord(annotations), 'annotations object present (empty)');
       assert.equal(
         Object.keys(annotations).length,
         0,
@@ -416,7 +426,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 // x-jt-predicate grounding — BY DESIGN, not by accident.
 //
 // The default fixture's annotations omit `x-jt-predicate`, so they resolve to
-// the canonical `baseIRI + propertyName` fallback. These tests use annotations
+// the canonical `baseIri + propertyName` fallback. These tests use annotations
 // that DO carry `x-jt-predicate`, proving the flat path honours the grounded
 // predicate IRI: `emitFlatAnnotationQuads` resolves through the SAME
 // `PredicateResolver` (passed the annotation's `propertySchema`) as the star
@@ -453,7 +463,7 @@ const GroundedReviewSchema = {
 
 function groundedQuads(mode: 'both' | 'flat-only' | 'star-only'): readonly QuadInterface[] {
   const jt = JsonTology.create({
-    'baseIRI': BASE_IRI,
+    'baseIri': BASE_IRI,
     'enableStrictGraph': false
   });
 
@@ -464,7 +474,7 @@ function groundedQuads(mode: 'both' | 'flat-only' | 'star-only'): readonly QuadI
 
   return jt.toQuads(GroundedReviewSchema, reviewInstance, {
     'annotationEmitMode': mode,
-    'graphIRI': REVIEWS_GRAPH
+    'graphIri': REVIEWS_GRAPH
   });
 }
 
@@ -487,7 +497,7 @@ void describe('annotationEmitMode — x-jt-predicate grounding (by design, not b
     assert.equal(verified.object.value, 'true');
     assert.equal(rating.object.value, '5');
 
-    // The canonical baseIRI+propertyName fallback must NOT appear when grounded.
+    // The canonical baseIri+propertyName fallback must NOT appear when grounded.
     const fallback = quads.filter((quad) => {
       return quad.predicate.value === VERIFIED_PREDICATE || quad.predicate.value === RATING_PREDICATE;
     });

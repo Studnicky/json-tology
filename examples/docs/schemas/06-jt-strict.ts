@@ -36,7 +36,7 @@ const StrictIsbnSchema = {
 } as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:docs-schemas-06',
+  'baseIri': 'urn:docs-schemas-06',
   // doc example with synthetic fixture schemas
   'enableStrictGraph': false,
   // global: lenient

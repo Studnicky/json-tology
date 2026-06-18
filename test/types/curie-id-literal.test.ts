@@ -104,7 +104,7 @@ assertType<AssertEqual<FooPickId, 'ex:FooPick'>>();
 // ---------------------------------------------------------------------------
 function facadeTypecheck(): void {
   const jt = JsonTology.create({
-    'baseIRI': 'https://ex.io',
+    'baseIri': 'https://ex.io',
     'prefixes': { 'ex': 'https://ex.io/' },
     'schemas': [FooSchema]
   });

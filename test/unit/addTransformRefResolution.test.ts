@@ -22,7 +22,7 @@ import {
   describe, it
 } from 'node:test';
 import { JsonTology } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type {
   MinimumBrandType, MinLengthBrandType
 } from '../../src/types/ConstraintBrands.js';
@@ -70,7 +70,7 @@ const ProductSchema = {
 void describe('addTransform decode output resolves registered $refs to readable canonical types', { 'concurrency': true }, () => {
   void it('produces a canonical output whose $ref-typed leaves resolve to branded types', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:codec',
+      'baseIri': 'urn:codec',
       'schemas': [
         NameSchema,
         PriceSchema,
@@ -83,7 +83,7 @@ void describe('addTransform decode output resolves registered $refs to readable 
     const codec = jt.addTransform(ProductSchema, {
       // `decode` consumes the raw wire payload and produces the canonical form.
       // The output type is `InferSchemaType<ProductSchema, …, TRefs>`, so each
-      // $ref-resolved leaf is branded — `brand()` infers the expected brand from
+      // $ref-resolved leaf is branded — `Brand.cast()` infers the expected brand from
       // the contextual property type. This compiles ONLY because the $refs
       // resolved (title → length-branded string, price → minimum-branded number).
       'decode': (raw: Record<string, unknown>) => {
@@ -91,9 +91,9 @@ void describe('addTransform decode output resolves registered $refs to readable 
 
         return {
           'active': raw['is_active'] as boolean,
-          'price': brand<MinimumBrandType<0> & number>(raw['sticker_price']),
-          'title': brand<MinLengthBrandType<1> & string>(raw['wire_title']),
-          'vendor': { 'vendorName': brand<MinLengthBrandType<1> & string>(seller['seller_name']) }
+          'price': Brand.cast<MinimumBrandType<0> & number>(raw['sticker_price']),
+          'title': Brand.cast<MinLengthBrandType<1> & string>(raw['wire_title']),
+          'vendor': { 'vendorName': Brand.cast<MinLengthBrandType<1> & string>(seller['seller_name']) }
         };
       },
       // encode writes the wire keys through the dynamic accessor — they belong

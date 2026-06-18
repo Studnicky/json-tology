@@ -51,7 +51,7 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
       messageContains, name, schema
     } of scenarios) {
       const jt = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'enableStrictGraph': false
       });
 
@@ -69,7 +69,7 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
 
   void it('set() replaces an existing schema with new content (Map semantics)', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -97,7 +97,7 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
 
   void it('SchemaError has code and toJson()', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -152,9 +152,16 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
           const chain = top.flatten();
 
           assert.equal(chain.length, 3, 'edge: nested cause chain — 3 deep');
-          assert.equal(chain[0].code, 'SCHEMA_STRUCTURE_INVALID', 'edge: nested cause chain — first is top');
-          assert.equal(chain[1].code, 'SCHEMA_DUPLICATE_ID', 'edge: nested cause chain — second is mid');
-          assert.equal(chain[2].code, 'SCHEMA_MISSING_ID', 'edge: nested cause chain — third is root');
+          const chain0 = chain.at(0);
+          const chain1 = chain.at(1);
+          const chain2 = chain.at(2);
+
+          if (chain0 === undefined || chain1 === undefined || chain2 === undefined) {
+            throw new Error('expected chain to have 3 elements');
+          }
+          assert.equal(chain0.code, 'SCHEMA_STRUCTURE_INVALID', 'edge: nested cause chain — first is top');
+          assert.equal(chain1.code, 'SCHEMA_DUPLICATE_ID', 'edge: nested cause chain — second is mid');
+          assert.equal(chain2.code, 'SCHEMA_MISSING_ID', 'edge: nested cause chain — third is root');
         },
         'name': 'edge: error with nested cause chain (3 deep) flattens correctly'
       },
@@ -164,8 +171,13 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
           const chain = single.flatten();
 
           assert.equal(chain.length, 1, 'edge: single error flatten — length 1');
-          assert.equal(chain[0].code, 'SCHEMA_NOT_REGISTERED', 'edge: single error flatten — code matches');
-          assert.equal(chain[0].message, 'single error', 'edge: single error flatten — message matches');
+          const singleChain0 = chain.at(0);
+
+          if (singleChain0 === undefined) {
+            throw new Error('expected chain[0] to exist');
+          }
+          assert.equal(singleChain0.code, 'SCHEMA_NOT_REGISTERED', 'edge: single error flatten — code matches');
+          assert.equal(singleChain0.message, 'single error', 'edge: single error flatten — message matches');
         },
         'name': 'edge: error flatten with single error returns one-element array'
       }
@@ -188,7 +200,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('carries structured ValidationErrors with items', () => {
     // enableStrictGraph: false — synthetic fixture schema with inline minimum
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -229,7 +241,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('reports multiple errors simultaneously', () => {
     // enableStrictGraph: false — synthetic fixture schema with inline format/minLength
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -263,7 +275,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
 
   void it('InstantiationError.toJson() serializes cleanly', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -298,7 +310,7 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
   void it('remains usable after failed registration', () => {
     // Use enableStrictGraph to trigger inline-object error (default mode is silent)
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': true
     });
 
@@ -353,7 +365,7 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
 
   void it('remains usable after InstantiationError', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'enableStrictGraph': false
     });
 
@@ -381,7 +393,7 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
 void describe('JsonTology error handling', { 'concurrency': true }, () => {
   void it('handles unregistered schema operations', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://err.test',
+      'baseIri': 'https://err.test',
       'enableStrictGraph': false
     });
 

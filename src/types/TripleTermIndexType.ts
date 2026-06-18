@@ -1,4 +1,4 @@
-import type { QuadInterface } from '../interfaces/Quad.js';
+import type { QuadInterface } from '../interfaces/QuadInterface.js';
 
 /**
  * Index of annotation quads (RDF 1.2 triple-term subjects), keyed by the

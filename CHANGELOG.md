@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-06-18
+
+A repo-wide technical-debt sweep: strict layering, naming consistency, type-safety
+hardening, and enforcement lint rules. The internal architecture is materially
+cleaner; several public surfaces changed name or shape.
+
+### Added
+
+- **`src/modules/quads/` layer.** rdf/js quad primitives (`Terms`, `Curie`, `Lists`, `QuadFactory`, `XsdTypes`, `IdentifierIssuer`) now live in a dedicated low layer between `data/` and `graph/`, separated from the `rdf/` projection layer.
+- **`DefaultCreatorInterface` and `AboxProjectorInterface`.** Dependency-inversion seams so `materialization` and `registry` no longer import outer/peer layers; the facade wires the concrete implementations.
+- **`noUncheckedIndexedAccess` and stricter tsconfig** (`allowUnreachableCode: false`, `allowUnusedLabels: false`). All indexed access is guarded.
+- **Deep-core logging.** `GraphEngine`, `SchemaRefWalker`, and `RefResolution` accept an optional logger (silent by default) and emit `[Component.operation]`-scoped trace/debug; previously-swallowed parse failures are now logged.
+- **Enforcement lint rules** in the portable `eslint-rules/noocodec.mjs` plugin: `filename-matches-export`, `interface-must-be-contract`, and `type-alias-must-end-type` (the `*Type` suffix is now mandatory on every `src/types/` alias, no exceptions). Leaf layers (`constants/`, `types/`, `interfaces/`) are barred from importing `src/modules/` runtime code.
+
+### Changed
+
+- **BREAKING: the `baseIRI` option is renamed to `baseIri`.** All camelCase/PascalCase identifiers containing `IRI` are normalized to `Iri` (matching the existing type-layer convention); `SCREAMING_SNAKE` constants keep `IRI`.
+- **BREAKING: exported helper functions are now methods on domain classes.** `isRecord`/`isPlainObject`/`hasCycle`/`deepEqual` → `DataType.*`; `decodeLiteral` → `Terms.decodeLiteral`; `brand` → `Brand.cast`; `logScope` → `LogScope.format`; the `importDispatch` `importX` functions → `X.dispatch`. No freestanding helper functions remain in `src/modules`.
+- **BREAKING: exported type renames for the `*Type` suffix convention.** Every `src/interfaces/` file now matches its exported `*Interface` symbol (`Serializer` split into `GraphSerializerInterface` + `GraphSchemaSerializerInterface`); `JsonSchema` → `JsonSchemaDefinitionType`; `LookupGraphFn` → `LookupGraphFnType`; `PropertyEntry`/`PropertyMap`/`RelationStructure` → `*Type`.
+- **BREAKING: `SchemaRegistry.create()` requires a wired default creator.** A bare `new SchemaRegistry()` without `defaultCreatorFactory` throws `SchemaError('SCHEMA_DEFAULT_CREATOR_MISSING')`; use `JsonTology` (which wires it) for default-instance creation.
+- **BREAKING: the dead `Result<T>` monad and `ResultInterface` are removed** from the public surface (they had zero internal usage). `BaseTypes` is now exported from the package root instead of the `./types` subpath.
+
+### Fixed
+
+- Eliminated the `constants/XSD_MAPS ↔ rdf/XsdTypes` runtime circular dependency.
+- `materialization` no longer imports `rdf/` or `validation/`; `registry` no longer imports `materialization/` — the onion layering is intact and lint-enforced.
+
 ## [0.25.0] - 2026-06-18
 
 ### Added

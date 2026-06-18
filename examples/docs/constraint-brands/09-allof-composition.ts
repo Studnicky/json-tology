@@ -20,7 +20,7 @@ type VEmail = InferType<typeof ValidatedEmailSchema>;
 // simplifies to: string & FormatBrandType<'email'> & MinLengthBrandType<5>
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:brands:',
+  'baseIri': 'urn:brands:',
   'enableStrictGraph': false,
   'schemas': [ValidatedEmailSchema]
 });

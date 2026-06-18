@@ -830,12 +830,12 @@ void describe('bookstore policy — SCENARIO 3A: annotationEmitMode flat → fla
   // Project with flat-only: verifiedPurchase emits as
   //   <reviewIri> <https://schema.org/verified> "true"^^xsd:boolean
   // alongside the base triple <reviewIri> <reviews> <bookIri>.
-  // graphIRI is required by the projection layer for annotated edges; we
+  // graphIri is required by the projection layer for annotated edges; we
   // strip the named-graph wrapper before sending to EYE (EYE rules operate
   // on the default graph — facts inside `<g> { ... }` blocks do not match).
   const flatQuads = jt.toQuads(ReviewSchema, annotatedReview, {
     'annotationEmitMode': 'flat-only',
-    'graphIRI': REVIEW_GRAPH_IRI,
+    'graphIri': REVIEW_GRAPH_IRI,
     'iriFor': ANNOTATED_REVIEW_IRI
   });
 
@@ -913,12 +913,12 @@ void describe('bookstore policy — SCENARIO 3B: annotationEmitMode star → sta
   // Project with star-only: verifiedPurchase emits as the triple-term quad
   //   << <reviewIri> <reviews> <bookIri> >> <schema:verified> "true"^^xsd:boolean
   // plus the base triple <reviewIri> <reviews> <bookIri>.
-  // graphIRI is required by the projection layer for annotated edges; we
+  // graphIri is required by the projection layer for annotated edges; we
   // strip the named-graph wrapper before sending to EYE (EYE rules operate
   // on the default graph — facts inside `<g> { ... }` blocks do not match).
   const starQuads = jt.toQuads(ReviewSchema, annotatedReview, {
     'annotationEmitMode': 'star-only',
-    'graphIRI': REVIEW_GRAPH_IRI,
+    'graphIri': REVIEW_GRAPH_IRI,
     'iriFor': ANNOTATED_REVIEW_IRI
   });
 

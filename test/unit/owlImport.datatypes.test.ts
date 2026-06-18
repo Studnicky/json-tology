@@ -28,13 +28,13 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importDatatypes } from '../../src/modules/ontology/importDispatch/Datatypes.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Datatypes } from '../../src/modules/ontology/importDispatch/Datatypes.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { listQuad } from '../helpers/listQuad.js';
 import type { JsonSchemaDocumentObjectType } from '../../src/types/Schema.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../src/types/Quad.js';
 import type { OwlImportContextType } from '../../src/types/OwlImport.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
@@ -82,10 +82,10 @@ function makeCtx(quads: QuadInterface[] = []): OwlImportContextType & {
   return {
     'allClassIris': new Set(),
     'allPropertyIris': new Set(),
-    'baseIRI': 'https://example.com/',
+    'baseIri': 'https://example.com/',
     curie,
     'graph': SchemaGraph.fromQuads(quads, {
-      'baseIRI': 'https://example.com/',
+      'baseIri': 'https://example.com/',
       'prefixes': STANDARD_PREFIXES
     }),
     'isDatatype': () => {
@@ -229,7 +229,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
   // ── Empty input ──────────────────────────────────────────────────────────
 
   void it('returns empty fragment for empty quad array', () => {
-    const fragment = importDatatypes([], makeCtx());
+    const fragment = Datatypes.dispatch([], makeCtx());
 
     assert.strictEqual(fragment.schemaDeltas.size, 0);
     assert.deepEqual(fragment.characteristics, []);
@@ -241,7 +241,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
   void it('returns empty fragment when no rdfs:Datatype declarations present', () => {
     // owl:Class — not a datatype
     const quads: QuadInterface[] = [makeQuad('https://ex.com/Person', RDF_TYPE, iri('http://www.w3.org/2002/07/owl#Class'))];
-    const fragment = importDatatypes(quads, makeCtx(quads));
+    const fragment = Datatypes.dispatch(quads, makeCtx(quads));
 
     assert.strictEqual(fragment.schemaDeltas.size, 0);
   });
@@ -251,7 +251,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
   void it('processes rdfs:Datatype declaration → empty delta (no facets)', () => {
     const dt = 'https://ex.com/MyDT';
     const quads: QuadInterface[] = [declareDatatype(dt)];
-    const fragment = importDatatypes(quads, makeCtx(quads));
+    const fragment = Datatypes.dispatch(quads, makeCtx(quads));
 
     assert.strictEqual(fragment.schemaDeltas.size, 1);
     assert.ok(fragment.schemaDeltas.has(dt), 'delta must be keyed by datatype IRI');
@@ -268,7 +268,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       declareDatatype(dt),
       setOnDatatype(dt, XSD_STRING)
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.type, 'string');
   });
@@ -279,7 +279,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       declareDatatype(dt),
       setOnDatatype(dt, XSD_INTEGER)
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.type, 'integer');
   });
@@ -290,7 +290,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       declareDatatype(dt),
       setOnDatatype(dt, XSD_DECIMAL)
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.type, 'number');
   });
@@ -306,7 +306,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       facetNumeric(bnode, XSD_MIN_INCLUSIVE, 0)
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.minimum, 0);
     assert.strictEqual(delta.type, 'number');
@@ -323,7 +323,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       facetNumeric(bnode, XSD_MAX_INCLUSIVE, 100)
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.maximum, 100);
   });
@@ -339,7 +339,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       facetNumeric(bnode, XSD_MIN_EXCLUSIVE, 0)
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.exclusiveMinimum, 0);
   });
@@ -355,7 +355,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       facetNumeric(bnode, XSD_MAX_EXCLUSIVE, 10)
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.exclusiveMaximum, 10);
   });
@@ -371,7 +371,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_MIN_LENGTH, intLit(1))
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.minLength, 1);
     assert.strictEqual(delta.type, 'string');
@@ -388,7 +388,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_MAX_LENGTH, intLit(100))
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.maxLength, 100);
   });
@@ -404,7 +404,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_LENGTH, intLit(13))
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.minLength, 13, 'minLength must equal xsd:length value');
     assert.strictEqual(delta.maxLength, 13, 'maxLength must equal xsd:length value');
@@ -421,7 +421,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       facetString(bnode, XSD_PATTERN, '^\\d{13}$')
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.pattern, '^\\d{13}$');
   });
@@ -437,7 +437,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_FRACTION_DIGITS, intLit(2))
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.ok(typeof delta.multipleOf === 'number', 'multipleOf must be present');
     assert.ok(
@@ -455,7 +455,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_FRACTION_DIGITS, intLit(0))
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.ok(typeof delta.multipleOf === 'number', 'multipleOf must be present');
     assert.strictEqual(delta.multipleOf, 1);
@@ -473,7 +473,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       blankQuad(bnode, XSD_TOTAL_DIGITS, intLit(10))
     ];
     const ctx = makeCtx(quads);
-    const delta = requireDelta(importDatatypes(quads, ctx).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, ctx).schemaDeltas, dt);
 
     // No JSON Schema keyword for totalDigits
     assert.strictEqual(delta.multipleOf, undefined);
@@ -495,7 +495,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       facetString(bnode, XSD_WHITE_SPACE, 'collapse')
     ];
     const ctx = makeCtx(quads);
-    const delta = requireDelta(importDatatypes(quads, ctx).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, ctx).schemaDeltas, dt);
 
     assert.strictEqual(delta.type, 'string');
     // No whiteSpace-related key in the delta
@@ -519,7 +519,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         'limitedRun'
       ], bEquiv)
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.deepEqual(delta.enum, [
       'inPrint',
@@ -541,7 +541,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         intLit(3)
       ])
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.deepEqual(delta.enum, [
       1,
@@ -571,7 +571,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       facetString(bRestr3, XSD_ENUMERATION, 'blue')
     ];
     const ctx = makeCtx(quads);
-    const delta = requireDelta(importDatatypes(quads, ctx).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, ctx).schemaDeltas, dt);
 
     // Type still emitted from owl:onDatatype
     assert.strictEqual(delta.type, 'string');
@@ -598,7 +598,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1),
       facetNumeric(bMax, XSD_MAX_INCLUSIVE, 5)
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.type, 'integer');
     assert.strictEqual(delta.minimum, 1);
@@ -619,7 +619,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       blankQuad(bMin, XSD_MIN_LENGTH, intLit(1)),
       blankQuad(bMax, XSD_MAX_LENGTH, intLit(100))
     ];
-    const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+    const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
     assert.strictEqual(delta.type, 'string');
     assert.strictEqual(delta.minLength, 1);
@@ -644,7 +644,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       ...makeWithRestrictions(dt2, [bnode2]),
       facetNumeric(bnode2, XSD_MIN_INCLUSIVE, 0)
     ];
-    const fragment = importDatatypes(quads, makeCtx(quads));
+    const fragment = Datatypes.dispatch(quads, makeCtx(quads));
 
     assert.strictEqual(fragment.schemaDeltas.size, 2);
 
@@ -664,7 +664,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
   void it('accepts rdfs:Datatype in compact prefixed form', () => {
     const dt = 'https://ex.com/CompactDT';
     const quads: QuadInterface[] = [Terms.quad(Terms.iri(dt), Terms.iri('rdf:type'), Terms.iri('rdfs:Datatype'))];
-    const fragment = importDatatypes(quads, makeCtx(quads));
+    const fragment = Datatypes.dispatch(quads, makeCtx(quads));
 
     assert.strictEqual(fragment.schemaDeltas.size, 1);
     assert.ok(fragment.schemaDeltas.has(dt));
@@ -685,7 +685,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 0)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'number');
       assert.strictEqual(delta.minimum, 0);
@@ -705,7 +705,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         blankQuad(bMin, XSD_MIN_LENGTH, intLit(1)),
         blankQuad(bMax, XSD_MAX_LENGTH, intLit(100))
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'string');
       assert.strictEqual(delta.minLength, 1);
@@ -721,7 +721,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         ...makeWithRestrictions(dt, [bPat]),
         facetString(bPat, XSD_PATTERN, '^[A-Z]{2}$')
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'string');
       assert.strictEqual(delta.pattern, '^[A-Z]{2}$');
@@ -742,7 +742,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         declareDatatype(dt),
         ...makeEnumDatatypeQuads(dt, currencies, bEquiv)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.deepEqual(delta.enum, currencies);
       assert.strictEqual(delta.type, 'string');
@@ -757,7 +757,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         ...makeWithRestrictions(dt, [bPat]),
         facetString(bPat, XSD_PATTERN, '^\\d{13}$')
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'string');
       assert.strictEqual(delta.pattern, '^\\d{13}$');
@@ -772,7 +772,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 0)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'integer');
       assert.strictEqual(delta.minimum, 0);
@@ -787,7 +787,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'integer');
       assert.strictEqual(delta.minimum, 1);
@@ -802,7 +802,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'integer');
       assert.strictEqual(delta.minimum, 1);
@@ -822,7 +822,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         blankQuad(bMin, XSD_MIN_LENGTH, intLit(1)),
         blankQuad(bMax, XSD_MAX_LENGTH, intLit(200))
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'string');
       assert.strictEqual(delta.minLength, 1);
@@ -843,7 +843,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         blankQuad(bMin, XSD_MIN_LENGTH, intLit(3)),
         blankQuad(bMax, XSD_MAX_LENGTH, intLit(12))
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'string');
       assert.strictEqual(delta.minLength, 3);
@@ -859,7 +859,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'integer');
       assert.strictEqual(delta.minimum, 1);
@@ -876,7 +876,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
           'limitedRun'
         ], bEquiv)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.deepEqual(delta.enum, [
         'inPrint',
@@ -895,7 +895,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'integer');
       assert.strictEqual(delta.minimum, 1);
@@ -915,7 +915,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1),
         facetNumeric(bMax, XSD_MAX_INCLUSIVE, 5)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'integer');
       assert.strictEqual(delta.minimum, 1);
@@ -939,7 +939,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 0),
         facetNumeric(bMax, XSD_MAX_INCLUSIVE, 100)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'integer');
       assert.strictEqual(delta.minimum, 0);
@@ -960,7 +960,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         blankQuad(bMin, XSD_MIN_LENGTH, intLit(1)),
         blankQuad(bMax, XSD_MAX_LENGTH, intLit(200))
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'string');
       assert.strictEqual(delta.minLength, 1);
@@ -981,7 +981,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         blankQuad(bMin, XSD_MIN_LENGTH, intLit(1)),
         blankQuad(bMax, XSD_MAX_LENGTH, intLit(500))
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'string');
       assert.strictEqual(delta.minLength, 1);
@@ -997,7 +997,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
         ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 0)
       ];
-      const delta = requireDelta(importDatatypes(quads, makeCtx(quads)).schemaDeltas, dt);
+      const delta = requireDelta(Datatypes.dispatch(quads, makeCtx(quads)).schemaDeltas, dt);
 
       assert.strictEqual(delta.type, 'number');
       assert.strictEqual(delta.minimum, 0);

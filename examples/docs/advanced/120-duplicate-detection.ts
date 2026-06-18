@@ -47,7 +47,7 @@ let strictModeThrew = false;
 
 try {
   JsonTology.create({
-    'baseIRI': 'https://bookstore.example',
+    'baseIri': 'https://bookstore.example',
     'schemas': [
       IsbnSchema,
       BookWithInlineIsbn
@@ -77,6 +77,10 @@ const duplicates = registry.findDuplicates();
 console.assert(duplicates.length > 0, 'findDuplicates returns at least one duplicate entry');
 
 const entry = duplicates[0];
+
+if (entry === undefined) {
+  throw new Error('expected at least one duplicate entry');
+}
 
 console.assert(
   entry.schemaId === BookWithInlineIsbn.$id,

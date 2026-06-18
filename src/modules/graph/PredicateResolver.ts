@@ -1,7 +1,7 @@
 import type { JsonSchemaType } from '../../types/Schema.js';
-import type { PredicateForType } from '../../types/PredicateFor.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
-import { isRecord } from '../data/DataTypes.js';
+import type { PredicateForType } from '../../types/PredicateForType.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import { DataType } from '../data/DataType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
@@ -59,7 +59,7 @@ function assertPredicateIriSafe(iri: string): void {
  * `$id` from the property schema. Returns the validated IRI or `undefined`.
  */
 function resolveSchemaAnnotation(propertySchema: JsonSchemaType): string | undefined {
-  if (!isRecord(propertySchema)) {
+  if (!DataType.isRecord(propertySchema)) {
     return undefined;
   }
 
@@ -120,15 +120,15 @@ function resolveViaCallback(
 }
 
 /**
- * Step 4: build the canonical flat predicate IRI from `baseIRI` and
+ * Step 4: build the canonical flat predicate IRI from `baseIri` and
  * `propertyName`, inserting a `/` separator unless the base already ends with
  * a delimiter (`/`, `#`, or `:` for URN namespaces).
  */
-function resolveCanonicalFlat(baseIRI: string, propertyName: string): string {
-  const endsWithDelimiter = baseIRI.endsWith('/') || baseIRI.endsWith('#') || baseIRI.endsWith(':');
+function resolveCanonicalFlat(baseIri: string, propertyName: string): string {
+  const endsWithDelimiter = baseIri.endsWith('/') || baseIri.endsWith('#') || baseIri.endsWith(':');
   const separator = endsWithDelimiter ? '' : '/';
 
-  return `${baseIRI}${separator}${propertyName}`;
+  return `${baseIri}${separator}${propertyName}`;
 }
 
 /**
@@ -141,7 +141,7 @@ function resolveCanonicalFlat(baseIRI: string, propertyName: string): string {
  *
  * @example
  * ```ts
- * const resolve = PredicateResolver.forConfig({ baseIRI: 'https://example.com', enableCanonicalPredicates: true, predicateFor: undefined });
+ * const resolve = PredicateResolver.forConfig({ baseIri: 'https://example.com', enableCanonicalPredicates: true, predicateFor: undefined });
  * const iri = resolve({ classId: 'https://example.com/Book', propertyName: 'title', propertySchema: {} });
  * ```
  *
@@ -152,12 +152,12 @@ function resolveCanonicalFlat(baseIRI: string, propertyName: string): string {
  */
 export const PredicateResolver = {
   /**
-   * Returns a closure that captures `baseIRI`, `enableCanonicalPredicates`, and
+   * Returns a closure that captures `baseIri`, `enableCanonicalPredicates`, and
    * `predicateFor`, so call-sites only need to pass `classId`, `propertyName`,
    * and `propertySchema`.
    */
   forConfig(config: {
-    'baseIRI': string;
+    'baseIri': string;
     'enableCanonicalPredicates': boolean | undefined;
     'predicateFor': PredicateForType | undefined;
   }): PredicateResolverFnType {
@@ -177,14 +177,14 @@ export const PredicateResolver = {
    * 1. Explicit per-property `x-jt-predicate` string annotation (non-empty).
    * 2. Property `$id` that is an absolute IRI (contains `://` after a non-empty scheme).
    * 3. Resolver: `predicateFor` callback — if it returns a string, that wins.
-   * 4. Default — canonical flat: `baseIRI + propertyName` when `enableCanonicalPredicates !== false`.
+   * 4. Default — canonical flat: `baseIri + propertyName` when `enableCanonicalPredicates !== false`.
    * 5. Class-scoped (DTO opt-out, `enableCanonicalPredicates: false`): `classId#propertyName`.
    *
    * All explicit predicates from steps 1 and 2 are validated for control
    * characters and spaces (throws `GraphError` with code `INVALID_PREDICATE_IRI`).
    */
   resolve(args: {
-    'baseIRI': string;
+    'baseIri': string;
     'classId': string;
     'enableCanonicalPredicates': boolean | undefined;
     'predicateFor': PredicateForType | undefined;
@@ -192,7 +192,7 @@ export const PredicateResolver = {
     'propertySchema': JsonSchemaType;
   }): string {
     const {
-      baseIRI,
+      baseIri,
       classId,
       enableCanonicalPredicates,
       predicateFor,
@@ -220,7 +220,7 @@ export const PredicateResolver = {
 
     // 4. Default — canonical flat.
     if (enableCanonicalPredicates !== false) {
-      const canonicalIri = resolveCanonicalFlat(baseIRI, propertyName);
+      const canonicalIri = resolveCanonicalFlat(baseIri, propertyName);
 
       assertSingleFragment(canonicalIri);
 

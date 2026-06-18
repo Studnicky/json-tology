@@ -1,6 +1,6 @@
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
-import { isTrustedFormatPredicate } from '../../format/FormatRegistry.js';
+import { FormatRegistry } from '../../format/FormatRegistry.js';
 import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
@@ -118,7 +118,7 @@ export class Scalars {
 
     let passed: boolean;
 
-    if (isTrustedFormatPredicate(formatValidator)) {
+    if (FormatRegistry.isTrustedFormatPredicate(formatValidator)) {
       // Built-in validators are total functions — skip the try/catch on the hot path.
       passed = formatValidator(value);
     } else {

@@ -2,21 +2,21 @@
  * SchemaCompilerPlan — plan-time graph helpers and node validation plan builder.
  *
  * Exports:
- *   buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
+ *   SchemaCompilerPlan.buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
  */
 
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
-import type { ExecContextType } from '../../types/ExecContext.js';
-import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntry.js';
-import type { CustomKeywordEntryType } from '../../types/CustomKeywordEntry.js';
-import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlan.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContext.js';
+import type { ExecContextType } from '../../types/ExecContextType.js';
+import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntryType.js';
+import type { CustomKeywordEntryType } from '../../types/CustomKeywordEntryType.js';
+import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlanType.js';
+import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContextType.js';
 import type {
   AllowedKeysResultType,
   BranchRefResultType,
@@ -38,26 +38,26 @@ import type {
   PropValidatorsMapType,
   ValidateWithErrorsResultType
 } from '../../types/Validation.js';
-import type { LookupSchemaFnType } from '../../types/LookupSchema.js';
-import type { PlanCompileWithSemanticsType } from '../../types/PlanCompileOptions.js';
-import type { CollectBranchOptionsType } from '../../types/CollectBranchOptions.js';
-import type { PlanAllowedKeysOptionsType } from '../../types/PlanAllowedKeysOptions.js';
-import type { PlanPreludeType } from '../../types/PlanPrelude.js';
-import type { PropertyDefaultsOptionsType } from '../../types/PropertyDefaultsOptions.js';
-import type { PropertyValidatorsOptionsType } from '../../types/PropertyValidatorsOptions.js';
-import type { RefValidatorOptionsType } from '../../types/RefValidatorOptions.js';
-import type { RefTargetType } from '../../types/RefTarget.js';
-import type { DynamicRefValidatorOptionsType } from '../../types/DynamicRefValidatorOptions.js';
-import type { ResolveScanRefOptionsType } from '../../types/ResolveScanRefOptions.js';
-import type { ScanConditionalOptionsType } from '../../types/ScanConditionalOptions.js';
-import type { WalkInheritedRefOptionsType } from '../../types/WalkInheritedRefOptions.js';
-import type { ConstraintValidatorsResult } from '../../types/ConstraintValidatorsResult.js';
+import type { LookupSchemaFnType } from '../../types/LookupSchemaFnType.js';
+import type { PlanCompileWithSemanticsType } from '../../types/PlanCompileWithSemanticsType.js';
+import type { CollectBranchOptionsType } from '../../types/CollectBranchOptionsType.js';
+import type { PlanAllowedKeysOptionsType } from '../../types/PlanAllowedKeysOptionsType.js';
+import type { PlanPreludeType } from '../../types/PlanPreludeType.js';
+import type { PropertyDefaultsOptionsType } from '../../types/PropertyDefaultsOptionsType.js';
+import type { PropertyValidatorsOptionsType } from '../../types/PropertyValidatorsOptionsType.js';
+import type { RefValidatorOptionsType } from '../../types/RefValidatorOptionsType.js';
+import type { RefTargetType } from '../../types/RefTargetType.js';
+import type { DynamicRefValidatorOptionsType } from '../../types/DynamicRefValidatorOptionsType.js';
+import type { ResolveScanRefOptionsType } from '../../types/ResolveScanRefOptionsType.js';
+import type { ScanConditionalOptionsType } from '../../types/ScanConditionalOptionsType.js';
+import type { WalkInheritedRefOptionsType } from '../../types/WalkInheritedRefOptionsType.js';
+import type { ConstraintValidatorsResultType } from '../../types/ConstraintValidatorsResultType.js';
 import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
 import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
-import { RefResolver } from './RefResolver.js';
+import { RefResolver } from '../graph/RefResolver.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
@@ -87,10 +87,6 @@ const typePredicateNull = (value: unknown): boolean => {
 const typePredicateArray = (value: unknown): boolean => {
   return Array.isArray(value);
 };
-const typePredicateObject = (value: unknown): boolean => {
-  return value !== null && !Array.isArray(value) && typeof value === 'object';
-};
-
 const singleTypePredicates = new Map<string, (v: unknown) => boolean>([
   [
     'array',
@@ -114,7 +110,7 @@ const singleTypePredicates = new Map<string, (v: unknown) => boolean>([
   ],
   [
     'object',
-    typePredicateObject
+    DataType.isRecord
   ],
   [
     'string',
@@ -128,14 +124,18 @@ function buildTypePredicate(types: string[]): ((v: unknown) => boolean) | undefi
   }
 
   if (types.length === 1) {
-    const pred = singleTypePredicates.get(types[0]);
+    const singleType = types[0];
+
+    if (singleType === undefined) {
+      return undefined;
+    }
+
+    const pred = singleTypePredicates.get(singleType);
 
     // Return the specialized predicate if known; fall back to Predicates.matchesType for exotic types.
     if (pred !== undefined) {
       return pred;
     }
-
-    const singleType = types[0];
 
     return (value: unknown): boolean => {
       // exotic single type — use the same string-comparison fallback as Predicates.inferValueType
@@ -514,7 +514,7 @@ function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithError
     // Direct construction avoids the spread overhead on the hot validation path.
     const strictCtx: ExecContextType = {
       ...ctx,
-      'doCoerce': false
+      'coerce': false
     };
 
     return inner(value, path, strictCtx);
@@ -621,10 +621,16 @@ function resolveDynamicRefTarget(
 ): RefTargetType | undefined {
   if (dynamicRef === '#') {
     for (let index = dynamicScope.length - 1; index >= 0; index--) {
-      if (dynamicScope[index].anchor === '') {
+      const scopeEntry = dynamicScope[index];
+
+      if (scopeEntry === undefined) {
+        continue;
+      }
+
+      if (scopeEntry.anchor === '') {
         return {
-          'graph': dynamicScope[index].graph,
-          'node': dynamicScope[index].node
+          'graph': scopeEntry.graph,
+          'node': scopeEntry.node
         };
       }
     }
@@ -749,7 +755,7 @@ function buildPropertyDefaults(opts: PropertyDefaultsOptionsType): PropertyDefau
     key,
     propNode
   ] of propertyEntries) {
-    if (!isRecord(propNode.schema)) {
+    if (!DataType.isRecord(propNode.schema)) {
       continue;
     }
     const propSem = graph.semantics(propNode);
@@ -1020,7 +1026,7 @@ function buildPlanDepRequired(dependentRequired: Readonly<Record<string, unknown
   return entries;
 }
 
-function buildPlanConstraintValidators(opts: PlanCompileWithSemanticsType): ConstraintValidatorsResult {
+function buildPlanConstraintValidators(opts: PlanCompileWithSemanticsType): ConstraintValidatorsResultType {
   const {
     context, formatRegistry, graph, lookupSchema, sem
   } = opts;
@@ -1188,7 +1194,7 @@ function compileRdfsRangeValidator(
     ctx.refStack.add(rangeRefKey);
 
     try {
-      if (isRecord(value)) {
+      if (DataType.isRecord(value)) {
         return rangeValidator(value, path, ctx);
       }
 
@@ -1202,7 +1208,7 @@ function compileRdfsRangeValidator(
           i,
           item
         ] of items.entries()) {
-          if (isRecord(item) || Array.isArray(item)) {
+          if (DataType.isRecord(item) || Array.isArray(item)) {
             const itemRes = rangeValidator(item, `${path}/${i}`, ctx);
 
             if (!itemRes.valid) {
@@ -1251,7 +1257,7 @@ function compileRdfsRangeValidator(
  *
  * @example
  * ```ts
- * const plan = buildNodePlan(context, graphNode, formatRegistry, graph);
+ * const plan = SchemaCompilerPlan.buildNodePlan(context, graphNode, formatRegistry, graph);
  * // plan.propValidators, plan.allOfValidators, etc. are ready for execution
  * ```
  *
@@ -1260,244 +1266,246 @@ function compileRdfsRangeValidator(
  * @see {@link CompiledNodeValidationPlanType}
  * @group SchemaCompiler
  */
-export function buildNodePlan(
-  context: SchemaCompilerValidatePlanContextType,
-  graphNode: SchemaGraphNodeType,
-  formatRegistry: FormatRegistryInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema?: LookupSchemaFnType,
-  lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
-): CompiledNodeValidationPlanType {
-  const sem = graph.semantics(graphNode);
-  const propertyEntries = sem.properties;
+export class SchemaCompilerPlan {
+  static buildNodePlan(
+    context: SchemaCompilerValidatePlanContextType,
+    graphNode: SchemaGraphNodeType,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
+    lookupSchema?: LookupSchemaFnType,
+    lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
+  ): CompiledNodeValidationPlanType {
+    const sem = graph.semantics(graphNode);
+    const propertyEntries = sem.properties;
 
-  const planSemOpts: PlanCompileWithSemanticsType = {
-    context,
-    formatRegistry,
-    graph,
-    'lookupSchema': lookupSchema,
-    sem
-  };
+    const planSemOpts: PlanCompileWithSemanticsType = {
+      context,
+      formatRegistry,
+      graph,
+      'lookupSchema': lookupSchema,
+      sem
+    };
 
-  const {
-    additionalValidator,
-    complementValidator,
-    depRequiredEntries,
-    formatValidator,
-    patternRegex,
-    propertyNamesValidator
-  } = buildPlanPrelude(planSemOpts);
+    const {
+      additionalValidator,
+      complementValidator,
+      depRequiredEntries,
+      formatValidator,
+      patternRegex,
+      propertyNamesValidator
+    } = buildPlanPrelude(planSemOpts);
 
-  const patternPropValidators = buildPlanPatternPropValidators(planSemOpts);
+    const patternPropValidators = buildPlanPatternPropValidators(planSemOpts);
 
-  const {
-    containsValidator,
-    itemValidator,
-    prefixValidators
-  } = buildPlanArrayValidators(planSemOpts);
+    const {
+      containsValidator,
+      itemValidator,
+      prefixValidators
+    } = buildPlanArrayValidators(planSemOpts);
 
-  const {
-    allOfValidators,
-    anyOfValidators,
-    oneOfValidators
-  } = buildPlanCompositionValidators(planSemOpts);
+    const {
+      allOfValidators,
+      anyOfValidators,
+      oneOfValidators
+    } = buildPlanCompositionValidators(planSemOpts);
 
-  const {
-    elseValidator,
-    ifValidator,
-    thenValidator
-  } = buildPlanConditionalValidators(planSemOpts);
+    const {
+      elseValidator,
+      ifValidator,
+      thenValidator
+    } = buildPlanConditionalValidators(planSemOpts);
 
-  const depSchemaValidators = buildPlanDependentSchemaValidators(planSemOpts);
-  const enumSet = buildEnumSet(sem.enumValues);
+    const depSchemaValidators = buildPlanDependentSchemaValidators(planSemOpts);
+    const enumSet = buildEnumSet(sem.enumValues);
 
-  const {
-    allowedKeys,
-    allowedKeysForStrip,
-    propertyAliases
-  } = buildPlanAllowedKeys({
-    graph,
-    lookupGraph,
-    'propertyEntries': propertyEntries,
-    sem
-  });
+    const {
+      allowedKeys,
+      allowedKeysForStrip,
+      propertyAliases
+    } = buildPlanAllowedKeys({
+      graph,
+      lookupGraph,
+      'propertyEntries': propertyEntries,
+      sem
+    });
 
-  const jtExtra = sem.jtConfig?.extra;
-  const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
+    const jtExtra = sem.jtConfig?.extra;
+    const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
 
-  const propertyZeroValueSynthesizers = new Map<string, () => unknown>();
-  const semRequired = sem.required;
+    const propertyZeroValueSynthesizers = new Map<string, () => unknown>();
+    const semRequired = sem.required;
 
-  if (semRequired.length > 0) {
-    for (const key of semRequired) {
-      const propNode = sem.properties.get(key);
+    if (semRequired.length > 0) {
+      for (const key of semRequired) {
+        const propNode = sem.properties.get(key);
 
-      if (propNode === undefined) {
-        propertyZeroValueSynthesizers.set(key, (): unknown => {
-          return null;
-        });
-      } else {
-        const capturedNode = propNode;
-        const capturedGraph = graph;
-        const capturedLookup = lookupSchema;
-        const capturedLookupGraph = lookupGraph;
+        if (propNode === undefined) {
+          propertyZeroValueSynthesizers.set(key, (): unknown => {
+            return null;
+          });
+        } else {
+          const capturedNode = propNode;
+          const capturedGraph = graph;
+          const capturedLookup = lookupSchema;
+          const capturedLookupGraph = lookupGraph;
 
-        propertyZeroValueSynthesizers.set(key, (): unknown => {
-          return context.synthesizeZeroValue(capturedNode, capturedGraph, capturedLookup, capturedLookupGraph);
-        });
+          propertyZeroValueSynthesizers.set(key, (): unknown => {
+            return context.synthesizeZeroValue(capturedNode, capturedGraph, capturedLookup, capturedLookupGraph);
+          });
+        }
       }
     }
-  }
 
-  const additionalIsFalse = sem.additionalPropertiesNode === false;
-  const propValidators = compilePropertyValidators({
-    'configStrict': sem.jtConfig?.strict,
-    context,
-    formatRegistry,
-    graph,
-    'lookupSchema': lookupSchema,
-    'propertyEntries': propertyEntries
-  });
-  const propertyDefaults = buildPropertyDefaults({
-    context,
-    graph,
-    'lookupSchema': lookupSchema,
-    'propertyEntries': propertyEntries
-  });
-  const requiredArr = sem.required.length > 0 ? sem.required : undefined;
+    const additionalIsFalse = sem.additionalPropertiesNode === false;
+    const propValidators = compilePropertyValidators({
+      'configStrict': sem.jtConfig?.strict,
+      context,
+      formatRegistry,
+      graph,
+      'lookupSchema': lookupSchema,
+      'propertyEntries': propertyEntries
+    });
+    const propertyDefaults = buildPropertyDefaults({
+      context,
+      graph,
+      'lookupSchema': lookupSchema,
+      'propertyEntries': propertyEntries
+    });
+    const requiredArr = sem.required.length > 0 ? sem.required : undefined;
 
-  // Precompute option bags once at compile time — avoids per-value object allocation.
-  const arrOpts: ArrayValidationOptionsType = {
-    containsValidator,
-    itemValidator,
-    'maxContains': sem.maxContains,
-    'maxItems': sem.maxItems,
-    'minContains': sem.minContains,
-    'minItems': sem.minItems,
-    prefixValidators,
-    'uniqueItems': sem.uniqueItems
-  };
+    // Precompute option bags once at compile time — avoids per-value object allocation.
+    const arrOpts: ArrayValidationOptionsType = {
+      containsValidator,
+      itemValidator,
+      'maxContains': sem.maxContains,
+      'maxItems': sem.maxItems,
+      'minContains': sem.minContains,
+      'minItems': sem.minItems,
+      prefixValidators,
+      'uniqueItems': sem.uniqueItems
+    };
 
-  const objOpts: ObjectValidationOptionsType = {
-    additionalIsFalse,
-    additionalValidator,
-    allowedKeys,
-    allowedKeysForStrip,
-    jtExtra,
-    'maxProperties': sem.maxProperties,
-    'minProperties': sem.minProperties,
-    patternPropValidators,
-    propertyAliases,
-    propertyDefaults,
-    propertyZeroValueSynthesizers,
-    propValidators,
-    'required': requiredArr
-  };
+    const objOpts: ObjectValidationOptionsType = {
+      additionalIsFalse,
+      additionalValidator,
+      allowedKeys,
+      allowedKeysForStrip,
+      jtExtra,
+      'maxProperties': sem.maxProperties,
+      'minProperties': sem.minProperties,
+      patternPropValidators,
+      propertyAliases,
+      propertyDefaults,
+      propertyZeroValueSynthesizers,
+      propValidators,
+      'required': requiredArr
+    };
 
-  return {
-    additionalIsFalse,
-    additionalValidator,
-    allOfValidators,
-    allowedKeys,
-    allowedKeysForStrip,
-    anyOfValidators,
-    arrOpts,
-    complementValidator,
-    'constVal': sem.constValue,
-    containsValidator,
-    'contentAssertionsEnabled': context.appliesFormatAssertions(sem),
-    'contentEncoding': sem.contentEncoding,
-    'contentMediaType': sem.contentMediaType,
-    'customKeywordEntries': buildCustomKeywordEntries(context.activeCustomKeywords, sem),
-    'defaultValue': sem.defaultValue,
-    depRequiredEntries,
-    depSchemaValidators,
-    'dynamicRefValidator': typeof sem.dynamicRef === 'string'
-      ? compileDynamicRefValidator({
+    return {
+      additionalIsFalse,
+      additionalValidator,
+      allOfValidators,
+      allowedKeys,
+      allowedKeysForStrip,
+      anyOfValidators,
+      arrOpts,
+      complementValidator,
+      'constVal': sem.constValue,
+      containsValidator,
+      'contentAssertionsEnabled': context.appliesFormatAssertions(sem),
+      'contentEncoding': sem.contentEncoding,
+      'contentMediaType': sem.contentMediaType,
+      'customKeywordEntries': buildCustomKeywordEntries(context.activeCustomKeywords, sem),
+      'defaultValue': sem.defaultValue,
+      depRequiredEntries,
+      depSchemaValidators,
+      'dynamicRefValidator': typeof sem.dynamicRef === 'string'
+        ? compileDynamicRefValidator({
+          context,
+          'dynamicRef': sem.dynamicRef,
+          formatRegistry,
+          graph,
+          lookupGraph,
+          'lookupSchema': lookupSchema
+        })
+        : undefined,
+      'dynamicScopeEntry': typeof sem.dynamicAnchor === 'string'
+        ? {
+          'anchor': sem.dynamicAnchor,
+          graph,
+          'node': graphNode
+        }
+        : undefined,
+      elseValidator,
+      enumSet,
+      'enumValues': sem.enumValues,
+      'exclusiveMaximum': sem.exclusiveMaximum,
+      'exclusiveMinimum': sem.exclusiveMinimum,
+      'format': sem.format,
+      formatValidator,
+      'hasConst': sem.hasConst,
+      'hasDefault': sem.hasDefault,
+      ifValidator,
+      itemValidator,
+      'jtExtra': jtExtra,
+      'jtStrictPerField': jtStrictPerField,
+      'maxContains': sem.maxContains,
+      'maximum': sem.maximum,
+      'maxItems': sem.maxItems,
+      'maxLength': sem.maxLength,
+      'maxProperties': sem.maxProperties,
+      'minContains': sem.minContains,
+      'minimum': sem.minimum,
+      'minItems': sem.minItems,
+      'minLength': sem.minLength,
+      'minProperties': sem.minProperties,
+      'multipleOf': sem.multipleOf,
+      objOpts,
+      oneOfValidators,
+      'pattern': sem.pattern,
+      patternPropValidators,
+      patternRegex,
+      prefixValidators,
+      propertyAliases,
+      propertyDefaults,
+      propertyNamesValidator,
+      propertyZeroValueSynthesizers,
+      propValidators,
+      'rdfsRangeValidator': compileRdfsRangeValidator(
+        sem.rdfsRange,
         context,
-        'dynamicRef': sem.dynamicRef,
+        formatRegistry,
+        graph,
+        lookupSchema,
+        lookupGraph
+      ),
+      'refValidator': compileRefValidator({
+        context,
         formatRegistry,
         graph,
         lookupGraph,
-        'lookupSchema': lookupSchema
-      })
-      : undefined,
-    'dynamicScopeEntry': typeof sem.dynamicAnchor === 'string'
-      ? {
-        'anchor': sem.dynamicAnchor,
+        'lookupSchema': lookupSchema,
+        'ref': sem.ref
+      }),
+      'required': requiredArr,
+      thenValidator,
+      'typePredicate': buildTypePredicate(sem.schemaTypes),
+      'types': sem.schemaTypes,
+      'unevaluatedItemsValidator': compileUnevaluatedNode(
+        sem.unevaluatedItemsNode,
+        context,
+        formatRegistry,
         graph,
-        'node': graphNode
-      }
-      : undefined,
-    elseValidator,
-    enumSet,
-    'enumValues': sem.enumValues,
-    'exclusiveMaximum': sem.exclusiveMaximum,
-    'exclusiveMinimum': sem.exclusiveMinimum,
-    'format': sem.format,
-    formatValidator,
-    'hasConst': sem.hasConst,
-    'hasDefault': sem.hasDefault,
-    ifValidator,
-    itemValidator,
-    'jtExtra': jtExtra,
-    'jtStrictPerField': jtStrictPerField,
-    'maxContains': sem.maxContains,
-    'maximum': sem.maximum,
-    'maxItems': sem.maxItems,
-    'maxLength': sem.maxLength,
-    'maxProperties': sem.maxProperties,
-    'minContains': sem.minContains,
-    'minimum': sem.minimum,
-    'minItems': sem.minItems,
-    'minLength': sem.minLength,
-    'minProperties': sem.minProperties,
-    'multipleOf': sem.multipleOf,
-    objOpts,
-    oneOfValidators,
-    'pattern': sem.pattern,
-    patternPropValidators,
-    patternRegex,
-    prefixValidators,
-    propertyAliases,
-    propertyDefaults,
-    propertyNamesValidator,
-    propertyZeroValueSynthesizers,
-    propValidators,
-    'rdfsRangeValidator': compileRdfsRangeValidator(
-      sem.rdfsRange,
-      context,
-      formatRegistry,
-      graph,
-      lookupSchema,
-      lookupGraph
-    ),
-    'refValidator': compileRefValidator({
-      context,
-      formatRegistry,
-      graph,
-      lookupGraph,
-      'lookupSchema': lookupSchema,
-      'ref': sem.ref
-    }),
-    'required': requiredArr,
-    thenValidator,
-    'typePredicate': buildTypePredicate(sem.schemaTypes),
-    'types': sem.schemaTypes,
-    'unevaluatedItemsValidator': compileUnevaluatedNode(
-      sem.unevaluatedItemsNode,
-      context,
-      formatRegistry,
-      graph,
-      lookupSchema
-    ),
-    'unevaluatedPropertiesValidator': compileUnevaluatedNode(
-      sem.unevaluatedPropertiesNode,
-      context,
-      formatRegistry,
-      graph,
-      lookupSchema
-    ),
-    'uniqueItems': sem.uniqueItems
-  };
+        lookupSchema
+      ),
+      'unevaluatedPropertiesValidator': compileUnevaluatedNode(
+        sem.unevaluatedPropertiesNode,
+        context,
+        formatRegistry,
+        graph,
+        lookupSchema
+      ),
+      'uniqueItems': sem.uniqueItems
+    };
+  }
 }

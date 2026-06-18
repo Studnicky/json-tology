@@ -154,7 +154,12 @@ void describe('SchemaGraphRelations.extractRelations()', { 'concurrency': true }
     const closedRels = filterByPredicate(relations, SH.closed);
 
     assert.ok(closedRels.length > 0, 'additionalProperties: false should emit sh:closed');
-    assert.equal(resolveTargetId(closedRels[0]), 'true');
+    const closedRel0 = closedRels.at(0);
+
+    if (closedRel0 === undefined) {
+      throw new Error('expected closedRels[0] to exist');
+    }
+    assert.equal(resolveTargetId(closedRel0), 'true');
   });
 
   void it('emits owl:oneOf for enum values', () => {

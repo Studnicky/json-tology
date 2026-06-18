@@ -3,7 +3,7 @@
  * the ClassExpressions dispatcher.
  */
 
-import type { ClassExprResolveContextType } from './ClassExprResolveContext.js';
+import type { ClassExprResolveContextType } from './ClassExprResolveContextType.js';
 
 export type ResolveBnodeOptionsType = ClassExprResolveContextType & {
   'bnodeId': string;

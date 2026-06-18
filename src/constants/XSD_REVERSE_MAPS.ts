@@ -19,7 +19,7 @@ import {
   OWL, XSD
 } from './IRI.js';
 import { STANDARD_PREFIXES } from './STANDARD_PREFIXES.js';
-import type { XsdEntryType } from '../types/XsdEntry.js';
+import type { XsdEntryType } from '../types/XsdEntryType.js';
 
 const RDF_NS = STANDARD_PREFIXES.rdf;
 const XSD_NS = STANDARD_PREFIXES.xsd;

@@ -4,22 +4,22 @@
 
 import type { InferType } from './Schema.js';
 import type { ValidationErrorSchema } from '../constants/SCHEMAS.js';
-import type { CustomKeywordEntryType } from '../types/CustomKeywordEntry.js';
-import type { ExecContextType } from '../types/ExecContext.js';
+import type { CustomKeywordEntryType } from '../types/CustomKeywordEntryType.js';
+import type { ExecContextType } from '../types/ExecContextType.js';
 
-export type { AllowedKeysResultType } from '../types/AllowedKeysResult.js';
+export type { AllowedKeysResultType } from '../types/AllowedKeysResultType.js';
 
-import type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntry.js';
-import type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntry.js';
-import type { RefTargetType } from '../types/RefTarget.js';
+import type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntryType.js';
+import type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntryType.js';
+import type { RefTargetType } from '../types/RefTargetType.js';
 
-export type { CompositionValidatorsResultType } from '../types/CompositionValidatorsResult.js';
-export type { ConditionalValidatorsResultType } from '../types/ConditionalValidatorsResult.js';
-export type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntry.js';
-export type { ExecContextType } from '../types/ExecContext.js';
-export type { KeyPatternCheckResultType } from '../types/KeyPatternCheckResult.js';
-export type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntry.js';
-export type { PlanArrayValidatorsType } from '../types/PlanArrayValidators.js';
+export type { CompositionValidatorsResultType } from '../types/CompositionValidatorsResultType.js';
+export type { ConditionalValidatorsResultType } from '../types/ConditionalValidatorsResultType.js';
+export type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntryType.js';
+export type { ExecContextType } from '../types/ExecContextType.js';
+export type { KeyPatternCheckResultType } from '../types/KeyPatternCheckResultType.js';
+export type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntryType.js';
+export type { PlanArrayValidatorsType } from '../types/PlanArrayValidatorsType.js';
 
 /**
  * Result of a boolean coercion attempt — `undefined` when the value is unrecognised.
@@ -209,7 +209,7 @@ export type ValidationErrorType = InferType<typeof ValidationErrorSchema>;
  * Named result type returned by every validate-with-errors call — validity flag and (potentially mutated) value.
  *
  * @remarks
- * When `applyDefaults`, `doCoerce`, or `stripUnknown` flags are set, the
+ * When `applyDefaults`, `coerce`, or `stripUnknown` flags are set, the
  * validator may mutate or replace the value in place. Callers must use the
  * returned `value` rather than the original argument after the call.
  *
@@ -234,14 +234,14 @@ export type ValidateWithErrorsResultType = {
  *
  * @remarks
  * Every schema node compiles to a function matching this signature. All
- * execution flags (collectErrors, applyDefaults, doCoerce, stripUnknown) are
+ * execution flags (collectErrors, applyDefaults, coerce, stripUnknown) are
  * bundled in the `ExecContextType` context object. The context also carries
  * the accumulated error list, ref-cycle guard stack, and dynamic scope.
  *
  * @example
  * ```ts
  * const validate: ValidateWithErrorsFnType = registry.compile(schema);
- * const ctx: ExecContextType = { errors: [], collectErrors: true, applyDefaults: false, doCoerce: false, ignoreAdditionalProperties: false, synthesizeDefaults: false, stripUnknown: false, refStack: new Set(), dynamicScope: [], evaluatedItems: undefined, evaluatedProperties: undefined, depth: 0, maxDepth: 100, trackEvaluated: false };
+ * const ctx: ExecContextType = { errors: [], collectErrors: true, applyDefaults: false, coerce: false, ignoreAdditionalProperties: false, synthesizeDefaults: false, stripUnknown: false, refStack: new Set(), dynamicScope: [], evaluatedItems: undefined, evaluatedProperties: undefined, depth: 0, maxDepth: 100, trackEvaluated: false };
  * const { valid } = validate(data, '', ctx);
  * ```
  *

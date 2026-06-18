@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import {
   BaseError, DecodeError, EncodeError, JsonTology, Transform, TransformError
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 
 // ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ const DateTimeSchema = {
 // decode's OUTPUT, so format validation runs on the decoded result.
 const TransformedDateSchema = Transform.create(DateTimeSchema, {
   'decode': (raw: { 'value': string }) => {
-    return brand<InferSchemaType<typeof DateTimeSchema>>(raw.value);
+    return Brand.cast<InferSchemaType<typeof DateTimeSchema>>(raw.value);
   },
   'encode': (value) => {
     return { 'value': value };
@@ -80,7 +80,7 @@ void describe('Transform.create()', () => {
       'name': 'happy: preserves schema identity after create',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
       }
@@ -95,7 +95,7 @@ void describe('Transform.create()', () => {
       'name': 'happy: decode normalizes the wire payload into the canonical string',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
       }
@@ -114,21 +114,21 @@ void describe('Transform.create()', () => {
       'name': 'unhappy: coerce() rejects invalid data',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
       }
     },
     {
       'check': (jt) => {
-        const wire = jt.encode(TransformedDateSchema, brand<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
+        const wire = jt.encode(TransformedDateSchema, Brand.cast<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
 
         assert.deepEqual(wire, { 'value': '2024-06-01T00:00:00.000Z' });
       },
       'name': 'happy: encode() converts back to wire format',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
       }
@@ -147,7 +147,7 @@ void describe('Transform.create()', () => {
       'name': 'edge: encode() returns value unchanged for non-transformed schemas',
       'setup': () => {
         const jt = JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [TransformedDateSchema] as const
         });
 
@@ -165,7 +165,7 @@ void describe('Transform.create()', () => {
       'name': 'edge: identity transform decode/encode round-trips unchanged',
       'setup': () => {
         return JsonTology.create({
-          'baseIRI': 'https://myapp.io',
+          'baseIri': 'https://myapp.io',
           'schemas': [IdentitySchema] as const
         });
       }
@@ -216,7 +216,7 @@ void describe('Transform.brand()', () => {
           } as const,
           'UserId'
         );
-        const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+        const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
         jt.set(UserIdSchema2);
         assert.equal(jt.validate(UserIdSchema2.$id, 'abc').length, 0);
@@ -224,8 +224,13 @@ void describe('Transform.brand()', () => {
         const wrongTypeErrors = jt.validate(UserIdSchema2.$id, 123);
 
         assert.equal(wrongTypeErrors.length, 1);
-        assert.equal(wrongTypeErrors.items[0]?.keyword, 'type');
-        assert.match(wrongTypeErrors.items[0]?.message ?? '', /must be string/u);
+        const wrongTypeItem0 = wrongTypeErrors.items.at(0);
+
+        if (wrongTypeItem0 === undefined) {
+          throw new Error('expected validation error at index 0');
+        }
+        assert.equal(wrongTypeItem0.keyword, 'type');
+        assert.match(wrongTypeItem0.message, /must be string/u);
       },
       'name': 'happy: branded schema validates correct type and rejects wrong type'
     },
@@ -239,7 +244,7 @@ void describe('Transform.brand()', () => {
           } as const,
           'ConstrainedId'
         );
-        const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+        const jt = JsonTology.create({ 'baseIri': 'https://myapp.io' });
 
         jt.set(ConstrainedId);
         assert.equal(jt.validate(ConstrainedId.$id, 'abc').length, 0);
@@ -247,8 +252,13 @@ void describe('Transform.brand()', () => {
         const tooShortErrors = jt.validate(ConstrainedId.$id, 'ab');
 
         assert.equal(tooShortErrors.length, 1);
-        assert.equal(tooShortErrors.items[0]?.keyword, 'minLength');
-        assert.match(tooShortErrors.items[0]?.message ?? '', /NOT have fewer than 3 characters/u);
+        const tooShortItem0 = tooShortErrors.items.at(0);
+
+        if (tooShortItem0 === undefined) {
+          throw new Error('expected validation error at index 0');
+        }
+        assert.equal(tooShortItem0.keyword, 'minLength');
+        assert.match(tooShortItem0.message, /NOT have fewer than 3 characters/u);
       },
       'name': 'edge: brand preserves validation constraints from base schema'
     }
@@ -292,7 +302,7 @@ void describe('Transform contract alignment', () => {
     },
     {
       'check': (jt) => {
-        const wire = jt.encode(TransformedDateSchema, brand<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
+        const wire = jt.encode(TransformedDateSchema, Brand.cast<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
 
         assert.deepEqual(wire, { 'value': '2024-06-01T00:00:00.000Z' });
       },
@@ -312,7 +322,7 @@ void describe('Transform contract alignment', () => {
   ];
 
   const jt = JsonTology.create({
-    'baseIRI': 'https://myapp.io',
+    'baseIri': 'https://myapp.io',
     'schemas': [
       TransformedDateSchema,
       UserSchema
@@ -419,7 +429,7 @@ void describe('Transform.chain()', () => {
       assert.equal(chained.$id, ChainSchema.$id);
 
       const jt = JsonTology.create({
-        'baseIRI': 'https://myapp.io',
+        'baseIri': 'https://myapp.io',
         'schemas': [chained] as const
       });
 
@@ -456,7 +466,7 @@ void describe('Transform bad paths', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -497,7 +507,7 @@ void describe('Transform bad paths', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -537,7 +547,7 @@ void describe('Transform bad paths', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -578,7 +588,7 @@ void describe('Transform bad paths', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -605,7 +615,7 @@ void describe('Transform bad paths', () => {
     assert.equal(chained.type, IdentityChainSchema.type);
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [chained] as const
     });
 
@@ -666,7 +676,7 @@ void describe('Transform error taxonomy — new contract coverage', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 
@@ -704,7 +714,7 @@ void describe('Transform error taxonomy — new contract coverage', () => {
     });
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://myapp.io',
+      'baseIri': 'https://myapp.io',
       'schemas': [transformed] as const
     });
 

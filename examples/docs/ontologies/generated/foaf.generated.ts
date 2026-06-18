@@ -96,7 +96,7 @@ export const foafSchemas = [
 ] as const;
 
 export const foaf = JsonTology.create({
-  "baseIRI": "http://xmlns.com/foaf/0.1",
+  "baseIri": "http://xmlns.com/foaf/0.1",
   "schemas": foafSchemas,
 } as const);
 

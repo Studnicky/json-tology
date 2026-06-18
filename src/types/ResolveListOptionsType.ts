@@ -3,7 +3,7 @@
  * member in the ClassExpressions dispatcher.
  */
 
-import type { ClassExprResolveContextType } from './ClassExprResolveContext.js';
+import type { ClassExprResolveContextType } from './ClassExprResolveContextType.js';
 
 export type ResolveListOptionsType = ClassExprResolveContextType & {
   'listHead': string;

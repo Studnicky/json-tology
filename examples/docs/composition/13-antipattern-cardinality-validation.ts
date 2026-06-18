@@ -13,7 +13,7 @@ const _StrictBook = Compose.subClassOf(
 );
 // doc example with synthetic fixture schemas (strict-graph default does not throw because no inline duplicates)
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [_StrictBook] as const
 });
 
@@ -41,7 +41,7 @@ const StrictBook2Schema = {
 } as const;
 
 const jt2 = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'schemas': [StrictBook2Schema] as const
 });
 

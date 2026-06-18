@@ -38,8 +38,8 @@ import type {
   SchemaGraphNodeType, SchemaGraphRelationType,
   SchemaGraphSemanticsType, StructureWarningType
 } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { PrefixMapType } from '../../types/OwlImport.js';
 import type {
   BuildRelationsOptionsType,
@@ -56,7 +56,7 @@ import type {
   SubjectPredicateQuadsIndexType,
   SubjectRelationsType
 } from '../../types/QuadBackedSchemaGraph.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import {
@@ -68,10 +68,10 @@ import {
   OWL_RESTRICTION_CONSTRAINT_IRIS,
   RDF_TYPE_PREDICATES
 } from '../../constants/ONTOLOGY_PREDICATES.js';
-import { Curie } from '../rdf/Curie.js';
-import { decodeLiteral } from '../rdf/Terms.js';
-import { Lists } from '../rdf/Lists.js';
-import { QuadFactory } from '../rdf/QuadFactory.js';
+import { Curie } from '../quads/Curie.js';
+import { Lists } from '../quads/Lists.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
+import { Terms } from '../quads/Terms.js';
 import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
 
 // OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
@@ -368,7 +368,13 @@ function resolveRestrictionBnode(opts: ResolveRestrictionOptionsType): OptionalR
   if (onPropertyQuads.length === 0) {
     return undefined;
   }
-  const onPropertyIri = curie.compact(onPropertyQuads[0].object.termType === 'NamedNode' ? onPropertyQuads[0].object.value : '');
+  const onPropertyQuad = onPropertyQuads[0];
+
+  if (onPropertyQuad === undefined) {
+    return undefined;
+  }
+
+  const onPropertyIri = curie.compact(onPropertyQuad.object.termType === 'NamedNode' ? onPropertyQuad.object.value : '');
 
   // Find the constraint predicate
   for (const [
@@ -398,7 +404,7 @@ function resolveRestrictionBnode(opts: ResolveRestrictionOptionsType): OptionalR
         break;
 
       case 'Literal':
-        value = decodeLiteral(constraintQuad.object);
+        value = Terms.decodeLiteral(constraintQuad.object);
         targetIri = String(constraintQuad.object.value);
 
         break;
@@ -461,7 +467,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
 
   public constructor(
     quads: readonly QuadInterface[],
-    options?: { 'baseIRI'?: string;
+    options?: { 'baseIri'?: string;
       'prefixes'?: PrefixMapType }
   ) {
     const mergedPrefixes: PrefixMapType = {
@@ -485,7 +491,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     });
 
     // Root schema stub — carries the base IRI so callers can inspect it.
-    this._rootSchema = { '$id': options?.baseIRI ?? '' };
+    this._rootSchema = { '$id': options?.baseIri ?? '' };
   }
 
   public allRelations(): SchemaGraphRelationType[] {
@@ -506,7 +512,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
    * case when the list is the value of `owl:withRestrictions`, `owl:hasKey`,
    * `owl:unionOf`, etc.).
    *
-   * Returns the typed JS value for Literal items (via `decodeLiteral`) and
+   * Returns the typed JS value for Literal items (via `Terms.decodeLiteral`) and
    * the IRI / bnode-id string for NamedNode / BlankNode items, preserving
    * the term-type so dispatchers can branch on the kind.
    */
@@ -554,11 +560,11 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
           });
           break;
         case 'Literal': {
-          const decoded = decodeLiteral(item);
+          const decoded = Terms.decodeLiteral(item);
 
           // Encode the typed JS value via String() so the `target` field
           // remains a plain string per the ListItemType contract; callers
-          // recover the typed value by re-applying decodeLiteral semantics
+          // recover the typed value by re-applying Terms.decodeLiteral semantics
           // through the `datatype` IRI we preserve below.
           result.push({
             'datatype': item.datatype.value,

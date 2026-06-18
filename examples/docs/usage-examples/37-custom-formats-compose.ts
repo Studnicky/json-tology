@@ -86,7 +86,7 @@ const formats: Record<string, (value: unknown) => boolean> = {
 };
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   // doc example with synthetic fixture schemas
   'enableStrictGraph': false,
   formats,

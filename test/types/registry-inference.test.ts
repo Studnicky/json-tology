@@ -52,7 +52,7 @@ const TagSchema = {
 // ---------------------------------------------------------------------------
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://example.io',
+  'baseIri': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [
     UserSchema,
@@ -103,7 +103,7 @@ if (false as boolean) {
 // ---------------------------------------------------------------------------
 
 const jt2 = JsonTology.create({
-  'baseIRI': 'https://example.io',
+  'baseIri': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [UserSchema] as const
 }).set(OrderSchema);
@@ -138,7 +138,7 @@ jt3.instantiate('https://example.io/Tag', { 'label': 'bar' });
 // ---------------------------------------------------------------------------
 
 const empty = JsonTology.create({
-  'baseIRI': 'https://example.io',
+  'baseIri': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [] as const
 });
@@ -225,7 +225,7 @@ const DuplicateB = {
 
 if (false as boolean) {
   JsonTology.create({
-    'baseIRI': 'https://example.io',
+    'baseIri': 'https://example.io',
     'enableStrictGraph': false,
     'schemas': [
       // @ts-expect-error — two schemas share '$id': 'https://example.io/Duplicate'
@@ -238,7 +238,7 @@ if (false as boolean) {
 
 // Positive: distinct $ids accept fine
 const _distinct = JsonTology.create({
-  'baseIRI': 'https://example.io',
+  'baseIri': 'https://example.io',
   'enableStrictGraph': false,
   'schemas': [
     UserSchema,

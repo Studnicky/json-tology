@@ -1,0 +1,46 @@
+/**
+ * Vocabulary plugin interface for extending json-tology with custom RDF vocabularies.
+ *
+ * Plugins can:
+ * - Register custom vocabulary prefixes (prefix → base IRI mappings)
+ * - Extract custom relations from schema extensions (unknown keywords)
+ * - Project custom relations into RDF quads
+ *
+ * @experimental This interface is subject to change before 1.0. The hook points
+ * (`extractRelations`, `project`) are likely to grow as the plugin surface matures.
+ */
+
+import type { SchemaGraphInterface } from './SchemaGraphInterface.js';
+import type {
+  SchemaGraphNodeType,
+  SchemaGraphRelationType,
+  SchemaGraphSemanticsType
+} from '../types/SchemaGraph.js';
+import type { QuadInterface } from './QuadInterface.js';
+
+export interface VocabularyPluginInterface {
+  /**
+   * Extract custom relations from a schema graph node.
+   * Called for each node after core relation extraction.
+   * Receives semantics.extensions (unknown keywords) for processing.
+   * Returns additional relations to add to the graph.
+   */
+  extractRelations?(
+    node: SchemaGraphNodeType,
+    semantics: SchemaGraphSemanticsType,
+    graph: SchemaGraphInterface
+  ): SchemaGraphRelationType[];
+
+  /** Prefix → base IRI mappings. Merged into active Curie instance. */
+  'prefixes': Record<string, string>;
+
+  /**
+   * Project a relation into RDF quads.
+   * Called for relations with predicates not in core RelationPredicateType.
+   * Must call emit() for each quad to be included in the output.
+   */
+  project?(
+    relation: SchemaGraphRelationType,
+    emit: (quad: QuadInterface) => void
+  ): void;
+}

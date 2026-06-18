@@ -1,4 +1,4 @@
-import type { CurieInterface } from '../interfaces/Curie.js';
+import type { CurieInterface } from '../interfaces/CurieInterface.js';
 import type {
   DefaultGraphTermType, IriTermType
 } from './Quad.js';

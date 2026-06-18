@@ -23,15 +23,14 @@ const _StatusSchema = {
 type Status = EnumValuesType<typeof _StatusSchema>;
 
 // ⊥ Don't do this — no default exhaustiveness check.
+// Adding a new union member (e.g. 'cancelled') silently falls through
+// to the implicit gap; the compiler emits no error.
 function describeUnsafe(status: Status): string {
   switch (status) {
     case 'pending': return 'Awaiting confirmation';
     case 'shipped': return 'In transit';
+    default: return 'unknown';
   }
-
-  // The function returns implicitly; adding a new union member would
-  // silently fall through this gap without a compile error.
-  return 'unknown';
 }
 
 // ✓ Do this — adding 'cancelled' to the enum without a case here is

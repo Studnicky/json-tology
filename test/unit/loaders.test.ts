@@ -211,26 +211,34 @@ void describe('Loaders.cached', () => {
     };
     const cached = Loaders.cached(inner, { 'maxSize': 2 });
 
+    const iri0 = iris.at(0);
+    const iri1 = iris.at(1);
+    const iri2 = iris.at(2);
+
+    if (iri0 === undefined || iri1 === undefined || iri2 === undefined) {
+      throw new Error('expected iris to have at least 3 elements');
+    }
+
     // Fill cache to maxSize: [S0, S1]
-    await cached(iris[0]);
-    await cached(iris[1]);
+    await cached(iri0);
+    await cached(iri1);
     assert.strictEqual(callCount, 2);
 
     // Both cached — no additional calls
-    await cached(iris[0]);
-    await cached(iris[1]);
+    await cached(iri0);
+    await cached(iri1);
     assert.strictEqual(callCount, 2, 'cached entries not re-fetched');
 
     // Fetch S2 — evicts S0 (oldest), cache = [S1, S2]
-    await cached(iris[2]);
+    await cached(iri2);
     assert.strictEqual(callCount, 3);
 
     // S1 is still cached
-    await cached(iris[1]);
+    await cached(iri1);
     assert.strictEqual(callCount, 3, 'S1 still cached after S0 eviction');
 
     // Re-fetch S0 (was evicted) — must call inner again
-    await cached(iris[0]);
+    await cached(iri0);
     assert.strictEqual(callCount, 4, 'evicted entry requires a fresh loader call');
   });
 });

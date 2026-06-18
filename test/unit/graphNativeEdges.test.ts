@@ -65,7 +65,12 @@ void describe('SchemaGraph — explicit domain edges', { 'concurrency': true }, 
     });
 
     assert.equal(domainRels.length, 1, 'exactly one rdfs:domain relation');
-    const target = domainRels[0].target;
+    const domainRel0 = domainRels.at(0);
+
+    if (domainRel0 === undefined) {
+      throw new Error('expected domainRel at 0');
+    }
+    const target = domainRel0.target;
 
     // The target should be the root node (Book), not the allOf member
     assert.ok(
@@ -92,7 +97,12 @@ void describe('SchemaGraph — explicit domain edges', { 'concurrency': true }, 
     });
 
     assert.equal(domainRels.length, 1, 'exactly one rdfs:domain relation (from authored)');
-    assert.equal(domainRels[0].target, 'https://example.com/OverriddenDomain', 'authored domain wins');
+    const authoredDomainRel0 = domainRels.at(0);
+
+    if (authoredDomainRel0 === undefined) {
+      throw new Error('expected domainRel at 0');
+    }
+    assert.equal(authoredDomainRel0.target, 'https://example.com/OverriddenDomain', 'authored domain wins');
   });
 
   void it('domainOf returns undefined for a non-property node (root)', () => {

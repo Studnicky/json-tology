@@ -34,7 +34,7 @@ const tboxJsonLd = bookstoreEntities.toTbox().jsonLd();
 // `register: true` (the default) registers all produced schemas so the registry
 // can resolve cross-schema $refs during validation.
 const freshJt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableStrictGraph': false
 });
 

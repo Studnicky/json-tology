@@ -63,7 +63,7 @@ export const ReviewSchema = {
     'rating': { '$ref': RatingScoreSchema.$id },
     'reviewId': { '$ref': ReviewIdSchema.$id },
     // reviewsBook — optional RDF-star annotated edge to the Book individual.
-    // When populated in a fixture, `toQuads` must receive a `graphIRI` option.
+    // When populated in a fixture, `toQuads` must receive a `graphIri` option.
     // Demonstrates jt:annotatedEdge: the ratingGiven annotation rides the
     // edge triple itself, not just as a scalar property on the Review.
     'reviewsBook': ReviewsBookEdge

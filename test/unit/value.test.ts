@@ -85,7 +85,7 @@ void describe('Value.create()', () => {
   } of primitiveScenarios) {
     void it(scenarioName, () => {
       const tology = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'schemas': [schema as SchemaWithId]
       });
 
@@ -191,7 +191,7 @@ void describe('Value.create()', () => {
   } of defaultScenarios) {
     void it(scenarioName, () => {
       const tology = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'schemas': schemaList as readonly SchemaWithId[]
       });
 
@@ -201,7 +201,7 @@ void describe('Value.create()', () => {
 
   void it('creates required properties but omits optional ones', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'schemas': [{
         '$id': 'urn:test:required-props',
         'properties': {
@@ -495,11 +495,16 @@ void describe('Value.diff() -> Changeset', () => {
           idx,
           element
         ] of expected.entries()) {
-          assert.equal(cs.operations[idx].op, element.op);
-          assert.equal(cs.operations[idx].path, element.path);
+          const op = cs.operations.at(idx);
+
+          if (op === undefined) {
+            throw new Error(`expected operations[${idx}] to exist`);
+          }
+          assert.equal(op.op, element.op);
+          assert.equal(op.path, element.path);
           if ('value' in element) {
             assert.deepEqual(
-              (cs.operations[idx] as { 'value': unknown }).value,
+              (op as { 'value': unknown }).value,
               element.value
             );
           }
@@ -617,7 +622,7 @@ void describe('Value.cast()', () => {
   // enableStrictGraph: false — synthetic fixture schemas include plain-type properties
   // that structurally match other registered schemas; this tests cast mechanics.
   const tology = JsonTology.create({
-    'baseIRI': 'urn:test:',
+    'baseIri': 'urn:test:',
     'enableStrictGraph': false,
     'schemas': castSchemas
   });
@@ -746,7 +751,7 @@ void describe('Value.clean()', () => {
     }
   ];
   const tology = JsonTology.create({
-    'baseIRI': 'urn:test:',
+    'baseIri': 'urn:test:',
     'schemas': cleanSchemas
   });
   const value = tology.value;

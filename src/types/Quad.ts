@@ -16,8 +16,9 @@
  *
  * Literal values are typed as `string` per the rdf/js spec, with the JS type
  * tag carried in `.datatype.value`. To decode back to a typed JS value
- * (number, boolean, Date), use `decodeLiteral` from `src/modules/rdf/Terms.ts`
- * — `fromQuads` and the internal Lift pipeline call it automatically.
+ * (number, boolean, Date), use `Terms.decodeLiteral` from
+ * `src/modules/quads/Terms.ts` — `fromQuads` and the internal Lift pipeline
+ * call it automatically.
  *
  * @see {@link https://rdf.js.org/data-model-spec/ rdf/js Data Model Spec}
  */
@@ -44,8 +45,8 @@ export type BnodeTermType = BlankNode;
  * Per the rdf/js spec, `value` is `string`. The JS type tag is carried in
  * `datatype.value` (e.g. `xsd:integer`, `xsd:boolean`, `xsd:dateTime`).
  *
- * To decode back to a typed JS value, use `decodeLiteral(literal)` from
- * `src/modules/rdf/Terms.ts` — `fromQuads` and the internal Lift pipeline
+ * To decode back to a typed JS value, use `Terms.decodeLiteral(literal)` from
+ * `src/modules/quads/Terms.ts` — `fromQuads` and the internal Lift pipeline
  * call it automatically.
  */
 export type LiteralTermType = Literal;

@@ -1,8 +1,8 @@
-import type { DumpOptionsType } from '../../types/Dump.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { DumpOptionsType } from '../../types/DumpOptionsType.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
-import { isRecord } from '../data/DataTypes.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
+import { DataType } from '../data/DataType.js';
 import { Transform } from '../transform/Transform.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { EncodeError } from '../../errors/EncodeError.js';
@@ -25,7 +25,7 @@ function graphHasTransforms(graph: SchemaGraphInterface): boolean {
   const result = graph.nodes().some((n: SchemaGraphNodeType): boolean => {
     const s = n.schema;
 
-    return isRecord(s) && Transform.getDecoder(s) !== undefined;
+    return DataType.isRecord(s) && Transform.getDecoder(s) !== undefined;
   });
 
   graphTransformCache.set(graph, result);
@@ -102,7 +102,7 @@ export class Dumper {
       });
     }
 
-    if (isRecord(value)) {
+    if (DataType.isRecord(value)) {
       const out: Record<string, unknown> = {};
 
       for (const key of Object.keys(value)) {
@@ -166,7 +166,7 @@ export class Dumper {
       graph, itemsNode, options, registry, value
     } = opts;
     const itemSchema = itemsNode.schema;
-    const nodeSchema = isRecord(itemSchema) ? itemSchema : {};
+    const nodeSchema = DataType.isRecord(itemSchema) ? itemSchema : {};
 
     return value.map((item: unknown): unknown => {
       return Dumper.dumpNode({
@@ -249,7 +249,7 @@ export class Dumper {
     const projected = Dumper.applyEncoder(nodeSchema, node, value);
 
     // Recurse into object properties
-    if (isRecord(projected) && semantics.properties.size > 0) {
+    if (DataType.isRecord(projected) && semantics.properties.size > 0) {
       return Dumper.dumpObject({
         graph,
         node,
@@ -318,7 +318,7 @@ export class Dumper {
         out[key] = Dumper.dumpNode({
           graph,
           'node': propNode,
-          'nodeSchema': isRecord(propSchema) ? propSchema : {},
+          'nodeSchema': DataType.isRecord(propSchema) ? propSchema : {},
           options,
           registry,
           'value': raw
@@ -384,7 +384,7 @@ export class Dumper {
         graph,
         node,
         'registry': registry,
-        'schema': isRecord(schema) ? schema : {}
+        'schema': DataType.isRecord(schema) ? schema : {}
       };
     }
 
@@ -408,7 +408,7 @@ export class Dumper {
       'graph': targetGraph,
       'node': targetNode,
       'registry': registry,
-      'schema': isRecord(targetNode.schema) ? targetNode.schema : targetSchema
+      'schema': DataType.isRecord(targetNode.schema) ? targetNode.schema : targetSchema
     };
   }
 }

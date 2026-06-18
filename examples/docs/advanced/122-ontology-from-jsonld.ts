@@ -28,7 +28,7 @@ console.assert(
 
 // Step 2 — re-ingest the JSON-LD object into a fresh OntologyBuilder.
 const freshBuilder = new OntologyBuilder({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'prefixes': tboxBuilder.context()
 });
 
@@ -83,7 +83,7 @@ const shaclJsonLdObject = shaclBuilder.shaclObject();
 const originalShaclQuads = shaclBuilder.shaclQuads();
 
 const freshShaclBuilder = new OntologyBuilder({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'prefixes': shaclBuilder.context()
 });
 

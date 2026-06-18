@@ -21,8 +21,8 @@ import {
 import { Command } from 'commander';
 import pkg from '../package.json' with { 'type': 'json' };
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
-import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
-import { isRecord } from './modules/data/DataTypes.js';
+import type { SchemaRegistryInterface } from './interfaces/SchemaRegistryInterface.js';
+import { DataType } from './modules/data/DataType.js';
 import { SchemaErrorCode } from './constants/ERROR_CODES.js';
 import { GraphArtifact } from './modules/graph/GraphArtifact.js';
 import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
@@ -31,10 +31,10 @@ import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { VizDataCollector } from './modules/viz/VizDataCollector.js';
 import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
-import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
-import type { BuildOptionsType } from './types/BuildOptions.js';
-import type { VizOptionsType } from './types/VizOptions.js';
-import type { BuildOutputOptionsType } from './types/BuildOutputOptions.js';
+import type { SchemaGraphInterface } from './interfaces/SchemaGraphInterface.js';
+import type { BuildOptionsType } from './types/BuildOptionsType.js';
+import type { VizOptionsType } from './types/VizOptionsType.js';
+import type { BuildOutputOptionsType } from './types/BuildOutputOptionsType.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
@@ -94,7 +94,7 @@ function loadSchemaFiles(schemaGlob: string): Array<Record<string, unknown>> {
       });
     }
 
-    if (!isRecord(parsed)) {
+    if (!DataType.isRecord(parsed)) {
       throw new SchemaError(`Schema file is not a JSON object: ${filePath}`, { 'code': SchemaErrorCode.INVALID_INPUT });
     }
 
@@ -121,17 +121,11 @@ function loadSchemas(schemaGlob: string): SchemaRegistryInterface {
 // IRI resolution
 // ---------------------------------------------------------------------------
 
-function normalizeBaseIRI(value: string): string {
-  let baseIRI = value;
-
-  while (baseIRI.endsWith('/')) {
-    baseIRI = baseIRI.slice(0, -1);
-  }
-
-  return baseIRI;
+function normalizeBaseIri(value: string): string {
+  return SchemaIri.normalizeBase(value);
 }
 
-function deriveBaseIRIFromSchemaId(schemaId: string): string {
+function deriveBaseIriFromSchemaId(schemaId: string): string {
   // parseRef extracts the IRI base (before '#') in the canonical way.
   const withoutHash = SchemaIri.parseRef(schemaId).id;
 
@@ -144,20 +138,20 @@ function deriveBaseIRIFromSchemaId(schemaId: string): string {
     parsed.search = '';
     parsed.pathname = lastSlash <= 0 ? '/' : pathname.slice(0, lastSlash);
 
-    return normalizeBaseIRI(parsed.toString());
+    return normalizeBaseIri(parsed.toString());
   } catch {
     const lastSlash = withoutHash.lastIndexOf('/');
 
-    return normalizeBaseIRI(lastSlash <= 0 ? withoutHash : withoutHash.slice(0, lastSlash));
+    return normalizeBaseIri(lastSlash <= 0 ? withoutHash : withoutHash.slice(0, lastSlash));
   }
 }
 
-function resolveBaseIRI(
+function resolveBaseIri(
   graphs: readonly SchemaGraphInterface[],
-  configuredBaseIRI: string | undefined
+  configuredBaseIri: string | undefined
 ): string {
-  if (configuredBaseIRI !== undefined && configuredBaseIRI !== '') {
-    return normalizeBaseIRI(configuredBaseIRI);
+  if (configuredBaseIri !== undefined && configuredBaseIri !== '') {
+    return normalizeBaseIri(configuredBaseIri);
   }
 
   const firstRootSchema = graphs[0]?.rootSchema;
@@ -172,7 +166,7 @@ function resolveBaseIRI(
     );
   }
 
-  return deriveBaseIRIFromSchemaId(firstSchemaId);
+  return deriveBaseIriFromSchemaId(firstSchemaId);
 }
 
 function resolveSingleOutputPath(
@@ -190,15 +184,21 @@ function resolveSingleOutputPath(
 // Prefix derivation
 // ---------------------------------------------------------------------------
 
-function derivePrefixFromIRI(iri: URL): string {
+function derivePrefixFromIri(iri: URL): string {
   const segments = iri.pathname.split('/').filter(Boolean);
 
   segments.pop();
 
   for (let i = segments.length - 1; i >= 0; i--) {
-    const candidate = segments[i].replaceAll(/\W/gu, '').toLowerCase();
+    const segment = segments[i];
 
-    if (candidate !== '' && !/^\d[\d.]*$/u.test(segments[i])) {
+    if (segment === undefined) {
+      continue;
+    }
+
+    const candidate = segment.replaceAll(/\W/gu, '').toLowerCase();
+
+    if (candidate !== '' && !/^\d[\d.]*$/u.test(segment)) {
       return candidate;
     }
   }
@@ -224,12 +224,13 @@ function derivePrefixesFromSchemas(schemas: ReadonlyArray<Record<string, unknown
     try {
       parsed = new URL(id);
     } catch {
+      writer.err(`Skipping prefix derivation for unparseable $id URL: ${id}`);
       continue;
     }
 
     const lastSlash = id.lastIndexOf('/');
     const namespace = `${id.slice(0, lastSlash)}/`;
-    const prefix = derivePrefixFromIRI(parsed);
+    const prefix = derivePrefixFromIri(parsed);
 
     if (prefix !== '' && !Object.hasOwn(prefixes, prefix)) {
       prefixes[prefix] = namespace;
@@ -266,12 +267,12 @@ function openBrowser(filePath: string): void {
 
 function buildOntologyOutput(opts: BuildOutputOptionsType): void {
   const {
-    baseIRI, graphs, output, outputFile
+    baseIri, graphs, output, outputFile
   } = opts;
   const serializer = new GraphOntologySerializer();
   const quads = serializer.serializeQuads(graphs);
   const builder = new OntologyBuilder({
-    baseIRI,
+    baseIri,
     'prefixes': CLI_PREFIXES
   }).addFromQuads(quads);
   const outPath = resolveSingleOutputPath(output, outputFile, 'ontology.jsonld');
@@ -282,12 +283,12 @@ function buildOntologyOutput(opts: BuildOutputOptionsType): void {
 
 function buildShaclOutput(opts: BuildOutputOptionsType): void {
   const {
-    baseIRI, graphs, output, outputFile
+    baseIri, graphs, output, outputFile
   } = opts;
   const serializer = new GraphShaclSerializer();
   const shaclQuads = serializer.serializeQuads(graphs);
   const builder = new OntologyBuilder({
-    baseIRI,
+    baseIri,
     'prefixes': CLI_PREFIXES
   }).addShaclFromQuads(shaclQuads);
   const outPath = resolveSingleOutputPath(output, outputFile, 'shacl.jsonld');
@@ -337,7 +338,7 @@ function buildGraphOutput(
 
 async function runBuild(options: BuildOptionsType): Promise<void> {
   const {
-    'baseIri': configuredBaseIRI, format, output, outputFile, 'schema': schemaGlob
+    'baseIri': configuredBaseIri, format, output, outputFile, 'schema': schemaGlob
   } = options;
   const registry = loadSchemas(schemaGlob);
 
@@ -346,10 +347,10 @@ async function runBuild(options: BuildOptionsType): Promise<void> {
   }
 
   const graphs = registry.listGraphs();
-  const baseIRI = resolveBaseIRI(graphs, configuredBaseIRI);
+  const baseIri = resolveBaseIri(graphs, configuredBaseIri);
 
   const buildOpts: BuildOutputOptionsType = {
-    baseIRI,
+    baseIri,
     graphs,
     output,
     outputFile
@@ -438,7 +439,7 @@ async function runOwlGen(
     ? await readStdin()
     : fs.readFileSync(resolve(input), 'utf8');
 
-  const parsed = JSON.parse(jsonLdSource) as object;
+  const parsed = JSON.parse(jsonLdSource) as Record<string, unknown>;
   const inferredName = opts.name ?? basename(input, path.extname(input)).replaceAll(/[^a-zA-Z0-9]+/gu, '_');
   const outPath = opts.out;
   const isDirectoryMode = opts.mode === 'directory'
@@ -447,7 +448,7 @@ async function runOwlGen(
   if (isDirectoryMode) {
     const outDir = resolve(outPath);
     const fileResult = writeRegistryDirectory({
-      ...(!(opts.baseIri === undefined) && { 'baseIRI': opts.baseIri }),
+      ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
       'input': parsed,
       'name': inferredName,
       'outDir': outDir,
@@ -457,7 +458,7 @@ async function runOwlGen(
     writer.out(`Generated registry directory (${fileResult.entityFiles.length} entities + index.ts) → ${outPath}`);
   } else {
     writeFromTbox({
-      ...(!(opts.baseIri === undefined) && { 'baseIRI': opts.baseIri }),
+      ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
       'input': parsed,
       'name': inferredName,
       'output': resolve(outPath),

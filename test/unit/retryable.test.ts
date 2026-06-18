@@ -60,10 +60,16 @@ void describe('BaseError.retryable propagation through flatten()', { 'concurrenc
     const chain = wrapper.flatten();
 
     assert.strictEqual(chain.length, 2, 'flatten yields wrapper + cause');
-    assert.strictEqual(chain[0].retryable, false, 'the deterministic wrapper is not retryable');
-    assert.strictEqual(chain[0].code, SchemaErrorCode.NOT_REGISTERED);
-    assert.strictEqual(chain[1].retryable, true, 'the transient cause stays retryable');
-    assert.strictEqual(chain[1].code, SchemaLoadErrorCode.LOAD_FAILED);
+    const chain0 = chain.at(0);
+    const chain1 = chain.at(1);
+
+    if (chain0 === undefined || chain1 === undefined) {
+      throw new Error('expected chain to have 2 elements');
+    }
+    assert.strictEqual(chain0.retryable, false, 'the deterministic wrapper is not retryable');
+    assert.strictEqual(chain0.code, SchemaErrorCode.NOT_REGISTERED);
+    assert.strictEqual(chain1.retryable, true, 'the transient cause stays retryable');
+    assert.strictEqual(chain1.code, SchemaLoadErrorCode.LOAD_FAILED);
   });
 
   void it('toJson() nests the cause with its own retryable flag', () => {

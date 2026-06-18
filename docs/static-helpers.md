@@ -47,7 +47,7 @@ Options marked <Badge type="info" text="Compile-time" /> affect type inference o
 
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
-| `baseIRI` | `string` | _(required)_ | Base URI for the canonical graph and ontology output. |
+| `baseIri` | `string` | _(required)_ | Base URI for the canonical graph and ontology output. |
 | `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref`: register referenced schemas before referencing schemas. |
 | `prefetched` | `SnapshotInterface` | _(none)_ | Pre-resolved schema bundle produced by `JsonTology.prefetch`. Schemas passed via `schemas` register first; entries from the snapshot then fill any IRIs not already in the registry. `schemas` wins on `$id` collision. See [Schema federation](/advanced/schema-federation). |
 | `prefixes` | `Record<string, string>` | `STANDARD_PREFIXES` | Vocabulary prefix → IRI mappings, merged with built-in defaults (`rdf`, `rdfs`, `owl`, `sh`, `xsd`, `schema`, `foaf`, `dc`, `dcterms`, `dcat`, `skos`, `prov`, `time`, `geo`, `vann`, `dash`, `jt`). |
@@ -84,7 +84,7 @@ These options control how `toQuads` mints subject IRIs and how `fromQuads` rever
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
 | `iriFor` | `SkolemizeFnType \| string` | _(content-hash)_ | Default IRI minting strategy for `toQuads`. A regular string becomes a root-only override; the string `'blank-node'` is a runtime-recognised constant that emits anonymous subjects (not a discriminated type member); a function matching `SkolemizeFnType` is the full custom minting shape. Per-call options override this. |
-| `defaultGraphIRI` | `string` | _(none)_ | Default `graph` field for every quad emitted by `toQuads`. Per-call `graphIRI` overrides. |
+| `defaultGraphIri` | `string` | _(none)_ | Default `graph` field for every quad emitted by `toQuads`. Per-call `graphIri` overrides. |
 | `defaultDeskolemize` | `boolean` | `false` | Treat `*/.well-known/genid/*` IRIs as blank nodes during `fromQuads`. Reverses `Skolemize.wellKnownGenid`. |
 
 ## Related

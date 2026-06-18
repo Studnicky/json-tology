@@ -7,11 +7,11 @@
  *
  * Covers:
  * - `toQuads` emits the base triple plus one `Quad`-subject (triple-term)
- *   annotation quad per annotation, ALL stamped with the same `graphIRI`.
+ *   annotation quad per annotation, ALL stamped with the same `graphIri`.
  * - The same-graph invariant: no annotation quad lands in a different graph.
  * - `fromQuads` round-trips the emitted quads back to the instance shape.
  * - The N3 v2 `Writer` serializes `Quad`-subject quads as Turtle 1.2 `<< s p o >>`.
- * - Missing `graphIRI` for an annotated edge raises an intelligible error.
+ * - Missing `graphIri` for an annotated edge raises an intelligible error.
  */
 
 import assert from 'node:assert/strict';
@@ -25,9 +25,9 @@ import {
   JsonTology, Skolemize
 } from '../../src/index.js';
 import { MaterializationError } from '../../src/errors/MaterializationError.js';
-import { isRecord } from '../../src/modules/data/DataTypes.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
-import type { SkolemizeFnType } from '../../src/types/Skolemize.js';
+import { DataType } from '../../src/modules/data/DataType.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
+import type { SkolemizeFnType } from '../../src/types/SkolemizeFnType.js';
 
 type TripleTermQuad = QuadInterface & { 'subject': QuadInterface };
 
@@ -93,7 +93,7 @@ const reviewInstance = {
 
 function freshJt(): ReturnType<typeof JsonTology.create> {
   const jt = JsonTology.create({
-    'baseIRI': 'https://bookstore.example',
+    'baseIri': 'https://bookstore.example',
     'enableStrictGraph': false
   });
 
@@ -116,14 +116,19 @@ function isTripleTermSubject(quad: QuadInterface): quad is TripleTermQuad {
 void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
   void it('emits the base triple plus one Quad-subject quad per annotation', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIri': REVIEWS_GRAPH });
 
     const baseTriples = quads.filter((quad) => {
       return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
     });
 
     assert.equal(baseTriples.length, 1, 'exactly one base triple');
-    assert.equal(baseTriples[0].object.value, BOOK_IRI);
+    const baseTriple0 = baseTriples.at(0);
+
+    if (baseTriple0 === undefined) {
+      throw new Error('expected baseTriples[0] to exist');
+    }
+    assert.equal(baseTriple0.object.value, BOOK_IRI);
 
     const annotationQuads = quads.filter((quad) => {
       return isTripleTermSubject(quad);
@@ -147,9 +152,9 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
     assert.equal(verifiedQuad.object.value, 'true');
   });
 
-  void it('stamps the base triple AND every annotation quad with the same graphIRI', () => {
+  void it('stamps the base triple AND every annotation quad with the same graphIri', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIri': REVIEWS_GRAPH });
 
     const edgeRelatedQuads = quads.filter((quad) => {
       return (quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode')
@@ -160,13 +165,13 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     for (const quad of edgeRelatedQuads) {
       assert.equal(quad.graph.termType, 'NamedNode', 'edge quad is in a named graph');
-      assert.equal(quad.graph.value, REVIEWS_GRAPH, 'same-graph invariant: all edge quads share graphIRI');
+      assert.equal(quad.graph.value, REVIEWS_GRAPH, 'same-graph invariant: all edge quads share graphIri');
     }
   });
 
   void it('the inner triple term of every annotation quad equals the base triple', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIri': REVIEWS_GRAPH });
 
     const annotationQuads = quads.filter((quad) => {
       return isTripleTermSubject(quad);
@@ -184,7 +189,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
   void it('round-trips through fromQuads back to the instance shape', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIri': REVIEWS_GRAPH });
 
     const lifted = jt.fromQuads(ReviewSchema, quads);
 
@@ -192,37 +197,37 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     const instance = lifted[0];
 
-    assert.ok(isRecord(instance), 'lifted instance is a record');
+    assert.ok(DataType.isRecord(instance), 'lifted instance is a record');
 
     const edge = instance.book;
 
-    assert.ok(isRecord(edge), 'book edge present');
+    assert.ok(DataType.isRecord(edge), 'book edge present');
     assert.equal(edge.target, BOOK_IRI);
 
     const annotations = edge.annotations;
 
-    assert.ok(isRecord(annotations), 'annotations present');
+    assert.ok(DataType.isRecord(annotations), 'annotations present');
     assert.equal(annotations.ratingGiven, 5);
     assert.equal(annotations.verifiedPurchase, true);
   });
 
   void it('round-trips through instantiate (validate passes)', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIri': REVIEWS_GRAPH });
     const lifted = jt.fromQuads(ReviewSchema, quads);
 
     const validated = jt.instantiate(ReviewSchema, lifted[0]);
 
-    assert.ok(isRecord(validated), 'validated instance is a record');
+    assert.ok(DataType.isRecord(validated), 'validated instance is a record');
     assert.equal(validated.reviewId, 'rev-001');
 
     const edge = validated.book;
 
-    assert.ok(isRecord(edge), 'book edge present');
+    assert.ok(DataType.isRecord(edge), 'book edge present');
     assert.equal(edge.target, BOOK_IRI);
   });
 
-  void it('raises an intelligible error when graphIRI is absent for an annotated edge', () => {
+  void it('raises an intelligible error when graphIri is absent for an annotated edge', () => {
     const jt = freshJt();
 
     assert.throws(
@@ -232,7 +237,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       (error: unknown) => {
         assert.ok(error instanceof MaterializationError);
         assert.equal(error.code, 'MISSING_GRAPH_IRI');
-        assert.match(error.message, /graphIRI/u);
+        assert.match(error.message, /graphIri/u);
 
         return true;
       }
@@ -241,7 +246,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
   void it('serializes Quad-subject quads as Turtle 1.2 << s p o >> via the N3 v2 Writer', async () => {
     const jt = freshJt();
-    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIri': REVIEWS_GRAPH });
 
     const annotationQuads = quads.filter((quad) => {
       return isTripleTermSubject(quad);
@@ -354,7 +359,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     function freshCitationJt(): ReturnType<typeof JsonTology.create> {
       const jt = JsonTology.create({
-        'baseIRI': 'https://test.example',
+        'baseIri': 'https://test.example',
         'enableStrictGraph': false
       });
 
@@ -378,7 +383,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       };
 
       const quads = jt.toQuads(CitationSchema, instance, {
-        'graphIRI': CITATION_GRAPH,
+        'graphIri': CITATION_GRAPH,
         'iriFor': depthGatedIriFor
       });
 
@@ -389,7 +394,12 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
       assert.equal(baseTriples.length, 1, 'exactly one base triple for the annotated edge');
 
-      const objectIri = baseTriples[0].object.value;
+      const baseTriple0Nested = baseTriples.at(0);
+
+      if (baseTriple0Nested === undefined) {
+        throw new Error('expected baseTriples[0] to exist');
+      }
+      const objectIri = baseTriple0Nested.object.value;
 
       // With the fix (depth+1): iriFor is called with depth>0 → returns NESTED_IRI.
       // Without the fix (depth 0): iriFor is called with depth===0 → returns ROOT_IRI.
@@ -419,7 +429,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       };
 
       const quads = jt.toQuads(CitationSchema, instance, {
-        'graphIRI': CITATION_GRAPH,
+        'graphIri': CITATION_GRAPH,
         'iriFor': depthGatedIriFor
       });
 
@@ -430,9 +440,14 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
       assert.equal(baseTriples.length, 1, 'exactly one base triple for the string-target edge');
 
+      const baseTriple0String = baseTriples.at(0);
+
+      if (baseTriple0String === undefined) {
+        throw new Error('expected baseTriples[0] to exist');
+      }
       // String targets bypass iriFor entirely; the literal IRI is used as-is.
       assert.equal(
-        baseTriples[0].object.value,
+        baseTriple0String.object.value,
         EXPLICIT_ARTICLE_IRI,
         'string target is passed through verbatim regardless of iriFor'
       );
@@ -441,7 +456,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
   void it('every emitted predicate IRI (including triple-term annotation quads) has at most one #', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIri': REVIEWS_GRAPH });
 
     for (const quad of quads) {
       const predicate = quad.predicate.value;
@@ -487,7 +502,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.example',
+      'baseIri': 'https://bookstore.example',
       'enableStrictGraph': false
     });
 
@@ -503,15 +518,20 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       'reviewId': 'rev-002'
     };
 
-    const quads = jt.toQuads(CustomReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+    const quads = jt.toQuads(CustomReviewSchema, instance, { 'graphIri': REVIEWS_GRAPH });
 
     const annotationQuads = quads.filter((quad) => {
       return isTripleTermSubject(quad);
     });
 
     assert.equal(annotationQuads.length, 1, 'one annotation quad for ratingValue');
+    const annotationQuad0 = annotationQuads.at(0);
+
+    if (annotationQuad0 === undefined) {
+      throw new Error('expected annotationQuads[0] to exist');
+    }
     assert.equal(
-      annotationQuads[0].predicate.value,
+      annotationQuad0.predicate.value,
       'https://schema.org/ratingValue',
       'x-jt-predicate binding is honoured for annotation predicate'
     );
@@ -523,16 +543,16 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     const liftedInstance = lifted[0];
 
-    assert.ok(isRecord(liftedInstance), 'lifted instance is a record');
+    assert.ok(DataType.isRecord(liftedInstance), 'lifted instance is a record');
 
     const liftedEdge = liftedInstance.book;
 
-    assert.ok(isRecord(liftedEdge), 'book edge present after round-trip');
+    assert.ok(DataType.isRecord(liftedEdge), 'book edge present after round-trip');
     assert.equal(liftedEdge.target, BOOK_IRI);
 
     const liftedAnnotations = liftedEdge.annotations;
 
-    assert.ok(isRecord(liftedAnnotations), 'annotations present after round-trip');
+    assert.ok(DataType.isRecord(liftedAnnotations), 'annotations present after round-trip');
     assert.equal(liftedAnnotations.ratingValue, 4, 'ratingValue annotation survives round-trip');
   });
 
@@ -560,7 +580,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
         'reviewId': 'rev-at-id'
       };
 
-      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIri': REVIEWS_GRAPH });
       const baseTriple = quads.find((quad) => {
         return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
       });
@@ -583,7 +603,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
         'reviewId': 'rev-id-field'
       };
 
-      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIri': REVIEWS_GRAPH });
       const baseTriple = quads.find((quad) => {
         return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
       });
@@ -609,14 +629,14 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
         'reviewId': 'rev-at-id-rt'
       };
 
-      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIri': REVIEWS_GRAPH });
       const lifted = jt.fromQuads(ReviewSchema, quads);
 
       assert.equal(lifted.length, 1);
 
       const edge = (lifted[0] as Record<string, unknown>).book;
 
-      assert.ok(isRecord(edge), 'edge present');
+      assert.ok(DataType.isRecord(edge), 'edge present');
       assert.equal(edge.target, BOOK_IRI, 'target round-trips as string IRI');
     });
 
@@ -637,8 +657,8 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       };
 
       const quads = jt.toQuads(ReviewSchema, instance, {
-        'graphIRI': REVIEWS_GRAPH,
-        'iriFor': Skolemize.fromProperty('title', { 'baseIRI': BASE })
+        'graphIri': REVIEWS_GRAPH,
+        'iriFor': Skolemize.fromProperty('title', { 'baseIri': BASE })
       });
       const baseTriple = quads.find((quad) => {
         return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
@@ -675,21 +695,21 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       };
 
       const quads = jt.toQuads(ReviewSchema, instance, {
-        'graphIRI': REVIEWS_GRAPH,
-        'iriFor': Skolemize.hash({ 'baseIRI': BASE })
+        'graphIri': REVIEWS_GRAPH,
+        'iriFor': Skolemize.hash({ 'baseIri': BASE })
       });
       const baseTriple = quads.find((quad) => {
         return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
       });
 
       assert.ok(baseTriple, 'base triple emitted');
-      const targetIRI = baseTriple.object.value;
+      const targetIri = baseTriple.object.value;
 
       // Verify the target IRI is scoped to BASE with a path separator, preventing
       // bare prefix matches like https://bookstore.example.other.com.
       assert.ok(
-        targetIRI === BASE || targetIRI.startsWith(`${BASE}/`),
-        `target IRI must be equal to or a path under baseIRI — got: ${targetIRI}`
+        targetIri === BASE || targetIri.startsWith(`${BASE}/`),
+        `target IRI must be equal to or a path under baseIri — got: ${targetIri}`
       );
       assert.notEqual(baseTriple.subject.value, baseTriple.object.value, 'root and target IRIs are distinct');
     });
@@ -718,7 +738,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       };
 
       jt.toQuads(ReviewSchema, instance, {
-        'graphIRI': REVIEWS_GRAPH,
+        'graphIri': REVIEWS_GRAPH,
         iriFor
       });
 
@@ -761,7 +781,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       };
 
       const quads = jt.toQuads(ReviewSchema, instance, {
-        'graphIRI': REVIEWS_GRAPH,
+        'graphIri': REVIEWS_GRAPH,
         iriFor
       });
       const baseTriple = quads.find((quad) => {
@@ -801,7 +821,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       } as const;
 
       const jt = JsonTology.create({
-        'baseIRI': BASE,
+        'baseIri': BASE,
         'enableStrictGraph': false
       });
 
@@ -829,8 +849,8 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       };
 
       const quads = jt.toQuads(DualReviewSchema, instance, {
-        'graphIRI': REVIEWS_GRAPH,
-        'iriFor': Skolemize.fromProperty('title', { 'baseIRI': BASE })
+        'graphIri': REVIEWS_GRAPH,
+        'iriFor': Skolemize.fromProperty('title', { 'baseIri': BASE })
       });
 
       const baseTriples = quads.filter((quad) => {
@@ -861,7 +881,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
         'reviewId': 'rev-no-ann'
       };
 
-      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+      const quads = jt.toQuads(ReviewSchema, instance, { 'graphIri': REVIEWS_GRAPH });
 
       const baseTriples = quads.filter((quad) => {
         return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';

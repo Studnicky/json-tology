@@ -43,6 +43,9 @@ for (const file of files) {
     const nodeId = profile.samples[index];
     const delta = profile.timeDeltas[index];
 
+    if (nodeId === undefined || delta === undefined) {
+      continue;
+    }
     selfTime.set(nodeId, (selfTime.get(nodeId) ?? 0) + delta);
   }
 

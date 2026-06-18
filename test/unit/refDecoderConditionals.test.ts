@@ -65,7 +65,7 @@ void describe('RefDecoder — then/else/not branch decoding', { 'concurrency': f
     };
 
     const jt = JsonTology.create({
-      'baseIRI': 'urn:decoder:cond:',
+      'baseIri': 'urn:decoder:cond:',
       'enableStrictGraph': false
     });
 
@@ -105,7 +105,7 @@ void describe('RefDecoder — then/else/not branch decoding', { 'concurrency': f
     };
 
     const jt = JsonTology.create({
-      'baseIRI': 'urn:decoder:cond2:',
+      'baseIri': 'urn:decoder:cond2:',
       'enableStrictGraph': false
     });
 

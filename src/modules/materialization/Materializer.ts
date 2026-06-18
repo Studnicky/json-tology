@@ -1,34 +1,35 @@
 import type {
   MaterializationResultType, MaterializerOptionsType
 } from '../../types/Materializer.js';
-import type { MaterializerInterface } from '../../interfaces/MaterializerImpl.js';
+import type { MaterializerInterface } from '../../interfaces/MaterializerInterface.js';
+import type { DefaultCreatorInterface } from '../../interfaces/DefaultCreatorInterface.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import type { InferSchemaType } from '../../types/Infer.js';
-import type { AboxOptionsType } from '../../types/AboxOptions.js';
+import type { AboxOptionsType } from '../../types/AboxOptionsType.js';
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
+import type { AboxProjectorInterface } from '../../interfaces/AboxProjectorInterface.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import {
   InstantiationErrorCode, MaterializationErrorCode
 } from '../../constants/ERROR_CODES.js';
 import { Frozen } from '../data/Frozen.js';
-import { isRecord } from '../data/DataTypes.js';
-import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
-import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
-import { Projection } from '../rdf/Projection.js';
-import { Terms } from '../rdf/Terms.js';
+import { DataType } from '../data/DataType.js';
+import { EffectiveProperties } from '../graph/EffectiveProperties.js';
+import { RefResolution } from '../graph/RefResolution.js';
+import { GraphEngineDefaults } from '../graph/GraphEngineDefaults.js';
+import { Terms } from '../quads/Terms.js';
 import { OWL } from '../../constants/IRI.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
-import { SchemaCompilerDefaults } from '../validation/SchemaCompilerDefaults.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import { logScope } from '../data/LogScope.js';
+import { LogScope } from '../data/LogScope.js';
 
 /**
  * Materializer — runtime projection over validation execution results.
@@ -64,19 +65,23 @@ import { logScope } from '../data/LogScope.js';
  * @see {@link SchemaRegistryInterface}
  * @group Runtime
  */
-export class Materializer implements MaterializerInterface {
+export class Materializer implements DefaultCreatorInterface, MaterializerInterface {
   private static isEffectivelyFrozen(schema: Record<string, unknown>): boolean {
     if (schema['jt:frozen'] === true) {
       return true;
     }
     const config = schema['jt:config'];
 
-    if (isRecord(config) && config.frozen === true) {
+    if (DataType.isRecord(config) && config.frozen === true) {
       return true;
     }
 
     return false;
   }
+
+  // Injected by the facade (JsonTology) so this layer need not import rdf/.
+  // undefined when no projector was supplied — ABox projection then errors.
+  private readonly aboxProjector: AboxProjectorInterface | undefined;
 
   // When true, additionalProperties:false enforcement is bypassed via ignoreAdditionalProperties.
   private readonly allowAdditionalProperties: boolean;
@@ -132,6 +137,7 @@ export class Materializer implements MaterializerInterface {
     const allowAdditionalProperties = options.passAdditionalProperties === true;
     const castTypes = registry.castTypes;
 
+    this.aboxProjector = options.aboxProjector;
     this.allowAdditionalProperties = allowAdditionalProperties;
     this.logger = options.logger ?? SILENT_LOGGER;
 
@@ -157,7 +163,7 @@ export class Materializer implements MaterializerInterface {
     this.lookupSchemaFn = (sid: string): Record<string, unknown> | undefined => {
       const schemaGraph = this.lookupGraphFn(sid);
 
-      if (schemaGraph === undefined || !isRecord(schemaGraph.rootSchema)) {
+      if (schemaGraph === undefined || !DataType.isRecord(schemaGraph.rootSchema)) {
         return undefined;
       }
 
@@ -170,13 +176,13 @@ export class Materializer implements MaterializerInterface {
    * ABox projection. Called automatically by projectAbox so direct callers and
    * the JsonTology.toQuads facade emit equivalent output — there is no bypass.
    */
-  private appendSameAsQuads(quads: QuadInterface[], graphIRI: string | undefined): void {
+  private appendSameAsQuads(quads: QuadInterface[], graphIri: string | undefined): void {
     const pairs = this.registry.sameAsStore.all();
 
     if (pairs.length === 0) {
       return;
     }
-    const graphTerm = graphIRI === undefined ? Terms.defaultGraph() : Terms.iri(graphIRI);
+    const graphTerm = graphIri === undefined ? Terms.defaultGraph() : Terms.iri(graphIri);
     const predicate = Terms.iri(OWL.sameAs);
 
     for (const [
@@ -233,7 +239,7 @@ export class Materializer implements MaterializerInterface {
     graph: SchemaGraphInterface,
     node: SchemaGraphNodeType
   ): EffectivePropertyMapType {
-    return collectEffectivePropertiesMemo(
+    return EffectiveProperties.collectMemo(
       this.effectivePropertiesCache,
       graph,
       node,
@@ -262,12 +268,12 @@ export class Materializer implements MaterializerInterface {
   public execute(
     schema: Record<string, unknown> & { '$id': string },
     data?: unknown,
-    options?: { 'baseIRI'?: string;
+    options?: { 'baseIri'?: string;
       'synthesizeDefaults'?: boolean }
   ): MaterializationResultType {
-    const baseIRI = options?.baseIRI;
+    const baseIri = options?.baseIri;
     const synthesize = options?.synthesizeDefaults === true;
-    const runResult = this.run(schema, data, baseIRI, synthesize);
+    const runResult = this.run(schema, data, baseIri, synthesize);
 
     return runResult;
   }
@@ -278,7 +284,7 @@ export class Materializer implements MaterializerInterface {
     value: unknown,
     visited = new WeakSet()
   ): void {
-    if (!isRecord(value) || visited.has(value)) {
+    if (!DataType.isRecord(value) || visited.has(value)) {
       return;
     }
     visited.add(value);
@@ -362,9 +368,11 @@ export class Materializer implements MaterializerInterface {
 
     const value = result.value;
 
-    if (isRecord(value)) {
+    if (DataType.isRecord(value)) {
       this.applyComputedFields(schema.$id, value);
     }
+
+    this.logger.info(LogScope.format('Materializer', 'materialize', `materialization complete for ${schema.$id}`));
 
     if (Materializer.isEffectivelyFrozen(schema)) {
       return Frozen.deepFreeze(value);
@@ -392,9 +400,9 @@ export class Materializer implements MaterializerInterface {
    *
    * @param schema - Schema object with $id
    * @param data - Data to project
-   * @param baseIRI - Base IRI for generated quad subjects
+   * @param baseIri - Base IRI for generated quad subjects
    * @param options - Optional overrides: `iriFor` mints subject IRIs per object;
-   *                  `graphIRI` sets the graph field on all quads;
+   *                  `graphIri` sets the graph field on all quads;
    *                  `curie` expands CURIE prefixes in predicates;
    *                  `predicateResolver` overrides predicate IRI resolution
    * @returns Array of RDF quads representing the ABox projection
@@ -403,10 +411,10 @@ export class Materializer implements MaterializerInterface {
   public projectAbox(
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
-    baseIRI: string,
+    baseIri: string,
     options?: AboxOptionsType
   ): QuadInterface[] {
-    const result = this.run(schema, data, baseIRI, false, options);
+    const result = this.run(schema, data, baseIri, false, options);
 
     if (!result.valid) {
       throw new MaterializationError(schema.$id, {
@@ -422,20 +430,31 @@ export class Materializer implements MaterializerInterface {
     graph: SchemaGraphInterface,
     entryNode: SchemaGraphNodeType,
     materialized: unknown,
-    baseIRI: string,
+    baseIri: string,
     options?: AboxOptionsType
   ): QuadInterface[] {
-    const quads = Projection.abox(graph, materialized, baseIRI, {
+    if (this.aboxProjector === undefined) {
+      throw new MaterializationError(
+        entryNode.id,
+        {
+          'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
+          'message': 'ABox projection requires an aboxProjector. Construct the Materializer with { aboxProjector } (the facade injects Projection) so this layer need not import rdf/.',
+          'validationErrors': ['no aboxProjector injected into Materializer']
+        }
+      );
+    }
+
+    const quads = this.aboxProjector.abox(graph, materialized, baseIri, {
       'annotationEmitMode': options?.annotationEmitMode,
       'curie': options?.curie,
       entryNode,
-      'graphIRI': options?.graphIRI,
+      'graphIri': options?.graphIri,
       'iriFor': options?.iriFor,
       'lookupGraph': this.lookupGraphFn,
       'predicateResolver': options?.predicateResolver
     });
 
-    this.appendSameAsQuads(quads, options?.graphIRI);
+    this.appendSameAsQuads(quads, options?.graphIri);
 
     return quads;
   }
@@ -461,14 +480,14 @@ export class Materializer implements MaterializerInterface {
     }
 
     try {
-      const resolved = canonicalResolveRef(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn });
+      const resolved = RefResolution.resolve(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn }, this.logger);
 
       return [
         resolved.graph,
         resolved.node
       ];
     } catch (error) {
-      this.logger.error(logScope('Materializer', 'resolveTargetGraphAndNode', `ref resolution failed for "${semantics.ref}"`));
+      this.logger.error(LogScope.format('Materializer', 'resolveTargetGraphAndNode', `ref resolution failed for "${semantics.ref}"`));
       throw error;
     }
   }
@@ -476,7 +495,7 @@ export class Materializer implements MaterializerInterface {
   private run(
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
-    baseIRI?: string,
+    baseIri?: string,
     synthesizeDefaults = false,
     aboxOptions?: AboxOptionsType
   ): MaterializationResultType {
@@ -501,21 +520,21 @@ export class Materializer implements MaterializerInterface {
       const opts = synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults;
       const validator = this.registry.validator(id);
       const seedData = synthesizeDefaults && data === undefined
-        ? SchemaCompilerDefaults.synthesizeZeroValue(entryNode, graph, this.lookupSchemaFn, this.lookupGraphFn)
+        ? GraphEngineDefaults.synthesizeZeroValueForLookups(entryNode, graph, this.lookupSchemaFn, this.lookupGraphFn)
         : data;
       const compiledResult = validator.validate(seedData, opts);
 
       const materialized = synthesizeDefaults
         ? compiledResult.value
         : this.materializeResult(graph, entryNode, compiledResult.value);
-      const abox = baseIRI === undefined
+      const abox = baseIri === undefined
         ? []
-        : this.projectAboxFromExecution(graph, entryNode, materialized, baseIRI, aboxOptions);
+        : this.projectAboxFromExecution(graph, entryNode, materialized, baseIri, aboxOptions);
 
       const errors = this.formatErrors(compiledResult.errors);
 
       if (!compiledResult.valid) {
-        this.logger.warn(logScope('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
+        this.logger.warn(LogScope.format('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
       }
 
       return {
@@ -542,14 +561,14 @@ export class Materializer implements MaterializerInterface {
     const entryNode = graph.rootNode;
     const materialized = this.materializeResult(graph, entryNode, compiledResult.value);
 
-    const abox = baseIRI === undefined
+    const abox = baseIri === undefined
       ? []
-      : this.projectAboxFromExecution(graph, entryNode, materialized, baseIRI, aboxOptions);
+      : this.projectAboxFromExecution(graph, entryNode, materialized, baseIri, aboxOptions);
 
     const errors = this.formatErrors(compiledResult.errors);
 
     if (!compiledResult.valid) {
-      this.logger.warn(logScope('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
+      this.logger.warn(LogScope.format('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
     }
 
     return {

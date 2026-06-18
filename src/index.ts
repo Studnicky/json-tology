@@ -43,6 +43,7 @@ export * from './errors/ValidationErrors.js';
 // single type.
 export * from './JsonTology.js';
 export * from './modules/composition/Compose.js';
+export { BaseTypes } from './modules/data/BaseTypes.js';
 export * from './modules/data/Changeset.js';
 export * from './modules/data/Operations.js';
 export * from './modules/data/Path.js';
@@ -55,12 +56,10 @@ export * from './modules/loaders/Loaders.js';
 export * from './modules/materialization/Materializer.js';
 export * from './modules/ontology/GraphOntologySerializer.js';
 export * from './modules/ontology/OntologyBuilder.js';
-export * from './modules/rdf/Curie.js';
+export * from './modules/quads/Curie.js';
+export * from './modules/quads/Lists.js';
+export * from './modules/quads/Terms.js';
 export * from './modules/rdf/Lift.js';
-export * from './modules/rdf/Lists.js';
 export * from './modules/rdf/Projection.js';
 export * from './modules/rdf/Skolemize.js';
-export {
-  decodeLiteral, Terms
-} from './modules/rdf/Terms.js';
 export * from './modules/transform/Transform.js';

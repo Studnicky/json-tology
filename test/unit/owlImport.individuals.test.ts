@@ -15,15 +15,15 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
-import { importIndividuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Individuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
-import { jsonLdNodesToQuads } from '../../src/modules/rdf/JsonLdToQuads.js';
+import { JsonLdToQuads } from '../../src/modules/rdf/JsonLdToQuads.js';
 import { JsonTology } from '../../src/index.js';
 import { bookstoreEntities } from '../../examples/docs/bookstore/index.js';
 
@@ -90,7 +90,7 @@ function makeCtx(
   return {
     'allClassIris': new Set(allClassIris),
     'allPropertyIris': new Set(allPropertyIris),
-    'baseIRI': 'urn:test',
+    'baseIri': 'urn:test',
     'curie': {
       'compact': (iri: string) => {
         return iri;
@@ -102,7 +102,7 @@ function makeCtx(
         return value;
       }
     },
-    'graph': SchemaGraph.fromQuads([], { 'baseIRI': 'urn:test' }),
+    'graph': SchemaGraph.fromQuads([], { 'baseIri': 'urn:test' }),
     'isDatatype': () => {
       return false;
     },
@@ -113,7 +113,7 @@ function makeCtx(
 
 /**
  * Run the Individuals dispatcher with a real quad-backed graph constructed
- * from the same `quads` array. Replaces ad-hoc `importIndividuals(quads,
+ * from the same `quads` array. Replaces ad-hoc `Individuals.dispatch(quads,
  * makeCtx(...))` calls so the graph and the quads stay in sync.
  */
 function runIndividuals(
@@ -125,10 +125,10 @@ function runIndividuals(
   const ctx = makeCtx(allClassIris, allPropertyIris, reportUnsupported);
   const withGraph: OwlImportContextType = {
     ...ctx,
-    'graph': SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' })
+    'graph': SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' })
   };
 
-  return importIndividuals(quads, withGraph);
+  return Individuals.dispatch(quads, withGraph);
 }
 
 // ---------------------------------------------------------------------------
@@ -559,14 +559,14 @@ void describe('importIndividuals — bookstore sameAs round-trip', () => {
     const parsed = JSON.parse(tboxJsonLd) as Record<string, unknown>;
     const jsonLdCtx = parsed['@context'] as Record<string, string>;
     const graphArr = parsed['@graph'] as Array<Record<string, unknown>>;
-    const tboxQuads = jsonLdNodesToQuads(graphArr, jsonLdCtx);
+    const tboxQuads = JsonLdToQuads.fromNodes(graphArr, jsonLdCtx);
 
     const result = JsonTology.fromTbox(
       [
         ...tboxQuads,
         ...extraQuads
       ],
-      { 'baseIRI': 'https://bookstore.example' }
+      { 'baseIri': 'https://bookstore.example' }
     );
 
     const resultPairs = result.sameAs.map((pair) => {

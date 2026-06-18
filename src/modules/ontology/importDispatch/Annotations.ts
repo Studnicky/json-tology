@@ -26,7 +26,7 @@
  * preserved without scanning raw quads.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
@@ -42,24 +42,11 @@ import {
   SEE_ALSO_PREDICATES,
   VERSION_INFO_PREDICATES
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
+import { ImportRelation } from './ImportRelation.js';
 
 // ---------------------------------------------------------------------------
 // Relation-target extraction helpers — read from graph relations
 // ---------------------------------------------------------------------------
-
-/**
- * Extract the string value of a Literal-typed relation target.
- * Returns null when the relation does not carry a Literal target.
- */
-function literalString(relation: SchemaGraphRelationType): null | string {
-  if (relation.termType !== 'Literal') {
-    return null;
-  }
-
-  return typeof relation.target === 'string'
-    ? relation.target
-    : relation.target.id;
-}
 
 /**
  * Extract the language tag of a Literal-typed relation target.
@@ -71,20 +58,6 @@ function literalLanguage(relation: SchemaGraphRelationType): string {
   }
 
   return relation.language ?? '';
-}
-
-/**
- * Extract the IRI of a NamedNode-typed relation target.
- * Returns null when the relation does not carry a NamedNode target.
- */
-function namedNodeIri(relation: SchemaGraphRelationType): null | string {
-  if (relation.termType !== 'NamedNode') {
-    return null;
-  }
-
-  return typeof relation.target === 'string'
-    ? relation.target
-    : relation.target.id;
 }
 
 // ---------------------------------------------------------------------------
@@ -294,11 +267,11 @@ function getOrCreateAccumulator(
 }
 
 /** Process a single label relation and append to the accumulator. */
-function processLabelRelation(
+function applyLabelRelation(
   relation: SchemaGraphRelationType,
   acc: AnnotationAccumulatorType
 ): void {
-  const value = literalString(relation);
+  const value = ImportRelation.literalString(relation);
 
   if (value !== null) {
     appendLangValue(acc.labels, literalLanguage(relation), value);
@@ -306,11 +279,11 @@ function processLabelRelation(
 }
 
 /** Process a single comment relation and append to the accumulator. */
-function processCommentRelation(
+function applyCommentRelation(
   relation: SchemaGraphRelationType,
   acc: AnnotationAccumulatorType
 ): void {
-  const value = literalString(relation);
+  const value = ImportRelation.literalString(relation);
 
   if (value !== null) {
     appendLangValue(acc.comments, literalLanguage(relation), value);
@@ -324,17 +297,17 @@ function dispatchLiteralRelation(
   acc: AnnotationAccumulatorType
 ): void {
   if (LABEL_PREDICATES.has(predicateIri)) {
-    processLabelRelation(relation, acc);
+    applyLabelRelation(relation, acc);
 
     return;
   }
   if (COMMENT_PREDICATES.has(predicateIri)) {
-    processCommentRelation(relation, acc);
+    applyCommentRelation(relation, acc);
 
     return;
   }
   if (DEPRECATED_PREDICATES.has(predicateIri)) {
-    const value = literalString(relation);
+    const value = ImportRelation.literalString(relation);
 
     if (value !== null && value.toLowerCase() === 'true') {
       acc.deprecated = true;
@@ -343,7 +316,7 @@ function dispatchLiteralRelation(
     return;
   }
   if (VERSION_INFO_PREDICATES.has(predicateIri)) {
-    const value = literalString(relation);
+    const value = ImportRelation.literalString(relation);
 
     if (value !== null) {
       acc.versionInfo.push(value);
@@ -358,7 +331,7 @@ function dispatchIriRelation(
   acc: AnnotationAccumulatorType
 ): void {
   if (IS_DEFINED_BY_PREDICATES.has(predicateIri)) {
-    const iri = namedNodeIri(relation) ?? literalString(relation);
+    const iri = ImportRelation.namedNodeIri(relation) ?? ImportRelation.literalString(relation);
 
     if (iri !== null) {
       acc.isDefinedBy.push(iri);
@@ -367,7 +340,7 @@ function dispatchIriRelation(
     return;
   }
   if (SEE_ALSO_PREDICATES.has(predicateIri)) {
-    const iri = namedNodeIri(relation) ?? literalString(relation);
+    const iri = ImportRelation.namedNodeIri(relation) ?? ImportRelation.literalString(relation);
 
     if (iri !== null) {
       acc.seeAlso.push(iri);
@@ -376,7 +349,7 @@ function dispatchIriRelation(
     return;
   }
   if (ALT_LABEL_PREDICATES.has(predicateIri)) {
-    const value = literalString(relation);
+    const value = ImportRelation.literalString(relation);
 
     if (value !== null) {
       appendLangValue(acc.altLabels, literalLanguage(relation), value);
@@ -447,7 +420,7 @@ function buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulatorType>)
  *
  * @example
  * ```ts
- * const fragment = importAnnotations(quads, ctx);
+ * const fragment = Annotations.dispatch(quads, ctx);
  * ```
  *
  * @param _quads - Retained for back-compat with the dispatcher signature; the
@@ -460,17 +433,19 @@ function buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulatorType>)
  * @see {@link OwlImportFragmentType}
  * @group OWL Import
  */
-export function importAnnotations(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const accumulators = new Map<string, AnnotationAccumulatorType>();
+export class Annotations {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const accumulators = new Map<string, AnnotationAccumulatorType>();
 
-  collectAnnotations(ctx, accumulators);
+    collectAnnotations(ctx, accumulators);
 
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    'schemaDeltas': buildSchemaDeltas(accumulators)
-  };
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      'schemaDeltas': buildSchemaDeltas(accumulators)
+    };
+  }
 }

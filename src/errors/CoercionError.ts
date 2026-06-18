@@ -1,4 +1,4 @@
-import type { ErrorJsonType } from '../types/Error.js';
+import type { ErrorJsonType } from '../types/ErrorJsonType.js';
 import type { CoercionErrorOptionsType } from '../types/ErrorOptions.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 import { ValidationErrors } from './ValidationErrors.js';

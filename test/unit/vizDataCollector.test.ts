@@ -20,7 +20,7 @@ import { VizDataCollector } from '../../src/modules/viz/VizDataCollector.js';
 void describe('VizDataCollector good paths', () => {
   void it('collect returns payload with nodes, edges, and schemas arrays', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [{
         '$id': 'https://viz.io/User',
         'properties': { 'name': { 'type': 'string' } },
@@ -38,7 +38,7 @@ void describe('VizDataCollector good paths', () => {
 
   void it('collect returns one node per registered schema', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [
         {
           '$id': 'https://viz.io/User',
@@ -70,7 +70,7 @@ void describe('VizDataCollector good paths', () => {
 
   void it('collect reports correct propertyCount for a node', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [{
         '$id': 'https://viz.io/Product',
         'properties': {
@@ -94,7 +94,7 @@ void describe('VizDataCollector good paths', () => {
 
   void it('collect creates an edge for $ref relationships between registered schemas', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [
         {
           '$id': 'https://viz.io/User',
@@ -119,7 +119,11 @@ void describe('VizDataCollector good paths', () => {
     const payload = collector.collect();
 
     assert.equal(payload.edges.length, 1, 'should have one edge for the $ref');
-    const [edge] = payload.edges;
+    const edge = payload.edges.at(0);
+
+    if (edge === undefined) {
+      throw new Error('expected edges[0] to exist');
+    }
 
     assert.equal(edge.label, 'address', 'edge label should be the property name');
     assert.equal(edge.source, 'https://viz.io/User', 'edge source should be User');
@@ -128,7 +132,7 @@ void describe('VizDataCollector good paths', () => {
 
   void it('collect schema entry contains id, jsonSchema, owl, shacl, and typescript fields', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [{
         '$id': 'https://viz.io/Widget',
         'properties': { 'name': { 'type': 'string' } },
@@ -155,7 +159,7 @@ void describe('VizDataCollector good paths', () => {
 
   void it('collect node label uses curie compaction when registry has prefix config', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'prefixes': { 'viz': 'https://viz.io/' },
       'schemas': [{
         '$id': 'https://viz.io/Category',
@@ -189,7 +193,7 @@ void describe('VizDataCollector good paths', () => {
 
 void describe('VizDataCollector bad paths', () => {
   void it('collect with empty registry returns payload with empty arrays', () => {
-    const tology = JsonTology.create({ 'baseIRI': 'https://empty.io' });
+    const tology = JsonTology.create({ 'baseIri': 'https://empty.io' });
     const collector = new VizDataCollector(tology.registry);
     const payload = collector.collect();
 
@@ -200,7 +204,7 @@ void describe('VizDataCollector bad paths', () => {
 
   void it('collect with single schema and no $ref produces zero edges', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [{
         '$id': 'https://viz.io/Standalone',
         'properties': { 'x': { 'type': 'number' } },
@@ -216,7 +220,7 @@ void describe('VizDataCollector bad paths', () => {
 
   void it('collect for schema with no properties produces node with propertyCount 0', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [{
         '$id': 'https://viz.io/Empty',
         'type': 'object'
@@ -226,14 +230,18 @@ void describe('VizDataCollector bad paths', () => {
     const payload = collector.collect();
 
     assert.equal(payload.nodes.length, 1, 'should have one node');
-    const [node] = payload.nodes;
+    const node = payload.nodes.at(0);
+
+    if (node === undefined) {
+      throw new Error('expected nodes[0] to exist');
+    }
 
     assert.equal(node.propertyCount, 0);
   });
 
   void it('collect does not throw when called multiple times on the same collector', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [{
         '$id': 'https://viz.io/Repeated',
         'properties': { 'v': { 'type': 'string' } },
@@ -265,7 +273,7 @@ void describe('VizDataCollector ugly paths', () => {
     });
 
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': schemas as unknown as readonly [{ '$id': string;
         'type': 'object' }]
     });
@@ -278,7 +286,7 @@ void describe('VizDataCollector ugly paths', () => {
 
   void it('collect with chain of $refs produces an edge for each ref', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [
         {
           '$id': 'https://viz.io/A',
@@ -315,7 +323,7 @@ void describe('VizDataCollector ugly paths', () => {
 
   void it('collect produces schemaTypes from the node semantics', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [{
         '$id': 'https://viz.io/TypedNode',
         'properties': { 'x': { 'type': 'string' } },
@@ -340,7 +348,7 @@ void describe('VizDataCollector ugly paths', () => {
   void it('collect with $ref to unregistered schema produces no edge for that ref', () => {
     // Only register the source schema, not the target
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [{
         '$id': 'https://viz.io/Source',
         'properties': {
@@ -363,7 +371,7 @@ void describe('VizDataCollector ugly paths', () => {
 
   void it('collect schema typescript field is a non-empty string', () => {
     const tology = JsonTology.create({
-      'baseIRI': 'https://viz.io',
+      'baseIri': 'https://viz.io',
       'schemas': [{
         '$id': 'https://viz.io/TypedSchema',
         'properties': { 'name': { 'type': 'string' } },
@@ -375,7 +383,11 @@ void describe('VizDataCollector ugly paths', () => {
     const payload = collector.collect();
 
     assert.equal(payload.schemas.length, 1, 'should have one schema entry');
-    const [schema] = payload.schemas;
+    const schema = payload.schemas.at(0);
+
+    if (schema === undefined) {
+      throw new Error('expected schemas[0] to exist');
+    }
 
     assert.ok(typeof schema.typescript === 'string');
     assert.ok(schema.typescript.length > 0, 'typescript field should not be empty');

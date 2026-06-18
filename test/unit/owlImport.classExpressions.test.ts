@@ -17,13 +17,13 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importClassExpressions } from '../../src/modules/ontology/importDispatch/ClassExpressions.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { ClassExpressions } from '../../src/modules/ontology/importDispatch/ClassExpressions.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type { OwlImportContextType } from '../../src/types/OwlImport.js';
 
 // ---------------------------------------------------------------------------
@@ -55,10 +55,10 @@ function makeCtx(classIris: string[] = [], quads: QuadInterface[] = []): OwlImpo
   return {
     'allClassIris': new Set(classIris),
     'allPropertyIris': new Set(),
-    'baseIRI': 'https://example.com/',
+    'baseIri': 'https://example.com/',
     curie,
     'graph': SchemaGraph.fromQuads(quads, {
-      'baseIRI': 'https://example.com/',
+      'baseIri': 'https://example.com/',
       'prefixes': STANDARD_PREFIXES
     }),
     'isDatatype': () => {
@@ -147,7 +147,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
 
   void it('returns an empty fragment for an empty quad array', () => {
     const ctx = makeCtx();
-    const fragment = importClassExpressions([], ctx);
+    const fragment = ClassExpressions.dispatch([], ctx);
 
     assert.strictEqual(fragment.schemaDeltas.size, 0);
     assert.deepEqual(fragment.characteristics, []);
@@ -176,7 +176,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       classA,
       classB
     ], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -211,7 +211,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       classC,
       classD
     ], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -248,7 +248,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     ];
 
     const ctx = makeCtx([subject], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     // The union resolves to an empty oneOf (blank-node Restrictions are skipped
@@ -267,9 +267,14 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     });
 
     assert.ok(discReports.length > 0, 'discriminator detection should be reported');
+    const discReport0 = discReports.at(0);
+
+    if (discReport0 === undefined) {
+      throw new Error('expected discriminator report at index 0');
+    }
     assert.ok(
-      discReports[0].axiomIri.includes('kind'),
-      `discriminator property name should include 'kind'; got: ${discReports[0].axiomIri}`
+      discReport0.axiomIri.includes('kind'),
+      `discriminator property name should include 'kind'; got: ${discReport0.axiomIri}`
     );
   });
 
@@ -304,7 +309,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     ];
 
     const ctx = makeCtx([subject], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -331,7 +336,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     ];
 
     const ctx = makeCtx([subject], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -394,7 +399,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       classF,
       classG
     ], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -432,7 +437,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
 
     // nonClass is NOT in allClassIris
     const ctx = makeCtx([classH], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(nonClass);
 
     assert.strictEqual(delta, undefined, 'non-class subjects must not produce deltas');
@@ -463,7 +468,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       classI,
       classJ
     ], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject with prefixed predicate');
@@ -492,7 +497,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     ];
 
     const ctx = makeCtx([subject], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present');

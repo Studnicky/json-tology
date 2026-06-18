@@ -76,7 +76,7 @@ import type {
   AnchorNotFoundType,
   RefNotFoundType
 } from './TypeErrors.js';
-import type { TransformBrandType } from '../types/TransformBrand.js';
+import type { TransformBrandType } from '../types/TransformBrandType.js';
 import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
 
 // ---------------------------------------------------------------------------

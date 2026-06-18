@@ -35,10 +35,10 @@ import {
   Skolemize,
   Transform
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 
 // ---------------------------------------------------------------------------
 // Bookstore fixtures (used across multiple sections)
@@ -109,7 +109,7 @@ void describe('dump / dumpJson failure modes', () => {
   void it('GBU: dump error paths — no $id throws SchemaError, unregistered throws GraphError REF_UNRESOLVED, encoder throw propagates', () => {
     // no $id
     {
-      const jt = JsonTology.create({ 'baseIRI': 'https://bookstore.io' });
+      const jt = JsonTology.create({ 'baseIri': 'https://bookstore.io' });
 
       assert.throws(
         () => {
@@ -125,7 +125,7 @@ void describe('dump / dumpJson failure modes', () => {
     // registering, so an unknown id surfaces REF_UNRESOLVED from the Dumper.
     {
       const jt = JsonTology.create({
-        'baseIRI': 'https://bookstore.io',
+        'baseIri': 'https://bookstore.io',
         'schemas': [AuthorSchema] as const
       });
       const unknownId = 'https://bookstore.io/Unknown' as typeof AuthorSchema.$id;
@@ -157,7 +157,7 @@ void describe('dump / dumpJson failure modes', () => {
         }
       );
       const jt = JsonTology.create({
-        'baseIRI': 'https://bookstore.io',
+        'baseIri': 'https://bookstore.io',
         'schemas': [ExplosiveSchema] as const
       });
 
@@ -176,7 +176,7 @@ void describe('dump / dumpJson failure modes', () => {
     // valid JSON string output
     {
       const jt = JsonTology.create({
-        'baseIRI': 'https://bookstore.io',
+        'baseIri': 'https://bookstore.io',
         'schemas': [AuthorSchema] as const
       });
       const out = jt.dumpJson(AuthorSchema.$id, {
@@ -196,7 +196,7 @@ void describe('dump / dumpJson failure modes', () => {
         'type': 'number'
       } as const;
       const jt = JsonTology.create({
-        'baseIRI': 'https://bookstore.io',
+        'baseIri': 'https://bookstore.io',
         'schemas': [BigIntSchema] as const
       });
 
@@ -225,7 +225,7 @@ void describe('encode — isolated behaviour', () => {
   // schema's canonical (branded) ISO date-time form; encode is the inverse.
   const TimestampSchema = Transform.create(TimestampRawSchema, {
     'decode': (raw: string) => {
-      return brand<InferSchemaType<typeof TimestampRawSchema>>(new Date(raw).toISOString());
+      return Brand.cast<InferSchemaType<typeof TimestampRawSchema>>(new Date(raw).toISOString());
     },
     'encode': (value) => {
       return value;
@@ -258,7 +258,7 @@ void describe('encode — isolated behaviour', () => {
       ]
     );
     const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
+      'baseIri': 'https://bookstore.io',
       'schemas': [ChainedSchema] as const
     });
 
@@ -277,7 +277,7 @@ void describe('encode — isolated behaviour', () => {
     // identity: no transform → input unchanged
     {
       const jt = JsonTology.create({
-        'baseIRI': 'https://bookstore.io',
+        'baseIri': 'https://bookstore.io',
         'schemas': [AuthorSchema] as const
       });
       const value = {
@@ -293,10 +293,10 @@ void describe('encode — isolated behaviour', () => {
     // delegates to Transform encoder
     {
       const jt = JsonTology.create({
-        'baseIRI': 'https://bookstore.io',
+        'baseIri': 'https://bookstore.io',
         'schemas': [TimestampSchema] as const
       });
-      const wire = jt.encode(TimestampSchema, brand<InferSchemaType<typeof TimestampRawSchema>>('2026-01-01T00:00:00.000Z'));
+      const wire = jt.encode(TimestampSchema, Brand.cast<InferSchemaType<typeof TimestampRawSchema>>('2026-01-01T00:00:00.000Z'));
 
       assert.equal(wire, '2026-01-01T00:00:00.000Z');
     }
@@ -316,7 +316,7 @@ void describe('encode — isolated behaviour', () => {
         'type': 'object'
       } as const;
       const jt = JsonTology.create({
-        'baseIRI': 'https://bookstore.io',
+        'baseIri': 'https://bookstore.io',
         'schemas': [
           TimestampSchema,
           ParentSchema
@@ -341,7 +341,7 @@ void describe('encode — isolated behaviour', () => {
 void describe('toQuads / fromQuads boundaries', () => {
   void it('fromQuads on empty array returns an empty array', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
+      'baseIri': 'https://bookstore.io',
       'schemas': [AuthorSchema] as const
     });
     const lifted = jt.fromQuads(AuthorSchema.$id, []);
@@ -351,7 +351,7 @@ void describe('toQuads / fromQuads boundaries', () => {
 
   void it('fromQuads on quads with no rdf:type triple yields no instances', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
+      'baseIri': 'https://bookstore.io',
       'schemas': [AuthorSchema] as const
     });
     const stray = [Terms.quad(
@@ -365,7 +365,7 @@ void describe('toQuads / fromQuads boundaries', () => {
   });
 
   void it('fromQuads against an unregistered schema throws SchemaError SCHEMA_NOT_REGISTERED', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'https://bookstore.io' });
+    const jt = JsonTology.create({ 'baseIri': 'https://bookstore.io' });
 
     assert.throws(
       () => {
@@ -381,7 +381,7 @@ void describe('toQuads / fromQuads boundaries', () => {
 
   void it('toQuads with iriFor from Skolemize.wellKnownGenid produces .well-known/genid IRIs', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
+      'baseIri': 'https://bookstore.io',
       'schemas': [AuthorSchema] as const
     });
     const quads = jt.toQuads(
@@ -407,7 +407,7 @@ void describe('toQuads / fromQuads boundaries', () => {
       'type': 'object'
     } as const;
     const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
+      'baseIri': 'https://bookstore.io',
       'schemas': [SelfRefSchema] as const
     });
 
@@ -429,7 +429,7 @@ void describe('toQuads / fromQuads boundaries', () => {
 
   void it('toQuads with iriFor returning a constant collides; same subject reused for distinct objects', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
+      'baseIri': 'https://bookstore.io',
       'schemas': [
         BookSchema,
         AuthorSchema,
@@ -480,7 +480,7 @@ void describe('subschemaAt pointer errors', () => {
   void it('GBU: invalid pointer throws, not-found throws, empty returns root, nested resolves', () => {
     // enableStrictGraph: false — PARENT has inline nested object to test subschemaAt
     const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
+      'baseIri': 'https://bookstore.io',
       'enableStrictGraph': false,
       'schemas': [PARENT] as const
     });
@@ -600,7 +600,7 @@ void describe('static counterparts — failure modes', () => {
     );
 
     const explodingJt = JsonTology.create({
-      'baseIRI': 'urn:test:',
+      'baseIri': 'urn:test:',
       'schemas': [ExplodingSchema] as const
     });
 
@@ -643,7 +643,7 @@ void describe('static counterparts — failure modes', () => {
         'type': 'object'
       } as const;
       const jt = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'schemas': [Standalone] as const
       });
 
@@ -693,7 +693,7 @@ void describe('static counterparts — failure modes', () => {
       );
 
       const explosiveJt = JsonTology.create({
-        'baseIRI': 'urn:test:',
+        'baseIri': 'urn:test:',
         'schemas': [ExplosiveSchema] as const
       });
 
@@ -731,7 +731,7 @@ void describe('Computed / Invariant lifecycle', () => {
     // addComputed then removeComputed
     {
       const jt = JsonTology.create({
-        'baseIRI': 'urn:lifecycle:',
+        'baseIri': 'urn:lifecycle:',
         'computeds': {
           'urn:lifecycle:Computed': {
             'derived': (data: Record<string, unknown>) => {
@@ -753,7 +753,7 @@ void describe('Computed / Invariant lifecycle', () => {
     // addComputed override
     {
       const jt = JsonTology.create({
-        'baseIRI': 'urn:lifecycle:',
+        'baseIri': 'urn:lifecycle:',
         'computeds': {
           'urn:lifecycle:Computed': {
             'derived': () => {
@@ -779,7 +779,7 @@ void describe('Computed / Invariant lifecycle', () => {
         'type': 'object'
       } as const;
       const jt = JsonTology.create({
-        'baseIRI': 'urn:lifecycle:',
+        'baseIri': 'urn:lifecycle:',
         'schemas': [Schema] as const
       });
 
@@ -808,7 +808,7 @@ void describe('Computed / Invariant lifecycle', () => {
         'type': 'object'
       } as const;
       const jt = JsonTology.create({
-        'baseIRI': 'urn:lifecycle:',
+        'baseIri': 'urn:lifecycle:',
         'schemas': [Schema] as const
       });
 
@@ -835,7 +835,7 @@ void describe('Computed / Invariant lifecycle', () => {
         'type': 'object'
       } as const;
       const jt = JsonTology.create({
-        'baseIRI': 'urn:lifecycle:',
+        'baseIri': 'urn:lifecycle:',
         'computeds': {
           'urn:lifecycle:DefaultThenCompute': {
             'doubled': (data: Record<string, unknown>) => {
@@ -878,7 +878,7 @@ void describe('Mutual recursion graphs', () => {
       'type': 'object'
     } as const;
     const jt = JsonTology.create({
-      'baseIRI': 'urn:mutual:',
+      'baseIri': 'urn:mutual:',
       'maxSchemaDepth': 50,
       'schemas': [
         NodeA,
@@ -933,7 +933,7 @@ void describe('Mixed-tuple registration order — order independence', () => {
         ]
       ] as const) {
       const jt = JsonTology.create({
-        'baseIRI': 'https://bookstore.io',
+        'baseIri': 'https://bookstore.io',
         'schemas': schemas
       });
       const result = jt.instantiate(OrderSchema, {
@@ -962,7 +962,7 @@ void describe('Type-cast behaviour with enableTypeCast', () => {
   void it('GBU: "true" string rejected by default, coerced to boolean true with enableTypeCast', () => {
     // default: reject string for boolean
     const jtDefault = JsonTology.create({
-      'baseIRI': 'urn:typecast:',
+      'baseIri': 'urn:typecast:',
       'schemas': [FlagSchema] as const
     });
 
@@ -977,7 +977,7 @@ void describe('Type-cast behaviour with enableTypeCast', () => {
 
     // enableTypeCast: coerce to boolean
     const jtCast = JsonTology.create({
-      'baseIRI': 'urn:typecast:',
+      'baseIri': 'urn:typecast:',
       'enableTypeCast': true,
       'schemas': [FlagSchema] as const
     });
@@ -994,7 +994,7 @@ void describe('Type-cast behaviour with enableTypeCast', () => {
 void describe('Default propagation through nested $refs', () => {
   void it('Customer.addresses default applies when reached through Order.$ref', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
+      'baseIri': 'https://bookstore.io',
       'enableDefaults': true,
       'schemas': [
         CustomerSchema,
@@ -1039,7 +1039,7 @@ void describe('Transform decode errors at root-level coercion', () => {
       }
     );
     const jt = JsonTology.create({
-      'baseIRI': 'urn:transform:',
+      'baseIri': 'urn:transform:',
       'schemas': [HostileSchema] as const
     });
 
@@ -1083,7 +1083,7 @@ void describe('findDuplicates — structurally identical, IRI distinct', () => {
     // enableStrictGraph: false — test registers inline duplicate shape to verify
     // findDuplicates() detection.
     const jt = JsonTology.create({
-      'baseIRI': 'urn:dup:',
+      'baseIri': 'urn:dup:',
       'enableStrictGraph': false
     });
 
@@ -1186,7 +1186,7 @@ void describe('Mixed $defs + cross-schema $ref', () => {
 
   void it('GBU: instantiate accepts $defs+cross-ref, rejects on constraint fail, toSchema preserves both ref forms', () => {
     const jt = JsonTology.create({
-      'baseIRI': 'urn:mixed:',
+      'baseIri': 'urn:mixed:',
       'schemas': [
         ExternalTag,
         Mixed
@@ -1221,8 +1221,19 @@ void describe('Mixed $defs + cross-schema $ref', () => {
     const reconstructed = jt.toSchema(Mixed.$id) as Record<string, unknown>;
     const properties = reconstructed.properties as Record<string, Record<string, unknown>>;
 
-    assert.equal(properties.tag.$ref, 'urn:mixed:Tag', 'cross-schema ref preserved');
-    assert.ok(typeof properties.local.$ref === 'string', 'local $defs ref preserved as string');
-    assert.match(properties.local.$ref, /\$defs\/Local|Doc/u, 'local ref points into $defs');
+    const tagProp = properties.tag;
+
+    if (tagProp === undefined) {
+      throw new Error('properties.tag missing');
+    }
+    assert.equal(tagProp.$ref, 'urn:mixed:Tag', 'cross-schema ref preserved');
+
+    const localProp = properties.local;
+
+    if (localProp === undefined) {
+      throw new Error('properties.local missing');
+    }
+    assert.ok(typeof localProp.$ref === 'string', 'local $defs ref preserved as string');
+    assert.match(localProp.$ref, /\$defs\/Local|Doc/u, 'local ref points into $defs');
   });
 });

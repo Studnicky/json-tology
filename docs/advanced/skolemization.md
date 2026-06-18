@@ -2,7 +2,7 @@
 
 > Skolemization is the process of replacing blank nodes in an RDF graph with deterministic IRIs so consumers can refer to those nodes stably across calls and stores. The W3C term comes from `Skolem(1920)`'s function: every existential variable becomes a fresh constant. In RDF, every anonymous node becomes a fresh IRI.
 
-json-tology projects every typed value into ABox quads via `toQuads`. By default, every emitted object gets a deterministic IRI of the form `<baseIRI>/instances/<classId>-<contentHash>`. Sometimes that's exactly right - content-addressed IRIs are stable, deduplicating, and need no external coordination. Sometimes you want something else: a property-derived IRI, a UUID, an explicit override, or genuine blank nodes. The `iriFor` option (and the `Skolemize` helper class) gives you that control.
+json-tology projects every typed value into ABox quads via `toQuads`. By default, every emitted object gets a deterministic IRI of the form `<baseIri>/instances/<classId>-<contentHash>`. Sometimes that's exactly right - content-addressed IRIs are stable, deduplicating, and need no external coordination. Sometimes you want something else: a property-derived IRI, a UUID, an explicit override, or genuine blank nodes. The `iriFor` option (and the `Skolemize` helper class) gives you that control.
 
 Relevant standards:
 
@@ -13,17 +13,17 @@ Relevant standards:
 
 `Skolemize` is a static-only helper class exposing four reusable minting strategies. Each returns a `SkolemizeFnType`: a function `(ctx) => string | undefined` suitable for the `iriFor` option on `toQuads`.
 
-### `Skolemize.hash({ baseIRI })`
+### `Skolemize.hash({ baseIri })`
 
-Hashes the value with FNV-1a and emits `<baseIRI>/instances/<contentHash>`. Deterministic: equal values produce equal IRIs across calls and processes.
+Hashes the value with FNV-1a and emits `<baseIri>/instances/<contentHash>`. Deterministic: equal values produce equal IRIs across calls and processes.
 
-This is **not** identical to the projection's built-in default IRI minter. The default minter (`defaultInstanceIri`) additionally prefixes the escaped class identifier, emitting `<baseIRI>/instances/<classId>-<contentHash>`. `Skolemize.hash` omits the classId segment, so its output differs from the projection default even for identical input values.
+This is **not** identical to the projection's built-in default IRI minter. The default minter (`defaultInstanceIri`) additionally prefixes the escaped class identifier, emitting `<baseIri>/instances/<classId>-<contentHash>`. `Skolemize.hash` omits the classId segment, so its output differs from the projection default even for identical input values.
 
 <RunnableExample src="examples/docs/advanced/50-skolemize-hash" />
 
-### `Skolemize.wellKnownGenid(baseIRI)`
+### `Skolemize.wellKnownGenid(baseIri)`
 
-Mints IRIs matching the [RDF 1.1 §3.5 well-known genid pattern](https://www.w3.org/TR/rdf11-concepts/#section-skolemization): `<baseIRI>/.well-known/genid/<hash>`. These IRIs are intentionally reversible - `fromQuads({ deskolemize: true })` recognizes the pattern and rewrites the IRIs back to blank nodes during lift.
+Mints IRIs matching the [RDF 1.1 §3.5 well-known genid pattern](https://www.w3.org/TR/rdf11-concepts/#section-skolemization): `<baseIri>/.well-known/genid/<hash>`. These IRIs are intentionally reversible - `fromQuads({ deskolemize: true })` recognizes the pattern and rewrites the IRIs back to blank nodes during lift.
 
 <RunnableExample src="examples/docs/advanced/51-skolemize-well-known-genid" />
 
@@ -39,9 +39,9 @@ Mints `urn:uuid:<v4>`. Non-deterministic - every emission gets a fresh identity.
 
 <RunnableExample src="examples/docs/advanced/52-skolemize-uuid" />
 
-### `Skolemize.fromProperty(name, { baseIRI, fallback })`
+### `Skolemize.fromProperty(name, { baseIri, fallback })`
 
-Mints `<baseIRI>/<value[name]>` when the value has a non-empty string at `value[name]`. Otherwise delegates to `fallback` (defaults to `Skolemize.hash`).
+Mints `<baseIri>/<value[name]>` when the value has a non-empty string at `value[name]`. Otherwise delegates to `fallback` (defaults to `Skolemize.hash`).
 
 <RunnableExample src="examples/docs/advanced/53-skolemize-from-property" />
 

@@ -10,16 +10,16 @@
  * @group OWL Codegen
  */
 
-export type { BuildEntityFileOptionsType } from '../types/BuildEntityFileOptions.js';
-export type { BuildIndexSourceOptionsType } from '../types/BuildIndexSourceOptions.js';
-export type { BuildNameMapResultType } from '../types/BuildNameMapResult.js';
-export type { EmitBannerOptionsType } from '../types/EmitBannerOptions.js';
-export type { EmitRegistryOptionsType } from '../types/EmitRegistryOptions.js';
-export type { EmitSchemaConstantsOptionsType } from '../types/EmitSchemaConstantsOptions.js';
-export type { KahnStepOptionsType } from '../types/KahnStepOptions.js';
-export type { RegistryDirContextType } from '../types/RegistryDirContext.js';
-export type { SerializeContextType } from '../types/SerializeContext.js';
-export type { SingleFileBodyOptionsType } from '../types/SingleFileBodyOptions.js';
+export type { BuildEntityFileOptionsType } from '../types/BuildEntityFileOptionsType.js';
+export type { BuildIndexSourceOptionsType } from '../types/BuildIndexSourceOptionsType.js';
+export type { BuildNameMapResultType } from '../types/BuildNameMapResultType.js';
+export type { EmitBannerOptionsType } from '../types/EmitBannerOptionsType.js';
+export type { EmitRegistryOptionsType } from '../types/EmitRegistryOptionsType.js';
+export type { EmitSchemaConstantsOptionsType } from '../types/EmitSchemaConstantsOptionsType.js';
+export type { KahnStepOptionsType } from '../types/KahnStepOptionsType.js';
+export type { RegistryDirContextType } from '../types/RegistryDirContextType.js';
+export type { SerializeContextType } from '../types/SerializeContextType.js';
+export type { SingleFileBodyOptionsType } from '../types/SingleFileBodyOptionsType.js';
 
 /**
  * Named return type for {@link buildDepsMap}.
@@ -37,7 +37,7 @@ export type { SingleFileBodyOptionsType } from '../types/SingleFileBodyOptions.j
  *
  * @category Codegen
  * @since 0.18.0
- * @see {@link generateTypeScript}
+ * @see {@link OwlCodegen.toTypeScript}
  * @group OWL Codegen
  */
 export type BuildDepsMapType = Map<string, Set<string>>;
@@ -59,7 +59,7 @@ export type BuildDepsMapType = Map<string, Set<string>>;
  *
  * @category Codegen
  * @since 0.18.0
- * @see {@link generateTypeScript}
+ * @see {@link OwlCodegen.toTypeScript}
  * @group OWL Codegen
  */
 export type BuildInDegreeMapType = Map<string, number>;
@@ -81,7 +81,7 @@ export type OwlCodegenOptionsType = {
    * Base IRI used in the `JsonTology.create` call. Defaults to empty string,
    * which causes the generator to derive it from the first schema $id.
    */
-  readonly 'baseIRI'?: string | undefined;
+  readonly 'baseIri'?: string | undefined;
 
   /**
    * Extra comment lines inserted immediately after the auto-generated banner.
@@ -109,7 +109,7 @@ export type OwlCodegenOptionsType = {
 };
 
 /**
- * Describes one entity file produced by {@link generateRegistryFiles}.
+ * Describes one entity file produced by {@link OwlCodegen.toRegistryFiles}.
  */
 export type RegistryFileEntryType = {
   /** Full IRI of the OWL class this file represents. */
@@ -123,7 +123,7 @@ export type RegistryFileEntryType = {
 };
 
 /**
- * Result returned by {@link generateRegistryFiles}.
+ * Result returned by {@link OwlCodegen.toRegistryFiles}.
  */
 export type RegistryFilesResultType = {
   /** Metadata + source for each generated `entities/<Name>.ts` file. */
@@ -140,7 +140,7 @@ export type OwlRegistryDirOptionsType = {
    * Base IRI used in the `JsonTology.create` call.
    * Defaults to an IRI derived from the first schema `$id`.
    */
-  readonly 'baseIRI'?: string | undefined;
+  readonly 'baseIri'?: string | undefined;
 
   /**
    * Extra comment lines inserted after the auto-generated banner in the

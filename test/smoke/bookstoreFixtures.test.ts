@@ -151,7 +151,7 @@ void describe('bookstore aboxFixtures', () => {
     const quads = bookstoreEntities.toQuads(
       ReviewSchema,
       validated,
-      { 'graphIRI': REVIEWS_GRAPH }
+      { 'graphIri': REVIEWS_GRAPH }
     );
 
     const EDGE_PREDICATE = 'https://bookstore.example/reviews';
@@ -162,7 +162,14 @@ void describe('bookstore aboxFixtures', () => {
     });
 
     assert.equal(baseTriples.length, 1, 'one base triple for the reviews edge');
-    assert.equal(baseTriples[0].object.value, NEVERENDING_BOOK_IRI, 'target is the book IRI');
+
+    const baseTriple = baseTriples.at(0);
+
+    if (baseTriple === undefined) {
+      throw new Error('baseTriples[0] is undefined');
+    }
+
+    assert.equal(baseTriple.object.value, NEVERENDING_BOOK_IRI, 'target is the book IRI');
 
     const annotationQuads = quads.filter((quad) => {
       return quad.subject.termType === 'Quad';
@@ -200,17 +207,22 @@ void describe('bookstore aboxFixtures', () => {
     const lifted = bookstoreEntities.fromQuads(EBookSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'one ebook lifted');
-    assert.equal(lifted[0].title, aboxFixtures.ebook.title, 'title preserved');
-    assert.equal(lifted[0].fileFormat, aboxFixtures.ebook.fileFormat, 'fileFormat preserved');
+
+    const liftedEbook = lifted.at(0);
+
+    if (liftedEbook === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    assert.equal(liftedEbook.title, aboxFixtures.ebook.title, 'title preserved');
+    assert.equal(liftedEbook.fileFormat, aboxFixtures.ebook.fileFormat, 'fileFormat preserved');
     assert.equal(
-      lifted[0].fileSizeBytes,
+      liftedEbook.fileSizeBytes,
       aboxFixtures.ebook.fileSizeBytes,
       'fileSizeBytes preserved'
     );
     // epubVersion lives under the then-branch; it must survive the round-trip.
     // `in` narrows the discriminated union to the epub (then-branch) member.
-    const liftedEbook = lifted[0];
-
     assert.ok(
       'epubVersion' in liftedEbook,
       'lifted ebook carries the conditional then-branch property epubVersion'
@@ -223,7 +235,7 @@ void describe('bookstore aboxFixtures', () => {
     // downloadUrl is emitted as a NamedNode (x-jt-iriRef: true) and lifted back
     // as a string IRI.
     assert.equal(
-      lifted[0].downloadUrl,
+      liftedEbook.downloadUrl,
       aboxFixtures.ebook.downloadUrl,
       'downloadUrl (iri-ref) preserved'
     );
@@ -235,9 +247,16 @@ void describe('bookstore aboxFixtures', () => {
     const lifted = bookstoreEntities.fromQuads(PrintBookSchema.$id, quads);
 
     assert.equal(lifted.length, 1, 'one printBook lifted');
-    assert.equal(lifted[0].title, aboxFixtures.printBook.title, 'title preserved');
-    assert.equal(lifted[0].binding, aboxFixtures.printBook.binding, 'binding preserved');
-    assert.equal(lifted[0].pageCount, aboxFixtures.printBook.pageCount, 'pageCount preserved');
+
+    const liftedPrintBook = lifted.at(0);
+
+    if (liftedPrintBook === undefined) {
+      throw new Error('lifted[0] is undefined');
+    }
+
+    assert.equal(liftedPrintBook.title, aboxFixtures.printBook.title, 'title preserved');
+    assert.equal(liftedPrintBook.binding, aboxFixtures.printBook.binding, 'binding preserved');
+    assert.equal(liftedPrintBook.pageCount, aboxFixtures.printBook.pageCount, 'pageCount preserved');
   });
 
   void it('signedFirstEdition: provenance literal has x-jt-language de tag in quads', () => {

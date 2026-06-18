@@ -6,22 +6,22 @@
  * an internal rdf/js quad store. Every output derives from that store.
  */
 
-import type { OntologyBuilderInterface } from '../../interfaces/Ontology.js';
-import type { JsonLdDocInput } from '../../types/JsonLdDocInput.js';
+import type { OntologyBuilderInterface } from '../../interfaces/OntologyBuilderInterface.js';
+import type { JsonLdDocInputType } from '../../types/JsonLdDocInputType.js';
 import type { OntologyBuilderOptionsType } from '../../types/OntologyBuilderOptionsType.js';
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import jsonld from 'jsonld';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { RDFS } from '../../constants/IRI.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { SHACL_ARRAY_KEYS } from '../../constants/SHACL.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import { logScope } from '../data/LogScope.js';
+import { LogScope } from '../data/LogScope.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
 import { JsonLdFormatter } from '../rdf/JsonLdFormatter.js';
-import { QuadFactory } from '../rdf/QuadFactory.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
 
 /**
  * Ontology Builder
@@ -31,7 +31,7 @@ import { QuadFactory } from '../rdf/QuadFactory.js';
  * All outputs derive from the canonical internal quad store.
  */
 export class OntologyBuilder implements OntologyBuilderInterface {
-  private readonly baseIRI: string;
+  private readonly baseIri: string;
   private readonly logger: LoggerInterface;
   private readonly prefixes: Record<string, string>;
   private readonly quadStore: QuadInterface[] = [];
@@ -42,7 +42,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Graph data enters through `addFromQuads` / `addFromJsonLd` and their SHACL variants.
    */
   public constructor(config: Readonly<OntologyBuilderOptionsType>) {
-    this.baseIRI = config.baseIRI;
+    this.baseIri = config.baseIri;
     this.logger = config.logger ?? SILENT_LOGGER;
     this.prefixes = config.prefixes;
   }
@@ -51,13 +51,13 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Parse a JSON-LD document to rdf/js quads via `jsonld.toRDF` and append
    * them to the canonical ontology store.
    */
-  public async addFromJsonLd(doc: JsonLdDocInput): Promise<this> {
+  public async addFromJsonLd(doc: JsonLdDocInputType): Promise<this> {
     const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
     const quads = dataset.map((datasetQuad) => {
       return QuadFactory.fromDatasetQuad(datasetQuad);
     });
 
-    this.logger.debug(logScope('OntologyBuilder', 'addFromJsonLd', `parsed ${quads.length} quads from JSON-LD`));
+    this.logger.debug(LogScope.format('OntologyBuilder', 'addFromJsonLd', `parsed ${quads.length} quads from JSON-LD`));
 
     return this.addFromQuads(quads);
   }
@@ -66,7 +66,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Append rdf/js quads to the canonical ontology store.
    */
   public addFromQuads(quads: readonly QuadInterface[]): this {
-    this.logger.debug(logScope('OntologyBuilder', 'addFromQuads', `adding ${quads.length} quads to ontology store`));
+    this.logger.debug(LogScope.format('OntologyBuilder', 'addFromQuads', `adding ${quads.length} quads to ontology store`));
 
     for (const quad of quads) {
       this.quadStore.push(quad);
@@ -79,13 +79,13 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Parse a JSON-LD document to rdf/js quads via `jsonld.toRDF` and append
    * them to the SHACL store.
    */
-  public async addShaclFromJsonLd(doc: JsonLdDocInput): Promise<this> {
+  public async addShaclFromJsonLd(doc: JsonLdDocInputType): Promise<this> {
     const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
     const quads = dataset.map((datasetQuad) => {
       return QuadFactory.fromDatasetQuad(datasetQuad);
     });
 
-    this.logger.debug(logScope('OntologyBuilder', 'addShaclFromJsonLd', `parsed ${quads.length} quads from JSON-LD`));
+    this.logger.debug(LogScope.format('OntologyBuilder', 'addShaclFromJsonLd', `parsed ${quads.length} quads from JSON-LD`));
 
     return this.addShaclFromQuads(quads);
   }
@@ -94,7 +94,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Append rdf/js quads to the SHACL store.
    */
   public addShaclFromQuads(quads: readonly QuadInterface[]): this {
-    this.logger.debug(logScope('OntologyBuilder', 'addShaclFromQuads', `adding ${quads.length} quads to SHACL store`));
+    this.logger.debug(LogScope.format('OntologyBuilder', 'addShaclFromQuads', `adding ${quads.length} quads to SHACL store`));
 
     for (const quad of quads) {
       this.shaclStore.push(quad);
@@ -135,7 +135,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
     return {
       [JSONLD.context]: this.prefixes,
       [JSONLD.graph]: nodes,
-      [JSONLD.id]: `${this.baseIRI}/ontology/`,
+      [JSONLD.id]: `${this.baseIri}/ontology/`,
       [JSONLD.type]: 'owl:Ontology',
       'rdfs:label': 'Generated Ontology'
     };

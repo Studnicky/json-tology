@@ -110,7 +110,7 @@ async function quadsToN3(quads: readonly QuadInterface[]): Promise<string> {
 // ---------------------------------------------------------------------------
 // quadsToN3DefaultGraph — strips named-graph context before EYE serialization.
 //
-// Annotated-edge projection requires graphIRI (triple-term quads carry no
+// Annotated-edge projection requires graphIri (triple-term quads carry no
 // default graph membership). EYE rules operate on the default graph: facts
 // inside `<g> { ... }` named-graph blocks are invisible to plain `{ ?s ?p ?o }`
 // rule antecedents. This helper re-projects every quad to the default graph
@@ -590,7 +590,7 @@ const annotatedReview = jt.instantiate(ReviewSchema, aboxFixtures.reviewWithAnno
 // RDF-star triple-term quad. fromQuads round-trips losslessly (star form present).
 const bothQuads = jt.toQuads(ReviewSchema, annotatedReview, {
   'annotationEmitMode': 'both',
-  'graphIRI': REVIEW_GRAPH_IRI,
+  'graphIri': REVIEW_GRAPH_IRI,
   'iriFor': ANNOTATED_REVIEW_IRI
 });
 
@@ -617,7 +617,7 @@ console.log();
 
 // SCENARIO 3A — flat rule keyed on `?r <schema:verified> true`.
 // Fires for any RDF-star-unaware tool; no quoted-triple needed.
-// Note: graphIRI is required by the projection layer for annotated edges.
+// Note: graphIri is required by the projection layer for annotated edges.
 // We strip the named-graph wrapper (default-graph projection) before sending
 // to EYE — EYE rules operate on the default graph only.
 const bothAboxN3 = await quadsToN3DefaultGraph(bothQuads);

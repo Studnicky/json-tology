@@ -21,7 +21,7 @@
  * - `predicatesOfClass` — inverse of domain (predicates whose domain is a class).
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { AboxGraphInterface } from '../../interfaces/AboxGraphInterface.js';
 import type { CursorInterface } from '../../interfaces/CursorInterface.js';
 import type { SchemaCursorInterface } from '../../interfaces/SchemaCursorInterface.js';
@@ -31,15 +31,15 @@ import type {
   AboxPredicateObjectType,
   AboxPredicateSubjectType
 } from '../../types/AboxGraph.js';
-import type { AboxLiftSubjectFnType } from '../../types/AboxLiftSubjectFn.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
+import type { AboxLiftSubjectFnType } from '../../types/AboxLiftSubjectFnType.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
 
 import {
   RDF, RDFS
 } from '../../constants/IRI.js';
 import { Cursor } from './Cursor.js';
 import { SchemaCursor } from './SchemaCursor.js';
-import { decodeLiteral } from '../rdf/Terms.js';
+import { Terms } from '../quads/Terms.js';
 
 
 function isLiteralObject(termType: AboxPredicateObjectType['objectTermType']): boolean {
@@ -52,7 +52,7 @@ function isLiteralObject(termType: AboxPredicateObjectType['objectTermType']): b
  */
 function quadObjectValue(quad: QuadInterface): unknown {
   if (quad.object.termType === 'Literal') {
-    return decodeLiteral(quad.object);
+    return Terms.decodeLiteral(quad.object);
   }
 
   return quad.object.value;
@@ -570,7 +570,7 @@ export class AboxGraph implements AboxGraphInterface {
         return iri;
       }
 
-      const classId = types[0];
+      const classId = types[0] ?? iri;
       const subjectQuads = this.collectClosureQuads(iri);
       const lifted = this.liftSubject(classId, subjectQuads);
       const instance = lifted.length > 0 ? lifted[0] : iri;

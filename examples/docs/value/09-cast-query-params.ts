@@ -17,7 +17,7 @@ import {
 // Iso8601Schema, RatingScoreSchema, ReviewIdSchema, etc.) so ReviewSchema's
 // references resolve correctly.
 const castEntities = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableTypeCast': true,
   'schemas': bookstoreSchemas
 });

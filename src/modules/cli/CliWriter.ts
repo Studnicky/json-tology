@@ -6,7 +6,7 @@
  * can opt to inject a mock writer for testing without touching globals.
  */
 
-import type { CliWriterInterface } from '../../interfaces/CliWriter.js';
+import type { CliWriterInterface } from '../../interfaces/CliWriterInterface.js';
 
 export class CliWriter implements CliWriterInterface {
   public static readonly default: CliWriter = new CliWriter();

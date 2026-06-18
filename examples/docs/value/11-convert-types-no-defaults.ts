@@ -16,7 +16,7 @@ import {
 // bookstoreSchemas seeds all transitive $refs so ReviewSchema's references
 // (IsbnSchema, CustomerIdSchema, Iso8601Schema, etc.) resolve correctly.
 const castEntities = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'enableTypeCast': true,
   'schemas': bookstoreSchemas
 });

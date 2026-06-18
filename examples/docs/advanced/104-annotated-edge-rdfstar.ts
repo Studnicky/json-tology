@@ -12,11 +12,11 @@
  *      << <review-IRI> <https://bookstore.example/reviews> <book-IRI> >>
  *        <…Review#…#ratingGiven>  "5"^^xsd:integer
  *
- * Both quads share the same named graph. A named graph (`graphIRI`) is
+ * Both quads share the same named graph. A named graph (`graphIri`) is
  * required — the default graph cannot carry triple-term quads.
  */
 
-import type { QuadInterface } from '../../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../../src/interfaces/QuadInterface.js';
 import {
   aboxFixtures,
   bookstoreEntities,
@@ -26,7 +26,7 @@ import {
 const REVIEWS_GRAPH = 'https://bookstore.example/graph/reviews';
 
 const review = bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge);
-const quads = bookstoreEntities.toQuads(ReviewSchema, review, { 'graphIRI': REVIEWS_GRAPH });
+const quads = bookstoreEntities.toQuads(ReviewSchema, review, { 'graphIri': REVIEWS_GRAPH });
 
 // ── Base triple ────────────────────────────────────────────────────────────
 const baseTriple = quads.find((quad) => {

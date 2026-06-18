@@ -57,7 +57,16 @@ export class SchemaCursor implements SchemaCursorInterface {
       );
     }
 
-    return this.schemaOf(this.iriList[0]);
+    const onlyIri = this.iriList[0];
+
+    if (onlyIri === undefined) {
+      throw new GraphError(
+        'SchemaCursor.one() internal error: iriList[0] undefined',
+        { 'code': GraphErrorCode.CURSOR_CARDINALITY }
+      );
+    }
+
+    return this.schemaOf(onlyIri);
   }
 
   public properties(): string[] {

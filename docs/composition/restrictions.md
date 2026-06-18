@@ -8,12 +8,12 @@ OWL property restrictions narrow the inferred TypeScript type of the restricted 
 
 <!-- inline-ts-ok: pseudocode signature group for the restriction builders; not runnable expressions. -->
 ```ts
-Compose.someValuesFrom(propIRI, rangeClassIRI): RestrictionRefType
-Compose.allValuesFrom(propIRI, rangeClassIRI): RestrictionRefType
-Compose.hasValue(propIRI, value): RestrictionRefType
-Compose.cardinality(propIRI, n): RestrictionRefType
-Compose.minCardinality(propIRI, n): RestrictionRefType
-Compose.maxCardinality(propIRI, n): RestrictionRefType
+Compose.someValuesFrom(propIri, rangeClassIri): RestrictionRefType
+Compose.allValuesFrom(propIri, rangeClassIri): RestrictionRefType
+Compose.hasValue(propIri, value): RestrictionRefType
+Compose.cardinality(propIri, n): RestrictionRefType
+Compose.minCardinality(propIri, n): RestrictionRefType
+Compose.maxCardinality(propIri, n): RestrictionRefType
 
 Compose.subClassOf(restriction, body): typeof body
 ```
@@ -44,8 +44,8 @@ The TBox emits:
 
 | Method | Predicate | TypeScript narrowing | OWL semantics |
 |---|---|---|---|
-| `someValuesFrom(prop, classIRI)` | `owl:someValuesFrom` | non-empty tuple | At least one value of `prop` is an instance of `classIRI` |
-| `allValuesFrom(prop, classIRI)` | `owl:allValuesFrom` | readonly array of element type | Every value of `prop` is an instance of `classIRI` |
+| `someValuesFrom(prop, classIri)` | `owl:someValuesFrom` | non-empty tuple | At least one value of `prop` is an instance of `classIri` |
+| `allValuesFrom(prop, classIri)` | `owl:allValuesFrom` | readonly array of element type | Every value of `prop` is an instance of `classIri` |
 | `hasValue(prop, value)` | `owl:hasValue` | property type is the literal `value` | `prop` carries the literal `value` (string/number/boolean) |
 | `cardinality(prop, n)` | `owl:cardinality` | length-`n` readonly tuple (cap 16) | Exactly `n` values |
 | `minCardinality(prop, n)` | `owl:minCardinality` | `n` mandatory prefix elements | At least `n` values |

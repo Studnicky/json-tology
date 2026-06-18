@@ -33,12 +33,12 @@ import type {
   ValidateChainType
 } from '../../types/Transform.js';
 import type { BrandedType } from '../../types/Brand.js';
-import { brand } from '../../types/Brand.js';
+import { Brand } from '../data/Brand.js';
 import type {
   CanonicalShapeType
 } from '../../types/Infer.js';
 import type { JsonTologyReferencesInterface } from '../../types/SchemaReferences.js';
-import type { TransformFnsType } from '../../types/TransformFns.js';
+import type { TransformFnsType } from '../../types/TransformFnsType.js';
 import type {
   AnyTransformStageType,
   TransformStageType
@@ -98,7 +98,7 @@ export class Transform {
     TSchema extends JsonSchemaDocumentType,
     TBrand extends string
   >(schema: TSchema, _: TBrand): BrandedType<TSchema, TBrand> {
-    return brand<BrandedType<TSchema, TBrand>>(schema);
+    return Brand.cast<BrandedType<TSchema, TBrand>>(schema);
   }
 
   /**
@@ -137,7 +137,7 @@ export class Transform {
 
     transformRegistry.set(schema, composed);
 
-    return brand<TransformedType<TSchema, ChainWireType<TStages>>>(schema);
+    return Brand.cast<TransformedType<TSchema, ChainWireType<TStages>>>(schema);
   }
 
   /**
@@ -169,7 +169,7 @@ export class Transform {
       // as `CanonicalShapeType`/`InferType`. Pass an explicit map to override.
       //
       // Both sides speak the brand-free structural canonical (`CanonicalShapeType`):
-      // `decode` produces plain values (no per-leaf `brand()`), and `validate`
+      // `decode` produces plain values (no per-leaf `Brand.cast()`), and `validate`
       // — run by `instantiate` — is the boundary that certifies the branded form.
       'decode': (raw: TWire) => CanonicalShapeType<TSchema, TReferences>;
       'encode': (value: CanonicalShapeType<TSchema, TReferences>) => TWire;
@@ -177,7 +177,7 @@ export class Transform {
   ): TransformedType<TSchema, TWire> {
     Transform.register(schema, fns as TransformFnsType);
 
-    return brand<TransformedType<TSchema, TWire>>(schema);
+    return Brand.cast<TransformedType<TSchema, TWire>>(schema);
   }
 
   /**

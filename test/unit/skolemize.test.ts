@@ -48,34 +48,34 @@ const literalCustomFallback = (): string => {
 };
 
 void describe('Skolemize.hash() — Good/Bad/Ugly', () => {
-  void it('mints IRIs deterministically, strips trailing slashes, returns undefined without baseIRI', () => {
-    // Bad: returns undefined when no baseIRI configured
+  void it('mints IRIs deterministically, strips trailing slashes, returns undefined without baseIri', () => {
+    // Bad: returns undefined when no baseIri configured
     const noBase = Skolemize.hash();
 
     assert.equal(noBase(ctx({ 'name': 'Alice' })), undefined);
 
-    // Good: mints baseIRI/instances/<hash>
-    const fn = Skolemize.hash({ 'baseIRI': 'https://example.com' });
+    // Good: mints baseIri/instances/<hash>
+    const fn = Skolemize.hash({ 'baseIri': 'https://example.com' });
     const iri = fn(ctx({ 'name': 'Alice' }));
 
     assert.ok(typeof iri === 'string');
     assert.match(iri, /^https:\/\/example\.com\/instances\//u);
 
-    // Ugly: strips trailing slashes from baseIRI
-    const stripped = Skolemize.hash({ 'baseIRI': 'https://example.com///' });
+    // Ugly: strips trailing slashes from baseIri
+    const stripped = Skolemize.hash({ 'baseIri': 'https://example.com///' });
     const strippedIri = stripped(ctx({ 'k': 1 }));
 
     assert.ok(typeof strippedIri === 'string');
     assert.ok((strippedIri).startsWith('https://example.com/instances/'));
 
     // Good: produces deterministic IRI for equal values
-    const fn2 = Skolemize.hash({ 'baseIRI': 'https://x' });
+    const fn2 = Skolemize.hash({ 'baseIri': 'https://x' });
 
     assert.equal(fn2(ctx({ 'name': 'Z' })), fn2(ctx({ 'name': 'Z' })));
 
     // Good: hash matches Hash.value() output
     const value = { 'k': 'v' };
-    const fn3 = Skolemize.hash({ 'baseIRI': 'https://example.com' });
+    const fn3 = Skolemize.hash({ 'baseIri': 'https://example.com' });
 
     assert.equal(fn3(ctx(value)), `https://example.com/instances/${Hash.value(value)}`);
   });
@@ -121,18 +121,18 @@ void describe('Skolemize.uuid() — Good/Bad', () => {
 void describe('Skolemize.fromProperty() — Good/Bad/Ugly', () => {
   void it('mints from property, falls through to fallback, encodes reserved chars', () => {
     // Good: mints IRI from named property when present
-    const fn = Skolemize.fromProperty('id', { 'baseIRI': 'https://example.com' });
+    const fn = Skolemize.fromProperty('id', { 'baseIri': 'https://example.com' });
 
     assert.equal(fn(ctx({ 'id': 'alice-001' })), 'https://example.com/alice-001');
 
-    // Good: uses raw value when no baseIRI provided
+    // Good: uses raw value when no baseIri provided
     const raw = Skolemize.fromProperty('id');
 
     assert.equal(raw(ctx({ 'id': 'https://example.com/users/alice' })), 'https://example.com/users/alice');
 
     // Bad: falls through to fallback when property missing
     const withFallback = Skolemize.fromProperty('id', {
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'fallback': literalCustomFallback
     });
 
@@ -141,15 +141,15 @@ void describe('Skolemize.fromProperty() — Good/Bad/Ugly', () => {
     // Bad: falls through to fallback when property is empty string
     assert.equal(withFallback(ctx({ 'id': '' })), 'urn:custom:fallback');
 
-    // Ugly: default fallback is hash strategy with same baseIRI
-    const defaultFallback = Skolemize.fromProperty('id', { 'baseIRI': 'https://example.com' });
+    // Ugly: default fallback is hash strategy with same baseIri
+    const defaultFallback = Skolemize.fromProperty('id', { 'baseIri': 'https://example.com' });
     const defaultFallbackIri = defaultFallback(ctx({ 'name': 'Alice' }));
 
     assert.ok(typeof defaultFallbackIri === 'string');
     assert.match(defaultFallbackIri, /^https:\/\/example\.com\/instances\//u);
 
     // Ugly: encodes property values with reserved URI characters
-    const encoded = Skolemize.fromProperty('slug', { 'baseIRI': 'https://example.com' });
+    const encoded = Skolemize.fromProperty('slug', { 'baseIri': 'https://example.com' });
 
     assert.equal(encoded(ctx({ 'slug': 'hello world/foo?bar' })), `https://example.com/${encodeURIComponent('hello world/foo?bar')}`);
   });
@@ -170,7 +170,7 @@ void describe('Skolemize.compose() — Good/Bad/Ugly', () => {
     // Good: composes fromProperty + hash fallback
     const composed = Skolemize.compose(
       Skolemize.fromProperty('id'),
-      Skolemize.hash({ 'baseIRI': 'https://x' })
+      Skolemize.hash({ 'baseIri': 'https://x' })
     );
 
     assert.equal(composed(ctx({ 'id': 'https://x/alice' })), 'https://x/alice');

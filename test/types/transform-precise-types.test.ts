@@ -50,7 +50,7 @@ function addTransformProducesCanonical(): void {
   } as const;
 
   const jt = JsonTology.create({
-    'baseIRI': 'https://ex.io',
+    'baseIri': 'https://ex.io',
     'schemas': [TimestampSchema]
   });
 

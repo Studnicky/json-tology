@@ -21,15 +21,15 @@ import {
 import assert from 'node:assert/strict';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaCompiler } from '../../src/modules/validation/SchemaCompiler.js';
-import { buildNodePlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
+import { SchemaCompilerPlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
 import { SchemaCompilerDefaults } from '../../src/modules/validation/SchemaCompilerDefaults.js';
 import { GraphError } from '../../src/errors/GraphError.js';
 import { GraphErrorCode } from '../../src/constants/ERROR_CODES.js';
 import { JsonTology } from '../../src/index.js';
-import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistry.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContext.js';
+import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistryInterface.js';
+import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContextType.js';
 import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
-import type { GraphEngineInterface } from '../../src/interfaces/GraphEngineImpl.js';
+import type { GraphEngineInterface } from '../../src/interfaces/GraphEngineInterface.js';
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures
@@ -214,7 +214,7 @@ void describe('Fix 3 — SchemaCompilerDefaults.resolveDynamicRef: unresolvable 
 void describe('Fix 4a — compileDynamicRefValidator: bad $dynamicRef throws', () => {
   void it('throws GraphError(REF_NOT_FOUND) when $dynamicRef static target is missing', () => {
     // A schema where the root node carries a $dynamicRef to a non-existent external schema.
-    // buildNodePlan calls compileDynamicRefValidator, which must throw GraphError(REF_NOT_FOUND)
+    // SchemaCompilerPlan.buildNodePlan calls compileDynamicRefValidator, which must throw GraphError(REF_NOT_FOUND)
     // at compile time rather than producing a pass-all validator at runtime.
     const schema = {
       '$dynamicRef': 'https://hardening.test/NoSuchSchema#items',
@@ -225,7 +225,7 @@ void describe('Fix 4a — compileDynamicRefValidator: bad $dynamicRef throws', (
 
     assert.throws(
       () => {
-        buildNodePlan(
+        SchemaCompilerPlan.buildNodePlan(
           makeStubContext(),
           graph.rootNode,
           stubFormatRegistry,
@@ -268,7 +268,7 @@ void describe('Fix 4b — $dynamicRef "#" spec-legal no-op validates successfull
     };
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://hardening.test/',
+      'baseIri': 'https://hardening.test/',
       'enableStrictGraph': false
     });
 

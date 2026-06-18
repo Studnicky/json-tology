@@ -46,7 +46,7 @@ const PatchPerson = Compose.partial(
 // ---------------------------------------------------------------------------
 
 const jt = JsonTology.create({
-  'baseIRI': 'http://xmlns.com/foaf',
+  'baseIri': 'http://xmlns.com/foaf',
   'schemas': allSchemas
 });
 

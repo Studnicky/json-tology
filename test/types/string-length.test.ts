@@ -26,7 +26,7 @@ import type {
 } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
-declare module '../../src/interfaces/JsonTologyTypeConfig.js' {
+declare module '../../src/interfaces/JsonTologyTypeConfigInterface.js' {
   interface JsonTologyTypeConfigInterface { 'tightStringLengths': true }
 }
 

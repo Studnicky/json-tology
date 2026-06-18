@@ -5,8 +5,8 @@
  * and a LoaderType; has no dependency on JsonTology itself.
  */
 
-import type { RefResolutionLoaderInterface } from '../../interfaces/RefResolutionLoader.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { RefResolutionLoaderInterface } from '../../interfaces/RefResolutionLoaderInterface.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import type { LoaderType } from '../../types/Loader.js';
 
 import { GraphError } from '../../errors/GraphError.js';

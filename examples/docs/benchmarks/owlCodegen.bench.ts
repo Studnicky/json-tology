@@ -29,7 +29,7 @@ import {
 // ---------------------------------------------------------------------------
 
 type GenerateFromTboxFn = (options: {
-  'baseIRI'?: string;
+  'baseIri'?: string;
   'input': object | string;
   'name'?: string;
 }) => string;

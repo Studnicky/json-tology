@@ -16,13 +16,13 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
 import type { InvariantType } from '../../src/types/Invariant.js';
-import { importIndividuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Individuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
 
@@ -59,7 +59,7 @@ function runIndividuals(
   const ctx: OwlImportContextType = {
     'allClassIris': new Set<string>(allClassIris),
     'allPropertyIris': new Set<string>(allPropertyIris),
-    'baseIRI': 'urn:test',
+    'baseIri': 'urn:test',
     'curie': {
       'compact': (iri: string) => {
         return iri;
@@ -71,7 +71,7 @@ function runIndividuals(
         return value;
       }
     },
-    'graph': SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' }),
+    'graph': SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' }),
     'isDatatype': () => {
       return false;
     },
@@ -79,7 +79,7 @@ function runIndividuals(
     'reportUnsupported': () => { /* no-op */ }
   };
 
-  return importIndividuals(quads, ctx);
+  return Individuals.dispatch(quads, ctx);
 }
 
 /**
@@ -133,7 +133,12 @@ void describe('negativePropertyAssertionInvariant fn', () => {
     const fragment = runIndividuals(quads, [classIri], []);
 
     assert.equal(fragment.invariants.length, 1);
-    assert.equal(fragment.invariants[0].schemaId, classIri, 'invariant is keyed to class IRI');
+    const inv0 = fragment.invariants.at(0);
+
+    if (inv0 === undefined) {
+      throw new Error('expected invariants[0] to exist');
+    }
+    assert.equal(inv0.schemaId, classIri, 'invariant is keyed to class IRI');
   });
 
   void it('returns an error string when value carries sourceIri identity and the forbidden property value matches', () => {

@@ -13,7 +13,7 @@
  * the import context graph so dispatchers can traverse it via allRelations() and nodes().
  */
 
-import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type {
   DispatcherFnType,
   OwlImportContextType,
@@ -27,32 +27,35 @@ import type { InvariantType } from '../../types/Invariant.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { JsonLdModuleType } from '../../types/JsonLdModuleType.js';
 import type { ExternalRdfJsQuadType } from '../../types/ExternalRdfJsQuadType.js';
-import { Curie } from '../rdf/Curie.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
+import { Curie } from '../quads/Curie.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import { logScope } from '../data/LogScope.js';
+import { LogScope } from '../data/LogScope.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import {
-  OWL, RDF, RDFS, XSD
+  OWL, RDF, XSD
 } from '../../constants/IRI.js';
+import {
+  CLASS_TYPE_IRIS,
+  RDF_TYPE_PREDICATES,
+  RDFS_DATATYPE_IRIS
+} from '../../constants/ONTOLOGY_PREDICATES.js';
 import { SUPPORTED_XSD_DATATYPES } from '../../constants/XSD_REVERSE_MAPS.js';
 import { OwlImportError } from '../../errors/OwlImportError.js';
 import { OwlImportErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { Terms } from '../rdf/Terms.js';
-import {
-  jsonLdNodesToQuads,
-  parseNQuads
-} from '../rdf/JsonLdToQuads.js';
-import { importAnnotations } from './importDispatch/Annotations.js';
-import { importCharacteristics } from './importDispatch/Characteristics.js';
-import { importClassAxioms } from './importDispatch/ClassAxioms.js';
-import { importClassExpressions } from './importDispatch/ClassExpressions.js';
-import { importDatatypes } from './importDispatch/Datatypes.js';
-import { importIndividuals } from './importDispatch/Individuals.js';
-import { importProperties } from './importDispatch/Properties.js';
-import { importPropertyRestrictions } from './importDispatch/PropertyRestrictions.js';
+import { DataType } from '../data/DataType.js';
+import { Terms } from '../quads/Terms.js';
+import { JsonLdToQuads } from '../rdf/JsonLdToQuads.js';
+import { Annotations } from './importDispatch/Annotations.js';
+import { Characteristics } from './importDispatch/Characteristics.js';
+import { ClassAxioms } from './importDispatch/ClassAxioms.js';
+import { ClassExpressions } from './importDispatch/ClassExpressions.js';
+import { Datatypes } from './importDispatch/Datatypes.js';
+import { Individuals } from './importDispatch/Individuals.js';
+import { Properties } from './importDispatch/Properties.js';
+import { PropertyRestrictions } from './importDispatch/PropertyRestrictions.js';
 
 
 // ---------------------------------------------------------------------------
@@ -147,22 +150,12 @@ function mergeFragments(fragments: OwlImportFragmentType[]): OwlImportFragmentTy
  */
 function collectClassIris(quads: QuadInterface[]): ReadonlySet<string> {
   const classIris = new Set<string>();
-  const CLASS_TYPES = new Set([
-    OWL.Class,
-    'owl:Class',
-    RDFS.Class,
-    'rdfs:Class'
-  ]);
-  const TYPE_PREDICATES = new Set([
-    RDF.type,
-    'rdf:type'
-  ]);
 
   for (const quad of quads) {
     if (
-      TYPE_PREDICATES.has(quad.predicate.value)
+      RDF_TYPE_PREDICATES.has(quad.predicate.value)
       && quad.object.termType === 'NamedNode'
-      && CLASS_TYPES.has(quad.object.value)
+      && CLASS_TYPE_IRIS.has(quad.object.value)
     ) {
       classIris.add(quad.subject.value);
     }
@@ -185,14 +178,10 @@ function collectPropertyIris(quads: QuadInterface[]): ReadonlySet<string> {
     RDF.Property,
     'rdf:Property'
   ]);
-  const TYPE_PREDICATES = new Set([
-    RDF.type,
-    'rdf:type'
-  ]);
 
   for (const quad of quads) {
     if (
-      TYPE_PREDICATES.has(quad.predicate.value)
+      RDF_TYPE_PREDICATES.has(quad.predicate.value)
       && quad.object.termType === 'NamedNode'
       && PROPERTY_TYPES.has(quad.object.value)
     ) {
@@ -209,20 +198,12 @@ function collectPropertyIris(quads: QuadInterface[]): ReadonlySet<string> {
  */
 function collectDatatypeIris(quads: QuadInterface[]): ReadonlySet<string> {
   const datatypeIris = new Set<string>();
-  const DATATYPE_TYPES = new Set([
-    RDFS.Datatype,
-    'rdfs:Datatype'
-  ]);
-  const TYPE_PREDICATES_DT = new Set([
-    RDF.type,
-    'rdf:type'
-  ]);
 
   for (const quad of quads) {
     if (
-      TYPE_PREDICATES_DT.has(quad.predicate.value)
+      RDF_TYPE_PREDICATES.has(quad.predicate.value)
       && quad.object.termType === 'NamedNode'
-      && DATATYPE_TYPES.has(quad.object.value)
+      && RDFS_DATATYPE_IRIS.has(quad.object.value)
     ) {
       datatypeIris.add(quad.subject.value);
     }
@@ -304,7 +285,7 @@ function buildQuadFromExternal(quad: ExternalRdfJsQuadType): QuadInterface {
  */
 function fromJsonLdRdfOutput(rdfOutput: unknown): QuadInterface[] {
   if (typeof rdfOutput === 'string') {
-    return parseNQuads(rdfOutput);
+    return JsonLdToQuads.fromNQuads(rdfOutput);
   }
 
   // Object graph: { '@default': [ { subject, predicate, object } ] }
@@ -340,9 +321,8 @@ function fromJsonLdRdfOutput(rdfOutput: unknown): QuadInterface[] {
  *
  * For arbitrary JSON-LD documents, use importAsync() with jsonld.toRDF.
  */
-function normalizeJsonLdInput(doc: object): QuadInterface[] {
-  const docRecord = doc as Record<string, unknown>;
-  const rawContext = docRecord['@context'];
+function normalizeJsonLdInput(doc: Record<string, unknown>): QuadInterface[] {
+  const rawContext = doc['@context'];
   const context: Record<string, string> = (
     typeof rawContext === 'object'
     && rawContext !== null
@@ -351,15 +331,10 @@ function normalizeJsonLdInput(doc: object): QuadInterface[] {
     ? (rawContext as Record<string, string>)
     : {};
 
-  const rawGraph = docRecord['@graph'];
+  const rawGraph = doc['@graph'];
 
   if (Array.isArray(rawGraph)) {
-    return jsonLdNodesToQuads(rawGraph as Array<Record<string, unknown>>, context);
-  }
-
-  // Flat JSON-LD array (no @graph wrapper)
-  if (Array.isArray(doc)) {
-    return jsonLdNodesToQuads(doc as Array<Record<string, unknown>>, context);
+    return JsonLdToQuads.fromNodes(rawGraph as Array<Record<string, unknown>>, context);
   }
 
   return [];
@@ -380,9 +355,9 @@ function normalizeJsonLdInput(doc: object): QuadInterface[] {
  * OntologyBuilder emit. For arbitrary JSON-LD documents use importAsync()
  * which calls jsonld.toRDF via the optional peerDependency.
  */
-function normalizeInput(jsonLd: object | QuadInterface[] | string): QuadInterface[] {
+function normalizeInput(jsonLd: QuadInterface[] | Record<string, unknown> | string): QuadInterface[] {
   if (Array.isArray(jsonLd)) {
-    return jsonLd as QuadInterface[];
+    return jsonLd;
   }
 
   if (typeof jsonLd === 'string') {
@@ -406,7 +381,7 @@ function normalizeInput(jsonLd: object | QuadInterface[] | string): QuadInterfac
         : new OwlImportError(msg, base);
     }
 
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    if (!DataType.isRecord(parsed)) {
       let parsedKind: string = typeof parsed;
 
       if (parsed === null) {
@@ -436,14 +411,14 @@ function normalizeInput(jsonLd: object | QuadInterface[] | string): QuadInterfac
 // ---------------------------------------------------------------------------
 
 const DISPATCHERS: readonly DispatcherFnType[] = [
-  importClassAxioms,
-  importClassExpressions,
-  importPropertyRestrictions,
-  importProperties,
-  importCharacteristics,
-  importDatatypes,
-  importIndividuals,
-  importAnnotations
+  ClassAxioms.dispatch,
+  ClassExpressions.dispatch,
+  PropertyRestrictions.dispatch,
+  Properties.dispatch,
+  Characteristics.dispatch,
+  Datatypes.dispatch,
+  Individuals.dispatch,
+  Annotations.dispatch
 ];
 
 // ---------------------------------------------------------------------------
@@ -462,7 +437,7 @@ const DISPATCHERS: readonly DispatcherFnType[] = [
  *
  * @example
  * ```ts
- * const importer = new OwlImporter({ baseIRI: 'https://example.com/' });
+ * const importer = new OwlImporter({ baseIri: 'https://example.com/' });
  * const result = importer.import(jsonLdDoc);
  * ```
  *
@@ -472,13 +447,13 @@ const DISPATCHERS: readonly DispatcherFnType[] = [
  * @group OWL Import
  */
 export class OwlImporter {
-  private readonly baseIRI: string;
+  private readonly baseIri: string;
   private readonly curie: CurieInterface;
   private readonly logger: LoggerInterface;
   private readonly prefixes: PrefixMapType;
 
   public constructor(options: OwlImporterOptionsType) {
-    this.baseIRI = options.baseIRI;
+    this.baseIri = options.baseIri;
     this.logger = options.logger ?? SILENT_LOGGER;
     this.prefixes = {
       ...STANDARD_PREFIXES,
@@ -507,10 +482,10 @@ export class OwlImporter {
    * @returns OwlImportResultType with schemas, invariants, characteristics,
    *   sameAs, individuals, and unsupported entries.
    */
-  public import(jsonLd: object | QuadInterface[] | string): OwlImportResultType {
+  public import(jsonLd: QuadInterface[] | Record<string, unknown> | string): OwlImportResultType {
     const quads = normalizeInput(jsonLd);
     const graph = SchemaGraph.fromQuads(quads, {
-      'baseIRI': this.baseIRI,
+      'baseIri': this.baseIri,
       'prefixes': this.prefixes
     });
     const allClassIris = collectClassIris(quads);
@@ -523,12 +498,13 @@ export class OwlImporter {
     const ctx: OwlImportContextType = {
       allClassIris,
       allPropertyIris,
-      'baseIRI': this.baseIRI,
+      'baseIri': this.baseIri,
       'curie': this.curie,
       graph,
       'isDatatype': (iri: string): boolean => {
         return isDatatypeIri(iri) || allDatatypeIris.has(iri);
       },
+      'logger': this.logger,
       'prefixes': this.prefixes,
       'reportUnsupported': (axiomIri: string, subjectIri: null | string): void => {
         unsupported.push({
@@ -551,8 +527,10 @@ export class OwlImporter {
     const schemas = resolveSchemaDeltas(merged, allClassIris);
 
     if (unsupported.length > 0) {
-      this.logger.warn(logScope('OwlImporter', 'import', `${unsupported.length} unsupported construct(s) recorded`));
+      this.logger.warn(LogScope.format('OwlImporter', 'import', `${unsupported.length} unsupported construct(s) recorded`));
     }
+
+    this.logger.info(LogScope.format('OwlImporter', 'import', `OWL TBox import complete: ${schemas.length} schema(s), ${merged.individuals.length} individual(s)`));
 
     return {
       'characteristics': merged.characteristics,
@@ -579,11 +557,11 @@ export class OwlImporter {
    * @param jsonLd - The input in one of three forms (same as `import()`).
    * @returns Promise<OwlImportResultType>
    */
-  public async importAsync(jsonLd: object | QuadInterface[] | string): Promise<OwlImportResultType> {
+  public async importAsync(jsonLd: QuadInterface[] | Record<string, unknown> | string): Promise<OwlImportResultType> {
     let quads: QuadInterface[];
 
     if (Array.isArray(jsonLd)) {
-      quads = jsonLd as QuadInterface[];
+      quads = jsonLd;
     } else {
       const syncResult = normalizeInput(jsonLd);
 
@@ -593,7 +571,7 @@ export class OwlImporter {
         const jsonLdModule = await tryLoadJsonLd();
 
         if (jsonLdModule === null) {
-          this.logger.error(logScope('OwlImporter', 'importAsync', 'optional jsonld peerDependency not installed; cannot process non-quad JSON-LD input'));
+          this.logger.error(LogScope.format('OwlImporter', 'importAsync', 'optional jsonld peerDependency not installed; cannot process non-quad JSON-LD input'));
           throw new OwlImportError(
             'importAsync() with non-quad JSON-LD input requires the optional `jsonld` peerDependency. '
             + 'Install it with: npm install jsonld',

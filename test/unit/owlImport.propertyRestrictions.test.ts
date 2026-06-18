@@ -20,15 +20,15 @@ import {
   describe,
   it
 } from 'node:test';
-import { importPropertyRestrictions } from '../../src/modules/ontology/importDispatch/PropertyRestrictions.js';
+import { PropertyRestrictions } from '../../src/modules/ontology/importDispatch/PropertyRestrictions.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 import type {
   OwlImportContextType,
   OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Compose } from '../../src/index.js';
 import { OwlProjection } from '../../src/modules/rdf/OwlProjection.js';
@@ -45,7 +45,7 @@ const RANGE_IRI = 'urn:example:Item';
  * Build a minimal OwlImportContextType from a SchemaGraph backed by the given quads.
  */
 function makeCtx(quads: QuadInterface[]): OwlImportContextType {
-  const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:example' });
+  const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:example' });
   const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{
     'axiomIri': string;
@@ -67,7 +67,7 @@ function makeCtx(quads: QuadInterface[]): OwlImportContextType {
   return {
     allClassIris,
     allPropertyIris,
-    'baseIRI': 'urn:example',
+    'baseIri': 'urn:example',
     curie,
     graph,
     'isDatatype': () => {
@@ -108,7 +108,7 @@ function importFromSchema(schema: Record<string, unknown>): OwlImportFragmentTyp
     quads
   } = quadsForSchema(schema);
 
-  return importPropertyRestrictions(quads, ctx);
+  return PropertyRestrictions.dispatch(quads, ctx);
 }
 
 /**
@@ -174,15 +174,20 @@ void describe('importPropertyRestrictions', () => {
       });
 
       assert.equal(inv.length, 1, 'one invariant emitted');
-      assert.ok(inv[0].invariant.name.includes('someValuesFrom'), 'invariant name contains someValuesFrom');
+      const inv0 = inv.at(0);
+
+      if (inv0 === undefined) {
+        throw new Error('expected invariant at index 0');
+      }
+      assert.ok(inv0.invariant.name.includes('someValuesFrom'), 'invariant name contains someValuesFrom');
 
       // The invariant fn returns null for a non-empty array
-      const result = inv[0].invariant.fn({ 'items': ['x'] });
+      const result = inv0.invariant.fn({ 'items': ['x'] });
 
       assert.equal(result, null, 'non-empty array satisfies someValuesFrom');
 
       // Empty array → error message
-      const fail = inv[0].invariant.fn({ 'items': [] });
+      const fail = inv0.invariant.fn({ 'items': [] });
 
       assert.ok(typeof fail === 'string', 'empty array fails someValuesFrom');
     });
@@ -380,7 +385,7 @@ void describe('importPropertyRestrictions', () => {
       const quads = OwlProjection.graph(graph);
 
       // Pass QuadInterface[] directly — OwlImporter.import() accepts this form.
-      const importer = new OwlImporter({ 'baseIRI': 'urn:example' });
+      const importer = new OwlImporter({ 'baseIri': 'urn:example' });
       const result = importer.import(quads);
 
       // PropertyRestrictions fully projects owl:maxCardinality; it must not

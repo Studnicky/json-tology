@@ -25,7 +25,7 @@
  * accepted by the downstream XSD/datatype/class membership checks.
  */
 
-import type { QuadInterface } from '../../../interfaces/Quad.js';
+import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../../types/OwlImport.js';
@@ -46,18 +46,6 @@ import {
   RANGE_PREDICATES,
   SUB_PROPERTY_PREDICATES
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
-
-// ---------------------------------------------------------------------------
-// XSD IRI → JSON Schema { type, format? } reverse map — imported from constants
-// ---------------------------------------------------------------------------
-
-/**
- * Resolve an XSD datatype IRI (full or prefixed) to its JSON Schema primitive.
- * Returns null when the IRI is not a recognised XSD primitive.
- */
-function xsdToJsonSchema(iri: string): null | XsdJsonSchemaPrimitiveType {
-  return XSD_TO_JSON_SCHEMA.get(iri) ?? null;
-}
 
 // ---------------------------------------------------------------------------
 // Property IRI → local name extraction
@@ -113,7 +101,7 @@ function indexPropertyType(
 }
 
 /** Handle an rdf:type relation — record object or datatype property declarations. */
-function handleTypeRelation(
+function applyTypeRelation(
   propertyIndex: Map<string, PropertyIndexValueType>,
   subjectIri: string,
   targetIri: string
@@ -144,7 +132,7 @@ function collectPropertyDeclarations(ctx: OwlImportContextType): PropertyCollect
     const targetIri = ctx.curie.expandIfNeeded(raw);
 
     if (predicate === RDF.type) {
-      handleTypeRelation(propertyIndex, subjectIri, targetIri);
+      applyTypeRelation(propertyIndex, subjectIri, targetIri);
       continue;
     }
 
@@ -257,7 +245,7 @@ function resolvePropertyShape(
     return null;
   }
 
-  const xsdPrimitive = xsdToJsonSchema(range);
+  const xsdPrimitive = XSD_TO_JSON_SCHEMA.get(range) ?? null;
 
   if (xsdPrimitive !== null) {
     return xsdPrimitiveShape(xsdPrimitive);
@@ -277,7 +265,7 @@ function resolvePropertyShape(
     return null;
   }
 
-  const expandedPrimitive = xsdToJsonSchema(expanded);
+  const expandedPrimitive = XSD_TO_JSON_SCHEMA.get(expanded) ?? null;
 
   return expandedPrimitive === null ? { '$ref': expanded } : xsdPrimitiveShape(expandedPrimitive);
 }
@@ -400,7 +388,7 @@ function buildFragmentFromEntries(
  *
  * @example
  * ```ts
- * const fragment = importProperties(quads, ctx);
+ * const fragment = Properties.dispatch(quads, ctx);
  * // fragment.schemaDeltas: Map<classIri, Partial<JsonSchemaDocumentObjectType>>
  * // fragment.characteristics: Array<{ characteristic, propertyIri }>
  * ```
@@ -410,19 +398,21 @@ function buildFragmentFromEntries(
  * @see {@link OwlImportFragmentType}
  * @group Dispatchers
  */
-export function importProperties(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const maps = collectPropertyDeclarations(ctx);
-  const entries = buildPropertyEntries(maps, ctx);
-  const {
-    characteristics, schemaDeltas
-  } = buildFragmentFromEntries(entries, ctx);
+export class Properties {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const maps = collectPropertyDeclarations(ctx);
+    const entries = buildPropertyEntries(maps, ctx);
+    const {
+      characteristics, schemaDeltas
+    } = buildFragmentFromEntries(entries, ctx);
 
-  return {
-    characteristics,
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    schemaDeltas
-  };
+    return {
+      characteristics,
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      schemaDeltas
+    };
+  }
 }

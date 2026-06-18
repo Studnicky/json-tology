@@ -212,8 +212,13 @@ void describe('Logger', () => {
       logger.fatal('system down', 'details');
 
       assert.equal(messages.length, 1);
-      assert.equal(messages[0]?.[0], '[fatal] system down');
-      assert.equal(messages[0]?.[1], 'details');
+      const msg0 = messages.at(0);
+
+      if (msg0 === undefined) {
+        throw new Error('expected message at index 0');
+      }
+      assert.equal(msg0[0], '[fatal] system down');
+      assert.equal(msg0[1], 'details');
     } finally {
       console.error = originalError;
     }

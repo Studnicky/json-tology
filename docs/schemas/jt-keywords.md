@@ -105,7 +105,7 @@ Prefer `jt:config: { frozen: true }` when you also need `extra` or `strict`. Use
 
 **Payload.** Absolute IRI string.
 
-**Semantics.** Pins the property to an explicit predicate IRI. `toQuads` uses this IRI as the predicate for the property's quad regardless of the registry `baseIRI`, `enableCanonicalPredicates`, or `predicateFor` settings. It is the highest-precedence predicate binding after an absolute `$id` on the property schema.
+**Semantics.** Pins the property to an explicit predicate IRI. `toQuads` uses this IRI as the predicate for the property's quad regardless of the registry `baseIri`, `enableCanonicalPredicates`, or `predicateFor` settings. It is the highest-precedence predicate binding after an absolute `$id` on the property schema.
 
 **Read by.** `PredicateResolver.resolve()` in `src/modules/graph/PredicateResolver.ts:53`, step 1 in the five-step precedence chain.
 
@@ -147,10 +147,10 @@ The example above (example 103) also shows `x-jt-language` in action via the `si
 
 **Semantics.** Declares a property as an RDF-star annotated edge. `toQuads` emits two things for the property:
 
-1. A **base triple**: `<subject> <edgePredicate> <targetIRI>`
-2. One **annotation quad** per declared annotation, whose subject is a triple-term (a `Quad`-subject quad per the RDF 1.2 / RDF-star specification): `<< subject edgePredicate targetIRI >> <annotationPredicate> <value>`
+1. A **base triple**: `<subject> <edgePredicate> <targetIri>`
+2. One **annotation quad** per declared annotation, whose subject is a triple-term (a `Quad`-subject quad per the RDF 1.2 / RDF-star specification): `<< subject edgePredicate targetIri >> <annotationPredicate> <value>`
 
-Both the base triple and all annotation quads share the same named graph. A `graphIRI` option is required when calling `toQuads`; the default graph cannot carry triple-term quads.
+Both the base triple and all annotation quads share the same named graph. A `graphIri` option is required when calling `toQuads`; the default graph cannot carry triple-term quads.
 
 **Read by.** `Projection` in `src/modules/rdf/Projection.ts` dispatches to `projectAnnotatedEdge` when the property structure kind is `'annotatedEdge'`.
 

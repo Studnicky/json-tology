@@ -38,7 +38,9 @@ try {
   console.log('  Reason:', schemaErr.message?.split(':').slice(1)
     .join(':')
     .trim()
-    .split(';')[0].trim());
+    .split(';')
+    .at(0)
+    ?.trim() ?? '');
 }
 
 // Permissive mode (opt-out): inline shapes register silently

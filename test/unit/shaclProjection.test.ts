@@ -16,12 +16,12 @@ import {
 } from 'node:test';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { ShaclProjection } from '../../src/modules/rdf/ShaclProjection.js';
-import { decodeLiteral } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import {
   RDF, SH
 } from '../../src/constants/IRI.js';
 import { Compose } from '../../src/index.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,7 +57,7 @@ function objectLiteralValue(quad: QuadInterface): unknown {
   const obj = quad.object;
 
   if (obj.termType === 'Literal') {
-    return decodeLiteral(obj);
+    return Terms.decodeLiteral(obj);
   }
 
   return undefined;

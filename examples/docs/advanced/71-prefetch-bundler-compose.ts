@@ -48,7 +48,7 @@ const snapshot = await JsonTology.prefetch({
 });
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
+  'baseIri': 'https://bookstore.example',
   'prefetched': snapshot,
   'schemas': [
     CustomerSchema,

@@ -20,8 +20,8 @@ import { GraphError } from '../../src/errors/GraphError.js';
 import { SchemaLoadError } from '../../src/errors/SchemaLoadError.js';
 import { InstantiationError } from '../../src/errors/InstantiationError.js';
 import { GraphErrorCode } from '../../src/constants/ERROR_CODES.js';
-import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
-import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphImpl.js';
+import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistryInterface.js';
+import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphInterface.js';
 import type { JsonSchemaType } from '../../src/types/Schema.js';
 
 // ---------------------------------------------------------------------------

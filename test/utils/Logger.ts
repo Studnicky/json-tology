@@ -1,4 +1,4 @@
-import type { LoggerInterface } from '../../src/interfaces/Logger.js';
+import type { LoggerInterface } from '../../src/interfaces/LoggerInterface.js';
 
 export class Logger implements LoggerInterface {
   private readonly silent: boolean;

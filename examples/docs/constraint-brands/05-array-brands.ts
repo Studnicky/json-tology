@@ -21,7 +21,7 @@ type NumberArray = InferType<typeof NumberArraySchema>;
 // readonly number[] & ContainsBrandType<number>
 
 const jt = JsonTology.create({
-  'baseIRI': 'urn:brands:',
+  'baseIri': 'urn:brands:',
   'enableStrictGraph': false,
   'schemas': [
     TagSetSchema,

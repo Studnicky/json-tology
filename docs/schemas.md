@@ -12,7 +12,7 @@ Schemas are declared as TypeScript `const` objects so the compiler can read the 
 
 <RunnableExample src="examples/docs/schemas/07-schema-authoring" />
 
-**`$id` is required.** Every schema registered with `set()` must carry a fully-qualified IRI as its `$id`. The IRI is the stable identity used by `registry.has`, `registry.get`, `validate`, `instantiate`, `materialize`, and cross-schema `$ref`. Use the project's `baseIRI` as the namespace:
+**`$id` is required.** Every schema registered with `set()` must carry a fully-qualified IRI as its `$id`. The IRI is the stable identity used by `registry.has`, `registry.get`, `validate`, `instantiate`, `materialize`, and cross-schema `$ref`. Use the project's `baseIri` as the namespace:
 
 <RunnableExample src="examples/docs/schemas/08-jsontology-create" />
 
@@ -44,7 +44,7 @@ Use `$defs` to define reusable sub-schemas inline within a parent schema. They a
 
 Use fully-qualified IRIs as schema identifiers:
 
-- **Base IRI** - use the same origin for all schemas in a project (`https://bookstore.example`). Pass it as `baseIRI` to `JsonTology.create` so relative `$ref` values resolve correctly.
+- **Base IRI** - use the same origin for all schemas in a project (`https://bookstore.example`). Pass it as `baseIri` to `JsonTology.create` so relative `$ref` values resolve correctly.
 - **Path segment** - use the domain entity name as the path (`/Book`, `/Customer`, `/OrderLine`). One schema per IRI.
 - **Stability** - once a schema `$id` is published and referenced by other schemas, treat it as stable. Changing a `$id` breaks all cross-schema `$ref` that target it.
 

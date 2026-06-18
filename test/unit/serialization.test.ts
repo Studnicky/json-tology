@@ -3,12 +3,12 @@
 
 import assert from 'node:assert/strict';
 // QuadInterface is the canonical RDF triple shape; surfaced via toQuads but type-import is internal here.
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 // QuadObjectType is the project's narrow quad-object union (IRI | blank | literal),
 // matching what Terms.iri/Terms.literal return and what Terms.quad/listQuad accept.
 import type { QuadObjectType } from '../../src/types/Quad.js';
-// RelationStructure/SchemaGraphRelationType are graph-internal shapes used by projection tests.
-import type { RelationStructure } from '../../src/types/SchemaGraph.js';
+// RelationStructureType/SchemaGraphRelationType are graph-internal shapes used by projection tests.
+import type { RelationStructureType } from '../../src/types/SchemaGraph.js';
 import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 // ProjectionIndex helpers are projection internals.
 import { ProjectionIndex } from '../../src/modules/rdf/ProjectionIndex.js';
@@ -20,13 +20,13 @@ import { BaseGraphSerializer } from '../../src/modules/ontology/BaseGraphSeriali
 import {
   JsonTology, Transform
 } from '../../src/index.js';
-import { brand } from '../../src/types/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { bookstoreEntities as entities } from '../../examples/docs/bookstore/index.js';
 // JsonLdFormatter is a low-level JSON-LD formatter used by serializers; not surfaced by the public API.
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 // Terms factory — produces rdf/js-compliant term objects for test quad construction.
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
 import { listQuad } from '../helpers/listQuad.js';
 import {
   OWL, RDF, XSD
@@ -66,9 +66,19 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 2);
-          assert.equal(result[0]['@id'], 'ex:Person');
-          assert.equal(result[0]['rdfs:comment'], 'A person');
-          assert.equal(result[1]['@id'], 'ex:Animal');
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          const r1 = result.at(1);
+
+          if (r1 === undefined) {
+            throw new Error('expected element at 1');
+          }
+          assert.equal(r0['@id'], 'ex:Person');
+          assert.equal(r0['rdfs:comment'], 'A person');
+          assert.equal(r1['@id'], 'ex:Animal');
         },
         'name': 'happy: groups quads by subject into separate nodes',
         'quads': [
@@ -79,15 +89,25 @@ import {
       },
       {
         'check': (result) => {
-          assert.equal(result[0]['@type'], OWL.Class);
-          assert.equal(result[0][RDF.type], undefined);
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['@type'], OWL.Class);
+          assert.equal(r0[RDF.type], undefined);
         },
         'name': 'happy: converts rdf:type to @type',
         'quads': [quad('ex:Person', RDF.type, named(OWL.Class))]
       },
       {
         'check': (result) => {
-          assert.deepEqual(result[0]['rdfs:label'], [
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.deepEqual(r0['rdfs:label'], [
             'Person',
             'Human'
           ]);
@@ -100,7 +120,12 @@ import {
       },
       {
         'check': (result) => {
-          assert.deepEqual(result[0]['@type'], [
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.deepEqual(r0['@type'], [
             OWL.Class,
             'http://www.w3.org/2000/01/rdf-schema#Resource'
           ]);
@@ -121,8 +146,13 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 1);
-          assert.equal(result[0]['@id'], 'ex:Widget');
-          assert.equal(result[0]['rdfs:label'], 'Widget');
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['@id'], 'ex:Widget');
+          assert.equal(r0['rdfs:label'], 'Widget');
         },
         'name': 'edge: single quad produces single node',
         'quads': [quad('ex:Widget', 'rdfs:label', literal('Widget'))]
@@ -130,8 +160,13 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 1);
-          assert.equal(result[0]['@id'], 'ex:Person');
-          assert.equal(result[0]['ex:age'], 30);
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['@id'], 'ex:Person');
+          assert.equal(r0['ex:age'], 30);
         },
         'name': 'edge: duplicate subjects with different predicates merge into one node',
         'quads': [
@@ -166,8 +201,13 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 1);
-          assert.equal(result[0]['@id'], 'ex:Person');
-          const address = result[0]['ex:address'] as Record<string, unknown>;
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['@id'], 'ex:Person');
+          const address = r0['ex:address'] as Record<string, unknown>;
 
           assert.equal(address['ex:city'], 'Portland');
           assert.equal(address['@id'], undefined);
@@ -181,8 +221,13 @@ import {
       {
         'check': (result) => {
           assert.equal(result.length, 3);
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
           assert.equal(
-            (result[0]['ex:address'] as Record<string, unknown>)['@id'],
+            (r0['ex:address'] as Record<string, unknown>)['@id'],
             '_:b0'
           );
         },
@@ -262,9 +307,14 @@ import {
       },
       {
         'check': (result) => {
-          assert.equal(result[0]['ex:count'], 42);
-          assert.equal(result[0]['ex:active'], true);
-          assert.equal(result[0]['ex:name'], 'Widget');
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.equal(r0['ex:count'], 42);
+          assert.equal(r0['ex:active'], true);
+          assert.equal(r0['ex:name'], 'Widget');
         },
         'name': 'happy: literal types preserved (integer, boolean, string)',
         'quads': [
@@ -275,7 +325,12 @@ import {
       },
       {
         'check': (result) => {
-          assert.deepEqual(result[0]['rdfs:subClassOf'], { '@id': 'ex:Agent' });
+          const r0 = result.at(0);
+
+          if (r0 === undefined) {
+            throw new Error('expected element at 0');
+          }
+          assert.deepEqual(r0['rdfs:subClassOf'], { '@id': 'ex:Agent' });
         },
         'name': 'happy: NamedNode becomes @id reference',
         'quads': [quad('ex:Person', 'rdfs:subClassOf', named('ex:Agent'))]
@@ -392,7 +447,7 @@ import {
 
   void describe('isRestrictionStructure', () => {
     void it('returns true for restriction kind', () => {
-      const structure: RelationStructure = {
+      const structure: RelationStructureType = {
         'constraint': 'sh:maxCount',
         'kind': 'restriction',
         'onProperty': 'http://example.com/User#name',
@@ -403,7 +458,7 @@ import {
     });
 
     void it('returns false for list kind', () => {
-      const structure: RelationStructure = {
+      const structure: RelationStructureType = {
         'kind': 'list',
         'members': [
           'a',
@@ -415,7 +470,7 @@ import {
     });
 
     void it('returns false for undefined', () => {
-      const noStructure: RelationStructure | undefined = undefined;
+      const noStructure: RelationStructureType | undefined = undefined;
 
       assert.equal(ProjectionIndex.isRestrictionStructure(noStructure), false);
     });
@@ -423,7 +478,7 @@ import {
 
   void describe('isListStructure', () => {
     void it('returns true for list kind', () => {
-      const structure: RelationStructure = {
+      const structure: RelationStructureType = {
         'kind': 'list',
         'members': [
           'http://example.com/a',
@@ -435,7 +490,7 @@ import {
     });
 
     void it('returns false for restriction kind', () => {
-      const structure: RelationStructure = {
+      const structure: RelationStructureType = {
         'constraint': 'sh:minCount',
         'kind': 'restriction',
         'onProperty': 'http://example.com/User#age',
@@ -446,7 +501,7 @@ import {
     });
 
     void it('returns false for undefined', () => {
-      const noStructure: RelationStructure | undefined = undefined;
+      const noStructure: RelationStructureType | undefined = undefined;
 
       assert.equal(ProjectionIndex.isListStructure(noStructure), false);
     });
@@ -536,8 +591,19 @@ import {
       };
 
       BaseGraphSerializer.normalizeArrays(n4, ['label']);
-      assert.deepEqual((n4.items as Array<Record<string, unknown>>)[0].label, ['First']);
-      assert.deepEqual((n4.items as Array<Record<string, unknown>>)[1].label, ['Second']);
+      const n4Items = n4.items as Array<Record<string, unknown>>;
+      const n4Item0 = n4Items.at(0);
+
+      if (n4Item0 === undefined) {
+        throw new Error('expected element at 0');
+      }
+      const n4Item1 = n4Items.at(1);
+
+      if (n4Item1 === undefined) {
+        throw new Error('expected element at 1');
+      }
+      assert.deepEqual(n4Item0.label, ['First']);
+      assert.deepEqual(n4Item1.label, ['Second']);
 
       // Ugly: leaves non-matching keys unchanged
       const n5: Record<string, unknown> = {
@@ -569,7 +635,7 @@ import {
   const SH_NODE_SHAPE_IRI = 'http://www.w3.org/ns/shacl#NodeShape';
   const SH_PROPERTY_IRI = 'http://www.w3.org/ns/shacl#property';
 
-  function hasType(nodes: unknown[], typeIRI: string): boolean {
+  function hasType(nodes: unknown[], typeIri: string): boolean {
     return nodes.some((node) => {
       if (typeof node !== 'object' || node === null) {
         return false;
@@ -579,14 +645,14 @@ import {
       const typeValue = record['@type'];
 
       if (Array.isArray(typeValue)) {
-        return (typeValue as string[]).includes(typeIRI);
+        return (typeValue as string[]).includes(typeIri);
       }
 
-      return typeValue === typeIRI;
+      return typeValue === typeIri;
     });
   }
 
-  function hasPredicate(nodes: unknown[], predicateIRI: string): boolean {
+  function hasPredicate(nodes: unknown[], predicateIri: string): boolean {
     return nodes.some((node) => {
       if (typeof node !== 'object' || node === null) {
         return false;
@@ -594,7 +660,7 @@ import {
 
       const record = node as Record<string, unknown>;
 
-      return predicateIRI in record;
+      return predicateIri in record;
     });
   }
 
@@ -779,7 +845,7 @@ import {
   // schema's canonical (branded) ISO date-time form; encode is the inverse.
   const TransformedDateSchema = Transform.create(DateTimeSchema, {
     'decode': (raw: string) => {
-      return brand<InferSchemaType<typeof DateTimeSchema>>(new Date(raw).toISOString());
+      return Brand.cast<InferSchemaType<typeof DateTimeSchema>>(new Date(raw).toISOString());
     },
     'encode': (value) => {
       return value;
@@ -805,7 +871,7 @@ import {
 
   function makeJt() {
     return JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         PersonSchema,
         AddressSchema,
@@ -973,7 +1039,7 @@ import {
       // Transform: encode produces wire form (canonical string → wire string)
       const isoString = '2026-01-01T00:00:00.000Z';
 
-      assert.equal(jt.dump(TransformedDateSchema.$id, brand<InferSchemaType<typeof DateTimeSchema>>(isoString)), isoString);
+      assert.equal(jt.dump(TransformedDateSchema.$id, Brand.cast<InferSchemaType<typeof DateTimeSchema>>(isoString)), isoString);
 
       // Transform: round-trip decode then dump
       const isoString2 = '2026-06-15T12:00:00.000Z';
@@ -982,7 +1048,7 @@ import {
       assert.equal(jt.dump(TransformedDateSchema.$id, decoded), isoString2);
 
       // mode 'json': the canonical string round-trips as the wire string
-      assert.equal(jt.dump(TransformedDateSchema.$id, brand<InferSchemaType<typeof DateTimeSchema>>(isoString), { 'mode': 'json' }), isoString);
+      assert.equal(jt.dump(TransformedDateSchema.$id, Brand.cast<InferSchemaType<typeof DateTimeSchema>>(isoString), { 'mode': 'json' }), isoString);
 
       // mode 'json': plain object untouched
       const plain = {

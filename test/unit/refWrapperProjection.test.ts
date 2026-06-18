@@ -25,7 +25,7 @@ import {
 } from 'node:test';
 import { JsonTology } from '../../src/index.js';
 import { XSD } from '../../src/constants/IRI.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
@@ -99,7 +99,7 @@ void describe('ABox projection through transparent $ref wrappers', { 'concurrenc
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         TimestampSchema,
         EventSchema
@@ -126,7 +126,7 @@ void describe('ABox projection through transparent $ref wrappers', { 'concurrenc
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         TimestampSchema,
         EventSchema
@@ -149,7 +149,7 @@ void describe('ABox projection through transparent $ref wrappers', { 'concurrenc
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         LatSchema,
         LonSchema,
@@ -210,7 +210,7 @@ void describe('ABox projection through transparent $ref wrappers', { 'concurrenc
     } as const;
 
     const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
+      'baseIri': 'https://example.com',
       'schemas': [
         LatSchema,
         LonSchema,

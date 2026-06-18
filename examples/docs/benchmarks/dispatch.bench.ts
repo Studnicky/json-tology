@@ -48,7 +48,13 @@ const VALUES: Record<SchemaType, unknown> = {
 let typeIdx = 0;
 
 function nextType(): SchemaType {
-  return TYPES[typeIdx++ % TYPES.length];
+  const schemaType = TYPES[typeIdx++ % TYPES.length];
+
+  if (schemaType === undefined) {
+    throw new Error('TYPES index out of bounds');
+  }
+
+  return schemaType;
 }
 
 function nextValue(schemaType: SchemaType): unknown {
@@ -288,12 +294,16 @@ results.push(monoTableResult);
 printResults(results);
 
 console.log('Winner:');
-const fastest = [
+const fastestArr = [
   ifelseResult,
   switchResult,
   tableResult
 ].sort((first, second) => {
   return second.opsPerSec - first.opsPerSec;
-})[0];
+});
+const fastest = fastestArr[0];
 
+if (fastest === undefined) {
+  throw new Error('expected benchmark results');
+}
 console.log(`  Polymorphic: ${fastest.name.trim()} wins`);

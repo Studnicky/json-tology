@@ -32,8 +32,15 @@ console.assert(abox.length > 0, 'ABox quad projection emits quads');
 const recovered = bookstoreEntities.fromQuads(CustomerSchema.$id, abox);
 
 console.assert(recovered.length > 0, 'fromQuads recovers at least one Customer');
+
+const first = recovered[0];
+
+if (first === undefined) {
+  throw new Error('expected recovered customer');
+}
+
 console.assert(
-  recovered[0].email === aboxFixtures.customer.email,
+  first.email === aboxFixtures.customer.email,
   'recovered Customer has correct email'
 );
 

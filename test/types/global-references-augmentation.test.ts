@@ -61,7 +61,7 @@ void ChatMessageSchema;
 // Register the schemas in the global references map (declaration merging).
 // ---------------------------------------------------------------------------
 
-declare module '../../src/interfaces/JsonTologyReferences.js' {
+declare module '../../src/interfaces/JsonTologyReferencesInterface.js' {
   interface JsonTologyReferencesInterface {
     readonly 'urn:aug:Channel': typeof ChannelSchema;
     readonly 'urn:aug:ChatMessage': typeof ChatMessageSchema;

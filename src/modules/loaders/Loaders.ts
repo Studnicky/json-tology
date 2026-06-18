@@ -8,11 +8,11 @@
 
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { LoaderType } from '../../types/Loader.js';
-import type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptions.js';
+import type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptionsType.js';
 import { SchemaLoadError } from '../../errors/SchemaLoadError.js';
 import { SchemaLoadErrorCode } from '../../constants/ERROR_CODES.js';
 
-export type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptions.js';
+export type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptionsType.js';
 
 /** Lowest HTTP status treated as a transient (retryable) server-side failure. */
 const HTTP_SERVER_ERROR_MIN = 500;
@@ -30,7 +30,7 @@ const HTTP_SERVER_ERROR_MIN = 500;
  * });
  *
  * const jt = JsonTology.create({
- *   baseIRI: 'https://example.com',
+ *   baseIri: 'https://example.com',
  *   prefetched: snapshot,
  *   schemas: [LocalSchema] as const,
  * });

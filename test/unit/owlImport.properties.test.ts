@@ -14,15 +14,15 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importProperties } from '../../src/modules/ontology/importDispatch/Properties.js';
+import { Properties } from '../../src/modules/ontology/importDispatch/Properties.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
-import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Terms } from '../../src/modules/quads/Terms.js';
+import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { OwlProjection } from '../../src/modules/rdf/OwlProjection.js';
 import {
@@ -39,7 +39,7 @@ function makeCtx(
   quads: QuadInterface[],
   extraClassIris: string[] = []
 ): OwlImportContextType {
-  const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': BASE_IRI });
+  const graph = SchemaGraph.fromQuads(quads, { 'baseIri': BASE_IRI });
   const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{ 'axiomIri': string;
     'subjectIri': null | string }> = [];
@@ -76,7 +76,7 @@ function makeCtx(
   return {
     allClassIris,
     allPropertyIris,
-    'baseIRI': BASE_IRI,
+    'baseIri': BASE_IRI,
     curie,
     graph,
     'isDatatype': (iri: string) => {
@@ -151,7 +151,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
   void describe('empty input', () => {
     void it('returns an empty fragment for zero quads', () => {
       const ctx = makeCtx([]);
-      const fragment = importProperties([], ctx);
+      const fragment = Properties.dispatch([], ctx);
 
       assert.equal(fragment.schemaDeltas.size, 0, 'no schemaDeltas from empty quads');
       assert.deepEqual(fragment.characteristics, []);
@@ -169,7 +169,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('adds a $ref property slot to the domain class delta', () => {
       const quads = buildObjectPropertyQuads(CUSTOMER_PROP_IRI, ORDER_IRI, PERSON_IRI);
       const ctx = makeCtx(quads, [PERSON_IRI]);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, ORDER_IRI);
 
       assert.ok(
@@ -184,7 +184,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('sets type: "object" on the class delta', () => {
       const quads = buildObjectPropertyQuads(CUSTOMER_PROP_IRI, ORDER_IRI, PERSON_IRI);
       const ctx = makeCtx(quads, [PERSON_IRI]);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const delta = fragment.schemaDeltas.get(ORDER_IRI);
 
       assert.equal(delta?.type, 'object', 'class delta type should be object');
@@ -198,7 +198,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('produces type: "string" when range is xsd:string (full IRI)', () => {
       const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, 'http://www.w3.org/2001/XMLSchema#string');
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
 
       assert.ok(props.title !== undefined, 'title property should be in delta');
@@ -211,7 +211,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('produces type: "string" when range is xsd:string (prefixed)', () => {
       const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, XSD.string);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.title as Record<string, unknown>;
 
@@ -221,7 +221,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('produces type: "string" when range is rdf:langString (full IRI)', () => {
       const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString');
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.title as Record<string, unknown>;
 
@@ -232,7 +232,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('produces type: "string" when range is rdf:langString (prefixed)', () => {
       const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, 'rdf:langString');
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.title as Record<string, unknown>;
 
@@ -243,7 +243,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const AGE_PROP = `${CLASS_IRI}#age`;
       const quads = buildDatatypePropertyQuads(AGE_PROP, CLASS_IRI, 'http://www.w3.org/2001/XMLSchema#integer');
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.age as Record<string, unknown>;
 
@@ -254,7 +254,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const FLAG_PROP = `${CLASS_IRI}#inStock`;
       const quads = buildDatatypePropertyQuads(FLAG_PROP, CLASS_IRI, XSD.boolean);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.inStock as Record<string, unknown>;
 
@@ -265,7 +265,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const TS_PROP = `${CLASS_IRI}#publishedOn`;
       const quads = buildDatatypePropertyQuads(TS_PROP, CLASS_IRI, XSD.dateTime);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.publishedOn as Record<string, unknown>;
 
@@ -277,7 +277,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const DATE_PROP = `${CLASS_IRI}#releaseDate`;
       const quads = buildDatatypePropertyQuads(DATE_PROP, CLASS_IRI, XSD.date);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.releaseDate as Record<string, unknown>;
 
@@ -288,7 +288,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const URL_PROP = `${CLASS_IRI}#homepage`;
       const quads = buildDatatypePropertyQuads(URL_PROP, CLASS_IRI, XSD.anyURI);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.homepage as Record<string, unknown>;
 
@@ -312,7 +312,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         makeQuad(PROP_IRI, RDFS.range, XSD.string)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
 
       const propsA = getProps(fragment, CLASS_A);
       const propsB = getProps(fragment, CLASS_B);
@@ -342,7 +342,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         makeQuad(CHILD_PROP, RDFS.subPropertyOf, PARENT_PROP)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
 
       const ch = fragment.characteristics.find((entry) => {
         return entry.propertyIri === CHILD_PROP;
@@ -379,7 +379,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         makeQuad(WROTE_PROP, OWL.inverseOf, WRITTEN_BY_PROP)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
 
       const ch = fragment.characteristics.find((entry) => {
         return entry.propertyIri === WROTE_PROP && entry.characteristic.includes('inverseOf');
@@ -419,7 +419,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         ...customerQuads
       ];
 
-      const importer = new OwlImporter({ 'baseIRI': BASE });
+      const importer = new OwlImporter({ 'baseIri': BASE });
       const result = importer.import(allQuads);
 
       const orderResult = result.schemas.find((schema) => {
@@ -444,7 +444,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       } as const;
 
       const quads = OwlProjection.graph(new SchemaGraph(bookSchema));
-      const importer = new OwlImporter({ 'baseIRI': BASE });
+      const importer = new OwlImporter({ 'baseIri': BASE });
       const result = importer.import(quads);
 
       const bookResult = result.schemas.find((schema) => {
@@ -469,7 +469,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       } as const;
 
       const quads = OwlProjection.graph(new SchemaGraph(bookSchema));
-      const importer = new OwlImporter({ 'baseIRI': BASE });
+      const importer = new OwlImporter({ 'baseIri': BASE });
       const result = importer.import(quads);
 
       const bookResult = result.schemas.find((schema) => {
@@ -510,7 +510,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         ...emailQuads
       ];
 
-      const importer = new OwlImporter({ 'baseIRI': BASE });
+      const importer = new OwlImporter({ 'baseIri': BASE });
       const result = importer.import(allQuads);
 
       const customerResult = result.schemas.find((schema) => {

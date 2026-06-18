@@ -25,7 +25,7 @@ type Temperature = InferType<typeof TemperatureSchema>;
 // additionally carries MaximumBrand<100>), so neither is assignable to the
 // other.
 const jt = JsonTology.create({
-  'baseIRI': 'urn:brands:',
+  'baseIri': 'urn:brands:',
   'enableStrictGraph': false,
   'schemas': [
     PercentSchema,

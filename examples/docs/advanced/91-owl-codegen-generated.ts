@@ -106,7 +106,7 @@ console.log('Contains GroupSchema export:', generatedSrc.includes('export const 
 
 // Use the runtime fromTbox path to validate (no disk I/O needed).
 const jt = JsonTology.create({
-  'baseIRI': 'https://neverending.example/',
+  'baseIri': 'https://neverending.example/',
   'enableStrictGraph': false
 });
 

@@ -115,7 +115,7 @@ if (personSchema !== undefined && typeof personSchema.$id === 'string') {
     ];
 
   const personJt = JsonTology.create({
-    'baseIRI': 'https://schema.org',
+    'baseIri': 'https://schema.org',
     'enableStrictGraph': false,
     'schemas': personSchemas
   });
@@ -142,7 +142,7 @@ if (organizationSchema !== undefined && typeof organizationSchema.$id === 'strin
     ];
 
   const orgJt = JsonTology.create({
-    'baseIRI': 'https://schema.org',
+    'baseIri': 'https://schema.org',
     'enableStrictGraph': false,
     'schemas': orgSchemas
   });
@@ -158,7 +158,7 @@ if (organizationSchema !== undefined && typeof organizationSchema.$id === 'strin
 if (isbnTypeSchema !== undefined && typeof isbnTypeSchema.$id === 'string') {
   const isbnRec = isbnTypeSchema as Record<string, unknown> & { '$id': string };
   const isbnJt = JsonTology.create({
-    'baseIRI': 'https://schema.org',
+    'baseIri': 'https://schema.org',
     'enableStrictGraph': false,
     'schemas': [isbnRec]
   });
@@ -190,7 +190,7 @@ type IsbnType = InferType<typeof IsbnTypeSchema>;
 // satisfy the brand on its own — a branded value is produced by instantiate(),
 // which validates the wire string and returns the narrowed branded type.
 const isbnRegistry = JsonTology.create({
-  'baseIRI': 'https://schema.org/',
+  'baseIri': 'https://schema.org/',
   'schemas': [IsbnTypeSchema]
 });
 const isbnValue: IsbnType = isbnRegistry.instantiate(IsbnTypeSchema.$id, '9783551551672');

@@ -1,5 +1,5 @@
-import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-import type { FormatPredicateType } from '../../types/FormatPredicate.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
+import type { FormatPredicateType } from '../../types/FormatPredicateType.js';
 import {
   IPV6_FULL, IPV6_MIXED, IPV6_MIXED_COMPRESSED, IPV6_WITH_DOUBLE_COLON
 } from '../../constants/FORMAT_REGEXES.js';
@@ -405,6 +405,10 @@ function validateDateFormat(value: string): boolean {
   const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
   const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
 
+  if (maxDay === undefined) {
+    return false;
+  }
+
   return day >= 1 && day <= maxDay;
 }
 
@@ -429,7 +433,7 @@ function validateDateTime(value: string): boolean {
   const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
   const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
 
-  if (day < 1 || day > maxDay) {
+  if (maxDay === undefined || day < 1 || day > maxDay) {
     return false;
   }
   // RFC 3339 allows 'T' or 't' as the date-time separator (index 10)
@@ -815,24 +819,6 @@ const NUMBER_FORMAT_VALIDATORS: Record<string, FormatPredicateType> = {
 const TRUSTED_MARKER = 'trusted' as const;
 
 /**
- * Returns `true` when `fn` is a built-in format validator registered via
- * {@link FormatRegistry.builtin}.  Built-in validators are total functions
- * that never throw, so callers can omit the try/catch guard on the hot path.
- *
- * User-supplied validators registered via {@link FormatRegistry.set} are never
- * trusted — the try/catch guard is preserved for them.
- *
- * @param fn - Format predicate to test
- * @returns `true` when the function carries the built-in trust marker
- * @category Validation
- * @since 0.25.0
- * @group Format
- */
-export function isTrustedFormatPredicate(fn: FormatPredicateType): boolean {
-  return Object.hasOwn(fn, TRUSTED_MARKER);
-}
-
-/**
  * Pluggable registry for JSON Schema `format` validators.
  *
  * Each validator receives `unknown` so it can handle both string and number
@@ -881,6 +867,24 @@ export class FormatRegistry implements FormatRegistryInterface {
     }
 
     return registry;
+  }
+
+  /**
+   * Returns `true` when `fn` is a built-in format validator registered via
+   * {@link FormatRegistry.builtin}.  Built-in validators are total functions
+   * that never throw, so callers can omit the try/catch guard on the hot path.
+   *
+   * User-supplied validators registered via {@link FormatRegistry.set} are never
+   * trusted — the try/catch guard is preserved for them.
+   *
+   * @param fn - Format predicate to test
+   * @returns `true` when the function carries the built-in trust marker
+   * @category Validation
+   * @since 0.25.0
+   * @group Format
+   */
+  static isTrustedFormatPredicate(fn: FormatPredicateType): boolean {
+    return Object.hasOwn(fn, TRUSTED_MARKER);
   }
 
   private readonly validators = new Map<string, FormatPredicateType>();

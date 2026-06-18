@@ -177,7 +177,13 @@ void describe('real-world ontology import: FOAF', () => {
     assert.ok('familyName' in props, 'foaf:Person must have familyName property');
 
     // foaf:knows is an ObjectProperty with range foaf:Person → $ref: self
-    const knowsRef = props.knows.$ref;
+    const knowsProp = props['knows'];
+
+    if (knowsProp === undefined) {
+      throw new Error('props.knows is undefined');
+    }
+
+    const knowsRef = knowsProp.$ref;
 
     assert.equal(
       knowsRef,
@@ -189,7 +195,7 @@ void describe('real-world ontology import: FOAF', () => {
   void it('validates a foaf:Person instance against the imported schema', () => {
     // Use instance fromTbox so all schemas register into the same registry.
     const jt = JsonTology.create({
-      'baseIRI': 'http://xmlns.com/foaf/0.1/',
+      'baseIri': 'http://xmlns.com/foaf/0.1/',
       'enableStrictGraph': false
     });
     const result = jt.fromTbox(FOAF_JSONLD);
@@ -268,7 +274,13 @@ void describe('real-world ontology import: DCAT-AP', () => {
     assert.ok('description' in props, 'dcat:Dataset must have description property');
 
     // dct:publisher is an ObjectProperty → $ref: foaf:Agent
-    const publisherRef = props.publisher.$ref;
+    const publisherProp = props['publisher'];
+
+    if (publisherProp === undefined) {
+      throw new Error('props.publisher is undefined');
+    }
+
+    const publisherRef = publisherProp.$ref;
 
     assert.equal(publisherRef, 'http://xmlns.com/foaf/0.1/Agent', 'dct:publisher must be a $ref to foaf:Agent');
   });
@@ -276,7 +288,7 @@ void describe('real-world ontology import: DCAT-AP', () => {
   void it('validates a dcat:Dataset instance against the imported schema', () => {
     // Use instance fromTbox so all schemas (including foaf:Agent) register.
     const jt = JsonTology.create({
-      'baseIRI': 'http://www.w3.org/ns/dcat#',
+      'baseIri': 'http://www.w3.org/ns/dcat#',
       'enableStrictGraph': false
     });
     const result = jt.fromTbox(DCAT_JSONLD);

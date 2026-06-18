@@ -161,7 +161,7 @@ interface Scenario {
 function jtFlatSetup(data: unknown): Setup {
   return async () => {
     const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { validate: (id: string, d: unknown) => unknown } } };
-    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', schemas: [JT_FLAT_SCHEMA] });
+    const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', schemas: [JT_FLAT_SCHEMA] });
     return () => { void jt.validate(JT_FLAT_SCHEMA.$id, data); };
   };
 }
@@ -169,7 +169,7 @@ function jtFlatSetup(data: unknown): Setup {
 function jtNestedSetup(data: unknown): Setup {
   return async () => {
     const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { validate: (id: string, d: unknown) => unknown } } };
-    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', schemas: [JT_FLAT_SCHEMA, JT_NESTED_SCHEMA] });
+    const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', schemas: [JT_FLAT_SCHEMA, JT_NESTED_SCHEMA] });
     return () => { void jt.validate(JT_NESTED_SCHEMA.$id, data); };
   };
 }
@@ -323,7 +323,7 @@ function iotsNested(data: unknown): Setup {
 function jtCoerceValid(): Setup {
   return async () => {
     const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { instantiate: (id: string, d: unknown) => unknown } } };
-    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', enableTypeCast: true, schemas: [JT_COERCE_SCHEMA] });
+    const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', enableTypeCast: true, schemas: [JT_COERCE_SCHEMA] });
     return () => { void jt.instantiate(JT_COERCE_SCHEMA.$id, COERCE_INPUT); };
   };
 }
@@ -331,7 +331,7 @@ function jtCoerceValid(): Setup {
 function jtCoerceDefaults(): Setup {
   return async () => {
     const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { instantiate: (id: string, d: unknown) => unknown } } };
-    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', enableTypeCast: true, schemas: [JT_COERCE_SCHEMA] });
+    const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', enableTypeCast: true, schemas: [JT_COERCE_SCHEMA] });
     return () => { void jt.instantiate(JT_COERCE_SCHEMA.$id, DEFAULTS_INPUT); };
   };
 }
@@ -339,7 +339,7 @@ function jtCoerceDefaults(): Setup {
 function jtClean(data: unknown, primary: { readonly $id: string }, schemas: readonly unknown[]): Setup {
   return async () => {
     const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { registry: { clean: (id: string, d: unknown) => unknown } } } };
-    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', schemas });
+    const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', schemas });
     return () => { void jt.registry.clean(primary.$id, data); };
   };
 }
@@ -865,7 +865,7 @@ function jsonStringifyEncode(data: unknown): Setup {
 function jtConvert(data: unknown): Setup {
   return async () => {
     const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { registry: { convert: (id: string, d: unknown) => unknown } } } };
-    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', enableTypeCast: true, schemas: [JT_COERCE_SCHEMA] });
+    const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', enableTypeCast: true, schemas: [JT_COERCE_SCHEMA] });
     return () => { void jt.registry.convert(JT_COERCE_SCHEMA.$id, data); };
   };
 }
@@ -898,7 +898,7 @@ function jtDump(): Setup {
         total: { type: 'number' },
       },
     } as const;
-    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', schemas: [schema] });
+    const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', schemas: [schema] });
     return () => { void jt.dump(schema, NESTED_FOR_DUMP); };
   };
 }
@@ -915,7 +915,7 @@ function jtDumpJson(): Setup {
         total: { type: 'number' },
       },
     } as const;
-    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', schemas: [schema] });
+    const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', schemas: [schema] });
     return () => { void jt.dumpJson(schema, NESTED_FOR_DUMP); };
   };
 }
@@ -1001,7 +1001,7 @@ export const SCENARIOS: Scenario[] = [
     factories: {
       'json-tology': async () => {
         const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { instantiate: (id: string, d: unknown) => unknown } } };
-        const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', schemas: [JT_FLAT_SCHEMA] });
+        const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', schemas: [JT_FLAT_SCHEMA] });
         return () => { void jt.instantiate(JT_FLAT_SCHEMA.$id, FLAT_VALID); };
       },
       'zod': async () => {
@@ -1035,7 +1035,7 @@ export const SCENARIOS: Scenario[] = [
     factories: {
       'json-tology': async () => {
         const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { instantiate: (id: string, d: unknown) => unknown } } };
-        const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', schemas: [JT_FLAT_SCHEMA, JT_NESTED_SCHEMA] });
+        const jt = mod.JsonTology.create({ baseIri: 'urn:bench:', schemas: [JT_FLAT_SCHEMA, JT_NESTED_SCHEMA] });
         return () => { void jt.instantiate(JT_NESTED_SCHEMA.$id, NESTED_VALID); };
       },
       'zod': zodNestedValidate(NESTED_VALID),

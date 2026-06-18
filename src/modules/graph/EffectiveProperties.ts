@@ -1,5 +1,5 @@
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
 
 /**
@@ -42,140 +42,144 @@ import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapT
  * @see {@link EffectivePropertyMapType}
  * @group Graph
  */
-export function collectEffectiveProperties(
-  graph: SchemaGraphInterface,
-  node: SchemaGraphNodeType,
-  resolveGraph?: (refId: string) => SchemaGraphInterface | undefined
-): EffectivePropertyMapType {
-  const collected: EffectivePropertyMapType = new Map();
-  const visited = new Set<SchemaGraphNodeType>();
+export class EffectiveProperties {
+  /**
+   * Collect the effective property set for a schema graph node.
+   *
+   * See the module-level documentation for the full walk semantics
+   * (own properties, `allOf`, union members, conditional branches,
+   * cross-graph `$ref` resolution, and cycle safety).
+   *
+   * @param graph - Graph containing `node`.
+   * @param node - Root node from which to start the walk.
+   * @param resolveGraph - Optional cross-graph resolver.
+   * @returns Map from property name to `{ graph, node }`.
+   */
+  public static collect(
+    graph: SchemaGraphInterface,
+    node: SchemaGraphNodeType,
+    resolveGraph?: (refId: string) => SchemaGraphInterface | undefined
+  ): EffectivePropertyMapType {
+    const collected: EffectivePropertyMapType = new Map();
+    const visited = new Set<SchemaGraphNodeType>();
 
-  walkEffectiveProperties(graph, node, resolveGraph, collected, visited);
+    EffectiveProperties.walk(graph, node, resolveGraph, collected, visited);
 
-  return collected;
-}
-
-/**
- * Node-keyed memoized wrapper around `collectEffectiveProperties`.
- *
- * The result is stable within a session (graphs and the registry are immutable
- * after schema registration), so caching by node identity is safe. The WeakMap
- * ensures no memory leak when nodes are GC'd.
- *
- * Limitation: the cache key is `node` only — it does not encode `resolveGraph`
- * identity. When the same node is queried with different resolvers (unusual in
- * practice since the resolver comes from a fixed registry), callers should
- * maintain their own two-level cache. For the standard single-registry case this
- * is always safe.
- *
- * @param cache - WeakMap maintained by the caller.
- * @param graph - Graph containing `node`.
- * @param node - Root node.
- * @param resolveGraph - Optional cross-graph resolver.
- * @returns Memoized effective property map.
- *
- * @category Graph
- * @since 0.22.0
- */
-export function collectEffectivePropertiesMemo(
-  cache: WeakMap<SchemaGraphNodeType, EffectivePropertyMapType>,
-  graph: SchemaGraphInterface,
-  node: SchemaGraphNodeType,
-  resolveGraph?: (refId: string) => SchemaGraphInterface | undefined
-): EffectivePropertyMapType {
-  const cached = cache.get(node);
-
-  if (cached !== undefined) {
-    return cached;
+    return collected;
   }
 
-  const result = collectEffectiveProperties(graph, node, resolveGraph);
+  /**
+   * Node-keyed memoized wrapper around {@link EffectiveProperties.collect}.
+   *
+   * The result is stable within a session (graphs and the registry are immutable
+   * after schema registration), so caching by node identity is safe.
+   *
+   * @param cache - WeakMap maintained by the caller.
+   * @param graph - Graph containing `node`.
+   * @param node - Root node.
+   * @param resolveGraph - Optional cross-graph resolver.
+   * @returns Memoized effective property map.
+   */
+  public static collectMemo(
+    cache: WeakMap<SchemaGraphNodeType, EffectivePropertyMapType>,
+    graph: SchemaGraphInterface,
+    node: SchemaGraphNodeType,
+    resolveGraph?: (refId: string) => SchemaGraphInterface | undefined
+  ): EffectivePropertyMapType {
+    const cached = cache.get(node);
 
-  cache.set(node, result);
+    if (cached !== undefined) {
+      return cached;
+    }
 
-  return result;
-}
+    const result = EffectiveProperties.collect(graph, node, resolveGraph);
 
-/**
- * Inner recursive walker — do not call directly. Use `collectEffectiveProperties`.
- */
-function walkEffectiveProperties(
-  currentGraph: SchemaGraphInterface,
-  current: SchemaGraphNodeType,
-  resolveGraph: ((refId: string) => SchemaGraphInterface | undefined) | undefined,
-  collected: EffectivePropertyMapType,
-  visited: Set<SchemaGraphNodeType>
-): void {
-  if (visited.has(current)) {
-    return;
+    cache.set(node, result);
+
+    return result;
   }
-  visited.add(current);
 
-  const sem = currentGraph.semantics(current);
+  /**
+   * Inner recursive walker — do not call directly. Use {@link EffectiveProperties.collect}.
+   */
+  private static walk(
+    currentGraph: SchemaGraphInterface,
+    current: SchemaGraphNodeType,
+    resolveGraph: ((refId: string) => SchemaGraphInterface | undefined) | undefined,
+    collected: EffectivePropertyMapType,
+    visited: Set<SchemaGraphNodeType>
+  ): void {
+    if (visited.has(current)) {
+      return;
+    }
+    visited.add(current);
 
-  // Cross-graph $ref: when a node carries a non-fragment $ref, resolve the
-  // target refId and look it up via the caller-supplied resolver. If found,
-  // descend into the target graph's rootNode instead of reading local
-  // properties (the local node is a bare $ref stub with no properties).
-  if (sem.ref !== undefined && !sem.ref.startsWith('#')) {
-    if (resolveGraph !== undefined) {
-      const refId = currentGraph.resolveRefId(sem.ref);
-      const targetGraph = resolveGraph(refId);
+    const sem = currentGraph.semantics(current);
 
-      if (targetGraph !== undefined) {
-        const rootNode = targetGraph.rootNode;
+    // Cross-graph $ref: when a node carries a non-fragment $ref, resolve the
+    // target refId and look it up via the caller-supplied resolver. If found,
+    // descend into the target graph's rootNode instead of reading local
+    // properties (the local node is a bare $ref stub with no properties).
+    if (sem.ref !== undefined && !sem.ref.startsWith('#')) {
+      if (resolveGraph !== undefined) {
+        const refId = currentGraph.resolveRefId(sem.ref);
+        const targetGraph = resolveGraph(refId);
 
-        // Mark the root node visited to prevent re-entry if the same
-        // target appears through multiple allOf members.
-        if (!visited.has(rootNode)) {
-          walkEffectiveProperties(targetGraph, rootNode, resolveGraph, collected, visited);
-          visited.add(rootNode);
+        if (targetGraph !== undefined) {
+          const rootNode = targetGraph.rootNode;
+
+          // Mark the root node visited to prevent re-entry if the same
+          // target appears through multiple allOf members.
+          if (!visited.has(rootNode)) {
+            EffectiveProperties.walk(targetGraph, rootNode, resolveGraph, collected, visited);
+            visited.add(rootNode);
+          }
         }
+      }
+
+      // A cross-graph $ref stub carries no local properties — return whether
+      // or not the resolver found a target (same behavior as Lift's walk).
+      return;
+    }
+
+    // Collect own properties first (first-declaration-wins).
+    for (const [
+      name,
+      propNode
+    ] of sem.properties) {
+      if (!collected.has(name)) {
+        collected.set(name, {
+          'graph': currentGraph,
+          'node': propNode
+        });
       }
     }
 
-    // A cross-graph $ref stub carries no local properties — return whether
-    // or not the resolver found a target (same behavior as Lift's walk).
-    return;
-  }
-
-  // Collect own properties first (first-declaration-wins).
-  for (const [
-    name,
-    propNode
-  ] of sem.properties) {
-    if (!collected.has(name)) {
-      collected.set(name, {
-        'graph': currentGraph,
-        'node': propNode
-      });
+    // Recurse into allOf members.
+    for (const member of sem.allOf) {
+      EffectiveProperties.walk(currentGraph, member, resolveGraph, collected, visited);
     }
-  }
 
-  // Recurse into allOf members.
-  for (const member of sem.allOf) {
-    walkEffectiveProperties(currentGraph, member, resolveGraph, collected, visited);
-  }
+    // Recurse into anyOf/oneOf union members.
+    // Both branches are walked because projection only emits a property when its
+    // value is present in data — including inactive union members does not fabricate
+    // output, only ensures each member's properties are reachable.
+    for (const member of sem.anyOf) {
+      EffectiveProperties.walk(currentGraph, member, resolveGraph, collected, visited);
+    }
+    for (const member of sem.oneOf) {
+      EffectiveProperties.walk(currentGraph, member, resolveGraph, collected, visited);
+    }
 
-  // Recurse into anyOf/oneOf union members.
-  // Both branches are walked because projection only emits a property when its
-  // value is present in data — including inactive union members does not fabricate
-  // output, only ensures each member's properties are reachable.
-  for (const member of sem.anyOf) {
-    walkEffectiveProperties(currentGraph, member, resolveGraph, collected, visited);
-  }
-  for (const member of sem.oneOf) {
-    walkEffectiveProperties(currentGraph, member, resolveGraph, collected, visited);
-  }
-
-  // Recurse into if/then/else conditional branches.
-  // Both branches are walked because projection only emits a property when its
-  // value is present in data — including the inactive branch does not fabricate
-  // output, only ensures the active branch's properties are reachable.
-  if (sem.thenNode !== undefined) {
-    walkEffectiveProperties(currentGraph, sem.thenNode, resolveGraph, collected, visited);
-  }
-  if (sem.elseNode !== undefined) {
-    walkEffectiveProperties(currentGraph, sem.elseNode, resolveGraph, collected, visited);
+    // Recurse into if/then/else conditional branches.
+    // Both branches are walked because projection only emits a property when its
+    // value is present in data — including the inactive branch does not fabricate
+    // output, only ensures the active branch's properties are reachable.
+    if (sem.thenNode !== undefined) {
+      EffectiveProperties.walk(currentGraph, sem.thenNode, resolveGraph, collected, visited);
+    }
+    if (sem.elseNode !== undefined) {
+      EffectiveProperties.walk(currentGraph, sem.elseNode, resolveGraph, collected, visited);
+    }
   }
 }

@@ -13,7 +13,12 @@ import {
 const original = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
 
 const quads = bookstoreEntities.toQuads(CustomerSchema, original);
-const [restored] = bookstoreEntities.fromQuads(CustomerSchema.$id, quads);
+const restoredList = bookstoreEntities.fromQuads(CustomerSchema.$id, quads);
+const restored = restoredList[0];
+
+if (restored === undefined) {
+  throw new Error('expected restored customer');
+}
 
 console.assert(restored.customerId === original.customerId, 'customer id round-tripped');
 console.assert(restored.name === original.name, 'customer name round-tripped');
