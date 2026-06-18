@@ -463,6 +463,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     });
     const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn, treeHasUnevaluated);
 
+    this.logger.info(logScope('SchemaCompiler', 'compile', `compiled validator for ${typeof schema.$id === 'string' ? schema.$id : '<anonymous>'}`));
+
     return {
       'check': checkFn,
       'compiled': true,

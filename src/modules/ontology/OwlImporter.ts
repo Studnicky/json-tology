@@ -532,6 +532,8 @@ export class OwlImporter {
       this.logger.warn(logScope('OwlImporter', 'import', `${unsupported.length} unsupported construct(s) recorded`));
     }
 
+    this.logger.info(logScope('OwlImporter', 'import', `OWL TBox import complete: ${schemas.length} schema(s), ${merged.individuals.length} individual(s)`));
+
     return {
       'characteristics': merged.characteristics,
       'differentFrom': merged.differentFrom,

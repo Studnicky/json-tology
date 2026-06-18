@@ -366,6 +366,8 @@ export class Materializer implements MaterializerInterface {
       this.applyComputedFields(schema.$id, value);
     }
 
+    this.logger.info(logScope('Materializer', 'materialize', `materialization complete for ${schema.$id}`));
+
     if (Materializer.isEffectivelyFrozen(schema)) {
       return Frozen.deepFreeze(value);
     }
