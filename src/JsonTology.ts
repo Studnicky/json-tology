@@ -25,7 +25,9 @@ import type { InvariantType } from './types/Invariant.js';
 import type { ComputedFnType } from './types/Computed.js';
 import type { JsonTologyOptionsType } from './types/Config.js';
 import type { JsonSchemaType } from './types/Schema.js';
-import type { LoaderType } from './types/Loader.js';
+import type {
+  LoaderType, SchemaLoadResultType
+} from './types/Loader.js';
 import type { LoggerInterface } from './interfaces/Logger.js';
 import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
 import type { PrefetchOptionsType } from './types/Prefetch.js';
@@ -592,7 +594,26 @@ export class JsonTology<TRefs = Record<never, never>> {
       }
     }
 
+    // Snapshot the registry size after pre-registering schemas from options.schemas
+    // but before the loader walk. Used to compute successful/skipped counts.
+    const preWalkIds = new Set<string>();
+
+    for (const s of tmp.registry.list()) {
+      if (typeof s.$id === 'string') {
+        preWalkIds.add(s.$id);
+      }
+    }
+
+    // Count rootIds that are already registered (skipped by the loader walk).
+    let skippedCount = 0;
+
     if (options.rootIds) {
+      for (const id of options.rootIds) {
+        if (preWalkIds.has(id)) {
+          skippedCount++;
+        }
+      }
+
       await tmp.refLoader.loadRootIds(options.rootIds, options.loader);
     }
 
@@ -608,7 +629,18 @@ export class JsonTology<TRefs = Record<never, never>> {
       }
     }
 
+    // Compute how many schemas were newly fetched by the loader walk.
+    const successfulCount = schemas.size - preWalkIds.size;
+
+    const loadResult: SchemaLoadResultType = {
+      'errors': [],
+      'failed': 0,
+      'skipped': skippedCount,
+      'successful': successfulCount
+    };
+
     return {
+      'loadResult': loadResult,
       'schemas': schemas,
       'version': 1
     };

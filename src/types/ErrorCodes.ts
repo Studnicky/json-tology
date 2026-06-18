@@ -204,3 +204,25 @@ export type MaterializationErrorCodeType
 export type OwlImportErrorCodeType
   = | 'OWL_IMPORT_PARSE_FAILED'
   | 'OWL_IMPORT_PEER_DEPENDENCY_MISSING';
+
+/**
+ * Error codes emitted by `SchemaLoadError`.
+ *
+ * @remarks
+ * Produced when the schema loader fails to fetch or parse a remote schema.
+ * `SCHEMA_LOAD_FAILED` covers fetch failures, missing `$id`, and invalid schema content.
+ *
+ * @example
+ * ```ts
+ * import type { SchemaLoadErrorCodeType } from 'json-tology/types';
+ * function handleLoad(code: SchemaLoadErrorCodeType): void {
+ *   if (code === 'SCHEMA_LOAD_FAILED') { /* ... *\/ }
+ * }
+ * ```
+ *
+ * @category Error Codes
+ * @since 0.25.0
+ * @see {@link GraphErrorCodeType}
+ * @group Error Codes
+ */
+export type SchemaLoadErrorCodeType = 'SCHEMA_LOAD_FAILED';

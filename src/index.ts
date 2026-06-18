@@ -15,6 +15,7 @@ export {
   MaterializationErrorCode,
   OwlImportErrorCode,
   SchemaErrorCode,
+  SchemaLoadErrorCode,
   TransformErrorCode
 } from './constants/ERROR_CODES.js';
 // Errors are runtime classes: tests catch them by class identity, callers
@@ -29,6 +30,7 @@ export * from './errors/InstantiationError.js';
 export * from './errors/MaterializationError.js';
 export * from './errors/OwlImportError.js';
 export * from './errors/SchemaError.js';
+export * from './errors/SchemaLoadError.js';
 export * from './errors/TransformError.js';
 export * from './errors/ValidationErrors.js';
 // Runtime classes only.

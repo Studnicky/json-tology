@@ -4,7 +4,7 @@
  * Covers:
  *  1. InvariantStore.runAll  — throwing invariant wraps as InstantiationError
  *  2. Lift.resolveNodeForType — POINTER_NOT_FOUND is swallowed; other GraphErrors rethrow
- *  3. RefResolutionLoader    — non-string $id throws GraphError(REF_UNRESOLVED)
+ *  3. RefResolutionLoader    — non-string $id throws SchemaLoadError(SCHEMA_LOAD_FAILED)
  */
 
 import assert from 'node:assert/strict';
@@ -17,6 +17,7 @@ import { Lift } from '../../src/modules/rdf/Lift.js';
 import { RefResolutionLoader } from '../../src/modules/registry/RefResolutionLoader.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { GraphError } from '../../src/errors/GraphError.js';
+import { SchemaLoadError } from '../../src/errors/SchemaLoadError.js';
 import { InstantiationError } from '../../src/errors/InstantiationError.js';
 import { GraphErrorCode } from '../../src/constants/ERROR_CODES.js';
 import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
@@ -196,7 +197,7 @@ void describe('Lift.resolveNodeForType — discriminated-catch', { 'concurrency'
 });
 
 // ---------------------------------------------------------------------------
-// 3. RefResolutionLoader — non-string $id throws GraphError(REF_UNRESOLVED)
+// 3. RefResolutionLoader — non-string $id throws SchemaLoadError(SCHEMA_LOAD_FAILED)
 // ---------------------------------------------------------------------------
 
 const loaderWithNumericId = async (_iri: string): Promise<JsonSchemaType | null> => {
@@ -217,7 +218,7 @@ const loaderWithMissingId = async (iri: string): Promise<JsonSchemaType | null> 
 };
 
 void describe('RefResolutionLoader — non-string $id', { 'concurrency': true }, () => {
-  void it('loadRootIds throws GraphError REF_UNRESOLVED when loader returns schema with non-string $id', async () => {
+  void it('loadRootIds throws SchemaLoadError missing-id when loader returns schema with non-string $id', async () => {
     const registry = new SchemaRegistry();
     const refLoader = new RefResolutionLoader(registry);
 
@@ -226,15 +227,16 @@ void describe('RefResolutionLoader — non-string $id', { 'concurrency': true },
         return refLoader.loadRootIds(['https://ex/NullId'], loaderWithNumericId);
       },
       (err: unknown) => {
-        assert.ok(err instanceof GraphError, `expected GraphError, got: ${String(err)}`);
-        assert.equal(err.code, 'REF_UNRESOLVED');
+        assert.ok(err instanceof SchemaLoadError, `expected SchemaLoadError, got: ${String(err)}`);
+        assert.equal(err.code, 'SCHEMA_LOAD_FAILED');
+        assert.equal(err.reason, 'missing-id');
 
         return true;
       }
     );
   });
 
-  void it('resolveAll throws GraphError REF_UNRESOLVED when loader returns schema with non-string $id', async () => {
+  void it('resolveAll throws SchemaLoadError missing-id when loader returns schema with non-string $id', async () => {
     const registry = new SchemaRegistry();
 
     registry.set({
@@ -250,8 +252,9 @@ void describe('RefResolutionLoader — non-string $id', { 'concurrency': true },
         return refLoader.resolveAll(loaderWithMissingId);
       },
       (err: unknown) => {
-        assert.ok(err instanceof GraphError, `expected GraphError, got: ${String(err)}`);
-        assert.equal(err.code, 'REF_UNRESOLVED');
+        assert.ok(err instanceof SchemaLoadError, `expected SchemaLoadError, got: ${String(err)}`);
+        assert.equal(err.code, 'SCHEMA_LOAD_FAILED');
+        assert.equal(err.reason, 'missing-id');
 
         return true;
       }

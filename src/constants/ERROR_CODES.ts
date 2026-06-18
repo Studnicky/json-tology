@@ -5,6 +5,7 @@ import type {
   MaterializationErrorCodeType,
   OwlImportErrorCodeType,
   SchemaErrorCodeType,
+  SchemaLoadErrorCodeType,
   TransformErrorCodeType
 } from '../types/ErrorCodes.js';
 
@@ -199,6 +200,28 @@ export const TransformErrorCode = {
   'TRANSFORM_DECODE_FAILED': 'TRANSFORM_DECODE_FAILED',
   'TRANSFORM_ENCODE_FAILED': 'TRANSFORM_ENCODE_FAILED'
 } as const satisfies Record<string, TransformErrorCodeType>;
+
+/**
+ * Error codes for schema load failures.
+ *
+ * @remarks
+ * Thrown by `SchemaLoadError` when the schema loader cannot fetch or parse a
+ * remote schema. Covers HTTP 5xx transient failures (`fetch-failed`), schemas
+ * returned without a `$id` (`missing-id`), and structurally invalid content
+ * (`invalid-schema`).
+ *
+ * @example
+ * ```ts
+ * throw new SchemaLoadError(message, { code: SchemaLoadErrorCode.LOAD_FAILED, file: url, reason: 'fetch-failed', status: 503, retryable: true });
+ * ```
+ *
+ * @category Error Codes
+ * @since 0.25.0
+ * @see {@link SchemaLoadErrorCodeType}
+ * @defaultValue `{ LOAD_FAILED: 'SCHEMA_LOAD_FAILED' }`
+ * @group Constants
+ */
+export const SchemaLoadErrorCode = { 'LOAD_FAILED': 'SCHEMA_LOAD_FAILED' } as const satisfies Record<string, SchemaLoadErrorCodeType>;
 
 /**
  * Sentinel code used when serializing a non-BaseError instance into the

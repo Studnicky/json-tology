@@ -10,7 +10,10 @@ import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js
 import type { LoaderType } from '../../types/Loader.js';
 
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { SchemaLoadError } from '../../errors/SchemaLoadError.js';
+import {
+  GraphErrorCode, SchemaLoadErrorCode
+} from '../../constants/ERROR_CODES.js';
 
 export class RefResolutionLoader implements RefResolutionLoaderInterface {
   private readonly registry: SchemaRegistryInterface;
@@ -45,11 +48,13 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
         const loadedId = loaded.$id;
 
         if (typeof loadedId !== 'string') {
-          throw new GraphError(
+          throw new SchemaLoadError(
             `loader returned schema with non-string $id for IRI: ${iri}`,
             {
-              'code': GraphErrorCode.REF_UNRESOLVED,
-              'pointer': iri
+              'code': SchemaLoadErrorCode.LOAD_FAILED,
+              'file': iri,
+              'reason': 'missing-id',
+              'retryable': false
             }
           );
         }
@@ -66,7 +71,8 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
    * loader calls.
    *
    * Throws `GraphError('REF_UNRESOLVED')` when the loader returns null for a
-   * required IRI. Loader-thrown errors propagate unchanged.
+   * required IRI. Throws `SchemaLoadError('SCHEMA_LOAD_FAILED')` when the loader
+   * returns a schema with a non-string `$id`. Loader-thrown errors propagate unchanged.
    *
    * @param loader - Async loader invoked for each unregistered cross-schema IRI.
    */
@@ -101,11 +107,13 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
           const loadedId = loaded.$id;
 
           if (typeof loadedId !== 'string') {
-            throw new GraphError(
+            throw new SchemaLoadError(
               `loader returned schema with non-string $id for IRI: ${iri}`,
               {
-                'code': GraphErrorCode.REF_UNRESOLVED,
-                'pointer': iri
+                'code': SchemaLoadErrorCode.LOAD_FAILED,
+                'file': iri,
+                'reason': 'missing-id',
+                'retryable': false
               }
             );
           }

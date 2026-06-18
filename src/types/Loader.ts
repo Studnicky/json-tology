@@ -12,17 +12,20 @@ import type { JsonSchemaType } from './Schema.js';
  * TypeScript type inferred from `SchemaLoadErrorSchema` — describes a single schema-load failure.
  *
  * @remarks
- * Produced by the schema loader when a fetch attempt fails. Carries the IRI
- * that was requested, a human-readable `message`, and an optional numeric
- * `status` code (e.g. HTTP status). The shape is derived from the canonical
- * schema constant so it stays in sync with the runtime representation.
+ * Produced by the schema loader when a load attempt fails. Shape: `{ file, message, reason, status? }`.
+ * `file` is the source path or IRI that was being loaded. `reason` is a string enum
+ * classifying the failure (e.g. `'missing-id'`, `'fetch-failed'`, `'invalid-schema'`).
+ * `status` is an optional numeric HTTP status code present only on remote fetch failures.
+ * The shape is derived from the canonical schema constant so it stays in sync with the
+ * runtime representation.
  *
  * @example
  * ```ts
  * const err: SchemaLoadErrorType = {
- *   iri: 'https://example.com/User',
- *   message: 'Not Found',
- *   status: 404,
+ *   file: 'https://example.com/User',
+ *   message: 'HTTP 503 loading schema',
+ *   reason: 'fetch-failed',
+ *   status: 503,
  * };
  * ```
  *
@@ -34,17 +37,38 @@ import type { JsonSchemaType } from './Schema.js';
 export type SchemaLoadErrorType = InferType<typeof SchemaLoadErrorSchema>;
 
 /**
- * TypeScript type inferred from `SchemaLoadResultSchema` — describes the outcome of a single schema-load attempt.
+ * Union of all valid `reason` values for a schema-load failure.
  *
  * @remarks
- * Returned by the loader registry after attempting to fetch a referenced IRI.
- * On success carries the parsed `schema` object; on failure carries a
- * `SchemaLoadErrorType` describing the failure. The shape is derived from the
- * canonical schema constant so it stays in sync with the runtime representation.
+ * Derived from `SchemaLoadErrorType['reason']` so it stays in sync with the
+ * enum defined in `SchemaLoadErrorSchema`.
+ *
+ * @category Schema Utilities
+ * @since 0.25.0
+ * @see {@link SchemaLoadErrorType}
+ * @group Schema Utilities
+ */
+export type SchemaLoadReasonType = SchemaLoadErrorType['reason'];
+
+/**
+ * TypeScript type inferred from `SchemaLoadResultSchema` — describes the aggregate outcome of a bulk schema-load operation.
+ *
+ * @remarks
+ * Summarises loading one or more schemas. Shape: `{ successful, skipped, failed, errors }`.
+ * `successful` is the count of schemas that loaded without error. `skipped` is the count
+ * of IRIs already registered. `failed` is the count of schemas that could not be loaded.
+ * `errors` is an array of `SchemaLoadErrorType` descriptors, one per failure.
+ * The shape is derived from the canonical schema constant so it stays in sync with the
+ * runtime representation.
  *
  * @example
  * ```ts
- * const result: SchemaLoadResultType = { iri: 'https://example.com/User', schema: userJson };
+ * const result: SchemaLoadResultType = {
+ *   errors: [],
+ *   failed: 0,
+ *   skipped: 1,
+ *   successful: 5,
+ * };
  * ```
  *
  * @category Schema Utilities

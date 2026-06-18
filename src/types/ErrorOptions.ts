@@ -17,8 +17,10 @@ import type {
   MaterializationErrorCodeType,
   OwlImportErrorCodeType,
   SchemaErrorCodeType,
+  SchemaLoadErrorCodeType,
   TransformErrorCodeType
 } from './ErrorCodes.js';
+import type { SchemaLoadReasonType } from './Loader.js';
 import type { TransformDirectionType } from './TransformDirection.js';
 
 export type BaseErrorOptionsType = {
@@ -70,4 +72,12 @@ export type TransformErrorOptionsType
     readonly 'direction': TransformDirectionType;
     readonly 'path'?: string;
     readonly 'schemaId'?: string;
+  };
+
+export type SchemaLoadErrorOptionsType
+  = Omit<BaseErrorOptionsType, 'code'> & {
+    readonly 'code': SchemaLoadErrorCodeType;
+    readonly 'file': string;
+    readonly 'reason': SchemaLoadReasonType;
+    readonly 'status'?: number;
   };
