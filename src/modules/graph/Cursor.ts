@@ -3,6 +3,7 @@ import type { CursorInterface } from '../../interfaces/CursorInterface.js';
 import type { AboxLiftFnType } from '../../types/AboxGraph.js';
 
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 
 /**
  * Lazy, immutable selection of resource IRIs over an {@link AboxGraph}.
@@ -154,7 +155,7 @@ export class Cursor implements CursorInterface {
     if (this.iriList.length !== 1) {
       throw new GraphError(
         `Cursor.one() requires exactly one resource, found ${this.iriList.length}`,
-        { 'code': 'CURSOR_CARDINALITY' }
+        { 'code': GraphErrorCode.CURSOR_CARDINALITY }
       );
     }
 

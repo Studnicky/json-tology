@@ -14,7 +14,7 @@
  * @since 0.1.0
  */
 
-import { deepEqual } from '../data/DataTypes.js';
+import { deepEqual } from './DataTypes.js';
 import { MULTIPLE_OF_EPSILON_FACTOR } from '../../constants/NUMERIC.js';
 import {
   SUPPORTED_CONTENT_ENCODINGS, SUPPORTED_CONTENT_MEDIA_TYPES

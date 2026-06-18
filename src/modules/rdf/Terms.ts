@@ -46,12 +46,10 @@ import { DECIMAL_RADIX } from '../../constants/FORMAT_VALIDATION.js';
 import {
   XSD, XSD_COMPACT_PREFIX
 } from '../../constants/IRI.js';
-import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
+import { XSD_IRI_PREFIX } from '../../constants/STANDARD_PREFIXES.js';
 import {
   DECIMAL_XSD_TYPE_NAMES, INTEGER_XSD_TYPE_NAMES
 } from '../../constants/XSD_MAPS.js';
-
-const XSD_IRI_PREFIX = STANDARD_PREFIXES.xsd;
 
 // ---------------------------------------------------------------------------
 // Equality helpers

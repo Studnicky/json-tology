@@ -15,6 +15,7 @@ import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { GraphArtifactType } from '../../types/GraphArtifact.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { isRecord } from '../data/DataTypes.js';
 import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './SchemaGraph.js';
@@ -31,28 +32,28 @@ export class GraphArtifact {
     if (!isRecord(artifact)) {
       throw new GraphError(
         'Artifact must be an object. Regenerate the artifact.',
-        { 'code': 'ARTIFACT_INVALID' }
+        { 'code': GraphErrorCode.ARTIFACT_INVALID }
       );
     }
 
     if (!('metadata' in artifact)) {
       throw new GraphError(
         'Artifact is missing metadata. Regenerate the artifact.',
-        { 'code': 'ARTIFACT_INVALID' }
+        { 'code': GraphErrorCode.ARTIFACT_INVALID }
       );
     }
 
     if (!('normIR' in artifact) || !('semanticsHashes' in artifact)) {
       throw new GraphError(
         'Unsupported legacy artifact format. Regenerate the artifact.',
-        { 'code': 'ARTIFACT_INVALID' }
+        { 'code': GraphErrorCode.ARTIFACT_INVALID }
       );
     }
 
     if (!this.isArtifact(artifact)) {
       throw new GraphError(
         'Artifact shape is invalid. Regenerate the artifact.',
-        { 'code': 'ARTIFACT_INVALID' }
+        { 'code': GraphErrorCode.ARTIFACT_INVALID }
       );
     }
 
@@ -64,7 +65,7 @@ export class GraphArtifact {
     if (artifact.metadata.schemaHash !== actualSchemaHash) {
       throw new GraphError(
         `Schema hash mismatch: artifact=${artifact.metadata.schemaHash}, actual=${actualSchemaHash}. Regenerate the artifact.`,
-        { 'code': 'ARTIFACT_STALE' }
+        { 'code': GraphErrorCode.ARTIFACT_STALE }
       );
     }
 
@@ -76,7 +77,7 @@ export class GraphArtifact {
       if (expected !== actual) {
         throw new GraphError(
           `Semantics hash mismatch at ${node.pointer || '(root)'}: artifact=${expected}, rebuilt=${actual}. Regenerate the artifact.`,
-          { 'code': 'ARTIFACT_STALE' }
+          { 'code': GraphErrorCode.ARTIFACT_STALE }
         );
       }
     }

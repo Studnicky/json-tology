@@ -7,6 +7,7 @@
 
 import { Hash } from '../hash/Hash.js';
 import { METADATA_KEYS } from '../../constants/STRUCTURAL_HASH.js';
+import { isRecord } from './DataTypes.js';
 
 export class StructuralHash {
   public static of(schema: Record<string, unknown>): string {
@@ -14,17 +15,17 @@ export class StructuralHash {
   }
 
   private static strip(value: unknown): unknown {
-    if (value === null || typeof value !== 'object') {
-      return value;
-    }
-
     if (Array.isArray(value)) {
       return value.map((item) => {
         return StructuralHash.strip(item);
       });
     }
 
-    const record = value as Record<string, unknown>;
+    if (!isRecord(value)) {
+      return value;
+    }
+
+    const record = value;
     const result: Record<string, unknown> = {};
 
     for (const [

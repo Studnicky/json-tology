@@ -23,15 +23,15 @@ import { Terms } from './Terms.js';
 // Predicate helpers
 // ---------------------------------------------------------------------------
 
-function isRdfFirst(value: string): boolean {
+export function isRdfFirst(value: string): boolean {
   return value === RDF.first;
 }
 
-function isRdfRest(value: string): boolean {
+export function isRdfRest(value: string): boolean {
   return value === RDF.rest;
 }
 
-function isRdfNil(value: string): boolean {
+export function isRdfNil(value: string): boolean {
   return value === RDF.nil;
 }
 

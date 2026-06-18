@@ -8,11 +8,10 @@ import type { ResolvedRefTargetType } from '../../types/RefDecoderCache.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
+import { TransformErrorCode } from '../../constants/ERROR_CODES.js';
 import { Transform } from '../transform/Transform.js';
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaIri } from './SchemaIri.js';
-
-export type { RefDecoderRegistryType } from '../../types/RefDecoderRegistry.js';
 
 /**
  * Per-graph cache: source node → resolved cross-schema ref target (or null sentinel).
@@ -81,13 +80,13 @@ export class RefDecoder {
         schemaId === undefined
           ? {
             'cause': causeError,
-            'code': 'TRANSFORM_DECODE_FAILED',
+            'code': TransformErrorCode.TRANSFORM_DECODE_FAILED,
             'direction': 'decode',
             'path': ''
           }
           : {
             'cause': causeError,
-            'code': 'TRANSFORM_DECODE_FAILED',
+            'code': TransformErrorCode.TRANSFORM_DECODE_FAILED,
             'direction': 'decode',
             'path': '',
             'schemaId': schemaId

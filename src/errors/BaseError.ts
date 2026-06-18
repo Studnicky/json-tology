@@ -9,6 +9,7 @@
 import type { ErrorJsonType } from '../types/Error.js';
 import type { BaseErrorOptionsType } from '../types/ErrorOptions.js';
 import type { ValidationErrorType } from '../types/Validation.js';
+import { UNKNOWN_ERROR_CODE } from '../constants/ERROR_CODES.js';
 
 export class BaseError extends Error {
   private static readonly EMPTY_PARAMS: Record<string, unknown> = Object.freeze({});
@@ -23,7 +24,7 @@ export class BaseError extends Error {
     }
 
     return {
-      'code': 'UNKNOWN',
+      'code': UNKNOWN_ERROR_CODE,
       'message': error.message,
       'retryable': false
     };
@@ -117,7 +118,7 @@ export class BaseError extends Error {
       json.cause = this.cause.toJson();
     } else if (this.cause instanceof Error) {
       json.cause = {
-        'code': 'UNKNOWN',
+        'code': UNKNOWN_ERROR_CODE,
         'message': this.cause.message,
         'retryable': false
       };

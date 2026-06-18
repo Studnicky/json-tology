@@ -2,14 +2,16 @@ import type { DumpOptionsType } from '../../types/Dump.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
-import { isRecord } from './DataTypes.js';
+import { isRecord } from '../data/DataTypes.js';
 import { Transform } from '../transform/Transform.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { EncodeError } from '../../errors/EncodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
-import { SchemaIri } from '../graph/SchemaIri.js';
+import {
+  GraphErrorCode, TransformErrorCode
+} from '../../constants/ERROR_CODES.js';
+import { SchemaIri } from './SchemaIri.js';
 
 const graphTransformCache = new WeakMap<SchemaGraphInterface, boolean>();
 
@@ -76,7 +78,7 @@ export class Dumper {
         `transform encoder failed at ${node.pointer}: ${causeError.message}`,
         {
           'cause': causeError,
-          'code': 'TRANSFORM_ENCODE_FAILED',
+          'code': TransformErrorCode.TRANSFORM_ENCODE_FAILED,
           'direction': 'encode',
           'path': node.pointer,
           ...((schemaId !== undefined) && { 'schemaId': schemaId })

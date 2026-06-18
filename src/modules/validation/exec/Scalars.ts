@@ -1,7 +1,7 @@
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { isTrustedFormatPredicate } from '../../format/FormatRegistry.js';
-import { Predicates } from '../Predicates.js';
+import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**

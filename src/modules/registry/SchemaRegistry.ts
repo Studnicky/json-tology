@@ -36,12 +36,14 @@ import { TransformError } from '../../errors/TransformError.js';
 import { ComputedStore } from './ComputedStore.js';
 import { SchemaEntryStore } from './SchemaEntryStore.js';
 import { SchemaRefWalker } from './SchemaRefWalker.js';
+import { DifferentFromStore } from './DifferentFromStore.js';
 import { SameAsStore } from './SameAsStore.js';
 import { Curie } from '../rdf/Curie.js';
 import {
   isRecord
 } from '../data/DataTypes.js';
 import { Frozen } from '../data/Frozen.js';
+import { logScope } from '../data/LogScope.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
@@ -50,7 +52,12 @@ import { RefDecoder } from '../graph/RefDecoder.js';
 import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
-import { SchemaErrorCode } from '../../constants/ERROR_CODES.js';
+import {
+  CoercionErrorCode,
+  InstantiationErrorCode,
+  SchemaErrorCode,
+  TransformErrorCode
+} from '../../constants/ERROR_CODES.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
@@ -156,6 +163,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly computedStore: ComputedStore;
 
   public readonly curie: CurieInterface | undefined;
+  public readonly differentFromStore: DifferentFromStore;
   private readonly enableDuplicateDetection: boolean;
   private readonly enableInlineWarnings: boolean;
   private readonly enableStrictGraph: boolean;
@@ -199,6 +207,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.refs = new SchemaRefWalker();
     this.store = new SchemaEntryStore();
     this.sameAsStore = new SameAsStore();
+    this.differentFromStore = new DifferentFromStore();
     this.formatRegistry = options?.formatRegistry;
     this.keywords = options?.keywords;
     this.invariants = new InvariantStore(options?.invariants);
@@ -219,6 +228,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       }
     };
     this.compiler = new SchemaCompiler({
+      'logger': this.logger,
       'lookupCompiled': (schemaId: string): CompiledValidatorType | undefined => {
         return this.store.has(schemaId)
           ? this.compiled(schemaId)
@@ -297,6 +307,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.set(patchedSchema);
   }
 
+  public addDifferentFrom(iriA: string, iriB: string): void {
+    this.differentFromStore.add(iriA, iriB);
+  }
+
   public addInvariant(schemaId: string, invariant: InvariantType): void {
     this.invariants.add(this.resolve(schemaId), invariant);
   }
@@ -332,7 +346,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
           }]),
           {
             'cause': causeError,
-            'code': 'INSTANTIATION_FAILED'
+            'code': InstantiationErrorCode.INSTANTIATION_FAILED
           }
         );
       }
@@ -351,6 +365,92 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   /**
+   * Assert that no differentFrom pair has both members in the same transitive
+   * sameAs component. Throws SchemaError(IDENTITY_CONTRADICTION) on contradiction.
+   *
+   * Builds the transitive closure of sameAs pairs (BFS) and checks
+   * each differentFrom pair against it.
+   */
+  public assertIdentityConsistency(): void {
+    const sameAsPairs = this.sameAsStore.all();
+
+    if (sameAsPairs.length === 0) {
+      return;
+    }
+
+    const adjacency = new Map<string, Set<string>>();
+
+    for (const [
+      a,
+      b
+    ] of sameAsPairs) {
+      let setA = adjacency.get(a);
+
+      if (setA === undefined) {
+        setA = new Set<string>();
+        adjacency.set(a, setA);
+      }
+      let setB = adjacency.get(b);
+
+      if (setB === undefined) {
+        setB = new Set<string>();
+        adjacency.set(b, setB);
+      }
+      setA.add(b);
+      setB.add(a);
+    }
+
+    const inSameComponent = (startA: string, startB: string): boolean => {
+      const visited = new Set<string>();
+      const queue: string[] = [startA];
+
+      while (queue.length > 0) {
+        const node = queue.pop();
+
+        if (node === undefined) {
+          break;
+        }
+        if (node === startB) {
+          return true;
+        }
+        if (visited.has(node)) {
+          continue;
+        }
+        visited.add(node);
+        const neighbors = adjacency.get(node);
+
+        if (neighbors !== undefined) {
+          for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+              queue.push(neighbor);
+            }
+          }
+        }
+      }
+
+      return false;
+    };
+
+    for (const [
+      iriA,
+      iriB
+    ] of this.differentFromStore.all()) {
+      if (!adjacency.has(iriA) && !adjacency.has(iriB)) {
+        continue;
+      }
+      if (inSameComponent(iriA, iriB)) {
+        throw new SchemaError(
+          `owl:differentFrom contradiction: <${iriA}> and <${iriB}> are declared differentFrom but are in the same owl:sameAs identity component`,
+          {
+            'code': SchemaErrorCode.IDENTITY_CONTRADICTION,
+            'schemaId': iriA
+          }
+        );
+      }
+    }
+  }
+
+  /**
    * Assert that all registered invariants pass for a validated value.
    * Throws `InstantiationError` when any invariant fails.
    */
@@ -362,7 +462,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new InstantiationError(new ValidationErrors([
         ...result.errors,
         ...invariantErrors
-      ]), { 'code': 'INSTANTIATION_FAILED' });
+      ]), { 'code': InstantiationErrorCode.INSTANTIATION_FAILED });
     }
   }
 
@@ -392,7 +492,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         schemaId
       });
     }
-    this.logger.warn(message);
+    this.logger.warn(logScope('SchemaRegistry', 'assertNoDuplicateShapes', message));
   }
 
   /**
@@ -430,7 +530,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           `Property "${propName}" in schema "${schemaId}" sets both symmetric:true and asymmetric:true, which are mutually exclusive OWL 2 characteristics`,
           {
-            'code': 'PROPERTY_CHARACTERISTIC_CONFLICT',
+            'code': SchemaErrorCode.PROPERTY_CHARACTERISTIC_CONFLICT,
             schemaId
           }
         );
@@ -440,7 +540,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           `Property "${propName}" in schema "${schemaId}" sets both reflexive:true and irreflexive:true, which are mutually exclusive OWL 2 characteristics`,
           {
-            'code': 'PROPERTY_CHARACTERISTIC_CONFLICT',
+            'code': SchemaErrorCode.PROPERTY_CHARACTERISTIC_CONFLICT,
             schemaId
           }
         );
@@ -450,7 +550,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           `Property "${propName}" in schema "${schemaId}" sets both asymmetric:true and reflexive:true; asymmetric implies irreflexive in OWL 2, so reflexive directly contradicts it`,
           {
-            'code': 'PROPERTY_CHARACTERISTIC_CONFLICT',
+            'code': SchemaErrorCode.PROPERTY_CHARACTERISTIC_CONFLICT,
             schemaId
           }
         );
@@ -534,7 +634,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       existing.schema = canonicalSchema;
       existing.hasTransform = true;
     }
-    this.logger.trace(`Schema already registered (identical): ${schemaId}`);
+    this.logger.trace(logScope('SchemaRegistry', 'assertSchemaNotDuplicate', `Schema already registered (identical): ${schemaId}`));
 
     return true;
   }
@@ -560,11 +660,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (this.enableStrictGraph) {
       throw new SchemaError(message, {
-        'code': 'SCHEMA_STRUCTURE_INVALID',
+        'code': SchemaErrorCode.STRUCTURE_INVALID,
         schemaId
       });
     }
-    this.logger.warn(message);
+    this.logger.warn(logScope('SchemaRegistry', 'assertStructureValid', message));
   }
 
   /**
@@ -615,7 +715,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError(
         `Strict mode requires draft ${DRAFT_NAME} but schema "${schemaId}" declares "${canonicalSchema.$schema}"`,
         {
-          'code': 'SCHEMA_DIALECT_UNSUPPORTED',
+          'code': SchemaErrorCode.DIALECT_UNSUPPORTED,
           schemaId
         }
       );
@@ -633,7 +733,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (compiled === undefined) {
       throw new SchemaError(`Schema not registered: ${schemaId}. Register it first.`, {
-        'code': 'SCHEMA_NOT_REGISTERED',
+        'code': SchemaErrorCode.NOT_REGISTERED,
         schemaId
       });
     }
@@ -647,7 +747,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         'collectErrors': true
       });
 
-      throw new CoercionError(new ValidationErrors(diagnostic.errors), { 'code': 'COERCION_FAILED' });
+      throw new CoercionError(new ValidationErrors(diagnostic.errors), { 'code': CoercionErrorCode.COERCION_FAILED });
     }
 
     return result.value;
@@ -736,7 +836,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (compiled === undefined) {
       throw new SchemaError(`Schema not registered: ${schemaId}. Register it first.`, {
-        'code': 'SCHEMA_NOT_REGISTERED',
+        'code': SchemaErrorCode.NOT_REGISTERED,
         schemaId
       });
     }
@@ -754,7 +854,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           `Duplicate $anchor "${schema.$anchor}" in schema "${schemaId}"`,
           {
-            'code': 'SCHEMA_DUPLICATE_ANCHOR',
+            'code': SchemaErrorCode.DUPLICATE_ANCHOR,
             schemaId
           }
         );
@@ -766,7 +866,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           `Duplicate $dynamicAnchor "${schema.$dynamicAnchor}" in schema "${schemaId}"`,
           {
-            'code': 'SCHEMA_DUPLICATE_ANCHOR',
+            'code': SchemaErrorCode.DUPLICATE_ANCHOR,
             schemaId
           }
         );
@@ -832,7 +932,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (compiled === undefined) {
       throw new SchemaError(`Schema not registered: ${schemaId}. Register it first.`, {
-        'code': 'SCHEMA_NOT_REGISTERED',
+        'code': SchemaErrorCode.NOT_REGISTERED,
         schemaId
       });
     }
@@ -846,7 +946,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         'collectErrors': true
       });
 
-      throw new CoercionError(new ValidationErrors(diagnostic.errors), { 'code': 'COERCION_FAILED' });
+      throw new CoercionError(new ValidationErrors(diagnostic.errors), { 'code': CoercionErrorCode.COERCION_FAILED });
     }
 
     return result.value;
@@ -857,14 +957,14 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (entry === undefined) {
       throw new SchemaError(`No schema registered for: ${schemaId}`, {
-        'code': 'SCHEMA_NOT_REGISTERED',
+        'code': SchemaErrorCode.NOT_REGISTERED,
         schemaId
       });
     }
 
     this.assertRefsResolvable(entry);
 
-    const materializer = new Materializer(this);
+    const materializer = new Materializer(this, { 'logger': this.logger });
 
     return materializer.createDefault(entry.schema as Record<string, unknown> & { '$id': string });
   }
@@ -893,7 +993,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         `transform decoder failed at root: ${causeError.message}`,
         {
           'cause': causeError,
-          'code': 'TRANSFORM_DECODE_FAILED',
+          'code': TransformErrorCode.TRANSFORM_DECODE_FAILED,
           'direction': 'decode',
           'path': '',
           schemaId
@@ -912,7 +1012,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (entry === undefined) {
       throw new SchemaError(`No validator registered for schema: ${schemaId}`, {
-        'code': 'SCHEMA_VALIDATOR_MISSING',
+        'code': SchemaErrorCode.VALIDATOR_MISSING,
         schemaId
       });
     }
@@ -1050,7 +1150,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
-      throw new SchemaError(`Schema not registered: ${schemaId}. Register it first.`, { 'code': 'SCHEMA_NOT_REGISTERED' });
+      throw new SchemaError(`Schema not registered: ${schemaId}. Register it first.`, { 'code': SchemaErrorCode.NOT_REGISTERED });
     }
 
     if (!entry.hasComputedFields && this.computedStore.has(schemaId)) {
@@ -1077,7 +1177,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const result = compiled.validate(decoded, resolvedOptions);
 
     if (!result.valid) {
-      throw new InstantiationError(new ValidationErrors(result.errors), { 'code': 'INSTANTIATION_FAILED' });
+      throw new InstantiationError(new ValidationErrors(result.errors), { 'code': InstantiationErrorCode.INSTANTIATION_FAILED });
     }
 
     this.assertInvariantsPass(schemaId, result);
@@ -1098,7 +1198,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (compiled === undefined) {
       throw new SchemaError(`Schema not registered: ${schemaId}. Register it first.`, {
-        'code': 'SCHEMA_NOT_REGISTERED',
+        'code': SchemaErrorCode.NOT_REGISTERED,
         schemaId
       });
     }
@@ -1151,7 +1251,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const rawId = schema.$id as string | undefined;
 
     if (rawId === undefined || rawId === '') {
-      throw new SchemaError('Schema must have a $id property', { 'code': 'SCHEMA_MISSING_ID' });
+      throw new SchemaError('Schema must have a $id property', { 'code': SchemaErrorCode.MISSING_ID });
     }
 
     // Reject schemas with unsupported dialects or required vocabularies eagerly at
@@ -1193,7 +1293,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.store.add(schemaId, entry);
     this.computedStore.validateAgainstGraph(graph);
     this.assertNoDuplicateShapes(schemaId);
-    this.logger.trace(`Schema registered: ${schemaId}`);
+    this.logger.trace(logScope('SchemaRegistry', 'registerSingle', `Schema registered: ${schemaId}`));
   }
 
   public removeInvariant(schemaId: string, name: string): void {
@@ -1287,7 +1387,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const schemaIdOnObject = schema.$id;
 
     if (typeof schemaIdOnObject !== 'string' || schemaIdOnObject === '') {
-      throw new SchemaError('Schema must have a $id property', { 'code': 'SCHEMA_MISSING_ID' });
+      throw new SchemaError('Schema must have a $id property', { 'code': SchemaErrorCode.MISSING_ID });
     }
 
     // Compare canonical forms so a CURIE key and an absolute-IRI $id (or vice
@@ -1296,7 +1396,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError(
         `set() key "${iri}" does not match schema.$id "${schemaIdOnObject}"`,
         {
-          'code': 'SCHEMA_INVALID_INPUT',
+          'code': SchemaErrorCode.INVALID_INPUT,
           'schemaId': iri
         }
       );
@@ -1311,14 +1411,14 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     if (!isRecord(schema)) {
       throw new SchemaError(
         `set() requires a plain object schema, received ${Array.isArray(schema) ? 'array' : typeof schema}`,
-        { 'code': 'SCHEMA_INVALID_INPUT' }
+        { 'code': SchemaErrorCode.INVALID_INPUT }
       );
     }
 
     const iri = schema.$id;
 
     if (typeof iri !== 'string' || iri === '') {
-      throw new SchemaError('Schema must have a $id property', { 'code': 'SCHEMA_MISSING_ID' });
+      throw new SchemaError('Schema must have a $id property', { 'code': SchemaErrorCode.MISSING_ID });
     }
     this.delete(iri);
     this.registerSingle(schema);
@@ -1337,7 +1437,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (!entry) {
       throw new SchemaError(`Schema not registered: ${schemaId}. Register it first.`, {
-        'code': 'SCHEMA_NOT_REGISTERED',
+        'code': SchemaErrorCode.NOT_REGISTERED,
         schemaId
       });
     }
@@ -1373,7 +1473,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (compiled === undefined) {
       throw new SchemaError(`No validator registered for schema: ${schemaId}`, {
-        'code': 'SCHEMA_NOT_REGISTERED',
+        'code': SchemaErrorCode.NOT_REGISTERED,
         schemaId
       });
     }
@@ -1422,7 +1522,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         };
       });
 
-      throw new InstantiationError(new ValidationErrors(errors), { 'code': 'INSTANTIATION_FAILED' });
+      throw new InstantiationError(new ValidationErrors(errors), { 'code': InstantiationErrorCode.INSTANTIATION_FAILED });
     }
   }
 
@@ -1431,7 +1531,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (compiled === undefined) {
       throw new SchemaError(`No schema registered for: ${schemaId}`, {
-        'code': 'SCHEMA_NOT_REGISTERED',
+        'code': SchemaErrorCode.NOT_REGISTERED,
         schemaId
       });
     }
@@ -1453,7 +1553,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const existingId = this.store.getByHash(hash);
 
     if (existingId !== undefined && existingId !== schemaId) {
-      this.logger.warn(`Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`);
+      this.logger.warn(logScope('SchemaRegistry', 'warnOnHashConflict', `Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`));
     }
   }
 }

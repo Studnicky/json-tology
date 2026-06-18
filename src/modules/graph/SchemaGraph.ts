@@ -7,9 +7,10 @@ import type {
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import type { PrefixMap } from '../../types/OwlImport.js';
+import type { PrefixMapType } from '../../types/OwlImport.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaGraphRelations } from './SchemaGraphRelations.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import { QuadBackedSchemaGraph } from './QuadBackedSchemaGraph.js';
@@ -119,7 +120,7 @@ export class SchemaGraph implements SchemaGraphInterface {
   public static fromQuads(
     quads: readonly QuadInterface[],
     options?: { 'baseIRI'?: string;
-      'prefixes'?: PrefixMap }
+      'prefixes'?: PrefixMapType }
   ): SchemaGraphInterface {
     return new QuadBackedSchemaGraph(quads, options);
   }
@@ -616,7 +617,7 @@ export class SchemaGraph implements SchemaGraphInterface {
 
     if (mapNode === undefined) {
       throw new GraphError(`Schema graph node not found for pointer: ${pointer}`, {
-        'code': 'POINTER_NOT_FOUND',
+        'code': GraphErrorCode.POINTER_NOT_FOUND,
         pointer
       });
     }
@@ -673,7 +674,7 @@ export class SchemaGraph implements SchemaGraphInterface {
 
     if (anchored === undefined) {
       throw new GraphError(`Unknown schema anchor: #${fragment}`, {
-        'code': 'ANCHOR_NOT_FOUND',
+        'code': GraphErrorCode.ANCHOR_NOT_FOUND,
         'pointer': fragment
       });
     }
@@ -698,7 +699,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     }
     if (!pointer.startsWith('/')) {
       throw new GraphError(`Invalid JSON Pointer: ${pointer}`, {
-        'code': 'POINTER_INVALID',
+        'code': GraphErrorCode.POINTER_INVALID,
         pointer
       });
     }
@@ -707,7 +708,7 @@ export class SchemaGraph implements SchemaGraphInterface {
 
     if (resolved === undefined) {
       throw new GraphError(`Pointer not found: ${pointer}`, {
-        'code': 'POINTER_NOT_FOUND',
+        'code': GraphErrorCode.POINTER_NOT_FOUND,
         pointer
       });
     }

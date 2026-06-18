@@ -18,7 +18,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { JsonTology } from '../../src/index.js';
-import { Predicates } from '../../src/modules/validation/Predicates.js';
+import { Predicates } from '../../src/modules/data/Predicates.js';
 
 // ---------------------------------------------------------------------------
 // Predicate unit tests

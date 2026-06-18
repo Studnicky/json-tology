@@ -2,6 +2,8 @@ import type {
   SchemaGraphNodeType, SchemaGraphRelationType,
   SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
+import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GraphError } from '../../errors/GraphError.js';
 import { SchemaIri } from './SchemaIri.js';
 import { XsdTypes } from '../rdf/XsdTypes.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
@@ -11,6 +13,7 @@ import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
+import { RESTRICTION_PREDICATE_MAP } from '../../constants/ONTOLOGY_PREDICATES.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type {
   CardinalityContextType,
@@ -207,15 +210,6 @@ function pushFormatAnnotationRelation(
   });
 }
 
-const RESTRICTION_PREDICATE_MAP: Readonly<Partial<Record<string, string>>> = {
-  'allValuesFrom': OWL.allValuesFrom,
-  'cardinality': OWL.cardinality,
-  'hasValue': OWL.hasValue,
-  'maxCardinality': OWL.maxCardinality,
-  'minCardinality': OWL.minCardinality,
-  'someValuesFrom': OWL.someValuesFrom
-};
-
 function pushUserRestrictionRelations(
   node: SchemaGraphNodeType,
   sem: SchemaGraphSemanticsType,
@@ -229,7 +223,17 @@ function pushUserRestrictionRelations(
     const predicate = RESTRICTION_PREDICATE_MAP[desc.kind];
 
     if (predicate === undefined) {
-      continue;
+      // Unreachable: RESTRICTION_PREDICATE_MAP keys exactly match the closed
+      // RestrictionKindType union ('allValuesFrom' | 'cardinality' | 'hasValue' |
+      // 'maxCardinality' | 'minCardinality' | 'someValuesFrom'). The map type is
+      // Partial<Record<string, string>> for index-signature compatibility, but all
+      // six members are always present. A miss here indicates a future RestrictionKindType
+      // member was added without a corresponding map entry — throw to surface it
+      // immediately rather than silently dropping a restriction relation.
+      throw new GraphError(
+        `restriction kind "${desc.kind}" has no entry in RESTRICTION_PREDICATE_MAP`,
+        { 'code': GraphErrorCode.VOCABULARY_UNSUPPORTED }
+      );
     }
 
     relations.push({
@@ -477,13 +481,22 @@ export const SchemaGraphRelations = {
         ? rawDomainNode
         : nodeMap.get(domainPtr === '' ? '' : domainPtr);
 
-      if (domainNode !== undefined) {
-        relations.push({
-          'predicate': RDFS.domain,
-          'source': node,
-          'target': domainNode
-        });
+      if (domainNode === undefined) {
+        // The allOf-climb produced a pointer that is not present in the nodeMap.
+        // Every pointer reachable by walking up from a real domain node must exist
+        // in the graph's nodeMap — a miss here indicates a graph construction defect
+        // (nodeMap was built without registering the ancestor node).
+        throw new GraphError(
+          `domain ancestor pointer "${domainPtr}" not found in nodeMap for node "${node.id}"`,
+          { 'code': GraphErrorCode.POINTER_NOT_FOUND }
+        );
       }
+
+      relations.push({
+        'predicate': RDFS.domain,
+        'source': node,
+        'target': domainNode
+      });
     }
 
     if (sem.rdfsDomain !== undefined) {

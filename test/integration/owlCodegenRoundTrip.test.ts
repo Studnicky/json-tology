@@ -51,6 +51,7 @@ function cleanTmpDir(): void {
 function resultFromSchemas(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultType {
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],

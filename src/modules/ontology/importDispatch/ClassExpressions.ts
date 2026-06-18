@@ -502,6 +502,7 @@ function applyOneOf(subjectId: string, ctx: ClassExprContextType): void {
 function emptyFragment(): OwlImportFragmentType {
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],
@@ -577,6 +578,7 @@ export function importClassExpressions(
 
   return {
     'characteristics': [],
+    'differentFrom': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],

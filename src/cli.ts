@@ -168,7 +168,7 @@ function resolveBaseIRI(
   if (typeof firstSchemaId !== 'string' || firstSchemaId === '') {
     throw new SchemaError(
       'Unable to derive base IRI from registered schemas. Pass --base-iri explicitly.',
-      { 'code': 'SCHEMA_MISSING_ID' }
+      { 'code': SchemaErrorCode.MISSING_ID }
     );
   }
 

@@ -1,7 +1,7 @@
 import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
 import type { ExecContextType } from '../../../types/ExecContext.js';
 import { BaseError } from '../../../errors/BaseError.js';
-import { Predicates } from '../Predicates.js';
+import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**

@@ -44,9 +44,17 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
       if (typeof loaded !== 'boolean') {
         const loadedId = loaded.$id;
 
-        if (typeof loadedId === 'string') {
-          this.registry.set(loaded, loadedId);
+        if (typeof loadedId !== 'string') {
+          throw new GraphError(
+            `loader returned schema with non-string $id for IRI: ${iri}`,
+            {
+              'code': GraphErrorCode.REF_UNRESOLVED,
+              'pointer': iri
+            }
+          );
         }
+
+        this.registry.set(loaded, loadedId);
       }
     }
   }
@@ -92,10 +100,17 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
         if (typeof loaded !== 'boolean') {
           const loadedId = loaded.$id;
 
-          if (typeof loadedId === 'string') {
-            this.registry.set(loaded, loadedId);
+          if (typeof loadedId !== 'string') {
+            throw new GraphError(
+              `loader returned schema with non-string $id for IRI: ${iri}`,
+              {
+                'code': GraphErrorCode.REF_UNRESOLVED,
+                'pointer': iri
+              }
+            );
           }
 
+          this.registry.set(loaded, loadedId);
           await resolveSchema(loaded);
         }
       }

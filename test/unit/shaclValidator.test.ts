@@ -348,6 +348,92 @@ void describe('ShaclValidator — pattern', () => {
     assert.ok(violation !== undefined, 'PatternConstraintComponent violation expected');
     assert.equal(violation.value, 'NOT_AN_ISBN!');
   });
+
+  void it('violation for invalid regex pattern — not a silent pass', () => {
+    // A sh:pattern with a syntactically broken regex (e.g. unmatched bracket)
+    // must produce a PatternConstraintComponent violation instead of silently
+    // treating the constraint as satisfied.
+    const shapeIri = `${BASE}/BadPatternShape`;
+    const psId = 'ps_bad_pattern';
+    const propPath = `${BASE}/code`;
+
+    const artificialShapes: QuadInterface[] = [
+      {
+        'equals': () => {
+          return false;
+        },
+        'graph': Terms.defaultGraph(),
+        'object': Terms.iri(SH.NodeShape),
+        'predicate': Terms.iri(RDF.type),
+        'subject': Terms.iri(shapeIri),
+        'termType': 'Quad',
+        'value': ''
+      },
+      {
+        'equals': () => {
+          return false;
+        },
+        'graph': Terms.defaultGraph(),
+        'object': Terms.blank(psId),
+        'predicate': Terms.iri(SH.property),
+        'subject': Terms.iri(shapeIri),
+        'termType': 'Quad',
+        'value': ''
+      },
+      {
+        'equals': () => {
+          return false;
+        },
+        'graph': Terms.defaultGraph(),
+        'object': Terms.iri(SH.PropertyShape),
+        'predicate': Terms.iri(RDF.type),
+        'subject': Terms.blank(psId),
+        'termType': 'Quad',
+        'value': ''
+      },
+      {
+        'equals': () => {
+          return false;
+        },
+        'graph': Terms.defaultGraph(),
+        'object': Terms.iri(propPath),
+        'predicate': Terms.iri(SH.path),
+        'subject': Terms.blank(psId),
+        'termType': 'Quad',
+        'value': ''
+      },
+      {
+        'equals': () => {
+          return false;
+        },
+        'graph': Terms.defaultGraph(),
+        'object': Terms.literal('[invalid(regex', { 'datatype': Terms.iri(XSD.string) }),
+        'predicate': Terms.iri(SH.pattern),
+        'subject': Terms.blank(psId),
+        'termType': 'Quad',
+        'value': ''
+      }
+    ];
+
+    const focusNode = `${BASE}/instances/item-1`;
+    const data: QuadInterface[] = [
+      typeQuad(focusNode, shapeIri),
+      strQuad(focusNode, propPath, 'anything')
+    ];
+    const report = ShaclValidator.validate(artificialShapes, data);
+
+    assert.equal(report.conforms, false, 'report must not conform when sh:pattern is invalid');
+
+    const badPatternResult = report.results.find((result) => {
+      return result.sourceConstraintComponent === SH.PatternConstraintComponent;
+    });
+
+    assert.ok(badPatternResult !== undefined, 'PatternConstraintComponent violation expected for malformed regex');
+    assert.ok(
+      badPatternResult.resultMessage.includes('[invalid(regex'),
+      'violation message must identify the offending pattern'
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -28,3 +28,10 @@ export const STANDARD_PREFIXES: Readonly<Record<string, string>> = {
   'vann': 'http://purl.org/vocab/vann/',
   'xsd': 'http://www.w3.org/2001/XMLSchema#'
 } as const;
+
+/**
+ * Canonical XSD namespace IRI prefix.
+ *
+ * Single derived constant — import this instead of re-deriving `STANDARD_PREFIXES.xsd` locally.
+ */
+export const XSD_IRI_PREFIX: string = STANDARD_PREFIXES.xsd;

@@ -58,6 +58,7 @@ export type SchemaErrorCodeType
   | 'SCHEMA_DUPLICATE_ANCHOR'
   | 'SCHEMA_DUPLICATE_ID'
   | 'SCHEMA_DUPLICATE_SHAPE'
+  | 'SCHEMA_IDENTITY_CONTRADICTION'
   | 'SCHEMA_INVALID_INPUT'
   | 'SCHEMA_MISSING_ID'
   | 'SCHEMA_NOT_REGISTERED'
@@ -182,15 +183,16 @@ export type MaterializationErrorCodeType
  * Error codes emitted by `OwlImportError`.
  *
  * @remarks
- * Produced when the OWL importer encounters a construct it does not yet
- * support. Currently only `OWL_IMPORT_NOT_IMPLEMENTED` is defined; future
- * versions may expand this union as more OWL axioms are handled.
+ * Produced when an OWL import fails. `OWL_IMPORT_PARSE_FAILED` indicates
+ * malformed JSON-LD input; `OWL_IMPORT_PEER_DEPENDENCY_MISSING` indicates the
+ * optional `jsonld` peer dependency is required for non-quad JSON-LD input but
+ * is not installed.
  *
  * @example
  * ```ts
  * import type { OwlImportErrorCodeType } from 'json-tology/types';
  * function handleOwlImport(code: OwlImportErrorCodeType): void {
- *   if (code === 'OWL_IMPORT_NOT_IMPLEMENTED') { /* ... *\/ }
+ *   if (code === 'OWL_IMPORT_PARSE_FAILED') { /* ... *\/ }
  * }
  * ```
  *
@@ -199,4 +201,6 @@ export type MaterializationErrorCodeType
  * @see {@link GraphErrorCodeType}
  * @group Error Codes
  */
-export type OwlImportErrorCodeType = 'OWL_IMPORT_NOT_IMPLEMENTED';
+export type OwlImportErrorCodeType
+  = | 'OWL_IMPORT_PARSE_FAILED'
+  | 'OWL_IMPORT_PEER_DEPENDENCY_MISSING';

@@ -114,6 +114,12 @@ export const Loaders = {
         return response.json() as Promise<JsonSchemaType>;
       }
 
+      // Non-2xx responses (4xx, 5xx) collapse to null per the LoaderType contract:
+      // null signals "IRI unknown to this loader" so the next layer (GraphError
+      // REF_UNRESOLVED) carries the full IRI. HTTP status detail (404 vs 403 vs
+      // 503) is intentionally discarded here — surfacing it would require a
+      // LoaderType signature change (e.g. a richer result union). Deferred
+      // enhancement: extend LoaderType to carry optional status metadata.
       return null;
     };
   },
