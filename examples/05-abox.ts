@@ -8,7 +8,7 @@
  */
 
 import { JsonTology } from '../src/index.js';
-import { isRecord } from '../src/modules/data/DataTypes.js';
+import { DataType } from '../src/modules/data/DataType.js';
 
 // ---------------------------------------------------------------------------
 // Schema with nested object
@@ -89,12 +89,12 @@ const nodes = Array.isArray(rawNodes) ? rawNodes : [];
 
 console.log('--- Instance nodes ---');
 for (const node of nodes) {
-  if (!isRecord(node)) {
+  if (!DataType.isRecord(node)) {
     continue;
   }
   const id = node['@id'];
   const type = node['@type'];
-  const typeId = isRecord(type) ? type['@id'] : type;
+  const typeId = DataType.isRecord(type) ? type['@id'] : type;
 
   console.log(`  Node: ${String(id)}`);
   console.log(`  Type: ${String(typeId)}`);
@@ -106,7 +106,7 @@ for (const node of nodes) {
     if (key === '@id' || key === '@type') {
       continue;
     }
-    const display = isRecord(value) ? JSON.stringify(value) : value;
+    const display = DataType.isRecord(value) ? JSON.stringify(value) : value;
 
     console.log(`    ${key}: ${String(display)}`);
   }

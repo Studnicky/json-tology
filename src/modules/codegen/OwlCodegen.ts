@@ -1,10 +1,10 @@
 /**
  * OwlCodegen — code generator for OWL 2 TBox import results.
  *
- * Pure functions:
- *   generateTypeScript(result, options)   → single TS source string (single-file mode).
- *   generateRegistryFiles(result, options) → per-entity file sources + index source
- *                                            (registry-directory mode).
+ * Static methods:
+ *   OwlCodegen.toTypeScript(result, options)    → single TS source string (single-file mode).
+ *   OwlCodegen.toRegistryFiles(result, options) → per-entity file sources + index source
+ *                                                 (registry-directory mode).
  *
  * Single-file emission order:
  *   1. Auto-generated banner comment (timestamp, source IRI, "do not edit").
@@ -397,7 +397,7 @@ function serializeSchemaLiteral(obj: unknown, indent: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// generateTypeScript helpers
+// toTypeScript helpers
 // ---------------------------------------------------------------------------
 
 /** Emit the auto-generated banner lines into an array. */
@@ -632,72 +632,148 @@ function buildSingleFileBody(
 }
 
 /**
- * Generate a TypeScript source string from an {@link OwlImportResultType}.
- *
- * @remarks
- * The returned string is ready to write to a `.ts` file. It contains an
- * auto-generated banner, per-class schema constants ordered by dependency,
- * a registry construction call, per-class type aliases, and post-processing
- * calls for owl:sameAs and property characteristics.
- *
- * @example
- * ```ts
- * const ts = generateTypeScript(result, { registryConstName: 'foaf' });
- * await fs.writeFile('generated/foaf.ts', ts);
- * ```
- *
- * @param result - The import result from `JsonTology.fromTbox()`.
- * @param options - Codegen options (name, baseIRI, etc.).
- * @returns The generated TypeScript source string.
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateRegistryFiles}
- * @group OWL Codegen
+ * OwlCodegen — code generator for OWL 2 TBox import results.
  */
-export function generateTypeScript(
-  result: OwlImportResultType,
-  options: OwlCodegenOptionsType
-): string {
-  const {
-    baseIRI = '',
-    header = [],
-    inferTypeImportPath = 'json-tology/types',
-    registryConstName = 'registry',
-    sourceLabel = ''
-  } = options;
+export class OwlCodegen {
+  /**
+   * Generate registry-directory-mode TypeScript sources from an
+   * {@link OwlImportResultType}.
+   *
+   * @remarks
+   * Returns an in-memory description of one `entities/<Name>.ts` file per OWL
+   * class (schema literal + type alias) and one `index.ts` that imports all
+   * entities, builds the registry, and re-exports all types and schema
+   * constants. Writing the files to disk is the caller's responsibility.
+   *
+   * @example
+   * ```ts
+   * const { entityFiles, indexSource } = OwlCodegen.toRegistryFiles(result, { registryConstName: 'foaf' });
+   * for (const f of entityFiles) {
+   *   await fs.writeFile(path.join(outDir, f.path), f.source);
+   * }
+   * await fs.writeFile(path.join(outDir, 'index.ts'), indexSource);
+   * ```
+   *
+   * @param result  - The import result from `JsonTology.fromTbox()`.
+   * @param options - Codegen options (name, baseIRI, etc.).
+   * @returns Entity file sources + index source.
+   *
+   * @category Codegen
+   * @since 0.18.0
+   * @see {@link OwlCodegen.toTypeScript}
+   * @group OWL Codegen
+   */
+  public static toRegistryFiles(
+    result: OwlImportResultType,
+    options: OwlRegistryDirOptionsType
+  ): RegistryFilesResultType {
+    const {
+      baseIRI = '',
+      header = [],
+      registryConstName = 'registry',
+      sourceLabel = ''
+    } = options;
 
-  const schemas = filterSchemas(result.schemas);
-  const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
-    return schema.$id as string;
-  });
+    const schemas = filterSchemas(result.schemas);
+    const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
+      return schema.$id as string;
+    });
+    const sortedIris = topoSort(iris, schemas);
+    const {
+      collisions,
+      nameMap
+    } = buildNameMap(sortedIris);
+    const effectiveBaseIRI = baseIRI === '' ? deriveBaseIRI(iris[0] ?? '') : baseIRI;
+    const schemasConst = `${registryConstName}Schemas`;
+    const ctx: RegistryDirContextType = {
+      nameMap,
+      'refsName': `${schemasConst}Refs`,
+      schemas,
+      'sortedIris': sortedIris,
+      sourceLabel,
+      'ts': new Date().toISOString()
+    };
 
-  const sortedIris = topoSort(iris, schemas);
-  const {
-    collisions,
-    nameMap
-  } = buildNameMap(sortedIris);
+    return {
+      'entityFiles': buildEntityFiles(ctx),
+      'indexSource': buildIndexSource(ctx, {
+        collisions,
+        'effectiveBaseIRI': effectiveBaseIRI,
+        header,
+        registryConstName,
+        schemasConst
+      }, result)
+    };
+  }
 
-  const effectiveBaseIRI = baseIRI === '' ? deriveBaseIRI(iris[0] ?? '') : baseIRI;
-  const lines: string[] = [];
-  const ts = new Date().toISOString();
+  /**
+   * Generate a TypeScript source string from an {@link OwlImportResultType}.
+   *
+   * @remarks
+   * The returned string is ready to write to a `.ts` file. It contains an
+   * auto-generated banner, per-class schema constants ordered by dependency,
+   * a registry construction call, per-class type aliases, and post-processing
+   * calls for owl:sameAs and property characteristics.
+   *
+   * @example
+   * ```ts
+   * const ts = OwlCodegen.toTypeScript(result, { registryConstName: 'foaf' });
+   * await fs.writeFile('generated/foaf.ts', ts);
+   * ```
+   *
+   * @param result - The import result from `JsonTology.fromTbox()`.
+   * @param options - Codegen options (name, baseIRI, etc.).
+   * @returns The generated TypeScript source string.
+   *
+   * @category Codegen
+   * @since 0.18.0
+   * @see {@link OwlCodegen.toRegistryFiles}
+   * @group OWL Codegen
+   */
+  public static toTypeScript(
+    result: OwlImportResultType,
+    options: OwlCodegenOptionsType
+  ): string {
+    const {
+      baseIRI = '',
+      header = [],
+      inferTypeImportPath = 'json-tology/types',
+      registryConstName = 'registry',
+      sourceLabel = ''
+    } = options;
 
-  emitBanner(lines, {
-    collisions,
-    header,
-    sourceLabel,
-    'ts': ts
-  });
-  buildSingleFileBody(lines, {
-    effectiveBaseIRI,
-    inferTypeImportPath,
-    nameMap,
-    registryConstName,
-    schemas,
-    'sortedIris': sortedIris
-  }, result);
+    const schemas = filterSchemas(result.schemas);
+    const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
+      return schema.$id as string;
+    });
 
-  return lines.join('\n');
+    const sortedIris = topoSort(iris, schemas);
+    const {
+      collisions,
+      nameMap
+    } = buildNameMap(sortedIris);
+
+    const effectiveBaseIRI = baseIRI === '' ? deriveBaseIRI(iris[0] ?? '') : baseIRI;
+    const lines: string[] = [];
+    const ts = new Date().toISOString();
+
+    emitBanner(lines, {
+      collisions,
+      header,
+      sourceLabel,
+      'ts': ts
+    });
+    buildSingleFileBody(lines, {
+      effectiveBaseIRI,
+      inferTypeImportPath,
+      nameMap,
+      registryConstName,
+      schemas,
+      'sortedIris': sortedIris
+    }, result);
+
+    return lines.join('\n');
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -851,79 +927,4 @@ function emitEntityReExports(indexLines: string[], schemaNames: string[]): void 
   }
 
   indexLines.push('');
-}
-
-// ---------------------------------------------------------------------------
-// Registry-directory mode
-// ---------------------------------------------------------------------------
-
-/**
- * Generate registry-directory-mode TypeScript sources from an
- * {@link OwlImportResultType}.
- *
- * @remarks
- * Returns an in-memory description of one `entities/<Name>.ts` file per OWL
- * class (schema literal + type alias) and one `index.ts` that imports all
- * entities, builds the registry, and re-exports all types and schema
- * constants. Writing the files to disk is the caller's responsibility.
- *
- * @example
- * ```ts
- * const { entityFiles, indexSource } = generateRegistryFiles(result, { registryConstName: 'foaf' });
- * for (const f of entityFiles) {
- *   await fs.writeFile(path.join(outDir, f.path), f.source);
- * }
- * await fs.writeFile(path.join(outDir, 'index.ts'), indexSource);
- * ```
- *
- * @param result  - The import result from `JsonTology.fromTbox()`.
- * @param options - Codegen options (name, baseIRI, etc.).
- * @returns Entity file sources + index source.
- *
- * @category Codegen
- * @since 0.18.0
- * @see {@link generateTypeScript}
- * @group OWL Codegen
- */
-export function generateRegistryFiles(
-  result: OwlImportResultType,
-  options: OwlRegistryDirOptionsType
-): RegistryFilesResultType {
-  const {
-    baseIRI = '',
-    header = [],
-    registryConstName = 'registry',
-    sourceLabel = ''
-  } = options;
-
-  const schemas = filterSchemas(result.schemas);
-  const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
-    return schema.$id as string;
-  });
-  const sortedIris = topoSort(iris, schemas);
-  const {
-    collisions,
-    nameMap
-  } = buildNameMap(sortedIris);
-  const effectiveBaseIRI = baseIRI === '' ? deriveBaseIRI(iris[0] ?? '') : baseIRI;
-  const schemasConst = `${registryConstName}Schemas`;
-  const ctx: RegistryDirContextType = {
-    nameMap,
-    'refsName': `${schemasConst}Refs`,
-    schemas,
-    'sortedIris': sortedIris,
-    sourceLabel,
-    'ts': new Date().toISOString()
-  };
-
-  return {
-    'entityFiles': buildEntityFiles(ctx),
-    'indexSource': buildIndexSource(ctx, {
-      collisions,
-      'effectiveBaseIRI': effectiveBaseIRI,
-      header,
-      registryConstName,
-      schemasConst
-    }, result)
-  };
 }

@@ -39,11 +39,9 @@ import { SchemaRefWalker } from './SchemaRefWalker.js';
 import { DifferentFromStore } from './DifferentFromStore.js';
 import { SameAsStore } from './SameAsStore.js';
 import { Curie } from '../quads/Curie.js';
-import {
-  isRecord
-} from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { Frozen } from '../data/Frozen.js';
-import { logScope } from '../data/LogScope.js';
+import { LogScope } from '../data/LogScope.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
@@ -279,8 +277,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return;
     }
 
-    const existingProperties = isRecord(existing.properties) ? existing.properties : {};
-    const existingProp = isRecord(existingProperties[propertyName]) ? existingProperties[propertyName] : {};
+    const existingProperties = DataType.isRecord(existing.properties) ? existing.properties : {};
+    const existingProp = DataType.isRecord(existingProperties[propertyName]) ? existingProperties[propertyName] : {};
 
     // Skip if the characteristic is already set (idempotent)
     if (existingProp[schemaKey] === true) {
@@ -324,7 +322,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     computedMap: Record<string, (data: Record<string, unknown>) => unknown>,
     coerced: unknown
   ): void {
-    if (computedNames.length === 0 || !isRecord(coerced)) {
+    if (computedNames.length === 0 || !DataType.isRecord(coerced)) {
       return;
     }
 
@@ -359,7 +357,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    */
   private applyFrozenSeal(schemaObj: Record<string, unknown>, decoded: unknown): unknown {
     const isFrozen = schemaObj['jt:frozen'] === true
-      || (isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true);
+      || (DataType.isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true);
 
     return isFrozen ? Frozen.deepFreeze(decoded) : decoded;
   }
@@ -501,7 +499,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         schemaId
       });
     }
-    this.logger.warn(logScope('SchemaRegistry', 'assertNoDuplicateShapes', message));
+    this.logger.warn(LogScope.format('SchemaRegistry', 'assertNoDuplicateShapes', message));
   }
 
   /**
@@ -518,7 +516,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     schema: Record<string, unknown>,
     schemaId: string
   ): void {
-    if (!isRecord(schema.properties)) {
+    if (!DataType.isRecord(schema.properties)) {
       return;
     }
 
@@ -526,7 +524,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       propName,
       propSchema
     ] of Object.entries(schema.properties)) {
-      if (!isRecord(propSchema)) {
+      if (!DataType.isRecord(propSchema)) {
         continue;
       }
 
@@ -643,7 +641,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       existing.schema = canonicalSchema;
       existing.hasTransform = true;
     }
-    this.logger.trace(logScope('SchemaRegistry', 'assertSchemaNotDuplicate', `Schema already registered (identical): ${schemaId}`));
+    this.logger.trace(LogScope.format('SchemaRegistry', 'assertSchemaNotDuplicate', `Schema already registered (identical): ${schemaId}`));
 
     return true;
   }
@@ -673,7 +671,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         schemaId
       });
     }
-    this.logger.warn(logScope('SchemaRegistry', 'assertStructureValid', message));
+    this.logger.warn(LogScope.format('SchemaRegistry', 'assertStructureValid', message));
   }
 
   /**
@@ -884,7 +882,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     for (const value of Object.values(schema)) {
-      if (isRecord(value)) {
+      if (DataType.isRecord(value)) {
         this.collectAnchors(value, seen, schemaId);
       }
     }
@@ -1060,7 +1058,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
           const embeddedNode = entryGraph.embeddedNode(lookupSchemaId)
             ?? entryGraph.embeddedNode(resolvedId);
 
-          if (embeddedNode !== undefined && isRecord(embeddedNode.schema)) {
+          if (embeddedNode !== undefined && DataType.isRecord(embeddedNode.schema)) {
             return embeddedNode.schema;
           }
 
@@ -1313,7 +1311,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.store.add(schemaId, entry);
     this.computedStore.validateAgainstGraph(graph);
     this.assertNoDuplicateShapes(schemaId);
-    this.logger.trace(logScope('SchemaRegistry', 'registerSingle', `Schema registered: ${schemaId}`));
+    this.logger.trace(LogScope.format('SchemaRegistry', 'registerSingle', `Schema registered: ${schemaId}`));
   }
 
   public removeInvariant(schemaId: string, name: string): void {
@@ -1428,7 +1426,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     // Defensive guard for untyped (JS) callers that bypass the typed `set()`
     // surface. `isRecord` is a type predicate, so no suppression is needed and
     // the parameter keeps its honest `Record<string, unknown>` type.
-    if (!isRecord(schema)) {
+    if (!DataType.isRecord(schema)) {
       throw new SchemaError(
         `set() requires a plain object schema, received ${Array.isArray(schema) ? 'array' : typeof schema}`,
         { 'code': SchemaErrorCode.INVALID_INPUT }
@@ -1524,7 +1522,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Throws `InstantiationError` if any computed property name is present in `data`.
    */
   private validateComputedInput(computedNames: string[], data: unknown): void {
-    if (computedNames.length === 0 || !isRecord(data)) {
+    if (computedNames.length === 0 || !DataType.isRecord(data)) {
       return;
     }
 
@@ -1573,7 +1571,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const existingId = this.store.getByHash(hash);
 
     if (existingId !== undefined && existingId !== schemaId) {
-      this.logger.warn(logScope('SchemaRegistry', 'warnOnHashConflict', `Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`));
+      this.logger.warn(LogScope.format('SchemaRegistry', 'warnOnHashConflict', `Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`));
     }
   }
 }

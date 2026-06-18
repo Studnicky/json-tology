@@ -19,11 +19,11 @@ import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
-import { importIndividuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
+import { Individuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
-import { jsonLdNodesToQuads } from '../../src/modules/rdf/JsonLdToQuads.js';
+import { JsonLdToQuads } from '../../src/modules/rdf/JsonLdToQuads.js';
 import { JsonTology } from '../../src/index.js';
 import { bookstoreEntities } from '../../examples/docs/bookstore/index.js';
 
@@ -113,7 +113,7 @@ function makeCtx(
 
 /**
  * Run the Individuals dispatcher with a real quad-backed graph constructed
- * from the same `quads` array. Replaces ad-hoc `importIndividuals(quads,
+ * from the same `quads` array. Replaces ad-hoc `Individuals.dispatch(quads,
  * makeCtx(...))` calls so the graph and the quads stay in sync.
  */
 function runIndividuals(
@@ -128,7 +128,7 @@ function runIndividuals(
     'graph': SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' })
   };
 
-  return importIndividuals(quads, withGraph);
+  return Individuals.dispatch(quads, withGraph);
 }
 
 // ---------------------------------------------------------------------------
@@ -559,7 +559,7 @@ void describe('importIndividuals — bookstore sameAs round-trip', () => {
     const parsed = JSON.parse(tboxJsonLd) as Record<string, unknown>;
     const jsonLdCtx = parsed['@context'] as Record<string, string>;
     const graphArr = parsed['@graph'] as Array<Record<string, unknown>>;
-    const tboxQuads = jsonLdNodesToQuads(graphArr, jsonLdCtx);
+    const tboxQuads = JsonLdToQuads.fromNodes(graphArr, jsonLdCtx);
 
     const result = JsonTology.fromTbox(
       [

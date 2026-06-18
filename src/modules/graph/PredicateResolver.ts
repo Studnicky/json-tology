@@ -1,7 +1,7 @@
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { PredicateForType } from '../../types/PredicateForType.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
@@ -59,7 +59,7 @@ function assertPredicateIriSafe(iri: string): void {
  * `$id` from the property schema. Returns the validated IRI or `undefined`.
  */
 function resolveSchemaAnnotation(propertySchema: JsonSchemaType): string | undefined {
-  if (!isRecord(propertySchema)) {
+  if (!DataType.isRecord(propertySchema)) {
     return undefined;
   }
 

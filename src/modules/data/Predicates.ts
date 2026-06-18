@@ -14,7 +14,7 @@
  * @since 0.1.0
  */
 
-import { deepEqual } from './DataTypes.js';
+import { DataType } from './DataType.js';
 import { MULTIPLE_OF_EPSILON_FACTOR } from '../../constants/NUMERIC.js';
 import {
   SUPPORTED_CONTENT_ENCODINGS, SUPPORTED_CONTENT_MEDIA_TYPES
@@ -438,7 +438,7 @@ export class Predicates {
    * @group Const
    */
   static satisfiesConst(value: unknown, constValue: unknown): boolean {
-    return deepEqual(value, constValue);
+    return DataType.deepEqual(value, constValue);
   }
 
   /**
@@ -561,7 +561,7 @@ export class Predicates {
    */
   static satisfiesEnum(value: unknown, enumValues: unknown[]): boolean {
     return enumValues.some((enumValue: unknown): boolean => {
-      return deepEqual(value, enumValue);
+      return DataType.deepEqual(value, enumValue);
     });
   }
 
@@ -811,7 +811,7 @@ export class Predicates {
   static satisfiesUniqueItems(value: unknown[]): boolean {
     for (let index = 0; index < value.length; index++) {
       for (let other = index + 1; other < value.length; other++) {
-        if (deepEqual(value[index], value[other])) {
+        if (DataType.deepEqual(value[index], value[other])) {
           return false;
         }
       }

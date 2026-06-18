@@ -13,7 +13,7 @@ import {
   PRIMITIVE_CONSTRAINT_KEYWORDS,
   PRIMITIVE_TYPES
 } from '../../constants/SCHEMA_KEYWORDS.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { SchemaIri } from './SchemaIri.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessorInterface.js';
@@ -110,7 +110,7 @@ function extractRestrictions(schema: Record<string, unknown>): ExtractedRestrict
 function extractAnnotatedEdgeDescriptor(schema: Record<string, unknown>): ExtractedAnnotatedEdgeType {
   const raw = schema['jt:annotatedEdge'];
 
-  if (!isRecord(raw)) {
+  if (!DataType.isRecord(raw)) {
     return undefined;
   }
 
@@ -123,7 +123,7 @@ function extractAnnotatedEdgeDescriptor(schema: Record<string, unknown>): Extrac
 
   const annotations: Record<string, JsonSchemaType> = {};
 
-  if (isRecord(raw.annotations)) {
+  if (DataType.isRecord(raw.annotations)) {
     for (const [
       propName,
       propSchema
@@ -131,7 +131,7 @@ function extractAnnotatedEdgeDescriptor(schema: Record<string, unknown>): Extrac
       // Carry the whole annotation sub-schema (range `$ref` plus any
       // predicate-binding keywords like x-jt-predicate / $id) so the predicate
       // IRI can be grounded by PredicateResolver at projection/lift time.
-      if (isRecord(propSchema) && typeof propSchema.$ref === 'string') {
+      if (DataType.isRecord(propSchema) && typeof propSchema.$ref === 'string') {
         annotations[propName] = propSchema;
       }
     }
@@ -147,7 +147,7 @@ function extractAnnotatedEdgeDescriptor(schema: Record<string, unknown>): Extrac
 function extractJtConfig(schema: Record<string, unknown>): ExtractedJtConfigType {
   const raw = schema['jt:config'];
 
-  if (!isRecord(raw)) {
+  if (!DataType.isRecord(raw)) {
     return undefined;
   }
 
@@ -201,7 +201,7 @@ function normalizeDynamicAnchor(schema: Record<string, unknown>): NormalizedDyna
 }
 
 function normalizeDependentRequired(schema: Record<string, unknown>): NormalizedDependentRequiredType {
-  if (!isRecord(schema.dependentRequired)) {
+  if (!DataType.isRecord(schema.dependentRequired)) {
     return {};
   }
 
@@ -241,7 +241,7 @@ function resolveAdditionalSchemaNode(
   child: (node: SchemaGraphNodeType, key: string) => SchemaGraphNodeType | undefined,
   key: 'additionalItems' | 'additionalProperties'
 ): AdditionalSchemaNodeType {
-  if (!isRecord(node.schema) || !(key in node.schema)) {
+  if (!DataType.isRecord(node.schema) || !(key in node.schema)) {
     return undefined;
   }
 
@@ -398,7 +398,7 @@ function buildSemantics(ctx: SemanticsBuildContextType): SchemaGraphSemanticsTyp
   const additional = resolveAdditionalNodes(graph, node);
   const flags = extractBooleanFlags(schema, jtConfig);
   const scalar = extractScalarFields(schema);
-  const discriminator = isRecord(schema.discriminator) ? schema.discriminator : undefined;
+  const discriminator = DataType.isRecord(schema.discriminator) ? schema.discriminator : undefined;
 
   return {
     'additionalItemsNode': additional.additionalItemsNode,
@@ -421,7 +421,7 @@ function buildSemantics(ctx: SemanticsBuildContextType): SchemaGraphSemanticsTyp
     'dependentSchemaEntries': graph.entries(node, 'dependentSchemas'),
     'deprecated': flags.deprecated,
     'description': scalar.description,
-    'discriminatorMapping': discriminator !== undefined && isRecord(discriminator.mapping)
+    'discriminatorMapping': discriminator !== undefined && DataType.isRecord(discriminator.mapping)
       ? discriminator.mapping as Record<string, string>
       : undefined,
     'discriminatorPropertyName': discriminator !== undefined && typeof discriminator.propertyName === 'string'
@@ -549,7 +549,7 @@ function checkInlineArrayItems(
   pointer: string,
   warnings: StructureWarningType[]
 ): void {
-  if (schema.type !== 'array' || !isRecord(schema.items)) {
+  if (schema.type !== 'array' || !DataType.isRecord(schema.items)) {
     return;
   }
 
@@ -575,7 +575,7 @@ function validateNode(
   node: SchemaGraphNodeType,
   warnings: StructureWarningType[]
 ): void {
-  if (node.pointer === '' || !isRecord(node.schema)) {
+  if (node.pointer === '' || !DataType.isRecord(node.schema)) {
     return;
   }
   const schema = node.schema;
@@ -624,7 +624,7 @@ export const SchemaGraphSupport = {
     node: SchemaGraphNodeType,
     resolveLocalRef: (ref: string) => SchemaGraphNodeType
   ): SchemaGraphSemanticsType {
-    if (!isRecord(node.schema)) {
+    if (!DataType.isRecord(node.schema)) {
       return EMPTY_SEMANTICS;
     }
 
@@ -650,7 +650,7 @@ export const SchemaGraphSupport = {
   },
 
   nodeIdFromPointer(rootSchema: JsonSchemaType, pointer: string, schema: JsonSchemaType): string {
-    if (!isRecord(schema)) {
+    if (!DataType.isRecord(schema)) {
       return pointerId(rootSchema, pointer);
     }
 
@@ -700,7 +700,7 @@ export const SchemaGraphSupport = {
       });
 
     for (const segment of segments) {
-      if (!isRecord(current) && !Array.isArray(current)) {
+      if (!DataType.isRecord(current) && !Array.isArray(current)) {
         throw new GraphError(`Pointer not found: ${pointer}`, {
           'code': GraphErrorCode.POINTER_NOT_FOUND,
           pointer
@@ -708,7 +708,7 @@ export const SchemaGraphSupport = {
       }
       current = (current as Record<string, unknown>)[segment];
     }
-    if (typeof current !== 'boolean' && !isRecord(current)) {
+    if (typeof current !== 'boolean' && !DataType.isRecord(current)) {
       throw new GraphError(`Pointer does not resolve to a schema: ${pointer}`, {
         'code': GraphErrorCode.POINTER_NOT_SCHEMA,
         pointer

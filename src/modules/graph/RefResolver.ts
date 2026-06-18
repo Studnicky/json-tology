@@ -1,9 +1,9 @@
 /**
- * RefResolver — thin compatibility shim over the canonical `resolveRef` function.
+ * RefResolver — thin compatibility shim over the canonical `RefResolution.resolve` method.
  *
  * The validation compiler (SchemaCompilerPlan, SchemaCompilerDefaults) tolerates
  * an unresolvable `$ref` by skipping the check rather than aborting compilation.
- * The canonical `resolveRef` throws on miss, so this shim catches `GraphError` and
+ * The canonical `RefResolution.resolve` throws on miss, so this shim catches `GraphError` and
  * maps it back to `undefined` to preserve the compiler's fallback contract.
  *
  * Call sites in SchemaCompilerDefaults treat `undefined` as "fall back to root node".
@@ -14,7 +14,7 @@
 import type { RefTargetType } from '../../types/RefTargetType.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { RefResolutionOptionsType } from '../../types/RefResolutionOptionsType.js';
-import { resolveRef as canonicalResolveRef } from './RefResolution.js';
+import { RefResolution } from './RefResolution.js';
 import { GraphError } from '../../errors/GraphError.js';
 
 export class RefResolver {
@@ -30,7 +30,7 @@ export class RefResolver {
     };
 
     try {
-      return canonicalResolveRef(ref, graph, opts);
+      return RefResolution.resolve(ref, graph, opts);
     } catch (error) {
       if (error instanceof GraphError) {
         return undefined;

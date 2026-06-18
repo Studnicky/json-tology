@@ -21,9 +21,9 @@ import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import { logScope } from '../data/LogScope.js';
+import { LogScope } from '../data/LogScope.js';
 import { ExecContext } from './ExecContext.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { BaseError } from '../../errors/BaseError.js';
@@ -211,7 +211,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private appliesFormatAssertions(sem: SchemaGraphSemanticsType): boolean {
     const rootVocabulary = sem.schemaVocabulary;
-    const formatAssertionValue = isRecord(rootVocabulary) ? rootVocabulary[VOCABULARY_FORMAT_ASSERTION] : undefined;
+    const formatAssertionValue = DataType.isRecord(rootVocabulary) ? rootVocabulary[VOCABULARY_FORMAT_ASSERTION] : undefined;
 
     // Explicit opt-out: $vocabulary with format-assertion: false disables checking.
     // Default: format assertions ON (strict-by-default posture).
@@ -442,7 +442,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       return this.compileBooleanSchema(rootSchema);
     }
 
-    if (!isRecord(rootSchema)) {
+    if (!DataType.isRecord(rootSchema)) {
       return this.compileBooleanSchema(false);
     }
 
@@ -463,7 +463,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     });
     const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn, treeHasUnevaluated);
 
-    this.logger.info(logScope('SchemaCompiler', 'compile', `compiled validator for ${typeof schema.$id === 'string' ? schema.$id : '<anonymous>'}`));
+    this.logger.info(LogScope.format('SchemaCompiler', 'compile', `compiled validator for ${typeof schema.$id === 'string' ? schema.$id : '<anonymous>'}`));
 
     return {
       'check': checkFn,
@@ -639,7 +639,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const graphNode = graph.node(schema);
 
     if (graphNode === undefined) {
-      this.logger.error(logScope('SchemaCompiler', 'compileValidateWithErrors', 'Schema not found in graph — cannot compile validator'));
+      this.logger.error(LogScope.format('SchemaCompiler', 'compileValidateWithErrors', 'Schema not found in graph — cannot compile validator'));
       throw new GraphError(
         'Schema not found in graph — cannot compile validator',
         { 'code': GraphErrorCode.REF_NOT_FOUND }
@@ -922,7 +922,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     // unevaluatedProperties — object post-pass
-    if (isRecord(currentValue) && unevaluatedPropertiesValidator !== undefined) {
+    if (DataType.isRecord(currentValue) && unevaluatedPropertiesValidator !== undefined) {
       const upResult = this.executeUnevaluatedProperties(
         unevaluatedPropertiesValidator,
         currentValue,
@@ -1265,7 +1265,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): ValidatorStatusType {
     let valid = true;
 
-    if (isRecord(workingValue)) {
+    if (DataType.isRecord(workingValue)) {
       const objResult = this.validateObjectPlan(plan, workingValue, path, ctx);
 
       if (objResult.earlyExit) {

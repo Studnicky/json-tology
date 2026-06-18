@@ -17,7 +17,7 @@ import {
 import {
   JsonTology, Transform
 } from '../../src/index.js';
-import { brand } from '../../src/modules/data/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { RefDecoder } from '../../src/modules/graph/RefDecoder.js';
@@ -54,7 +54,7 @@ const DateRawSchema = {
 // canonical (branded) ISO date-time form; encode is the inverse pass-through.
 const DateSchema = Transform.create(DateRawSchema, {
   'decode': (raw: string) => {
-    return brand<InferSchemaType<typeof DateRawSchema>>(new Date(raw).toISOString());
+    return Brand.cast<InferSchemaType<typeof DateRawSchema>>(new Date(raw).toISOString());
   },
   'encode': (value) => {
     return value;

@@ -25,13 +25,18 @@
  */
 
 /**
- * Render a log message prefixed with its originating component and operation.
- *
- * @param component - module or class name (e.g. `"OwlImporter"`)
- * @param operation - method name (e.g. `"import"`); must differ from `component`
- * @param message - the human-readable log message
- * @returns the message prefixed with `[component.operation] `
+ * LogScope — renders the `[component.operation]` log prefix.
  */
-export function logScope(component: string, operation: string, message: string): string {
-  return `[${component}.${operation}] ${message}`;
+export class LogScope {
+  /**
+   * Render a log message prefixed with its originating component and operation.
+   *
+   * @param component - module or class name (e.g. `"OwlImporter"`)
+   * @param operation - method name (e.g. `"import"`); must differ from `component`
+   * @param message - the human-readable log message
+   * @returns the message prefixed with `[component.operation] `
+   */
+  public static format(component: string, operation: string, message: string): string {
+    return `[${component}.${operation}] ${message}`;
+  }
 }

@@ -13,7 +13,7 @@ import type { RelationIndexType } from '../../types/RelationIndexType.js';
 import type { OptionalAnnotatedEdgeType } from '../../types/OptionalAnnotatedEdgeType.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import { RDFS } from '../../constants/IRI.js';
@@ -187,13 +187,13 @@ export class PropertyProjection {
     if (fragment === null) {
       const rootSchema = graph.rootNode.schema;
 
-      return isRecord(rootSchema) ? rootSchema : {};
+      return DataType.isRecord(rootSchema) ? rootSchema : {};
     }
 
     try {
       const node = graph.resolvePointer(fragment);
 
-      return isRecord(node.schema) ? node.schema : {};
+      return DataType.isRecord(node.schema) ? node.schema : {};
     } catch (error) {
       if (error instanceof GraphError && error.code === 'POINTER_NOT_FOUND') {
         return {};

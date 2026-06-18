@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import {
   BaseError, DecodeError, EncodeError, JsonTology, Transform, TransformError
 } from '../../src/index.js';
-import { brand } from '../../src/modules/data/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 
 // ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ const DateTimeSchema = {
 // decode's OUTPUT, so format validation runs on the decoded result.
 const TransformedDateSchema = Transform.create(DateTimeSchema, {
   'decode': (raw: { 'value': string }) => {
-    return brand<InferSchemaType<typeof DateTimeSchema>>(raw.value);
+    return Brand.cast<InferSchemaType<typeof DateTimeSchema>>(raw.value);
   },
   'encode': (value) => {
     return { 'value': value };
@@ -121,7 +121,7 @@ void describe('Transform.create()', () => {
     },
     {
       'check': (jt) => {
-        const wire = jt.encode(TransformedDateSchema, brand<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
+        const wire = jt.encode(TransformedDateSchema, Brand.cast<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
 
         assert.deepEqual(wire, { 'value': '2024-06-01T00:00:00.000Z' });
       },
@@ -302,7 +302,7 @@ void describe('Transform contract alignment', () => {
     },
     {
       'check': (jt) => {
-        const wire = jt.encode(TransformedDateSchema, brand<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
+        const wire = jt.encode(TransformedDateSchema, Brand.cast<InferSchemaType<typeof DateTimeSchema>>('2024-06-01T00:00:00.000Z'));
 
         assert.deepEqual(wire, { 'value': '2024-06-01T00:00:00.000Z' });
       },

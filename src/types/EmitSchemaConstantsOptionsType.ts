@@ -14,7 +14,7 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  *
  * @category Codegen
  * @since 0.18.0
- * @see {@link generateTypeScript}
+ * @see {@link OwlCodegen.toTypeScript}
  * @group OWL Codegen
  */
 export type EmitSchemaConstantsOptionsType = {

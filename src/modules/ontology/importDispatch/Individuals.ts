@@ -32,7 +32,7 @@ import { Terms } from '../../quads/Terms.js';
 import { decodeLiteral } from '../../quads/Terms.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-import { isRecord } from '../../data/DataTypes.js';
+import { DataType } from '../../data/DataType.js';
 import { ImportRelation } from './ImportRelation.js';
 import {
   ALL_DIFFERENT_IRIS,
@@ -126,7 +126,7 @@ function negativePropertyAssertionInvariant(
 ): InvariantType {
   return {
     'fn': (value: unknown): null | string => {
-      if (!isRecord(value)) {
+      if (!DataType.isRecord(value)) {
         return null;
       }
       // Identity guard: an NPA binds one named individual, so enforce only when
@@ -175,7 +175,7 @@ function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantTyp
 
   return {
     'fn': (value: unknown): null | string => {
-      if (!isRecord(value)) {
+      if (!DataType.isRecord(value)) {
         return null;
       }
       for (const propIri of propertyIris) {
@@ -218,288 +218,290 @@ function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantTyp
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragmentType with individuals, sameAs, differentFrom, invariants, and schemaDeltas populated.
  */
-export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const sameAs: Array<readonly [string, string]> = [];
-  const differentFrom: Array<readonly [string, string]> = [];
-  const invariants: Array<{
-    'invariant': InvariantType;
-    'schemaId': string;
-  }> = [];
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+export class Individuals {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const sameAs: Array<readonly [string, string]> = [];
+    const differentFrom: Array<readonly [string, string]> = [];
+    const invariants: Array<{
+      'invariant': InvariantType;
+      'schemaId': string;
+    }> = [];
+    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
 
-  const allRelations = ctx.graph.allRelations();
+    const allRelations = ctx.graph.allRelations();
 
-  // ---- Collect named individual IRIs from rdf:type relations --------------
+    // ---- Collect named individual IRIs from rdf:type relations --------------
 
-  const namedIndividualIris = new Set<string>();
+    const namedIndividualIris = new Set<string>();
 
-  for (const relation of allRelations) {
-    if (predicateIn(relation, RDF_TYPE_PREDICATES) && targetIriIn(relation, NAMED_INDIVIDUAL_IRIS)) {
-      const subject = relation.source.id;
+    for (const relation of allRelations) {
+      if (predicateIn(relation, RDF_TYPE_PREDICATES) && targetIriIn(relation, NAMED_INDIVIDUAL_IRIS)) {
+        const subject = relation.source.id;
 
-      if (!subject.startsWith('_:')) {
-        namedIndividualIris.add(subject);
+        if (!subject.startsWith('_:')) {
+          namedIndividualIris.add(subject);
+        }
       }
     }
-  }
 
-  // ---- Named individuals: types + property assertions ---------------------
+    // ---- Named individuals: types + property assertions ---------------------
 
-  const individuals: Array<{
-    'iri': string;
-    'properties': Record<string, unknown>;
-    'types': readonly string[];
-  }> = [];
+    const individuals: Array<{
+      'iri': string;
+      'properties': Record<string, unknown>;
+      'types': readonly string[];
+    }> = [];
 
-  for (const individualIri of namedIndividualIris) {
-    const subjectRelations = ctx.graph.relationsForSubject(individualIri);
-    const types: string[] = [];
-    const properties: Record<string, unknown> = {};
+    for (const individualIri of namedIndividualIris) {
+      const subjectRelations = ctx.graph.relationsForSubject(individualIri);
+      const types: string[] = [];
+      const properties: Record<string, unknown> = {};
 
-    for (const relation of subjectRelations) {
-      if (predicateIn(relation, RDF_TYPE_PREDICATES)) {
-        const objectIri = ImportRelation.namedNodeIri(relation);
+      for (const relation of subjectRelations) {
+        if (predicateIn(relation, RDF_TYPE_PREDICATES)) {
+          const objectIri = ImportRelation.namedNodeIri(relation);
 
-        if (objectIri === null || NAMED_INDIVIDUAL_IRIS.has(objectIri)) {
+          if (objectIri === null || NAMED_INDIVIDUAL_IRIS.has(objectIri)) {
+            continue;
+          }
+          if (ctx.allClassIris.has(objectIri)) {
+            types.push(objectIri);
+          }
           continue;
         }
-        if (ctx.allClassIris.has(objectIri)) {
-          types.push(objectIri);
+
+        // Property assertion — must be a registered property IRI
+        if (!ctx.allPropertyIris.has(relation.predicate)) {
+          continue;
         }
+
+        let value: unknown;
+
+        if (relation.termType === 'Literal') {
+          value = literalTarget(relation);
+        } else if (relation.termType === 'NamedNode') {
+          value = ImportRelation.namedNodeIri(relation);
+        } else {
+          continue;
+        }
+
+        if (value !== undefined && value !== null) {
+          properties[relation.predicate] = value;
+        }
+      }
+
+      individuals.push({
+        'iri': individualIri,
+        properties,
+        'types': types
+      });
+    }
+
+    // ---- Build individualToClasses map for NPA invariant keying -------------
+
+    const individualToClasses = new Map<string, string[]>();
+
+    for (const individual of individuals) {
+      individualToClasses.set(individual.iri, [...individual.types]);
+    }
+
+    // ---- owl:sameAs pairs ---------------------------------------------------
+    // The forward projection emits both (a, b) and (b, a) directions;
+    // deduplicate using a canonical order key so each logical pair appears once.
+
+    const seenSameAs = new Set<string>();
+
+    for (const relation of allRelations) {
+      if (!predicateIn(relation, SAME_AS_IRIS)) {
+        continue;
+      }
+      const iriA = relation.source.id;
+      const iriB = ImportRelation.namedNodeIri(relation);
+
+      if (iriB === null || iriA === iriB || iriA.startsWith('_:') || iriB.startsWith('_:')) {
+        continue;
+      }
+      const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
+
+      if (seenSameAs.has(pairKey)) {
+        continue;
+      }
+      seenSameAs.add(pairKey);
+      sameAs.push([
+        iriA,
+        iriB
+      ] as const);
+    }
+
+    // ---- owl:differentFrom — pairs flow to differentFrom array --------------
+
+    const seenDifferentFrom = new Set<string>();
+
+    for (const relation of allRelations) {
+      if (!predicateIn(relation, DIFFERENT_FROM_IRIS)) {
+        continue;
+      }
+      const iriA = relation.source.id;
+      const iriB = ImportRelation.namedNodeIri(relation);
+
+      if (iriB === null || iriA.startsWith('_:') || iriB.startsWith('_:')) {
+        continue;
+      }
+      const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
+
+      if (seenDifferentFrom.has(pairKey)) {
+        continue;
+      }
+      seenDifferentFrom.add(pairKey);
+      differentFrom.push([
+        iriA,
+        iriB
+      ] as const);
+    }
+
+    // ---- owl:AllDifferent + owl:distinctMembers (RDF list) ------------------
+
+    for (const relation of allRelations) {
+      if (!predicateIn(relation, RDF_TYPE_PREDICATES) || !targetIriIn(relation, ALL_DIFFERENT_IRIS)) {
         continue;
       }
 
-      // Property assertion — must be a registered property IRI
-      if (!ctx.allPropertyIris.has(relation.predicate)) {
+      const allDiffSubject = relation.source.id;
+      const distinctRelations = ctx.graph.relationsForSubject(allDiffSubject);
+
+      for (const dmRelation of distinctRelations) {
+        if (!predicateIn(dmRelation, DISTINCT_MEMBERS_IRIS)) {
+          continue;
+        }
+
+        const listHead = ImportRelation.targetValue(dmRelation);
+        const memberIris: string[] = [];
+
+        for (const item of ctx.graph.collectList(listHead)) {
+          if (item.termType === 'NamedNode') {
+            memberIris.push(item.target);
+          }
+        }
+
+        for (let i = 0; i < memberIris.length; i++) {
+          for (let j = i + 1; j < memberIris.length; j++) {
+            const iriA = memberIris[i];
+            const iriB = memberIris[j];
+
+            if (iriA === undefined || iriB === undefined) {
+              continue;
+            }
+
+            const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
+
+            if (seenDifferentFrom.has(pairKey)) {
+              continue;
+            }
+            seenDifferentFrom.add(pairKey);
+            differentFrom.push([
+              iriA,
+              iriB
+            ] as const);
+          }
+        }
+      }
+    }
+
+    // ---- owl:NegativePropertyAssertion (blank-node sibling predicates) ------
+
+    for (const relation of allRelations) {
+      if (!predicateIn(relation, RDF_TYPE_PREDICATES) || !targetIriIn(relation, NEGATIVE_PROPERTY_ASSERTION_IRIS)) {
         continue;
       }
 
-      let value: unknown;
+      const negSubject = relation.source.id;
+      const siblings = ctx.graph.relationsForSubject(negSubject);
 
-      if (relation.termType === 'Literal') {
-        value = literalTarget(relation);
-      } else if (relation.termType === 'NamedNode') {
-        value = ImportRelation.namedNodeIri(relation);
-      } else {
+      let sourceIndividual: null | string = null;
+      let assertionProperty: null | string = null;
+      let target: unknown;
+
+      for (const sibling of siblings) {
+        if (predicateIn(sibling, SOURCE_INDIVIDUAL_IRIS)) {
+          sourceIndividual = ImportRelation.namedNodeIri(sibling);
+        } else if (predicateIn(sibling, ASSERTION_PROPERTY_IRIS)) {
+          assertionProperty = ImportRelation.namedNodeIri(sibling);
+        } else if (predicateIn(sibling, TARGET_INDIVIDUAL_IRIS)) {
+          target = ImportRelation.namedNodeIri(sibling);
+        } else if (predicateIn(sibling, TARGET_VALUE_IRIS)) {
+          target = sibling.termType === 'Literal' ? literalTarget(sibling) : ImportRelation.namedNodeIri(sibling);
+        }
+      }
+
+      if (sourceIndividual === null || assertionProperty === null) {
+        ctx.reportUnsupported('owl:NegativePropertyAssertion', negSubject);
         continue;
       }
 
-      if (value !== undefined && value !== null) {
-        properties[relation.predicate] = value;
+      const classIris = individualToClasses.get(sourceIndividual) ?? [];
+
+      if (classIris.length === 0) {
+        ctx.reportUnsupported('owl:NegativePropertyAssertion', sourceIndividual);
+        continue;
+      }
+      for (const classIri of classIris) {
+        invariants.push({
+          'invariant': negativePropertyAssertionInvariant(sourceIndividual, assertionProperty, target),
+          'schemaId': classIri
+        });
       }
     }
 
-    individuals.push({
-      'iri': individualIri,
-      properties,
-      'types': types
-    });
-  }
+    // ---- owl:hasKey (RDF list of property IRIs on a class) ------------------
 
-  // ---- Build individualToClasses map for NPA invariant keying -------------
+    for (const relation of allRelations) {
+      if (!predicateIn(relation, HAS_KEY_IRIS)) {
+        continue;
+      }
+      const classIri = relation.source.id;
 
-  const individualToClasses = new Map<string, string[]>();
-
-  for (const individual of individuals) {
-    individualToClasses.set(individual.iri, [...individual.types]);
-  }
-
-  // ---- owl:sameAs pairs ---------------------------------------------------
-  // The forward projection emits both (a, b) and (b, a) directions;
-  // deduplicate using a canonical order key so each logical pair appears once.
-
-  const seenSameAs = new Set<string>();
-
-  for (const relation of allRelations) {
-    if (!predicateIn(relation, SAME_AS_IRIS)) {
-      continue;
-    }
-    const iriA = relation.source.id;
-    const iriB = ImportRelation.namedNodeIri(relation);
-
-    if (iriB === null || iriA === iriB || iriA.startsWith('_:') || iriB.startsWith('_:')) {
-      continue;
-    }
-    const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
-
-    if (seenSameAs.has(pairKey)) {
-      continue;
-    }
-    seenSameAs.add(pairKey);
-    sameAs.push([
-      iriA,
-      iriB
-    ] as const);
-  }
-
-  // ---- owl:differentFrom — pairs flow to differentFrom array --------------
-
-  const seenDifferentFrom = new Set<string>();
-
-  for (const relation of allRelations) {
-    if (!predicateIn(relation, DIFFERENT_FROM_IRIS)) {
-      continue;
-    }
-    const iriA = relation.source.id;
-    const iriB = ImportRelation.namedNodeIri(relation);
-
-    if (iriB === null || iriA.startsWith('_:') || iriB.startsWith('_:')) {
-      continue;
-    }
-    const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
-
-    if (seenDifferentFrom.has(pairKey)) {
-      continue;
-    }
-    seenDifferentFrom.add(pairKey);
-    differentFrom.push([
-      iriA,
-      iriB
-    ] as const);
-  }
-
-  // ---- owl:AllDifferent + owl:distinctMembers (RDF list) ------------------
-
-  for (const relation of allRelations) {
-    if (!predicateIn(relation, RDF_TYPE_PREDICATES) || !targetIriIn(relation, ALL_DIFFERENT_IRIS)) {
-      continue;
-    }
-
-    const allDiffSubject = relation.source.id;
-    const distinctRelations = ctx.graph.relationsForSubject(allDiffSubject);
-
-    for (const dmRelation of distinctRelations) {
-      if (!predicateIn(dmRelation, DISTINCT_MEMBERS_IRIS)) {
+      if (classIri.startsWith('_:')) {
         continue;
       }
 
-      const listHead = ImportRelation.targetValue(dmRelation);
-      const memberIris: string[] = [];
+      const listHead = ImportRelation.targetValue(relation);
+      const propertyIris: string[] = [];
 
       for (const item of ctx.graph.collectList(listHead)) {
         if (item.termType === 'NamedNode') {
-          memberIris.push(item.target);
+          propertyIris.push(item.target);
         }
       }
 
-      for (let i = 0; i < memberIris.length; i++) {
-        for (let j = i + 1; j < memberIris.length; j++) {
-          const iriA = memberIris[i];
-          const iriB = memberIris[j];
-
-          if (iriA === undefined || iriB === undefined) {
-            continue;
-          }
-
-          const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
-
-          if (seenDifferentFrom.has(pairKey)) {
-            continue;
-          }
-          seenDifferentFrom.add(pairKey);
-          differentFrom.push([
-            iriA,
-            iriB
-          ] as const);
-        }
+      if (propertyIris.length === 0) {
+        ctx.reportUnsupported('owl:hasKey', classIri);
+        continue;
       }
-    }
-  }
 
-  // ---- owl:NegativePropertyAssertion (blank-node sibling predicates) ------
-
-  for (const relation of allRelations) {
-    if (!predicateIn(relation, RDF_TYPE_PREDICATES) || !targetIriIn(relation, NEGATIVE_PROPERTY_ASSERTION_IRIS)) {
-      continue;
-    }
-
-    const negSubject = relation.source.id;
-    const siblings = ctx.graph.relationsForSubject(negSubject);
-
-    let sourceIndividual: null | string = null;
-    let assertionProperty: null | string = null;
-    let target: unknown;
-
-    for (const sibling of siblings) {
-      if (predicateIn(sibling, SOURCE_INDIVIDUAL_IRIS)) {
-        sourceIndividual = ImportRelation.namedNodeIri(sibling);
-      } else if (predicateIn(sibling, ASSERTION_PROPERTY_IRIS)) {
-        assertionProperty = ImportRelation.namedNodeIri(sibling);
-      } else if (predicateIn(sibling, TARGET_INDIVIDUAL_IRIS)) {
-        target = ImportRelation.namedNodeIri(sibling);
-      } else if (predicateIn(sibling, TARGET_VALUE_IRIS)) {
-        target = sibling.termType === 'Literal' ? literalTarget(sibling) : ImportRelation.namedNodeIri(sibling);
-      }
-    }
-
-    if (sourceIndividual === null || assertionProperty === null) {
-      ctx.reportUnsupported('owl:NegativePropertyAssertion', negSubject);
-      continue;
-    }
-
-    const classIris = individualToClasses.get(sourceIndividual) ?? [];
-
-    if (classIris.length === 0) {
-      ctx.reportUnsupported('owl:NegativePropertyAssertion', sourceIndividual);
-      continue;
-    }
-    for (const classIri of classIris) {
       invariants.push({
-        'invariant': negativePropertyAssertionInvariant(sourceIndividual, assertionProperty, target),
+        'invariant': hasKeyInvariant(classIri, propertyIris),
         'schemaId': classIri
       });
+
+      const existing = schemaDeltas.get(classIri) ?? {};
+      const existingKeys = existing['jt:hasKey'] ?? [];
+
+      schemaDeltas.set(classIri, {
+        ...existing,
+        'jt:hasKey': [
+          ...existingKeys,
+          propertyIris
+        ]
+      });
     }
+
+    return {
+      'characteristics': [],
+      'differentFrom': differentFrom,
+      individuals,
+      'invariants': invariants,
+      'sameAs': sameAs,
+      'schemaDeltas': schemaDeltas
+    };
   }
-
-  // ---- owl:hasKey (RDF list of property IRIs on a class) ------------------
-
-  for (const relation of allRelations) {
-    if (!predicateIn(relation, HAS_KEY_IRIS)) {
-      continue;
-    }
-    const classIri = relation.source.id;
-
-    if (classIri.startsWith('_:')) {
-      continue;
-    }
-
-    const listHead = ImportRelation.targetValue(relation);
-    const propertyIris: string[] = [];
-
-    for (const item of ctx.graph.collectList(listHead)) {
-      if (item.termType === 'NamedNode') {
-        propertyIris.push(item.target);
-      }
-    }
-
-    if (propertyIris.length === 0) {
-      ctx.reportUnsupported('owl:hasKey', classIri);
-      continue;
-    }
-
-    invariants.push({
-      'invariant': hasKeyInvariant(classIri, propertyIris),
-      'schemaId': classIri
-    });
-
-    const existing = schemaDeltas.get(classIri) ?? {};
-    const existingKeys = existing['jt:hasKey'] ?? [];
-
-    schemaDeltas.set(classIri, {
-      ...existing,
-      'jt:hasKey': [
-        ...existingKeys,
-        propertyIris
-      ]
-    });
-  }
-
-  return {
-    'characteristics': [],
-    'differentFrom': differentFrom,
-    individuals,
-    'invariants': invariants,
-    'sameAs': sameAs,
-    'schemaDeltas': schemaDeltas
-  };
 }

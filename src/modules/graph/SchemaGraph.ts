@@ -8,8 +8,8 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPluginInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { PrefixMapType } from '../../types/OwlImport.js';
-import { isRecord } from '../data/DataTypes.js';
-import { logScope } from '../data/LogScope.js';
+import { DataType } from '../data/DataType.js';
+import { LogScope } from '../data/LogScope.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
@@ -214,7 +214,7 @@ export class SchemaGraph implements SchemaGraphInterface {
       }
       const schema = SchemaGraphSupport.resolveSchemaAtPointer(normIR.rootSchema, normNode.pointer);
 
-      if (isRecord(schema) && typeof schema.$id === 'string' && schema.$id !== '') {
+      if (DataType.isRecord(schema) && typeof schema.$id === 'string' && schema.$id !== '') {
         const node = graph.nodeMap.get(normNode.pointer);
 
         if (node !== undefined) {
@@ -308,7 +308,7 @@ export class SchemaGraph implements SchemaGraphInterface {
       };
 
       graph.nodeMap.set(normNode.pointer, node);
-      if (isRecord(schema)) {
+      if (DataType.isRecord(schema)) {
         graph.identityMap.set(schema, node);
       }
       graph.childMap.set(node, new Map());
@@ -488,7 +488,7 @@ export class SchemaGraph implements SchemaGraphInterface {
    * authored value from the source schema, not a semantically-resolved value.
    */
   public keywordValue(node: SchemaGraphNodeType, key: string): unknown {
-    if (!isRecord(node.schema)) {
+    if (!DataType.isRecord(node.schema)) {
       return undefined;
     }
 
@@ -504,14 +504,14 @@ export class SchemaGraph implements SchemaGraphInterface {
     };
 
     this.nodeMap.set(pointer, node);
-    if (isRecord(schema)) {
+    if (DataType.isRecord(schema)) {
       this.identityMap.set(schema, node);
     }
     this.childMap.set(node, new Map());
     this.entryMap.set(node, new Map());
     this.indexedChildMap.set(node, new Map());
 
-    if (!isRecord(schema)) {
+    if (!DataType.isRecord(schema)) {
       return;
     }
 
@@ -534,7 +534,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     ] of Object.entries(schema)) {
       const childPointer = `${pointer}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`;
 
-      if (typeof value === 'boolean' || isRecord(value)) {
+      if (typeof value === 'boolean' || DataType.isRecord(value)) {
         this.lowerSchemaKeyword(node, childPointer, value, key);
         continue;
       }
@@ -557,7 +557,7 @@ export class SchemaGraph implements SchemaGraphInterface {
       index,
       element
     ] of value.entries()) {
-      if (typeof element === 'boolean' || isRecord(element)) {
+      if (typeof element === 'boolean' || DataType.isRecord(element)) {
         const elementPointer = `${keyPointer}/${index}`;
 
         this.lower(element, elementPointer);
@@ -582,7 +582,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     this.lower(value, childPointer);
     this.childMap.get(node)?.set(key, this.nodeForPointer(childPointer));
 
-    if (!isRecord(value)) {
+    if (!DataType.isRecord(value)) {
       return;
     }
 
@@ -592,7 +592,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     for (const entryKey of Object.keys(value)) {
       const entryValue = value[entryKey];
 
-      if (!isRecord(entryValue) && typeof entryValue !== 'boolean') {
+      if (!DataType.isRecord(entryValue) && typeof entryValue !== 'boolean') {
         continue;
       }
 
@@ -624,7 +624,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     const mapNode = this.nodeMap.get(pointer);
 
     if (mapNode === undefined) {
-      this.logger.debug(logScope('SchemaGraph', 'nodeForPointer', `node not found for pointer "${pointer}"`));
+      this.logger.debug(LogScope.format('SchemaGraph', 'nodeForPointer', `node not found for pointer "${pointer}"`));
       throw new GraphError(`Schema graph node not found for pointer: ${pointer}`, {
         'code': GraphErrorCode.POINTER_NOT_FOUND,
         pointer
@@ -682,7 +682,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     const anchored = this.anchorMap.get(fragment);
 
     if (anchored === undefined) {
-      this.logger.debug(logScope('SchemaGraph', 'resolveFragment', `unknown schema anchor "#${fragment}"`));
+      this.logger.debug(LogScope.format('SchemaGraph', 'resolveFragment', `unknown schema anchor "#${fragment}"`));
       throw new GraphError(`Unknown schema anchor: #${fragment}`, {
         'code': GraphErrorCode.ANCHOR_NOT_FOUND,
         'pointer': fragment
@@ -708,7 +708,7 @@ export class SchemaGraph implements SchemaGraphInterface {
       return this.rootNode;
     }
     if (!pointer.startsWith('/')) {
-      this.logger.debug(logScope('SchemaGraph', 'resolvePointer', `invalid JSON Pointer "${pointer}"`));
+      this.logger.debug(LogScope.format('SchemaGraph', 'resolvePointer', `invalid JSON Pointer "${pointer}"`));
       throw new GraphError(`Invalid JSON Pointer: ${pointer}`, {
         'code': GraphErrorCode.POINTER_INVALID,
         pointer
@@ -718,7 +718,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     const resolved = this.nodeMap.get(pointer);
 
     if (resolved === undefined) {
-      this.logger.debug(logScope('SchemaGraph', 'resolvePointer', `pointer not found "${pointer}"`));
+      this.logger.debug(LogScope.format('SchemaGraph', 'resolvePointer', `pointer not found "${pointer}"`));
       throw new GraphError(`Pointer not found: ${pointer}`, {
         'code': GraphErrorCode.POINTER_NOT_FOUND,
         pointer

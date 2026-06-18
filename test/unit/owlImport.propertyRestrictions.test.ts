@@ -20,7 +20,7 @@ import {
   describe,
   it
 } from 'node:test';
-import { importPropertyRestrictions } from '../../src/modules/ontology/importDispatch/PropertyRestrictions.js';
+import { PropertyRestrictions } from '../../src/modules/ontology/importDispatch/PropertyRestrictions.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 import type {
   OwlImportContextType,
@@ -108,7 +108,7 @@ function importFromSchema(schema: Record<string, unknown>): OwlImportFragmentTyp
     quads
   } = quadsForSchema(schema);
 
-  return importPropertyRestrictions(quads, ctx);
+  return PropertyRestrictions.dispatch(quads, ctx);
 }
 
 /**

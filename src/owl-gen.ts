@@ -46,10 +46,7 @@ import type {
   OwlCodegenOptionsType,
   OwlRegistryDirOptionsType
 } from './types/OwlCodegen.js';
-import {
-  generateRegistryFiles,
-  generateTypeScript
-} from './modules/codegen/OwlCodegen.js';
+import { OwlCodegen } from './modules/codegen/OwlCodegen.js';
 
 export type {
   OwlCodegenOptionsType, OwlRegistryDirOptionsType
@@ -88,7 +85,7 @@ export function generateFromTbox(options: GenerateFromTboxOptionsType): string {
     'sourceLabel': sourceLabel ?? defaultSourceLabel
   };
 
-  return generateTypeScript(result, codegenOptions);
+  return OwlCodegen.toTypeScript(result, codegenOptions);
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +135,7 @@ export function generateRegistryDirectory(options: GenerateRegistryDirectoryOpti
     'sourceLabel': sourceLabel ?? defaultSourceLabel
   };
 
-  return generateRegistryFiles(result, codegenOptions);
+  return OwlCodegen.toRegistryFiles(result, codegenOptions);
 }
 
 export type {

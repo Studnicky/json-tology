@@ -495,7 +495,7 @@ function emptyFragment(): OwlImportFragmentType {
  *
  * @example
  * ```ts
- * const fragment = importDatatypes(quads, ctx);
+ * const fragment = Datatypes.dispatch(quads, ctx);
  * // fragment.schemaDeltas maps datatype IRI → { type, minLength, pattern, … }
  * ```
  *
@@ -504,39 +504,41 @@ function emptyFragment(): OwlImportFragmentType {
  * @see OwlImportContextType
  * @group importDispatch
  */
-export function importDatatypes(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const graph = ctx.graph;
-  const datatypeIris = new Set<string>();
+export class Datatypes {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const graph = ctx.graph;
+    const datatypeIris = new Set<string>();
 
-  for (const relation of graph.allRelations()) {
-    if (
-      RDF_TYPE_PREDICATES.has(relation.predicate)
-      && relation.termType === 'NamedNode'
-      && RDFS_DATATYPE_IRIS.has(ImportRelation.targetValue(relation))
-      && !relation.source.id.startsWith('_:')
-    ) {
-      datatypeIris.add(relation.source.id);
+    for (const relation of graph.allRelations()) {
+      if (
+        RDF_TYPE_PREDICATES.has(relation.predicate)
+        && relation.termType === 'NamedNode'
+        && RDFS_DATATYPE_IRIS.has(ImportRelation.targetValue(relation))
+        && !relation.source.id.startsWith('_:')
+      ) {
+        datatypeIris.add(relation.source.id);
+      }
     }
+
+    if (datatypeIris.size === 0) {
+      return emptyFragment();
+    }
+
+    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+
+    for (const datatypeIri of datatypeIris) {
+      const delta = resolveDatatypeIri(datatypeIri, graph, ctx.reportUnsupported);
+
+      schemaDeltas.set(datatypeIri, delta);
+    }
+
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      schemaDeltas
+    };
   }
-
-  if (datatypeIris.size === 0) {
-    return emptyFragment();
-  }
-
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-
-  for (const datatypeIri of datatypeIris) {
-    const delta = resolveDatatypeIri(datatypeIri, graph, ctx.reportUnsupported);
-
-    schemaDeltas.set(datatypeIri, delta);
-  }
-
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    schemaDeltas
-  };
 }

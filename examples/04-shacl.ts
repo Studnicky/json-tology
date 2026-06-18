@@ -9,7 +9,7 @@
  */
 
 import { JsonTology } from '../src/index.js';
-import { isRecord } from '../src/modules/data/DataTypes.js';
+import { DataType } from '../src/modules/data/DataType.js';
 
 // ---------------------------------------------------------------------------
 // Schema with constraints
@@ -72,7 +72,7 @@ const rawShapes = shacl['@graph'];
 const shapes = Array.isArray(rawShapes) ? rawShapes : [];
 
 for (const shape of shapes) {
-  if (!isRecord(shape) || shape['@type'] !== 'sh:NodeShape') {
+  if (!DataType.isRecord(shape) || shape['@type'] !== 'sh:NodeShape') {
     continue;
   }
   console.log(`--- NodeShape: ${String(shape['@id'])} ---`);
@@ -80,16 +80,16 @@ for (const shape of shapes) {
   const props = Array.isArray(rawProps) ? rawProps : [];
 
   for (const prop of props) {
-    if (!isRecord(prop)) {
+    if (!DataType.isRecord(prop)) {
       continue;
     }
     const pathNode = prop['sh:path'];
-    const path = isRecord(pathNode) ? String(pathNode['@id'] ?? '(unknown)') : '(unknown)';
+    const path = DataType.isRecord(pathNode) ? String(pathNode['@id'] ?? '(unknown)') : '(unknown)';
 
     console.log(`  Property: ${path}`);
     const datatypeNode = prop['sh:datatype'];
 
-    if (isRecord(datatypeNode)) {
+    if (DataType.isRecord(datatypeNode)) {
       console.log(`    sh:datatype:      ${String(datatypeNode['@id'])}`);
     }
     if (prop['sh:minCount'] !== undefined) {

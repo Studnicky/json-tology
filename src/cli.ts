@@ -22,7 +22,7 @@ import { Command } from 'commander';
 import pkg from '../package.json' with { 'type': 'json' };
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import type { SchemaRegistryInterface } from './interfaces/SchemaRegistryInterface.js';
-import { isRecord } from './modules/data/DataTypes.js';
+import { DataType } from './modules/data/DataType.js';
 import { SchemaErrorCode } from './constants/ERROR_CODES.js';
 import { GraphArtifact } from './modules/graph/GraphArtifact.js';
 import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
@@ -94,7 +94,7 @@ function loadSchemaFiles(schemaGlob: string): Array<Record<string, unknown>> {
       });
     }
 
-    if (!isRecord(parsed)) {
+    if (!DataType.isRecord(parsed)) {
       throw new SchemaError(`Schema file is not a JSON object: ${filePath}`, { 'code': SchemaErrorCode.INVALID_INPUT });
     }
 

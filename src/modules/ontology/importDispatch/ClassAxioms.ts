@@ -537,7 +537,7 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContextType, axiomCtx: AxiomConte
  *
  * @example
  * ```ts
- * const fragment = importClassAxioms(quads, ctx);
+ * const fragment = ClassAxioms.dispatch(quads, ctx);
  * // fragment.schemaDeltas contains $ref / allOf / not / disjointWith patches
  * ```
  *
@@ -546,35 +546,37 @@ function applyBnodeLiteralAxioms(ctx: OwlImportContextType, axiomCtx: AxiomConte
  * @see OwlImportContextType
  * @group importDispatch
  */
-export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-  const invariants: Array<{ 'invariant': InvariantType;
-    'schemaId': string; }> = [];
+export class ClassAxioms {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+    const invariants: Array<{ 'invariant': InvariantType;
+      'schemaId': string; }> = [];
 
-  const axiomCtx: AxiomContextType = {
-    'allClassIris': ctx.allClassIris,
-    invariants,
-    // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
-    // map. Expand them back so $ref / disjointWith values match the full-IRI
-    // schema $id form used throughout the importer.
-    'resolveIri': (target: string | { 'id': string }): string => {
-      const raw = typeof target === 'string' ? target : target.id;
+    const axiomCtx: AxiomContextType = {
+      'allClassIris': ctx.allClassIris,
+      invariants,
+      // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
+      // map. Expand them back so $ref / disjointWith values match the full-IRI
+      // schema $id form used throughout the importer.
+      'resolveIri': (target: string | { 'id': string }): string => {
+        const raw = typeof target === 'string' ? target : target.id;
 
-      return ctx.curie.expandIfNeeded(raw);
-    },
-    schemaDeltas
-  };
+        return ctx.curie.expandIfNeeded(raw);
+      },
+      schemaDeltas
+    };
 
-  emitClassStubs(ctx, schemaDeltas);
-  applyNamedNodeAxioms(ctx, axiomCtx);
-  applyBnodeLiteralAxioms(ctx, axiomCtx);
+    emitClassStubs(ctx, schemaDeltas);
+    applyNamedNodeAxioms(ctx, axiomCtx);
+    applyBnodeLiteralAxioms(ctx, axiomCtx);
 
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    invariants,
-    'sameAs': [],
-    'schemaDeltas': schemaDeltas
-  };
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      invariants,
+      'sameAs': [],
+      'schemaDeltas': schemaDeltas
+    };
+  }
 }

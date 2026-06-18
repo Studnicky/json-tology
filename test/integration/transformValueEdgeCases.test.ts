@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import {
   Hash, Operations, Transform, Value
 } from '../../src/index.js';
-import { brand } from '../../src/modules/data/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 // ---------------------------------------------------------------------------
 // Transform edge cases
@@ -108,7 +108,7 @@ const transformScenarios: TransformScenario[] = [
       // form; encode is the inverse, recovering the original wire value.
       Transform.create(RoundTripSchema, {
         'decode': (source: string) => {
-          return brand<InferSchemaType<typeof RoundTripSchema>>(source.toLowerCase());
+          return Brand.cast<InferSchemaType<typeof RoundTripSchema>>(source.toLowerCase());
         },
         'encode': (value) => {
           return value.toUpperCase();

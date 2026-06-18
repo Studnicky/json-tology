@@ -7,7 +7,7 @@ import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInt
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { EffectiveOptionsType } from '../../types/EffectiveOptionsType.js';
 
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
@@ -49,7 +49,7 @@ export class GraphEngine implements GraphEngineInterface {
 
   /** @internal Used by SchemaRegistry to obtain a cached graph for lookupGraph wiring. */
   public graphFor(rootSchema: JsonSchemaDocumentType): SchemaGraphInterface {
-    if (!isRecord(rootSchema)) {
+    if (!DataType.isRecord(rootSchema)) {
       return new SchemaGraph(rootSchema);
     }
 

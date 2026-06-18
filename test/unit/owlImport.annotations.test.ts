@@ -21,7 +21,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importAnnotations } from '../../src/modules/ontology/importDispatch/Annotations.js';
+import { Annotations } from '../../src/modules/ontology/importDispatch/Annotations.js';
 import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
@@ -67,7 +67,7 @@ function makeCtx(quads: QuadInterface[] = []): OwlImportContextType & { 'unsuppo
 
 /** Run the Annotations dispatcher with a graph derived from the same quads. */
 function runAnnotations(quads: QuadInterface[]): OwlImportFragmentType {
-  return importAnnotations(quads, makeCtx(quads));
+  return Annotations.dispatch(quads, makeCtx(quads));
 }
 
 // ---------------------------------------------------------------------------

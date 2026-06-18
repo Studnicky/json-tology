@@ -6,7 +6,7 @@
  * entries are suffixed with `_2`, `_3`, etc. in `nameMap`.
  *
  * @remarks
- * Used internally by `generateTypeScript` and `generateRegistryFiles` to
+ * Used internally by `OwlCodegen.toTypeScript` and `OwlCodegen.toRegistryFiles` to
  * ensure every OWL class gets a unique TypeScript identifier.
  *
  * @example
@@ -16,7 +16,7 @@
  *
  * @category Codegen
  * @since 0.18.0
- * @see {@link generateTypeScript}
+ * @see {@link OwlCodegen.toTypeScript}
  * @group OWL Codegen
  */
 export type BuildNameMapResultType = {

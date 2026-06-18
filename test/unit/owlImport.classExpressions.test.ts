@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importClassExpressions } from '../../src/modules/ontology/importDispatch/ClassExpressions.js';
+import { ClassExpressions } from '../../src/modules/ontology/importDispatch/ClassExpressions.js';
 import { Curie } from '../../src/modules/quads/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
@@ -147,7 +147,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
 
   void it('returns an empty fragment for an empty quad array', () => {
     const ctx = makeCtx();
-    const fragment = importClassExpressions([], ctx);
+    const fragment = ClassExpressions.dispatch([], ctx);
 
     assert.strictEqual(fragment.schemaDeltas.size, 0);
     assert.deepEqual(fragment.characteristics, []);
@@ -176,7 +176,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       classA,
       classB
     ], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -211,7 +211,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       classC,
       classD
     ], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -248,7 +248,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     ];
 
     const ctx = makeCtx([subject], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     // The union resolves to an empty oneOf (blank-node Restrictions are skipped
@@ -309,7 +309,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     ];
 
     const ctx = makeCtx([subject], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -336,7 +336,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     ];
 
     const ctx = makeCtx([subject], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -399,7 +399,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       classF,
       classG
     ], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject');
@@ -437,7 +437,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
 
     // nonClass is NOT in allClassIris
     const ctx = makeCtx([classH], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(nonClass);
 
     assert.strictEqual(delta, undefined, 'non-class subjects must not produce deltas');
@@ -468,7 +468,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       classI,
       classJ
     ], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for subject with prefixed predicate');
@@ -497,7 +497,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     ];
 
     const ctx = makeCtx([subject], quads);
-    const fragment = importClassExpressions(quads, ctx);
+    const fragment = ClassExpressions.dispatch(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present');

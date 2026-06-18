@@ -35,7 +35,7 @@ import {
   Skolemize,
   Transform
 } from '../../src/index.js';
-import { brand } from '../../src/modules/data/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
@@ -225,7 +225,7 @@ void describe('encode — isolated behaviour', () => {
   // schema's canonical (branded) ISO date-time form; encode is the inverse.
   const TimestampSchema = Transform.create(TimestampRawSchema, {
     'decode': (raw: string) => {
-      return brand<InferSchemaType<typeof TimestampRawSchema>>(new Date(raw).toISOString());
+      return Brand.cast<InferSchemaType<typeof TimestampRawSchema>>(new Date(raw).toISOString());
     },
     'encode': (value) => {
       return value;
@@ -296,7 +296,7 @@ void describe('encode — isolated behaviour', () => {
         'baseIRI': 'https://bookstore.io',
         'schemas': [TimestampSchema] as const
       });
-      const wire = jt.encode(TimestampSchema, brand<InferSchemaType<typeof TimestampRawSchema>>('2026-01-01T00:00:00.000Z'));
+      const wire = jt.encode(TimestampSchema, Brand.cast<InferSchemaType<typeof TimestampRawSchema>>('2026-01-01T00:00:00.000Z'));
 
       assert.equal(wire, '2026-01-01T00:00:00.000Z');
     }

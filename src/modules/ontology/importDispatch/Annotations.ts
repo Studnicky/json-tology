@@ -420,7 +420,7 @@ function buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulatorType>)
  *
  * @example
  * ```ts
- * const fragment = importAnnotations(quads, ctx);
+ * const fragment = Annotations.dispatch(quads, ctx);
  * ```
  *
  * @param _quads - Retained for back-compat with the dispatcher signature; the
@@ -433,17 +433,19 @@ function buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulatorType>)
  * @see {@link OwlImportFragmentType}
  * @group OWL Import
  */
-export function importAnnotations(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const accumulators = new Map<string, AnnotationAccumulatorType>();
+export class Annotations {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const accumulators = new Map<string, AnnotationAccumulatorType>();
 
-  collectAnnotations(ctx, accumulators);
+    collectAnnotations(ctx, accumulators);
 
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    'schemaDeltas': buildSchemaDeltas(accumulators)
-  };
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      'schemaDeltas': buildSchemaDeltas(accumulators)
+    };
+  }
 }

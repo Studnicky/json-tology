@@ -6,7 +6,7 @@
  */
 
 import { HEX_RADIX } from '../../constants/NUMERIC.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 
 export class Hash {
   /**
@@ -30,7 +30,7 @@ export class Hash {
 }
 
 function keySortReplacer(_: string, value: unknown): unknown {
-  if (isRecord(value)) {
+  if (DataType.isRecord(value)) {
     const rec = value;
     const keys = Object.keys(rec);
 

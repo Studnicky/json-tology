@@ -388,7 +388,7 @@ function buildFragmentFromEntries(
  *
  * @example
  * ```ts
- * const fragment = importProperties(quads, ctx);
+ * const fragment = Properties.dispatch(quads, ctx);
  * // fragment.schemaDeltas: Map<classIri, Partial<JsonSchemaDocumentObjectType>>
  * // fragment.characteristics: Array<{ characteristic, propertyIri }>
  * ```
@@ -398,19 +398,21 @@ function buildFragmentFromEntries(
  * @see {@link OwlImportFragmentType}
  * @group Dispatchers
  */
-export function importProperties(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const maps = collectPropertyDeclarations(ctx);
-  const entries = buildPropertyEntries(maps, ctx);
-  const {
-    characteristics, schemaDeltas
-  } = buildFragmentFromEntries(entries, ctx);
+export class Properties {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const maps = collectPropertyDeclarations(ctx);
+    const entries = buildPropertyEntries(maps, ctx);
+    const {
+      characteristics, schemaDeltas
+    } = buildFragmentFromEntries(entries, ctx);
 
-  return {
-    characteristics,
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    schemaDeltas
-  };
+    return {
+      characteristics,
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      schemaDeltas
+    };
+  }
 }

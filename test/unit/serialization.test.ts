@@ -20,7 +20,7 @@ import { BaseGraphSerializer } from '../../src/modules/ontology/BaseGraphSeriali
 import {
   JsonTology, Transform
 } from '../../src/index.js';
-import { brand } from '../../src/modules/data/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { bookstoreEntities as entities } from '../../examples/docs/bookstore/index.js';
 // JsonLdFormatter is a low-level JSON-LD formatter used by serializers; not surfaced by the public API.
@@ -845,7 +845,7 @@ import {
   // schema's canonical (branded) ISO date-time form; encode is the inverse.
   const TransformedDateSchema = Transform.create(DateTimeSchema, {
     'decode': (raw: string) => {
-      return brand<InferSchemaType<typeof DateTimeSchema>>(new Date(raw).toISOString());
+      return Brand.cast<InferSchemaType<typeof DateTimeSchema>>(new Date(raw).toISOString());
     },
     'encode': (value) => {
       return value;
@@ -1039,7 +1039,7 @@ import {
       // Transform: encode produces wire form (canonical string → wire string)
       const isoString = '2026-01-01T00:00:00.000Z';
 
-      assert.equal(jt.dump(TransformedDateSchema.$id, brand<InferSchemaType<typeof DateTimeSchema>>(isoString)), isoString);
+      assert.equal(jt.dump(TransformedDateSchema.$id, Brand.cast<InferSchemaType<typeof DateTimeSchema>>(isoString)), isoString);
 
       // Transform: round-trip decode then dump
       const isoString2 = '2026-06-15T12:00:00.000Z';
@@ -1048,7 +1048,7 @@ import {
       assert.equal(jt.dump(TransformedDateSchema.$id, decoded), isoString2);
 
       // mode 'json': the canonical string round-trips as the wire string
-      assert.equal(jt.dump(TransformedDateSchema.$id, brand<InferSchemaType<typeof DateTimeSchema>>(isoString), { 'mode': 'json' }), isoString);
+      assert.equal(jt.dump(TransformedDateSchema.$id, Brand.cast<InferSchemaType<typeof DateTimeSchema>>(isoString), { 'mode': 'json' }), isoString);
 
       // mode 'json': plain object untouched
       const plain = {

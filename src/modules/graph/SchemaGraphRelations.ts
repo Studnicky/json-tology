@@ -8,7 +8,7 @@ import { SchemaIri } from './SchemaIri.js';
 import { XsdTypes } from '../quads/XsdTypes.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessorInterface.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
   DASH, DCT, JT, OWL, RDF, rdfMemberIri, RDFS, SH, XSD
@@ -414,7 +414,7 @@ function pushAnnotatedEdgeRelations(ctx: RelationsPushContextType): void {
   ] of Object.entries(descriptor.annotations)) {
     // The descriptor extraction already validated a string `$ref`; narrow again
     // for the type system before reading it and carrying the full sub-schema.
-    if (!isRecord(propSchema) || typeof propSchema.$ref !== 'string') {
+    if (!DataType.isRecord(propSchema) || typeof propSchema.$ref !== 'string') {
       continue;
     }
 

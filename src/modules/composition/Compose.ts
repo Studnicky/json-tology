@@ -33,8 +33,8 @@ import type { ValidateSchemaType } from '../../types/SchemaValidation.js';
 import {
   isRestrictionRef, RESTRICTION_TAG
 } from '../../types/Restriction.js';
-import { isRecord } from '../data/DataTypes.js';
-import { brand } from '../../modules/data/Brand.js';
+import { DataType } from '../data/DataType.js';
+import { Brand } from '../../modules/data/Brand.js';
 import {
   CLASS_AXIOM_BODY_SKIP_KEYS,
   EXTEND_SKIP_KEYS,
@@ -153,7 +153,7 @@ export class Compose {
    * );
    */
   private static buildAdditionsProperties(additions: Record<string, unknown>): Record<string, unknown> | undefined {
-    if (isRecord(additions.properties)) {
+    if (DataType.isRecord(additions.properties)) {
       return additions.properties;
     }
 
@@ -296,7 +296,7 @@ export class Compose {
       }
     }
 
-    return brand<ComplementOfSchemaType<TOther, TBody>>(result);
+    return Brand.cast<ComplementOfSchemaType<TOther, TBody>>(result);
   }
 
   /**
@@ -367,7 +367,7 @@ export class Compose {
       }
     }
 
-    return brand<DisjointWithSchemaType<TOther, TBody>>(result);
+    return Brand.cast<DisjointWithSchemaType<TOther, TBody>>(result);
   }
 
   /**
@@ -469,7 +469,7 @@ export class Compose {
       }
     }
 
-    return brand<ExtendSchemaType<TSchema, TAdditional, TId>>(child);
+    return Brand.cast<ExtendSchemaType<TSchema, TAdditional, TId>>(child);
   }
 
   public static getDefaults(schema: Record<string, unknown>): Record<string, unknown> {
@@ -550,10 +550,10 @@ export class Compose {
     const parentConfig = source['jt:config'];
     const childConfig = additions['jt:config'];
 
-    if (isRecord(parentConfig) || isRecord(childConfig)) {
+    if (DataType.isRecord(parentConfig) || DataType.isRecord(childConfig)) {
       additionsSchema['jt:config'] = {
-        ...(isRecord(parentConfig) && parentConfig),
-        ...(isRecord(childConfig) && childConfig)
+        ...(DataType.isRecord(parentConfig) && parentConfig),
+        ...(DataType.isRecord(childConfig) && childConfig)
       };
     }
   }
@@ -610,7 +610,7 @@ export class Compose {
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): OmitSchemaType<TSchema, TKeys, TId> {
     const source: Record<string, unknown> = schema;
     const rawOmitProps = source.properties;
-    const sourceProps = isRecord(rawOmitProps)
+    const sourceProps = DataType.isRecord(rawOmitProps)
       ? { ...rawOmitProps }
       : {};
     const sourceRequired = Array.isArray(source.required) ? (source.required as string[]) : [];
@@ -638,7 +638,7 @@ export class Compose {
       result['jt:config'] = source['jt:config'];
     }
 
-    return brand<OmitSchemaType<TSchema, TKeys, TId>>(result);
+    return Brand.cast<OmitSchemaType<TSchema, TKeys, TId>>(result);
   }
 
   /**
@@ -658,7 +658,7 @@ export class Compose {
     delete source.required;
     source.$id = newId;
 
-    return brand<PartialSchemaType<TSchema, TId>>(source);
+    return Brand.cast<PartialSchemaType<TSchema, TId>>(source);
   }
 
   /**
@@ -677,7 +677,7 @@ export class Compose {
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): PickSchemaType<TSchema, TKeys, TId> {
     const source: Record<string, unknown> = schema;
     const rawPickProps = source.properties;
-    const sourceProps = isRecord(rawPickProps)
+    const sourceProps = DataType.isRecord(rawPickProps)
       ? rawPickProps
       : {};
     const sourceRequired = Array.isArray(source.required) ? (source.required as string[]) : [];
@@ -708,7 +708,7 @@ export class Compose {
       result['jt:config'] = source['jt:config'];
     }
 
-    return brand<PickSchemaType<TSchema, TKeys, TId>>(result);
+    return Brand.cast<PickSchemaType<TSchema, TKeys, TId>>(result);
   }
 
   /**
@@ -724,11 +724,11 @@ export class Compose {
   >(schema: TSchema, newId: TId): RequiredSchemaType<TSchema, TId> {
     const source: Record<string, unknown> = schema;
     const rawRequiredProps = source.properties;
-    const props = isRecord(rawRequiredProps)
+    const props = DataType.isRecord(rawRequiredProps)
       ? rawRequiredProps
       : {};
 
-    return brand<RequiredSchemaType<TSchema, TId>>({
+    return Brand.cast<RequiredSchemaType<TSchema, TId>>({
       ...source,
       '$id': newId,
       'required': Object.keys(props)
@@ -851,7 +851,7 @@ export class Compose {
       allOf.push(bodySchema);
     }
 
-    return brand<SubClassOfSchemaType<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody>>({
+    return Brand.cast<SubClassOfSchemaType<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody>>({
       '$id': body.$id,
       allOf
     });

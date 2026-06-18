@@ -7,7 +7,7 @@ import { GraphEngineSupport } from './GraphEngineSupport.js';
 import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntryType.js';
 import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContextType.js';
 import { MAX_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import type { DefaultResolutionStateType } from '../../types/DefaultResolutionStateType.js';
 import type { RefTargetType } from '../../types/RefTargetType.js';
 import type { LookupSchemaFnType } from '../../types/LookupSchemaFnType.js';
@@ -136,7 +136,7 @@ function synthesizeAllOfZeroValue(
   for (const memberNode of allOf) {
     const memberValue = synthesizeZeroValueInternal(state, memberNode, depth + 1);
 
-    if (memberValue !== null && memberValue !== undefined && isRecord(memberValue)) {
+    if (memberValue !== null && memberValue !== undefined && DataType.isRecord(memberValue)) {
       hasObjectMember = true;
 
       for (const [

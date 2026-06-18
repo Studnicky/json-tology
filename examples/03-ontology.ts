@@ -9,7 +9,7 @@
  */
 
 import { JsonTology } from '../src/index.js';
-import { isRecord } from '../src/modules/data/DataTypes.js';
+import { DataType } from '../src/modules/data/DataType.js';
 
 // ---------------------------------------------------------------------------
 // Schemas with $ref relationships
@@ -77,15 +77,15 @@ const rawGraph = jsonLd['@graph'];
 const graph = Array.isArray(rawGraph) ? rawGraph : [];
 
 const classes = graph.filter((n): n is Record<string, unknown> => {
-  return isRecord(n) && n['@type'] === 'owl:Class';
+  return DataType.isRecord(n) && n['@type'] === 'owl:Class';
 });
 const properties = graph.filter((n): n is Record<string, unknown> => {
-  return isRecord(n) && (n['@type'] === 'owl:DatatypeProperty' || n['@type'] === 'owl:ObjectProperty');
+  return DataType.isRecord(n) && (n['@type'] === 'owl:DatatypeProperty' || n['@type'] === 'owl:ObjectProperty');
 });
 
 console.log('--- Derived classes ---');
 for (const cls of classes) {
-  const label = isRecord(cls['rdfs:label']) ? String(cls['rdfs:label']) : cls['rdfs:label'];
+  const label = DataType.isRecord(cls['rdfs:label']) ? String(cls['rdfs:label']) : cls['rdfs:label'];
 
   console.log(' ', cls['@id'], '-', label ?? '(no label)');
 }
@@ -93,8 +93,8 @@ console.log();
 
 console.log('--- Derived properties ---');
 for (const prop of properties) {
-  const domain = isRecord(prop['rdfs:domain']) ? prop['rdfs:domain']['@id'] : undefined;
-  const range = isRecord(prop['rdfs:range']) ? prop['rdfs:range']['@id'] : undefined;
+  const domain = DataType.isRecord(prop['rdfs:domain']) ? prop['rdfs:domain']['@id'] : undefined;
+  const range = DataType.isRecord(prop['rdfs:range']) ? prop['rdfs:range']['@id'] : undefined;
 
   console.log(`  ${String(prop['@id'])}  [${String(prop['@type'])}]`);
   console.log(`    domain: ${String(domain ?? '(none)')}  range: ${String(range ?? '(none)')}`);

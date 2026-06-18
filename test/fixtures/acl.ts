@@ -6,7 +6,7 @@
  */
 
 import { Transform } from '../../src/index.js';
-import { brand } from '../../src/modules/data/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 
 // ---------------------------------------------------------------------------
@@ -131,7 +131,7 @@ const DateTimeRawSchema = {
 // decode's OUTPUT, so format validation runs on the decoded result.
 export const DateTimeSchema = Transform.create(DateTimeRawSchema, {
   'decode': (raw: string) => {
-    return brand<InferSchemaType<typeof DateTimeRawSchema>>(raw);
+    return Brand.cast<InferSchemaType<typeof DateTimeRawSchema>>(raw);
   },
   'encode': (value) => {
     return value;

@@ -2,7 +2,7 @@ import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js
 import type { LookupSchemaFnType } from './LookupSchemaFnType.js';
 
 /**
- * Options bag for the canonical `resolveRef` function.
+ * Options bag for the canonical `RefResolution.resolve` method.
  *
  * `lookupGraph` — resolve a schema ID to its pre-compiled graph (e.g. from a registry).
  * `lookupSchema` — resolve a schema ID to its raw JSON Schema object; used to construct

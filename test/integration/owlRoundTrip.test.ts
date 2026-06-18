@@ -439,7 +439,7 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
     const { Compose } = await import('../../src/index.js');
     const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
     const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
-    const { importPropertyRestrictions } = await import('../../src/modules/ontology/importDispatch/PropertyRestrictions.js');
+    const { PropertyRestrictions } = await import('../../src/modules/ontology/importDispatch/PropertyRestrictions.js');
     const { Curie } = await import('../../src/modules/quads/Curie.js');
     const { STANDARD_PREFIXES } = await import('../../src/constants/STANDARD_PREFIXES.js');
 
@@ -476,7 +476,7 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
       'reportUnsupported': () => { /* noop */ }
     };
 
-    const fragment = importPropertyRestrictions(tbox, ctx);
+    const fragment = PropertyRestrictions.dispatch(tbox, ctx);
     const delta = fragment.schemaDeltas.get(CLASS_IRI);
     const itemsProp = delta?.properties?.items as Record<string, unknown> | undefined;
 

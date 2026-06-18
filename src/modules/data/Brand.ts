@@ -18,19 +18,24 @@
  *
  * @example
  * ```ts
- * return brand<BrandedType<typeof schema, 'UserId'>>(rawSchema);
+ * return Brand.cast<BrandedType<typeof schema, 'UserId'>>(rawSchema);
  * ```
  *
  * @category Schema Utilities
  * @since 0.10.0
  * @see {@link BrandedType}
  * @group Schema Utilities
- *
- * @param value - The runtime value to project into the branded type.
- * @returns The same value cast to `TBranded` — no runtime transformation occurs.
- *
- * @typeParam TBranded - The branded target type to project into.
  */
-export function brand<TBranded>(value: unknown): TBranded {
-  return value as TBranded;
+export class Brand {
+  /**
+   * Phantom brand projection — casts an untyped value to a branded type.
+   *
+   * @param value - The runtime value to project into the branded type.
+   * @returns The same value cast to `TBranded` — no runtime transformation occurs.
+   *
+   * @typeParam TBranded - The branded target type to project into.
+   */
+  public static cast<TBranded>(value: unknown): TBranded {
+    return value as TBranded;
+  }
 }

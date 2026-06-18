@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importClassAxioms } from '../../src/modules/ontology/importDispatch/ClassAxioms.js';
+import { ClassAxioms } from '../../src/modules/ontology/importDispatch/ClassAxioms.js';
 import type { OwlImportContextType } from '../../src/types/OwlImport.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
@@ -112,7 +112,7 @@ void describe('importClassAxioms', () => {
     void it('produces a minimal object stub for each named class', () => {
       const quads = [typeQuad(CLASS_A)];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_A);
 
@@ -131,7 +131,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_B, RDFS_SUBCLASSOF, CLASS_A)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_B);
 
@@ -159,7 +159,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_C, RDFS_SUBCLASSOF, CLASS_B)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_C);
       const allOf = delta?.allOf as Array<Record<string, unknown>> | undefined;
@@ -185,7 +185,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_B, OWL_EQUIVALENT_CLASS, CLASS_A)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_B);
 
@@ -223,7 +223,7 @@ void describe('importClassAxioms', () => {
         )
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_B);
 
@@ -239,7 +239,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_A, OWL_DISJOINT_WITH, CLASS_B)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const deltaA = fragment.schemaDeltas.get(CLASS_A);
       const deltaB = fragment.schemaDeltas.get(CLASS_B);
@@ -265,7 +265,7 @@ void describe('importClassAxioms', () => {
         )
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_A);
       const oneOf = delta?.oneOf as Array<Record<string, unknown>> | undefined;
@@ -290,7 +290,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_A, OWL_COMPLEMENT_OF, CLASS_B)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const delta = fragment.schemaDeltas.get(CLASS_A);
       const notSchema = delta?.not as Record<string, unknown> | undefined;
@@ -306,7 +306,7 @@ void describe('importClassAxioms', () => {
         namedQuad(CLASS_A, OWL_COMPLEMENT_OF, CLASS_B)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       const inv = fragment.invariants.find((entry) => {
         return entry.schemaId === CLASS_A;
@@ -327,7 +327,7 @@ void describe('importClassAxioms', () => {
     void it('characteristics, sameAs, and individuals are always empty', () => {
       const quads = [typeQuad(CLASS_A)];
       const ctx = makeCtx(quads);
-      const fragment = importClassAxioms(quads, ctx);
+      const fragment = ClassAxioms.dispatch(quads, ctx);
 
       assert.deepEqual([...fragment.characteristics], [], 'characteristics must be empty');
       assert.deepEqual([...fragment.sameAs], [], 'sameAs must be empty');

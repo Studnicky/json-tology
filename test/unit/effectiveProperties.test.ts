@@ -2,10 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  collectEffectiveProperties,
-  collectEffectivePropertiesMemo
-} from '../../src/modules/graph/EffectiveProperties.js';
+import { EffectiveProperties } from '../../src/modules/graph/EffectiveProperties.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import type { SchemaGraphNodeType } from '../../src/types/SchemaGraph.js';
 import type { EffectivePropertyMapType } from '../../src/types/EffectivePropertyMapType.js';
@@ -26,7 +23,7 @@ function buildGraph(schema: Record<string, unknown>): ReturnType<InstanceType<ty
 }
 
 /** Return the set of property names from the effective map. */
-function propertyNames(map: ReturnType<typeof collectEffectiveProperties>): string[] {
+function propertyNames(map: ReturnType<typeof EffectiveProperties.collect>): string[] {
   return [...map.keys()].sort();
 }
 
@@ -46,7 +43,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
       },
       'type': 'object'
     });
-    const map = collectEffectiveProperties(graph, root);
+    const map = EffectiveProperties.collect(graph, root);
 
     assert.deepEqual(propertyNames(map), [
       'isbn',
@@ -71,7 +68,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
       'properties': { 'own': { 'type': 'number' } },
       'type': 'object'
     });
-    const map = collectEffectiveProperties(graph, root);
+    const map = EffectiveProperties.collect(graph, root);
 
     assert.deepEqual(propertyNames(map), [
       'inherited',
@@ -91,7 +88,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
       'properties': { 'name': { 'type': 'string' } },
       'type': 'object'
     });
-    const map = collectEffectiveProperties(graph, root);
+    const map = EffectiveProperties.collect(graph, root);
 
     assert.deepEqual(propertyNames(map), ['name']);
     // The own declaration (string type) wins — check the node's schema
@@ -123,7 +120,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
     const {
       graph, root
     } = buildGraph(conditionalSchema);
-    const map = collectEffectiveProperties(graph, root);
+    const map = EffectiveProperties.collect(graph, root);
 
     const names = propertyNames(map);
 
@@ -140,7 +137,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
       'properties': { 'x': { 'type': 'string' } },
       'type': 'object'
     });
-    const map = collectEffectiveProperties(graph, root);
+    const map = EffectiveProperties.collect(graph, root);
 
     assert.equal(map.size, 1);
     assert.ok(map.has('x'));
@@ -162,7 +159,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
     const resolveGraph = (_refId: string): typeof graph => {
       return graph;
     };
-    const map = collectEffectiveProperties(graph, root, resolveGraph);
+    const map = EffectiveProperties.collect(graph, root, resolveGraph);
 
     // Should complete and return 'value'
     assert.ok(map.has('value'), 'should still collect own properties despite cycle');
@@ -193,7 +190,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
       return graphStore.get(refId);
     };
 
-    const map = collectEffectiveProperties(childGraph, childRoot, resolveGraph);
+    const map = EffectiveProperties.collect(childGraph, childRoot, resolveGraph);
 
     assert.ok(map.has('childField'), 'own property should be present');
     assert.ok(map.has('parentField'), 'inherited cross-graph property should be present');
@@ -212,7 +209,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
       'type': 'object'
     });
     const childRoot = childGraph.rootNode;
-    const map = collectEffectiveProperties(childGraph, childRoot);
+    const map = EffectiveProperties.collect(childGraph, childRoot);
 
     assert.ok(map.has('childField'), 'own property should still be present');
     assert.equal(map.size, 1, 'cross-graph ref without resolver yields only own properties');
@@ -225,7 +222,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
       '$id': 'https://example.com/Empty',
       'type': 'string'
     });
-    const map = collectEffectiveProperties(graph, root);
+    const map = EffectiveProperties.collect(graph, root);
 
     assert.equal(map.size, 0);
   });
@@ -239,8 +236,8 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
       'type': 'object'
     });
     const cache = new WeakMap<SchemaGraphNodeType, EffectivePropertyMapType>();
-    const result1 = collectEffectivePropertiesMemo(cache, graph, root);
-    const result2 = collectEffectivePropertiesMemo(cache, graph, root);
+    const result1 = EffectiveProperties.collectMemo(cache, graph, root);
+    const result2 = EffectiveProperties.collectMemo(cache, graph, root);
 
     assert.strictEqual(result1, result2, 'second call should return cached object');
     assert.ok(result1.has('a'));

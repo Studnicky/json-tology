@@ -37,7 +37,7 @@ export type { SingleFileBodyOptionsType } from '../types/SingleFileBodyOptionsTy
  *
  * @category Codegen
  * @since 0.18.0
- * @see {@link generateTypeScript}
+ * @see {@link OwlCodegen.toTypeScript}
  * @group OWL Codegen
  */
 export type BuildDepsMapType = Map<string, Set<string>>;
@@ -59,7 +59,7 @@ export type BuildDepsMapType = Map<string, Set<string>>;
  *
  * @category Codegen
  * @since 0.18.0
- * @see {@link generateTypeScript}
+ * @see {@link OwlCodegen.toTypeScript}
  * @group OWL Codegen
  */
 export type BuildInDegreeMapType = Map<string, number>;
@@ -109,7 +109,7 @@ export type OwlCodegenOptionsType = {
 };
 
 /**
- * Describes one entity file produced by {@link generateRegistryFiles}.
+ * Describes one entity file produced by {@link OwlCodegen.toRegistryFiles}.
  */
 export type RegistryFileEntryType = {
   /** Full IRI of the OWL class this file represents. */
@@ -123,7 +123,7 @@ export type RegistryFileEntryType = {
 };
 
 /**
- * Result returned by {@link generateRegistryFiles}.
+ * Result returned by {@link OwlCodegen.toRegistryFiles}.
  */
 export type RegistryFilesResultType = {
   /** Metadata + source for each generated `entities/<Name>.ts` file. */

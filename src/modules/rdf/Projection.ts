@@ -28,7 +28,7 @@ import type { EmitAnnotationQuadsArgsType } from '../../types/EmitAnnotationQuad
 import type { EmitFlatAnnotationQuadsArgsType } from '../../types/EmitFlatAnnotationQuadsArgsType.js';
 import type { ProjectScalarValueArgsType } from '../../types/ProjectScalarValueArgsType.js';
 import type { ProjectAboxArgsType } from '../../types/ProjectAboxArgsType.js';
-import { collectEffectiveProperties } from '../graph/EffectiveProperties.js';
+import { EffectiveProperties } from '../graph/EffectiveProperties.js';
 import { Terms } from '../quads/Terms.js';
 import { Curie } from '../quads/Curie.js';
 
@@ -38,15 +38,13 @@ import {
 import { XsdTypes } from '../quads/XsdTypes.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { MaterializationErrorCode } from '../../constants/ERROR_CODES.js';
-import {
-  hasCycle, isRecord
-} from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { PredicateResolver } from '../graph/PredicateResolver.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Hash } from '../hash/Hash.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { PropertyProjection } from './PropertyProjection.js';
-import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
+import { RefResolution } from '../graph/RefResolution.js';
 
 // ---------------------------------------------------------------------------
 // TBox projection — purely relation-driven
@@ -155,11 +153,11 @@ function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
   const rootNode = entryNode ?? graph.rootNode;
   const resolved = resolveNode(graph, rootNode);
 
-  if (!isRecord(data)) {
+  if (!DataType.isRecord(data)) {
     return quads;
   }
 
-  if (hasCycle(data)) {
+  if (DataType.hasCycle(data)) {
     throw new MaterializationError(
       resolved.node.id,
       {
@@ -222,7 +220,7 @@ function resolveNode(
     };
   }
 
-  return canonicalResolveRef(
+  return RefResolution.resolve(
     nodeSemantics.ref,
     graph,
     lookupGraph === undefined ? {} : { 'lookupGraph': lookupGraph }
@@ -399,7 +397,7 @@ function collectProjectionProperties(
       return undefined;
     };
 
-  const collected = collectEffectiveProperties(graph, node, resolveGraph);
+  const collected = EffectiveProperties.collect(graph, node, resolveGraph);
 
   byLookup.set(cacheKey, collected);
 
@@ -546,7 +544,7 @@ function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgsType): string {
     return target;
   }
 
-  if (isRecord(target)) {
+  if (DataType.isRecord(target)) {
     const idValue = target['@id'] ?? target.id;
 
     if (typeof idValue === 'string') {
@@ -697,7 +695,7 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
     );
   }
 
-  if (!isRecord(value)) {
+  if (!DataType.isRecord(value)) {
     throw new MaterializationError(
       sourceId,
       {
@@ -721,7 +719,7 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
   // named graph) instead of rebuilding the bag per edge.
   quads.push(QuadFactory.quad(instanceIri, edge.edgePredicate, objectTerm, quadOpts));
 
-  const annotationValues = isRecord(value.annotations) ? value.annotations : {};
+  const annotationValues = DataType.isRecord(value.annotations) ? value.annotations : {};
 
   if (annotationEmitMode === 'star-only' || annotationEmitMode === 'both') {
     // The triple term `<< s edgePredicate o >>` is loop-invariant across all
@@ -957,7 +955,7 @@ function projectSingleValue(args: ProjectPropertyArgsType, path: string, value: 
     return;
   }
 
-  if (isRecord(value)) {
+  if (DataType.isRecord(value)) {
     projectObjectValue(args, path, value);
   }
 }

@@ -3,7 +3,7 @@ import type { ComputedStoreInterface } from '../../interfaces/ComputedStoreInter
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { SchemaErrorCode } from '../../constants/ERROR_CODES.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 
 export class ComputedStore implements ComputedStoreInterface {
   private readonly store = new Map<string, Map<string, ComputedFnType>>();
@@ -39,7 +39,7 @@ export class ComputedStore implements ComputedStoreInterface {
   }
 
   public validateAgainstGraph(graph: SchemaGraphInterface): void {
-    const schemaId = isRecord(graph.rootSchema) && typeof graph.rootSchema.$id === 'string'
+    const schemaId = DataType.isRecord(graph.rootSchema) && typeof graph.rootSchema.$id === 'string'
       ? graph.rootSchema.$id
       : undefined;
 
@@ -56,7 +56,7 @@ export class ComputedStore implements ComputedStoreInterface {
     ] of sem.properties) {
       const propSchema = propNode.schema;
 
-      if (!isRecord(propSchema)) {
+      if (!DataType.isRecord(propSchema)) {
         continue;
       }
 

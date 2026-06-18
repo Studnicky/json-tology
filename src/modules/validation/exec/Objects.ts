@@ -1,9 +1,7 @@
 import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
 import type { ExecContextType } from '../../../types/ExecContextType.js';
 import { BaseError } from '../../../errors/BaseError.js';
-import {
-  isRecord
-} from '../../data/DataTypes.js';
+import { DataType } from '../../data/DataType.js';
 import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
@@ -47,7 +45,7 @@ export class Objects {
     ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
-    if (depRequiredEntries.length === 0 || !isRecord(value)) {
+    if (depRequiredEntries.length === 0 || !DataType.isRecord(value)) {
       return {
         'earlyExit': false,
         'valid': true
@@ -211,7 +209,7 @@ export class Objects {
     ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
-    if (propertyNamesValidator === undefined || !isRecord(value)) {
+    if (propertyNamesValidator === undefined || !DataType.isRecord(value)) {
       return {
         'earlyExit': false,
         'valid': true

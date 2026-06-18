@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { importProperties } from '../../src/modules/ontology/importDispatch/Properties.js';
+import { Properties } from '../../src/modules/ontology/importDispatch/Properties.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 import type {
   OwlImportContextType, OwlImportFragmentType
@@ -151,7 +151,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
   void describe('empty input', () => {
     void it('returns an empty fragment for zero quads', () => {
       const ctx = makeCtx([]);
-      const fragment = importProperties([], ctx);
+      const fragment = Properties.dispatch([], ctx);
 
       assert.equal(fragment.schemaDeltas.size, 0, 'no schemaDeltas from empty quads');
       assert.deepEqual(fragment.characteristics, []);
@@ -169,7 +169,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('adds a $ref property slot to the domain class delta', () => {
       const quads = buildObjectPropertyQuads(CUSTOMER_PROP_IRI, ORDER_IRI, PERSON_IRI);
       const ctx = makeCtx(quads, [PERSON_IRI]);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, ORDER_IRI);
 
       assert.ok(
@@ -184,7 +184,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('sets type: "object" on the class delta', () => {
       const quads = buildObjectPropertyQuads(CUSTOMER_PROP_IRI, ORDER_IRI, PERSON_IRI);
       const ctx = makeCtx(quads, [PERSON_IRI]);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const delta = fragment.schemaDeltas.get(ORDER_IRI);
 
       assert.equal(delta?.type, 'object', 'class delta type should be object');
@@ -198,7 +198,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('produces type: "string" when range is xsd:string (full IRI)', () => {
       const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, 'http://www.w3.org/2001/XMLSchema#string');
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
 
       assert.ok(props.title !== undefined, 'title property should be in delta');
@@ -211,7 +211,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('produces type: "string" when range is xsd:string (prefixed)', () => {
       const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, XSD.string);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.title as Record<string, unknown>;
 
@@ -221,7 +221,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('produces type: "string" when range is rdf:langString (full IRI)', () => {
       const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString');
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.title as Record<string, unknown>;
 
@@ -232,7 +232,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     void it('produces type: "string" when range is rdf:langString (prefixed)', () => {
       const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, 'rdf:langString');
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.title as Record<string, unknown>;
 
@@ -243,7 +243,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const AGE_PROP = `${CLASS_IRI}#age`;
       const quads = buildDatatypePropertyQuads(AGE_PROP, CLASS_IRI, 'http://www.w3.org/2001/XMLSchema#integer');
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.age as Record<string, unknown>;
 
@@ -254,7 +254,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const FLAG_PROP = `${CLASS_IRI}#inStock`;
       const quads = buildDatatypePropertyQuads(FLAG_PROP, CLASS_IRI, XSD.boolean);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.inStock as Record<string, unknown>;
 
@@ -265,7 +265,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const TS_PROP = `${CLASS_IRI}#publishedOn`;
       const quads = buildDatatypePropertyQuads(TS_PROP, CLASS_IRI, XSD.dateTime);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.publishedOn as Record<string, unknown>;
 
@@ -277,7 +277,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const DATE_PROP = `${CLASS_IRI}#releaseDate`;
       const quads = buildDatatypePropertyQuads(DATE_PROP, CLASS_IRI, XSD.date);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.releaseDate as Record<string, unknown>;
 
@@ -288,7 +288,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const URL_PROP = `${CLASS_IRI}#homepage`;
       const quads = buildDatatypePropertyQuads(URL_PROP, CLASS_IRI, XSD.anyURI);
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
       const propSchema = props.homepage as Record<string, unknown>;
 
@@ -312,7 +312,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         makeQuad(PROP_IRI, RDFS.range, XSD.string)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
 
       const propsA = getProps(fragment, CLASS_A);
       const propsB = getProps(fragment, CLASS_B);
@@ -342,7 +342,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         makeQuad(CHILD_PROP, RDFS.subPropertyOf, PARENT_PROP)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
 
       const ch = fragment.characteristics.find((entry) => {
         return entry.propertyIri === CHILD_PROP;
@@ -379,7 +379,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
         makeQuad(WROTE_PROP, OWL.inverseOf, WRITTEN_BY_PROP)
       ];
       const ctx = makeCtx(quads);
-      const fragment = importProperties(quads, ctx);
+      const fragment = Properties.dispatch(quads, ctx);
 
       const ch = fragment.characteristics.find((entry) => {
         return entry.propertyIri === WROTE_PROP && entry.characteristic.includes('inverseOf');

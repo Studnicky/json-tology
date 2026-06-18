@@ -59,7 +59,7 @@ import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
 import { AboxGraph } from './modules/graph/AboxGraph.js';
 import type { AboxGraphInterface } from './interfaces/AboxGraphInterface.js';
 import type { AboxIdentityDescriptorType } from './types/AboxGraph.js';
-import { isRecord } from './modules/data/DataTypes.js';
+import { DataType } from './modules/data/DataType.js';
 import type { CurieInterface } from './interfaces/CurieInterface.js';
 import { Curie } from './modules/quads/Curie.js';
 import { OwlImporter } from './modules/ontology/OwlImporter.js';
@@ -83,7 +83,7 @@ import { SchemaError } from './errors/SchemaError.js';
 import type { DuplicateReportEntryType } from './types/DuplicateReportEntryType.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
-import { brand } from './modules/data/Brand.js';
+import { Brand } from './modules/data/Brand.js';
 import { Value } from './modules/data/Value.js';
 import { ShaclValidator } from './modules/validation/ShaclValidator.js';
 import type { ShaclValidationReportType } from './types/ShaclValidationReportType.js';
@@ -997,7 +997,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     // (identical to Transform.create), not a widening.
     Transform.register(schema, fns as TransformFnsType);
 
-    return brand<TransformedType<TSchema, TWire>>(schema);
+    return Brand.cast<TransformedType<TSchema, TWire>>(schema);
   }
   /**
    * Build the ABox identity descriptor list and schema-by-IRI index for `aboxGraph`.
@@ -1016,7 +1016,7 @@ export class JsonTology<TRefs = Record<never, never>> {
 
       const properties = schema.properties;
 
-      if (!isRecord(properties)) {
+      if (!DataType.isRecord(properties)) {
         continue;
       }
 
@@ -1024,7 +1024,7 @@ export class JsonTology<TRefs = Record<never, never>> {
         propertyName,
         rawPropertySchema
       ] of Object.entries(properties)) {
-        if (!isRecord(rawPropertySchema) || rawPropertySchema.inverseFunctional !== true) {
+        if (!DataType.isRecord(rawPropertySchema) || rawPropertySchema.inverseFunctional !== true) {
           continue;
         }
 

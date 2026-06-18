@@ -4,12 +4,8 @@
 import assert from 'node:assert/strict';
 // SchemaGraphSemanticsType is graph-internal type structure not surfaced by the public API.
 import type { SchemaGraphSemanticsType } from '../../src/types/SchemaGraph.js';
-// DataTypes guards/equality helpers are pure utilities used internally; no public surface.
-import {
-  deepEqual,
-  isPlainObject,
-  isRecord
-} from '../../src/modules/data/DataTypes.js';
+// DataType guards/equality helpers are pure utilities used internally; no public surface.
+import { DataType } from '../../src/modules/data/DataType.js';
 import {
   describe, it
 } from 'node:test';
@@ -419,7 +415,7 @@ import {
       for (const {
         expected, input, label
       } of cases) {
-        assert.equal(isRecord(input), expected, `isRecord(${label})`);
+        assert.equal(DataType.isRecord(input), expected, `DataType.isRecord(${label})`);
       }
     });
 
@@ -469,7 +465,7 @@ import {
       for (const {
         expected, input, label
       } of cases) {
-        assert.equal(isPlainObject(input), expected, `isPlainObject(${label})`);
+        assert.equal(DataType.isPlainObject(input), expected, `DataType.isPlainObject(${label})`);
       }
     });
   });
@@ -609,7 +605,7 @@ import {
       for (const {
         expected, label, left, right
       } of scenarios) {
-        assert.equal(deepEqual(left, right), expected, `deepEqual: ${label}`);
+        assert.equal(DataType.deepEqual(left, right), expected, `deepEqual: ${label}`);
       }
     });
   });

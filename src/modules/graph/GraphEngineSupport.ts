@@ -5,7 +5,7 @@ import {
 } from '../../constants/DIALECT.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { SchemaIri } from './SchemaIri.js';
 
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
@@ -13,7 +13,7 @@ import type { RootDialectPlanType } from '../../types/RootDialectPlanType.js';
 
 export const GraphEngineSupport = {
   buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanType {
-    if (!isRecord(rootSchema)) {
+    if (!DataType.isRecord(rootSchema)) {
       return {
         'contentAssertions': true,
         'formatAssertions': true
@@ -26,7 +26,7 @@ export const GraphEngineSupport = {
       throw new GraphError(`Unsupported JSON Schema dialect: ${schemaUri}`, { 'code': GraphErrorCode.DIALECT_UNSUPPORTED });
     }
 
-    const rawVocabulary = isRecord(rootSchema.$vocabulary)
+    const rawVocabulary = DataType.isRecord(rootSchema.$vocabulary)
       ? rootSchema.$vocabulary
       : undefined;
 
@@ -91,7 +91,7 @@ export const GraphEngineSupport = {
   },
 
   schemaId(schema: JsonSchemaDocumentType): string | undefined {
-    if (!isRecord(schema)) {
+    if (!DataType.isRecord(schema)) {
       return undefined;
     }
 

@@ -20,16 +20,16 @@ import {
   InstantiationErrorCode, MaterializationErrorCode
 } from '../../constants/ERROR_CODES.js';
 import { Frozen } from '../data/Frozen.js';
-import { isRecord } from '../data/DataTypes.js';
-import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
-import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
+import { DataType } from '../data/DataType.js';
+import { EffectiveProperties } from '../graph/EffectiveProperties.js';
+import { RefResolution } from '../graph/RefResolution.js';
 import { GraphEngineDefaults } from '../graph/GraphEngineDefaults.js';
 import { Terms } from '../quads/Terms.js';
 import { OWL } from '../../constants/IRI.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import { logScope } from '../data/LogScope.js';
+import { LogScope } from '../data/LogScope.js';
 
 /**
  * Materializer — runtime projection over validation execution results.
@@ -72,7 +72,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     }
     const config = schema['jt:config'];
 
-    if (isRecord(config) && config.frozen === true) {
+    if (DataType.isRecord(config) && config.frozen === true) {
       return true;
     }
 
@@ -163,7 +163,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     this.lookupSchemaFn = (sid: string): Record<string, unknown> | undefined => {
       const schemaGraph = this.lookupGraphFn(sid);
 
-      if (schemaGraph === undefined || !isRecord(schemaGraph.rootSchema)) {
+      if (schemaGraph === undefined || !DataType.isRecord(schemaGraph.rootSchema)) {
         return undefined;
       }
 
@@ -239,7 +239,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     graph: SchemaGraphInterface,
     node: SchemaGraphNodeType
   ): EffectivePropertyMapType {
-    return collectEffectivePropertiesMemo(
+    return EffectiveProperties.collectMemo(
       this.effectivePropertiesCache,
       graph,
       node,
@@ -284,7 +284,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     value: unknown,
     visited = new WeakSet()
   ): void {
-    if (!isRecord(value) || visited.has(value)) {
+    if (!DataType.isRecord(value) || visited.has(value)) {
       return;
     }
     visited.add(value);
@@ -368,11 +368,11 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
     const value = result.value;
 
-    if (isRecord(value)) {
+    if (DataType.isRecord(value)) {
       this.applyComputedFields(schema.$id, value);
     }
 
-    this.logger.info(logScope('Materializer', 'materialize', `materialization complete for ${schema.$id}`));
+    this.logger.info(LogScope.format('Materializer', 'materialize', `materialization complete for ${schema.$id}`));
 
     if (Materializer.isEffectivelyFrozen(schema)) {
       return Frozen.deepFreeze(value);
@@ -480,14 +480,14 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     }
 
     try {
-      const resolved = canonicalResolveRef(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn });
+      const resolved = RefResolution.resolve(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn });
 
       return [
         resolved.graph,
         resolved.node
       ];
     } catch (error) {
-      this.logger.error(logScope('Materializer', 'resolveTargetGraphAndNode', `ref resolution failed for "${semantics.ref}"`));
+      this.logger.error(LogScope.format('Materializer', 'resolveTargetGraphAndNode', `ref resolution failed for "${semantics.ref}"`));
       throw error;
     }
   }
@@ -534,7 +534,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       const errors = this.formatErrors(compiledResult.errors);
 
       if (!compiledResult.valid) {
-        this.logger.warn(logScope('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
+        this.logger.warn(LogScope.format('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
       }
 
       return {
@@ -568,7 +568,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     const errors = this.formatErrors(compiledResult.errors);
 
     if (!compiledResult.valid) {
-      this.logger.warn(logScope('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
+      this.logger.warn(LogScope.format('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
     }
 
     return {

@@ -31,7 +31,7 @@ import { Curie } from '../quads/Curie.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import { logScope } from '../data/LogScope.js';
+import { LogScope } from '../data/LogScope.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import {
   OWL, RDF, XSD
@@ -45,20 +45,17 @@ import { SUPPORTED_XSD_DATATYPES } from '../../constants/XSD_REVERSE_MAPS.js';
 import { OwlImportError } from '../../errors/OwlImportError.js';
 import { OwlImportErrorCode } from '../../constants/ERROR_CODES.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { Terms } from '../quads/Terms.js';
-import {
-  jsonLdNodesToQuads,
-  parseNQuads
-} from '../rdf/JsonLdToQuads.js';
-import { importAnnotations } from './importDispatch/Annotations.js';
-import { importCharacteristics } from './importDispatch/Characteristics.js';
-import { importClassAxioms } from './importDispatch/ClassAxioms.js';
-import { importClassExpressions } from './importDispatch/ClassExpressions.js';
-import { importDatatypes } from './importDispatch/Datatypes.js';
-import { importIndividuals } from './importDispatch/Individuals.js';
-import { importProperties } from './importDispatch/Properties.js';
-import { importPropertyRestrictions } from './importDispatch/PropertyRestrictions.js';
+import { JsonLdToQuads } from '../rdf/JsonLdToQuads.js';
+import { Annotations } from './importDispatch/Annotations.js';
+import { Characteristics } from './importDispatch/Characteristics.js';
+import { ClassAxioms } from './importDispatch/ClassAxioms.js';
+import { ClassExpressions } from './importDispatch/ClassExpressions.js';
+import { Datatypes } from './importDispatch/Datatypes.js';
+import { Individuals } from './importDispatch/Individuals.js';
+import { Properties } from './importDispatch/Properties.js';
+import { PropertyRestrictions } from './importDispatch/PropertyRestrictions.js';
 
 
 // ---------------------------------------------------------------------------
@@ -288,7 +285,7 @@ function buildQuadFromExternal(quad: ExternalRdfJsQuadType): QuadInterface {
  */
 function fromJsonLdRdfOutput(rdfOutput: unknown): QuadInterface[] {
   if (typeof rdfOutput === 'string') {
-    return parseNQuads(rdfOutput);
+    return JsonLdToQuads.fromNQuads(rdfOutput);
   }
 
   // Object graph: { '@default': [ { subject, predicate, object } ] }
@@ -337,7 +334,7 @@ function normalizeJsonLdInput(doc: Record<string, unknown>): QuadInterface[] {
   const rawGraph = doc['@graph'];
 
   if (Array.isArray(rawGraph)) {
-    return jsonLdNodesToQuads(rawGraph as Array<Record<string, unknown>>, context);
+    return JsonLdToQuads.fromNodes(rawGraph as Array<Record<string, unknown>>, context);
   }
 
   return [];
@@ -384,7 +381,7 @@ function normalizeInput(jsonLd: QuadInterface[] | Record<string, unknown> | stri
         : new OwlImportError(msg, base);
     }
 
-    if (!isRecord(parsed)) {
+    if (!DataType.isRecord(parsed)) {
       let parsedKind: string = typeof parsed;
 
       if (parsed === null) {
@@ -414,14 +411,14 @@ function normalizeInput(jsonLd: QuadInterface[] | Record<string, unknown> | stri
 // ---------------------------------------------------------------------------
 
 const DISPATCHERS: readonly DispatcherFnType[] = [
-  importClassAxioms,
-  importClassExpressions,
-  importPropertyRestrictions,
-  importProperties,
-  importCharacteristics,
-  importDatatypes,
-  importIndividuals,
-  importAnnotations
+  ClassAxioms.dispatch,
+  ClassExpressions.dispatch,
+  PropertyRestrictions.dispatch,
+  Properties.dispatch,
+  Characteristics.dispatch,
+  Datatypes.dispatch,
+  Individuals.dispatch,
+  Annotations.dispatch
 ];
 
 // ---------------------------------------------------------------------------
@@ -529,10 +526,10 @@ export class OwlImporter {
     const schemas = resolveSchemaDeltas(merged, allClassIris);
 
     if (unsupported.length > 0) {
-      this.logger.warn(logScope('OwlImporter', 'import', `${unsupported.length} unsupported construct(s) recorded`));
+      this.logger.warn(LogScope.format('OwlImporter', 'import', `${unsupported.length} unsupported construct(s) recorded`));
     }
 
-    this.logger.info(logScope('OwlImporter', 'import', `OWL TBox import complete: ${schemas.length} schema(s), ${merged.individuals.length} individual(s)`));
+    this.logger.info(LogScope.format('OwlImporter', 'import', `OWL TBox import complete: ${schemas.length} schema(s), ${merged.individuals.length} individual(s)`));
 
     return {
       'characteristics': merged.characteristics,
@@ -573,7 +570,7 @@ export class OwlImporter {
         const jsonLdModule = await tryLoadJsonLd();
 
         if (jsonLdModule === null) {
-          this.logger.error(logScope('OwlImporter', 'importAsync', 'optional jsonld peerDependency not installed; cannot process non-quad JSON-LD input'));
+          this.logger.error(LogScope.format('OwlImporter', 'importAsync', 'optional jsonld peerDependency not installed; cannot process non-quad JSON-LD input'));
           throw new OwlImportError(
             'importAsync() with non-quad JSON-LD input requires the optional `jsonld` peerDependency. '
             + 'Install it with: npm install jsonld',

@@ -10,7 +10,7 @@ import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalkerI
 
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 
 export class SchemaRefWalker implements SchemaRefWalkerInterface {
@@ -29,7 +29,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
       return;
     }
 
-    if (!isRecord(node)) {
+    if (!DataType.isRecord(node)) {
       return;
     }
 
@@ -70,7 +70,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
       return;
     }
 
-    if (!isRecord(node)) {
+    if (!DataType.isRecord(node)) {
       return;
     }
 

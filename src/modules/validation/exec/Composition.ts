@@ -5,9 +5,7 @@ import type {
 import type { ExecContextType } from '../../../types/ExecContextType.js';
 import type { CustomKeywordEntryType } from '../../../types/CustomKeywordEntryType.js';
 import { BaseError } from '../../../errors/BaseError.js';
-import {
-  isRecord
-} from '../../data/DataTypes.js';
+import { DataType } from '../../data/DataType.js';
 import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
 import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
@@ -422,7 +420,7 @@ export class Composition {
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
-    if (depSchemaValidators === undefined || !isRecord(workingValue)) {
+    if (depSchemaValidators === undefined || !DataType.isRecord(workingValue)) {
       return {
         'earlyExit': false,
         'valid': true,

@@ -21,7 +21,7 @@ import type {
   OwlImportContextType, OwlImportFragmentType
 } from '../../src/types/OwlImport.js';
 import type { InvariantType } from '../../src/types/Invariant.js';
-import { importIndividuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
+import { Individuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
@@ -79,7 +79,7 @@ function runIndividuals(
     'reportUnsupported': () => { /* no-op */ }
   };
 
-  return importIndividuals(quads, ctx);
+  return Individuals.dispatch(quads, ctx);
 }
 
 /**

@@ -38,7 +38,7 @@ import type { LiftAnnotatedEdgeArgsType } from '../../types/LiftAnnotatedEdgeArg
 import type { LiftPropertyValueArgsType } from '../../types/LiftPropertyValueArgsType.js';
 import type { LiftMatchingQuadsArgsType } from '../../types/LiftMatchingQuadsArgsType.js';
 import type { LiftImplArgsType } from '../../types/LiftImplArgsType.js';
-import { collectEffectivePropertiesMemo } from '../graph/EffectiveProperties.js';
+import { EffectiveProperties } from '../graph/EffectiveProperties.js';
 
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { RDF } from '../../constants/IRI.js';
@@ -454,7 +454,7 @@ function collectEffectiveLiftProperties(
   node: SchemaGraphNodeType,
   registry: SchemaRegistryInterface
 ): EffectivePropertyMapType {
-  return collectEffectivePropertiesMemo(
+  return EffectiveProperties.collectMemo(
     effectivePropertiesCache,
     graph,
     node,

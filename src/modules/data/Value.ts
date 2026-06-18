@@ -12,7 +12,7 @@
 import type { DiffOpType } from '../../types/Diff.js';
 import type { ValueInterface } from '../../interfaces/ValueInterface.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
-import { isRecord } from './DataTypes.js';
+import { DataType } from './DataType.js';
 import { Changeset } from './Changeset.js';
 
 export class Value implements ValueInterface {
@@ -114,7 +114,7 @@ export class Value implements ValueInterface {
 // ---------------------------------------------------------------------------
 
 function diffAt(path: string, before: unknown, after: unknown, ops: DiffOpType[]): void {
-  if (isRecord(before) && isRecord(after)) {
+  if (DataType.isRecord(before) && DataType.isRecord(after)) {
     const beforeObj = before;
     const afterObj = after;
 

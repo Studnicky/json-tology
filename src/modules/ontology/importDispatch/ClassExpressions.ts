@@ -527,7 +527,7 @@ function emptyFragment(): OwlImportFragmentType {
  *
  * @example
  * ```ts
- * const fragment = importClassExpressions(quads, ctx);
+ * const fragment = ClassExpressions.dispatch(quads, ctx);
  * // fragment.schemaDeltas contains allOf / oneOf / enum patches per class IRI
  * ```
  *
@@ -536,43 +536,45 @@ function emptyFragment(): OwlImportFragmentType {
  * @see OwlImportContextType
  * @group importDispatch
  */
-export function importClassExpressions(
-  _quads: QuadInterface[],
-  ctx: OwlImportContextType
-): OwlImportFragmentType {
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-  const exprCtx: ClassExprContextType = {
-    'allClassIris': ctx.allClassIris,
-    'graph': ctx.graph,
-    'reportUnsupported': ctx.reportUnsupported,
-    schemaDeltas
-  };
+export class ClassExpressions {
+  public static dispatch(
+    _quads: QuadInterface[],
+    ctx: OwlImportContextType
+  ): OwlImportFragmentType {
+    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+    const exprCtx: ClassExprContextType = {
+      'allClassIris': ctx.allClassIris,
+      'graph': ctx.graph,
+      'reportUnsupported': ctx.reportUnsupported,
+      schemaDeltas
+    };
 
-  for (const subjectId of ctx.allClassIris) {
-    if (subjectId.startsWith('_:')) {
-      continue;
+    for (const subjectId of ctx.allClassIris) {
+      if (subjectId.startsWith('_:')) {
+        continue;
+      }
+
+      applyIntersectionOf(subjectId, exprCtx);
+
+      const hasUnion = applyUnionOf(subjectId, exprCtx);
+      const hasDisjointUnion = applyDisjointUnionOf(subjectId, exprCtx);
+
+      if (!hasUnion && !hasDisjointUnion) {
+        applyOneOf(subjectId, exprCtx);
+      }
     }
 
-    applyIntersectionOf(subjectId, exprCtx);
-
-    const hasUnion = applyUnionOf(subjectId, exprCtx);
-    const hasDisjointUnion = applyDisjointUnionOf(subjectId, exprCtx);
-
-    if (!hasUnion && !hasDisjointUnion) {
-      applyOneOf(subjectId, exprCtx);
+    if (schemaDeltas.size === 0) {
+      return emptyFragment();
     }
-  }
 
-  if (schemaDeltas.size === 0) {
-    return emptyFragment();
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      schemaDeltas
+    };
   }
-
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    schemaDeltas
-  };
 }

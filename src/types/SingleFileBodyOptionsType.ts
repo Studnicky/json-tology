@@ -5,7 +5,7 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  *
  * @remarks
  * Bundles the computed context for single-file mode TypeScript emission
- * so that `generateTypeScript` stays within the 50-line limit.
+ * so that `OwlCodegen.toTypeScript` stays within the 50-line limit.
  *
  * @example
  * ```ts
@@ -14,7 +14,7 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  *
  * @category Codegen
  * @since 0.18.0
- * @see {@link generateTypeScript}
+ * @see {@link OwlCodegen.toTypeScript}
  * @group OWL Codegen
  */
 export type SingleFileBodyOptionsType = {

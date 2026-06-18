@@ -10,8 +10,8 @@ import { DecodeError } from '../../errors/DecodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { TransformErrorCode } from '../../constants/ERROR_CODES.js';
 import { Transform } from '../transform/Transform.js';
-import { isRecord } from '../data/DataTypes.js';
-import { logScope } from '../data/LogScope.js';
+import { DataType } from '../data/DataType.js';
+import { LogScope } from '../data/LogScope.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import { SchemaIri } from './SchemaIri.js';
@@ -114,7 +114,7 @@ export class RefDecoder {
       return RefDecoder.walk(graph, graph.rootNode, value, registry, new Set());
     } catch (error) {
       if (error instanceof DecodeError) {
-        logger.error(logScope('RefDecoder', 'run', `ref decode failed: ${error.message}`));
+        logger.error(LogScope.format('RefDecoder', 'run', `ref decode failed: ${error.message}`));
       }
       throw error;
     }
@@ -148,7 +148,7 @@ export class RefDecoder {
     registry: RefDecoderRegistryType,
     visited: Set<SchemaGraphNodeType>
   ): unknown {
-    if (!isRecord(value)) {
+    if (!DataType.isRecord(value)) {
       return value;
     }
     const additional = semantics.additionalPropertiesNode;
@@ -291,7 +291,7 @@ export class RefDecoder {
     registry: RefDecoderRegistryType,
     visited: Set<SchemaGraphNodeType>
   ): unknown {
-    if (!isRecord(value)) {
+    if (!DataType.isRecord(value)) {
       return value;
     }
 

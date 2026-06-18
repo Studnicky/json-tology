@@ -263,47 +263,95 @@ function emitNodeQuads(
 // ---------------------------------------------------------------------------
 
 /**
- * Convert a compact JSON-LD node array to a flat array of RDF quads.
- *
- * @remarks
- * Accepts the format that OntologyBuilder + JsonLdFormatter produce: a prefix
- * map (`context`) and a flat node array (`graph`). Each node must carry an
- * `id` (subject IRI or blank node ID), an optional `type` (class IRI string
- * or string[]), and predicate keys that are CURIE strings mapping to IRI
- * references, list structures, or literal values.
- *
- * @example
- * ```ts
- * const quads = jsonLdNodesToQuads(doc.graph, doc.prefixMap);
- * ```
- *
- * @param nodes - Array of JSON-LD node objects from the graph array.
- * @param prefixMap - Prefix expansion map from the document (e.g. `{ owl: 'http://www.w3.org/2002/07/owl#' }`).
- * @returns Flat array of QuadInterface objects.
- *
- * @category RDF
- * @since 0.18.0
- * @see {@link parseNQuads}
- * @group JsonLdToQuads
+ * JsonLdToQuads — converts compact JSON-LD (and jsonld.js N-Quads output) to quads.
  */
-export function jsonLdNodesToQuads(
-  nodes: Array<Record<string, unknown>>,
-  prefixMap: Record<string, string>
-): QuadInterface[] {
-  const ctx = makeConversionContext(prefixMap);
+export class JsonLdToQuads {
+  /**
+   * Convert a compact JSON-LD node array to a flat array of RDF quads.
+   *
+   * @remarks
+   * Accepts the format that OntologyBuilder + JsonLdFormatter produce: a prefix
+   * map (`context`) and a flat node array (`graph`). Each node must carry an
+   * `id` (subject IRI or blank node ID), an optional `type` (class IRI string
+   * or string[]), and predicate keys that are CURIE strings mapping to IRI
+   * references, list structures, or literal values.
+   *
+   * @example
+   * ```ts
+   * const quads = JsonLdToQuads.fromNodes(doc.graph, doc.prefixMap);
+   * ```
+   *
+   * @param nodes - Array of JSON-LD node objects from the graph array.
+   * @param prefixMap - Prefix expansion map from the document (e.g. `{ owl: 'http://www.w3.org/2002/07/owl#' }`).
+   * @returns Flat array of QuadInterface objects.
+   *
+   * @category RDF
+   * @since 0.18.0
+   * @see {@link JsonLdToQuads.fromNQuads}
+   * @group JsonLdToQuads
+   */
+  public static fromNodes(
+    nodes: Array<Record<string, unknown>>,
+    prefixMap: Record<string, string>
+  ): QuadInterface[] {
+    const ctx = makeConversionContext(prefixMap);
 
-  for (const node of nodes) {
-    const subjectRaw = node['@id'];
+    for (const node of nodes) {
+      const subjectRaw = node['@id'];
 
-    if (typeof subjectRaw !== 'string') {
-      continue;
+      if (typeof subjectRaw !== 'string') {
+        continue;
+      }
+      const subjectId = Curie.expandWithContext(subjectRaw, ctx.context);
+
+      emitNodeQuads(subjectId, node, ctx);
     }
-    const subjectId = Curie.expandWithContext(subjectRaw, ctx.context);
 
-    emitNodeQuads(subjectId, node, ctx);
+    return ctx.allQuads;
   }
 
-  return ctx.allQuads;
+  /**
+   * Parse N-Quads produced by jsonld.js v8.
+   *
+   * @remarks
+   * Handles lines of the form: `<subject> <predicate> <object> [<graph>] .`
+   * Comment lines (starting with `#`) and blank lines are ignored.
+   * Blank node subjects are recognized by the `_:` prefix. Literal objects
+   * with optional `^^<datatype>` or `@lang` suffixes are fully supported.
+   *
+   * @example
+   * ```ts
+   * const quads = JsonLdToQuads.fromNQuads(nquadsString);
+   * ```
+   *
+   * @param nquads - N-Quads document as a plain string.
+   * @returns Flat array of QuadInterface objects.
+   *
+   * @category RDF
+   * @since 0.18.0
+   * @see {@link JsonLdToQuads.fromNodes}
+   * @group JsonLdToQuads
+   */
+  public static fromNQuads(nquads: string): QuadInterface[] {
+    const quads: QuadInterface[] = [];
+    const lines = nquads.split('\n');
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      if (trimmed === '' || trimmed.startsWith('#')) {
+        continue;
+      }
+      const body = trimmed.endsWith(' .') ? trimmed.slice(0, -2).trimEnd() : trimmed;
+      const quad = parseNQuadLine(body);
+
+      if (quad !== undefined) {
+        quads.push(quad);
+      }
+    }
+
+    return quads;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -351,49 +399,6 @@ function parseNQuadLine(body: string): NQuadLineResultType {
   const objectTerm = parseNQuadObjectTerm(objectToken);
 
   return Terms.quad(subjectTerm, predicateTerm, objectTerm, Terms.defaultGraph());
-}
-
-/**
- * Parse N-Quads produced by jsonld.js v8.
- *
- * @remarks
- * Handles lines of the form: `<subject> <predicate> <object> [<graph>] .`
- * Comment lines (starting with `#`) and blank lines are ignored.
- * Blank node subjects are recognized by the `_:` prefix. Literal objects
- * with optional `^^<datatype>` or `@lang` suffixes are fully supported.
- *
- * @example
- * ```ts
- * const quads = parseNQuads(nquadsString);
- * ```
- *
- * @param nquads - N-Quads document as a plain string.
- * @returns Flat array of QuadInterface objects.
- *
- * @category RDF
- * @since 0.18.0
- * @see {@link jsonLdNodesToQuads}
- * @group JsonLdToQuads
- */
-export function parseNQuads(nquads: string): QuadInterface[] {
-  const quads: QuadInterface[] = [];
-  const lines = nquads.split('\n');
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    if (trimmed === '' || trimmed.startsWith('#')) {
-      continue;
-    }
-    const body = trimmed.endsWith(' .') ? trimmed.slice(0, -2).trimEnd() : trimmed;
-    const quad = parseNQuadLine(body);
-
-    if (quad !== undefined) {
-      quads.push(quad);
-    }
-  }
-
-  return quads;
 }
 
 function advancePastLiteralQuotes(line: string, startPos: number): number {

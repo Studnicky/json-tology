@@ -25,7 +25,7 @@ import {
   JsonTology, Skolemize
 } from '../../src/index.js';
 import { MaterializationError } from '../../src/errors/MaterializationError.js';
-import { isRecord } from '../../src/modules/data/DataTypes.js';
+import { DataType } from '../../src/modules/data/DataType.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type { SkolemizeFnType } from '../../src/types/SkolemizeFnType.js';
 
@@ -197,16 +197,16 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     const instance = lifted[0];
 
-    assert.ok(isRecord(instance), 'lifted instance is a record');
+    assert.ok(DataType.isRecord(instance), 'lifted instance is a record');
 
     const edge = instance.book;
 
-    assert.ok(isRecord(edge), 'book edge present');
+    assert.ok(DataType.isRecord(edge), 'book edge present');
     assert.equal(edge.target, BOOK_IRI);
 
     const annotations = edge.annotations;
 
-    assert.ok(isRecord(annotations), 'annotations present');
+    assert.ok(DataType.isRecord(annotations), 'annotations present');
     assert.equal(annotations.ratingGiven, 5);
     assert.equal(annotations.verifiedPurchase, true);
   });
@@ -218,12 +218,12 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     const validated = jt.instantiate(ReviewSchema, lifted[0]);
 
-    assert.ok(isRecord(validated), 'validated instance is a record');
+    assert.ok(DataType.isRecord(validated), 'validated instance is a record');
     assert.equal(validated.reviewId, 'rev-001');
 
     const edge = validated.book;
 
-    assert.ok(isRecord(edge), 'book edge present');
+    assert.ok(DataType.isRecord(edge), 'book edge present');
     assert.equal(edge.target, BOOK_IRI);
   });
 
@@ -543,16 +543,16 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     const liftedInstance = lifted[0];
 
-    assert.ok(isRecord(liftedInstance), 'lifted instance is a record');
+    assert.ok(DataType.isRecord(liftedInstance), 'lifted instance is a record');
 
     const liftedEdge = liftedInstance.book;
 
-    assert.ok(isRecord(liftedEdge), 'book edge present after round-trip');
+    assert.ok(DataType.isRecord(liftedEdge), 'book edge present after round-trip');
     assert.equal(liftedEdge.target, BOOK_IRI);
 
     const liftedAnnotations = liftedEdge.annotations;
 
-    assert.ok(isRecord(liftedAnnotations), 'annotations present after round-trip');
+    assert.ok(DataType.isRecord(liftedAnnotations), 'annotations present after round-trip');
     assert.equal(liftedAnnotations.ratingValue, 4, 'ratingValue annotation survives round-trip');
   });
 
@@ -636,7 +636,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
       const edge = (lifted[0] as Record<string, unknown>).book;
 
-      assert.ok(isRecord(edge), 'edge present');
+      assert.ok(DataType.isRecord(edge), 'edge present');
       assert.equal(edge.target, BOOK_IRI, 'target round-trips as string IRI');
     });
 

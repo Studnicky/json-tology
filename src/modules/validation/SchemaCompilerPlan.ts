@@ -54,7 +54,7 @@ import type { WalkInheritedRefOptionsType } from '../../types/WalkInheritedRefOp
 import type { ConstraintValidatorsResultType } from '../../types/ConstraintValidatorsResultType.js';
 import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
 import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { RefResolver } from '../graph/RefResolver.js';
@@ -110,7 +110,7 @@ const singleTypePredicates = new Map<string, (v: unknown) => boolean>([
   ],
   [
     'object',
-    isRecord
+    DataType.isRecord
   ],
   [
     'string',
@@ -755,7 +755,7 @@ function buildPropertyDefaults(opts: PropertyDefaultsOptionsType): PropertyDefau
     key,
     propNode
   ] of propertyEntries) {
-    if (!isRecord(propNode.schema)) {
+    if (!DataType.isRecord(propNode.schema)) {
       continue;
     }
     const propSem = graph.semantics(propNode);
@@ -1194,7 +1194,7 @@ function compileRdfsRangeValidator(
     ctx.refStack.add(rangeRefKey);
 
     try {
-      if (isRecord(value)) {
+      if (DataType.isRecord(value)) {
         return rangeValidator(value, path, ctx);
       }
 
@@ -1208,7 +1208,7 @@ function compileRdfsRangeValidator(
           i,
           item
         ] of items.entries()) {
-          if (isRecord(item) || Array.isArray(item)) {
+          if (DataType.isRecord(item) || Array.isArray(item)) {
             const itemRes = rangeValidator(item, `${path}/${i}`, ctx);
 
             if (!itemRes.valid) {

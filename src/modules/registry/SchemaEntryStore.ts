@@ -10,7 +10,7 @@ import type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryT
 import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStoreInterface.js';
 import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntryType.js';
 
-import { isRecord } from '../data/DataTypes.js';
+import { DataType } from '../data/DataType.js';
 import { StructuralHash } from '../data/StructuralHash.js';
 
 /**
@@ -185,12 +185,12 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
     topLevelHashes: Map<string, string>,
     results: DuplicateReportEntryType[]
   ): void {
-    if (isRecord(schema.properties)) {
+    if (DataType.isRecord(schema.properties)) {
       for (const [
         propName,
         propSchema
       ] of Object.entries(schema.properties)) {
-        if (!isRecord(propSchema)) {
+        if (!DataType.isRecord(propSchema)) {
           continue;
         }
         const propPointer = `${pointer}/properties/${propName}`;
@@ -227,7 +227,7 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
           idx,
           subSchema
         ] of compositionArr.entries()) {
-          if (!isRecord(subSchema)) {
+          if (!DataType.isRecord(subSchema)) {
             continue;
           }
           this.walkForDuplicates(schemaId, subSchema, `${pointer}/${compositionKey}/${idx}`, topLevelHashes, results);
@@ -235,12 +235,12 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
       }
     }
 
-    if (isRecord(schema.$defs)) {
+    if (DataType.isRecord(schema.$defs)) {
       for (const [
         defName,
         defSchema
       ] of Object.entries(schema.$defs)) {
-        if (!isRecord(defSchema)) {
+        if (!DataType.isRecord(defSchema)) {
           continue;
         }
         this.walkForDuplicates(schemaId, defSchema, `${pointer}/$defs/${defName}`, topLevelHashes, results);

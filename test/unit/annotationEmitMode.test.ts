@@ -29,7 +29,7 @@ import {
 
 import { Compose } from '../../src/modules/composition/Compose.js';
 import { JsonTology } from '../../src/index.js';
-import { isRecord } from '../../src/modules/data/DataTypes.js';
+import { DataType } from '../../src/modules/data/DataType.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 
 // ---------------------------------------------------------------------------
@@ -173,11 +173,11 @@ function liftedReviewEdge(mode: 'both' | 'flat-only' | 'star-only'): Record<stri
 
   const instance = lifted[0];
 
-  assert.ok(isRecord(instance), 'lifted instance is a record');
+  assert.ok(DataType.isRecord(instance), 'lifted instance is a record');
 
   const edge = instance.book;
 
-  assert.ok(isRecord(edge), 'book edge present');
+  assert.ok(DataType.isRecord(edge), 'book edge present');
 
   return edge;
 }
@@ -384,7 +384,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 
       const annotations = edge.annotations;
 
-      assert.ok(isRecord(annotations), 'annotations present');
+      assert.ok(DataType.isRecord(annotations), 'annotations present');
       assert.equal(annotations.ratingGiven, 5);
       assert.equal(annotations.verifiedPurchase, true);
     });
@@ -396,7 +396,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
 
       const annotations = edge.annotations;
 
-      assert.ok(isRecord(annotations), 'annotations present');
+      assert.ok(DataType.isRecord(annotations), 'annotations present');
       assert.equal(annotations.ratingGiven, 5);
       assert.equal(annotations.verifiedPurchase, true);
     });
@@ -412,7 +412,7 @@ void describe('annotationEmitMode — annotated-edge annotation projection', () 
       // limitation as a behavioural test (not just prose in the TSDoc).
       const annotations = edge.annotations;
 
-      assert.ok(isRecord(annotations), 'annotations object present (empty)');
+      assert.ok(DataType.isRecord(annotations), 'annotations object present (empty)');
       assert.equal(
         Object.keys(annotations).length,
         0,

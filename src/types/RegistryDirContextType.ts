@@ -14,7 +14,7 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  *
  * @category Codegen
  * @since 0.18.0
- * @see {@link generateRegistryFiles}
+ * @see {@link OwlCodegen.toRegistryFiles}
  * @group OWL Codegen
  */
 export type RegistryDirContextType = {

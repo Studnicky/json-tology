@@ -183,7 +183,7 @@ function recordCharacteristic(options: RecordCharacteristicOptionsType): void {
  *
  * @example
  * ```ts
- * const fragment = importCharacteristics(quads, ctx);
+ * const fragment = Characteristics.dispatch(quads, ctx);
  * // fragment.characteristics contains { propertyIri, characteristic } entries
  * ```
  *
@@ -192,34 +192,36 @@ function recordCharacteristic(options: RecordCharacteristicOptionsType): void {
  * @see OwlImportContextType
  * @group importDispatch
  */
-export function importCharacteristics(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-  const fragment = emptyFragment();
-  const seen = new Set<string>();
+export class Characteristics {
+  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+    const fragment = emptyFragment();
+    const seen = new Set<string>();
 
-  for (const relation of ctx.graph.allRelations()) {
-    if (relation.predicate !== RDF.type) {
-      continue;
+    for (const relation of ctx.graph.allRelations()) {
+      if (relation.predicate !== RDF.type) {
+        continue;
+      }
+
+      if (typeof relation.target !== 'string') {
+        continue;
+      }
+
+      const characteristicName = CHARACTERISTIC_IRI_MAP.get(relation.target);
+
+      if (characteristicName === undefined) {
+        continue;
+      }
+
+      recordCharacteristic({
+        characteristicName,
+        'characteristicTarget': relation.target,
+        ctx,
+        fragment,
+        'propertyIri': relation.source.id,
+        seen
+      });
     }
 
-    if (typeof relation.target !== 'string') {
-      continue;
-    }
-
-    const characteristicName = CHARACTERISTIC_IRI_MAP.get(relation.target);
-
-    if (characteristicName === undefined) {
-      continue;
-    }
-
-    recordCharacteristic({
-      characteristicName,
-      'characteristicTarget': relation.target,
-      ctx,
-      fragment,
-      'propertyIri': relation.source.id,
-      seen
-    });
+    return fragment;
   }
-
-  return fragment;
 }

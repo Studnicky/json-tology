@@ -1,5 +1,5 @@
 /**
- * Unit tests for OwlCodegen.generateTypeScript
+ * Unit tests for OwlCodegen.toTypeScript
  *
  * Good: single-class, multi-class with dependency order, bookstore round-trip counts.
  * Bad: IRI collision → _2 suffix, empty input → valid minimal emission.
@@ -10,9 +10,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import {
-  generateRegistryFiles, generateTypeScript
-} from '../../src/modules/codegen/OwlCodegen.js';
+import { OwlCodegen } from '../../src/modules/codegen/OwlCodegen.js';
 import { JsonTology } from '../../src/index.js';
 import {
   bookstoreEntities, bookstoreSchemas
@@ -60,19 +58,19 @@ void describe('OwlCodegen — Good: single-class ontology', () => {
   } as const;
 
   void it('emits export const WidgetSchema', () => {
-    const src = generateTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
 
     assert.ok(src.includes('export const WidgetSchema ='), 'should emit WidgetSchema const');
   });
 
   void it('emits as const suffix', () => {
-    const src = generateTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
 
     assert.ok(src.includes('as const;'), 'should emit as const');
   });
 
   void it('emits export type Widget threaded through the schema-set reference map', () => {
-    const src = generateTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
 
     assert.ok(
       src.includes('type exSchemasRefs = SchemaReferencesMapType<typeof exSchemas>;'),
@@ -85,33 +83,33 @@ void describe('OwlCodegen — Good: single-class ontology', () => {
   });
 
   void it('emits the registry array with WidgetSchema', () => {
-    const src = generateTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
 
     assert.ok(src.includes('exSchemas'), 'should emit exSchemas array');
     assert.ok(src.includes('WidgetSchema'), 'schema name in array');
   });
 
   void it('emits JsonTology.create call with registryConstName', () => {
-    const src = generateTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
 
     assert.ok(src.includes('export const ex = JsonTology.create('), 'should emit registry create');
   });
 
   void it('emits auto-generated banner with DO NOT EDIT', () => {
-    const src = generateTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
 
     assert.ok(src.includes('DO NOT EDIT'), 'should emit do not edit banner');
   });
 
   void it('emits import statements for json-tology and InferType', () => {
-    const src = generateTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
 
     assert.ok(src.includes("from 'json-tology'"), 'should import JsonTology');
     assert.ok(src.includes("from 'json-tology/types'"), 'should import InferType from default path');
   });
 
   void it('respects custom inferTypeImportPath', () => {
-    const src = generateTypeScript(resultFromSchemas([singleSchema]), {
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([singleSchema]), {
       'inferTypeImportPath': '../types/index.js',
       'registryConstName': 'ex'
     });
@@ -144,7 +142,7 @@ void describe('OwlCodegen — Good: dependency order', () => {
 
   void it('emits Price before LineItem and Order', () => {
     // Supply in reverse order to test sorting
-    const src = generateTypeScript(resultFromSchemas([
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([
       topSchema,
       midSchema,
       primitiveSchema
@@ -162,7 +160,7 @@ void describe('OwlCodegen — Good: dependency order', () => {
   });
 
   void it('emits schemas array in dependency order', () => {
-    const src = generateTypeScript(resultFromSchemas([
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([
       topSchema,
       midSchema,
       primitiveSchema
@@ -194,7 +192,7 @@ void describe('OwlCodegen — Good: bookstore TBox round-trip', () => {
     // produces 55 classes; threshold is 50 to allow minor variation.
     const tbox = bookstoreEntities.toTbox().jsonLd();
     const result = JsonTology.fromTbox(tbox);
-    const src = generateTypeScript(result, { 'registryConstName': 'bookstore' });
+    const src = OwlCodegen.toTypeScript(result, { 'registryConstName': 'bookstore' });
 
     const constMatches = [...src.matchAll(/^export const \w+Schema = /gmu)];
     const typeMatches = [...src.matchAll(/^export type \w+ = InferType</gmu)];
@@ -213,7 +211,7 @@ void describe('OwlCodegen — Good: bookstore TBox round-trip', () => {
     // Every bookstoreSchema $id should appear somewhere in the generated source
     const tbox = bookstoreEntities.toTbox().jsonLd();
     const result = JsonTology.fromTbox(tbox);
-    const src = generateTypeScript(result, { 'registryConstName': 'bookstore' });
+    const src = OwlCodegen.toTypeScript(result, { 'registryConstName': 'bookstore' });
 
     for (const schema of bookstoreSchemas) {
       assert.ok(
@@ -239,7 +237,7 @@ void describe('OwlCodegen — Bad: IRI collision detection', () => {
       'type': 'object'
     } as const;
 
-    const src = generateTypeScript(resultFromSchemas([
+    const src = OwlCodegen.toTypeScript(resultFromSchemas([
       schemaA,
       schemaB
     ]), { 'registryConstName': 'ex' });
@@ -258,7 +256,7 @@ void describe('OwlCodegen — Bad: IRI collision detection', () => {
 
 void describe('OwlCodegen — Bad: empty input', () => {
   void it('emits a valid TS file with imports and empty array but no schema consts', () => {
-    const src = generateTypeScript(emptyResult(), { 'registryConstName': 'empty' });
+    const src = OwlCodegen.toTypeScript(emptyResult(), { 'registryConstName': 'empty' });
 
     assert.ok(src.includes("from 'json-tology'"), 'should still emit imports');
     assert.ok(src.includes('export const emptySchemas = [] as const;'), 'should emit empty array');
@@ -287,7 +285,7 @@ void describe('OwlCodegen — Ugly: sameAs + characteristics in result', () => {
       'unsupported': []
     };
 
-    const src = generateTypeScript(result, { 'registryConstName': 'ex' });
+    const src = OwlCodegen.toTypeScript(result, { 'registryConstName': 'ex' });
 
     assert.ok(src.includes('.sameAs('), 'should emit sameAs call');
     assert.ok(src.includes('"urn:a"'), 'should emit first IRI');
@@ -308,7 +306,7 @@ void describe('OwlCodegen — Ugly: sameAs + characteristics in result', () => {
       'unsupported': []
     };
 
-    const src = generateTypeScript(result, { 'registryConstName': 'ex' });
+    const src = OwlCodegen.toTypeScript(result, { 'registryConstName': 'ex' });
 
     assert.ok(src.includes('.addCharacteristic('), 'should emit addCharacteristic call');
     assert.ok(src.includes('"urn:prop:id"'), 'should emit property IRI');
@@ -321,7 +319,7 @@ void describe('OwlCodegen — Ugly: sameAs + characteristics in result', () => {
 
 void describe('OwlCodegen — Ugly: banner customization', () => {
   void it('includes sourceLabel in generated banner', () => {
-    const src = generateTypeScript(emptyResult(), {
+    const src = OwlCodegen.toTypeScript(emptyResult(), {
       'registryConstName': 'ex',
       'sourceLabel': '/path/to/my.jsonld'
     });
@@ -330,7 +328,7 @@ void describe('OwlCodegen — Ugly: banner customization', () => {
   });
 
   void it('includes extra header lines', () => {
-    const src = generateTypeScript(emptyResult(), {
+    const src = OwlCodegen.toTypeScript(emptyResult(), {
       'header': [
         'Generated for project: example-project',
         'See: https://example.com'
@@ -362,7 +360,7 @@ void describe('OwlCodegen — registry-directory mode reference threading', () =
   };
 
   void it('index.ts exports the reference map over the schema tuple', () => {
-    const { indexSource } = generateRegistryFiles(resultFromSchemas([
+    const { indexSource } = OwlCodegen.toRegistryFiles(resultFromSchemas([
       schemaB,
       schemaA
     ]), { 'registryConstName': 'rt' });
@@ -374,7 +372,7 @@ void describe('OwlCodegen — registry-directory mode reference threading', () =
   });
 
   void it('entity files import and thread the reference map from the index', () => {
-    const { entityFiles } = generateRegistryFiles(resultFromSchemas([
+    const { entityFiles } = OwlCodegen.toRegistryFiles(resultFromSchemas([
       schemaB,
       schemaA
     ]), { 'registryConstName': 'rt' });

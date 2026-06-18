@@ -19,7 +19,7 @@
 
 import { JsonTology } from '../../src/JsonTology.js';
 import { Transform } from '../../src/modules/transform/Transform.js';
-import { brand } from '../../src/modules/data/Brand.js';
+import { Brand } from '../../src/modules/data/Brand.js';
 import type {
   ContainsBrandType,
   ContentEncodingBrandType,
@@ -228,7 +228,7 @@ const DateSchema = {
 // schema's canonical (branded, date-time) string; encode is the inverse.
 const _TransformedDateSchema = Transform.create(DateSchema, {
   'decode': (raw: { 'epoch': number }) => {
-    return brand(new Date(raw.epoch).toISOString());
+    return Brand.cast(new Date(raw.epoch).toISOString());
   },
   'encode': (value) => {
     return { 'epoch': new Date(value).getTime() };
