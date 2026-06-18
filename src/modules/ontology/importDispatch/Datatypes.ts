@@ -48,6 +48,9 @@ import {
   RDFS_DATATYPE_IRIS
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
 import { DECIMAL_RADIX } from '../../../constants/FORMAT_VALIDATION.js';
+import {
+  literalString, relationsByPredicate, targetValue
+} from './DispatchHelpers.js';
 
 // ---------------------------------------------------------------------------
 // XSD facet predicate → JSON Schema keyword mapping and XSD base type mapping
@@ -55,24 +58,8 @@ import { DECIMAL_RADIX } from '../../../constants/FORMAT_VALIDATION.js';
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Graph-native helpers
+// Graph-native helpers (local)
 // ---------------------------------------------------------------------------
-
-/** Resolve the IRI / bnode-id / lexical form of a relation target. */
-function targetValue(relation: SchemaGraphRelationType): string {
-  return typeof relation.target === 'string' ? relation.target : relation.target.id;
-}
-
-/** Filter outgoing relations on a subject by predicate set. */
-function relationsByPredicate(
-  graph: SchemaGraphInterface,
-  subject: string,
-  predicates: ReadonlySet<string>
-): readonly SchemaGraphRelationType[] {
-  return graph.relationsForSubject(subject).filter((rel: SchemaGraphRelationType): boolean => {
-    return predicates.has(rel.predicate);
-  });
-}
 
 /**
  * Extract a number from a Literal-typed relation target.
@@ -86,18 +73,6 @@ function literalNumber(relation: SchemaGraphRelationType): null | number {
   const num = Number(raw);
 
   return Number.isFinite(num) ? num : null;
-}
-
-/**
- * Extract a string from a Literal-typed relation target.
- * Returns null when the target is not a Literal.
- */
-function literalString(relation: SchemaGraphRelationType): null | string {
-  if (relation.termType !== 'Literal') {
-    return null;
-  }
-
-  return targetValue(relation);
 }
 
 /** Decode a Literal ListItemType back to its typed JS value. */

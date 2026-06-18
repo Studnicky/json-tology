@@ -35,6 +35,28 @@ export class SchemaIri {
     return segments.at(-1) ?? '';
   }
 
+  /**
+   * Strip trailing slashes from a base IRI.
+   *
+   * @param iri - A base IRI string, possibly with one or more trailing slashes.
+   * @returns The IRI with all trailing slashes removed.
+   *
+   * @example
+   * ```ts
+   * SchemaIri.normalizeBase('https://example.com/') // 'https://example.com'
+   * SchemaIri.normalizeBase('https://example.com')  // 'https://example.com'
+   * ```
+   */
+  static normalizeBase(iri: string): string {
+    let base = iri;
+
+    while (base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
+
+    return base;
+  }
+
   static parseRef(ref: string): { 'fragment': string;
     'id': string } {
     const hashIndex = ref.indexOf('#');

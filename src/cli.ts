@@ -122,13 +122,7 @@ function loadSchemas(schemaGlob: string): SchemaRegistryInterface {
 // ---------------------------------------------------------------------------
 
 function normalizeBaseIRI(value: string): string {
-  let baseIRI = value;
-
-  while (baseIRI.endsWith('/')) {
-    baseIRI = baseIRI.slice(0, -1);
-  }
-
-  return baseIRI;
+  return SchemaIri.normalizeBase(value);
 }
 
 function deriveBaseIRIFromSchemaId(schemaId: string): string {

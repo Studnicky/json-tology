@@ -48,15 +48,7 @@ import {
   EQUIVALENT_CLASS_PREDICATES,
   UNION_OF_IRIS
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
-
-// ---------------------------------------------------------------------------
-// Graph-native helpers
-// ---------------------------------------------------------------------------
-
-/** Resolve the IRI / bnode-id / lexical form of a relation target. */
-function targetValue(relation: SchemaGraphRelationType): string {
-  return typeof relation.target === 'string' ? relation.target : relation.target.id;
-}
+import { targetValue } from './DispatchHelpers.js';
 
 /**
  * Parse the legacy `owl:equivalentClass = <JSON-LD wrapper literal>` form.

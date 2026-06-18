@@ -42,24 +42,13 @@ import {
   SEE_ALSO_PREDICATES,
   VERSION_INFO_PREDICATES
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
+import {
+  literalString, namedNodeIri
+} from './DispatchHelpers.js';
 
 // ---------------------------------------------------------------------------
 // Relation-target extraction helpers — read from graph relations
 // ---------------------------------------------------------------------------
-
-/**
- * Extract the string value of a Literal-typed relation target.
- * Returns null when the relation does not carry a Literal target.
- */
-function literalString(relation: SchemaGraphRelationType): null | string {
-  if (relation.termType !== 'Literal') {
-    return null;
-  }
-
-  return typeof relation.target === 'string'
-    ? relation.target
-    : relation.target.id;
-}
 
 /**
  * Extract the language tag of a Literal-typed relation target.
@@ -71,20 +60,6 @@ function literalLanguage(relation: SchemaGraphRelationType): string {
   }
 
   return relation.language ?? '';
-}
-
-/**
- * Extract the IRI of a NamedNode-typed relation target.
- * Returns null when the relation does not carry a NamedNode target.
- */
-function namedNodeIri(relation: SchemaGraphRelationType): null | string {
-  if (relation.termType !== 'NamedNode') {
-    return null;
-  }
-
-  return typeof relation.target === 'string'
-    ? relation.target
-    : relation.target.id;
 }
 
 // ---------------------------------------------------------------------------

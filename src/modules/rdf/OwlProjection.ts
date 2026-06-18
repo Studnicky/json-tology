@@ -24,7 +24,7 @@ import type { OptionalQuadObjectType } from '../../types/OptionalQuadObjectType.
 import type { TypedLiteralObjectType } from '../../types/TypedLiteralObjectType.js';
 import type { EmitPatternPropertyEntryArgsType } from '../../types/EmitPatternPropertyEntryArgsType.js';
 import {
-  DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
+  DASH, DCT, JT, OWL, RDF, rdfMemberIri, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { OWL_CARDINALITY_PREDICATE_IRIS } from '../../constants/ONTOLOGY_PREDICATES.js';
 import {
@@ -1012,7 +1012,7 @@ function emitPrefixItemQuads(
       'constraintValue': QuadFactory.iri(typeRef, { curie }),
       curie,
       issuer,
-      'onProperty': `rdf:_${i + 1}`,
+      'onProperty': rdfMemberIri(i + 1),
       quads
     });
 

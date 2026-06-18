@@ -77,6 +77,7 @@ import { BaseError } from './errors/BaseError.js';
 import { EncodeError } from './errors/EncodeError.js';
 import { TransformError } from './errors/TransformError.js';
 import { PredicateResolver } from './modules/graph/PredicateResolver.js';
+import { SchemaIri } from './modules/graph/SchemaIri.js';
 import { SchemaError } from './errors/SchemaError.js';
 import type { DuplicateReportEntryType } from './types/DuplicateReportEntryType.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
@@ -91,8 +92,7 @@ import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import {
   SchemaErrorCode, TransformErrorCode
 } from './constants/ERROR_CODES.js';
-
-const JT_STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
+import { JT_STATIC_BASE_IRI } from './constants/IRI.js';
 
 /**
  * The literal string `'blank-node'` requests anonymous-node subjects
@@ -829,12 +829,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param options - Configuration including `baseIRI`, prefixes, format validators, `enableTypeCast`, `enableStrictTypes`, and logger.
    */
   private constructor(options: JsonTologyOptionsType) {
-    let baseIRI = options.baseIRI;
-
-    while (baseIRI.endsWith('/')) {
-      baseIRI = baseIRI.slice(0, -1);
-    }
-    this.baseIRI = baseIRI;
+    this.baseIRI = SchemaIri.normalizeBase(options.baseIRI);
     this.logger = options.logger ?? SILENT_LOGGER;
 
     this.defaultGraphIRI = options.defaultGraphIRI;

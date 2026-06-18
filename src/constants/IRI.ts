@@ -347,3 +347,34 @@ export const JT = {
   'multipleOf': `${JT_NS}multipleOf`,
   'thenBranch': `${JT_NS}then`
 } as const;
+
+/**
+ * RFC 7807 Problem Details type IRI for json-tology validation failures.
+ *
+ * @category IRI
+ * @since 0.25.0
+ * @group Constants
+ */
+export const JT_VALIDATION_PROBLEM_TYPE = 'https://json-tology.dev/problems/validation';
+
+/**
+ * Static base IRI used by ephemeral single-schema registries (static convenience methods).
+ *
+ * @category IRI
+ * @since 0.25.0
+ * @group Constants
+ */
+export const JT_STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
+
+/**
+ * Produce the RDF container membership property compact IRI for position `n`.
+ * e.g. `rdfMemberIri(1)` → `'rdf:_1'`
+ *
+ * @param n - 1-based container membership index
+ * @category IRI
+ * @since 0.25.0
+ * @group Constants
+ */
+export function rdfMemberIri(n: number): string {
+  return `rdf:_${n}`;
+}

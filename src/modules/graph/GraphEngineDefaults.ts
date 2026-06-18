@@ -7,6 +7,7 @@ import { GraphEngineSupport } from './GraphEngineSupport.js';
 import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntryType.js';
 import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContextType.js';
 import { MAX_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
+import { isRecord } from '../data/DataTypes.js';
 import type { DefaultResolutionStateType } from '../../types/DefaultResolutionStateType.js';
 
 function propertiesFromSemantics(sem: SchemaGraphSemanticsType): ReadonlyMap<string, SchemaGraphNodeType> {
@@ -130,13 +131,13 @@ function synthesizeAllOfZeroValue(
   for (const memberNode of allOf) {
     const memberValue = synthesizeZeroValueInternal(state, memberNode, depth + 1);
 
-    if (memberValue !== null && memberValue !== undefined && typeof memberValue === 'object' && !Array.isArray(memberValue)) {
+    if (memberValue !== null && memberValue !== undefined && isRecord(memberValue)) {
       hasObjectMember = true;
 
       for (const [
         key,
         val
-      ] of Object.entries(memberValue as Record<string, unknown>)) {
+      ] of Object.entries(memberValue)) {
         merged[key] = val;
       }
     }

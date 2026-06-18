@@ -48,18 +48,6 @@ import {
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
 
 // ---------------------------------------------------------------------------
-// XSD IRI → JSON Schema { type, format? } reverse map — imported from constants
-// ---------------------------------------------------------------------------
-
-/**
- * Resolve an XSD datatype IRI (full or prefixed) to its JSON Schema primitive.
- * Returns null when the IRI is not a recognised XSD primitive.
- */
-function xsdToJsonSchema(iri: string): null | XsdJsonSchemaPrimitiveType {
-  return XSD_TO_JSON_SCHEMA.get(iri) ?? null;
-}
-
-// ---------------------------------------------------------------------------
 // Property IRI → local name extraction
 // ---------------------------------------------------------------------------
 
@@ -257,7 +245,7 @@ function resolvePropertyShape(
     return null;
   }
 
-  const xsdPrimitive = xsdToJsonSchema(range);
+  const xsdPrimitive = XSD_TO_JSON_SCHEMA.get(range) ?? null;
 
   if (xsdPrimitive !== null) {
     return xsdPrimitiveShape(xsdPrimitive);
@@ -277,7 +265,7 @@ function resolvePropertyShape(
     return null;
   }
 
-  const expandedPrimitive = xsdToJsonSchema(expanded);
+  const expandedPrimitive = XSD_TO_JSON_SCHEMA.get(expanded) ?? null;
 
   return expandedPrimitive === null ? { '$ref': expanded } : xsdPrimitiveShape(expandedPrimitive);
 }

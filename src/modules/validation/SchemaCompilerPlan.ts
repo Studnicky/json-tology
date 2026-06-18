@@ -87,10 +87,6 @@ const typePredicateNull = (value: unknown): boolean => {
 const typePredicateArray = (value: unknown): boolean => {
   return Array.isArray(value);
 };
-const typePredicateObject = (value: unknown): boolean => {
-  return value !== null && !Array.isArray(value) && typeof value === 'object';
-};
-
 const singleTypePredicates = new Map<string, (v: unknown) => boolean>([
   [
     'array',
@@ -114,7 +110,7 @@ const singleTypePredicates = new Map<string, (v: unknown) => boolean>([
   ],
   [
     'object',
-    typePredicateObject
+    isRecord
   ],
   [
     'string',

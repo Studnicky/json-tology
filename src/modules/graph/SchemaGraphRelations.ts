@@ -11,7 +11,7 @@ import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import { isRecord } from '../data/DataTypes.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
-  DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
+  DASH, DCT, JT, OWL, RDF, rdfMemberIri, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { RESTRICTION_PREDICATE_MAP } from '../../constants/ONTOLOGY_PREDICATES.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
@@ -286,7 +286,7 @@ function pushPrefixItemRelations(ctx: RelationsPushContextType): void {
 
     relations.push({
       'metadata': {
-        'memberProperty': `rdf:_${index + 1}`,
+        'memberProperty': rdfMemberIri(index + 1),
         'position': index
       },
       'predicate': RDFS.member,
