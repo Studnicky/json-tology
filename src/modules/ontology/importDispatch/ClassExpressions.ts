@@ -52,11 +52,7 @@ import {
   RESTRICTION_IRIS,
   UNION_OF_IRIS
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
-import {
-  decodeListItemLiteral,
-  relationsByPredicate,
-  targetValue
-} from './DispatchHelpers.js';
+import { ImportRelation } from './ImportRelation.js';
 
 /** Maximum recursion depth for blank-node class expression resolution. */
 const MAX_BNODE_DEPTH = 20;
@@ -67,16 +63,16 @@ const MAX_BNODE_DEPTH = 20;
 
 /** Return true when the blank node is an owl:Restriction or has onProperty. */
 function isBnodeRestriction(bnodeId: string, graph: SchemaGraphInterface): boolean {
-  const typeRelations = relationsByPredicate(graph, bnodeId, RDF_TYPE_PREDICATES);
+  const typeRelations = ImportRelation.byPredicate(graph, bnodeId, RDF_TYPE_PREDICATES);
   const isRestrictionType = typeRelations.some((rel: SchemaGraphRelationType): boolean => {
-    return rel.termType === 'NamedNode' && RESTRICTION_IRIS.has(targetValue(rel));
+    return rel.termType === 'NamedNode' && RESTRICTION_IRIS.has(ImportRelation.targetValue(rel));
   });
 
   if (isRestrictionType) {
     return true;
   }
 
-  return relationsByPredicate(graph, bnodeId, ON_PROPERTY_IRIS).length > 0;
+  return ImportRelation.byPredicate(graph, bnodeId, ON_PROPERTY_IRIS).length > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -129,7 +125,7 @@ function resolveBlankNodeExpression(options: ResolveBnodeOptionsType): JsonSchem
     allClassIris, bnodeId, depth, graph
   } = options;
 
-  const intersection = relationsByPredicate(graph, bnodeId, INTERSECTION_OF_IRIS);
+  const intersection = ImportRelation.byPredicate(graph, bnodeId, INTERSECTION_OF_IRIS);
 
   if (intersection.length > 0) {
     const intersection0 = intersection.at(0);
@@ -142,11 +138,11 @@ function resolveBlankNodeExpression(options: ResolveBnodeOptionsType): JsonSchem
       allClassIris,
       depth,
       graph,
-      'listHead': targetValue(intersection0)
+      'listHead': ImportRelation.targetValue(intersection0)
     });
   }
 
-  const union = relationsByPredicate(graph, bnodeId, UNION_OF_IRIS);
+  const union = ImportRelation.byPredicate(graph, bnodeId, UNION_OF_IRIS);
 
   if (union.length > 0) {
     const union0 = union.at(0);
@@ -159,7 +155,7 @@ function resolveBlankNodeExpression(options: ResolveBnodeOptionsType): JsonSchem
       allClassIris,
       depth,
       graph,
-      'listHead': targetValue(union0)
+      'listHead': ImportRelation.targetValue(union0)
     });
   }
 
@@ -276,12 +272,12 @@ function extractHasValueDiscriminator(
   graph: SchemaGraphInterface
 ): undefined | { 'property': string;
   'value': string } {
-  const hasValueRelations = relationsByPredicate(graph, bnodeId, HAS_VALUE_IRIS);
+  const hasValueRelations = ImportRelation.byPredicate(graph, bnodeId, HAS_VALUE_IRIS);
 
   if (hasValueRelations.length === 0) {
     return undefined;
   }
-  const onPropertyRelations = relationsByPredicate(graph, bnodeId, ON_PROPERTY_IRIS);
+  const onPropertyRelations = ImportRelation.byPredicate(graph, bnodeId, ON_PROPERTY_IRIS);
 
   if (onPropertyRelations.length === 0) {
     return undefined;
@@ -296,7 +292,7 @@ function extractHasValueDiscriminator(
   if (propertyRel.termType !== 'NamedNode') {
     return undefined;
   }
-  const propertyIri = targetValue(propertyRel);
+  const propertyIri = ImportRelation.targetValue(propertyRel);
   const localName = SchemaIri.propertyName(propertyIri);
 
   const valueRel = hasValueRelations.at(0);
@@ -311,7 +307,7 @@ function extractHasValueDiscriminator(
 
   return {
     'property': localName,
-    'value': targetValue(valueRel)
+    'value': ImportRelation.targetValue(valueRel)
   };
 }
 
@@ -338,7 +334,7 @@ function extractEnumValues(
     switch (item.termType) {
       case 'BlankNode': {
         // Blank-node individual with owl:hasValue.
-        const hvRelations = relationsByPredicate(graph, item.target, HAS_VALUE_IRIS);
+        const hvRelations = ImportRelation.byPredicate(graph, item.target, HAS_VALUE_IRIS);
 
         if (hvRelations.length > 0) {
           const hv = hvRelations.at(0);
@@ -348,20 +344,20 @@ function extractEnumValues(
           }
 
           if (hv.termType === 'Literal') {
-            const literalTerm = Terms.literal(targetValue(hv), {
+            const literalTerm = Terms.literal(ImportRelation.targetValue(hv), {
               'datatype': Terms.iri(hv.datatype ?? ''),
               'language': hv.language ?? ''
             });
 
             values.push(decodeLiteral(literalTerm));
           } else {
-            values.push(targetValue(hv));
+            values.push(ImportRelation.targetValue(hv));
           }
         }
         break;
       }
       case 'Literal':
-        values.push(decodeListItemLiteral(item));
+        values.push(ImportRelation.decodeListItem(item));
         break;
       case 'NamedNode':
         values.push(item.target);
@@ -383,14 +379,14 @@ function applyIntersectionOf(
   subjectId: string,
   ctx: ClassExprContextType
 ): void {
-  const intersection = relationsByPredicate(ctx.graph, subjectId, INTERSECTION_OF_IRIS);
+  const intersection = ImportRelation.byPredicate(ctx.graph, subjectId, INTERSECTION_OF_IRIS);
 
   for (const iq of intersection) {
     const members = resolveListMembers({
       'allClassIris': ctx.allClassIris,
       'depth': 0,
       'graph': ctx.graph,
-      'listHead': targetValue(iq)
+      'listHead': ImportRelation.targetValue(iq)
     });
 
     if (members.length > 0) {
@@ -408,10 +404,10 @@ function applyIntersectionOf(
  * Apply `owl:unionOf` relations for a single class subject (with discriminator detection).
  */
 function applyUnionOf(subjectId: string, ctx: ClassExprContextType): boolean {
-  const union = relationsByPredicate(ctx.graph, subjectId, UNION_OF_IRIS);
+  const union = ImportRelation.byPredicate(ctx.graph, subjectId, UNION_OF_IRIS);
 
   for (const uq of union) {
-    const listHead = targetValue(uq);
+    const listHead = ImportRelation.targetValue(uq);
     const listItems = ctx.graph.collectList(listHead);
     const discriminatorProp = detectDiscriminatorProperty(listItems, ctx.graph);
 
@@ -446,14 +442,14 @@ function applyUnionOf(subjectId: string, ctx: ClassExprContextType): boolean {
  * Apply `owl:disjointUnionOf` relations for a single class subject.
  */
 function applyDisjointUnionOf(subjectId: string, ctx: ClassExprContextType): boolean {
-  const disjointUnion = relationsByPredicate(ctx.graph, subjectId, DISJOINT_UNION_OF_IRIS);
+  const disjointUnion = ImportRelation.byPredicate(ctx.graph, subjectId, DISJOINT_UNION_OF_IRIS);
 
   for (const duq of disjointUnion) {
     const members = resolveListMembers({
       'allClassIris': ctx.allClassIris,
       'depth': 0,
       'graph': ctx.graph,
-      'listHead': targetValue(duq)
+      'listHead': ImportRelation.targetValue(duq)
     });
 
     if (members.length > 0) {
@@ -474,10 +470,10 @@ function applyDisjointUnionOf(subjectId: string, ctx: ClassExprContextType): boo
  * Only call when no unionOf / disjointUnionOf already covers the subject.
  */
 function applyOneOf(subjectId: string, ctx: ClassExprContextType): void {
-  const oneOf = relationsByPredicate(ctx.graph, subjectId, ONE_OF_IRIS);
+  const oneOf = ImportRelation.byPredicate(ctx.graph, subjectId, ONE_OF_IRIS);
 
   for (const oq of oneOf) {
-    const enumValues = extractEnumValues(targetValue(oq), ctx.graph);
+    const enumValues = extractEnumValues(ImportRelation.targetValue(oq), ctx.graph);
 
     if (enumValues.length > 0) {
       const existing = ctx.schemaDeltas.get(subjectId) ?? {};

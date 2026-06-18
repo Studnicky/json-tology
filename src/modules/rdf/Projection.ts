@@ -45,7 +45,7 @@ import { PredicateResolver } from '../graph/PredicateResolver.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Hash } from '../hash/Hash.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
-import { findAnnotatedEdgeStructure } from './ProjectionHelpers.js';
+import { PropertyProjection } from './PropertyProjection.js';
 import { resolveRef as canonicalResolveRef } from '../graph/RefResolution.js';
 
 // ---------------------------------------------------------------------------
@@ -417,7 +417,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
   const propertyValue = data[propertyName];
   const propertyNode = propertyEntry.node;
   const propertyGraph = propertyEntry.graph;
-  const annotatedEdge = findAnnotatedEdgeStructure(propertyGraph, propertyNode);
+  const annotatedEdge = PropertyProjection.findAnnotatedEdge(propertyGraph, propertyNode);
 
   if (annotatedEdge !== undefined) {
     projectAnnotatedEdge({

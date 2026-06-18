@@ -33,10 +33,7 @@ import { decodeLiteral } from '../../quads/Terms.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { isRecord } from '../../data/DataTypes.js';
-import {
-  namedNodeIri,
-  targetValue
-} from './DispatchHelpers.js';
+import { ImportRelation } from './ImportRelation.js';
 import {
   ALL_DIFFERENT_IRIS,
   ASSERTION_PROPERTY_IRIS,
@@ -261,7 +258,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
 
     for (const relation of subjectRelations) {
       if (predicateIn(relation, RDF_TYPE_PREDICATES)) {
-        const objectIri = namedNodeIri(relation);
+        const objectIri = ImportRelation.namedNodeIri(relation);
 
         if (objectIri === null || NAMED_INDIVIDUAL_IRIS.has(objectIri)) {
           continue;
@@ -282,7 +279,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
       if (relation.termType === 'Literal') {
         value = literalTarget(relation);
       } else if (relation.termType === 'NamedNode') {
-        value = namedNodeIri(relation);
+        value = ImportRelation.namedNodeIri(relation);
       } else {
         continue;
       }
@@ -318,7 +315,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
       continue;
     }
     const iriA = relation.source.id;
-    const iriB = namedNodeIri(relation);
+    const iriB = ImportRelation.namedNodeIri(relation);
 
     if (iriB === null || iriA === iriB || iriA.startsWith('_:') || iriB.startsWith('_:')) {
       continue;
@@ -344,7 +341,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
       continue;
     }
     const iriA = relation.source.id;
-    const iriB = namedNodeIri(relation);
+    const iriB = ImportRelation.namedNodeIri(relation);
 
     if (iriB === null || iriA.startsWith('_:') || iriB.startsWith('_:')) {
       continue;
@@ -376,7 +373,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
         continue;
       }
 
-      const listHead = targetValue(dmRelation);
+      const listHead = ImportRelation.targetValue(dmRelation);
       const memberIris: string[] = [];
 
       for (const item of ctx.graph.collectList(listHead)) {
@@ -425,13 +422,13 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
 
     for (const sibling of siblings) {
       if (predicateIn(sibling, SOURCE_INDIVIDUAL_IRIS)) {
-        sourceIndividual = namedNodeIri(sibling);
+        sourceIndividual = ImportRelation.namedNodeIri(sibling);
       } else if (predicateIn(sibling, ASSERTION_PROPERTY_IRIS)) {
-        assertionProperty = namedNodeIri(sibling);
+        assertionProperty = ImportRelation.namedNodeIri(sibling);
       } else if (predicateIn(sibling, TARGET_INDIVIDUAL_IRIS)) {
-        target = namedNodeIri(sibling);
+        target = ImportRelation.namedNodeIri(sibling);
       } else if (predicateIn(sibling, TARGET_VALUE_IRIS)) {
-        target = sibling.termType === 'Literal' ? literalTarget(sibling) : namedNodeIri(sibling);
+        target = sibling.termType === 'Literal' ? literalTarget(sibling) : ImportRelation.namedNodeIri(sibling);
       }
     }
 
@@ -466,7 +463,7 @@ export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext
       continue;
     }
 
-    const listHead = targetValue(relation);
+    const listHead = ImportRelation.targetValue(relation);
     const propertyIris: string[] = [];
 
     for (const item of ctx.graph.collectList(listHead)) {

@@ -48,7 +48,7 @@ import {
   EQUIVALENT_CLASS_PREDICATES,
   UNION_OF_IRIS
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
-import { targetValue } from './DispatchHelpers.js';
+import { ImportRelation } from './ImportRelation.js';
 
 /**
  * Parse the legacy `owl:equivalentClass = <JSON-LD wrapper literal>` form.
@@ -127,7 +127,7 @@ function extractEquivalentMembersFromGraph(
     return [];
   }
 
-  const listHead = targetValue(firstUnionRelation);
+  const listHead = ImportRelation.targetValue(firstUnionRelation);
   const members: string[] = [];
 
   for (const item of graph.collectList(listHead)) {
@@ -376,7 +376,7 @@ function applyEquivalentClassBlankNode(
   relation: SchemaGraphRelationType,
   subjectIri: string
 ): void {
-  const members = extractEquivalentMembersFromGraph(targetValue(relation), options.graph);
+  const members = extractEquivalentMembersFromGraph(ImportRelation.targetValue(relation), options.graph);
 
   if (members.length > 1) {
     const anyOf = members.map((memberIri: string): { '$ref': string } => {
@@ -415,7 +415,7 @@ function applyEquivalentClassLiteral(
   subjectIri: string,
   reportUnsupported: OwlImportContextType['reportUnsupported']
 ): void {
-  const members = parseUnionLiteralWrapper(targetValue(relation));
+  const members = parseUnionLiteralWrapper(ImportRelation.targetValue(relation));
 
   if (members.length > 0) {
     const firstMember = members[0];
@@ -451,7 +451,7 @@ function applyDisjointUnionOf(
     return;
   }
 
-  const listHead = targetValue(relation);
+  const listHead = ImportRelation.targetValue(relation);
   const members: string[] = [];
 
   for (const item of options.graph.collectList(listHead)) {

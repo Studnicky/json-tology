@@ -34,11 +34,7 @@ import { XSD_IRI_PREFIX } from '../../constants/STANDARD_PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { QuadEmit } from './QuadEmit.js';
-import {
-  finiteNumber,
-  resolvePropertySchema,
-  resolveRestrictionOnProperty
-} from './ProjectionHelpers.js';
+import { PropertyProjection } from './PropertyProjection.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexType } from '../../types/RelationIndexType.js';
 import { VocabProjection } from './VocabProjection.js';
@@ -574,10 +570,10 @@ function emitRestrictionPropertyShape(
   // constraint) to the shared quads array.
   // Any early return below produces no quads — no orphaned PropertyShape nodes.
   const pending: Array<[string, QuadObjectType]> = [];
-  const flatOnProperty = resolveRestrictionOnProperty(onProperty, graph, predicateResolver);
+  const flatOnProperty = PropertyProjection.resolveRestriction(onProperty, graph, predicateResolver);
 
   if (OWL_CARDINALITY_PREDICATE_IRIS.has(constraint)) {
-    const n = finiteNumber(value);
+    const n = PropertyProjection.finiteNumber(value);
 
     if (n === undefined) {
       return undefined;
@@ -918,7 +914,7 @@ function emitPropertyShape(args: EmitPropertyShapeArgsType): void {
   const pathClassId = overridePathClassId
     ?? (domainRels.length > 0 && domainRel0 !== undefined ? ProjectionIndex.relationTargetId(domainRel0) : classId);
   const propName = SchemaIri.lastSegment(subject);
-  const propertySchema = resolvePropertySchema(graph, subject);
+  const propertySchema = PropertyProjection.resolveSchema(graph, subject);
   const canonicalId = predicateResolver === undefined
     ? SchemaIri.propertyIri(pathClassId, propName)
     : predicateResolver({

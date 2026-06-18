@@ -1,5 +1,5 @@
 /**
- * Regression test for ProjectionHelpers.ts — resolvePropertySchema must:
+ * Regression test for PropertyProjection.ts — PropertyProjection.resolveSchema must:
  *   - Return {} for POINTER_NOT_FOUND (tolerated miss; the pointer path does not
  *     exist in the graph, which is a normal caller-recovery situation).
  *   - Re-throw any other GraphError, including POINTER_INVALID (a pointer that
@@ -14,7 +14,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { resolvePropertySchema } from '../../src/modules/rdf/ProjectionHelpers.js';
+import { PropertyProjection } from '../../src/modules/rdf/PropertyProjection.js';
 import { GraphError } from '../../src/errors/GraphError.js';
 
 // ---------------------------------------------------------------------------
@@ -31,13 +31,13 @@ const BookSchema = {
 // Tests
 // ---------------------------------------------------------------------------
 
-void describe('resolvePropertySchema — pointer error handling', () => {
+void describe('PropertyProjection.resolveSchema — pointer error handling', () => {
   const graph = new SchemaGraph(BookSchema);
 
   void it('returns the property schema when the pointer resolves normally', () => {
     // subject with a valid pointer path that exists in the graph
     const subject = 'https://example.com/Book#/properties/title';
-    const schema = resolvePropertySchema(graph, subject);
+    const schema = PropertyProjection.resolveSchema(graph, subject);
 
     assert.deepEqual(schema, { 'type': 'string' });
   });
@@ -46,7 +46,7 @@ void describe('resolvePropertySchema — pointer error handling', () => {
     // /properties/nonexistent is a valid JSON Pointer (starts with /) but
     // there is no such property in this graph — SchemaGraph throws POINTER_NOT_FOUND.
     const subject = 'https://example.com/Book#/properties/nonexistent';
-    const schema = resolvePropertySchema(graph, subject);
+    const schema = PropertyProjection.resolveSchema(graph, subject);
 
     assert.deepEqual(schema, {}, 'POINTER_NOT_FOUND should be swallowed and return {}');
   });
@@ -58,7 +58,7 @@ void describe('resolvePropertySchema — pointer error handling', () => {
 
     assert.throws(
       () => {
-        resolvePropertySchema(graph, subject);
+        PropertyProjection.resolveSchema(graph, subject);
       },
       (err: unknown) => {
         assert.ok(err instanceof GraphError, `expected GraphError, got ${String(err)}`);

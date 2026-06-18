@@ -46,7 +46,7 @@ import { GraphError } from '../../errors/GraphError.js';
 
 import { Lists } from '../quads/Lists.js';
 import { decodeLiteral } from '../quads/Terms.js';
-import { findAnnotatedEdgeStructure } from './ProjectionHelpers.js';
+import { PropertyProjection } from './PropertyProjection.js';
 
 // ---------------------------------------------------------------------------
 // Lift internals
@@ -470,7 +470,7 @@ function liftPropertyValue(pvArgs: LiftPropertyValueArgsType): unknown {
   } = pvArgs;
   const propNode = propEntry.node;
   const propGraph = propEntry.graph;
-  const edge = findAnnotatedEdgeStructure(propGraph, propNode);
+  const edge = PropertyProjection.findAnnotatedEdge(propGraph, propNode);
 
   if (edge !== undefined) {
     return liftAnnotatedEdge({

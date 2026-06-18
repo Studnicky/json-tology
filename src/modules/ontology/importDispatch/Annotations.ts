@@ -42,9 +42,7 @@ import {
   SEE_ALSO_PREDICATES,
   VERSION_INFO_PREDICATES
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
-import {
-  literalString, namedNodeIri
-} from './DispatchHelpers.js';
+import { ImportRelation } from './ImportRelation.js';
 
 // ---------------------------------------------------------------------------
 // Relation-target extraction helpers — read from graph relations
@@ -273,7 +271,7 @@ function applyLabelRelation(
   relation: SchemaGraphRelationType,
   acc: AnnotationAccumulatorType
 ): void {
-  const value = literalString(relation);
+  const value = ImportRelation.literalString(relation);
 
   if (value !== null) {
     appendLangValue(acc.labels, literalLanguage(relation), value);
@@ -285,7 +283,7 @@ function applyCommentRelation(
   relation: SchemaGraphRelationType,
   acc: AnnotationAccumulatorType
 ): void {
-  const value = literalString(relation);
+  const value = ImportRelation.literalString(relation);
 
   if (value !== null) {
     appendLangValue(acc.comments, literalLanguage(relation), value);
@@ -309,7 +307,7 @@ function dispatchLiteralRelation(
     return;
   }
   if (DEPRECATED_PREDICATES.has(predicateIri)) {
-    const value = literalString(relation);
+    const value = ImportRelation.literalString(relation);
 
     if (value !== null && value.toLowerCase() === 'true') {
       acc.deprecated = true;
@@ -318,7 +316,7 @@ function dispatchLiteralRelation(
     return;
   }
   if (VERSION_INFO_PREDICATES.has(predicateIri)) {
-    const value = literalString(relation);
+    const value = ImportRelation.literalString(relation);
 
     if (value !== null) {
       acc.versionInfo.push(value);
@@ -333,7 +331,7 @@ function dispatchIriRelation(
   acc: AnnotationAccumulatorType
 ): void {
   if (IS_DEFINED_BY_PREDICATES.has(predicateIri)) {
-    const iri = namedNodeIri(relation) ?? literalString(relation);
+    const iri = ImportRelation.namedNodeIri(relation) ?? ImportRelation.literalString(relation);
 
     if (iri !== null) {
       acc.isDefinedBy.push(iri);
@@ -342,7 +340,7 @@ function dispatchIriRelation(
     return;
   }
   if (SEE_ALSO_PREDICATES.has(predicateIri)) {
-    const iri = namedNodeIri(relation) ?? literalString(relation);
+    const iri = ImportRelation.namedNodeIri(relation) ?? ImportRelation.literalString(relation);
 
     if (iri !== null) {
       acc.seeAlso.push(iri);
@@ -351,7 +349,7 @@ function dispatchIriRelation(
     return;
   }
   if (ALT_LABEL_PREDICATES.has(predicateIri)) {
-    const value = literalString(relation);
+    const value = ImportRelation.literalString(relation);
 
     if (value !== null) {
       appendLangValue(acc.altLabels, literalLanguage(relation), value);

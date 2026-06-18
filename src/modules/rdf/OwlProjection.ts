@@ -40,13 +40,7 @@ import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexType } from '../../types/RelationIndexType.js';
 import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
 import { VocabProjection } from './VocabProjection.js';
-import {
-  finiteNumber,
-  propertySubjectIri,
-  resolveCanonicalPropertyIri,
-  resolvePropertySchema,
-  resolveRestrictionOnProperty
-} from './ProjectionHelpers.js';
+import { PropertyProjection } from './PropertyProjection.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 
@@ -255,7 +249,7 @@ function isPrimitiveEntry(entry: RelationIndexType): boolean {
 // OWL_CARDINALITY_PREDICATE_IRIS imported from ONTOLOGY_PREDICATES
 
 function cardinalityConstraintValue(value: unknown, curie: CurieInterface | undefined): OptionalQuadObjectType {
-  const n = finiteNumber(value);
+  const n = PropertyProjection.finiteNumber(value);
 
   if (n === undefined) {
     return undefined;
@@ -526,7 +520,7 @@ function emitClassSubClassRelations(
       const constraintValue = restrictionConstraintValue(constraint, value, curie);
 
       if (constraintValue !== undefined) {
-        const flatOnProperty = resolveRestrictionOnProperty(onProperty, graph, predicateResolver);
+        const flatOnProperty = PropertyProjection.resolveRestriction(onProperty, graph, predicateResolver);
         const rBnode = emitRestriction({
           constraint,
           'constraintValue': constraintValue,
@@ -562,12 +556,12 @@ function emitClassRestrictionRelations(
     let onProperty: string;
 
     if (predicateResolver !== undefined && typeof meta.propertyName === 'string') {
-      const propSubject = propertySubjectIri(subject, meta.propertyName);
+      const propSubject = PropertyProjection.subjectIri(subject, meta.propertyName);
 
       onProperty = predicateResolver({
         'classId': subject,
         'propertyName': meta.propertyName,
-        'propertySchema': resolvePropertySchema(graph, propSubject)
+        'propertySchema': PropertyProjection.resolveSchema(graph, propSubject)
       });
     } else if (typeof meta.onProperty === 'string' && meta.onProperty !== '') {
       onProperty = meta.onProperty;
@@ -900,7 +894,7 @@ function emitPropertyQuads(
     ? SchemaIri.structuralParent(subject)
     : ProjectionIndex.relationTargetId(firstDomainRel);
 
-  const canonicalId = resolveCanonicalPropertyIri({
+  const canonicalId = PropertyProjection.resolveCanonicalIri({
     'fallback': canonicalPropertyIri,
     graph,
     predicateResolver,
@@ -999,7 +993,7 @@ function emitContainsQuads(
       continue;
     }
     // Resolve the class-scoped onProperty to the flat canonical predicate IRI.
-    const onProp = resolveRestrictionOnProperty(structure.onProperty, graph, predicateResolver);
+    const onProp = PropertyProjection.resolveRestriction(structure.onProperty, graph, predicateResolver);
     const containsTypeRef = String(structure.value);
     const containsIri = QuadFactory.iri(containsTypeRef, { curie });
     const rBnode = emitRestriction({
@@ -1153,7 +1147,7 @@ function emitArrayItemQuads(
       continue;
     }
 
-    const canonicalId = resolveCanonicalPropertyIri({
+    const canonicalId = PropertyProjection.resolveCanonicalIri({
       'fallback': canonicalPropertyIri,
       graph,
       predicateResolver,
@@ -1199,7 +1193,7 @@ function emitPatternPropertyEntry(args: EmitPatternPropertyEntryArgsType): void 
     : predicateResolver({
       'classId': subject,
       'propertyName': pattern,
-      'propertySchema': resolvePropertySchema(graph, patternSubject)
+      'propertySchema': PropertyProjection.resolveSchema(graph, patternSubject)
     });
 
   quads.push(QuadFactory.quad(propIri, RDF.type, QuadFactory.iri(rdfType, { curie }), { curie }));

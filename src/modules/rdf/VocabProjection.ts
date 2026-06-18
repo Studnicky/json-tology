@@ -17,7 +17,7 @@ import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssue
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { JT } from '../../constants/IRI.js';
-import { resolvePredicateIriForClass } from './ProjectionHelpers.js';
+import { PropertyProjection } from './PropertyProjection.js';
 
 /**
  * Abstract base class for vocabulary-specific RDF quad emission.
@@ -235,7 +235,7 @@ export abstract class VocabProjection {
     graph: SchemaGraphInterface | undefined,
     predicateResolver: PredicateResolverFnType | undefined
   ): string {
-    return resolvePredicateIriForClass(graph, subject, propertyName, predicateResolver);
+    return PropertyProjection.resolvePredicateForClass(graph, subject, propertyName, predicateResolver);
   }
 
   /**

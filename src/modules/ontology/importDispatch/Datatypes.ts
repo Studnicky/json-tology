@@ -48,9 +48,7 @@ import {
   RDFS_DATATYPE_IRIS
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
 import { DECIMAL_RADIX } from '../../../constants/FORMAT_VALIDATION.js';
-import {
-  literalString, relationsByPredicate, targetValue
-} from './DispatchHelpers.js';
+import { ImportRelation } from './ImportRelation.js';
 
 // ---------------------------------------------------------------------------
 // XSD facet predicate → JSON Schema keyword mapping and XSD base type mapping
@@ -69,7 +67,7 @@ function literalNumber(relation: SchemaGraphRelationType): null | number {
   if (relation.termType !== 'Literal') {
     return null;
   }
-  const raw = targetValue(relation);
+  const raw = ImportRelation.targetValue(relation);
   const num = Number(raw);
 
   return Number.isFinite(num) ? num : null;
@@ -189,7 +187,7 @@ function applyStringFacet(
   delta: Record<string, unknown>,
   key: string
 ): void {
-  const str = literalString(fr);
+  const str = ImportRelation.literalString(fr);
 
   if (str !== null) {
     delta[key] = str;
@@ -278,14 +276,14 @@ function applyOnDatatype(
   graph: SchemaGraphInterface,
   delta: Record<string, unknown>
 ): 'boolean' | 'integer' | 'number' | 'string' | undefined {
-  const onDatatype = relationsByPredicate(graph, subjectIri, OWL_ON_DATATYPE_IRIS);
+  const onDatatype = ImportRelation.byPredicate(graph, subjectIri, OWL_ON_DATATYPE_IRIS);
   const firstOnDatatype = onDatatype[0];
 
   if (firstOnDatatype?.termType !== 'NamedNode') {
     return undefined;
   }
 
-  const onDt = targetValue(firstOnDatatype);
+  const onDt = ImportRelation.targetValue(firstOnDatatype);
   const mappedType = XSD_TO_SCHEMA_TYPE.get(onDt);
 
   if (mappedType !== undefined) {
@@ -302,10 +300,10 @@ function applyWithRestrictions(options: ApplyRestrictionsOptionsType): void {
   const {
     delta, graph, reportUnsupported, schemaType, subjectIri
   } = options;
-  const withRestrictions = relationsByPredicate(graph, subjectIri, OWL_WITH_RESTRICTIONS_IRIS);
+  const withRestrictions = ImportRelation.byPredicate(graph, subjectIri, OWL_WITH_RESTRICTIONS_IRIS);
 
   for (const wr of withRestrictions) {
-    const listHead = targetValue(wr);
+    const listHead = ImportRelation.targetValue(wr);
     const items = graph.collectList(listHead);
 
     for (const item of items) {
@@ -329,10 +327,10 @@ function applyOneOfEnum(
   graph: SchemaGraphInterface,
   delta: Record<string, unknown>
 ): void {
-  const oneOfRelations = relationsByPredicate(graph, equivBnode, ONE_OF_IRIS);
+  const oneOfRelations = ImportRelation.byPredicate(graph, equivBnode, ONE_OF_IRIS);
 
   for (const oo of oneOfRelations) {
-    const enumValues = extractEnumValues(targetValue(oo), graph);
+    const enumValues = extractEnumValues(ImportRelation.targetValue(oo), graph);
 
     if (enumValues.length > 0) {
       delta.enum = enumValues;
@@ -356,13 +354,13 @@ function applyEquivClassEnum(
   graph: SchemaGraphInterface,
   delta: Record<string, unknown>
 ): void {
-  const equivClass = relationsByPredicate(graph, subjectIri, EQUIVALENT_CLASS_PREDICATES);
+  const equivClass = ImportRelation.byPredicate(graph, subjectIri, EQUIVALENT_CLASS_PREDICATES);
 
   for (const ec of equivClass) {
     if (ec.termType !== 'BlankNode') {
       continue;
     }
-    applyOneOfEnum(targetValue(ec), graph, delta);
+    applyOneOfEnum(ImportRelation.targetValue(ec), graph, delta);
   }
 }
 
@@ -374,7 +372,7 @@ function applyExtensionAnnotations(
   graph: SchemaGraphInterface,
   delta: Record<string, unknown>
 ): void {
-  const multipleOf = relationsByPredicate(graph, subjectIri, JT_MULTIPLE_OF_IRIS);
+  const multipleOf = ImportRelation.byPredicate(graph, subjectIri, JT_MULTIPLE_OF_IRIS);
   const firstMultipleOf = multipleOf[0];
 
   if (firstMultipleOf !== undefined) {
@@ -385,11 +383,11 @@ function applyExtensionAnnotations(
     }
   }
 
-  const formatRels = relationsByPredicate(graph, subjectIri, JT_FORMAT_IRIS);
+  const formatRels = ImportRelation.byPredicate(graph, subjectIri, JT_FORMAT_IRIS);
   const firstFormatRel = formatRels[0];
 
   if (firstFormatRel !== undefined) {
-    const fmtStr = literalString(firstFormatRel);
+    const fmtStr = ImportRelation.literalString(firstFormatRel);
 
     if (fmtStr !== null) {
       delta.format = fmtStr;
@@ -514,7 +512,7 @@ export function importDatatypes(_quads: QuadInterface[], ctx: OwlImportContextTy
     if (
       RDF_TYPE_PREDICATES.has(relation.predicate)
       && relation.termType === 'NamedNode'
-      && RDFS_DATATYPE_IRIS.has(targetValue(relation))
+      && RDFS_DATATYPE_IRIS.has(ImportRelation.targetValue(relation))
       && !relation.source.id.startsWith('_:')
     ) {
       datatypeIris.add(relation.source.id);
