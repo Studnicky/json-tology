@@ -1118,7 +1118,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   private graphOf(entry: SchemaRegistryEntryType): SchemaGraphInterface {
-    entry.graph ??= new SchemaGraph(entry.schema, { 'vocabularies': this.vocabularies });
+    entry.graph ??= new SchemaGraph(entry.schema, {
+      'logger': this.logger,
+      'vocabularies': this.vocabularies
+    });
 
     return entry.graph;
   }
@@ -1169,7 +1172,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     // decoders run over the canonical structure. Validation + strip then run on
     // the decoded result, because the schema describes the transform's OUTPUT.
     const rootDecoded = this.decodeWithTransform(schemaObj, input, schemaId);
-    const decoded = RefDecoder.run(this.graphOf(entry), rootDecoded, this.refDecoderRegistry);
+    const decoded = RefDecoder.run(this.graphOf(entry), rootDecoded, this.refDecoderRegistry, this.logger);
 
     const result = compiled.validate(decoded, resolvedOptions);
 

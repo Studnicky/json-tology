@@ -17,6 +17,9 @@ import type { GraphArtifactType } from '../../types/GraphArtifact.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
 import { isRecord } from '../data/DataTypes.js';
+import { logScope } from '../data/LogScope.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
 import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './SchemaGraph.js';
 
@@ -28,7 +31,7 @@ export class GraphArtifact {
    * Rehydrates directly from NormIR without re-lowering, then verifies
    * per-node semantics hashes for staleness.
    */
-  public static fromArtifact(artifact: unknown): SchemaGraphInterface {
+  public static fromArtifact(artifact: unknown, logger: LoggerInterface = SILENT_LOGGER): SchemaGraphInterface {
     if (!isRecord(artifact)) {
       throw new GraphError(
         'Artifact must be an object. Regenerate the artifact.',
@@ -63,6 +66,7 @@ export class GraphArtifact {
     const actualSchemaHash = Hash.value(graph.rootSchema);
 
     if (artifact.metadata.schemaHash !== actualSchemaHash) {
+      logger.warn(logScope('GraphArtifact', 'fromArtifact', `schema hash mismatch (artifact=${artifact.metadata.schemaHash}, actual=${actualSchemaHash}); artifact is stale`));
       throw new GraphError(
         `Schema hash mismatch: artifact=${artifact.metadata.schemaHash}, actual=${actualSchemaHash}. Regenerate the artifact.`,
         { 'code': GraphErrorCode.ARTIFACT_STALE }
@@ -75,6 +79,7 @@ export class GraphArtifact {
       const actual = this.hashSemantics(graph, node);
 
       if (expected !== actual) {
+        logger.warn(logScope('GraphArtifact', 'fromArtifact', `semantics hash mismatch at "${node.pointer || '(root)'}" (artifact=${expected}, rebuilt=${actual}); artifact is stale`));
         throw new GraphError(
           `Semantics hash mismatch at ${node.pointer || '(root)'}: artifact=${expected}, rebuilt=${actual}. Regenerate the artifact.`,
           { 'code': GraphErrorCode.ARTIFACT_STALE }
