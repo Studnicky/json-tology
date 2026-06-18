@@ -367,10 +367,19 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    *
    * Builds the transitive closure of sameAs pairs (BFS) and checks
    * each differentFrom pair against it.
+   *
+   * Call order: this is invoked automatically at the end of
+   * `JsonTology.fromTbox({ register: true })` once both stores are populated.
+   * If you drive the registry directly — calling `addDifferentFrom` and
+   * `sameAsStore.add` across separate steps — re-invoke this after the final
+   * mutation; it is not triggered automatically on store writes.
    */
   public assertIdentityConsistency(): void {
     const sameAsPairs = this.sameAsStore.all();
 
+    // No sameAs pairs means the closure unifies nothing, so no distinct pair can be
+    // contradicted. differentFrom self-pairs (a,a) are filtered upstream by the
+    // Individuals dispatcher, so an empty sameAs store is genuinely consistent.
     if (sameAsPairs.length === 0) {
       return;
     }

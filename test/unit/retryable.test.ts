@@ -50,7 +50,7 @@ void describe('BaseError.retryable contract', { 'concurrency': true }, () => {
 });
 
 void describe('BaseError.retryable propagation through flatten()', { 'concurrency': true }, () => {
-  void it('preserves each link’s retryable flag, root-first', () => {
+  void it('preserves the retryable flag of each chain link, root-first', () => {
     // A deterministic wrapper whose cause is a transient (retryable) failure.
     const wrapper = new SchemaError('registration failed while loading $ref', {
       'cause': transientError(),
@@ -61,9 +61,9 @@ void describe('BaseError.retryable propagation through flatten()', { 'concurrenc
 
     assert.strictEqual(chain.length, 2, 'flatten yields wrapper + cause');
     assert.strictEqual(chain[0].retryable, false, 'the deterministic wrapper is not retryable');
-    assert.strictEqual(chain[0].code, 'SCHEMA_NOT_REGISTERED');
+    assert.strictEqual(chain[0].code, SchemaErrorCode.NOT_REGISTERED);
     assert.strictEqual(chain[1].retryable, true, 'the transient cause stays retryable');
-    assert.strictEqual(chain[1].code, 'SCHEMA_LOAD_FAILED');
+    assert.strictEqual(chain[1].code, SchemaLoadErrorCode.LOAD_FAILED);
   });
 
   void it('toJson() nests the cause with its own retryable flag', () => {

@@ -85,8 +85,10 @@ export type SchemaLoadResultType = InferType<typeof SchemaLoadResultSchema>;
  * Called by `JsonTology.prefetch` during transitive `$ref` resolution when a
  * referenced IRI is not yet registered. Returns the parsed schema object for
  * the given IRI, or `null` if the IRI is unknown to this loader. Returning
- * `null` causes `GraphError` `REF_UNRESOLVED` to be thrown with the IRI.
- * Network errors should propagate so callers see real connectivity failures.
+ * `null` causes `GraphError` `REF_UNRESOLVED` to be thrown with the IRI;
+ * returning a schema whose `$id` is not a string causes `SchemaLoadError`
+ * (`reason: 'missing-id'`). Network errors should propagate so callers see real
+ * connectivity failures.
  *
  * @example
  * ```ts

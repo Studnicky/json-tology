@@ -18,6 +18,10 @@ import {
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { GraphArtifact } from '../../src/modules/graph/GraphArtifact.js';
 import { GraphError } from '../../src/errors/GraphError.js';
+import { DecodeError } from '../../src/errors/DecodeError.js';
+import {
+  GraphErrorCode, TransformErrorCode
+} from '../../src/constants/ERROR_CODES.js';
 import type { LoggerInterface } from '../../src/interfaces/Logger.js';
 
 type CapturedType = {
@@ -87,9 +91,14 @@ void describe('SchemaGraph logger DI', () => {
     } = capturingLogger();
     const graph = new SchemaGraph(ObjectSchema, { logger });
 
-    assert.throws(() => {
-      return graph.resolvePointer('no-leading-slash');
-    });
+    assert.throws(
+      () => {
+        return graph.resolvePointer('no-leading-slash');
+      },
+      (error: unknown) => {
+        return error instanceof GraphError && error.code === GraphErrorCode.POINTER_INVALID;
+      }
+    );
     assert.ok(messages.some((m) => {
       return m.level === 'debug' && m.msg.includes('[SchemaGraph.resolvePointer]') && m.msg.includes('invalid');
     }));
@@ -101,9 +110,14 @@ void describe('SchemaGraph logger DI', () => {
     } = capturingLogger();
     const graph = new SchemaGraph(ObjectSchema, { logger });
 
-    assert.throws(() => {
-      return graph.resolveFragment('missing-anchor');
-    });
+    assert.throws(
+      () => {
+        return graph.resolveFragment('missing-anchor');
+      },
+      (error: unknown) => {
+        return error instanceof GraphError && error.code === GraphErrorCode.ANCHOR_NOT_FOUND;
+      }
+    );
     assert.ok(messages.some((m) => {
       return m.level === 'debug' && m.msg.includes('[SchemaGraph.resolveFragment]');
     }));
@@ -112,9 +126,14 @@ void describe('SchemaGraph logger DI', () => {
   void it('defaults to a silent logger and does not throw on construction', () => {
     const graph = new SchemaGraph(ObjectSchema);
 
-    assert.throws(() => {
-      return graph.resolvePointer('/nonexistent');
-    });
+    assert.throws(
+      () => {
+        return graph.resolvePointer('/nonexistent');
+      },
+      (error: unknown) => {
+        return error instanceof GraphError && error.code === GraphErrorCode.POINTER_NOT_FOUND;
+      }
+    );
   });
 });
 
@@ -156,9 +175,14 @@ void describe('GraphArtifact logger DI', () => {
 
     // The rebuilt graph went through fromNormIR (constructor-bypassing); a
     // resolution failure must not crash on an undefined logger.
-    assert.throws(() => {
-      return rebuilt.resolvePointer('/nonexistent');
-    });
+    assert.throws(
+      () => {
+        return rebuilt.resolvePointer('/nonexistent');
+      },
+      (error: unknown) => {
+        return error instanceof GraphError && error.code === GraphErrorCode.POINTER_NOT_FOUND;
+      }
+    );
   });
 });
 
@@ -198,9 +222,14 @@ void describe('RefDecoder logger DI (end-to-end through the registry)', () => {
       ] as const
     });
 
-    assert.throws(() => {
-      return jt.instantiate(HostSchema.$id, { 'token': 'anything' });
-    });
+    assert.throws(
+      () => {
+        return jt.instantiate(HostSchema.$id, { 'token': 'anything' });
+      },
+      (error: unknown) => {
+        return error instanceof DecodeError && error.code === TransformErrorCode.TRANSFORM_DECODE_FAILED;
+      }
+    );
     assert.ok(
       messages.some((m) => {
         return m.level === 'error' && m.msg.includes('[RefDecoder.run]');

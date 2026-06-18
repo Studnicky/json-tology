@@ -1,24 +1,26 @@
 /**
  * SHACL validator internal index and evaluation types.
  *
- * Extracted from ShaclValidator.ts for canonical placement.
+ * Extracted from ShaclValidator.ts for canonical placement. These are internal
+ * to the SHACL engine and are not re-exported from the public `./types` entry.
  *
+ * @internal
  * @module Shacl
  * @category SHACL
  * @since 0.20.0
  */
 
-/** Subject-to-predicate-to-objects index for quad lookup. */
-export type SubjectPredicateIndexType = Map<string, Map<string, string[]>>;
-
-/** Predicate-to-object-literals index for a single subject. */
+/** Predicate-to-object-value-strings index for a single subject. */
 export type PredicateValuesIndexType = Map<string, string[]>;
+
+/** Subject-to-predicate-to-object-value-strings index for quad lookup. */
+export type SubjectPredicateIndexType = Map<string, PredicateValuesIndexType>;
 
 /** Per-subject type set for rdf:type lookups. */
 export type TypeIndexType = Map<string, Set<string>>;
 
 /** Datatype IRI of each literal object per subject+predicate, for data quads. */
-export type DatatypeIndexType = Map<string, Map<string, string[]>>;
+export type DatatypeIndexType = Map<string, PredicateValuesIndexType>;
 
 /** A parsed property shape. */
 export type PropertyShapeIndexType = {

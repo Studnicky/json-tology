@@ -3,6 +3,8 @@
  *
  * Covers HTTP 5xx transient failures (`fetch-failed`), schemas returned without
  * a `$id` (`missing-id`), and structurally invalid content (`invalid-schema`).
+ *
+ * @since 0.25.0
  */
 
 import type { SchemaLoadErrorOptionsType } from '../types/ErrorOptions.js';

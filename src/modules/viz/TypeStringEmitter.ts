@@ -30,11 +30,15 @@ export class TypeStringEmitter {
     const segments = schemaId.split('/');
     const lastSegment = segments.at(-1) ?? 'Root';
 
-    // Remove extension and capitalize
+    // Strip any file extension, then upper-case the first character while
+    // preserving the rest so PascalCase ids (e.g. "TreeNode") stay intact.
     const base = lastSegment.split('.')[0] ?? 'Root';
-    const capitalized = base.charAt(0).toUpperCase() + base.slice(1).toLowerCase();
 
-    return capitalized;
+    if (base.length === 0) {
+      return 'Root';
+    }
+
+    return base.charAt(0).toUpperCase() + base.slice(1);
   }
 
   /**

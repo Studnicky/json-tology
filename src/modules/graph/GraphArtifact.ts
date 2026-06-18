@@ -26,10 +26,17 @@ import { SchemaGraph } from './SchemaGraph.js';
 
 export class GraphArtifact {
   /**
-   * Reconstruct a SchemaGraph from a serialized artifact.
+   * Reconstruct a SchemaGraph from a serialized artifact (the deserialization
+   * half of the `toArtifact` / `fromArtifact` pair used for cached graphs).
    *
    * Rehydrates directly from NormIR without re-lowering, then verifies
    * per-node semantics hashes for staleness.
+   *
+   * @param artifact - A previously serialized {@link GraphArtifactType}.
+   * @param logger - Optional; warns on a stale hash mismatch before throwing
+   *   `GraphError ARTIFACT_STALE`. Defaults to the silent logger. Supplied by the
+   *   consumer loading the artifact (this is a leaf load entry with no in-tree
+   *   caller — `cli.ts` only serializes via `toArtifact`).
    */
   public static fromArtifact(artifact: unknown, logger: LoggerInterface = SILENT_LOGGER): SchemaGraphInterface {
     if (!isRecord(artifact)) {

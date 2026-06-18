@@ -127,8 +127,14 @@ function isScalar(value: unknown): boolean {
  * Build a registry-level invariant that asserts a specific property assertion
  * does NOT hold for the given individual.
  *
- * The invariant is keyed to the individual's class IRI and uses an identity
- * guard (`$id` or `@id`) to restrict enforcement to the specific source individual.
+ * The invariant is keyed to the individual's class IRI, so it runs for every
+ * instance of that class. An NPA targets one *specific* individual, so the `fn`
+ * guards on identity: it enforces the constraint only when the validated value
+ * carries that individual's IRI in `$id` (or `@id`). This is the convention for
+ * validating a named individual — the instance IS the individual, identified by
+ * `$id` — and is exercised end-to-end in `owlIndividualEnforcement.test.ts`. A
+ * value with no identity (typical anonymous data) is intentionally not subject
+ * to a per-individual NPA, since NPA does not constrain arbitrary class members.
  */
 function negativePropertyAssertionInvariant(
   sourceIri: string,
@@ -140,6 +146,8 @@ function negativePropertyAssertionInvariant(
       if (!isRecord(value)) {
         return null;
       }
+      // Identity guard: an NPA binds one named individual, so enforce only when
+      // the value declares it is that individual (see the convention above).
       const id = value['$id'] ?? value['@id'];
 
       if (id !== sourceIri) {

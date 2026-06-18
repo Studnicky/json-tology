@@ -221,10 +221,11 @@ void describe('TypeStringEmitter self-referential $ref', () => {
     assert.ok(typeof result === 'string' && result.length > 0, 'emit should return non-empty string');
     // The children property must appear
     assert.match(result, /children/u, `expected children prop, got: ${result}`);
-    // The referenced type name should appear (Treenode or TreeNode variant via deriveTypeName)
+    // deriveTypeName preserves PascalCase, so the cycle is emitted as a reference
+    // to the exact type name "TreeNode".
     assert.ok(
-      result.includes('Treenode') || result.includes('treenode') || result.includes('TreeNode'),
-      `expected type name reference for cycle, got: ${result}`
+      result.includes('TreeNode'),
+      `expected a "TreeNode" type reference for the cycle, got: ${result}`
     );
   });
 
