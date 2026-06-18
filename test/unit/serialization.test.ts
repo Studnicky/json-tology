@@ -7,8 +7,8 @@ import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 // QuadObjectType is the project's narrow quad-object union (IRI | blank | literal),
 // matching what Terms.iri/Terms.literal return and what Terms.quad/listQuad accept.
 import type { QuadObjectType } from '../../src/types/Quad.js';
-// RelationStructure/SchemaGraphRelationType are graph-internal shapes used by projection tests.
-import type { RelationStructure } from '../../src/types/SchemaGraph.js';
+// RelationStructureType/SchemaGraphRelationType are graph-internal shapes used by projection tests.
+import type { RelationStructureType } from '../../src/types/SchemaGraph.js';
 import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 // ProjectionIndex helpers are projection internals.
 import { ProjectionIndex } from '../../src/modules/rdf/ProjectionIndex.js';
@@ -447,7 +447,7 @@ import {
 
   void describe('isRestrictionStructure', () => {
     void it('returns true for restriction kind', () => {
-      const structure: RelationStructure = {
+      const structure: RelationStructureType = {
         'constraint': 'sh:maxCount',
         'kind': 'restriction',
         'onProperty': 'http://example.com/User#name',
@@ -458,7 +458,7 @@ import {
     });
 
     void it('returns false for list kind', () => {
-      const structure: RelationStructure = {
+      const structure: RelationStructureType = {
         'kind': 'list',
         'members': [
           'a',
@@ -470,7 +470,7 @@ import {
     });
 
     void it('returns false for undefined', () => {
-      const noStructure: RelationStructure | undefined = undefined;
+      const noStructure: RelationStructureType | undefined = undefined;
 
       assert.equal(ProjectionIndex.isRestrictionStructure(noStructure), false);
     });
@@ -478,7 +478,7 @@ import {
 
   void describe('isListStructure', () => {
     void it('returns true for list kind', () => {
-      const structure: RelationStructure = {
+      const structure: RelationStructureType = {
         'kind': 'list',
         'members': [
           'http://example.com/a',
@@ -490,7 +490,7 @@ import {
     });
 
     void it('returns false for restriction kind', () => {
-      const structure: RelationStructure = {
+      const structure: RelationStructureType = {
         'constraint': 'sh:minCount',
         'kind': 'restriction',
         'onProperty': 'http://example.com/User#age',
@@ -501,7 +501,7 @@ import {
     });
 
     void it('returns false for undefined', () => {
-      const noStructure: RelationStructure | undefined = undefined;
+      const noStructure: RelationStructureType | undefined = undefined;
 
       assert.equal(ProjectionIndex.isListStructure(noStructure), false);
     });

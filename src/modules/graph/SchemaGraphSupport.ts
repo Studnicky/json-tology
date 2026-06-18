@@ -33,8 +33,8 @@ import type {
   NormalizedLanguageTagType,
   OptionalNumberType,
   OptionalStringType,
-  PropertyEntry,
-  PropertyMap,
+  PropertyEntryType,
+  PropertyMapType,
   ScalarFieldsType,
   SchemaExtensionsType,
   SemanticsBuildContextType
@@ -166,9 +166,9 @@ function extractJtConfig(schema: Record<string, unknown>): ExtractedJtConfigType
   return Object.keys(config).length > 0 ? config : undefined;
 }
 
-const EMPTY_MAP: PropertyMap = new Map();
+const EMPTY_MAP: PropertyMapType = new Map();
 
-function propertiesMap(entries: PropertyEntry[]): PropertyMap {
+function propertiesMap(entries: PropertyEntryType[]): PropertyMapType {
   return entries.length === 0 ? EMPTY_MAP : new Map(entries);
 }
 

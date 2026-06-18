@@ -2,7 +2,7 @@ import type { CurieInterface } from '../interfaces/CurieInterface.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 import type { AnnotationEmitModeType } from './AnnotationEmitModeType.js';
 import type { SchemaGraphNodeType } from './SchemaGraph.js';
-import type { LookupGraphFn } from '../types/LookupGraphFn.js';
+import type { LookupGraphFnType } from '../types/LookupGraphFnType.js';
 import type { PredicateResolverFnType } from '../types/PredicateResolverFnType.js';
 import type { SkolemizeFnType } from '../types/SkolemizeFnType.js';
 
@@ -16,6 +16,6 @@ export type ProjectAboxArgsType = {
   readonly 'graph': SchemaGraphInterface;
   readonly 'graphIri'?: string | undefined;
   readonly 'iriFor'?: SkolemizeFnType | undefined;
-  readonly 'lookupGraph'?: LookupGraphFn | undefined;
+  readonly 'lookupGraph'?: LookupGraphFnType | undefined;
   readonly 'predicateResolver'?: PredicateResolverFnType | undefined;
 };

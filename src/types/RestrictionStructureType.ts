@@ -1,8 +1,8 @@
 /**
- * RestrictionStructureType — the restriction variant of RelationStructure, extracted
+ * RestrictionStructureType — the restriction variant of RelationStructureType, extracted
  * for use in the PropertyRestrictions dispatcher.
  */
 
-import type { RelationStructure } from './SchemaGraph.js';
+import type { RelationStructureType } from './SchemaGraph.js';
 
-export type RestrictionStructureType = Extract<RelationStructure, { 'kind': 'restriction' }>;
+export type RestrictionStructureType = Extract<RelationStructureType, { 'kind': 'restriction' }>;

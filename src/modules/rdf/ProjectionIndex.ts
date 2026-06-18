@@ -7,7 +7,7 @@
  */
 
 import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
-import type { RelationStructure } from '../../types/SchemaGraph.js';
+import type { RelationStructureType } from '../../types/SchemaGraph.js';
 import type { RelationIndexType } from '../../types/RelationIndexType.js';
 
 import {
@@ -76,11 +76,11 @@ export const ProjectionIndex = {
   // Structure type guards
   // ---------------------------------------------------------------------------
 
-  isListStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'list' }> {
+  isListStructure(structure: RelationStructureType | undefined): structure is Extract<RelationStructureType, { 'kind': 'list' }> {
     return structure?.kind === 'list';
   },
 
-  isRestrictionStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'restriction' }> {
+  isRestrictionStructure(structure: RelationStructureType | undefined): structure is Extract<RelationStructureType, { 'kind': 'restriction' }> {
     return structure?.kind === 'restriction';
   },
 

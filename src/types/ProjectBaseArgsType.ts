@@ -5,7 +5,7 @@ import type { QuadInterface } from '../interfaces/QuadInterface.js';
 import type {
   DefaultGraphTermType, IriTermType
 } from './Quad.js';
-import type { LookupGraphFn } from './LookupGraphFn.js';
+import type { LookupGraphFnType } from './LookupGraphFnType.js';
 import type { PredicateResolverFnType } from './PredicateResolverFnType.js';
 import type { QuadOptsType } from './QuadOptsType.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
@@ -32,7 +32,7 @@ export type ProjectBaseArgsType = {
   readonly 'graph': SchemaGraphInterface;
   readonly 'graphTerm': DefaultGraphTermType | IriTermType;
   /** Optional cross-schema graph lookup — resolves full-IRI $ref to a foreign graph. */
-  readonly 'lookupGraph'?: LookupGraphFn | undefined;
+  readonly 'lookupGraph'?: LookupGraphFnType | undefined;
   readonly 'minter': IriMinterInterface;
   readonly 'path': string;
   /** Single predicate-derivation authority — resolves each property's RDF predicate IRI. */

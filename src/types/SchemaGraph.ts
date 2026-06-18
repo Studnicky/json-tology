@@ -83,7 +83,7 @@ export type RelationPredicateType
  *   so predicate IRIs are resolved late (at projection/lift time) via PredicateResolver,
  *   consistent with every other predicate in the system.
  */
-export type RelationStructure
+export type RelationStructureType
   = | { 'constraint': RelationPredicateType;
     'kind': 'restriction';
     'onProperty': string;
@@ -365,7 +365,7 @@ export type SchemaGraphRelationType = {
   'metadata'?: Record<string, unknown>;
   'predicate': RelationPredicateType;
   'source': SchemaGraphNodeType;
-  'structure'?: RelationStructure;
+  'structure'?: RelationStructureType;
   'target': SchemaGraphNodeType | string;
   /**
    * rdf/js term-type discriminator for the relation's target. Populated by

@@ -20,7 +20,7 @@ import type { SkolemizeFnType } from '../../types/SkolemizeFnType.js';
 import type { ProjectInstanceArgsType } from '../../types/ProjectInstanceArgsType.js';
 import type { ProjectPropertyArgsType } from '../../types/ProjectPropertyArgsType.js';
 import type { RefTargetType } from '../../types/RefTargetType.js';
-import type { LookupGraphFn } from '../../types/LookupGraphFn.js';
+import type { LookupGraphFnType } from '../../types/LookupGraphFnType.js';
 import type { ProjectInstancePropertyArgsType } from '../../types/ProjectInstancePropertyArgsType.js';
 import type { ProjectAnnotatedEdgeArgsType } from '../../types/ProjectAnnotatedEdgeArgsType.js';
 import type { ResolveEdgeTargetIriArgsType } from '../../types/ResolveEdgeTargetIriArgsType.js';
@@ -341,7 +341,7 @@ function unwrapSingleRef(
 const NO_LOOKUP_GRAPH = Symbol('no-lookup-graph');
 const collectProjectionPropertiesCache = new WeakMap<
   SchemaGraphNodeType,
-  Map<LookupGraphFn | typeof NO_LOOKUP_GRAPH, Map<string, RefTargetType>>
+  Map<LookupGraphFnType | typeof NO_LOOKUP_GRAPH, Map<string, RefTargetType>>
 >();
 
 /**
@@ -356,7 +356,7 @@ const collectProjectionPropertiesCache = new WeakMap<
 function collectProjectionProperties(
   graph: SchemaGraphInterface,
   node: SchemaGraphNodeType,
-  lookupGraph?: LookupGraphFn
+  lookupGraph?: LookupGraphFnType
 ): Map<string, RefTargetType> {
   const cacheKey = lookupGraph ?? NO_LOOKUP_GRAPH;
   let byLookup = collectProjectionPropertiesCache.get(node);

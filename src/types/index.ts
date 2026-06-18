@@ -51,7 +51,7 @@ export type * from './Infer.js';
 export type * from './Invariant.js';
 export type * from './JsonLdDatasetQuadType.js';
 export type * from './JsonLdDocInputType.js';
-export type * from './JsonSchema.js';
+export type * from './JsonSchemaDefinitionType.js';
 export type * from './JsonSchemaObjectType.js';
 export type * from './JsonTologyOptionsType.js';
 export type * from './JtConfig.js';

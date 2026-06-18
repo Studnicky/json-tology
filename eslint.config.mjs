@@ -101,7 +101,38 @@ const interfaceMustBeContractRule = {
   }
 };
 
-const contractPlugin = { rules: { 'interface-must-be-contract': interfaceMustBeContractRule } };
+// Custom rule: every EXPORTED type alias in src/types/ must end in `Type`.
+// No allowlist, no exceptions — the suffix is the at-a-glance "this is a data
+// type" signal and is uniform across the substrate. (External-symbol re-exports
+// `export type { X } from '...'` are ExportNamedDeclaration, not alias
+// declarations, so they are not subject to this rule.)
+const typeAliasMustEndTypeRule = {
+  meta: {
+    messages: {
+      mustEndType:
+        "Exported type alias '{{name}}' must end in 'Type'. The src/types/ substrate has no suffix exceptions — rename to '{{name}}Type'."
+    },
+    schema: [],
+    type: 'problem'
+  },
+  create(context) {
+    return {
+      TSTypeAliasDeclaration(node) {
+        if (node.parent.type !== 'ExportNamedDeclaration') { return; }
+        if (!node.id.name.endsWith('Type')) {
+          context.report({ data: { name: node.id.name }, messageId: 'mustEndType', node: node.id });
+        }
+      }
+    };
+  }
+};
+
+const contractPlugin = {
+  rules: {
+    'interface-must-be-contract': interfaceMustBeContractRule,
+    'type-alias-must-end-type': typeAliasMustEndTypeRule
+  }
+};
 
 // ---------------------------------------------------------------------------
 // Rule sets
@@ -701,6 +732,7 @@ export default [
   {
     files: ['src/types/**/*.ts'],
     rules: {
+      'contract/type-alias-must-end-type': 'error',
       'no-restricted-syntax': [
         'error',
         ...syntaxRestrictions,
