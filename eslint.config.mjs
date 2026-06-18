@@ -2,137 +2,15 @@ import js from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import { basename, extname } from 'node:path';
 import perfectionist from 'eslint-plugin-perfectionist';
 import regexpPlugin from 'eslint-plugin-regexp';
 import unicornPlugin from 'eslint-plugin-unicorn';
 import ymlPlugin from 'eslint-plugin-yml';
 import globals from 'globals';
+import { noocodecPlugin } from './eslint-rules/noocodec.mjs';
 
-// Custom rule: filename must match a named export
-// Replaces deprecated eslint-plugin-filename-export (uses removed context.getFilename)
-const filenameMatchesExportRule = {
-  meta: {
-    docs: { description: 'Enforce filename matches named export' },
-    messages: { noMatchingExport: 'Filename does not match any named exports' },
-    schema: [{ properties: { casing: { enum: ['strict', 'loose'], type: 'string' }, stripextra: { type: 'boolean' } }, type: 'object' }],
-    type: 'suggestion'
-  },
-  create(context) {
-    const options = context.options[0] ?? {};
-    const isStrict = options.casing === 'strict';
-    const stripExtra = options.stripextra === true;
-    return {
-      Program(node) {
-        const filename = context.filename;
-        const filenameSansExt = basename(filename, extname(filename));
-        if (['index', 'types'].includes(filenameSansExt) || /\.(test|spec|stories)$/.test(filenameSansExt)) { return; }
-        // interfaces/ IS enforced (filename must match the exported *Interface symbol);
-        // types/errors/constants are exempt (multi-export / suffix-convention files).
-        if (/[/\\](types|errors|constants)[/\\]/.test(filename)) { return; }
-        if (node.body.some((item) => { return item.type === 'ExportDefaultDeclaration'; })) { return; }
-        const namedExports = node.body.filter((item) => { return item.type === 'ExportNamedDeclaration'; });
-        if (namedExports.length === 0) { return; }
-        const exportNames = namedExports.flatMap((exp) => {
-          if (exp.declaration) {
-            if ('declarations' in exp.declaration && exp.declaration.declarations) {
-              return exp.declaration.declarations.map((decl) => { return decl.id?.name ?? ''; });
-            }
-            return [exp.declaration.id?.name ?? ''];
-          }
-          if (exp.specifiers) { return exp.specifiers.map((spec) => { return 'name' in spec.exported ? spec.exported.name : spec.exported.value; }); }
-          return [];
-        });
-        const normalize = (name) => {
-          let result = name;
-          if (stripExtra) { result = result.replace(/[^a-zA-Z0-9]/g, ''); }
-          if (!isStrict) { result = result.toLowerCase(); }
-          return result;
-        };
-        if (!exportNames.some((name) => { return normalize(name) === normalize(filenameSansExt); })) {
-          context.report({ messageId: 'noMatchingExport', node });
-        }
-      }
-    };
-  }
-};
-
-const filenameExportPlugin = { rules: { 'match-named-export': filenameMatchesExportRule } };
-
-// Custom rule: interface must bear at least one method/call/construct signature
-// (the type-substrate rule: data shapes belong in src/types/ as `type`, not `interface`)
-const interfaceMustBeContractRule = {
-  meta: {
-    messages: {
-      dataShapeMustBeType:
-        "Interface '{{name}}' has no method/call/construct signatures. Per the type-substrate rule, data shapes must be declared as `type` in src/types/; `interface` is reserved for behavioral/class contracts and the allowlisted augmentation points."
-    },
-    schema: [],
-    type: 'problem'
-  },
-  create(context) {
-    const ALLOW = new Set([
-      'JsonTologyReferencesInterface',
-      'JsonTologyTypeConfigInterface'
-    ]);
-
-    return {
-      TSInterfaceDeclaration(node) {
-        if (ALLOW.has(node.id.name)) { return; }
-
-        const hasBehavioralMember = node.body.body.some(
-          (member) =>
-            member.type === 'TSMethodSignature'
-            || member.type === 'TSCallSignatureDeclaration'
-            || member.type === 'TSConstructSignatureDeclaration'
-          // NOTE: TSPropertySignature with TSFunctionType typeAnnotation is a
-          // function-valued FIELD (data), NOT behavioral. Do NOT count it.
-        );
-
-        if (!hasBehavioralMember) {
-          context.report({
-            data: { name: node.id.name },
-            messageId: 'dataShapeMustBeType',
-            node: node.id
-          });
-        }
-      }
-    };
-  }
-};
-
-// Custom rule: every EXPORTED type alias in src/types/ must end in `Type`.
-// No allowlist, no exceptions — the suffix is the at-a-glance "this is a data
-// type" signal and is uniform across the substrate. (External-symbol re-exports
-// `export type { X } from '...'` are ExportNamedDeclaration, not alias
-// declarations, so they are not subject to this rule.)
-const typeAliasMustEndTypeRule = {
-  meta: {
-    messages: {
-      mustEndType:
-        "Exported type alias '{{name}}' must end in 'Type'. The src/types/ substrate has no suffix exceptions — rename to '{{name}}Type'."
-    },
-    schema: [],
-    type: 'problem'
-  },
-  create(context) {
-    return {
-      TSTypeAliasDeclaration(node) {
-        if (node.parent.type !== 'ExportNamedDeclaration') { return; }
-        if (!node.id.name.endsWith('Type')) {
-          context.report({ data: { name: node.id.name }, messageId: 'mustEndType', node: node.id });
-        }
-      }
-    };
-  }
-};
-
-const contractPlugin = {
-  rules: {
-    'interface-must-be-contract': interfaceMustBeContractRule,
-    'type-alias-must-end-type': typeAliasMustEndTypeRule
-  }
-};
+// Custom @noocodec rules live in the portable extension `eslint-rules/noocodec.mjs`
+// (canonical home: noocodec-bot; copied verbatim between @noocodec projects).
 
 // ---------------------------------------------------------------------------
 // Rule sets
@@ -580,8 +458,7 @@ const jsModulePlugins = {
 const typeScriptPlugins = {
   '@stylistic': stylistic,
   '@typescript-eslint': tsPlugin,
-  'contract': contractPlugin,
-  'filename-export': filenameExportPlugin,
+  'noocodec': noocodecPlugin,
   'perfectionist': perfectionist,
   'regexp': regexpPlugin,
   'unicorn': unicornPlugin
@@ -669,7 +546,7 @@ export default [
       ...typeScriptPluginRules,
       ...unicornPluginRules,
       ...regexpPluginRules,
-      'contract/interface-must-be-contract': 'error'
+      'noocodec/interface-must-be-contract': ['error', { 'allow': ['JsonTologyReferencesInterface', 'JsonTologyTypeConfigInterface'] }]
     }
   },
 
@@ -732,7 +609,7 @@ export default [
   {
     files: ['src/types/**/*.ts'],
     rules: {
-      'contract/type-alias-must-end-type': 'error',
+      'noocodec/type-alias-must-end-type': 'error',
       'no-restricted-syntax': [
         'error',
         ...syntaxRestrictions,
@@ -772,7 +649,7 @@ export default [
         }]
       }],
       // Filename must match the exported *Interface symbol (one interface per file).
-      'filename-export/match-named-export': ['error', { casing: 'strict' }]
+      'noocodec/filename-matches-export': ['error', { casing: 'strict' }]
     }
   },
 
