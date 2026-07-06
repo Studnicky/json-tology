@@ -137,17 +137,17 @@
     "eslint-plugin-regexp": "^3.1.0",
     "eslint-plugin-unicorn": "^66.0.0",
     "eslint-plugin-yml": "^3.3.2",
-    "eyereasoner": "^21.1.9",
+    "eyereasoner": "^21.1.13",
     "fp-ts": "^2.16.11",
-    "globals": "^17.6.0",
+    "globals": "^17.7.0",
     "io-ts": "^2.2.22",
     "license-checker": "^25.0.1",
     "madge": "^8.0.0",
-    "n3": "^2.0.3",
+    "n3": "^2.1.1",
     "sucrase": "^3.35.1",
-    "tsx": "^4.22.3",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.3",
-    "valibot": "^1.4.0",
+    "valibot": "^1.4.2",
     "vitepress": "^1.6.4",
     "vitepress-sidebar": "^1.36.1",
     "zod": "^4.4.3"
@@ -162,7 +162,7 @@
     "jsonld": "^9.0.0"
   },
   "peerDependencies": {
-    "eyereasoner": "^21.1.9"
+    "eyereasoner": "^21.1.13"
   },
   "peerDependenciesMeta": {
     "eyereasoner": {
