@@ -124,7 +124,7 @@
     "@types/json-schema": "^7.0.15",
     "@types/jsonld": "^1.5.15",
     "@types/n3": "^1.26.1",
-    "@types/node": "^25.9.1",
+    "@types/node": "^26.1.1",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "ajv": "^8.20.0",
