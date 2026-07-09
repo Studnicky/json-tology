@@ -977,8 +977,11 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param schema - A registered schema with `$id`. Any `$ref` in the
    *   schema or its sub-properties is resolved against `TRefs`.
-   * @param fns - `decode` runs after validation succeeds; `encode`
-   *   round-trips the decoded value back to the wire shape.
+   * @param fns - `instantiate()` runs `decode` before validation, so `decode`
+   *   may return just the fields it transforms — schema `default`s fill the
+   *   rest when the caller passes `{ enableDefaults: true }`. `encode` runs
+   *   after validation and round-trips the full decoded value back to the
+   *   wire shape.
    */
   public addTransform<
     TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
@@ -986,7 +989,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   >(
     schema: TSchema,
     fns: {
-      'decode': (raw: TWire) => CanonicalShapeType<TSchema, TRefs>;
+      'decode': (raw: TWire) => Partial<CanonicalShapeType<TSchema, TRefs>>;
       'encode': (value: CanonicalShapeType<TSchema, TRefs>) => TWire;
     }
   ): TransformedType<TSchema, TWire> {
