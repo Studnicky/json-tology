@@ -57,8 +57,7 @@ const sidebar = [
       { link: '/validation-modes', text: 'Validation modes' },
       { link: '/picking-a-method', text: 'Picking a method' },
       { link: '/instantiate-vs-materialize', text: 'instantiate vs materialize' },
-      { link: '/argument-conventions', text: 'Argument conventions' },
-      { link: '/cross-package-typing', text: 'Runtime decoding across packages' }
+      { link: '/argument-conventions', text: 'Argument conventions' }
     ]
   },
   {
@@ -136,6 +135,8 @@ const sidebar = [
       { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
       { link: '/advanced/graph-internals', text: 'Graph internals' },
       { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
+      { link: '/advanced/strict-graph-mode', text: 'Strict graph mode' },
+      { link: '/advanced/duplicate-detection', text: 'Duplicate shape detection' },
       { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
       { link: '/advanced/schema-federation', text: 'Schema federation (prefetch + snapshot)' },
       { link: '/advanced/browser-usage', text: 'Browser usage' },
@@ -161,8 +162,6 @@ const sidebar = [
       { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' },
       { link: '/advanced/predicates', text: 'RDF predicates (canonical / custom)' },
       { link: '/advanced/sameas', text: 'sameAs (ABox identity)' },
-      { link: '/advanced/strict-graph-mode', text: 'Strict graph mode' },
-      { link: '/advanced/duplicate-detection', text: 'Duplicate shape detection' },
       { link: '/advanced/instance-graphs', text: 'Instance graphs (aboxGraph)' }
     ]
   },
@@ -194,7 +193,8 @@ const sidebar = [
     items: [
       { link: '/types/infer', text: 'InferType' },
       { link: '/types/utility', text: 'Utility types' },
-      { link: '/types/ranges', text: 'Range types' }
+      { link: '/types/ranges', text: 'Range types' },
+      { link: '/cross-package-typing', text: 'Runtime decoding across packages' }
     ]
   },
   {

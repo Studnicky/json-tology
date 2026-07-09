@@ -47,16 +47,6 @@ new GraphError(code, message, options?);           // { pointer?, cause? }
 new BaseError(code, message, options?);            // { retryable?, cause? }
 ```
 
-### v0.15.0 surface alignment
-
-v0.15.0 brings the entire public surface into compliance with this rule. The notable changes:
-
-- **`QuadFactory`**: `iri`, `literal`, `quad`, `emitLiterals`, and `emitConstraintLiteral` previously accepted a trailing `curie` positional. They now accept an options bag (`{ curie }`, plus `{ curie, graph }` for `quad`).
-- **`BaseError` / `SchemaError` / `GraphError`**: `retryable`, `schemaId`, and `pointer` moved from positional arguments into the constructor options bag (alongside `cause`).
-- **`IdentifierIssuer`**: new utility; its constructor takes a single optional options bag (`{ prefix?, counter?, existingMap? }`).
-
-All call sites in the package have been updated. External callers using positional forms must migrate to the options-bag form.
-
 ### Option interface names
 
 Each options bag has a canonical interface declared in `src/interfaces/`. They are exported through `json-tology/interfaces` (type-only) so external callers can reference the exact shape they pass.
@@ -82,7 +72,7 @@ Resolution rule: if a string, look up in the registry; if an object with `$id`, 
 
 ## Static counterparts <Badge type="warning" text="Compile-time + Runtime" />
 
-The static facade methods (`JsonTology.dump`, `JsonTology.fromQuads`, `JsonTology.instantiate`, `JsonTology.materialize`) are generic over the supplied schema and return the inferred type rather than `unknown`. Explicit casts to the schema's inferred type are no longer required.
+The static facade methods (`JsonTology.dump`, `JsonTology.fromQuads`, `JsonTology.instantiate`, `JsonTology.materialize`) are generic over the supplied schema and return the inferred type; no cast to the schema's inferred type is needed.
 
 Every instance method has a static counterpart on `JsonTology` that creates an ephemeral registry, registers the schema, runs the operation, and returns. No shared state. No setup required.
 

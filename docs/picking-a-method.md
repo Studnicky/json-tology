@@ -11,9 +11,7 @@ Where does the data come from?
 
 ## The trust boundary axis
 
-**`instantiate`** is for data crossing into your system from outside - HTTP request bodies, queue messages, file imports, IPC payloads. Trust boundary: the data came from somewhere you don't control. Failure is the caller's contract violation. The error is theirs to handle.
-
-**`materialize`** is for data you produced - test fixtures, form scaffolding, default-filled instances. Construction helper: failure is your own bug. Validates by default and throws `MaterializationError` if validation fails. Pass `{ enablePartial: true }` to allow missing required-without-default fields during lenient construction.
+**`instantiate`** is for data crossing into your system from outside - HTTP request bodies, queue messages, file imports, IPC payloads. **`materialize`** is for data you produced - test fixtures, form scaffolding, default-filled instances. See [instantiate vs materialize](/instantiate-vs-materialize) for the decode-step and `enablePartial` mechanics.
 
 ## Decision recipes
 

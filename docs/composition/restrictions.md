@@ -2,9 +2,7 @@
 
 > Validation modes: [Validation modes reference](/validation-modes)
 
-OWL property restrictions narrow the inferred TypeScript type of the restricted property at compile time. The TBox output carries `owl:Restriction` blank nodes for reasoners.
-
-## Declaration
+**Declaration.** OWL property restrictions narrow the inferred TypeScript type of the restricted property at compile time. The TBox output carries `owl:Restriction` blank nodes for reasoners.
 
 <!-- inline-ts-ok: pseudocode signature group for the restriction builders; not runnable expressions. -->
 ```ts
@@ -18,9 +16,7 @@ Compose.maxCardinality(propIri, n): RestrictionRefType
 Compose.subClassOf(restriction, body): typeof body
 ```
 
-## Use this when
-
-You want to express OWL property-restriction class axioms - anonymous classes that constrain how a property is used. Each restriction becomes an `owl:Restriction` blank node in the TBox, referenced from the body class via `rdfs:subClassOf`. Restrictions compose: chaining `Compose.subClassOf` accumulates `jt:restrictions` on the body schema.
+**Use this when** you want to express OWL property-restriction class axioms - anonymous classes that constrain how a property is used. Each restriction becomes an `owl:Restriction` blank node in the TBox, referenced from the body class via `rdfs:subClassOf`. Restrictions compose: chaining `Compose.subClassOf` accumulates `jt:restrictions` on the body schema.
 
 <RunnableExample src="examples/docs/composition/08-restrictions" />
 
@@ -61,7 +57,7 @@ The compile-time narrowing applies to the property named in the restriction. `ca
 
 The TBox carries two `owl:Restriction` blank nodes attached via `rdfs:subClassOf`.
 
-## Don't use this when
+**Don't use this when**
 
 * Use [`Compose.equivalent`](/composition/equivalent) to declare two classes have identical extension. That maps to `owl:equivalentClass`, not a property restriction.
 * Use [`Compose.extend`](/composition/extend) for structural inheritance (allOf + $ref). Restrictions are *property-level* axioms - they say "values of this property satisfy X", not "this class also has these properties".

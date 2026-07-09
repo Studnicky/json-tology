@@ -69,6 +69,18 @@ and `jt.validate(BibliographicRecordSchema, decoded)` guards the output contract
 This is the architectural rule that validation executes against the canonical
 graph, applied at an ingestion boundary.
 
+This dual-schema approach is explicit by design: the decoder's output type is the
+full `BibliographicRecordSchema`, and the second `jt.validate` call is a real
+re-check against that same strict schema, not a formality. The alternative —
+a `decode` that returns a bare `Partial<BibliographicRecord>` and lets
+`jt.instantiate(..., { enableDefaults: true })` fill in the rest — is documented at
+[Partial decode with `enableDefaults`](/transforms/decode-encode#partial-decode-with-enabledefaults).
+That pattern is the better fit when the schema's own defaults are trustworthy
+fill-ins for missing wire fields. Here they are not: a book search result that
+lacks a `publishedOn` should be discarded, not defaulted, so this page keeps
+the wire and canonical boundaries as two schemas the decoder must satisfy in
+full rather than one schema completed by the framework.
+
 ## Cross-source provenance with `sameAs`
 
 When two sources describe the same book, that identity is a fact worth

@@ -70,15 +70,9 @@ See [`Compose.extend`](/composition/extend) for the operator declaration; the re
 
 Detection has on-demand ([`findDuplicates`](/registry/find-duplicates)), warning ([`enableInlineWarnings`](/advanced/strict-graph-mode), [`enableDuplicateDetection`](/advanced/strict-graph-mode)), and enforcement ([`enableStrictGraph`](/advanced/strict-graph-mode)) modes.
 
-## When inline is OK {#when-inline-is-ok}
+## When inline is OK
 
-Not every project needs strict graph mode. Inline shapes are fine when:
-
-- The schema has a single consumer and will never be reused.
-- It's a throwaway script or one-off data validation utility.
-- You're prototyping and the ontology contract isn't relevant yet.
-
-The cost of inline shapes is borne only by graph users: OWL/SHACL output is less precise, `findDuplicates()` reports noise, and global type changes require manual find-and-replace. If you're not using the ontology output, inline shapes have no runtime cost.
+Not every project needs strict graph mode. See [Strict graph mode - when inline is OK](/advanced/strict-graph-mode#when-inline-is-ok) for the criteria and the cost tradeoff.
 
 ---
 

@@ -34,25 +34,7 @@ Every variant must declare `properties[prop]` as `const` and list `prop` in `req
 
 <RunnableExample src="examples/docs/composition/42-discriminator-validation" />
 
-## `Compose.narrow` {#compose-narrow} <Badge type="info" text="Compile-time" />
-
-**Declaration.** Type guard that narrows a discriminated union value to the variant whose discriminant property equals `expected`. Returns `Extract<TUnion, Record<TDiscriminant, TValue>>` inside the truthy branch. No runtime effect beyond the property comparison.
-
-**Use this when** you have a union value and need TypeScript to narrow it to a specific variant for type-safe field access. Pairs naturally with `discriminatedUnion` - same discriminant property, same value.
-
-**Don't use this when** your variants don't have a single discriminant property (use manual `typeof` / `instanceof` checks instead).
-
-### Examples
-
-#### Example 1: Narrow a Payment to access variant-specific fields
-
-<RunnableExample src="examples/docs/composition/43-narrow-payment" />
-
-#### Example 2: Exhaustive switch with Compose.narrow
-
-<RunnableExample src="examples/docs/composition/44-narrow-exhaustive-switch" />
-
-## Comparison (discriminatedUnion)
+### Comparison
 
 ::: code-group
 
@@ -146,6 +128,28 @@ Payment = Annotated[CreditCardPayment | InvoicePayment, Discriminator('method')]
 ```
 
 :::
+
+## `Compose.narrow` {#compose-narrow} <Badge type="info" text="Compile-time" />
+
+**Declaration.** Type guard that narrows a discriminated union value to the variant whose discriminant property equals `expected`. Returns `Extract<TUnion, Record<TDiscriminant, TValue>>` inside the truthy branch. No runtime effect beyond the property comparison.
+
+**Use this when** you have a union value and need TypeScript to narrow it to a specific variant for type-safe field access. Pairs naturally with `discriminatedUnion` - same discriminant property, same value.
+
+**Don't use this when** your variants don't have a single discriminant property (use manual `typeof` / `instanceof` checks instead).
+
+### Examples
+
+#### Example 1: Narrow a Payment to access variant-specific fields
+
+<RunnableExample src="examples/docs/composition/43-narrow-payment" />
+
+#### Example 2: Exhaustive switch with Compose.narrow
+
+<RunnableExample src="examples/docs/composition/44-narrow-exhaustive-switch" />
+
+### Comparison
+
+`narrow` has no comparison table: it is a compile-time-only type guard (a boolean-narrowing function over an existing value), not a schema builder or validator. Peer libraries express the same narrowing with native TypeScript discriminant checks (`value.method === 'credit_card'`) rather than a dedicated runtime API, so there is no schema-construction code to compare it against.
 
 ## Related
 

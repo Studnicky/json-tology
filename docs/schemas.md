@@ -56,7 +56,7 @@ IRI-based identity is what allows the runtime to perform `$ref` resolution, comp
 
 Cross-schema `$ref` resolution is enforced at both layers:
 
-- **Compile-time**: `InferType` flags any `$ref` that points to an IRI not present in the type map at the call site. This was introduced in 0.3.x (PR #54).
+- **Compile-time**: `InferType` flags any `$ref` that points to an IRI not present in the type map at the call site.
 - **Runtime**: The registry performs a lazy walk on first use of an entry (the first `validate` / `instantiate` / `materialize` / `create` / `convert` / `cast` / `is` / `clean` against it) and throws `GraphError` with code `REF_UNRESOLVED` if any non-fragment `$ref` points to an IRI that is neither in the registry nor embedded as a nested `$id` within the same schema.
 
 Local fragment refs (`#`, `#/foo`, `#anchor`) are unaffected by the strict check.
