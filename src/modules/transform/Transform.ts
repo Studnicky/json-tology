@@ -143,7 +143,7 @@ export class Transform {
   /**
    * Attach decode and encode functions to a schema.
    *
-   * - `decode` is called by instantiate() after validation succeeds.
+   * - `decode` is called by instantiate() before validation runs.
    * - `encode` converts a decoded value back to the wire representation.
    *
    * The schema object is returned unchanged at runtime; only the TypeScript
