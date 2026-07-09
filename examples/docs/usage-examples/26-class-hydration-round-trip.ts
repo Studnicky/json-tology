@@ -68,7 +68,7 @@ const RoundTripOrderTransform = jt.addTransform(RoundTripOrderSchema, {
   }
 });
 
-const wire = aboxFixtures.order;
+const wire = aboxFixtures.order as unknown as OrderWire;
 // Hydrate canonical JSON via encode.
 const instance = jt.encode(RoundTripOrderTransform, wire);
 

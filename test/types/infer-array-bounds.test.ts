@@ -12,7 +12,7 @@
  * side (a value of the wrong arity) is proved with `@ts-expect-error`.
  *
  * Cap behaviour: bounds at or beyond `TupleCapType = 16` fall through to
- * `ReadonlyArray<T>` so that recursion stays within TS limits — the brands are
+ * `T[]` so that recursion stays within TS limits — the brands are
  * still applied.
  */
 
@@ -48,7 +48,7 @@ type ExactThree = InferType<typeof _ExactThreeSchema>;
 // Exactly three strings, carrying both item-count brands.
 assert<AssertEqualType<
   ExactThree,
-  MaxItemsBrandType<3> & MinItemsBrandType<3> & readonly [string, string, string]
+  [string, string, string] & MaxItemsBrandType<3> & MinItemsBrandType<3>
 >>();
 
 // @ts-expect-error — length 2 is rejected, must be exactly 3
@@ -86,7 +86,7 @@ type AtLeastTwo = InferType<typeof _AtLeastTwoSchema>;
 // At least two numbers (non-empty prefix + variadic tail), carrying the minItems brand.
 assert<AssertEqualType<
   AtLeastTwo,
-  MinItemsBrandType<2> & readonly [number, number, ...number[]]
+  [number, number, ...number[]] & MinItemsBrandType<2>
 >>();
 
 // @ts-expect-error — length 1 is rejected, requires at least 2
@@ -116,12 +116,12 @@ type AtMostThree = InferType<typeof _AtMostThreeSchema>;
 // Union of boolean tuples length 0..3, carrying the maxItems brand.
 assert<AssertEqualType<
   AtMostThree,
-  MaxItemsBrandType<3> & (
-    | readonly []
-    | readonly [boolean, boolean, boolean]
-    | readonly [boolean, boolean]
-    | readonly [boolean]
-  )
+  (
+    | []
+    | [boolean, boolean, boolean]
+    | [boolean, boolean]
+    | [boolean]
+  ) & MaxItemsBrandType<3>
 >>();
 
 // @ts-expect-error — length 4 is rejected, must be at most 3
@@ -152,10 +152,10 @@ type RangeTwoToFour = InferType<typeof _RangeTwoToFourSchema>;
 // Bounded union of string tuples across the 2..4 range, carrying both brands.
 assert<AssertEqualType<
   RangeTwoToFour,
-  MaxItemsBrandType<4> & MinItemsBrandType<2> & (
-    | readonly [string, string, string, string]
-    | readonly [string, string]
-  )
+  (
+    | [string, string, string, string]
+    | [string, string]
+  ) & MaxItemsBrandType<4> & MinItemsBrandType<2>
 >>();
 
 // @ts-expect-error — length 1 is below minItems
@@ -176,7 +176,7 @@ void _rangeLong;
 
 // ---------------------------------------------------------------------------
 // 5. Beyond cap — bounds at or beyond TupleCapType = 16 fall through to
-//    ReadonlyArray<T>; the brands are still applied.
+//    T[]; the brands are still applied.
 // ---------------------------------------------------------------------------
 
 const _BeyondCapSchema = {
@@ -190,14 +190,14 @@ void _BeyondCapSchema;
 
 type BeyondCap = InferType<typeof _BeyondCapSchema>;
 
-// Above the cap, narrowing falls through to ReadonlyArray<number> + both brands.
+// Above the cap, narrowing falls through to number[] + both brands.
 assert<AssertEqualType<
   BeyondCap,
-  MaxItemsBrandType<20> & MinItemsBrandType<20> & readonly number[]
+  MaxItemsBrandType<20> & MinItemsBrandType<20> & number[]
 >>();
 
 // ---------------------------------------------------------------------------
-// 6. Sanity — `items` only (no bounds) keeps the existing ReadonlyArray path
+// 6. Sanity — `items` only (no bounds) keeps the existing array-of-T path
 //    with no item-count brands.
 // ---------------------------------------------------------------------------
 
@@ -242,7 +242,7 @@ type RawExact = InferType<typeof _RawExactSchema>;
 // Exactly two unknown elements, carrying both item-count brands.
 assert<AssertEqualType<
   RawExact,
-  MaxItemsBrandType<2> & MinItemsBrandType<2> & readonly [unknown, unknown]
+  [unknown, unknown] & MaxItemsBrandType<2> & MinItemsBrandType<2>
 >>();
 
 // @ts-expect-error — length 1 is rejected, must be exactly 2

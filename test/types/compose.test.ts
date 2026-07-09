@@ -382,7 +382,7 @@ const ExactlyTwoItems = Compose.subClassOf(
 );
 
 type TwoItems = InferType<typeof ExactlyTwoItems>;
-assertType<TwoItems extends { readonly 'items': readonly [string, string] } ? true : false>();
+assertType<TwoItems extends { readonly 'items': [string, string] } ? true : false>();
 
 // minCardinality(N) → at least N elements (non-empty tuple prefix + variadic tail).
 const AtLeastOneItem = Compose.subClassOf(
@@ -394,7 +394,7 @@ const AtLeastOneItem = Compose.subClassOf(
 );
 
 type AtLeast1 = InferType<typeof AtLeastOneItem>;
-assertType<AtLeast1 extends { readonly 'items': readonly [string, ...string[]] } ? true : false>();
+assertType<AtLeast1 extends { readonly 'items': [string, ...string[]] } ? true : false>();
 
 // maxCardinality(N) → union of tuples with length 0..N.
 const AtMostTwoItems = Compose.subClassOf(
@@ -406,11 +406,11 @@ const AtMostTwoItems = Compose.subClassOf(
 );
 
 type AtMost2 = InferType<typeof AtMostTwoItems>;
-assertType<readonly [] extends AtMost2['items'] ? true : false>();
-assertType<readonly [string] extends AtMost2['items'] ? true : false>();
-assertType<readonly [string, string] extends AtMost2['items'] ? true : false>();
+assertType<[] extends AtMost2['items'] ? true : false>();
+assertType<[string] extends AtMost2['items'] ? true : false>();
+assertType<[string, string] extends AtMost2['items'] ? true : false>();
 
-// allValuesFrom(C) narrows array element type to readonly C[].
+// allValuesFrom(C) narrows array element type to C[].
 const StringContainer = Compose.subClassOf(
   Compose.allValuesFrom(ITEMS_PROP, 'https://example.io/Container#items'),
   Compose.subClassOf(ContainerSchema, {

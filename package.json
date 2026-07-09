@@ -169,6 +169,9 @@
       "optional": true
     }
   },
+  "overrides": {
+    "undici": "^6.27.0"
+  },
   "json-tology": {
     "seo": {
       "googleSiteVerification": "",

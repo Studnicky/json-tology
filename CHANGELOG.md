@@ -7,10 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`docs/cross-package-typing.md`** — an end-to-end guide for a registry-in-one-package,
+  consumer-in-another setup: CURIE `$ref` authoring, `InferType` with a CURIE-keyed
+  reference map, and why `instantiate()`'s own return type — keyed by the registry's
+  absolute `$id`s — cannot be trusted across a package boundary, with the recommended
+  re-derive-locally idiom.
+
+### Changed
+
+- **Schema-derived types are mutable by default.** Every type-producing surface
+  (`InferType`, `InferSchemaType`, `MaterializedSchemaType`, `ParseOutputType`,
+  `CanonicalShapeType`/`UnbrandType`, `BrandOutputType`) types object properties and
+  array/tuple elements as plain mutable TypeScript (`T[]`, `{ id: string }`) instead of
+  `readonly T[]`/`ReadonlyArray<T>`/`{ readonly id: string }`. A mutable array is
+  assignable wherever a `readonly` array is expected but not the reverse, so existing
+  call sites that already treat generated values as read-only are unaffected; consumers
+  who need immutability opt in locally with their own `readonly`/`Readonly<T>`
+  annotation. See [Mutability](/types/infer#mutability).
+- **`Transform.create`'s `decode` accepts a partial return.** `decode` is now typed
+  `(raw: TWire) => Partial<CanonicalShapeType<TSchema, TReferences>>` instead of the
+  full canonical shape, matching runtime behavior: `instantiate(..., { enableDefaults:
+  true })` already runs `decode` before filling schema defaults and validating, so a
+  normalize `decode` that only transforms a few wire fields no longer needs to
+  duplicate every schema `default` or use a type assertion. `encode`'s parameter type
+  is unchanged (it consumes the full, validated canonical value).
+
 ### Fixed
 
 - **CI: `publish-gpr.yml` now triggers on tag push** (`v*.*.*`), not only `release: published`. A release created by `release.yml` runs under `GITHUB_TOKEN` and does not cascade the `release` event, so GPR publish never auto-fired; the tag-push trigger (a human/CLI `git push origin vX.Y.Z`) fixes it. A concurrency guard prevents a double-publish when both triggers fire for a human/PAT release.
 - **Release flow documented** in `docs/releasing.md`: merge-commit-based release/back-merge keeps `main` and `develop` convergent (the prior squash-only + linear-history policy made them diverge at every release).
+- **Full-IRI `#fragment` `$ref`s matching a registered hash-namespace `$id`** (e.g.
+  `https://ns#Class`, the idiomatic OWL/RDF form) now resolve correctly, at both
+  schema-registration time and validate/instantiate/materialize/dump runtime. Every
+  `$ref` resolution site (`SchemaRefWalker`, `RefResolution`, `SchemaCompilerPlan`,
+  `Dumper`, `RefDecoder`) tries the literal `$ref` string against the registry before
+  falling back to document-fragment semantics, which previously stripped everything
+  from `#` onward and looked up a base IRI that was never registered. CURIE refs,
+  fragment-less path IRIs, and in-document `#`-only fragment refs are unaffected.
+- **`docs/instantiate-vs-materialize.md` and four related pages stated the decode/default
+  ordering backwards** (validate-then-decode instead of the actual decode-then-validate).
+  Fixed, with a canonical ordering statement and a passthrough-decode example.
+
+### Removed
+
+- **`docs/proposals/specialized-per-schema-validators.md`** — a deferred/not-planned
+  performance proposal with a named revisit trigger, not an open item.
 
 ## [0.26.0] - 2026-06-18
 

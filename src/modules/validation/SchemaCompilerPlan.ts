@@ -234,6 +234,17 @@ function walkInheritedRef(opts: WalkInheritedRefOptionsType): void {
     return;
   }
 
+  // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
+  // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
+  // fragment-stripped resolution when no such registration matches exactly.
+  const literalGraph = ref.includes('#') ? lookupGraph(ref) : undefined;
+
+  if (literalGraph !== undefined) {
+    walkFn(literalGraph, literalGraph.resolveFragment(''));
+
+    return;
+  }
+
   const {
     fragment, id
   } = SchemaIri.parseRef(ref);
@@ -309,6 +320,18 @@ function resolveBranchRef(
 
   if (lookupGraph === undefined) {
     return undefined;
+  }
+
+  // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
+  // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
+  // fragment-stripped resolution when no such registration matches exactly.
+  const literalGraph = ref.includes('#') ? lookupGraph(ref) : undefined;
+
+  if (literalGraph !== undefined) {
+    return {
+      'graph': literalGraph,
+      'node': literalGraph.resolveFragment('')
+    };
   }
 
   const {
@@ -443,6 +466,23 @@ function resolveScanRef(opts: ResolveScanRefOptionsType): void {
   }
 
   if (lookupGraph === undefined) {
+    return;
+  }
+
+  // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
+  // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
+  // fragment-stripped resolution when no such registration matches exactly.
+  const literalGraph = ref.includes('#') ? lookupGraph(ref) : undefined;
+
+  if (literalGraph !== undefined) {
+    const literalSem = literalGraph.semantics(literalGraph.resolveFragment(''));
+
+    scanForConditionalBranches({
+      'currentGraph': literalGraph,
+      'scanSem': literalSem,
+      scanState
+    });
+
     return;
   }
 

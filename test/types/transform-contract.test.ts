@@ -199,3 +199,97 @@ if (false as boolean) {
 }
 
 void [_encodedFromString];
+
+// ---------------------------------------------------------------------------
+// Transform.create — decode return type tolerates a partial canonical value
+//
+// `instantiate(codec, ..., { enableDefaults: true })` runs decode →
+// applyDefaults → validate, so `decode` only needs to return the fields it
+// actually transforms; schema `default`s fill the rest. `encode` still
+// requires the FULL canonical value, since it runs on the validated,
+// fully-defaulted result — its type is untouched by this contract.
+// ---------------------------------------------------------------------------
+
+const BookWireSchema = {
+  '$id': 'https://bookstore.example/schema/BookWire',
+  'properties': {
+    'available': {
+      'default': true,
+      'type': 'boolean'
+    },
+    'isbn': { 'type': 'string' },
+    'stock': {
+      'default': 0,
+      'type': 'number'
+    },
+    'title': { 'type': 'string' }
+  },
+  'required': [
+    'isbn',
+    'title',
+    'available',
+    'stock'
+  ],
+  'type': 'object'
+} as const;
+
+// `decode` returns only `isbn`/`title` — a genuinely partial object literal,
+// not a cast. This type-checks BECAUSE the declared return type is
+// `Partial<CanonicalShapeType<...>>`; `available`/`stock` are left for
+// `enableDefaults` to fill at runtime.
+const BookWireCodec = Transform.create(BookWireSchema, {
+  'decode': (raw: { 'isbn13': string;
+    'title': string }) => {
+    return {
+      'isbn': raw.isbn13,
+      'title': raw.title
+    };
+  },
+  'encode': (book) => {
+    return {
+      'isbn13': book.isbn,
+      'title': book.title
+    };
+  }
+});
+
+const jtBook = JsonTology.create({
+  'baseIri': 'https://bookstore.example',
+  'enableStrictGraph': false,
+  'schemas': [BookWireCodec] as const
+});
+
+// instantiate() with enableDefaults still returns the FULL canonical shape —
+// not `Partial` — proving decode's widened return type has no effect on
+// instantiate()'s own return type, which derives from the schema's
+// `InferSchemaType`/`ParseOutputType`, independent of decode's declared type.
+type BookCanonical = ParseOutputType<typeof BookWireCodec>;
+const _fullBookCanonical: BookCanonical = {
+  'available': true,
+  'isbn': '9780743273565',
+  'stock': 0,
+  'title': 'Gatsby'
+};
+
+assert<AssertEqualType<BookCanonical, {
+  'available': boolean;
+  'isbn': string;
+  'stock': number;
+  'title': string;
+}>>();
+
+const bookInstance = jtBook.instantiate(
+  BookWireCodec,
+  {
+    'isbn13': '9780743273565',
+    'title': 'Gatsby'
+  },
+  { 'enableDefaults': true }
+);
+
+const _bookInstanceIsFullCanonical: BookCanonical = bookInstance;
+
+void [
+  _fullBookCanonical,
+  _bookInstanceIsFullCanonical
+];

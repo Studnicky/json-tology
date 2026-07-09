@@ -389,7 +389,14 @@ export class Dumper {
     }
 
     const parsed = SchemaIri.parseRef(ref);
-    const lookedUp = registry.graphEntry(parsed.id);
+
+    // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be
+    // a registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall
+    // to fragment-stripped resolution when no such registration matches
+    // exactly.
+    const literalLookedUp = parsed.fragment === '' ? undefined : registry.graphEntry(ref);
+    const lookedUp = literalLookedUp ?? registry.graphEntry(parsed.id);
+    const targetFragment = literalLookedUp === undefined ? parsed.fragment : '';
 
     if (lookedUp === undefined) {
       throw new GraphError(`Unresolved schema reference: ${ref}`, {
@@ -402,7 +409,7 @@ export class Dumper {
       'graph': targetGraph,
       'schema': targetSchema
     } = lookedUp;
-    const targetNode = targetGraph.resolveFragment(parsed.fragment);
+    const targetNode = targetGraph.resolveFragment(targetFragment);
 
     return {
       'graph': targetGraph,

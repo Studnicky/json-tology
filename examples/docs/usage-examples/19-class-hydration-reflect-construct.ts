@@ -78,7 +78,7 @@ const ReflectOrderTransform = jt.addTransform(ReflectOrderSchema, {
 });
 
 // Hydrate canonical JSON into a class instance via encode.
-const hydrated = jt.encode(ReflectOrderTransform, aboxFixtures.order);
+const hydrated = jt.encode(ReflectOrderTransform, aboxFixtures.order as unknown as OrderWire);
 
 console.assert(hydrated instanceof OrderViaReflect);
 console.assert(hydrated.status().startsWith('shipped:'));

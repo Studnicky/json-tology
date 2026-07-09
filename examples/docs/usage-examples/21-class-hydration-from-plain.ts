@@ -87,7 +87,7 @@ const FromPlainOrderTransform = jt.addTransform(FromPlainOrderSchema, {
 });
 
 // Hydrate canonical JSON via encode.
-const hydrated = jt.encode(FromPlainOrderTransform, aboxFixtures.order);
+const hydrated = jt.encode(FromPlainOrderTransform, aboxFixtures.order as unknown as OrderWire);
 
 console.assert(hydrated instanceof OrderViaFromPlain);
 console.assert(hydrated.orderId === aboxFixtures.order.orderId);

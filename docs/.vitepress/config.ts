@@ -57,7 +57,8 @@ const sidebar = [
       { link: '/validation-modes', text: 'Validation modes' },
       { link: '/picking-a-method', text: 'Picking a method' },
       { link: '/instantiate-vs-materialize', text: 'instantiate vs materialize' },
-      { link: '/argument-conventions', text: 'Argument conventions' }
+      { link: '/argument-conventions', text: 'Argument conventions' },
+      { link: '/cross-package-typing', text: 'Runtime decoding across packages' }
     ]
   },
   {

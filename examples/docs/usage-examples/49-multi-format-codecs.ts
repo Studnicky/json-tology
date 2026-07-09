@@ -292,7 +292,7 @@ function recordIri(isbn: string | undefined): string {
 
 interface BibliographicRecordWire {
   // `authors` carries minItems:1, so the canonical types it as a non-empty tuple.
-  'authors'?: readonly [string, ...string[]];
+  'authors'?: [string, ...string[]];
   'isbn'?: string;
   'publishedOn'?: string;
   'title'?: string;

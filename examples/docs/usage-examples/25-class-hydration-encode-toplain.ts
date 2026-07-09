@@ -85,7 +85,7 @@ const ToPlainOrderTransform = jt.addTransform(ToPlainOrderSchema, {
 // Hydrate canonical JSON via encode.
 const hydrated = jt.encode(
   ToPlainOrderTransform,
-  aboxFixtures.order
+  aboxFixtures.order as unknown as OrderWire
 );
 
 hydrated.cacheTouch();

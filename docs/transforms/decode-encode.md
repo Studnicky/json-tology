@@ -8,7 +8,7 @@
 
 ## `Transform.create` {#transform-create}
 
-**Declaration.** Attaches `decode` and `encode` functions to a schema using a `WeakMap` (the schema object is never mutated). Returns the same schema object with a widened TypeScript type `TransformedType<TSchema, TOut>`. After `Transform.create`, any call to `jt.instantiate(schema.$id, raw)` automatically applies the `decode` function after validation. The TypeScript return type changes from `InferSchemaType<TSchema>` to `TOut`.
+**Declaration.** Attaches `decode` and `encode` functions to a schema using a `WeakMap` (the schema object is never mutated). Returns the same schema object with a widened TypeScript type `TransformedType<TSchema, TOut>`. After `Transform.create`, any call to `jt.instantiate(schema.$id, raw)` automatically applies the `decode` function **before** validation — the schema describes `decode`'s output, so validation (which fills defaults and strips unknown properties) runs on the decoded result. See [Canonical decode/default ordering](/instantiate-vs-materialize#canonical-decode-default-ordering) for the full sequence. The TypeScript return type changes from `InferSchemaType<TSchema>` to `TOut`.
 
 **Use this when** a wire-format value needs automatic conversion to a richer domain type - ISO date strings → `Date`, cents integers → floats, raw enums → branded enums, base64 strings → `Buffer`.
 

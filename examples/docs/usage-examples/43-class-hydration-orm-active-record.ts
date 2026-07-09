@@ -77,7 +77,7 @@ const activeRecordCustomerTransform = jt.addTransform(
 );
 
 // Hydrate canonical JSON into a CustomerRecord instance.
-const customer = jt.encode(activeRecordCustomerTransform, aboxFixtures.customer);
+const customer = jt.encode(activeRecordCustomerTransform, aboxFixtures.customer as unknown as CustomerWire);
 
 // Active-record method available immediately on the hydrated value.
 const saved = await customer.save();

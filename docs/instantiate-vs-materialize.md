@@ -20,11 +20,13 @@ Both methods validate and return a typed value. The difference is **where the da
 
 It does four things in order:
 1. Deep-clones the input (the original is never mutated).
-2. Validates against the schema; throws `InstantiationError` on failure.
-3. Resolves `$ref`s recursively via the registered `RefDecoder`.
-4. **Runs every registered `Transform` decoder** on the validated value.
+2. **Runs the schema's registered `Transform` decoder** on the raw, cloned input.
+3. Resolves `$ref`s recursively via the registered `RefDecoder`, running each nested schema's decoder in turn.
+4. Validates the fully-decoded result against the schema — filling `default` values and stripping unknown properties in the same pass; throws `InstantiationError` on failure.
 
 The returned value is the decoded, branded runtime type — `Customer`, not `{ id: string, email: string, … }`.
+
+> Canonical ordering: `decode → validate (fills defaults, strips unknown) → invariants`. See [Canonical decode/default ordering](#canonical-decode-default-ordering) below.
 
 <!-- inline-ts-ok: HTTP-handler usage sketch; `rawBody` is a handler parameter and the imports are doc-relative, not a standalone runnable program. -->
 ```ts
@@ -84,7 +86,7 @@ Transform.create(CustomerIdSchema, {
 });
 ```
 
-When `instantiate` runs, every `$ref`-resolved property that has a registered `Transform` decoder runs its `decode` function. This is how wire data (raw strings, dates as ISO strings, CURIEs) becomes your domain type.
+When `instantiate` runs, every `$ref`-resolved property that has a registered `Transform` decoder runs its `decode` function **before** validation and default-filling happen. This is how wire data (raw strings, dates as ISO strings, CURIEs) becomes your domain type.
 
 `materialize` skips this step entirely — the data you pass in is already your domain shape. Calling `materialize` on wire data where a decoder is registered means the decoder never runs and the returned value is the undecoded wire form, not the domain type.
 
@@ -118,6 +120,16 @@ const draft = bookstoreEntities.materialize(BookSchema, {
 
 This option has no equivalent on `instantiate` — every required field must be present in untrusted input.
 
+## Canonical decode/default ordering
+
+`instantiate` runs `decode` **before** validation, not after: `decode → validate (fills defaults, strips unknown) → invariants`. A `decode` function receives the raw wire value, not the defaulted canonical value — any `default` declared on the schema is filled in by the validation pass that runs *after* `decode` returns.
+
+A passthrough `decode` — one that returns its input unchanged — makes the ordering directly observable: the decoder does no default-filling itself, yet `instantiate`'s final return value has every default filled in.
+
+<RunnableExample src="examples/docs/instantiate-vs-materialize/01-passthrough-decode-defaults" />
+
+This is also documented on `Transform.create` itself (`src/modules/transform/Transform.ts`): "`decode` consumes the raw wire type and produces the canonical value; the schema describes decode's OUTPUT, so validation runs on the decoded result (decode → validate → strip)."
+
 ## Summary
 
 | | `instantiate` | `materialize` |
@@ -136,3 +148,4 @@ This option has no equivalent on `instantiate` — every required field must be 
 - [`materialize` reference](/registry/materialize) — construction helper examples
 - [Picking a method](/picking-a-method) — broader decision guide including `validate` and `is`
 - [Transforms](/transforms/decode-encode) — how `Transform.create` registers a decoder
+- [Runtime decoding across packages](/cross-package-typing) — this same ordering, applied to a registry split across two packages

@@ -357,8 +357,16 @@ export class RefDecoder {
 
     // Cache miss — resolve and store.
     const parsed = SchemaIri.parseRef(refTarget);
-    const targetId = registry.resolveSchemaId(parsed.id);
-    const targetSchema = registry.getSchema(targetId);
+
+    // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be
+    // a registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall
+    // to fragment-stripped resolution when no such registration matches
+    // exactly.
+    const literalSchema = parsed.fragment === ''
+      ? undefined
+      : registry.getSchema(registry.resolveSchemaId(refTarget));
+    const targetSchema = literalSchema ?? registry.getSchema(registry.resolveSchemaId(parsed.id));
+    const targetFragment = literalSchema === undefined ? parsed.fragment : '';
 
     if (targetSchema === undefined) {
       graphCache.set(node, null);
@@ -380,9 +388,9 @@ export class RefDecoder {
       return RefDecoder.decodeWithSchema(targetSchema, value);
     }
 
-    const targetNode = parsed.fragment === ''
+    const targetNode = targetFragment === ''
       ? targetGraph.rootNode
-      : targetGraph.resolveFragment(parsed.fragment);
+      : targetGraph.resolveFragment(targetFragment);
 
     graphCache.set(node, {
       'targetGraph': targetGraph,

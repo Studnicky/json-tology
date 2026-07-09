@@ -17,7 +17,7 @@ import {
 
 // materialize — fills declared defaults, partial is trusted.
 const materialized = bookstoreEntities.materialize(BookSchema, {
-  'authors': aboxFixtures.rareBook.authors,
+  'authors': [...aboxFixtures.rareBook.authors],
   'isbn': aboxFixtures.rareBook.isbn,
   'price': aboxFixtures.rareBook.price,
   'printStatus': aboxFixtures.rareBook.printStatus,

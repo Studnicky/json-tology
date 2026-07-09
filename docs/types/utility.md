@@ -9,6 +9,8 @@ description: DeprecatedKeysType, NonDeprecatedSchemaType, EnumValuesType, Exhaus
 
 See also [Primary inference](./infer.md), [Range types](./ranges.md).
 
+> All schema-derived types on this page — like every generated type in json-tology — are mutable by default; see [Mutability](./infer.md#mutability).
+
 json-tology exports five utility types for working with schema-derived types. Each has its own section below.
 
 | Type | Purpose |
