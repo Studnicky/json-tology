@@ -59,7 +59,9 @@ import {
  * JSON-pointer `/properties/<name>` form, and plain path segments.
  */
 function localNameOf(propertyIri: string): string {
-  return SchemaIri.propertyName(propertyIri);
+  const result = SchemaIri.propertyName(propertyIri);
+
+  return result;
 }
 
 /** Compact form of the RDF List IRI. */
@@ -100,122 +102,6 @@ function indexPropertyType(
   }
 }
 
-/** Handle an rdf:type relation — record object or datatype property declarations. */
-function applyTypeRelation(
-  propertyIndex: Map<string, PropertyIndexValueType>,
-  subjectIri: string,
-  targetIri: string
-): void {
-  if (OBJECT_PROPERTY_TYPES.has(targetIri)) {
-    indexPropertyType(propertyIndex, subjectIri, 'object');
-  } else if (DATATYPE_PROPERTY_TYPES.has(targetIri)) {
-    indexPropertyType(propertyIndex, subjectIri, 'datatype');
-  }
-}
-
-/**
- * Single-pass traversal of `ctx.graph.allRelations()` that collects property
- * type declarations, domain, range, subPropertyOf, and inverseOf axioms into
- * separate maps for later merging.
- */
-function collectPropertyDeclarations(ctx: OwlImportContextType): PropertyCollectionMapsType {
-  const propertyIndex = new Map<string, PropertyIndexValueType>();
-  const domainsByProperty = new Map<string, string[]>();
-  const rangeByProperty = new Map<string, string>();
-  const subPropertyOf = new Map<string, string[]>();
-  const inverseOf = new Map<string, string[]>();
-
-  for (const relation of ctx.graph.allRelations()) {
-    const subjectIri = relation.source.id;
-    const predicate = relation.predicate;
-    const raw = typeof relation.target === 'string' ? relation.target : relation.target.id;
-    const targetIri = ctx.curie.expandIfNeeded(raw);
-
-    if (predicate === RDF.type) {
-      applyTypeRelation(propertyIndex, subjectIri, targetIri);
-      continue;
-    }
-
-    if (targetIri.startsWith('_:') || targetIri === '') {
-      continue;
-    }
-
-    if (DOMAIN_PREDICATES.has(predicate)) {
-      pushUnique(domainsByProperty, subjectIri, targetIri);
-      continue;
-    }
-
-    if (RANGE_PREDICATES.has(predicate)) {
-      rangeByProperty.set(subjectIri, targetIri);
-      continue;
-    }
-
-    if (SUB_PROPERTY_PREDICATES.has(predicate)) {
-      pushUnique(subPropertyOf, subjectIri, targetIri);
-      continue;
-    }
-
-    if (INVERSE_OF_PREDICATES.has(predicate)) {
-      pushUnique(inverseOf, subjectIri, targetIri);
-    }
-  }
-
-  return {
-    domainsByProperty,
-    inverseOf,
-    propertyIndex,
-    rangeByProperty,
-    subPropertyOf
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Phase 2: merge collection maps into PropIndexEntryType records
-// ---------------------------------------------------------------------------
-
-/**
- * Merge the per-predicate collection maps into a unified `PropIndexEntryType` map,
- * including properties that appear via `rdfs:domain` without an explicit
- * `rdf:type` declaration.
- */
-function buildPropertyEntries(
-  maps: PropertyCollectionMapsType,
-  ctx: OwlImportContextType
-): Map<string, PropIndexEntryType> {
-  const {
-    domainsByProperty, inverseOf, propertyIndex, rangeByProperty, subPropertyOf
-  } = maps;
-
-  const allPropertyIris = new Set<string>([
-    ...propertyIndex.keys(),
-    ...ctx.allPropertyIris
-  ]);
-
-  for (const domainPropIri of domainsByProperty.keys()) {
-    // Property seen via rdfs:domain but not declared with rdf:type — treat
-    // as a generic property; classify as object/datatype based on range.
-    allPropertyIris.add(domainPropIri);
-  }
-
-  const entries = new Map<string, PropIndexEntryType>();
-
-  for (const propIri of allPropertyIris) {
-    const existing = propertyIndex.get(propIri);
-    const propType: 'datatype' | 'object' = existing?.type ?? 'object';
-
-    entries.set(propIri, {
-      'domains': domainsByProperty.get(propIri) ?? [],
-      'inverseOf': inverseOf.get(propIri) ?? [],
-      'propertyIri': propIri,
-      'range': rangeByProperty.get(propIri) ?? null,
-      'subPropertyOf': subPropertyOf.get(propIri) ?? [],
-      'type': propType
-    });
-  }
-
-  return entries;
-}
-
 // ---------------------------------------------------------------------------
 // Phase 3a: resolve property value shape from range IRI
 // ---------------------------------------------------------------------------
@@ -228,139 +114,6 @@ function xsdPrimitiveShape(primitive: XsdJsonSchemaPrimitiveType): Record<string
       'format': primitive.format,
       'type': primitive.type
     };
-}
-
-/**
- * Derive the JSON Schema value shape for a property given its range IRI.
- * Returns null when no structural delta should be produced (e.g. rdf:List).
- */
-function resolvePropertyShape(
-  range: string,
-  propertyIri: string,
-  ctx: OwlImportContextType
-): null | Record<string, unknown> {
-  if (range === RDF_LIST_CURIE || range === RDF.List) {
-    // rdf:List signals an array (no-maxCount path in OwlProjection); no
-    // structural delta from range alone.
-    return null;
-  }
-
-  const xsdPrimitive = XSD_TO_JSON_SCHEMA.get(range) ?? null;
-
-  if (xsdPrimitive !== null) {
-    return xsdPrimitiveShape(xsdPrimitive);
-  }
-
-  if (ctx.allClassIris.has(range) || ctx.allPropertyIris.has(range) || ctx.isDatatype(range)) {
-    return { '$ref': range };
-  }
-
-  // Unknown range: try expanding with curie and check again.
-  const expanded = ctx.curie.expand(range);
-
-  if (expanded === range) {
-    // Truly unknown — report and skip shape.
-    ctx.reportUnsupported(range, propertyIri);
-
-    return null;
-  }
-
-  const expandedPrimitive = XSD_TO_JSON_SCHEMA.get(expanded) ?? null;
-
-  return expandedPrimitive === null ? { '$ref': expanded } : xsdPrimitiveShape(expandedPrimitive);
-}
-
-// ---------------------------------------------------------------------------
-// Phase 3b: apply property shape to every domain class
-// ---------------------------------------------------------------------------
-
-/**
- * Update `schemaDeltas` for each class in `domains` with the property shape.
- */
-function applyPropertyToDomains(args: ApplyPropertyArgsType): void {
-  const {
-    domains, propertyIri, propShape, schemaDeltas
-  } = args;
-  const propLocalName = localNameOf(propertyIri);
-
-  if (propLocalName === '') {
-    return;
-  }
-
-  for (const classIri of domains) {
-    if (classIri.startsWith('_:')) {
-      continue;
-    }
-
-    const existing = schemaDeltas.get(classIri) ?? {};
-    const existingProps = typeof existing.properties === 'object'
-      ? existing.properties as Record<string, unknown>
-      : {};
-
-    const propValue: Record<string, unknown> = propShape === null ? {} : { ...propShape };
-    const updatedProps: Record<string, unknown> = {
-      ...existingProps,
-      [propLocalName]: propValue
-    };
-    const updatedDelta: Record<string, unknown> = {
-      ...existing,
-      'properties': updatedProps,
-      'type': 'object'
-    };
-
-    schemaDeltas.set(classIri, updatedDelta);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Phase 3: build schema deltas and characteristics from merged entries
-// ---------------------------------------------------------------------------
-
-/**
- * Walk the merged property entries and produce the `schemaDeltas` and
- * `characteristics` arrays that make up the returned fragment.
- */
-function buildFragmentFromEntries(
-  entries: Map<string, PropIndexEntryType>,
-  ctx: OwlImportContextType
-): Pick<OwlImportFragmentType, 'characteristics' | 'schemaDeltas'> {
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-  const characteristics: Array<{ 'characteristic': string;
-    'propertyIri': string }> = [];
-
-  for (const entry of entries.values()) {
-    const {
-      domains, inverseOf, propertyIri, range, subPropertyOf
-    } = entry;
-
-    for (const parentIri of subPropertyOf) {
-      characteristics.push({
-        'characteristic': `subPropertyOf:${parentIri}`,
-        'propertyIri': propertyIri
-      });
-    }
-
-    for (const targetIri of inverseOf) {
-      characteristics.push({
-        'characteristic': `inverseOf:${targetIri}`,
-        'propertyIri': propertyIri
-      });
-    }
-
-    const propShape = range === null ? null : resolvePropertyShape(range, propertyIri, ctx);
-
-    applyPropertyToDomains({
-      domains,
-      propertyIri,
-      propShape,
-      schemaDeltas
-    });
-  }
-
-  return {
-    characteristics,
-    schemaDeltas
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -399,12 +152,209 @@ function buildFragmentFromEntries(
  * @group Dispatchers
  */
 export class Properties {
+  /**
+   * Update `schemaDeltas` for each class in `domains` with the property shape.
+   */
+  private static applyPropertyToDomains(args: ApplyPropertyArgsType): void {
+    const {
+      domains, propertyIri, propShape, schemaDeltas
+    } = args;
+    const propLocalName = localNameOf(propertyIri);
+
+    if (propLocalName === '') {
+      return;
+    }
+
+    for (const classIri of domains) {
+      if (classIri.startsWith('_:')) {
+        continue;
+      }
+
+      const existing = schemaDeltas.get(classIri) ?? {};
+      const existingProps = typeof existing.properties === 'object'
+        ? existing.properties as Record<string, unknown>
+        : {};
+
+      const propValue: Record<string, unknown> = propShape === null ? {} : { ...propShape };
+      const updatedProps: Record<string, unknown> = { ...existingProps };
+
+      updatedProps[propLocalName] = propValue;
+
+      const updatedDelta: Record<string, unknown> = {
+        ...existing,
+        'properties': updatedProps,
+        'type': 'object'
+      };
+
+      schemaDeltas.set(classIri, updatedDelta);
+    }
+  }
+
+  /** Handle an rdf:type relation — record object or datatype property declarations. */
+  private static applyTypeRelation(
+    propertyIndex: Map<string, PropertyIndexValueType>,
+    subjectIri: string,
+    targetIri: string
+  ): void {
+    if (OBJECT_PROPERTY_TYPES.has(targetIri)) {
+      indexPropertyType(propertyIndex, subjectIri, 'object');
+    } else if (DATATYPE_PROPERTY_TYPES.has(targetIri)) {
+      indexPropertyType(propertyIndex, subjectIri, 'datatype');
+    }
+  }
+
+  /**
+   * Walk the merged property entries and produce the `schemaDeltas` and
+   * `characteristics` arrays that make up the returned fragment.
+   */
+  private static buildFragmentFromEntries(
+    entries: Map<string, PropIndexEntryType>,
+    ctx: OwlImportContextType
+  ): Pick<OwlImportFragmentType, 'characteristics' | 'schemaDeltas'> {
+    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+    const characteristics: Array<{ 'characteristic': string;
+      'propertyIri': string }> = [];
+
+    for (const entry of entries.values()) {
+      const {
+        domains, inverseOf, propertyIri, range, subPropertyOf
+      } = entry;
+
+      for (const parentIri of subPropertyOf) {
+        characteristics.push({
+          'characteristic': `subPropertyOf:${parentIri}`,
+          'propertyIri': propertyIri
+        });
+      }
+
+      for (const targetIri of inverseOf) {
+        characteristics.push({
+          'characteristic': `inverseOf:${targetIri}`,
+          'propertyIri': propertyIri
+        });
+      }
+
+      const propShape = range === null ? null : Properties.resolvePropertyShape(range, propertyIri, ctx);
+
+      Properties.applyPropertyToDomains({
+        domains,
+        propertyIri,
+        propShape,
+        schemaDeltas
+      });
+    }
+
+    return {
+      characteristics,
+      schemaDeltas
+    };
+  }
+
+  /**
+   * Merge the per-predicate collection maps into a unified `PropIndexEntryType` map,
+   * including properties that appear via `rdfs:domain` without an explicit
+   * `rdf:type` declaration.
+   */
+  private static buildPropertyEntries(
+    maps: PropertyCollectionMapsType,
+    ctx: OwlImportContextType
+  ): Map<string, PropIndexEntryType> {
+    const {
+      domainsByProperty, inverseOf, propertyIndex, rangeByProperty, subPropertyOf
+    } = maps;
+
+    const allPropertyIris = new Set<string>([
+      ...propertyIndex.keys(),
+      ...ctx.allPropertyIris
+    ]);
+
+    for (const domainPropIri of domainsByProperty.keys()) {
+      // Property seen via rdfs:domain but not declared with rdf:type — treat
+      // as a generic property; classify as object/datatype based on range.
+      allPropertyIris.add(domainPropIri);
+    }
+
+    const entries = new Map<string, PropIndexEntryType>();
+
+    for (const propIri of allPropertyIris) {
+      const existing = propertyIndex.get(propIri);
+      const propType: 'datatype' | 'object' = existing?.type ?? 'object';
+
+      entries.set(propIri, {
+        'domains': domainsByProperty.get(propIri) ?? [],
+        'inverseOf': inverseOf.get(propIri) ?? [],
+        'propertyIri': propIri,
+        'range': rangeByProperty.get(propIri) ?? null,
+        'subPropertyOf': subPropertyOf.get(propIri) ?? [],
+        'type': propType
+      });
+    }
+
+    return entries;
+  }
+
+  /**
+   * Single-pass traversal of `ctx.graph.allRelations()` that collects property
+   * type declarations, domain, range, subPropertyOf, and inverseOf axioms into
+   * separate maps for later merging.
+   */
+  private static collectPropertyDeclarations(ctx: OwlImportContextType): PropertyCollectionMapsType {
+    const propertyIndex = new Map<string, PropertyIndexValueType>();
+    const domainsByProperty = new Map<string, string[]>();
+    const rangeByProperty = new Map<string, string>();
+    const subPropertyOf = new Map<string, string[]>();
+    const inverseOf = new Map<string, string[]>();
+
+    for (const relation of ctx.graph.allRelations()) {
+      const subjectIri = relation.source.id;
+      const predicate = relation.predicate;
+      const raw = typeof relation.target === 'string' ? relation.target : relation.target.id;
+      const targetIri = ctx.curie.expandIfNeeded(raw);
+
+      if (predicate === RDF.type) {
+        Properties.applyTypeRelation(propertyIndex, subjectIri, targetIri);
+        continue;
+      }
+
+      if (targetIri.startsWith('_:') || targetIri === '') {
+        continue;
+      }
+
+      if (DOMAIN_PREDICATES.has(predicate)) {
+        pushUnique(domainsByProperty, subjectIri, targetIri);
+        continue;
+      }
+
+      if (RANGE_PREDICATES.has(predicate)) {
+        rangeByProperty.set(subjectIri, targetIri);
+        continue;
+      }
+
+      if (SUB_PROPERTY_PREDICATES.has(predicate)) {
+        pushUnique(subPropertyOf, subjectIri, targetIri);
+        continue;
+      }
+
+      if (INVERSE_OF_PREDICATES.has(predicate)) {
+        pushUnique(inverseOf, subjectIri, targetIri);
+      }
+    }
+
+    return {
+      domainsByProperty,
+      inverseOf,
+      propertyIndex,
+      rangeByProperty,
+      subPropertyOf
+    };
+  }
+
   public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-    const maps = collectPropertyDeclarations(ctx);
-    const entries = buildPropertyEntries(maps, ctx);
+    const maps = Properties.collectPropertyDeclarations(ctx);
+    const entries = Properties.buildPropertyEntries(maps, ctx);
     const {
       characteristics, schemaDeltas
-    } = buildFragmentFromEntries(entries, ctx);
+    } = Properties.buildFragmentFromEntries(entries, ctx);
 
     return {
       characteristics,
@@ -414,5 +364,45 @@ export class Properties {
       'sameAs': [],
       schemaDeltas
     };
+  }
+
+  /**
+   * Derive the JSON Schema value shape for a property given its range IRI.
+   * Returns null when no structural delta should be produced (e.g. rdf:List).
+   */
+  private static resolvePropertyShape(
+    range: string,
+    propertyIri: string,
+    ctx: OwlImportContextType
+  ): null | Record<string, unknown> {
+    if (range === RDF_LIST_CURIE || range === RDF.List) {
+      // rdf:List signals an array (no-maxCount path in OwlProjection); no
+      // structural delta from range alone.
+      return null;
+    }
+
+    const xsdPrimitive = XSD_TO_JSON_SCHEMA.get(range) ?? null;
+
+    if (xsdPrimitive !== null) {
+      return xsdPrimitiveShape(xsdPrimitive);
+    }
+
+    if (ctx.allClassIris.has(range) || ctx.allPropertyIris.has(range) || ctx.isDatatype(range)) {
+      return { '$ref': range };
+    }
+
+    // Unknown range: try expanding with curie and check again.
+    const expanded = ctx.curie.expand(range);
+
+    if (expanded === range) {
+      // Truly unknown — report and skip shape.
+      ctx.reportUnsupported(range, propertyIri);
+
+      return null;
+    }
+
+    const expandedPrimitive = XSD_TO_JSON_SCHEMA.get(expanded) ?? null;
+
+    return expandedPrimitive === null ? { '$ref': expanded } : xsdPrimitiveShape(expandedPrimitive);
   }
 }

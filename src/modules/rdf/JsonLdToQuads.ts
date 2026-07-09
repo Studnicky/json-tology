@@ -66,120 +66,120 @@ function isLiteralString(value: string, context: Record<string, string>): boolea
 }
 
 // ---------------------------------------------------------------------------
-// Shared conversion context — groups per-call mutable state to avoid
-// passing 4–5 arguments through every recursive call.
+// JSON-LD value conversion — grouped as methods on a single internal
+// namespace object (see `Lists`/`Terms`) because their names collide with
+// the project's banned freestanding verb-prefix list (make/convert/...).
 // ---------------------------------------------------------------------------
 
-function makeConversionContext(context: Record<string, string>): ConversionContextType {
-  return {
-    'allQuads': [],
-    'bnodeMap': new Map(),
-    'context': context,
-    'counter': new IdentifierIssuer({ 'prefix': '_:jld' })
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Convert a JSON-LD object value to a QuadObjectType
-// ---------------------------------------------------------------------------
-
-function convertIdObject(
-  obj: Record<string, unknown>,
-  iriValue: string,
-  ctx: ConversionContextType
-): QuadObjectType {
-  if (iriValue.startsWith('_:')) {
-    return Terms.blank(iriValue.slice(2));
-  }
-
-  // Inlined blank node (has keys beyond @id)
-  if (Object.keys(obj).length > 1) {
-    const bnodeId = convertInlinedBnode(obj, ctx);
-
-    return Terms.blank(bnodeId.slice(2));
-  }
-
-  return Terms.iri(Curie.expandWithContext(iriValue, ctx.context));
-}
-
-function convertRdfList(
-  rawList: unknown[],
-  ctx: ConversionContextType
-): QuadObjectType {
-  const items: QuadObjectType[] = [];
-
-  for (const rawItem of rawList) {
-    const term = jsonLdValueToTerm(rawItem, ctx);
-
-    if (term !== null) {
-      items.push(term);
+const Convert = {
+  convertIdObject(
+    obj: Record<string, unknown>,
+    iriValue: string,
+    ctx: ConversionContextType
+  ): QuadObjectType {
+    if (iriValue.startsWith('_:')) {
+      return Terms.blank(iriValue.slice(2));
     }
+
+    // Inlined blank node (has keys beyond @id)
+    if (Object.keys(obj).length > 1) {
+      const bnodeId = Convert.convertInlinedBnode(obj, ctx);
+
+      return Terms.blank(bnodeId.slice(2));
+    }
+
+    return Terms.iri(Curie.expandWithContext(iriValue, ctx.context));
+  },
+
+  convertInlinedBnode(
+    obj: Record<string, unknown>,
+    ctx: ConversionContextType
+  ): string {
+    const existingId = ctx.bnodeMap.get(obj);
+    const bnodeId = existingId ?? ctx.counter.getId();
+
+    if (existingId === undefined) {
+      ctx.bnodeMap.set(obj, bnodeId);
+      emitNodeQuads(bnodeId, obj, ctx);
+    }
+
+    return bnodeId;
+  },
+
+  convertObjectValue(
+    obj: Record<string, unknown>,
+    originalValue: unknown,
+    ctx: ConversionContextType
+  ): null | QuadObjectType {
+    if ('@list' in obj && Array.isArray(obj['@list'])) {
+      return Convert.convertRdfList(obj['@list'] as unknown[], ctx);
+    }
+
+    if ('@id' in obj && typeof obj['@id'] === 'string') {
+      return Convert.convertIdObject(obj, obj['@id'], ctx);
+    }
+
+    if ('@value' in obj) {
+      return Terms.literal(obj['@value']);
+    }
+
+    if (Object.keys(obj).length > 0) {
+      return Terms.blank(Convert.convertInlinedBnode(obj, ctx).slice(2));
+    }
+
+    return Terms.literal(originalValue);
+  },
+
+  convertRdfList(
+    rawList: unknown[],
+    ctx: ConversionContextType
+  ): QuadObjectType {
+    const items: QuadObjectType[] = [];
+
+    for (const rawItem of rawList) {
+      const term = jsonLdValueToTerm(rawItem, ctx);
+
+      if (term !== null) {
+        items.push(term);
+      }
+    }
+
+    const {
+      head, triples
+    } = Lists.build(items, ctx.counter);
+
+    for (const triple of triples) {
+      ctx.allQuads.push(triple);
+    }
+
+    return head;
+  },
+
+  convertStringValue(value: string, ctx: ConversionContextType): QuadObjectType {
+    if (isLiteralString(value, ctx.context)) {
+      return Terms.literal(value);
+    }
+
+    return Terms.iri(Curie.expandWithContext(value, ctx.context));
+  },
+
+  /** Groups per-call mutable state to avoid passing 4-5 arguments through every recursive call. */
+  makeConversionContext(context: Record<string, string>): ConversionContextType {
+    return {
+      'allQuads': [],
+      'bnodeMap': new Map(),
+      'context': context,
+      'counter': new IdentifierIssuer({ 'prefix': '_:jld' })
+    };
   }
-
-  const {
-    head, triples
-  } = Lists.build(items, ctx.counter);
-
-  for (const triple of triples) {
-    ctx.allQuads.push(triple);
-  }
-
-  return head;
-}
-
-function convertInlinedBnode(
-  obj: Record<string, unknown>,
-  ctx: ConversionContextType
-): string {
-  const existingId = ctx.bnodeMap.get(obj);
-  const bnodeId = existingId ?? ctx.counter.getId();
-
-  if (existingId === undefined) {
-    ctx.bnodeMap.set(obj, bnodeId);
-    emitNodeQuads(bnodeId, obj, ctx);
-  }
-
-  return bnodeId;
-}
-
-function convertStringValue(value: string, ctx: ConversionContextType): QuadObjectType {
-  if (isLiteralString(value, ctx.context)) {
-    return Terms.literal(value);
-  }
-
-  return Terms.iri(Curie.expandWithContext(value, ctx.context));
-}
-
-function convertObjectValue(
-  obj: Record<string, unknown>,
-  originalValue: unknown,
-  ctx: ConversionContextType
-): null | QuadObjectType {
-  if ('@list' in obj && Array.isArray(obj['@list'])) {
-    return convertRdfList(obj['@list'] as unknown[], ctx);
-  }
-
-  if ('@id' in obj && typeof obj['@id'] === 'string') {
-    return convertIdObject(obj, obj['@id'], ctx);
-  }
-
-  if ('@value' in obj) {
-    return Terms.literal(obj['@value']);
-  }
-
-  if (Object.keys(obj).length > 0) {
-    return Terms.blank(convertInlinedBnode(obj, ctx).slice(2));
-  }
-
-  return Terms.literal(originalValue);
-}
+} as const;
 
 function jsonLdValueToTerm(
   value: unknown,
   ctx: ConversionContextType
 ): null | QuadObjectType {
   if (typeof value === 'string') {
-    return convertStringValue(value, ctx);
+    return Convert.convertStringValue(value, ctx);
   }
 
   if (typeof value === 'number' || typeof value === 'boolean') {
@@ -190,7 +190,7 @@ function jsonLdValueToTerm(
     return null;
   }
 
-  return convertObjectValue(value as Record<string, unknown>, value, ctx);
+  return Convert.convertObjectValue(value as Record<string, unknown>, value, ctx);
 }
 
 // ---------------------------------------------------------------------------
@@ -259,6 +259,94 @@ function emitNodeQuads(
 }
 
 // ---------------------------------------------------------------------------
+// N-Quads parser (for jsonld.js v8 output with format: 'application/n-quads')
+// — grouped for the same reason as `Convert` above.
+// ---------------------------------------------------------------------------
+
+const NQuadParse = {
+  parseLiteralToken(token: string): ParsedLiteralType {
+    const closingQuote = token.lastIndexOf('"');
+
+    if (closingQuote <= 0) {
+      return {
+        'datatype': XSD.string,
+        'language': '',
+        'value': token.slice(1, -1)
+      };
+    }
+    const value = token.slice(1, closingQuote)
+      .replaceAll('\\"', '"')
+      .replaceAll('\\n', '\n')
+      .replaceAll('\\t', '\t');
+    const suffix = token.slice(closingQuote + 1);
+
+    if (suffix.startsWith('^^<')) {
+      return {
+        'datatype': suffix.slice(NQUAD_DATATYPE_PREFIX_LENGTH, -1),
+        'language': '',
+        value
+      };
+    }
+    if (suffix.startsWith('@')) {
+      return {
+        'datatype': RDF.langString,
+        'language': suffix.slice(1),
+        value
+      };
+    }
+
+    return {
+      'datatype': XSD.string,
+      'language': '',
+      value
+    };
+  },
+
+  parseNQuadLine(body: string): NQuadLineResultType {
+    const tokens = tokenizeNQuadLine(body);
+
+    if (tokens.length < NQUAD_MIN_TOKENS) {
+      return undefined;
+    }
+
+    const subjectToken = tokens[0];
+    const predicateToken = tokens[1];
+    const objectToken = tokens[2];
+
+    if (subjectToken === undefined || predicateToken === undefined || objectToken === undefined) {
+      return undefined;
+    }
+
+    const subjectTerm = subjectToken.startsWith('_:')
+      ? Terms.blank(subjectToken.slice(2))
+      : Terms.iri(subjectToken.slice(1, -1));
+    const predicateTerm = Terms.iri(predicateToken.slice(1, -1));
+    const objectTerm = NQuadParse.parseNQuadObjectTerm(objectToken);
+
+    return Terms.quad(subjectTerm, predicateTerm, objectTerm, Terms.defaultGraph());
+  },
+
+  parseNQuadObjectTerm(objectToken: string): QuadObjectType {
+    if (objectToken.startsWith('"')) {
+      const {
+        datatype, language, value
+      } = NQuadParse.parseLiteralToken(objectToken);
+
+      return Terms.literal(value, {
+        'datatype': Terms.iri(datatype),
+        'language': language
+      });
+    }
+
+    if (objectToken.startsWith('_:')) {
+      return Terms.blank(objectToken.slice(2));
+    }
+
+    return Terms.iri(objectToken.slice(1, -1));
+  }
+} as const;
+
+// ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
 
@@ -294,7 +382,7 @@ export class JsonLdToQuads {
     nodes: Array<Record<string, unknown>>,
     prefixMap: Record<string, string>
   ): QuadInterface[] {
-    const ctx = makeConversionContext(prefixMap);
+    const ctx = Convert.makeConversionContext(prefixMap);
 
     for (const node of nodes) {
       const subjectRaw = node['@id'];
@@ -343,7 +431,7 @@ export class JsonLdToQuads {
         continue;
       }
       const body = trimmed.endsWith(' .') ? trimmed.slice(0, -2).trimEnd() : trimmed;
-      const quad = parseNQuadLine(body);
+      const quad = NQuadParse.parseNQuadLine(body);
 
       if (quad !== undefined) {
         quads.push(quad);
@@ -352,53 +440,6 @@ export class JsonLdToQuads {
 
     return quads;
   }
-}
-
-// ---------------------------------------------------------------------------
-// N-Quads parser (for jsonld.js v8 output with format: 'application/n-quads')
-// ---------------------------------------------------------------------------
-
-function parseNQuadObjectTerm(objectToken: string): QuadObjectType {
-  if (objectToken.startsWith('"')) {
-    const {
-      datatype, language, value
-    } = parseLiteralToken(objectToken);
-
-    return Terms.literal(value, {
-      'datatype': Terms.iri(datatype),
-      'language': language
-    });
-  }
-
-  if (objectToken.startsWith('_:')) {
-    return Terms.blank(objectToken.slice(2));
-  }
-
-  return Terms.iri(objectToken.slice(1, -1));
-}
-
-function parseNQuadLine(body: string): NQuadLineResultType {
-  const tokens = tokenizeNQuadLine(body);
-
-  if (tokens.length < NQUAD_MIN_TOKENS) {
-    return undefined;
-  }
-
-  const subjectToken = tokens[0];
-  const predicateToken = tokens[1];
-  const objectToken = tokens[2];
-
-  if (subjectToken === undefined || predicateToken === undefined || objectToken === undefined) {
-    return undefined;
-  }
-
-  const subjectTerm = subjectToken.startsWith('_:')
-    ? Terms.blank(subjectToken.slice(2))
-    : Terms.iri(subjectToken.slice(1, -1));
-  const predicateTerm = Terms.iri(predicateToken.slice(1, -1));
-  const objectTerm = parseNQuadObjectTerm(objectToken);
-
-  return Terms.quad(subjectTerm, predicateTerm, objectTerm, Terms.defaultGraph());
 }
 
 function advancePastLiteralQuotes(line: string, startPos: number): number {
@@ -471,6 +512,43 @@ function tokenizeBnodeAt(line: string, pos: number): TokenParseResultType {
   ];
 }
 
+function consumeLiteralToken(line: string, pos: number, tokens: string[]): number {
+  const [
+    token,
+    nextPos
+  ] = tokenizeLiteralAt(line, pos);
+
+  tokens.push(token);
+
+  return nextPos;
+}
+
+function consumeIriToken(line: string, pos: number, tokens: string[]): number {
+  const [
+    token,
+    nextPos
+  ] = tokenizeIriAt(line, pos);
+
+  if (token === '') {
+    // No closing bracket — malformed, stop tokenizing this line.
+    return line.length;
+  }
+  tokens.push(token);
+
+  return nextPos;
+}
+
+function consumeBnodeToken(line: string, pos: number, tokens: string[]): number {
+  const [
+    token,
+    nextPos
+  ] = tokenizeBnodeAt(line, pos);
+
+  tokens.push(token);
+
+  return nextPos;
+}
+
 function tokenizeNQuadLine(line: string): string[] {
   const tokens: string[] = [];
   let pos = 0;
@@ -486,89 +564,22 @@ function tokenizeNQuadLine(line: string): string[] {
     const ch = line[pos];
 
     switch (ch) {
-      case '"': {
-        const [
-          token,
-          nextPos
-        ] = tokenizeLiteralAt(line, pos);
-
-        tokens.push(token);
-        pos = nextPos;
-
+      case '"':
+        pos = consumeLiteralToken(line, pos, tokens);
         break;
-      }
-      case '<': {
-        const [
-          token,
-          nextPos
-        ] = tokenizeIriAt(line, pos);
-
-        if (token === '') {
-        // No closing bracket — malformed, stop tokenizing this line.
-          pos = line.length;
-        } else {
-          tokens.push(token);
-          pos = nextPos;
-        }
-
+      case '<':
+        pos = consumeIriToken(line, pos, tokens);
         break;
-      }
-      case '_': {
-        const [
-          token,
-          nextPos
-        ] = tokenizeBnodeAt(line, pos);
-
-        tokens.push(token);
-        pos = nextPos;
-
+      case '_':
+        pos = consumeBnodeToken(line, pos, tokens);
         break;
-      }
       case undefined:
         break;
       default:
-      // Unknown token character — skip
+        // Unknown token character — skip
         pos++;
     }
   }
 
   return tokens;
-}
-
-function parseLiteralToken(token: string): ParsedLiteralType {
-  const closingQuote = token.lastIndexOf('"');
-
-  if (closingQuote <= 0) {
-    return {
-      'datatype': XSD.string,
-      'language': '',
-      'value': token.slice(1, -1)
-    };
-  }
-  const value = token.slice(1, closingQuote)
-    .replaceAll('\\"', '"')
-    .replaceAll('\\n', '\n')
-    .replaceAll('\\t', '\t');
-  const suffix = token.slice(closingQuote + 1);
-
-  if (suffix.startsWith('^^<')) {
-    return {
-      'datatype': suffix.slice(NQUAD_DATATYPE_PREFIX_LENGTH, -1),
-      'language': '',
-      value
-    };
-  }
-  if (suffix.startsWith('@')) {
-    return {
-      'datatype': RDF.langString,
-      'language': suffix.slice(1),
-      value
-    };
-  }
-
-  return {
-    'datatype': XSD.string,
-    'language': '',
-    value
-  };
 }

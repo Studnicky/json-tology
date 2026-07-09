@@ -30,12 +30,96 @@ import type { RefResolutionOptionsType } from '../../types/RefResolutionOptionsT
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { SchemaIri } from './SchemaIri.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { DataType } from '../data/DataType.js';
 import { LogScope } from '../data/LogScope.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
+
+/** Graph — builds a SchemaGraph from a raw schema. */
+class Graph {
+  /** Build a SchemaGraph from a raw schema, preferring the caller-supplied cache. */
+  static build(
+    schema: Record<string, unknown>,
+    options: RefResolutionOptionsType
+  ): SchemaGraphInterface {
+    if (options.graphFor !== undefined) {
+      return options.graphFor(schema);
+    }
+
+    return new SchemaGraph(schema);
+  }
+}
+
+/** InGraph — resolves an optional fragment within a graph. */
+class InGraph {
+  /** Resolve an optional fragment within a graph and return the `RefTargetType`. */
+  static resolve(
+    targetGraph: SchemaGraphInterface,
+    fragment: string
+  ): RefTargetType {
+    if (fragment === '' || fragment === '/') {
+      return {
+        'graph': targetGraph,
+        'node': targetGraph.rootNode
+      };
+    }
+
+    return {
+      'graph': targetGraph,
+      'node': targetGraph.resolveFragment(fragment)
+    };
+  }
+}
+
+/**
+ * LiteralRef — resolves a `$ref` as a literal, exact registered `$id` — i.e.
+ * without fragment-stripping.
+ */
+class LiteralRef {
+  /**
+   * Try resolving `ref` as a literal, exact registered `$id` — i.e. without
+   * fragment-stripping. Mirrors steps 3a/3b/3c/5 of `RefResolution.resolve`, but
+   * keyed on the ref exactly as authored so a hash-namespace `$id` (e.g.
+   * `https://ns#Class`) matches even though it contains a `#`.
+   *
+   * Returns `undefined` when no literal match is found, so the caller falls
+   * through to the fragment-stripped resolution path unchanged.
+   */
+  static resolve(
+    ref: string,
+    graph: SchemaGraphInterface,
+    options: RefResolutionOptionsType
+  ): RefTargetType | undefined {
+    const literalGraph = options.lookupGraph?.(ref);
+
+    if (literalGraph !== undefined) {
+      return InGraph.resolve(literalGraph, '');
+    }
+
+    const literalSchema = options.lookupSchema?.(ref);
+
+    if (literalSchema !== undefined) {
+      return InGraph.resolve(Graph.build(literalSchema, options), '');
+    }
+
+    if (options.rootId !== undefined && ref === options.rootId && options.rootSchema !== undefined) {
+      return InGraph.resolve(Graph.build(options.rootSchema, options), '');
+    }
+
+    const embeddedLookupGraph = options.rootSchema === undefined
+      ? graph
+      : Graph.build(options.rootSchema, options);
+    const embeddedNode = embeddedLookupGraph.embeddedNode(ref);
+
+    if (embeddedNode !== undefined && DataType.isRecord(embeddedNode.schema)) {
+      return InGraph.resolve(Graph.build(embeddedNode.schema, options), '');
+    }
+
+    return undefined;
+  }
+}
 
 /**
  * RefResolution — canonical `$ref` → `{ graph, node }` resolver.
@@ -47,7 +131,7 @@ export class RefResolution {
    * @param ref      - The `$ref` string from the authored JSON Schema.
    * @param graph    - The graph that owns the node carrying this `$ref`; used for
    *                   fragment-only refs and embedded-$id fallback.
-   * @param options  - Lookup callbacks and root-schema context.
+   * @param options  - Lookup callbacks, root-schema context, and an optional logger.
    * @returns `RefTargetType` — never `undefined`. Throws on miss.
    * @throws `GraphError` with code `REF_NOT_FOUND` when the ref ID cannot be resolved.
    * @throws `GraphError` with code `ANCHOR_NOT_FOUND` (from `graph.resolveFragment`)
@@ -56,9 +140,10 @@ export class RefResolution {
   public static resolve(
     ref: string,
     graph: SchemaGraphInterface,
-    options: RefResolutionOptionsType = {},
-    logger: LoggerInterface = SILENT_LOGGER
+    options: RefResolutionOptionsType = {}
   ): RefTargetType {
+    const logger: LoggerInterface = options.logger ?? SILENT_LOGGER;
+
     logger.trace(LogScope.format('RefResolution', 'resolve', `resolving $ref: ${ref}`));
 
     // Step 1: fragment-only ref — resolve within the current graph.
@@ -75,7 +160,7 @@ export class RefResolution {
     // Step 2a: literal full-ref lookup. Only meaningful when the ref carries
     // a `#fragment` — otherwise `ref === parsed.id` and step 3 already covers it.
     if (parsed.fragment !== '') {
-      const literalTarget = resolveLiteralRef(ref, graph, options);
+      const literalTarget = LiteralRef.resolve(ref, graph, options);
 
       if (literalTarget !== undefined) {
         return literalTarget;
@@ -86,23 +171,23 @@ export class RefResolution {
     const externalGraph = options.lookupGraph?.(parsed.id);
 
     if (externalGraph !== undefined) {
-      return resolveInGraph(externalGraph, parsed.fragment);
+      return InGraph.resolve(externalGraph, parsed.fragment);
     }
 
     // Step 3b: raw schema lookup → build a new graph.
     const rawSchema = options.lookupSchema?.(parsed.id);
 
     if (rawSchema !== undefined) {
-      const builtGraph = buildGraph(rawSchema, options);
+      const builtGraph = Graph.build(rawSchema, options);
 
-      return resolveInGraph(builtGraph, parsed.fragment);
+      return InGraph.resolve(builtGraph, parsed.fragment);
     }
 
     // Step 3c: self-ref short-circuit — ref points at the root schema itself.
     if (options.rootId !== undefined && parsed.id === options.rootId && options.rootSchema !== undefined) {
-      const rootGraph = buildGraph(options.rootSchema, options);
+      const rootGraph = Graph.build(options.rootSchema, options);
 
-      return resolveInGraph(rootGraph, parsed.fragment);
+      return InGraph.resolve(rootGraph, parsed.fragment);
     }
 
     // Step 5: embedded-$id fallback via O(1) index on the root graph.
@@ -111,7 +196,7 @@ export class RefResolution {
     // graphFor cache), otherwise fall back to the already-constructed `graph`.
     const embeddedLookupGraph = options.rootSchema === undefined
       ? graph
-      : buildGraph(options.rootSchema, options);
+      : Graph.build(options.rootSchema, options);
     const embeddedNode = embeddedLookupGraph.embeddedNode(parsed.id);
 
     if (embeddedNode !== undefined && DataType.isRecord(embeddedNode.schema)) {
@@ -119,89 +204,17 @@ export class RefResolution {
       // This matches GraphEngine's pattern: subsequent fragment navigation can be
       // performed against the sub-graph rather than requiring pointer arithmetic
       // within the parent graph.
-      const embeddedGraph = buildGraph(embeddedNode.schema, options);
+      const embeddedGraph = Graph.build(embeddedNode.schema, options);
 
-      return resolveInGraph(embeddedGraph, parsed.fragment);
+      return InGraph.resolve(embeddedGraph, parsed.fragment);
     }
 
     // Step 6: unresolvable.
     logger.debug(LogScope.format('RefResolution', 'resolve', `resolution miss for $ref: ${ref}`));
 
     throw new GraphError(`Unresolved schema reference: ${ref}`, {
-      'code': GraphErrorCode.REF_NOT_FOUND,
+      'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
       'pointer': ref
     });
   }
-}
-
-/**
- * Try resolving `ref` as a literal, exact registered `$id` — i.e. without
- * fragment-stripping. Mirrors steps 3a/3b/3c/5 of `RefResolution.resolve`, but
- * keyed on the ref exactly as authored so a hash-namespace `$id` (e.g.
- * `https://ns#Class`) matches even though it contains a `#`.
- *
- * Returns `undefined` when no literal match is found, so the caller falls
- * through to the fragment-stripped resolution path unchanged.
- */
-function resolveLiteralRef(
-  ref: string,
-  graph: SchemaGraphInterface,
-  options: RefResolutionOptionsType
-): RefTargetType | undefined {
-  const literalGraph = options.lookupGraph?.(ref);
-
-  if (literalGraph !== undefined) {
-    return resolveInGraph(literalGraph, '');
-  }
-
-  const literalSchema = options.lookupSchema?.(ref);
-
-  if (literalSchema !== undefined) {
-    return resolveInGraph(buildGraph(literalSchema, options), '');
-  }
-
-  if (options.rootId !== undefined && ref === options.rootId && options.rootSchema !== undefined) {
-    return resolveInGraph(buildGraph(options.rootSchema, options), '');
-  }
-
-  const embeddedLookupGraph = options.rootSchema === undefined
-    ? graph
-    : buildGraph(options.rootSchema, options);
-  const embeddedNode = embeddedLookupGraph.embeddedNode(ref);
-
-  if (embeddedNode !== undefined && DataType.isRecord(embeddedNode.schema)) {
-    return resolveInGraph(buildGraph(embeddedNode.schema, options), '');
-  }
-
-  return undefined;
-}
-
-/** Resolve an optional fragment within a graph and return the `RefTargetType`. */
-function resolveInGraph(
-  targetGraph: SchemaGraphInterface,
-  fragment: string
-): RefTargetType {
-  if (fragment === '' || fragment === '/') {
-    return {
-      'graph': targetGraph,
-      'node': targetGraph.rootNode
-    };
-  }
-
-  return {
-    'graph': targetGraph,
-    'node': targetGraph.resolveFragment(fragment)
-  };
-}
-
-/** Build a SchemaGraph from a raw schema, preferring the caller-supplied cache. */
-function buildGraph(
-  schema: Record<string, unknown>,
-  options: RefResolutionOptionsType
-): SchemaGraphInterface {
-  if (options.graphFor !== undefined) {
-    return options.graphFor(schema);
-  }
-
-  return new SchemaGraph(schema);
 }

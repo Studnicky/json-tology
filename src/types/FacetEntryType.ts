@@ -12,13 +12,13 @@ import type { FacetDescriptorType } from '../types/FacetDescriptorType.js';
  */
 export type FacetEntryType = {
   /** XSD facet IRI — full IRI form (e.g. `http://www.w3.org/2001/XMLSchema#minLength`). */
-  readonly 'facetFull': string;
+  'facetFull': string;
   /** XSD facet IRI — `xsd:` prefixed form. */
-  readonly 'facetPrefixed': string;
+  'facetPrefixed': string;
   /** XSD datatype for the facet value literal (used by OwlProjection forward map). */
-  readonly 'facetValueDatatype': string;
+  'facetValueDatatype': string;
   /** JSON-Schema keyword descriptor (used by Datatypes.ts reverse map). */
-  readonly 'jsonSchemaDescriptor': FacetDescriptorType;
+  'jsonSchemaDescriptor': FacetDescriptorType;
   /** SHACL predicate full IRI (used by OwlProjection SHACL→XSD map; null for XSD-only facets). */
-  readonly 'shaclPredicate': null | string;
+  'shaclPredicate': null | string;
 };

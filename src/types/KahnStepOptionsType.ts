@@ -21,13 +21,13 @@ import type {
  */
 export type KahnStepOptionsType = {
   /** The IRI currently being processed. */
-  readonly 'current': string;
+  'current': string;
   /** Forward dependency map. */
-  readonly 'deps': BuildDepsMapType;
+  'deps': BuildDepsMapType;
   /** Mutable in-degree map (updated in-place). */
-  readonly 'fwdInDegree': BuildInDegreeMapType;
+  'fwdInDegree': BuildInDegreeMapType;
   /** Queue of IRIs ready to emit (appended in-place). */
-  readonly 'queue': string[];
+  'queue': string[];
   /** Set of already-visited IRIs. */
-  readonly 'visited': Set<string>;
+  'visited': Set<string>;
 };

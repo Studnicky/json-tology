@@ -3,8 +3,8 @@ import type { IriMinterInterface } from '../interfaces/IriMinterInterface.js';
 import type { AnnotationEmitModeType } from './AnnotationEmitModeType.js';
 import type { QuadInterface } from '../interfaces/QuadInterface.js';
 import type {
-  DefaultGraphTermType, IriTermType
-} from './Quad.js';
+  DefaultGraph, NamedNode
+} from '@rdfjs/types';
 import type { LookupGraphFnType } from './LookupGraphFnType.js';
 import type { PredicateResolverFnType } from './PredicateResolverFnType.js';
 import type { QuadOptsType } from './QuadOptsType.js';
@@ -26,19 +26,19 @@ import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js
  * @group ABox
  */
 export type ProjectBaseArgsType = {
-  readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'depth': number;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'graphTerm': DefaultGraphTermType | IriTermType;
+  'annotationEmitMode'?: AnnotationEmitModeType | undefined;
+  'curie': CurieInterface | undefined;
+  'depth': number;
+  'graph': SchemaGraphInterface;
+  'graphTerm': DefaultGraph | NamedNode;
   /** Optional cross-schema graph lookup — resolves full-IRI $ref to a foreign graph. */
-  readonly 'lookupGraph'?: LookupGraphFnType | undefined;
-  readonly 'minter': IriMinterInterface;
-  readonly 'path': string;
+  'lookupGraph'?: LookupGraphFnType | undefined;
+  'minter': IriMinterInterface;
+  'path': string;
   /** Single predicate-derivation authority — resolves each property's RDF predicate IRI. */
-  readonly 'predicateResolver': PredicateResolverFnType;
+  'predicateResolver': PredicateResolverFnType;
   /** Pre-built `{ curie, graph: graphTerm }` — reused across all quads in this projection. */
-  readonly 'quadOpts': QuadOptsType;
-  readonly 'quads': QuadInterface[];
-  readonly 'visited': WeakSet<object>;
+  'quadOpts': QuadOptsType;
+  'quads': QuadInterface[];
+  'visited': WeakSet<object>;
 };

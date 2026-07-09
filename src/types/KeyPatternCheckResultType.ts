@@ -19,6 +19,6 @@
  * @group Validation
  */
 export type KeyPatternCheckResultType = {
-  readonly 'matched': boolean;
-  readonly 'valid': boolean;
+  'matched': boolean;
+  'valid': boolean;
 };

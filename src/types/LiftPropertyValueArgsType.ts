@@ -5,11 +5,11 @@ import type { LiftContextType } from './LiftContextType.js';
 
 /** Arguments for lifting a single property's matching quads. */
 export type LiftPropertyValueArgsType = {
-  readonly 'classId': string;
-  readonly 'ctx': LiftContextType;
-  readonly 'index': PredicateIndexType | undefined;
-  readonly 'propEntry': RefTargetType;
-  readonly 'propName': string;
-  readonly 'subjectIri': string;
-  readonly 'subjectQuads': QuadInterface[];
+  'classId': string;
+  'ctx': LiftContextType;
+  'index': PredicateIndexType | undefined;
+  'propEntry': RefTargetType;
+  'propName': string;
+  'subjectIri': string;
+  'subjectQuads': QuadInterface[];
 };

@@ -9,7 +9,7 @@
  * counter is used (backward-compatible, not concurrent-safe).
  *
  * All quads are rdf/js-compliant: subject, predicate, and graph are
- * term objects (IriTermType | BnodeTermType | DefaultGraphTermType),
+ * term objects (NamedNode | BlankNode | DefaultGraph),
  * not bare strings. Use `.value` to extract the IRI string.
  */
 
@@ -17,7 +17,7 @@ import type { Quad } from '@rdfjs/types';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import type {
   QuadFactoryIriOptsType,
   QuadFactoryLiteralOptsType,
@@ -53,7 +53,7 @@ function assertAbsolutePredicate(predicate: string): void {
 
   throw new GraphError(
     `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`,
-    { 'code': GraphErrorCode.INVALID_PREDICATE_IRI }
+    { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
   );
 }
 
@@ -66,7 +66,7 @@ function assertAbsolutePredicate(predicate: string): void {
  *
  * @remarks
  * All factory methods return rdf/js-compliant term objects — subjects,
- * predicates, and graphs are `IriTermType | BnodeTermType | DefaultGraphTermType`,
+ * predicates, and graphs are `NamedNode | BlankNode | DefaultGraph`,
  * never bare strings. Use `.value` to extract the underlying IRI string.
  *
  * Blank-node naming: callers should pass an `IdentifierIssuerInterface` for
@@ -112,7 +112,9 @@ export class QuadFactory {
   }
 
   static bnode(id: string): QuadObjectType {
-    return Terms.blank(id);
+    const result = Terms.blank(id);
+
+    return result;
   }
 
   /**

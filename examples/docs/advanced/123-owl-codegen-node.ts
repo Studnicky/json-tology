@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
   writeFromTbox, writeRegistryDirectory
-} from '../../../src/owl-gen-node.js';
+} from '../../../src/owl-gen-node/index.js';
 import { foafSubset } from '../ontologies/foaf-subset.js';
 
 // Unique temp directory — isolated per run, removed on completion.

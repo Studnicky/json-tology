@@ -9,9 +9,8 @@
  */
 
 import type { ContainsBrandType } from '../../src/types/ConstraintBrands.js';
-import type {
-  InferSchemaType, InferType
-} from '../../src/types/Schema.js';
+import type { InferType } from '../../src/types/Schema.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 import type { RefNotFoundType } from '../../src/types/TypeErrors.js';
 
 

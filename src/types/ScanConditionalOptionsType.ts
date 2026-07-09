@@ -4,7 +4,7 @@ import type { BranchScanStateType } from './BranchScanStateType.js';
 
 /** Options for `scanForConditionalBranches`. */
 export type ScanConditionalOptionsType = {
-  readonly 'currentGraph': SchemaGraphInterface;
-  readonly 'scanSem': SchemaGraphSemanticsType;
-  readonly 'scanState': BranchScanStateType;
+  'currentGraph': SchemaGraphInterface;
+  'scanSem': SchemaGraphSemanticsType;
+  'scanState': BranchScanStateType;
 };

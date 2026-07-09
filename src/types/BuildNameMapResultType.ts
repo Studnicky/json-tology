@@ -21,7 +21,7 @@
  */
 export type BuildNameMapResultType = {
   /** Set of base names that collided (used for banner warnings). */
-  readonly 'collisions': Set<string>;
+  'collisions': Set<string>;
   /** Map from IRI to its assigned PascalCase identifier. */
-  readonly 'nameMap': Map<string, string>;
+  'nameMap': Map<string, string>;
 };

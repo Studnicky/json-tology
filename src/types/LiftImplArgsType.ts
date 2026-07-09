@@ -4,7 +4,7 @@ import type { PredicateResolverFnType } from '../types/PredicateResolverFnType.j
 
 /** Internal args for liftInstancesImpl — bundles registry + LiftOptionsType. */
 export type LiftImplArgsType = {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'registry': SchemaRegistryInterface;
+  'curie': CurieInterface | undefined;
+  'predicateResolver': PredicateResolverFnType | undefined;
+  'registry': SchemaRegistryInterface;
 };

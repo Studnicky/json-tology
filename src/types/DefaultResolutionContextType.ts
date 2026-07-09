@@ -3,12 +3,12 @@ import type { DynamicScopeEntryType } from './DynamicScopeEntryType.js';
 import type { RefTargetType } from './RefTargetType.js';
 
 export type DefaultResolutionContextType = {
-  readonly 'resolveDynamicRef': (
+  'resolveDynamicRef': (
     ref: string,
     currentGraph: SchemaGraphInterface,
     dynamicScope: DynamicScopeEntryType[]
   ) => RefTargetType;
-  readonly 'resolveRef': (
+  'resolveRef': (
     ref: string,
     currentGraph: SchemaGraphInterface
   ) => RefTargetType;

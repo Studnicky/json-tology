@@ -7,5 +7,4 @@
  *
  * @category Type Inference
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- intentionally empty: a consumer-augmentable declaration-merge target; any member would pollute `keyof` and resolve every $ref prematurely.
 export interface JsonTologyReferencesInterface {}

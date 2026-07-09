@@ -91,31 +91,11 @@ import type { ShaclValidationReportType } from './types/ShaclValidationReportTyp
 import { SILENT_LOGGER } from './constants/LOGGER.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import {
-  SchemaErrorCode, TransformErrorCode
+  SCHEMA_ERROR_CODE, TRANSFORM_ERROR_CODE
 } from './constants/ERROR_CODES.js';
-import { JT_STATIC_BASE_IRI } from './constants/IRI.js';
-
-/**
- * The literal string `'blank-node'` requests anonymous-node subjects
- * for every object in the projection. Exposed as a separate constant
- * so consumers can spell the magic value without importing it inline.
- *
- * @remarks
- * Pass as the `iriFor` option to `toQuads()` or the constructor to enable blank-node
- * subjects for every projected object, rather than minting well-known genid IRIs.
- *
- * @example
- * ```ts
- * const quads = jt.toQuads(UserSchema, user, { iriFor: BLANK_NODE_IRI_FOR });
- * ```
- *
- * @defaultValue `'blank-node'`
- * @category Skolemization
- * @since 0.1.0
- * @see {@link SkolemizeFnType}
- * @group Constants
- */
-export const BLANK_NODE_IRI_FOR = 'blank-node';
+import {
+  BLANK_NODE_IRI_FOR, JT_STATIC_BASE_IRI
+} from './constants/IRI.js';
 
 function rootIriOnly(iri: string): SkolemizeFnType {
   return (ctx): string | undefined => {
@@ -194,9 +174,13 @@ function deskolemizeQuad(quad: QuadInterface): QuadInterface {
  * sees them as anonymous nodes.
  */
 function deskolemizeQuads(quads: readonly QuadInterface[]): QuadInterface[] {
-  return quads.map((quad: QuadInterface): QuadInterface => {
-    return deskolemizeQuad(quad);
+  const result = quads.map((quad: QuadInterface): QuadInterface => {
+    const deskolemized = deskolemizeQuad(quad);
+
+    return deskolemized;
   });
+
+  return result;
 }
 
 function liftIriForOption(raw: SkolemizeFnType | string | undefined): SkolemizeFnType | undefined {
@@ -211,32 +195,34 @@ function liftIriForOption(raw: SkolemizeFnType | string | undefined): SkolemizeF
   return raw === BLANK_NODE_IRI_FOR ? blankNodeStrategy() : rootIriOnly(raw);
 }
 
-function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): NormalizedToQuadsOptionsType {
-  if (options === undefined) {
-    return {};
+class ToQuadsOptions {
+  static normalize(options: ToQuadsOptionsType | undefined): NormalizedToQuadsOptionsType {
+    if (options === undefined) {
+      return {};
+    }
+
+    const annotationEmitMode = options.annotationEmitMode;
+    const graphIri = options.graphIri;
+    const iriFor = liftIriForOption(options.iriFor);
+
+    const base: NormalizedToQuadsOptionsType = graphIri === undefined
+      ? {}
+      : { graphIri };
+
+    const withIriFor: NormalizedToQuadsOptionsType = iriFor === undefined
+      ? base
+      : {
+        ...base,
+        iriFor
+      };
+
+    return annotationEmitMode === undefined
+      ? withIriFor
+      : {
+        ...withIriFor,
+        annotationEmitMode
+      };
   }
-
-  const annotationEmitMode = options.annotationEmitMode;
-  const graphIri = options.graphIri;
-  const iriFor = liftIriForOption(options.iriFor);
-
-  const base: NormalizedToQuadsOptionsType = graphIri === undefined
-    ? {}
-    : { graphIri };
-
-  const withIriFor: NormalizedToQuadsOptionsType = iriFor === undefined
-    ? base
-    : {
-      ...base,
-      iriFor
-    };
-
-  return annotationEmitMode === undefined
-    ? withIriFor
-    : {
-      ...withIriFor,
-      annotationEmitMode
-    };
 }
 
 
@@ -277,7 +263,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    */
   private static asNamedSchema(schema: JsonSchemaDocumentType): Record<string, unknown> & { '$id': string } {
     if (typeof schema === 'boolean' || typeof (schema as Record<string, unknown>).$id !== 'string') {
-      throw new SchemaError('Schema must be an object with a string $id', { 'code': SchemaErrorCode.MISSING_ID });
+      throw new SchemaError('Schema must be an object with a string $id', { 'code': SCHEMA_ERROR_CODE.MISSING_ID });
     }
 
     return schema as Record<string, unknown> & { '$id': string };
@@ -429,11 +415,13 @@ export class JsonTology<TRefs = Record<never, never>> {
     // for the static convenience methods (materialize, encode, etc.). They accept
     // whatever schema is passed without imposing graph-integrity constraints; the
     // caller is responsible for schema quality in production code.
-    return JsonTology.create({
+    const result = JsonTology.create({
       'baseIri': JT_STATIC_BASE_IRI,
       'enableStrictGraph': false,
       'schemas': [schema] as const
     });
+
+    return result;
   }
 
   /**
@@ -542,7 +530,9 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @returns An {@link OntologyBuilder} containing OWL + SHACL output.
    */
   public static ontology(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
-    return JsonTology.registryForSchemas(schemas).ontology();
+    const result = JsonTology.registryForSchemas(schemas).ontology();
+
+    return result;
   }
 
   /**
@@ -721,7 +711,9 @@ export class JsonTology<TRefs = Record<never, never>> {
   public static toShacl(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
     // enableStrictGraph: false — static convenience method accepts any schema without
     // imposing graph-integrity constraints; the caller manages schema quality.
-    return JsonTology.registryForSchemas(schemas, { 'enableStrictGraph': false }).toShacl();
+    const result = JsonTology.registryForSchemas(schemas, { 'enableStrictGraph': false }).toShacl();
+
+    return result;
   }
   /**
    * ToTbox — ephemeral registry variant. No instance required.
@@ -732,7 +724,9 @@ export class JsonTology<TRefs = Record<never, never>> {
   public static toTbox(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
     // enableStrictGraph: false — static convenience method accepts any schema without
     // imposing graph-integrity constraints; the caller manages schema quality.
-    return JsonTology.registryForSchemas(schemas, { 'enableStrictGraph': false }).toTbox();
+    const result = JsonTology.registryForSchemas(schemas, { 'enableStrictGraph': false }).toTbox();
+
+    return result;
   }
   /**
    * Validate — ephemeral registry variant. No instance required.
@@ -911,7 +905,9 @@ export class JsonTology<TRefs = Record<never, never>> {
       tboxQuads,
       identities,
       (classId: string, subjectQuads: QuadInterface[]): unknown[] => {
-        return this.fromQuads(classId as keyof TRefs & string, subjectQuads);
+        const result = this.fromQuads(classId as keyof TRefs & string, subjectQuads);
+
+        return result;
       },
       this.predicateResolver,
       (classIri: string): unknown => {
@@ -1098,7 +1094,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     options?: DumpOptionsType
   ): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('schema must not be null or undefined', { 'code': SchemaErrorCode.INVALID_INPUT });
+      throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
 
     const schemaId = typeof schema === 'string' ? schema : schema.$id;
@@ -1131,7 +1127,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     options?: Omit<DumpOptionsType, 'mode'>
   ): string {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('schema must not be null or undefined', { 'code': SchemaErrorCode.INVALID_INPUT });
+      throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
 
     const schemaId = typeof schema === 'string' ? schema : schema.$id;
@@ -1174,7 +1170,7 @@ export class JsonTology<TRefs = Record<never, never>> {
         `transform encoder failed at root: ${causeError.message}`,
         {
           'cause': causeError,
-          'code': TransformErrorCode.TRANSFORM_ENCODE_FAILED,
+          'code': TRANSFORM_ERROR_CODE.TRANSFORM_ENCODE_FAILED,
           'direction': 'encode',
           'path': '',
           'schemaId': schemaId
@@ -1192,7 +1188,9 @@ export class JsonTology<TRefs = Record<never, never>> {
    * destructure the IRI as a literal without `as const` casts.
    */
   public findDuplicates<TKey extends string = keyof TRefs & string>(): ReadonlyArray<DuplicateReportEntryType<TKey>> {
-    return this.registry.findDuplicates() as ReadonlyArray<DuplicateReportEntryType<TKey>>;
+    const result = this.registry.findDuplicates() as ReadonlyArray<DuplicateReportEntryType<TKey>>;
+
+    return result;
   }
   /**
    * Expand a CURIE to its full IRI using the registry's merged prefix map.
@@ -1201,7 +1199,9 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @returns The expanded full IRI when the prefix is known; otherwise the input unchanged.
    */
   public fromCurie(value: string): string {
-    return this.curie.expand(value);
+    const result = this.curie.expand(value);
+
+    return result;
   }
   // ---------------------------------------------------------------------------
   // Validation
@@ -1235,7 +1235,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     quads: QuadInterface[],
     options?: { 'deskolemize'?: boolean }
   ): unknown[] {
-    const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
+    const schemaId = typeof schemaRef === 'string' ? schemaRef : schemaRef.$id;
 
     if (typeof schemaRef !== 'string') {
       this.registry.set(schemaRef);
@@ -1245,7 +1245,7 @@ export class JsonTology<TRefs = Record<never, never>> {
       throw new SchemaError(
         `Schema not registered: ${schemaId}. Register it first.`,
         {
-          'code': SchemaErrorCode.NOT_REGISTERED,
+          'code': SCHEMA_ERROR_CODE.NOT_REGISTERED,
           schemaId
         }
       );
@@ -1259,7 +1259,9 @@ export class JsonTology<TRefs = Record<never, never>> {
     });
 
     return raw.map((instance: unknown): unknown => {
-      return this.registry.instantiate(schemaId, instance);
+      const result = this.registry.instantiate(schemaId, instance);
+
+      return result;
     });
   }
   /**
@@ -1347,10 +1349,10 @@ export class JsonTology<TRefs = Record<never, never>> {
   ): ParseOutputType<TSchema, TRefs>;
   public instantiate(schema: SchemaRefType<TRefs>, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('schema must not be null or undefined', { 'code': SchemaErrorCode.INVALID_INPUT });
+      throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
 
-    const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
+    const schemaId = typeof schema === 'string' ? schema : schema.$id;
 
     if (typeof schema !== 'string') {
       this.registry.set(schema);
@@ -1371,10 +1373,10 @@ export class JsonTology<TRefs = Record<never, never>> {
   public is<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(schema: TSchema, data: unknown): data is ParseOutputType<TSchema, TRefs>;
   public is(schema: SchemaRefType<TRefs>, data: unknown): boolean {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('schema must not be null or undefined', { 'code': SchemaErrorCode.INVALID_INPUT });
+      throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
 
-    const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
+    const schemaId = typeof schema === 'string' ? schema : schema.$id;
 
     if (typeof schema !== 'string') {
       this.registry.set(schema);
@@ -1413,7 +1415,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     options?: { 'enablePartial'?: boolean }
   ): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('schema must not be null or undefined', { 'code': SchemaErrorCode.INVALID_INPUT });
+      throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
 
     // The Materializer operates on the schema document, not an identifier;
@@ -1427,7 +1429,7 @@ export class JsonTology<TRefs = Record<never, never>> {
         throw new SchemaError(
           `Schema not registered: ${schema}. Register it first.`,
           {
-            'code': SchemaErrorCode.NOT_REGISTERED,
+            'code': SCHEMA_ERROR_CODE.NOT_REGISTERED,
             'schemaId': schema
           }
         );
@@ -1492,7 +1494,9 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @returns The `$id` used for registration (original or synthetic).
    */
   public registerAnonymous(schema: Record<string, unknown>): string {
-    return this.registry.registerAnonymous(schema);
+    const result = this.registry.registerAnonymous(schema);
+
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -1524,7 +1528,9 @@ export class JsonTology<TRefs = Record<never, never>> {
    * If the loader returns `null` for a required IRI, throws `GraphError('REF_UNRESOLVED')`.
    */
   private resolveAllRefs(loader: LoaderType): Promise<void> {
-    return this.refLoader.resolveAll(loader);
+    const result = this.refLoader.resolveAll(loader);
+
+    return result;
   }
   /**
    * Record an `owl:sameAs` assertion between two individuals.
@@ -1611,10 +1617,10 @@ export class JsonTology<TRefs = Record<never, never>> {
     pointer: string
   ): Record<string, unknown> & { '$id': string } {
     if ((schemaRef as unknown) === null || (schemaRef as unknown) === undefined) {
-      throw new SchemaError('schema must not be null or undefined', { 'code': SchemaErrorCode.INVALID_INPUT });
+      throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
 
-    const parentId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
+    const parentId = typeof schemaRef === 'string' ? schemaRef : schemaRef.$id;
 
     if (typeof schemaRef !== 'string') {
       this.registry.set(schemaRef);
@@ -1629,7 +1635,9 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @returns The CURIE form when a prefix matches (e.g. `rdf:type`); otherwise the input unchanged.
    */
   public toCurie(iri: string): string {
-    return this.curie.compact(iri);
+    const result = this.curie.compact(iri);
+
+    return result;
   }
 
   /**
@@ -1665,7 +1673,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     data: unknown,
     options?: ToQuadsOptionsType
   ): QuadInterface[] {
-    const normalized = normalizeToQuadsOptions(options);
+    const normalized = ToQuadsOptions.normalize(options);
     const effective = {
       'annotationEmitMode': normalized.annotationEmitMode,
       'curie': this.curie,
@@ -1688,7 +1696,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @returns The reconstructed schema object, or `undefined` if not registered.
    */
   public toSchema(schemaRef: SchemaRefType<TRefs>): Record<string, unknown> | undefined {
-    const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
+    const schemaId = typeof schemaRef === 'string' ? schemaRef : schemaRef.$id;
 
     if (typeof schemaRef !== 'string') {
       this.registry.set(schemaRef);
@@ -1762,10 +1770,10 @@ export class JsonTology<TRefs = Record<never, never>> {
   public validate<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(schema: TSchema, data: unknown): ValidationErrors;
   public validate(schema: SchemaRefType<TRefs>, data: unknown): ValidationErrors {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('schema must not be null or undefined', { 'code': SchemaErrorCode.INVALID_INPUT });
+      throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
 
-    const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
+    const schemaId = typeof schema === 'string' ? schema : schema.$id;
 
     if (typeof schema !== 'string') {
       this.registry.set(schema);
@@ -1825,15 +1833,4 @@ export class JsonTology<TRefs = Record<never, never>> {
     return ShaclValidator.validate(shapeQuads, data);
   }
 }
-
-// ---------------------------------------------------------------------------
-// Registry-derived type helpers — canonical definitions live in
-// src/types/RegisteredTypes.ts; re-exported here for the public surface.
-// ---------------------------------------------------------------------------
-export type {
-  RegisteredCanonicalType,
-  RegisteredMaterializedType,
-  RegisteredOutputType,
-  RegistryReferencesType
-} from './types/RegisteredTypes.js';
 

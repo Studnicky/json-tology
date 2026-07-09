@@ -96,7 +96,7 @@ Nine package entry points control what consumers import. Internal imports refere
 
 | Entry point | Exports |
 |---|---|
-| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Lists`, `Projection`, `Skolemize`, `Terms`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders`, `OwlImportError`, `OwlImportErrorCode` |
+| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Lists`, `Projection`, `Skolemize`, `Terms`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders`, `OwlImportError`, `OWL_IMPORT_ERROR_CODE` |
 | `json-tology/value` | `Changeset`, `Operations`, `Value`, `Hash` |
 | `json-tology/schema` | `Compose`, `FormatRegistry`, `SchemaRegistry`, `Transform` |
 | `json-tology/ontology` | `GraphOntologySerializer`, `GraphSchemaSerializer`, `GraphShaclSerializer`, `OntologyBuilder` |
@@ -115,12 +115,12 @@ All source files under `src/`. Organized by directory.
 - `cli.ts` — CLI entry; delegates to `src/modules/cli/CliWriter.ts`
 - `index.ts` — main package entry (`json-tology`)
 - `JsonTology.ts` — top-level facade class; all public methods delegate to modules
-- `ontology.ts` — `json-tology/ontology` entry
-- `owl-gen.ts` — `json-tology/owl-gen` entry; `generateFromTbox` and `generateRegistryDirectory`; browser-safe (no `node:` imports; returns source strings)
-- `owl-gen-node.ts` — `json-tology/owl-gen-node` entry; `writeFromTbox` and `writeRegistryDirectory`; Node.js only (filesystem writes via `node:fs`)
-- `schema.ts` — `json-tology/schema` entry
-- `value.ts` — `json-tology/value` entry
-- `viz.ts` — `json-tology/viz` entry
+- `ontology/index.ts` — `json-tology/ontology` entry
+- `owl-gen/index.ts` — `json-tology/owl-gen` entry; `generateFromTbox` and `generateRegistryDirectory`; browser-safe (no `node:` imports; returns source strings)
+- `owl-gen-node/index.ts` — `json-tology/owl-gen-node` entry; `writeFromTbox` and `writeRegistryDirectory`; Node.js only (filesystem writes via `node:fs`)
+- `schema/index.ts` — `json-tology/schema` entry
+- `value/index.ts` — `json-tology/value` entry
+- `viz/index.ts` — `json-tology/viz` entry
 
 ### Constants (`src/constants/`)
 
@@ -163,12 +163,12 @@ All error classes extend `BaseError`. Internal imports reference each file direc
 - `CoercionError.ts` — coercion failures; carries `ValidationErrors` collection; code: `COERCION_FAILED`
 - `DecodeError.ts` — failure inside a `decode` transform function; extends `TransformError`; code: `TRANSFORM_DECODE_FAILED`
 - `EncodeError.ts` — failure inside an `encode` transform function; extends `TransformError`; code: `TRANSFORM_ENCODE_FAILED`
-- `GraphError.ts` — pointer resolution, anchor lookup, ref resolution, dialect issues; codes: see `GraphErrorCode` in `src/constants/ERROR_CODES.ts`
+- `GraphError.ts` — pointer resolution, anchor lookup, ref resolution, dialect issues; codes: see `GRAPH_ERROR_CODE` in `src/constants/ERROR_CODES.ts`
 - `InstantiationError.ts` — schema instantiation failures; codes: `INSTANTIATION_FAILED`, `EXTRA_FORBIDDEN`
 - _(no LoadError class)_ — loader failures use `SchemaLoadErrorType` in `src/types/Loader.ts` (a discriminated union type, not an error class)
 - `MaterializationError.ts` — materialization and ABox projection failures; codes: `MATERIALIZATION_FAILED`, `CYCLIC_DATA`, `INVALID_IRI_VALUE`, `NON_FINITE_NUMBER`, `MISSING_GRAPH_IRI`
 - `OwlImportError.ts` — OWL import fatal conditions; carries `axiomIri` and `subjectIri`; code: `OWL_IMPORT_NOT_IMPLEMENTED`
-- `SchemaError.ts` — registration, missing `$id`, structure validation; codes: see `SchemaErrorCode` in `src/constants/ERROR_CODES.ts`; includes `SchemaErrorCode.DUPLICATE_ID` (`SCHEMA_DUPLICATE_ID`) and `SchemaErrorCode.DUPLICATE_SHAPE` (`SCHEMA_DUPLICATE_SHAPE`) used by `SchemaRegistry` for duplicate detection
+- `SchemaError.ts` — registration, missing `$id`, structure validation; codes: see `SCHEMA_ERROR_CODE` in `src/constants/ERROR_CODES.ts`; includes `SCHEMA_ERROR_CODE.DUPLICATE_ID` (`SCHEMA_DUPLICATE_ID`) and `SCHEMA_ERROR_CODE.DUPLICATE_SHAPE` (`SCHEMA_DUPLICATE_SHAPE`) used by `SchemaRegistry` for duplicate detection
 - `TransformError.ts` — base class for directional transform failures; adds `direction`, `schemaId?`, `path?`; not thrown directly by the library
 - `ValidationErrors.ts` — collection class for accumulated validation errors
 

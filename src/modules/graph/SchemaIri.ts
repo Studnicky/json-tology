@@ -1,6 +1,8 @@
 export class SchemaIri {
   static escapeSegment(value: string): string {
-    return encodeURIComponent(value).replaceAll('%2F', '/');
+    const result = encodeURIComponent(value).replaceAll('%2F', '/');
+
+    return result;
   }
 
   static fragmentContains(subject: string, segment: string): boolean {
@@ -70,7 +72,9 @@ export class SchemaIri {
   }
 
   static propertyIri(classId: string, propertyName: string): string {
-    return `${classId}#${propertyName}`;
+    const result = `${classId}#${propertyName}`;
+
+    return result;
   }
 
   /**

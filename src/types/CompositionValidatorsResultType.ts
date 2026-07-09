@@ -25,7 +25,7 @@ import type { ValidateWithErrorsFnType } from '../types/Validation.js';
  * @group Validation
  */
 export type CompositionValidatorsResultType = {
-  readonly 'allOfValidators': undefined | ValidateWithErrorsFnType[];
-  readonly 'anyOfValidators': undefined | ValidateWithErrorsFnType[];
-  readonly 'oneOfValidators': undefined | ValidateWithErrorsFnType[];
+  'allOfValidators': undefined | ValidateWithErrorsFnType[];
+  'anyOfValidators': undefined | ValidateWithErrorsFnType[];
+  'oneOfValidators': undefined | ValidateWithErrorsFnType[];
 };

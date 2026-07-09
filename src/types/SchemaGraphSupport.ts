@@ -55,7 +55,7 @@ export type NormalizedLanguageTagType = string | undefined;
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type NormalizedAliasesType = readonly string[];
+export type NormalizedAliasesType = string[];
 
 /**
  * Named return type for {@link extractRestrictions}.
@@ -76,7 +76,7 @@ export type NormalizedAliasesType = readonly string[];
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type ExtractedRestrictionsType = readonly RawRestrictionDescriptorType[];
+export type ExtractedRestrictionsType = RawRestrictionDescriptorType[];
 
 /**
  * Named return type for {@link extractAnnotatedEdgeDescriptor}.
@@ -263,10 +263,10 @@ export type OptionalNumberType = number | undefined;
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type AdditionalNodesResultType = {
-  readonly 'additionalItemsNode': AdditionalSchemaNodeType;
-  readonly 'additionalPropertiesNode': AdditionalSchemaNodeType;
-};
+export type AdditionalNodesResultType = Pick<
+  SchemaGraphSemanticsType,
+  'additionalItemsNode' | 'additionalPropertiesNode'
+>;
 
 /**
  * Named return type for {@link extractDiscriminatorFields}.
@@ -286,10 +286,10 @@ export type AdditionalNodesResultType = {
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type DiscriminatorFieldsType = {
-  readonly 'discriminatorMapping': Record<string, string> | undefined;
-  readonly 'discriminatorPropertyName': string | undefined;
-};
+export type DiscriminatorFieldsType = Pick<
+  SchemaGraphSemanticsType,
+  'discriminatorMapping' | 'discriminatorPropertyName'
+>;
 
 /**
  * Named return type for {@link extractRdfsDomainRange}.
@@ -309,10 +309,7 @@ export type DiscriminatorFieldsType = {
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type DomainRangeFieldsType = {
-  readonly 'rdfsDomain': string | undefined;
-  readonly 'rdfsRange': string | undefined;
-};
+export type DomainRangeFieldsType = Pick<SchemaGraphSemanticsType, 'rdfsDomain' | 'rdfsRange'>;
 
 /**
  * Named return type for {@link extractScalarFields}.
@@ -334,37 +331,38 @@ export type DomainRangeFieldsType = {
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type ScalarFieldsType = {
-  readonly 'comment': string | undefined;
-  readonly 'contentEncoding': string | undefined;
-  readonly 'contentMediaType': string | undefined;
-  readonly 'description': string | undefined;
-  readonly 'disjointWith': string | undefined;
-  readonly 'dynamicRef': string | undefined;
-  readonly 'equivalentTo': string | undefined;
-  readonly 'exclusiveMaximum': number | undefined;
-  readonly 'exclusiveMinimum': number | undefined;
-  readonly 'format': string | undefined;
-  readonly 'inverseOf': string | undefined;
-  readonly 'maxContains': number | undefined;
-  readonly 'maximum': number | undefined;
-  readonly 'maxItems': number | undefined;
-  readonly 'maxLength': number | undefined;
-  readonly 'maxProperties': number | undefined;
-  readonly 'minContains': number | undefined;
-  readonly 'minimum': number | undefined;
-  readonly 'minItems': number | undefined;
-  readonly 'minLength': number | undefined;
-  readonly 'minProperties': number | undefined;
-  readonly 'multipleOf': number | undefined;
-  readonly 'pattern': string | undefined;
-  readonly 'recursiveRef': string | undefined;
-  readonly 'schemaAnchor': string | undefined;
-  readonly 'schemaDialect': string | undefined;
-  readonly 'schemaId': string | undefined;
-  readonly 'schemaVocabulary': unknown;
-  readonly 'title': string | undefined;
-};
+export type ScalarFieldsType = Pick<
+  SchemaGraphSemanticsType,
+  | 'comment'
+  | 'contentEncoding'
+  | 'contentMediaType'
+  | 'description'
+  | 'disjointWith'
+  | 'dynamicRef'
+  | 'equivalentTo'
+  | 'exclusiveMaximum'
+  | 'exclusiveMinimum'
+  | 'format'
+  | 'inverseOf'
+  | 'maxContains'
+  | 'maximum'
+  | 'maxItems'
+  | 'maxLength'
+  | 'maxProperties'
+  | 'minContains'
+  | 'minimum'
+  | 'minItems'
+  | 'minLength'
+  | 'minProperties'
+  | 'multipleOf'
+  | 'pattern'
+  | 'recursiveRef'
+  | 'schemaAnchor'
+  | 'schemaDialect'
+  | 'schemaId'
+  | 'schemaVocabulary'
+  | 'title'
+>;
 
 /**
  * Named return type for {@link buildSemanticsGraphPart}.
@@ -410,8 +408,6 @@ export type SemanticsGraphPartType = Pick<
   | 'unevaluatedPropertiesNode'
 >;
 
-export type { SemanticsBuildContextType } from '../types/SemanticsBuildContextType.js';
-
 /**
  * Named return type for {@link extractBooleanFlags}.
  *
@@ -432,25 +428,26 @@ export type { SemanticsBuildContextType } from '../types/SemanticsBuildContextTy
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type BooleanFlagsType = {
-  readonly 'asymmetric': boolean;
-  readonly 'computed': boolean;
-  readonly 'deprecated': boolean;
-  readonly 'functional': boolean;
-  readonly 'hasConst': boolean;
-  readonly 'hasDefault': boolean;
-  readonly 'inverseFunctional': boolean;
-  readonly 'iriRef': boolean;
-  readonly 'irreflexive': boolean;
-  readonly 'jtFrozen': boolean;
-  readonly 'readOnly': boolean;
-  readonly 'recursiveAnchor': boolean;
-  readonly 'reflexive': boolean;
-  readonly 'symmetric': boolean;
-  readonly 'transitive': boolean;
-  readonly 'uniqueItems': boolean;
-  readonly 'writeOnly': boolean;
-};
+export type BooleanFlagsType = Pick<
+  SchemaGraphSemanticsType,
+  | 'asymmetric'
+  | 'computed'
+  | 'deprecated'
+  | 'functional'
+  | 'hasConst'
+  | 'hasDefault'
+  | 'inverseFunctional'
+  | 'iriRef'
+  | 'irreflexive'
+  | 'jtFrozen'
+  | 'readOnly'
+  | 'recursiveAnchor'
+  | 'reflexive'
+  | 'symmetric'
+  | 'transitive'
+  | 'uniqueItems'
+  | 'writeOnly'
+>;
 
 /**
  * A single property entry: a tuple of property name and its resolved graph node.

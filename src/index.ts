@@ -7,17 +7,20 @@
 
 // Error-code constant objects: machine-readable code lookup without importing
 // from the constants subpath. Exported here so callers can do
-// `import { InstantiationErrorCode } from 'json-tology'` as documented.
+// `import { INSTANTIATION_ERROR_CODE } from 'json-tology'` as documented.
 export {
-  CoercionErrorCode,
-  GraphErrorCode,
-  InstantiationErrorCode,
-  MaterializationErrorCode,
-  OwlImportErrorCode,
-  SchemaErrorCode,
-  SchemaLoadErrorCode,
-  TransformErrorCode
+  COERCION_ERROR_CODE,
+  GRAPH_ERROR_CODE,
+  INSTANTIATION_ERROR_CODE,
+  MATERIALIZATION_ERROR_CODE,
+  OWL_IMPORT_ERROR_CODE,
+  SCHEMA_ERROR_CODE,
+  SCHEMA_LOAD_ERROR_CODE,
+  TRANSFORM_ERROR_CODE
 } from './constants/ERROR_CODES.js';
+// BLANK_NODE_IRI_FOR is the `iriFor` sentinel for JsonTology.toQuads(); exported
+// here so callers can do `import { BLANK_NODE_IRI_FOR } from 'json-tology'`.
+export { BLANK_NODE_IRI_FOR } from './constants/IRI.js';
 // Errors are runtime classes: tests catch them by class identity, callers
 // throw them, instances cross the package boundary through the public API.
 // They belong here, not under a subpath.

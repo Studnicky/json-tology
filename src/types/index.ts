@@ -2,6 +2,19 @@
  * Types Module
  */
 
+// Explicit named re-export so consumer module augmentation
+// (`declare module 'json-tology/types' { interface JsonTologyReferencesInterface }`)
+// merges into the canonical declaration that standalone `$ref` resolution
+// defaults to. A bare `export type *` star re-export does not create an
+// augmentable named binding, so registered schemas would never reach the
+// resolver default.
+export type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
+// Explicit named re-export so consumer module augmentation
+// (`declare module 'json-tology/types' { interface JsonTologyTypeConfigInterface }`)
+// merges into the canonical declaration. A bare `export type *` star re-export
+// does not create an augmentable named binding, so brand-disable config from
+// consumers would never reach IsEnabledType.
+export type { JsonTologyTypeConfigInterface } from '../interfaces/JsonTologyTypeConfigInterface.js';
 export type * from '../interfaces/QuadInterface.js';
 export type * from './AboxGraph.js';
 export type * from './AboxLiftSubjectFnType.js';
@@ -36,6 +49,7 @@ export type * from './EmitSchemaConstantsOptionsType.js';
 export type * from './ErrorCodes.js';
 export type * from './ErrorJsonType.js';
 export type * from './ErrorOptions.js';
+export type * from './ExecContextType.js';
 export type * from './FacetDescriptorType.js';
 export type * from './FailResultType.js';
 export type * from './FetchLoaderOptionsType.js';
@@ -91,13 +105,6 @@ export type * from './Schema.js';
 export type * from './SchemaCompilerValidatePlanContextType.js';
 export type * from './SchemaGraph.js';
 export type * from './SchemaLookupType.js';
-// Explicit named re-export so consumer module augmentation
-// (`declare module 'json-tology/types' { interface JsonTologyReferencesInterface }`)
-// merges into the canonical declaration that standalone `$ref` resolution
-// defaults to. A bare `export type *` star re-export does not create an
-// augmentable named binding, so registered schemas would never reach the
-// resolver default.
-export type { JsonTologyReferencesInterface } from './SchemaReferences.js';
 export type * from './SchemaReferences.js';
 export type * from './SchemaRefType.js';
 export type * from './SchemaRegistryEntryType.js';
@@ -115,12 +122,6 @@ export type * from './Transform.js';
 export type * from './TransformBrandType.js';
 export type * from './TransformFnsType.js';
 export type * from './TransformStage.js';
-// Explicit named re-export so consumer module augmentation
-// (`declare module 'json-tology/types' { interface JsonTologyTypeConfigInterface }`)
-// merges into the canonical declaration. A bare `export type *` star re-export
-// does not create an augmentable named binding, so brand-disable config from
-// consumers would never reach IsEnabledType.
-export type { JsonTologyTypeConfigInterface } from './TypeConfig.js';
 export type * from './TypeConfig.js';
 export type * from './TypeErrors.js';
 export type * from './Validation.js';

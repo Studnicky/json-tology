@@ -49,18 +49,18 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 
 | Constant                                | Value                          | Notes |
 |-----------------------------------------|--------------------------------|-------|
-| `SchemaErrorCode.MISSING_ID`            | `SCHEMA_MISSING_ID`            | |
-| `SchemaErrorCode.INVALID_INPUT`         | `SCHEMA_INVALID_INPUT`         | |
-| `SchemaErrorCode.NOT_REGISTERED`        | `SCHEMA_NOT_REGISTERED`        | |
-| `SchemaErrorCode.STRUCTURE_INVALID`     | `SCHEMA_STRUCTURE_INVALID`     | |
-| `SchemaErrorCode.DUPLICATE_ANCHOR`      | `SCHEMA_DUPLICATE_ANCHOR`      | |
-| `SchemaErrorCode.DIALECT_UNSUPPORTED`   | `SCHEMA_DIALECT_UNSUPPORTED`   | |
-| `SchemaErrorCode.VALIDATOR_MISSING`     | `SCHEMA_VALIDATOR_MISSING`     | |
-| `SchemaErrorCode.COMPUTED_FN_MISSING`   | `COMPUTED_FN_MISSING`          | |
-| `SchemaErrorCode.COMPUTED_INPUT_FORBIDDEN` | `COMPUTED_INPUT_FORBIDDEN`  | |
-| `SchemaErrorCode.DUPLICATE_ID`          | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `set()` with `enableDuplicateDetection` enabled. |
-| `SchemaErrorCode.DUPLICATE_SHAPE`       | `SCHEMA_DUPLICATE_SHAPE`       | Thrown by `SchemaRegistry` when a schema with a duplicate canonical shape (same structural hash) is registered. |
-| `SchemaErrorCode.PROPERTY_CHARACTERISTIC_CONFLICT` | `PROPERTY_CHARACTERISTIC_CONFLICT` | Thrown by `SchemaRegistry` when conflicting property characteristics are registered for the same property. |
+| `SCHEMA_ERROR_CODE.MISSING_ID`            | `SCHEMA_MISSING_ID`            | |
+| `SCHEMA_ERROR_CODE.INVALID_INPUT`         | `SCHEMA_INVALID_INPUT`         | |
+| `SCHEMA_ERROR_CODE.NOT_REGISTERED`        | `SCHEMA_NOT_REGISTERED`        | |
+| `SCHEMA_ERROR_CODE.STRUCTURE_INVALID`     | `SCHEMA_STRUCTURE_INVALID`     | |
+| `SCHEMA_ERROR_CODE.DUPLICATE_ANCHOR`      | `SCHEMA_DUPLICATE_ANCHOR`      | |
+| `SCHEMA_ERROR_CODE.DIALECT_UNSUPPORTED`   | `SCHEMA_DIALECT_UNSUPPORTED`   | |
+| `SCHEMA_ERROR_CODE.VALIDATOR_MISSING`     | `SCHEMA_VALIDATOR_MISSING`     | |
+| `SCHEMA_ERROR_CODE.COMPUTED_FN_MISSING`   | `COMPUTED_FN_MISSING`          | |
+| `SCHEMA_ERROR_CODE.COMPUTED_INPUT_FORBIDDEN` | `COMPUTED_INPUT_FORBIDDEN`  | |
+| `SCHEMA_ERROR_CODE.DUPLICATE_ID`          | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `set()` with `enableDuplicateDetection` enabled. |
+| `SCHEMA_ERROR_CODE.DUPLICATE_SHAPE`       | `SCHEMA_DUPLICATE_SHAPE`       | Thrown by `SchemaRegistry` when a schema with a duplicate canonical shape (same structural hash) is registered. |
+| `SCHEMA_ERROR_CODE.PROPERTY_CHARACTERISTIC_CONFLICT` | `PROPERTY_CHARACTERISTIC_CONFLICT` | Thrown by `SchemaRegistry` when conflicting property characteristics are registered for the same property. |
 
 <RunnableExample src="examples/docs/errors/16-schema-error" />
 
@@ -78,20 +78,20 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 
 | Constant                              | Value                       | Notes |
 |---------------------------------------|-----------------------------|-------|
-| `GraphErrorCode.POINTER_INVALID`      | `POINTER_INVALID`           | |
-| `GraphErrorCode.POINTER_NOT_FOUND`    | `POINTER_NOT_FOUND`         | |
-| `GraphErrorCode.POINTER_NOT_SCHEMA`   | `POINTER_NOT_SCHEMA`        | |
-| `GraphErrorCode.ANCHOR_NOT_FOUND`     | `ANCHOR_NOT_FOUND`          | |
-| `GraphErrorCode.REF_NOT_FOUND`        | `REF_NOT_FOUND`             | `$ref` ID cannot be resolved within the graph by `RefResolution`. Distinct from `REF_UNRESOLVED`: thrown when in-graph resolution fails after the schema is already loaded (pointer, anchor, and embedded-`$id` lookups all exhausted). |
-| `GraphErrorCode.REF_UNRESOLVED`       | `REF_UNRESOLVED`            | Cross-schema `$ref` points to an IRI not in the registry. Thrown on first use of a schema entry. |
-| `GraphErrorCode.RECURSION_LIMIT`      | `RECURSION_LIMIT`           | |
-| `GraphErrorCode.DIALECT_UNSUPPORTED`  | `DIALECT_UNSUPPORTED`       | |
-| `GraphErrorCode.VOCABULARY_UNSUPPORTED` | `VOCABULARY_UNSUPPORTED`  | |
-| `GraphErrorCode.ARTIFACT_INVALID`     | `ARTIFACT_INVALID`          | |
-| `GraphErrorCode.ARTIFACT_STALE`       | `ARTIFACT_STALE`            | |
-| `GraphErrorCode.CURSOR_CARDINALITY`   | `CURSOR_CARDINALITY`        | Thrown by `Cursor` and `SchemaCursor` when a selection that expects exactly one result contains multiple items. |
-| `GraphErrorCode.INVALID_LANGUAGE_TAG` | `INVALID_LANGUAGE_TAG`      | Thrown by `SchemaGraphSupport` when a language tag does not conform to BCP 47 syntax. |
-| `GraphErrorCode.INVALID_PREDICATE_IRI` | `INVALID_PREDICATE_IRI`   | Thrown by `PredicateResolver` and `QuadFactory` when a predicate IRI contains invalid characters or is malformed. |
+| `GRAPH_ERROR_CODE.POINTER_INVALID`      | `POINTER_INVALID`           | |
+| `GRAPH_ERROR_CODE.POINTER_NOT_FOUND`    | `POINTER_NOT_FOUND`         | |
+| `GRAPH_ERROR_CODE.POINTER_NOT_SCHEMA`   | `POINTER_NOT_SCHEMA`        | |
+| `GRAPH_ERROR_CODE.ANCHOR_NOT_FOUND`     | `ANCHOR_NOT_FOUND`          | |
+| `GRAPH_ERROR_CODE.REF_NOT_FOUND`        | `REF_NOT_FOUND`             | `$ref` ID cannot be resolved within the graph by `RefResolution`. Distinct from `REF_UNRESOLVED`: thrown when in-graph resolution fails after the schema is already loaded (pointer, anchor, and embedded-`$id` lookups all exhausted). |
+| `GRAPH_ERROR_CODE.REF_UNRESOLVED`       | `REF_UNRESOLVED`            | Cross-schema `$ref` points to an IRI not in the registry. Thrown on first use of a schema entry. |
+| `GRAPH_ERROR_CODE.RECURSION_LIMIT`      | `RECURSION_LIMIT`           | |
+| `GRAPH_ERROR_CODE.DIALECT_UNSUPPORTED`  | `DIALECT_UNSUPPORTED`       | |
+| `GRAPH_ERROR_CODE.VOCABULARY_UNSUPPORTED` | `VOCABULARY_UNSUPPORTED`  | |
+| `GRAPH_ERROR_CODE.ARTIFACT_INVALID`     | `ARTIFACT_INVALID`          | |
+| `GRAPH_ERROR_CODE.ARTIFACT_STALE`       | `ARTIFACT_STALE`            | |
+| `GRAPH_ERROR_CODE.CURSOR_CARDINALITY`   | `CURSOR_CARDINALITY`        | Thrown by `Cursor` and `SchemaCursor` when a selection that expects exactly one result contains multiple items. |
+| `GRAPH_ERROR_CODE.INVALID_LANGUAGE_TAG` | `INVALID_LANGUAGE_TAG`      | Thrown by `SchemaGraphSupport` when a language tag does not conform to BCP 47 syntax. |
+| `GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI` | `INVALID_PREDICATE_IRI`   | Thrown by `PredicateResolver` and `QuadFactory` when a predicate IRI contains invalid characters or is malformed. |
 
 <RunnableExample src="examples/docs/errors/17-graph-error" />
 
@@ -105,7 +105,7 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 
 | Constant | Value | When recorded |
 |----------|-------|---------------|
-| `InstantiationErrorCode.EXTRA_FORBIDDEN` | `EXTRA_FORBIDDEN` | `jt:config.extra: 'forbid'` rejects unknown properties |
+| `INSTANTIATION_ERROR_CODE.EXTRA_FORBIDDEN` | `EXTRA_FORBIDDEN` | `jt:config.extra: 'forbid'` rejects unknown properties |
 
 <RunnableExample src="examples/docs/errors/19-instantiation-error" />
 
@@ -121,7 +121,7 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 | Constant | Value | Notes |
 |----------|-------|-------|
-| `CoercionErrorCode.COERCION_FAILED` | `COERCION_FAILED` | Always emitted at the wrapper level |
+| `COERCION_ERROR_CODE.COERCION_FAILED` | `COERCION_FAILED` | Always emitted at the wrapper level |
 
 <RunnableExample src="examples/docs/errors/20-coercion-error" />
 
@@ -143,8 +143,8 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 | Constant | Value | Subclass |
 |----------|-------|----------|
-| `TransformErrorCode.TRANSFORM_DECODE_FAILED` | `TRANSFORM_DECODE_FAILED` | `DecodeError` |
-| `TransformErrorCode.TRANSFORM_ENCODE_FAILED` | `TRANSFORM_ENCODE_FAILED` | `EncodeError` |
+| `TRANSFORM_ERROR_CODE.TRANSFORM_DECODE_FAILED` | `TRANSFORM_DECODE_FAILED` | `DecodeError` |
+| `TRANSFORM_ERROR_CODE.TRANSFORM_ENCODE_FAILED` | `TRANSFORM_ENCODE_FAILED` | `EncodeError` |
 
 ## `DecodeError` <Badge type="tip" text="Runtime" />
 
@@ -182,11 +182,11 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 | Constant | Value | When thrown |
 |----------|-------|-------------|
-| `MaterializationErrorCode.MATERIALIZATION_FAILED` | `MATERIALIZATION_FAILED` | Default materialization failure. |
-| `MaterializationErrorCode.CYCLIC_DATA`            | `CYCLIC_DATA`            | Circular reference detected during ABox projection (`toQuads`). Thrown by `Projection` when a data object contains a cycle that would loop indefinitely during RDF quad emission. |
-| `MaterializationErrorCode.INVALID_IRI_VALUE`      | `INVALID_IRI_VALUE`      | Thrown when a value that must be an IRI is not a valid IRI. |
-| `MaterializationErrorCode.NON_FINITE_NUMBER`      | `NON_FINITE_NUMBER`      | Thrown when a numeric value is `Infinity` or `NaN`, which cannot be represented in RDF. |
-| `MaterializationErrorCode.MISSING_GRAPH_IRI`      | `MISSING_GRAPH_IRI`      | Thrown when a required named-graph IRI is absent during ABox projection. |
+| `MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED` | `MATERIALIZATION_FAILED` | Default materialization failure. |
+| `MATERIALIZATION_ERROR_CODE.CYCLIC_DATA`            | `CYCLIC_DATA`            | Circular reference detected during ABox projection (`toQuads`). Thrown by `Projection` when a data object contains a cycle that would loop indefinitely during RDF quad emission. |
+| `MATERIALIZATION_ERROR_CODE.INVALID_IRI_VALUE`      | `INVALID_IRI_VALUE`      | Thrown when a value that must be an IRI is not a valid IRI. |
+| `MATERIALIZATION_ERROR_CODE.NON_FINITE_NUMBER`      | `NON_FINITE_NUMBER`      | Thrown when a numeric value is `Infinity` or `NaN`, which cannot be represented in RDF. |
+| `MATERIALIZATION_ERROR_CODE.MISSING_GRAPH_IRI`      | `MISSING_GRAPH_IRI`      | Thrown when a required named-graph IRI is absent during ABox projection. |
 
 <RunnableExample src="examples/docs/errors/21-materialization-error" />
 

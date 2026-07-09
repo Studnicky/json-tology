@@ -2,7 +2,7 @@
  * PropertyCharacteristicConflictType — brand shape.
  *
  * The brand interface carries the offending property name and the
- * conflicting characteristics as a readonly tuple. IDE hover on the
+ * conflicting characteristics as a tuple. IDE hover on the
  * failing assignment surfaces all three fields directly.
  */
 
@@ -11,7 +11,7 @@ import type { PropertyCharacteristicConflictType } from '../../../src/types/Type
 // Demonstrate the brand shape by typing a value that conforms to it.
 const brand: PropertyCharacteristicConflictType<
   'relates',
-  readonly ['symmetric', 'asymmetric']
+  ['symmetric', 'asymmetric']
 > = {
   'conflicts': [
     'symmetric',

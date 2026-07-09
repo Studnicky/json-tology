@@ -19,7 +19,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { GraphError } from '../../src/errors/GraphError.js';
 import { SchemaLoadError } from '../../src/errors/SchemaLoadError.js';
 import { InstantiationError } from '../../src/errors/InstantiationError.js';
-import { GraphErrorCode } from '../../src/constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../src/constants/ERROR_CODES.js';
 import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistryInterface.js';
 import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphInterface.js';
 import type { JsonSchemaType } from '../../src/types/Schema.js';
@@ -178,7 +178,7 @@ void describe('Lift.resolveNodeForType — discriminated-catch', { 'concurrency'
     // We simulate this by having the stub graph throw it directly — the stub
     // is reached via a pointer-based IRI ('registeredId#/ptr') which passes the
     // hashSlash check and calls resolvePointer('/ptr').
-    const nonSwallowedError = new GraphError('pointer invalid', { 'code': GraphErrorCode.POINTER_INVALID });
+    const nonSwallowedError = new GraphError('pointer invalid', { 'code': GRAPH_ERROR_CODE.POINTER_INVALID });
 
     const registry = makeRegistryWithThrowingGraph(registeredId, nonSwallowedError);
 
@@ -188,7 +188,7 @@ void describe('Lift.resolveNodeForType — discriminated-catch', { 'concurrency'
       },
       (err: unknown) => {
         assert.ok(err instanceof GraphError, `expected GraphError, got ${String(err)}`);
-        assert.equal(err.code, GraphErrorCode.POINTER_INVALID);
+        assert.equal(err.code, GRAPH_ERROR_CODE.POINTER_INVALID);
 
         return true;
       }

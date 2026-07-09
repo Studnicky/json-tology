@@ -12,16 +12,16 @@ import {
  *
  * @example
  * ```ts
- * registry.register({ ...DurationDef, $id: 'https://example.com/Duration' });
+ * registry.register({ ...DURATION_DEF, $id: 'https://example.com/Duration' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see TimestampedDef
+ * @see TIMESTAMPED_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const DurationDef = {
+export const DURATION_DEF = {
   'description': 'Duration information',
   'properties': {
     'duration': { 'type': 'number' },
@@ -49,16 +49,16 @@ export const DurationDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...ErrorDetailsDef, $id: 'https://example.com/ErrorDetails' });
+ * registry.register({ ...ERROR_DETAILS_DEF, $id: 'https://example.com/ErrorDetails' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see ResponseDef
+ * @see RESPONSE_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const ErrorDetailsDef = {
+export const ERROR_DETAILS_DEF = {
   'description': 'Core error information',
   'properties': {
     'code': { 'type': 'string' },
@@ -78,16 +78,16 @@ export const ErrorDetailsDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...ProgressDef, $id: 'https://example.com/Progress' });
+ * registry.register({ ...PROGRESS_DEF, $id: 'https://example.com/Progress' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see TimestampedDef
+ * @see TIMESTAMPED_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const ProgressDef = {
+export const PROGRESS_DEF = {
   'description': 'Progress/lifecycle state',
   'properties': {
     'phase': { 'type': 'string' },
@@ -107,20 +107,20 @@ export const ProgressDef = {
  *
  * @remarks
  * A reusable schema fragment for objects that carry a single Unix millisecond
- * `timestamp` field. Use `TimestampedDef` when both start and end times are needed.
+ * `timestamp` field. Use `TIMESTAMPED_DEF` when both start and end times are needed.
  *
  * @example
  * ```ts
- * registry.register({ ...TimedDef, $id: 'https://example.com/Timed' });
+ * registry.register({ ...TIMED_DEF, $id: 'https://example.com/Timed' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see TimestampedDef
+ * @see TIMESTAMPED_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const TimedDef = {
+export const TIMED_DEF = {
   'description': 'Basic timestamp wrapper',
   'properties': { 'timestamp': { 'type': 'number' } },
   'required': ['timestamp'],
@@ -136,16 +136,16 @@ export const TimedDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...TimestampedDef, $id: 'https://example.com/Timestamped' });
+ * registry.register({ ...TIMESTAMPED_DEF, $id: 'https://example.com/Timestamped' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see TimedDef
+ * @see TIMED_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const TimestampedDef = {
+export const TIMESTAMPED_DEF = {
   'description': 'Timestamped with duration',
   'properties': {
     'duration': { 'type': 'number' },
@@ -169,16 +169,16 @@ export const TimestampedDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...ResponseDef, $id: 'https://example.com/Response' });
+ * registry.register({ ...RESPONSE_DEF, $id: 'https://example.com/Response' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see ResultDef
+ * @see RESULT_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const ResponseDef = {
+export const RESPONSE_DEF = {
   'description': 'Generic response container',
   'properties': {
     'body': { 'type': 'object' },
@@ -200,16 +200,16 @@ export const ResponseDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...ResultDef, $id: 'https://example.com/Result' });
+ * registry.register({ ...RESULT_DEF, $id: 'https://example.com/Result' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see ResponseDef
+ * @see RESPONSE_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const ResultDef = {
+export const RESULT_DEF = {
   'description': 'Generic result container',
   'properties': {
     'data': { 'type': 'object' },
@@ -234,16 +234,16 @@ export const ResultDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...StateSnapshotDef, $id: 'https://example.com/StateSnapshot' });
+ * registry.register({ ...STATE_SNAPSHOT_DEF, $id: 'https://example.com/StateSnapshot' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see PageDef
+ * @see PAGE_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const StateSnapshotDef = {
+export const STATE_SNAPSHOT_DEF = {
   'description': 'State snapshot container with metadata',
   'properties': {
     'count': { 'type': 'number' },
@@ -260,20 +260,20 @@ export const StateSnapshotDef = {
  *
  * @remarks
  * An enum schema fragment with two valid values: `'asc'` and `'desc'`.
- * Used as an inline sub-schema for `sortOrder` in `PaginationDef`.
+ * Used as an inline sub-schema for `sortOrder` in `PAGINATION_DEF`.
  *
  * @example
  * ```ts
- * registry.register({ ...SortOrderDef, $id: 'https://example.com/SortOrder' });
+ * registry.register({ ...SORT_ORDER_DEF, $id: 'https://example.com/SortOrder' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see PaginationDef
+ * @see PAGINATION_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const SortOrderDef = {
+export const SORT_ORDER_DEF = {
   'description': 'Sort direction for ordered results',
   'enum': [
     'asc',
@@ -291,16 +291,16 @@ export const SortOrderDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...CursorDef, $id: 'https://example.com/Cursor' });
+ * registry.register({ ...CURSOR_DEF, $id: 'https://example.com/Cursor' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see PaginationDef
+ * @see PAGINATION_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const CursorDef = {
+export const CURSOR_DEF = {
   'description': 'Opaque pagination cursor',
   'type': 'string'
 } as const;
@@ -315,16 +315,16 @@ export const CursorDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...PaginationDef, $id: 'https://example.com/Pagination' });
+ * registry.register({ ...PAGINATION_DEF, $id: 'https://example.com/Pagination' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see PageDef
+ * @see PAGE_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const PaginationDef = {
+export const PAGINATION_DEF = {
   'description': 'Pagination request parameters',
   'properties': {
     'cursor': { 'type': 'string' },
@@ -340,7 +340,7 @@ export const PaginationDef = {
       'type': 'number'
     },
     'sortBy': { 'type': 'string' },
-    'sortOrder': SortOrderDef
+    'sortOrder': SORT_ORDER_DEF
   },
   'required': [] as const,
   'type': 'object'
@@ -356,16 +356,16 @@ export const PaginationDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...FilterDef, $id: 'https://example.com/Filter' });
+ * registry.register({ ...FILTER_DEF, $id: 'https://example.com/Filter' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see PaginationDef
+ * @see PAGINATION_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const FilterDef = {
+export const FILTER_DEF = {
   'description': 'Generic filter specification',
   'properties': {
     'field': { 'type': 'string' },
@@ -404,16 +404,16 @@ export const FilterDef = {
  *
  * @example
  * ```ts
- * registry.register({ ...PageDef, $id: 'https://example.com/Page' });
+ * registry.register({ ...PAGE_DEF, $id: 'https://example.com/Page' });
  * ```
  *
  * @category Base schemas
  * @since 0.1.0
- * @see PaginationDef
+ * @see PAGINATION_DEF
  * @defaultValue `{...}`
  * @group Constants
  */
-export const PageDef = {
+export const PAGE_DEF = {
   'description': 'A page of results with pagination metadata',
   'properties': {
     'hasNext': { 'type': 'boolean' },

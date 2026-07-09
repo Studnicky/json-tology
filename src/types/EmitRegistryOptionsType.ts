@@ -17,11 +17,11 @@
  */
 export type EmitRegistryOptionsType = {
   /** Effective base IRI for `JsonTology.create`. */
-  readonly 'effectiveBaseIri': string;
+  'effectiveBaseIri': string;
   /** Name of the exported registry constant. */
-  readonly 'registryConstName': string;
+  'registryConstName': string;
   /** Ordered list of PascalCase schema identifiers. */
-  readonly 'schemaNames': string[];
+  'schemaNames': string[];
   /** Name of the exported schemas array constant. */
-  readonly 'schemasConst': string;
+  'schemasConst': string;
 };

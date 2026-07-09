@@ -197,7 +197,9 @@ export class Scalars {
 
     const passes = typePredicate === undefined
       ? types.some((typeName: string): boolean => {
-        return Predicates.matchesType(typeName, value);
+        const result = Predicates.matchesType(typeName, value);
+
+        return result;
       })
       : typePredicate(value);
 

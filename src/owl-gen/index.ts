@@ -36,21 +36,21 @@
  * console.log(written.indexFile); // absolute path
  */
 
-import { JsonTology } from './JsonTology.js';
+import { JsonTology } from '../JsonTology.js';
 import type {
   GenerateFromTboxOptionsType,
   GenerateRegistryDirectoryOptionsType,
   GenerateRegistryDirectoryResultType
-} from './types/OwlGen.js';
+} from '../types/OwlGen.js';
 import type {
   OwlCodegenOptionsType,
   OwlRegistryDirOptionsType
-} from './types/OwlCodegen.js';
-import { OwlCodegen } from './modules/codegen/OwlCodegen.js';
+} from '../types/OwlCodegen.js';
+import { OwlCodegen } from '../modules/codegen/OwlCodegen.js';
 
 export type {
   OwlCodegenOptionsType, OwlRegistryDirOptionsType
-} from './modules/codegen/OwlCodegen.js';
+} from '../types/OwlCodegen.js';
 
 /**
  * Generate TypeScript source from an OWL 2 TBox.
@@ -144,4 +144,4 @@ export type {
   GenerateRegistryDirectoryOptionsType,
   GenerateRegistryDirectoryResultType,
   WrittenEntityFileType
-} from './types/OwlGen.js';
+} from '../types/OwlGen.js';

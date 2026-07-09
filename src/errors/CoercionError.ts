@@ -40,7 +40,9 @@ export class CoercionError extends BaseError {
   public constructor(errors: ValidationErrors | ValidationErrorType[], options: CoercionErrorOptionsType) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
     const message = validationErrors.items.map((err: ValidationErrorType): string => {
-      return `${err.path || 'root'}: ${err.message}`;
+      const result = `${err.path || 'root'}: ${err.message}`;
+
+      return result;
     }).join('; ');
 
     super(message, options);

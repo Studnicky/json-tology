@@ -12,11 +12,11 @@ import type { LookupSchemaFnType } from '../types/LookupSchemaFnType.js';
 
 export type GraphCompileBaseOptionsType<TCtx> = {
   /** The compiler context providing validator/check builder methods. */
-  readonly 'context': TCtx;
+  'context': TCtx;
   /** The format validator registry. */
-  readonly 'formatRegistry': FormatRegistryInterface;
+  'formatRegistry': FormatRegistryInterface;
   /** The schema graph being compiled. */
-  readonly 'graph': SchemaGraphInterface;
+  'graph': SchemaGraphInterface;
   /** Optional cross-schema lookup by `$id`. */
-  readonly 'lookupSchema'?: LookupSchemaFnType;
+  'lookupSchema'?: LookupSchemaFnType;
 };

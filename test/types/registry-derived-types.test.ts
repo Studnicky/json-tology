@@ -20,7 +20,7 @@ import type {
   RegisteredMaterializedType,
   RegisteredOutputType,
   RegistryReferencesType
-} from '../../src/JsonTology.js';
+} from '../../src/types/RegisteredTypes.js';
 import type { RefNotFoundType } from '../../src/types/TypeErrors.js';
 
 type AssertAssignable<TSource, TTarget>

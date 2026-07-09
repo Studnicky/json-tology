@@ -12,7 +12,7 @@ The main runtime entry. Exports:
 - **`Compose`** — schema derivation combinators: `extend`, `pick`, `omit`, `partial`, `required`, `intersection`, `discriminatedUnion`, `equivalent`, `subClassOf`, `restrictions`, and more.
 - **`Transform`** — transform registration: `Transform.create`, `Transform.brand`, `Transform.chain`, `Transform.getDecoder`.
 - **All error classes** — `BaseError`, `SchemaError`, `GraphError`, `InstantiationError`, `MaterializationError`, `CoercionError`, `DecodeError`, `EncodeError`, `TransformError`, `OwlImportError`, `ValidationErrors`.
-- **Error-code constants** — `SchemaErrorCode`, `GraphErrorCode`, `InstantiationErrorCode`, `MaterializationErrorCode`, `CoercionErrorCode`, `TransformErrorCode`, `OwlImportErrorCode`. Import these to compare `error.code` without using magic strings.
+- **Error-code constants** — `SCHEMA_ERROR_CODE`, `GRAPH_ERROR_CODE`, `INSTANTIATION_ERROR_CODE`, `MATERIALIZATION_ERROR_CODE`, `COERCION_ERROR_CODE`, `TRANSFORM_ERROR_CODE`, `OWL_IMPORT_ERROR_CODE`. Import these to compare `error.code` without using magic strings.
 - Runtime utilities: `AboxGraph`, `GraphEngine`, `Hash`, `Curie`, `Value`, `Changeset`, `Operations`, `Path`, `Resolver`, `Lift`, `Materializer`, `OntologyBuilder`, `GraphOntologySerializer`, `Loaders`.
 
 **What is NOT in the root entry:** type aliases, interface contracts, and type-only utilities. These live behind `json-tology/types` and `json-tology/interfaces` respectively. This is by design — see below.
@@ -20,7 +20,7 @@ The main runtime entry. Exports:
 <!-- inline-ts-ok: published-package import surface for the root entry; documents the export map, not a runnable scenario. -->
 ```ts
 import { JsonTology, Compose, Transform } from 'json-tology';
-import { InstantiationError, SchemaErrorCode } from 'json-tology';
+import { InstantiationError, SCHEMA_ERROR_CODE } from 'json-tology';
 ```
 
 ### `json-tology/value`

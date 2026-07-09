@@ -54,61 +54,99 @@ import {
 // Index builders
 // ---------------------------------------------------------------------------
 
-/**
- * Build a subject → predicate → object-values index from a quad array.
- * Object values are the `.value` strings of the object terms.
- */
-function buildSubjectIndex(quads: readonly QuadInterface[]): SubjectPredicateIndexType {
-  const index: SubjectPredicateIndexType = new Map();
+/** Index builders over raw RDF quad arrays. */
+class Indexes {
+  /**
+   * Build subject → predicate → datatype-IRI[] index from literal quads.
+   * Non-literal objects produce no entry.
+   */
+  static datatype(quads: readonly QuadInterface[]): DatatypeIndexType {
+    const index: DatatypeIndexType = new Map();
 
-  for (const quad of quads) {
-    const subjectId = quad.subject.value;
-    let pmap = index.get(subjectId);
+    for (const quad of quads) {
+      if (quad.object.termType !== 'Literal') {
+        continue;
+      }
 
-    if (pmap === undefined) {
-      pmap = new Map();
-      index.set(subjectId, pmap);
+      const subjectId = quad.subject.value;
+      let pmap = index.get(subjectId);
+
+      if (pmap === undefined) {
+        pmap = new Map();
+        index.set(subjectId, pmap);
+      }
+
+      const predId = quad.predicate.value;
+      let dtArr = pmap.get(predId);
+
+      if (dtArr === undefined) {
+        dtArr = [];
+        pmap.set(predId, dtArr);
+      }
+
+      // Object is guaranteed Literal here (non-Literal cases continued above)
+      dtArr.push(quad.object.datatype.value);
     }
 
-    const predId = quad.predicate.value;
-    let objs = pmap.get(predId);
-
-    if (objs === undefined) {
-      objs = [];
-      pmap.set(predId, objs);
-    }
-
-    objs.push(quad.object.value);
+    return index;
   }
 
-  return index;
-}
+  /**
+   * Build a subject → predicate → object-values index from a quad array.
+   * Object values are the `.value` strings of the object terms.
+   */
+  static subject(quads: readonly QuadInterface[]): SubjectPredicateIndexType {
+    const index: SubjectPredicateIndexType = new Map();
 
-/** Build a subject → rdf:type set index. */
-function buildTypeIndex(quads: readonly QuadInterface[]): TypeIndexType {
-  const index: TypeIndexType = new Map();
+    for (const quad of quads) {
+      const subjectId = quad.subject.value;
+      let pmap = index.get(subjectId);
 
-  for (const quad of quads) {
-    if (quad.predicate.value !== RDF.type) {
-      continue;
+      if (pmap === undefined) {
+        pmap = new Map();
+        index.set(subjectId, pmap);
+      }
+
+      const predId = quad.predicate.value;
+      let objs = pmap.get(predId);
+
+      if (objs === undefined) {
+        objs = [];
+        pmap.set(predId, objs);
+      }
+
+      objs.push(quad.object.value);
     }
 
-    if (quad.object.termType !== 'NamedNode') {
-      continue;
-    }
-
-    const subjectId = quad.subject.value;
-    let types = index.get(subjectId);
-
-    if (types === undefined) {
-      types = new Set();
-      index.set(subjectId, types);
-    }
-
-    types.add(quad.object.value);
+    return index;
   }
 
-  return index;
+  /** Build a subject → rdf:type set index. */
+  static type(quads: readonly QuadInterface[]): TypeIndexType {
+    const index: TypeIndexType = new Map();
+
+    for (const quad of quads) {
+      if (quad.predicate.value !== RDF.type) {
+        continue;
+      }
+
+      if (quad.object.termType !== 'NamedNode') {
+        continue;
+      }
+
+      const subjectId = quad.subject.value;
+      let types = index.get(subjectId);
+
+      if (types === undefined) {
+        types = new Set();
+        index.set(subjectId, types);
+      }
+
+      types.add(quad.object.value);
+    }
+
+    return index;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -162,45 +200,6 @@ function collectRdfListValues(
 }
 
 // ---------------------------------------------------------------------------
-// Datatype index — maps subject+predicate to the object's datatype IRI
-// ---------------------------------------------------------------------------
-
-/**
- * Build subject → predicate → datatype-IRI[] index from literal quads.
- * Non-literal objects produce no entry.
- */
-function buildDatatypeIndex(quads: readonly QuadInterface[]): DatatypeIndexType {
-  const index: DatatypeIndexType = new Map();
-
-  for (const quad of quads) {
-    if (quad.object.termType !== 'Literal') {
-      continue;
-    }
-
-    const subjectId = quad.subject.value;
-    let pmap = index.get(subjectId);
-
-    if (pmap === undefined) {
-      pmap = new Map();
-      index.set(subjectId, pmap);
-    }
-
-    const predId = quad.predicate.value;
-    let dtArr = pmap.get(predId);
-
-    if (dtArr === undefined) {
-      dtArr = [];
-      pmap.set(predId, dtArr);
-    }
-
-    // Object is guaranteed Literal here (non-Literal cases continued above)
-    dtArr.push(quad.object.datatype.value);
-  }
-
-  return index;
-}
-
-// ---------------------------------------------------------------------------
 // Shape index — parsed representation of SHACL shapes
 // ---------------------------------------------------------------------------
 
@@ -217,127 +216,139 @@ function isDeactivated(bnodeId: string, shapeIndex: SubjectPredicateIndexType): 
   return node.get(SH.deactivated)?.includes('true') === true;
 }
 
-/**
- * Extract the `PredicateValuesIndexType` for a subject from the shape quad index.
- */
-function extractConstraints(id: string, shapeIndex: SubjectPredicateIndexType): PredicateValuesIndexType {
-  const node = shapeIndex.get(id);
+/** Extraction of a subject's constraint index from the shape quad index. */
+class Constraints {
+  /**
+   * Extract the `PredicateValuesIndexType` for a subject from the shape quad index.
+   */
+  static extract(id: string, shapeIndex: SubjectPredicateIndexType): PredicateValuesIndexType {
+    const node = shapeIndex.get(id);
 
-  return node ?? new Map<string, string[]>();
+    return node ?? new Map<string, string[]>();
+  }
 }
 
-/**
- * Build a parsed shape view for any subject id — a named NodeShape IRI, or an
- * anonymous blank-node shape used as an `sh:and`/`sh:or`/`sh:not`/`sh:node`
- * member. Returns `undefined` when the subject carries no shape content.
- */
-function buildShapeView(shapeId: string, shapeIndex: SubjectPredicateIndexType): NodeShapeIndexType | undefined {
-  const pmap = shapeIndex.get(shapeId);
+/** Parsed shape-view construction over the shape quad index. */
+class ShapeView {
+  /**
+   * Build a parsed shape view for any subject id — a named NodeShape IRI, or an
+   * anonymous blank-node shape used as an `sh:and`/`sh:or`/`sh:not`/`sh:node`
+   * member. Returns `undefined` when the subject carries no shape content.
+   */
+  static build(shapeId: string, shapeIndex: SubjectPredicateIndexType): NodeShapeIndexType | undefined {
+    const pmap = shapeIndex.get(shapeId);
 
-  if (pmap === undefined) {
-    return undefined;
+    if (pmap === undefined) {
+      return undefined;
+    }
+
+    const propertyBnodeIds = pmap.get(SH.property) ?? [];
+    const propertyShapes: PropertyShapeIndexType[] = [];
+
+    for (const bnodeId of propertyBnodeIds) {
+      const psNode = shapeIndex.get(bnodeId);
+
+      if (psNode === undefined) {
+        continue;
+      }
+
+      const pathArr = psNode.get(SH.path);
+
+      if (pathArr === undefined || pathArr.length === 0) {
+        continue;
+      }
+
+      const pathFirst = pathArr.at(0);
+
+      if (pathFirst === undefined) {
+        continue;
+      }
+
+      propertyShapes.push({
+        'bnodeId': bnodeId,
+        'constraints': Constraints.extract(bnodeId, shapeIndex),
+        'isDeactivated': isDeactivated(bnodeId, shapeIndex),
+        'path': pathFirst
+      });
+    }
+
+    return {
+      'constraints': Constraints.extract(shapeId, shapeIndex),
+      'isDeactivated': pmap.get(SH.deactivated)?.includes('true') === true,
+      'propertyShapes': propertyShapes,
+      'shapeIri': shapeId
+    };
   }
-
-  const propertyBnodeIds = pmap.get(SH.property) ?? [];
-  const propertyShapes: PropertyShapeIndexType[] = [];
-
-  for (const bnodeId of propertyBnodeIds) {
-    const psNode = shapeIndex.get(bnodeId);
-
-    if (psNode === undefined) {
-      continue;
-    }
-
-    const pathArr = psNode.get(SH.path);
-
-    if (pathArr === undefined || pathArr.length === 0) {
-      continue;
-    }
-
-    const pathFirst = pathArr.at(0);
-
-    if (pathFirst === undefined) {
-      continue;
-    }
-
-    propertyShapes.push({
-      'bnodeId': bnodeId,
-      'constraints': extractConstraints(bnodeId, shapeIndex),
-      'isDeactivated': isDeactivated(bnodeId, shapeIndex),
-      'path': pathFirst
-    });
-  }
-
-  return {
-    'constraints': extractConstraints(shapeId, shapeIndex),
-    'isDeactivated': pmap.get(SH.deactivated)?.includes('true') === true,
-    'propertyShapes': propertyShapes,
-    'shapeIri': shapeId
-  };
 }
 
-/**
- * Parse all named (non-blank-node) NodeShape IRIs. These are the top-level
- * shapes whose focus nodes are selected by implicit class target (rdf:type).
- */
-function buildNodeShapes(shapeIndex: SubjectPredicateIndexType): NodeShapeIndexType[] {
-  const shapes: NodeShapeIndexType[] = [];
+/** Enumeration of named NodeShapes from the shape quad index. */
+class NodeShapes {
+  /**
+   * Parse all named (non-blank-node) NodeShape IRIs. These are the top-level
+   * shapes whose focus nodes are selected by implicit class target (rdf:type).
+   */
+  static build(shapeIndex: SubjectPredicateIndexType): NodeShapeIndexType[] {
+    const shapes: NodeShapeIndexType[] = [];
 
-  for (const [
-    subject,
-    pmap
-  ] of shapeIndex) {
-    if (pmap.get(RDF.type)?.includes(SH.NodeShape) !== true) {
-      continue;
+    for (const [
+      subject,
+      pmap
+    ] of shapeIndex) {
+      if (pmap.get(RDF.type)?.includes(SH.NodeShape) !== true) {
+        continue;
+      }
+
+      if (subject.startsWith('_:')) {
+        continue;
+      }
+
+      const view = ShapeView.build(subject, shapeIndex);
+
+      if (view !== undefined) {
+        shapes.push(view);
+      }
     }
 
-    if (subject.startsWith('_:')) {
-      continue;
-    }
-
-    const view = buildShapeView(subject, shapeIndex);
-
-    if (view !== undefined) {
-      shapes.push(view);
-    }
+    return shapes;
   }
-
-  return shapes;
 }
 
-/**
- * Build a memoised shape resolver over the named shapes plus on-demand
- * blank-node member shapes.
- */
-function makeShapeResolver(
-  namedShapes: NodeShapeIndexType[],
-  shapeIndex: SubjectPredicateIndexType
-): (shapeId: string) => NodeShapeIndexType | undefined {
-  const byIri = new Map<string, NodeShapeIndexType>();
+/** Memoised shape resolution over named shapes plus on-demand blank-node member shapes. */
+class ShapeResolver {
+  /**
+   * Build a memoised shape resolver over the named shapes plus on-demand
+   * blank-node member shapes.
+   */
+  static make(
+    namedShapes: NodeShapeIndexType[],
+    shapeIndex: SubjectPredicateIndexType
+  ): (shapeId: string) => NodeShapeIndexType | undefined {
+    const byIri = new Map<string, NodeShapeIndexType>();
 
-  for (const shape of namedShapes) {
-    byIri.set(shape.shapeIri, shape);
+    for (const shape of namedShapes) {
+      byIri.set(shape.shapeIri, shape);
+    }
+
+    const cache = new Map<string, NodeShapeIndexType | undefined>();
+
+    return (shapeId: string): NodeShapeIndexType | undefined => {
+      const named = byIri.get(shapeId);
+
+      if (named !== undefined) {
+        return named;
+      }
+
+      if (cache.has(shapeId)) {
+        return cache.get(shapeId);
+      }
+
+      const view = ShapeView.build(shapeId, shapeIndex);
+
+      cache.set(shapeId, view);
+
+      return view;
+    };
   }
-
-  const cache = new Map<string, NodeShapeIndexType | undefined>();
-
-  return (shapeId: string): NodeShapeIndexType | undefined => {
-    const named = byIri.get(shapeId);
-
-    if (named !== undefined) {
-      return named;
-    }
-
-    if (cache.has(shapeId)) {
-      return cache.get(shapeId);
-    }
-
-    const view = buildShapeView(shapeId, shapeIndex);
-
-    cache.set(shapeId, view);
-
-    return view;
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -372,10 +383,13 @@ function selectFocusNodes(
 // Numeric comparison helpers
 // ---------------------------------------------------------------------------
 
-function parseNumeric(value: string): number {
-  const num = Number(value);
+/** Numeric literal parsing shared by the range constraint evaluators. */
+class Numeric {
+  static parse(value: string): number {
+    const num = Number(value);
 
-  return Number.isFinite(num) ? num : Number.NaN;
+    return Number.isFinite(num) ? num : Number.NaN;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -420,7 +434,7 @@ function evalMinCount(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const min = parseNumeric(minCountVal);
+  const min = Numeric.parse(minCountVal);
 
   if (Number.isNaN(min) || args.valueCount >= min) {
     return [];
@@ -450,7 +464,7 @@ function evalMaxCount(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const max = parseNumeric(maxCountVal);
+  const max = Numeric.parse(maxCountVal);
 
   if (Number.isNaN(max) || args.valueCount <= max) {
     return [];
@@ -496,6 +510,15 @@ function evalDatatype(args: EvalArgsType): ShaclValidationResultType[] {
   return results;
 }
 
+/** Test a single sh:pattern regex against a value; `undefined` signals an invalid pattern. */
+function testPatternConstraint(pattern: string, value: string): boolean | undefined {
+  try {
+    return new RegExp(pattern).test(value);
+  } catch {
+    return undefined;
+  }
+}
+
 /** Evaluate sh:pattern constraint against each value node. */
 function evalPattern(args: EvalArgsType): ShaclValidationResultType[] {
   const patternArr = args.constraints.get(SH.pattern);
@@ -508,11 +531,9 @@ function evalPattern(args: EvalArgsType): ShaclValidationResultType[] {
 
   for (const value of args.values) {
     for (const pattern of patternArr) {
-      let matches: boolean;
+      const matches = testPatternConstraint(pattern, value);
 
-      try {
-        matches = new RegExp(pattern).test(value);
-      } catch {
+      if (matches === undefined) {
         results.push(violation(
           args.focusNode,
           args.path,
@@ -554,7 +575,7 @@ function evalMinLength(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const min = parseNumeric(minLenVal);
+  const min = Numeric.parse(minLenVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
@@ -587,7 +608,7 @@ function evalMaxLength(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const max = parseNumeric(maxLenVal);
+  const max = Numeric.parse(maxLenVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
@@ -620,11 +641,11 @@ function evalMinInclusive(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const min = parseNumeric(minInclusiveVal);
+  const min = Numeric.parse(minInclusiveVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
-    const num = parseNumeric(value);
+    const num = Numeric.parse(value);
 
     if (Number.isNaN(num) || num < min) {
       results.push(violation(
@@ -655,11 +676,11 @@ function evalMaxInclusive(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const max = parseNumeric(maxInclusiveVal);
+  const max = Numeric.parse(maxInclusiveVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
-    const num = parseNumeric(value);
+    const num = Numeric.parse(value);
 
     if (Number.isNaN(num) || num > max) {
       results.push(violation(
@@ -690,11 +711,11 @@ function evalMinExclusive(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const min = parseNumeric(minExclusiveVal);
+  const min = Numeric.parse(minExclusiveVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
-    const num = parseNumeric(value);
+    const num = Numeric.parse(value);
 
     if (Number.isNaN(num) || num <= min) {
       results.push(violation(
@@ -725,11 +746,11 @@ function evalMaxExclusive(args: EvalArgsType): ShaclValidationResultType[] {
     return [];
   }
 
-  const max = parseNumeric(maxExclusiveVal);
+  const max = Numeric.parse(maxExclusiveVal);
   const results: ShaclValidationResultType[] = [];
 
   for (const value of args.values) {
-    const num = parseNumeric(value);
+    const num = Numeric.parse(value);
 
     if (Number.isNaN(num) || num >= max) {
       results.push(violation(
@@ -841,6 +862,128 @@ function evalClass(args: EvalArgsType): ShaclValidationResultType[] {
 }
 
 // ---------------------------------------------------------------------------
+// Core validation
+// ---------------------------------------------------------------------------
+
+/** Construction of the shared evaluator args bag for a focus node + path + constraints. */
+class EvalArgsBuilder {
+  static build(
+    focusNode: string,
+    path: string,
+    shapeId: string,
+    constraints: PredicateValuesIndexType,
+    values: string[],
+    ctx: ValidationContextType
+  ): EvalArgsType {
+    return {
+      constraints,
+      'dataIndex': ctx.dataIndex,
+      'datatypeBySubjectPredicate': ctx.datatypeBySubjectPredicate,
+      'dataTypeIndex': ctx.dataTypeIndex,
+      focusNode,
+      path,
+      shapeId,
+      'shapeIndex': ctx.shapeIndex,
+      'valueCount': values.length,
+      values
+    };
+  }
+}
+
+/**
+ * Evaluate a shape's own (node-level) constraints against the focus node as a
+ * single value node. Only IRI-safe components apply here — `sh:in`, `sh:hasValue`,
+ * `sh:class`, `sh:node` — because in this contract a focus node reached by an
+ * implicit class target or `sh:node` is always an IRI, never a literal; datatype,
+ * range, length and pattern constraints are carried by property shapes instead.
+ * Path is empty so node-level results omit `sh:resultPath`.
+ */
+function evalNodeLevelConstraints(
+  focusNode: string,
+  shape: NodeShapeIndexType,
+  ctx: ValidationContextType
+): ShaclValidationResultType[] {
+  const args = EvalArgsBuilder.build(focusNode, '', shape.shapeIri, shape.constraints, [focusNode], ctx);
+
+  return [
+    ...evalIn(args),
+    ...evalHasValue(args),
+    ...evalClass(args),
+    ...evalNode(args, ctx)
+  ];
+}
+
+/** Recursive per-shape validation, guarded against cyclic re-entry. */
+class Shape {
+  /**
+   * Validate a single focus node against a shape (named NodeShape or anonymous
+   * blank-node member shape). Recursion through `sh:node`/`sh:and`/`sh:or`/`sh:not`
+   * is guarded by `ctx.visited`: re-entering the same (focusNode, shape) pair while
+   * it is already on the stack returns conforming, so cyclic data cannot overflow.
+   */
+  static validate(
+    focusNode: string,
+    shapeId: string,
+    ctx: ValidationContextType
+  ): ShaclValidationResultType[] {
+    const visitKey = `${focusNode} ${shapeId}`;
+
+    if (ctx.visited.has(visitKey)) {
+      return [];
+    }
+
+    ctx.visited.add(visitKey);
+
+    try {
+      const shape = ctx.resolveShape(shapeId);
+
+      if (shape === undefined || shape.isDeactivated) {
+        return [];
+      }
+
+      const focusPredicates = ctx.dataIndex.get(focusNode);
+      const results: ShaclValidationResultType[] = [];
+
+      results.push(...evalNodeLevelConstraints(focusNode, shape, ctx));
+
+      for (const ps of shape.propertyShapes) {
+        if (ps.isDeactivated) {
+          continue;
+        }
+
+        const values = focusPredicates?.get(ps.path) ?? [];
+        const evalArgs = EvalArgsBuilder.build(focusNode, ps.path, ps.bnodeId, ps.constraints, values, ctx);
+
+        results.push(...evalMinCount(evalArgs));
+        results.push(...evalMaxCount(evalArgs));
+        results.push(...evalDatatype(evalArgs));
+        results.push(...evalPattern(evalArgs));
+        results.push(...evalMinLength(evalArgs));
+        results.push(...evalMaxLength(evalArgs));
+        results.push(...evalMinInclusive(evalArgs));
+        results.push(...evalMaxInclusive(evalArgs));
+        results.push(...evalMinExclusive(evalArgs));
+        results.push(...evalMaxExclusive(evalArgs));
+        results.push(...evalHasValue(evalArgs));
+        results.push(...evalIn(evalArgs));
+        results.push(...evalClass(evalArgs));
+        results.push(...evalNode(evalArgs, ctx));
+        results.push(...evalQualifiedValueShape(evalArgs, ctx));
+      }
+
+      results.push(...evalClosed(focusNode, shape, ctx.dataIndex));
+      results.push(...evalAnd(focusNode, shape.constraints, ctx, shape.shapeIri));
+      results.push(...evalOr(focusNode, shape.constraints, ctx, shape.shapeIri));
+      results.push(...evalNot(focusNode, shape.constraints, ctx, shape.shapeIri));
+
+      return results;
+    } finally {
+      ctx.visited.delete(visitKey);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // sh:node — recursive shape evaluation
 // ---------------------------------------------------------------------------
 
@@ -859,7 +1002,7 @@ function evalNode(
 
   for (const value of args.values) {
     for (const nodeShapeIri of nodeArr) {
-      const nested = validateShape(value, nodeShapeIri, ctx);
+      const nested = Shape.validate(value, nodeShapeIri, ctx);
 
       if (nested.length > 0) {
         results.push(violation(
@@ -969,7 +1112,7 @@ function evalQualifiedValueShape(
   for (const value of args.values) {
     const valueConforms = datatypeOnly
       ? expectedDt !== undefined && actualDts.includes(expectedDt)
-      : validateShape(value, qvsRef, ctx).length === 0;
+      : Shape.validate(value, qvsRef, ctx).length === 0;
 
     if (valueConforms) {
       qualifiedCount++;
@@ -982,7 +1125,7 @@ function evalQualifiedValueShape(
     const qMinVal = qMinArr.at(0);
 
     if (qMinVal !== undefined) {
-      const qMin = parseNumeric(qMinVal);
+      const qMin = Numeric.parse(qMinVal);
 
       if (!Number.isNaN(qMin) && qualifiedCount < qMin) {
         results.push(violation(
@@ -1003,7 +1146,7 @@ function evalQualifiedValueShape(
     const qMaxVal = qMaxArr.at(0);
 
     if (qMaxVal !== undefined) {
-      const qMax = parseNumeric(qMaxVal);
+      const qMax = Numeric.parse(qMaxVal);
 
       if (!Number.isNaN(qMax) && qualifiedCount > qMax) {
         results.push(violation(
@@ -1048,7 +1191,7 @@ function evalAnd(
   const results: ShaclValidationResultType[] = [];
 
   for (const memberIri of memberIris) {
-    if (validateShape(focusNode, memberIri, ctx).length > 0) {
+    if (Shape.validate(focusNode, memberIri, ctx).length > 0) {
       results.push(violation(
         focusNode,
         undefined,
@@ -1089,7 +1232,7 @@ function evalOr(
   }
 
   for (const memberIri of memberIris) {
-    if (validateShape(focusNode, memberIri, ctx).length === 0) {
+    if (Shape.validate(focusNode, memberIri, ctx).length === 0) {
       return [];
     }
   }
@@ -1120,7 +1263,7 @@ function evalNot(
   const results: ShaclValidationResultType[] = [];
 
   for (const notRef of notArr) {
-    if (validateShape(focusNode, notRef, ctx).length === 0) {
+    if (Shape.validate(focusNode, notRef, ctx).length === 0) {
       results.push(violation(
         focusNode,
         undefined,
@@ -1133,123 +1276,6 @@ function evalNot(
   }
 
   return results;
-}
-
-// ---------------------------------------------------------------------------
-// Core validation
-// ---------------------------------------------------------------------------
-
-/** Build the shared evaluator args bag for a focus node + path + constraints. */
-function buildEvalArgs(
-  focusNode: string,
-  path: string,
-  shapeId: string,
-  constraints: PredicateValuesIndexType,
-  values: string[],
-  ctx: ValidationContextType
-): EvalArgsType {
-  return {
-    constraints,
-    'dataIndex': ctx.dataIndex,
-    'datatypeBySubjectPredicate': ctx.datatypeBySubjectPredicate,
-    'dataTypeIndex': ctx.dataTypeIndex,
-    focusNode,
-    path,
-    shapeId,
-    'shapeIndex': ctx.shapeIndex,
-    'valueCount': values.length,
-    values
-  };
-}
-
-/**
- * Evaluate a shape's own (node-level) constraints against the focus node as a
- * single value node. Only IRI-safe components apply here — `sh:in`, `sh:hasValue`,
- * `sh:class`, `sh:node` — because in this contract a focus node reached by an
- * implicit class target or `sh:node` is always an IRI, never a literal; datatype,
- * range, length and pattern constraints are carried by property shapes instead.
- * Path is empty so node-level results omit `sh:resultPath`.
- */
-function evalNodeLevelConstraints(
-  focusNode: string,
-  shape: NodeShapeIndexType,
-  ctx: ValidationContextType
-): ShaclValidationResultType[] {
-  const args = buildEvalArgs(focusNode, '', shape.shapeIri, shape.constraints, [focusNode], ctx);
-
-  return [
-    ...evalIn(args),
-    ...evalHasValue(args),
-    ...evalClass(args),
-    ...evalNode(args, ctx)
-  ];
-}
-
-/**
- * Validate a single focus node against a shape (named NodeShape or anonymous
- * blank-node member shape). Recursion through `sh:node`/`sh:and`/`sh:or`/`sh:not`
- * is guarded by `ctx.visited`: re-entering the same (focusNode, shape) pair while
- * it is already on the stack returns conforming, so cyclic data cannot overflow.
- */
-function validateShape(
-  focusNode: string,
-  shapeId: string,
-  ctx: ValidationContextType
-): ShaclValidationResultType[] {
-  const visitKey = `${focusNode} ${shapeId}`;
-
-  if (ctx.visited.has(visitKey)) {
-    return [];
-  }
-
-  ctx.visited.add(visitKey);
-
-  try {
-    const shape = ctx.resolveShape(shapeId);
-
-    if (shape === undefined || shape.isDeactivated) {
-      return [];
-    }
-
-    const focusPredicates = ctx.dataIndex.get(focusNode);
-    const results: ShaclValidationResultType[] = [];
-
-    results.push(...evalNodeLevelConstraints(focusNode, shape, ctx));
-
-    for (const ps of shape.propertyShapes) {
-      if (ps.isDeactivated) {
-        continue;
-      }
-
-      const values = focusPredicates?.get(ps.path) ?? [];
-      const evalArgs = buildEvalArgs(focusNode, ps.path, ps.bnodeId, ps.constraints, values, ctx);
-
-      results.push(...evalMinCount(evalArgs));
-      results.push(...evalMaxCount(evalArgs));
-      results.push(...evalDatatype(evalArgs));
-      results.push(...evalPattern(evalArgs));
-      results.push(...evalMinLength(evalArgs));
-      results.push(...evalMaxLength(evalArgs));
-      results.push(...evalMinInclusive(evalArgs));
-      results.push(...evalMaxInclusive(evalArgs));
-      results.push(...evalMinExclusive(evalArgs));
-      results.push(...evalMaxExclusive(evalArgs));
-      results.push(...evalHasValue(evalArgs));
-      results.push(...evalIn(evalArgs));
-      results.push(...evalClass(evalArgs));
-      results.push(...evalNode(evalArgs, ctx));
-      results.push(...evalQualifiedValueShape(evalArgs, ctx));
-    }
-
-    results.push(...evalClosed(focusNode, shape, ctx.dataIndex));
-    results.push(...evalAnd(focusNode, shape.constraints, ctx, shape.shapeIri));
-    results.push(...evalOr(focusNode, shape.constraints, ctx, shape.shapeIri));
-    results.push(...evalNot(focusNode, shape.constraints, ctx, shape.shapeIri));
-
-    return results;
-  } finally {
-    ctx.visited.delete(visitKey);
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1282,17 +1308,17 @@ export const ShaclValidator = {
     shapes: readonly QuadInterface[],
     data: readonly QuadInterface[]
   ): ShaclValidationReportType {
-    const shapeIndex = buildSubjectIndex(shapes);
-    const dataIndex = buildSubjectIndex(data);
-    const dataTypeIndex = buildTypeIndex(data);
-    const datatypeBySubjectPredicate = buildDatatypeIndex(data);
+    const shapeIndex = Indexes.subject(shapes);
+    const dataIndex = Indexes.subject(data);
+    const dataTypeIndex = Indexes.type(data);
+    const datatypeBySubjectPredicate = Indexes.datatype(data);
 
-    const allNodeShapes = buildNodeShapes(shapeIndex);
+    const allNodeShapes = NodeShapes.build(shapeIndex);
     const ctx: ValidationContextType = {
       dataIndex,
       datatypeBySubjectPredicate,
       dataTypeIndex,
-      'resolveShape': makeShapeResolver(allNodeShapes, shapeIndex),
+      'resolveShape': ShapeResolver.make(allNodeShapes, shapeIndex),
       shapeIndex,
       'visited': new Set<string>()
     };
@@ -1306,7 +1332,7 @@ export const ShaclValidator = {
       const focusNodes = selectFocusNodes(shape.shapeIri, dataTypeIndex);
 
       for (const focusNode of focusNodes) {
-        results.push(...validateShape(focusNode, shape.shapeIri, ctx));
+        results.push(...Shape.validate(focusNode, shape.shapeIri, ctx));
       }
     }
 

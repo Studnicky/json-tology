@@ -5,11 +5,11 @@ import type { PredicateResolverFnType } from './PredicateResolverFnType.js';
 
 /** Arguments for emitFlatAnnotationQuads. */
 export type EmitFlatAnnotationQuadsArgsType = {
-  readonly 'annotationValues': Record<string, unknown>;
-  readonly 'classId': string;
-  readonly 'edge': AnnotatedEdgeStructureType;
-  readonly 'instanceIri': string;
-  readonly 'predicateResolver': PredicateResolverFnType;
-  readonly 'quadOpts': QuadFactoryQuadOptsType;
-  readonly 'quads': QuadInterface[];
+  'annotationValues': Record<string, unknown>;
+  'classId': string;
+  'edge': AnnotatedEdgeStructureType;
+  'instanceIri': string;
+  'predicateResolver': PredicateResolverFnType;
+  'quadOpts': QuadFactoryQuadOptsType;
+  'quads': QuadInterface[];
 };

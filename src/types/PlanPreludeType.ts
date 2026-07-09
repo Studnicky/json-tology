@@ -5,10 +5,10 @@ import type {
 
 /** Result of `buildPlanPrelude` — the non-composition, non-conditional plan fragments. */
 export type PlanPreludeType = {
-  readonly 'additionalValidator': OptionalValidateWithErrorsFnType;
-  readonly 'complementValidator': OptionalValidateWithErrorsFnType;
-  readonly 'depRequiredEntries': DepRequiredEntriesType;
-  readonly 'formatValidator': ReturnType<FormatRegistryInterface['get']> | undefined;
-  readonly 'patternRegex': RegExp | undefined;
-  readonly 'propertyNamesValidator': OptionalValidateWithErrorsFnType;
+  'additionalValidator': OptionalValidateWithErrorsFnType;
+  'complementValidator': OptionalValidateWithErrorsFnType;
+  'depRequiredEntries': DepRequiredEntriesType;
+  'formatValidator': ReturnType<FormatRegistryInterface['get']> | undefined;
+  'patternRegex': RegExp | undefined;
+  'propertyNamesValidator': OptionalValidateWithErrorsFnType;
 };

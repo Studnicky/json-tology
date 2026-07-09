@@ -1,5 +1,5 @@
 import type {
-  MaterializationResultType, MaterializerOptionsType
+  MaterializationResultType, MaterializerOptionsType, MaterializerRunOptionsType
 } from '../../types/Materializer.js';
 import type { MaterializerInterface } from '../../interfaces/MaterializerInterface.js';
 import type { DefaultCreatorInterface } from '../../interfaces/DefaultCreatorInterface.js';
@@ -14,10 +14,11 @@ import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapT
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { AboxProjectorInterface } from '../../interfaces/AboxProjectorInterface.js';
+import type { ComputedFnType } from '../../types/ComputedFnType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import {
-  InstantiationErrorCode, MaterializationErrorCode
+  INSTANTIATION_ERROR_CODE, MATERIALIZATION_ERROR_CODE
 } from '../../constants/ERROR_CODES.js';
 import { Frozen } from '../data/Frozen.js';
 import { DataType } from '../data/DataType.js';
@@ -158,7 +159,9 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       'synthesizeDefaults': true
     };
     this.lookupGraphFn = (schemaId: string): SchemaGraphInterface | undefined => {
-      return registry.graph(schemaId);
+      const result = registry.graph(schemaId);
+
+      return result;
     };
     this.lookupSchemaFn = (sid: string): Record<string, unknown> | undefined => {
       const schemaGraph = this.lookupGraphFn(sid);
@@ -194,6 +197,31 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     }
   }
 
+  private applyComputedField(
+    name: string,
+    fn: ComputedFnType,
+    value: Record<string, unknown>
+  ): void {
+    try {
+      value[name] = fn(value);
+    } catch (error) {
+      const causeError = BaseError.toCause(error);
+
+      throw new InstantiationError(
+        new ValidationErrors([{
+          'keyword': 'COMPUTED_FN_MISSING',
+          'message': `Compute function for "${name}" threw: ${causeError.message}`,
+          'params': {},
+          'path': `/${name}`
+        }]),
+        {
+          'cause': causeError,
+          'code': INSTANTIATION_ERROR_CODE.INSTANTIATION_FAILED
+        }
+      );
+    }
+  }
+
   private applyComputedFields(schemaId: string, value: Record<string, unknown>): void {
     const computedMap = this.registry.computedStore.getMap(schemaId);
 
@@ -201,24 +229,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       name,
       fn
     ] of Object.entries(computedMap)) {
-      try {
-        value[name] = fn(value);
-      } catch (error) {
-        const causeError = BaseError.toCause(error);
-
-        throw new InstantiationError(
-          new ValidationErrors([{
-            'keyword': 'COMPUTED_FN_MISSING',
-            'message': `Compute function for "${name}" threw: ${causeError.message}`,
-            'params': {},
-            'path': `/${name}`
-          }]),
-          {
-            'cause': causeError,
-            'code': InstantiationErrorCode.INSTANTIATION_FAILED
-          }
-        );
-      }
+      this.applyComputedField(name, fn, value);
     }
   }
 
@@ -239,14 +250,18 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     graph: SchemaGraphInterface,
     node: SchemaGraphNodeType
   ): EffectivePropertyMapType {
-    return EffectiveProperties.collectMemo(
+    const result = EffectiveProperties.collectMemo(
       this.effectivePropertiesCache,
       graph,
       node,
       (refId: string): SchemaGraphInterface | undefined => {
-        return this.registry.graph(refId);
+        const refGraph = this.registry.graph(refId);
+
+        return refGraph;
       }
     );
+
+    return result;
   }
 
   /**
@@ -256,7 +271,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
    * @returns Default value with all required properties filled
    */
   public createDefault(schema: Record<string, unknown> & { '$id': string }): unknown {
-    const result = this.run(schema, undefined, undefined, true);
+    const result = this.run(schema, undefined, { 'synthesizeDefaults': true });
 
     return result.value;
   }
@@ -273,7 +288,12 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
   ): MaterializationResultType {
     const baseIri = options?.baseIri;
     const synthesize = options?.synthesizeDefaults === true;
-    const runResult = this.run(schema, data, baseIri, synthesize);
+    const runResult = baseIri === undefined
+      ? this.run(schema, data, { 'synthesizeDefaults': synthesize })
+      : this.run(schema, data, {
+        baseIri,
+        'synthesizeDefaults': synthesize
+      });
 
     return runResult;
   }
@@ -338,7 +358,9 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
   }
 
   private formatErrors(errors: ValidationErrorType[]): string[] {
-    return BaseError.formatErrors(errors);
+    const result = BaseError.formatErrors(errors);
+
+    return result;
   }
 
   /**
@@ -361,7 +383,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
     if (!result.valid) {
       throw new MaterializationError(schema.$id, {
-        'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
+        'code': MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED,
         'validationErrors': result.errors
       });
     }
@@ -414,11 +436,20 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     baseIri: string,
     options?: AboxOptionsType
   ): QuadInterface[] {
-    const result = this.run(schema, data, baseIri, false, options);
+    const result = options === undefined
+      ? this.run(schema, data, {
+        baseIri,
+        'synthesizeDefaults': false
+      })
+      : this.run(schema, data, {
+        'aboxOptions': options,
+        baseIri,
+        'synthesizeDefaults': false
+      });
 
     if (!result.valid) {
       throw new MaterializationError(schema.$id, {
-        'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
+        'code': MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED,
         'validationErrors': result.errors
       });
     }
@@ -437,7 +468,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       throw new MaterializationError(
         entryNode.id,
         {
-          'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
+          'code': MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED,
           'message': 'ABox projection requires an aboxProjector. Construct the Materializer with { aboxProjector } (the facade injects Projection) so this layer need not import rdf/.',
           'validationErrors': ['no aboxProjector injected into Materializer']
         }
@@ -480,7 +511,10 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     }
 
     try {
-      const resolved = RefResolution.resolve(semantics.ref, graph, { 'lookupGraph': this.lookupGraphFn }, this.logger);
+      const resolved = RefResolution.resolve(semantics.ref, graph, {
+        'logger': this.logger,
+        'lookupGraph': this.lookupGraphFn
+      });
 
       return [
         resolved.graph,
@@ -495,10 +529,11 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
   private run(
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
-    baseIri?: string,
-    synthesizeDefaults = false,
-    aboxOptions?: AboxOptionsType
+    options: MaterializerRunOptionsType = {}
   ): MaterializationResultType {
+    const {
+      aboxOptions, baseIri, synthesizeDefaults = false
+    } = options;
     const id = schema.$id;
 
     if (!this.registry.has(id)) {
@@ -510,7 +545,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
       if (graph === undefined) {
         throw new MaterializationError(id, {
-          'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
+          'code': MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED,
           'validationErrors': [`No graph found for schema: ${id}`]
         });
       }
@@ -553,7 +588,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
     if (graph === undefined) {
       throw new MaterializationError(id, {
-        'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
+        'code': MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED,
         'validationErrors': [`No graph found for schema: ${id}`]
       });
     }

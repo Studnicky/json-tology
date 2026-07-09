@@ -2,7 +2,7 @@ import type { ComputedExtensionBrandType } from '../types/ComputedExtensionBrand
 import type { TransformBrandType } from '../types/TransformBrandType.js';
 import type { AnyTransformStageType } from '../types/TransformStage.js';
 import type { InferSchemaType } from './Infer.js';
-import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
+import type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
 import type {
   ChainMismatchType,
   ChainSchemaMismatchType
@@ -73,7 +73,7 @@ type ChainRecursionCap = 10;
 export type ValidateChainType<
   TStages extends readonly AnyTransformStageType[],
   TCanonical,
-  TIndex extends readonly unknown[] = readonly []
+  TIndex extends unknown[] = []
 > = TIndex['length'] extends ChainRecursionCap
   ? TStages
   : TStages extends readonly [infer THead, ...infer TRest]
@@ -81,18 +81,18 @@ export type ValidateChainType<
       ? THead extends { 'decode': (input: never) => infer TOutHead }
         ? TRest extends readonly []
           ? TOutHead extends TCanonical
-            ? readonly [THead]
-            : readonly [ChainSchemaMismatchType<TCanonical, TOutHead>]
+            ? [THead]
+            : [ChainSchemaMismatchType<TCanonical, TOutHead>]
           : TRest extends readonly [
             { 'decode': (input: infer TInNext) => unknown },
             ...readonly unknown[]
           ]
             ? TOutHead extends TInNext
-              ? readonly [
+              ? [
                 THead,
-                ...ValidateChainType<TRest, TCanonical, readonly [...TIndex, unknown]>
+                ...ValidateChainType<TRest, TCanonical, [...TIndex, unknown]>
               ]
-              : readonly [
+              : [
                 THead,
                 ChainMismatchType<TIndex['length'], TOutHead, TInNext>,
                 ...TRest

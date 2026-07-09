@@ -19,7 +19,7 @@ import type {
  *
  * @example
  * ```ts
- * throw new CoercionError(CoercionErrorCode.COERCION_FAILED, errors);
+ * throw new CoercionError(COERCION_ERROR_CODE.COERCION_FAILED, errors);
  * ```
  *
  * @category Error Codes
@@ -28,7 +28,7 @@ import type {
  * @defaultValue `{ COERCION_FAILED: 'COERCION_FAILED' }`
  * @group Constants
  */
-export const CoercionErrorCode = { 'COERCION_FAILED': 'COERCION_FAILED' } as const satisfies Record<string, CoercionErrorCodeType>;
+export const COERCION_ERROR_CODE = { 'COERCION_FAILED': 'COERCION_FAILED' } as const satisfies Record<string, CoercionErrorCodeType>;
 
 /**
  * Error codes for schema registration and structural validation failures.
@@ -40,7 +40,7 @@ export const CoercionErrorCode = { 'COERCION_FAILED': 'COERCION_FAILED' } as con
  *
  * @example
  * ```ts
- * throw new SchemaError(SchemaErrorCode.MISSING_ID, 'Schema must declare $id');
+ * throw new SchemaError(SCHEMA_ERROR_CODE.MISSING_ID, 'Schema must declare $id');
  * ```
  *
  * @category Error Codes
@@ -49,7 +49,7 @@ export const CoercionErrorCode = { 'COERCION_FAILED': 'COERCION_FAILED' } as con
  * @defaultValue `{ COMPUTED_FN_MISSING, COMPUTED_INPUT_FORBIDDEN, DIALECT_UNSUPPORTED, ... }`
  * @group Constants
  */
-export const SchemaErrorCode = {
+export const SCHEMA_ERROR_CODE = {
   'COMPUTED_FN_MISSING': 'COMPUTED_FN_MISSING',
   'COMPUTED_INPUT_FORBIDDEN': 'COMPUTED_INPUT_FORBIDDEN',
   'DEFAULT_CREATOR_MISSING': 'SCHEMA_DEFAULT_CREATOR_MISSING',
@@ -76,7 +76,7 @@ export const SchemaErrorCode = {
  *
  * @example
  * ```ts
- * throw new GraphError(GraphErrorCode.REF_UNRESOLVED, ref);
+ * throw new GraphError(GRAPH_ERROR_CODE.REF_UNRESOLVED, ref);
  * ```
  *
  * @category Error Codes
@@ -85,7 +85,7 @@ export const SchemaErrorCode = {
  * @defaultValue `{ ANCHOR_NOT_FOUND, ARTIFACT_INVALID, ARTIFACT_STALE, ... }`
  * @group Constants
  */
-export const GraphErrorCode = {
+export const GRAPH_ERROR_CODE = {
   'ANCHOR_NOT_FOUND': 'ANCHOR_NOT_FOUND',
   'ARTIFACT_INVALID': 'ARTIFACT_INVALID',
   'ARTIFACT_STALE': 'ARTIFACT_STALE',
@@ -112,7 +112,7 @@ export const GraphErrorCode = {
  *
  * @example
  * ```ts
- * throw new InstantiationError(InstantiationErrorCode.EXTRA_FORBIDDEN, path);
+ * throw new InstantiationError(INSTANTIATION_ERROR_CODE.EXTRA_FORBIDDEN, path);
  * ```
  *
  * @category Error Codes
@@ -121,7 +121,7 @@ export const GraphErrorCode = {
  * @defaultValue `{ EXTRA_FORBIDDEN: 'EXTRA_FORBIDDEN', INSTANTIATION_FAILED: 'INSTANTIATION_FAILED' }`
  * @group Constants
  */
-export const InstantiationErrorCode = {
+export const INSTANTIATION_ERROR_CODE = {
   'EXTRA_FORBIDDEN': 'EXTRA_FORBIDDEN',
   'INSTANTIATION_FAILED': 'INSTANTIATION_FAILED'
 } as const satisfies Record<string, InstantiationErrorCodeType>;
@@ -137,7 +137,7 @@ export const InstantiationErrorCode = {
  *
  * @example
  * ```ts
- * throw new MaterializationError(MaterializationErrorCode.CYCLIC_DATA, path);
+ * throw new MaterializationError(MATERIALIZATION_ERROR_CODE.CYCLIC_DATA, path);
  * ```
  *
  * @category Error Codes
@@ -146,7 +146,7 @@ export const InstantiationErrorCode = {
  * @defaultValue `{ CYCLIC_DATA: 'CYCLIC_DATA', MATERIALIZATION_FAILED: 'MATERIALIZATION_FAILED' }`
  * @group Constants
  */
-export const MaterializationErrorCode = {
+export const MATERIALIZATION_ERROR_CODE = {
   'CYCLIC_DATA': 'CYCLIC_DATA',
   'INVALID_IRI_VALUE': 'INVALID_IRI_VALUE',
   'MATERIALIZATION_FAILED': 'MATERIALIZATION_FAILED',
@@ -164,7 +164,7 @@ export const MaterializationErrorCode = {
  *
  * @example
  * ```ts
- * throw new OwlImportError(message, { code: OwlImportErrorCode.PARSE_FAILED, axiomIri, subjectIri });
+ * throw new OwlImportError(message, { code: OWL_IMPORT_ERROR_CODE.PARSE_FAILED, axiomIri, subjectIri });
  * ```
  *
  * @category Error Codes
@@ -173,7 +173,7 @@ export const MaterializationErrorCode = {
  * @defaultValue `{ PARSE_FAILED: 'OWL_IMPORT_PARSE_FAILED', PEER_DEPENDENCY_MISSING: 'OWL_IMPORT_PEER_DEPENDENCY_MISSING' }`
  * @group Constants
  */
-export const OwlImportErrorCode = {
+export const OWL_IMPORT_ERROR_CODE = {
   'PARSE_FAILED': 'OWL_IMPORT_PARSE_FAILED',
   'PEER_DEPENDENCY_MISSING': 'OWL_IMPORT_PEER_DEPENDENCY_MISSING'
 } as const satisfies Record<string, OwlImportErrorCodeType>;
@@ -188,7 +188,7 @@ export const OwlImportErrorCode = {
  *
  * @example
  * ```ts
- * throw new TransformError(TransformErrorCode.TRANSFORM_DECODE_FAILED, detail);
+ * throw new TransformError(TRANSFORM_ERROR_CODE.TRANSFORM_DECODE_FAILED, detail);
  * ```
  *
  * @category Error Codes
@@ -197,7 +197,7 @@ export const OwlImportErrorCode = {
  * @defaultValue `{ TRANSFORM_DECODE_FAILED: 'TRANSFORM_DECODE_FAILED', TRANSFORM_ENCODE_FAILED: 'TRANSFORM_ENCODE_FAILED' }`
  * @group Constants
  */
-export const TransformErrorCode = {
+export const TRANSFORM_ERROR_CODE = {
   'TRANSFORM_DECODE_FAILED': 'TRANSFORM_DECODE_FAILED',
   'TRANSFORM_ENCODE_FAILED': 'TRANSFORM_ENCODE_FAILED'
 } as const satisfies Record<string, TransformErrorCodeType>;
@@ -213,7 +213,7 @@ export const TransformErrorCode = {
  *
  * @example
  * ```ts
- * throw new SchemaLoadError(message, { code: SchemaLoadErrorCode.LOAD_FAILED, file: url, reason: 'fetch-failed', status: 503, retryable: true });
+ * throw new SchemaLoadError(message, { code: SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED, file: url, reason: 'fetch-failed', status: 503, retryable: true });
  * ```
  *
  * @category Error Codes
@@ -222,7 +222,7 @@ export const TransformErrorCode = {
  * @defaultValue `{ LOAD_FAILED: 'SCHEMA_LOAD_FAILED' }`
  * @group Constants
  */
-export const SchemaLoadErrorCode = { 'LOAD_FAILED': 'SCHEMA_LOAD_FAILED' } as const satisfies Record<string, SchemaLoadErrorCodeType>;
+export const SCHEMA_LOAD_ERROR_CODE = { 'LOAD_FAILED': 'SCHEMA_LOAD_FAILED' } as const satisfies Record<string, SchemaLoadErrorCodeType>;
 
 /**
  * Sentinel code used when serializing a non-BaseError instance into the

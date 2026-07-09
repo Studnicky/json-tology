@@ -367,14 +367,23 @@ export const JT_VALIDATION_PROBLEM_TYPE = 'https://json-tology.dev/problems/vali
 export const JT_STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
 
 /**
- * Produce the RDF container membership property compact IRI for position `n`.
- * e.g. `rdfMemberIri(1)` → `'rdf:_1'`
+ * The literal string `'blank-node'` requests anonymous-node subjects
+ * for every object in a quad projection. Exposed as a separate constant
+ * so consumers can spell the magic value without hard-coding it inline.
  *
- * @param n - 1-based container membership index
- * @category IRI
- * @since 0.25.0
+ * @remarks
+ * Pass as the `iriFor` option to `JsonTology.toQuads()` or the constructor to enable
+ * blank-node subjects for every projected object, rather than minting well-known
+ * genid IRIs.
+ *
+ * @example
+ * ```ts
+ * const quads = jt.toQuads(UserSchema, user, { iriFor: BLANK_NODE_IRI_FOR });
+ * ```
+ *
+ * @defaultValue `'blank-node'`
+ * @category Skolemization
+ * @since 0.1.0
  * @group Constants
  */
-export function rdfMemberIri(n: number): string {
-  return `rdf:_${n}`;
-}
+export const BLANK_NODE_IRI_FOR = 'blank-node';

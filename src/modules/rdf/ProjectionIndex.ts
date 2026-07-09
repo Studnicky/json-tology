@@ -65,11 +65,13 @@ export const ProjectionIndex = {
    * which use `rdfs:subClassOf` as the predicate, and any other restriction kinds.
    */
   filterContainsRestrictions(relations: readonly SchemaGraphRelationType[]): SchemaGraphRelationType[] {
-    return relations.filter((rel: SchemaGraphRelationType): boolean => {
+    const result = relations.filter((rel: SchemaGraphRelationType): boolean => {
       return rel.predicate === OWL.someValuesFrom
       && ProjectionIndex.isRestrictionStructure(rel.structure)
       && rel.structure.constraint === OWL.someValuesFrom;
     });
+
+    return result;
   },
 
   // ---------------------------------------------------------------------------

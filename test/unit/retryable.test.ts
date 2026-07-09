@@ -14,12 +14,12 @@ import { SchemaLoadError } from '../../src/errors/SchemaLoadError.js';
 import { GraphError } from '../../src/errors/GraphError.js';
 import { SchemaError } from '../../src/errors/SchemaError.js';
 import {
-  GraphErrorCode, SchemaErrorCode, SchemaLoadErrorCode
+  GRAPH_ERROR_CODE, SCHEMA_ERROR_CODE, SCHEMA_LOAD_ERROR_CODE
 } from '../../src/constants/ERROR_CODES.js';
 
 function transientError(): SchemaLoadError {
   return new SchemaLoadError('HTTP 503 loading https://ex/Schema', {
-    'code': SchemaLoadErrorCode.LOAD_FAILED,
+    'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
     'file': 'https://ex/Schema',
     'reason': 'fetch-failed',
     'retryable': true,
@@ -36,14 +36,14 @@ void describe('BaseError.retryable contract', { 'concurrency': true }, () => {
   });
 
   void it('a deterministic failure (GraphError) is not retryable by default', () => {
-    const error = new GraphError('pointer not found', { 'code': GraphErrorCode.POINTER_NOT_FOUND });
+    const error = new GraphError('pointer not found', { 'code': GRAPH_ERROR_CODE.POINTER_NOT_FOUND });
 
     assert.strictEqual(error.retryable, false);
     assert.strictEqual(error.toJson().retryable, false);
   });
 
   void it('omitting retryable defaults to false', () => {
-    const error = new SchemaError('not registered', { 'code': SchemaErrorCode.NOT_REGISTERED });
+    const error = new SchemaError('not registered', { 'code': SCHEMA_ERROR_CODE.NOT_REGISTERED });
 
     assert.strictEqual(error.retryable, false);
   });
@@ -54,7 +54,7 @@ void describe('BaseError.retryable propagation through flatten()', { 'concurrenc
     // A deterministic wrapper whose cause is a transient (retryable) failure.
     const wrapper = new SchemaError('registration failed while loading $ref', {
       'cause': transientError(),
-      'code': SchemaErrorCode.NOT_REGISTERED
+      'code': SCHEMA_ERROR_CODE.NOT_REGISTERED
     });
 
     const chain = wrapper.flatten();
@@ -67,15 +67,15 @@ void describe('BaseError.retryable propagation through flatten()', { 'concurrenc
       throw new Error('expected chain to have 2 elements');
     }
     assert.strictEqual(chain0.retryable, false, 'the deterministic wrapper is not retryable');
-    assert.strictEqual(chain0.code, SchemaErrorCode.NOT_REGISTERED);
+    assert.strictEqual(chain0.code, SCHEMA_ERROR_CODE.NOT_REGISTERED);
     assert.strictEqual(chain1.retryable, true, 'the transient cause stays retryable');
-    assert.strictEqual(chain1.code, SchemaLoadErrorCode.LOAD_FAILED);
+    assert.strictEqual(chain1.code, SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED);
   });
 
   void it('toJson() nests the cause with its own retryable flag', () => {
     const wrapper = new SchemaError('wrap', {
       'cause': transientError(),
-      'code': SchemaErrorCode.NOT_REGISTERED
+      'code': SCHEMA_ERROR_CODE.NOT_REGISTERED
     });
 
     const json = wrapper.toJson();

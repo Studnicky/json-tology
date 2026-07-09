@@ -27,9 +27,13 @@ export class ImportRelation {
     subject: string,
     predicates: ReadonlySet<string>
   ): readonly SchemaGraphRelationType[] {
-    return graph.relationsForSubject(subject).filter((rel: SchemaGraphRelationType): boolean => {
-      return predicates.has(rel.predicate);
+    const result = graph.relationsForSubject(subject).filter((rel: SchemaGraphRelationType): boolean => {
+      const isMemberPredicate = predicates.has(rel.predicate);
+
+      return isMemberPredicate;
     });
+
+    return result;
   }
 
   /**

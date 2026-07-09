@@ -7,8 +7,8 @@
 import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 
 export type ApplyPropertyArgsType = {
-  readonly 'domains': string[];
-  readonly 'propertyIri': string;
-  readonly 'propShape': null | Record<string, unknown>;
-  readonly 'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
+  'domains': string[];
+  'propertyIri': string;
+  'propShape': null | Record<string, unknown>;
+  'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
 };

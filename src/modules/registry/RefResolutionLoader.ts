@@ -12,7 +12,7 @@ import type { LoaderType } from '../../types/Loader.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { SchemaLoadError } from '../../errors/SchemaLoadError.js';
 import {
-  GraphErrorCode, SchemaLoadErrorCode
+  GRAPH_ERROR_CODE, SCHEMA_LOAD_ERROR_CODE
 } from '../../constants/ERROR_CODES.js';
 
 export class RefResolutionLoader implements RefResolutionLoaderInterface {
@@ -39,7 +39,7 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
 
       if (loaded === null) {
         throw new GraphError(`loader returned null for IRI: ${iri}`, {
-          'code': GraphErrorCode.REF_UNRESOLVED,
+          'code': GRAPH_ERROR_CODE.REF_UNRESOLVED,
           'pointer': iri
         });
       }
@@ -51,7 +51,7 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
           throw new SchemaLoadError(
             `loader returned schema with non-string $id for IRI: ${iri}`,
             {
-              'code': SchemaLoadErrorCode.LOAD_FAILED,
+              'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
               'file': iri,
               'reason': 'missing-id',
               'retryable': false
@@ -97,7 +97,7 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
           throw new GraphError(
             `loader returned null for IRI: ${iri}`,
             {
-              'code': GraphErrorCode.REF_UNRESOLVED,
+              'code': GRAPH_ERROR_CODE.REF_UNRESOLVED,
               'pointer': iri
             }
           );
@@ -110,7 +110,7 @@ export class RefResolutionLoader implements RefResolutionLoaderInterface {
             throw new SchemaLoadError(
               `loader returned schema with non-string $id for IRI: ${iri}`,
               {
-                'code': SchemaLoadErrorCode.LOAD_FAILED,
+                'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
                 'file': iri,
                 'reason': 'missing-id',
                 'retryable': false

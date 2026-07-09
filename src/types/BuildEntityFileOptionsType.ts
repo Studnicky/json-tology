@@ -19,15 +19,15 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  */
 export type BuildEntityFileOptionsType = {
   /** Full IRI of the OWL class. */
-  readonly 'iri': string;
+  'iri': string;
   /** PascalCase identifier for this class. */
-  readonly 'name': string;
+  'name': string;
   /** Name of the schema-set reference-map type exported by `index.ts`. */
-  readonly 'refsName': string;
+  'refsName': string;
   /** The JSON Schema object for this class. */
-  readonly 'schema': JsonSchemaDocumentObjectType;
+  'schema': JsonSchemaDocumentObjectType;
   /** Human-readable source label (file path or IRI), or empty string. */
-  readonly 'sourceLabel': string;
+  'sourceLabel': string;
   /** ISO-8601 timestamp string. */
-  readonly 'ts': string;
+  'ts': string;
 };

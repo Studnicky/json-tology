@@ -7,8 +7,8 @@ import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js
 import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 
 export type ClassExprContextType = {
-  readonly 'allClassIris': ReadonlySet<string>;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'reportUnsupported': (axiomIri: string, subjectIri: string) => void;
-  readonly 'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
+  'allClassIris': ReadonlySet<string>;
+  'graph': SchemaGraphInterface;
+  'reportUnsupported': (axiomIri: string, subjectIri: string) => void;
+  'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
 };

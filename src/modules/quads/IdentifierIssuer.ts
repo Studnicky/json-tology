@@ -120,7 +120,9 @@ export class IdentifierIssuer implements IdentifierIssuerInterface {
 
   /** Returns true if `existing` has already been mapped. */
   hasId(existing: string): boolean {
-    return this.issued.has(existing);
+    const result = this.issued.has(existing);
+
+    return result;
   }
 
   /**

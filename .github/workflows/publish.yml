@@ -9,7 +9,10 @@ jobs:
     name: Validate Before Publish
     permissions:
       contents: read
+      packages: read
     runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
 
@@ -46,6 +49,7 @@ jobs:
       version: ${{ steps.check-version.outputs.version }}
     permissions:
       contents: read
+      packages: read
       id-token: write
     runs-on: ubuntu-latest
     steps:
@@ -58,6 +62,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm ci --include=dev --include=optional
 
       - name: Build
@@ -121,6 +127,8 @@ jobs:
           scope: '@studnicky'
 
       - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm ci --include=dev --include=optional
 
       - name: Build

@@ -56,7 +56,9 @@ import {
  * Returns true when the relation's predicate matches any IRI in the set.
  */
 function predicateIn(relation: SchemaGraphRelationType, set: ReadonlySet<string>): boolean {
-  return set.has(relation.predicate);
+  const result = set.has(relation.predicate);
+
+  return result;
 }
 
 /**
@@ -219,8 +221,8 @@ function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantTyp
  */
 export class Individuals {
   public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-    const sameAs: Array<readonly [string, string]> = [];
-    const differentFrom: Array<readonly [string, string]> = [];
+    const sameAs: Array<[string, string]> = [];
+    const differentFrom: Array<[string, string]> = [];
     const invariants: Array<{
       'invariant': InvariantType;
       'schemaId': string;
@@ -248,7 +250,7 @@ export class Individuals {
     const individuals: Array<{
       'iri': string;
       'properties': Record<string, unknown>;
-      'types': readonly string[];
+      'types': string[];
     }> = [];
 
     for (const individualIri of namedIndividualIris) {
@@ -329,7 +331,7 @@ export class Individuals {
       sameAs.push([
         iriA,
         iriB
-      ] as const);
+      ]);
     }
 
     // ---- owl:differentFrom — pairs flow to differentFrom array --------------
@@ -355,7 +357,7 @@ export class Individuals {
       differentFrom.push([
         iriA,
         iriB
-      ] as const);
+      ]);
     }
 
     // ---- owl:AllDifferent + owl:distinctMembers (RDF list) ------------------
@@ -400,7 +402,7 @@ export class Individuals {
             differentFrom.push([
               iriA,
               iriB
-            ] as const);
+            ]);
           }
         }
       }

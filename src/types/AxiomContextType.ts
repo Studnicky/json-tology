@@ -7,9 +7,9 @@ import type { InvariantType } from './Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 
 export type AxiomContextType = {
-  readonly 'allClassIris': ReadonlySet<string>;
-  readonly 'invariants': Array<{ 'invariant': InvariantType;
+  'allClassIris': ReadonlySet<string>;
+  'invariants': Array<{ 'invariant': InvariantType;
     'schemaId': string }>;
-  readonly 'resolveIri': (target: string | { 'id': string }) => string;
-  readonly 'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
+  'resolveIri': (target: string | { 'id': string }) => string;
+  'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
 };

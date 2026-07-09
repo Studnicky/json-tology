@@ -23,6 +23,6 @@ import type { ValidateWithErrorsFnType } from '../types/Validation.js';
  * @group Validation
  */
 export type DependentSchemaValidatorEntryType = {
-  readonly 'trigger': string;
-  readonly 'validator': ValidateWithErrorsFnType;
+  'trigger': string;
+  'validator': ValidateWithErrorsFnType;
 };

@@ -19,15 +19,15 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  */
 export type RegistryDirContextType = {
   /** Map from IRI to PascalCase identifier. */
-  readonly 'nameMap': Map<string, string>;
+  'nameMap': Map<string, string>;
   /** Name of the schema-set reference-map type exported by `index.ts`. */
-  readonly 'refsName': string;
+  'refsName': string;
   /** All consumer-facing schemas. */
-  readonly 'schemas': JsonSchemaDocumentObjectType[];
+  'schemas': JsonSchemaDocumentObjectType[];
   /** Sorted IRIs in emission order. */
-  readonly 'sortedIris': string[];
+  'sortedIris': string[];
   /** Human-readable source label, or empty string. */
-  readonly 'sourceLabel': string;
+  'sourceLabel': string;
   /** ISO-8601 timestamp string. */
-  readonly 'ts': string;
+  'ts': string;
 };

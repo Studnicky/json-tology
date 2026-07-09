@@ -10,6 +10,6 @@
  */
 
 export type XsdJsonSchemaPrimitiveType = {
-  readonly 'format'?: string;
-  readonly 'type': 'boolean' | 'integer' | 'number' | 'string';
+  'format'?: string;
+  'type': 'boolean' | 'integer' | 'number' | 'string';
 };

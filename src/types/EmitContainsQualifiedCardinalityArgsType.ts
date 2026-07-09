@@ -3,6 +3,6 @@ import type { QuadEmitBaseType } from './QuadEmitBaseType.js';
 
 /** Arguments for emitContainsQualifiedCardinality. */
 export type EmitContainsQualifiedCardinalityArgsType = QuadEmitBaseType & {
-  readonly 'entry': RelationIndexType;
-  readonly 'psBnode': string;
+  'entry': RelationIndexType;
+  'psBnode': string;
 };

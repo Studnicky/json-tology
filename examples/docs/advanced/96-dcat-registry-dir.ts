@@ -16,7 +16,7 @@
  * Browser-safe: no node:fs, node:path, or node:url.
  */
 
-import { generateRegistryDirectory } from '../../../src/owl-gen.js';
+import { generateRegistryDirectory } from '../../../src/owl-gen/index.js';
 import { dcatSubset } from '../ontologies/dcat-subset.js';
 
 // ---------------------------------------------------------------------------

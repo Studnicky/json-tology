@@ -37,6 +37,8 @@ export class LogScope {
    * @returns the message prefixed with `[component.operation] `
    */
   public static format(component: string, operation: string, message: string): string {
-    return `[${component}.${operation}] ${message}`;
+    const result = `[${component}.${operation}] ${message}`;
+
+    return result;
   }
 }

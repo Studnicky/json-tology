@@ -5,10 +5,10 @@ import type { LookupSchemaFnType } from './LookupSchemaFnType.js';
 
 /** Options for `compileDynamicRefValidator`. */
 export type DynamicRefValidatorOptionsType = {
-  readonly 'context': SchemaCompilerValidatePlanContextType;
-  readonly 'dynamicRef': string;
-  readonly 'formatRegistry': FormatRegistryInterface;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
+  'context': SchemaCompilerValidatePlanContextType;
+  'dynamicRef': string;
+  'formatRegistry': FormatRegistryInterface;
+  'graph': SchemaGraphInterface;
+  'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
+  'lookupSchema': LookupSchemaFnType | undefined;
 };

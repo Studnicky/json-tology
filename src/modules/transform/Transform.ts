@@ -37,7 +37,7 @@ import { Brand } from '../data/Brand.js';
 import type {
   CanonicalShapeType
 } from '../../types/Infer.js';
-import type { JsonTologyReferencesInterface } from '../../types/SchemaReferences.js';
+import type { JsonTologyReferencesInterface } from '../../interfaces/JsonTologyReferencesInterface.js';
 import type { TransformFnsType } from '../../types/TransformFnsType.js';
 import type {
   AnyTransformStageType,
@@ -98,7 +98,9 @@ export class Transform {
     TSchema extends JsonSchemaDocumentType,
     TBrand extends string
   >(schema: TSchema, _: TBrand): BrandedType<TSchema, TBrand> {
-    return Brand.cast<BrandedType<TSchema, TBrand>>(schema);
+    const result = Brand.cast<BrandedType<TSchema, TBrand>>(schema);
+
+    return result;
   }
 
   /**
@@ -124,14 +126,22 @@ export class Transform {
     const stages = transforms as ReadonlyArray<TransformStageType<unknown, unknown>>;
     const composed: TransformFnsType = {
       'decode': (value: unknown): unknown => {
-        return stages.reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
-          return transform.decode(accumulator);
+        const result = stages.reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
+          const decoded = transform.decode(accumulator);
+
+          return decoded;
         }, value);
+
+        return result;
       },
       'encode': (value: unknown): unknown => {
-        return [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
-          return transform.encode(accumulator);
+        const result = [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
+          const encoded = transform.encode(accumulator);
+
+          return encoded;
         }, value);
+
+        return result;
       }
     };
 
@@ -191,7 +201,9 @@ export class Transform {
    * @returns The registered decode/encode pair, or `undefined` if none.
    */
   public static getDecoder(schema: JsonSchemaDocumentObjectType): TransformFnsType | undefined {
-    return transformRegistry.get(schema);
+    const result = transformRegistry.get(schema);
+
+    return result;
   }
 
   /**

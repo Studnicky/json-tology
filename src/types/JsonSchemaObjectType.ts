@@ -13,67 +13,61 @@
  * Specs:
  *   https://json-schema.org/draft/2020-12/json-schema-core
  *   https://json-schema.org/draft/2020-12/json-schema-validation
+ *
+ * Composed on top of {@link JsonSchemaDocumentObjectType} (`./Schema.js`)
+ * rather than duplicating its field list: `Omit`s the OWL class-axiom /
+ * `jt:*` extension keywords entirely, then re-narrows every nested-schema
+ * position from the OWL-extended {@link JsonSchemaDocumentType} to
+ * {@link JsonSchemaDefinitionType} via an intersection override, so no OWL
+ * vocabulary leaks back in through a nested `items`/`properties`/`allOf`/etc.
+ * Giving `JsonSchemaDocumentObjectType` a type parameter instead (so this
+ * type could `Pick` a generic instantiation of it) was tried and reverted:
+ * TypeScript reports the type's own existing
+ * `JsonSchemaDocumentType = boolean | JsonSchemaDocumentObjectType`
+ * recursion as circular the moment a type parameter — even one with a
+ * self-referential default that changes no other call site's behavior — is
+ * added, independent of anything in this file. `Omit` + override keeps
+ * `JsonSchemaDocumentObjectType` untouched and non-generic, which avoids
+ * that limit entirely.
  */
 
 import type { JsonSchemaDefinitionType } from '../types/JsonSchemaDefinitionType.js';
-import type { JsonSchemaTypeNameType } from '../types/Schema.js';
+import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 
-export type JsonSchemaObjectType = {
-  readonly '$anchor'?: string;
-  readonly '$comment'?: string;
-  readonly '$defs'?: Readonly<Record<string, JsonSchemaDefinitionType>>;
-  readonly '$dynamicAnchor'?: string;
-  readonly '$dynamicRef'?: string;
-  readonly '$id'?: string;
-  readonly '$ref'?: string;
-  readonly '$schema'?: string;
-  readonly '$vocabulary'?: Readonly<Record<string, boolean>>;
-  readonly 'additionalProperties'?: JsonSchemaDefinitionType;
-  readonly 'allOf'?: readonly JsonSchemaDefinitionType[];
-  readonly 'anyOf'?: readonly JsonSchemaDefinitionType[];
-  readonly 'const'?: unknown;
-  readonly 'contains'?: JsonSchemaDefinitionType;
-  readonly 'contentEncoding'?: string;
-  readonly 'contentMediaType'?: string;
-  readonly 'contentSchema'?: JsonSchemaDefinitionType;
-  readonly 'default'?: unknown;
-  readonly 'dependentRequired'?: Readonly<Record<string, readonly string[]>>;
-  readonly 'dependentSchemas'?: Readonly<Record<string, JsonSchemaDefinitionType>>;
-  readonly 'deprecated'?: boolean;
-  readonly 'description'?: string;
-  readonly 'else'?: JsonSchemaDefinitionType;
-  readonly 'enum'?: readonly unknown[];
-  readonly 'examples'?: readonly unknown[];
-  readonly 'exclusiveMaximum'?: number;
-  readonly 'exclusiveMinimum'?: number;
-  readonly 'format'?: string;
-  readonly 'if'?: JsonSchemaDefinitionType;
-  readonly 'items'?: JsonSchemaDefinitionType;
-  readonly 'maxContains'?: number;
-  readonly 'maximum'?: number;
-  readonly 'maxItems'?: number;
-  readonly 'maxLength'?: number;
-  readonly 'maxProperties'?: number;
-  readonly 'minContains'?: number;
-  readonly 'minimum'?: number;
-  readonly 'minItems'?: number;
-  readonly 'minLength'?: number;
-  readonly 'minProperties'?: number;
-  readonly 'multipleOf'?: number;
-  readonly 'not'?: JsonSchemaDefinitionType;
-  readonly 'oneOf'?: readonly JsonSchemaDefinitionType[];
-  readonly 'pattern'?: string;
-  readonly 'patternProperties'?: Readonly<Record<string, JsonSchemaDefinitionType>>;
-  readonly 'prefixItems'?: readonly JsonSchemaDefinitionType[];
-  readonly 'properties'?: Readonly<Record<string, JsonSchemaDefinitionType>>;
-  readonly 'propertyNames'?: JsonSchemaDefinitionType;
-  readonly 'readOnly'?: boolean;
-  readonly 'required'?: readonly string[];
-  readonly 'then'?: JsonSchemaDefinitionType;
-  readonly 'title'?: string;
-  readonly 'type'?: JsonSchemaTypeNameType | readonly JsonSchemaTypeNameType[];
-  readonly 'unevaluatedItems'?: JsonSchemaDefinitionType;
-  readonly 'unevaluatedProperties'?: JsonSchemaDefinitionType;
-  readonly 'uniqueItems'?: boolean;
-  readonly 'writeOnly'?: boolean;
-};
+/** The 2020-12-core keys whose value type is a nested schema position and
+ * must be re-narrowed from `JsonSchemaDocumentType` to `JsonSchemaDefinitionType`. */
+type NestedSchemaKeysType
+  = | '$defs' | 'additionalProperties' | 'allOf' | 'anyOf' | 'contains' | 'contentSchema' | 'dependentSchemas'
+  | 'else' | 'if' | 'items' | 'not' | 'oneOf' | 'patternProperties' | 'prefixItems' | 'properties'
+  | 'propertyNames' | 'then' | 'unevaluatedItems' | 'unevaluatedProperties';
+
+/** The OWL class-axiom / `jt:*` / `$recursive*` extension keys this narrow,
+ * 2020-12-core-only type excludes entirely. */
+type OwlOnlyKeysType
+  = | '$recursiveAnchor' | '$recursiveRef' | 'asymmetric' | 'disjointWith' | 'equivalentTo' | 'functional'
+  | 'inverseFunctional' | 'inverseOf' | 'irreflexive' | 'jt:computed' | 'jt:config' | 'jt:frozen' | 'jt:hasKey'
+  | 'jt:restrictions' | 'jt:strict' | 'rdfs:domain' | 'rdfs:range' | 'reflexive' | 'symmetric' | 'transitive';
+
+export type JsonSchemaObjectType
+  = & Omit<JsonSchemaDocumentObjectType, NestedSchemaKeysType | OwlOnlyKeysType>
+  & {
+    '$defs'?: Readonly<Record<string, JsonSchemaDefinitionType>>;
+    'additionalProperties'?: JsonSchemaDefinitionType;
+    'allOf'?: readonly JsonSchemaDefinitionType[];
+    'anyOf'?: readonly JsonSchemaDefinitionType[];
+    'contains'?: JsonSchemaDefinitionType;
+    'contentSchema'?: JsonSchemaDefinitionType;
+    'dependentSchemas'?: Readonly<Record<string, JsonSchemaDefinitionType>>;
+    'else'?: JsonSchemaDefinitionType;
+    'if'?: JsonSchemaDefinitionType;
+    'items'?: JsonSchemaDefinitionType;
+    'not'?: JsonSchemaDefinitionType;
+    'oneOf'?: readonly JsonSchemaDefinitionType[];
+    'patternProperties'?: Readonly<Record<string, JsonSchemaDefinitionType>>;
+    'prefixItems'?: readonly JsonSchemaDefinitionType[];
+    'properties'?: Readonly<Record<string, JsonSchemaDefinitionType>>;
+    'propertyNames'?: JsonSchemaDefinitionType;
+    'then'?: JsonSchemaDefinitionType;
+    'unevaluatedItems'?: JsonSchemaDefinitionType;
+    'unevaluatedProperties'?: JsonSchemaDefinitionType;
+  };

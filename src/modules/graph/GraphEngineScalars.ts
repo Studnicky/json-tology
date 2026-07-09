@@ -45,7 +45,9 @@ export const GraphEngineScalars = {
   },
 
   matchesSchemaTypes(schemaTypes: string[], value: unknown): boolean {
-    return Predicates.matchesAnyType(schemaTypes, value);
+    const result = Predicates.matchesAnyType(schemaTypes, value);
+
+    return result;
   },
 
   validateNumberConstraints(

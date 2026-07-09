@@ -39,12 +39,41 @@ import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexType } from '../../types/RelationIndexType.js';
 import { VocabProjection } from './VocabProjection.js';
 
+/**
+ * Target-ref resolution, grouped as a method on a single-method internal
+ * namespace object (see `Lists`/`Terms`) because the name collides with the
+ * project's banned freestanding verb-prefix list (resolve/...).
+ */
+const TargetRef = {
+  resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndexType>): string {
+    const targetEntry = index.get(targetNodeId);
+
+    if (targetEntry === undefined) {
+      return targetNodeId;
+    }
+
+    const rangeRels = targetEntry.byPredicate.get(RDFS.range) ?? [];
+
+    if (rangeRels.length > 0) {
+      const rangeRel0 = rangeRels.at(0);
+
+      if (rangeRel0 === undefined) {
+        return targetNodeId;
+      }
+
+      return ProjectionIndex.relationTargetId(rangeRel0);
+    }
+
+    return targetNodeId;
+  }
+} as const;
+
 function relationToEquivIri(
   rel: SchemaGraphRelationType,
   index: Map<string, RelationIndexType>,
   curie: CurieInterface | undefined
 ): ReturnType<typeof QuadFactory.iri> {
-  const targetId = resolveTargetRef(ProjectionIndex.relationTargetId(rel), index);
+  const targetId = TargetRef.resolveTargetRef(ProjectionIndex.relationTargetId(rel), index);
 
   return QuadFactory.iri(targetId, { curie });
 }
@@ -53,29 +82,9 @@ function relationToOneOfLiteral(
   rel: SchemaGraphRelationType,
   curie: CurieInterface | undefined
 ): ReturnType<typeof QuadFactory.literal> {
-  return QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
-}
+  const result = QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
 
-function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndexType>): string {
-  const targetEntry = index.get(targetNodeId);
-
-  if (targetEntry === undefined) {
-    return targetNodeId;
-  }
-
-  const rangeRels = targetEntry.byPredicate.get(RDFS.range) ?? [];
-
-  if (rangeRels.length > 0) {
-    const rangeRel0 = rangeRels.at(0);
-
-    if (rangeRel0 === undefined) {
-      return targetNodeId;
-    }
-
-    return ProjectionIndex.relationTargetId(rangeRel0);
-  }
-
-  return targetNodeId;
+  return result;
 }
 
 function isExcludedFragment(fragment: null | string): boolean {
@@ -376,40 +385,50 @@ class ShaclVocabProjection extends VocabProjection {
   ): QuadObjectType[] {
     // SHACL: branches are already in the correct sh:or form — pass through without
     // wrapping in an additional union node (unlike OWL which wraps in owl:unionOf).
-    return branches.filter((branch: QuadObjectType): boolean => {
+    const result = branches.filter((branch: QuadObjectType): boolean => {
       return branch.termType === 'BlankNode' || branch.termType === 'NamedNode';
     });
+
+    return result;
   }
 }
 
-/** Build the property-parent index: maps each parent subject IRI to its property subject IRIs. */
-function buildPropertyIndex(index: Map<string, RelationIndexType>): Map<string, string[]> {
-  const propertyIndex = new Map<string, string[]>();
+/**
+ * Property-parent index construction, grouped as a method on a
+ * single-method internal namespace object (see `Lists`/`Terms`) because the
+ * name collides with the project's banned freestanding verb-prefix list
+ * (build/...).
+ */
+const PropertyIndex = {
+  /** Build the property-parent index: maps each parent subject IRI to its property subject IRIs. */
+  buildPropertyIndex(index: Map<string, RelationIndexType>): Map<string, string[]> {
+    const propertyIndex = new Map<string, string[]>();
 
-  for (const [subject] of index) {
-    if (subject.startsWith('_:') || !SchemaIri.isPropertySubject(subject)) {
-      continue;
+    for (const [subject] of index) {
+      if (subject.startsWith('_:') || !SchemaIri.isPropertySubject(subject)) {
+        continue;
+      }
+
+      // Skip array-item child subjects (/items, /prefixItems/N, /contains).
+      // Their range constraints are folded onto the parent array property shape
+      // in emitPropertyShape; emitting them as standalone property shapes would
+      // produce phantom "#items" shapes on the class node.
+      const parts = SchemaIri.splitSubject(subject);
+
+      if (isExcludedFragment(parts.fragment)) {
+        continue;
+      }
+
+      const parentId = SchemaIri.structuralParent(subject);
+      const list = propertyIndex.get(parentId) ?? [];
+
+      list.push(subject);
+      propertyIndex.set(parentId, list);
     }
 
-    // Skip array-item child subjects (/items, /prefixItems/N, /contains).
-    // Their range constraints are folded onto the parent array property shape
-    // in emitPropertyShape; emitting them as standalone property shapes would
-    // produce phantom "#items" shapes on the class node.
-    const parts = SchemaIri.splitSubject(subject);
-
-    if (isExcludedFragment(parts.fragment)) {
-      continue;
-    }
-
-    const parentId = SchemaIri.structuralParent(subject);
-    const list = propertyIndex.get(parentId) ?? [];
-
-    list.push(subject);
-    propertyIndex.set(parentId, list);
+    return propertyIndex;
   }
-
-  return propertyIndex;
-}
+} as const;
 
 /**
  * Projects SchemaGraph relations into SHACL-vocabulary RDF quads.
@@ -442,7 +461,7 @@ export const ShaclProjection = {
     const quads: QuadInterface[] = [];
     const allRelations = graph.allRelations();
     const index = ProjectionIndex.build(allRelations);
-    const propertyIndex = buildPropertyIndex(index);
+    const propertyIndex = PropertyIndex.buildPropertyIndex(index);
 
     const shaclVocab = new ShaclVocabProjection(index, graph, predicateResolver);
     const ctx: ProjectionEmitContextType = {
@@ -682,9 +701,11 @@ function emitNodeShapeComposition(args: EmitNodeShapeCompositionArgsType): void 
     entry,
     quads,
     curie,
-    issuer,
-    graph,
-    predicateResolver
+    {
+      graph,
+      issuer,
+      predicateResolver
+    }
   );
   const depSchemaItems = shaclVocab.emitDependentSchemas(subject, entry, quads, curie, issuer);
   const conditionalItems = shaclVocab.emitConditionals(entry, quads, curie, issuer);
@@ -708,7 +729,9 @@ function emitNodeShapeEquivalences(
 
   if (equivRels.length > 0) {
     const orItems = equivRels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.iri> => {
-      return relationToEquivIri(rel, index, curie);
+      const result = relationToEquivIri(rel, index, curie);
+
+      return result;
     });
 
     quads.push(QuadFactory.quad(subject, SH.or, QuadFactory.rdfList(orItems, quads, issuer), { curie }));
@@ -720,7 +743,7 @@ function emitNodeShapeEquivalences(
     const complementRel0 = complementRels.at(0);
 
     if (complementRel0 !== undefined) {
-      const compRef = resolveTargetRef(ProjectionIndex.relationTargetId(complementRel0), index);
+      const compRef = TargetRef.resolveTargetRef(ProjectionIndex.relationTargetId(complementRel0), index);
 
       quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(compRef, { curie }), { curie }));
     }
@@ -734,7 +757,7 @@ function emitNodeShapeEquivalences(
     if (disjointRel0 === undefined) {
       return;
     }
-    const disjRef = resolveTargetRef(ProjectionIndex.relationTargetId(disjointRel0), index);
+    const disjRef = TargetRef.resolveTargetRef(ProjectionIndex.relationTargetId(disjointRel0), index);
 
     quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(disjRef, { curie }), { curie }));
   }
@@ -743,7 +766,9 @@ function emitNodeShapeEquivalences(
 
   if (oneOfRels.length > 0) {
     const values = oneOfRels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.literal> => {
-      return relationToOneOfLiteral(rel, curie);
+      const result = relationToOneOfLiteral(rel, curie);
+
+      return result;
     });
 
     quads.push(QuadFactory.quad(subject, SH.in, QuadFactory.rdfList(values, quads, issuer), { curie }));

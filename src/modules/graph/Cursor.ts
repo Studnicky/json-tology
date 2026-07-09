@@ -3,7 +3,7 @@ import type { CursorInterface } from '../../interfaces/CursorInterface.js';
 import type { AboxLiftFnType } from '../../types/AboxGraph.js';
 
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 
 /**
  * Lazy, immutable selection of resource IRIs over an {@link AboxGraph}.
@@ -48,9 +48,13 @@ export class Cursor implements CursorInterface {
   }
 
   public all(): unknown[] {
-    return this.iriList.map((iri: string): unknown => {
-      return this.lift(iri);
+    const result = this.iriList.map((iri: string): unknown => {
+      const lifted = this.lift(iri);
+
+      return lifted;
     });
+
+    return result;
   }
 
   public closure(predicate: string | string[]): CursorInterface {
@@ -105,9 +109,11 @@ export class Cursor implements CursorInterface {
   public having(predicate: string, value: unknown): CursorInterface {
     const predicateIri = this.graph.resolvePredicate(predicate);
     const next = this.iriList.filter((iri: string): boolean => {
-      return this.graph.valuesVia(iri, predicateIri).some((candidate: unknown): boolean => {
+      const result = this.graph.valuesVia(iri, predicateIri).some((candidate: unknown): boolean => {
         return candidate === value;
       });
+
+      return result;
     });
 
     return new Cursor(next, this.graph, this.lift);
@@ -116,7 +122,9 @@ export class Cursor implements CursorInterface {
   public intersect(other: CursorInterface): CursorInterface {
     const otherSet = new Set(other.iris());
     const next = this.iriList.filter((iri: string): boolean => {
-      return otherSet.has(iri);
+      const result = otherSet.has(iri);
+
+      return result;
     });
 
     return new Cursor(next, this.graph, this.lift);
@@ -151,7 +159,9 @@ export class Cursor implements CursorInterface {
 
   public ofType(classIri: string): CursorInterface {
     const next = this.iriList.filter((iri: string): boolean => {
-      return this.graph.typesOf(iri).includes(classIri);
+      const result = this.graph.typesOf(iri).includes(classIri);
+
+      return result;
     });
 
     return new Cursor(next, this.graph, this.lift);
@@ -161,7 +171,7 @@ export class Cursor implements CursorInterface {
     if (this.iriList.length !== 1) {
       throw new GraphError(
         `Cursor.one() requires exactly one resource, found ${this.iriList.length}`,
-        { 'code': GraphErrorCode.CURSOR_CARDINALITY }
+        { 'code': GRAPH_ERROR_CODE.CURSOR_CARDINALITY }
       );
     }
 
@@ -170,7 +180,7 @@ export class Cursor implements CursorInterface {
     if (onlyIri === undefined) {
       throw new GraphError(
         'Cursor.one() internal error: iriList[0] undefined',
-        { 'code': GraphErrorCode.CURSOR_CARDINALITY }
+        { 'code': GRAPH_ERROR_CODE.CURSOR_CARDINALITY }
       );
     }
 
@@ -179,7 +189,9 @@ export class Cursor implements CursorInterface {
 
   public orderBy(compare: (left: unknown, right: unknown) => number): CursorInterface {
     const sorted = [...this.iriList].sort((leftIri: string, rightIri: string): number => {
-      return compare(this.lift(leftIri), this.lift(rightIri));
+      const result = compare(this.lift(leftIri), this.lift(rightIri));
+
+      return result;
     });
 
     return new Cursor(sorted, this.graph, this.lift);
@@ -189,12 +201,16 @@ export class Cursor implements CursorInterface {
     const tokens = Array.isArray(predicate) ? predicate : [predicate];
 
     return tokens.map((token: string): string => {
-      return this.graph.resolvePredicate(token);
+      const result = this.graph.resolvePredicate(token);
+
+      return result;
     });
   }
 
   public resources(): unknown[] {
-    return this.all();
+    const result = this.all();
+
+    return result;
   }
 
   public some(): boolean {
@@ -251,7 +267,9 @@ export class Cursor implements CursorInterface {
 
   public where(fn: (instance: unknown) => boolean): CursorInterface {
     const next = this.iriList.filter((iri: string): boolean => {
-      return fn(this.lift(iri));
+      const result = fn(this.lift(iri));
+
+      return result;
     });
 
     return new Cursor(next, this.graph, this.lift);

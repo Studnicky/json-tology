@@ -6,9 +6,9 @@
 import type { PropertyIndexValueType } from './PropertyIndexValueType.js';
 
 export type PropertyCollectionMapsType = {
-  readonly 'domainsByProperty': Map<string, string[]>;
-  readonly 'inverseOf': Map<string, string[]>;
-  readonly 'propertyIndex': Map<string, PropertyIndexValueType>;
-  readonly 'rangeByProperty': Map<string, string>;
-  readonly 'subPropertyOf': Map<string, string[]>;
+  'domainsByProperty': Map<string, string[]>;
+  'inverseOf': Map<string, string[]>;
+  'propertyIndex': Map<string, PropertyIndexValueType>;
+  'rangeByProperty': Map<string, string>;
+  'subPropertyOf': Map<string, string[]>;
 };

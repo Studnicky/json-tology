@@ -14,13 +14,13 @@ import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptorTyp
  */
 export type ListItemType = {
   /** XSD datatype IRI for Literal items (omitted for NamedNode / BlankNode). */
-  readonly 'datatype'?: string;
+  'datatype'?: string;
   /** BCP47 language tag for Literal items (omitted for NamedNode / BlankNode). */
-  readonly 'language'?: string;
+  'language'?: string;
   /** Target value: IRI for NamedNode, bnode id for BlankNode, lexical string for Literal. */
-  readonly 'target': string;
+  'target': string;
   /** rdf/js term-type discriminator for the list item. */
-  readonly 'termType': 'BlankNode' | 'Literal' | 'NamedNode';
+  'termType': 'BlankNode' | 'Literal' | 'NamedNode';
 };
 
 export type RelationPredicateType
@@ -90,9 +90,9 @@ export type RelationStructureType
     'value': unknown }
   | {
     'edgeAnnotations': ReadonlyArray<{
-      readonly 'propertyName': string;
-      readonly 'propertySchema': JsonSchemaType;
-      readonly 'rangeRef': string;
+      'propertyName': string;
+      'propertySchema': JsonSchemaType;
+      'rangeRef': string;
     }>;
     'edgePredicate': string;
     'edgeTarget': string;
@@ -128,8 +128,8 @@ export type RelationStructureType
  * @group SchemaGraph
  */
 export type NormIRNodeType = {
-  readonly 'id': string;
-  readonly 'pointer': string;
+  'id': string;
+  'pointer': string;
 };
 
 /**
@@ -158,12 +158,12 @@ export type NormIRNodeType = {
  * @group SchemaGraph
  */
 export type NormIRType = {
-  readonly 'anchors': Record<string, string>;
-  readonly 'children': Record<string, Record<string, string>>;
-  readonly 'entries': Record<string, Record<string, Array<[string, string]>>>;
-  readonly 'indexedChildren': Record<string, Record<string, string[]>>;
-  readonly 'nodes': NormIRNodeType[];
-  readonly 'rootSchema': JsonSchemaType;
+  'anchors': Record<string, string>;
+  'children': Record<string, Record<string, string>>;
+  'entries': Record<string, Record<string, Array<[string, string]>>>;
+  'indexedChildren': Record<string, Record<string, string[]>>;
+  'nodes': NormIRNodeType[];
+  'rootSchema': JsonSchemaType;
 };
 
 /**
@@ -233,7 +233,7 @@ export type SchemaGraphNodeType = {
 export type SchemaGraphSemanticsType = {
   'additionalItemsNode': boolean | SchemaGraphNodeType | undefined;
   'additionalPropertiesNode': boolean | SchemaGraphNodeType | undefined;
-  'aliases': readonly string[];
+  'aliases': string[];
   'allOf': SchemaGraphNodeType[];
   'annotatedEdge': AnnotatedEdgeDescriptorType | undefined;
   'anyOf': SchemaGraphNodeType[];
@@ -303,7 +303,7 @@ export type SchemaGraphSemanticsType = {
   'reflexive': boolean;
   'refTargetNode': SchemaGraphNodeType | undefined;
   'required': string[];
-  'restrictions': readonly RawRestrictionDescriptorType[];
+  'restrictions': RawRestrictionDescriptorType[];
   'schemaAnchor': string | undefined;
   'schemaDialect': string | undefined;
   'schemaId': string | undefined;
@@ -355,13 +355,13 @@ export type SchemaGraphRelationType = {
    * the source quad's `object.datatype.value`; the forward-projection graph
    * leaves it undefined because datatype is computed at projection time.
    */
-  readonly 'datatype'?: string;
+  'datatype'?: string;
   /**
    * BCP47 language tag when `target` is a language-tagged Literal — empty /
    * undefined otherwise. Populated by the quad-backed graph from the source
    * quad's `object.language`.
    */
-  readonly 'language'?: string;
+  'language'?: string;
   'metadata'?: Record<string, unknown>;
   'predicate': RelationPredicateType;
   'source': SchemaGraphNodeType;
@@ -372,7 +372,7 @@ export type SchemaGraphRelationType = {
    * the quad-backed graph during construction; left undefined by the
    * forward-projection graph (whose targets are always graph nodes or IRIs).
    */
-  readonly 'termType'?: 'BlankNode' | 'Literal' | 'NamedNode';
+  'termType'?: 'BlankNode' | 'Literal' | 'NamedNode';
 };
 
 /**

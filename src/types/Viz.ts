@@ -11,22 +11,22 @@ export type VizNodeType = {
   /**
    * Schema ID (IRI).
    */
-  readonly 'id': string;
+  'id': string;
 
   /**
    * Human-readable label for the schema.
    */
-  readonly 'label': string;
+  'label': string;
 
   /**
    * Number of properties defined in the schema.
    */
-  readonly 'propertyCount': number;
+  'propertyCount': number;
 
   /**
    * JSON Schema type constraints (e.g., `['object', 'null']`).
    */
-  readonly 'schemaTypes': string[];
+  'schemaTypes': string[];
 };
 
 /**
@@ -36,17 +36,17 @@ export type VizEdgeType = {
   /**
    * Property or relationship name.
    */
-  readonly 'label': string;
+  'label': string;
 
   /**
    * Source schema ID.
    */
-  readonly 'source': string;
+  'source': string;
 
   /**
    * Target schema ID.
    */
-  readonly 'target': string;
+  'target': string;
 };
 
 /**
@@ -56,27 +56,27 @@ export type VizSchemaDataType = {
   /**
    * Schema ID (IRI).
    */
-  readonly 'id': string;
+  'id': string;
 
   /**
    * Reconstructed JSON Schema.
    */
-  readonly 'jsonSchema': Record<string, unknown>;
+  'jsonSchema': Record<string, unknown>;
 
   /**
    * OWL ontology representation (RDF quads).
    */
-  readonly 'owl': readonly QuadInterface[];
+  'owl': QuadInterface[];
 
   /**
    * SHACL shapes representation (RDF quads).
    */
-  readonly 'shacl': readonly QuadInterface[];
+  'shacl': QuadInterface[];
 
   /**
    * Generated TypeScript type definition.
    */
-  readonly 'typescript': string;
+  'typescript': string;
 };
 
 /**
@@ -86,15 +86,15 @@ export type VizPayloadType = {
   /**
    * Edges representing relationships between schemas.
    */
-  readonly 'edges': VizEdgeType[];
+  'edges': VizEdgeType[];
 
   /**
    * Nodes representing registered schemas.
    */
-  readonly 'nodes': VizNodeType[];
+  'nodes': VizNodeType[];
 
   /**
    * Detailed schema data for each registered schema.
    */
-  readonly 'schemas': VizSchemaDataType[];
+  'schemas': VizSchemaDataType[];
 };

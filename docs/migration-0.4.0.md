@@ -72,18 +72,18 @@ import type { CoercionErrorCodeType } from 'json-tology/types';
 import type { InstantiationErrorCodeType } from 'json-tology/types';
 ```
 
-### `CoercionErrorCode` constant
+### `COERCION_ERROR_CODE` constant
 
-The `CoercionErrorCodeType` *type* union from before 0.4.0 is removed and replaced by `InstantiationErrorCodeType` for instantiation codes. The `CoercionError` *class* continues to exist and throws code `'COERCION_FAILED'`: it has not been removed. `CoercionErrorCode` is now a first-class exported constant for matching against `'COERCION_FAILED'`.
+The `CoercionErrorCodeType` *type* union from before 0.4.0 is removed and replaced by `InstantiationErrorCodeType` for instantiation codes. The `CoercionError` *class* continues to exist and throws code `'COERCION_FAILED'`: it has not been removed. `COERCION_ERROR_CODE` is now a first-class exported constant for matching against `'COERCION_FAILED'`.
 
-<!-- inline-ts-ok: demonstrates removed/legacy CoercionErrorCodeType union type; preserved as migration context alongside current CoercionErrorCode usage. -->
+<!-- inline-ts-ok: demonstrates removed/legacy CoercionErrorCodeType union type; preserved as migration context alongside current COERCION_ERROR_CODE usage. -->
 ```ts
 // Before
 import type { CoercionErrorCodeType } from 'json-tology/types';
 
 // After
-import { CoercionErrorCode } from 'json-tology';
-if (err.code === CoercionErrorCode.COERCION_FAILED) { ... }
+import { COERCION_ERROR_CODE } from 'json-tology';
+if (err.code === COERCION_ERROR_CODE.COERCION_FAILED) { ... }
 ```
 
 ## Renamed factory functions

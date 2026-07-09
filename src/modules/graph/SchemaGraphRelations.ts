@@ -2,7 +2,7 @@ import type {
   SchemaGraphNodeType, SchemaGraphRelationType,
   SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { SchemaIri } from './SchemaIri.js';
 import { XsdTypes } from '../quads/XsdTypes.js';
@@ -11,7 +11,7 @@ import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import { DataType } from '../data/DataType.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
-  DASH, DCT, JT, OWL, RDF, rdfMemberIri, RDFS, SH, XSD
+  DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { RESTRICTION_PREDICATE_MAP } from '../../constants/ONTOLOGY_PREDICATES.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
@@ -21,23 +21,25 @@ import type {
   TypeRelationsContextType
 } from '../../types/RelationsContext.js';
 
-function resolveNodeRef(
-  graph: GraphAccessorInterface,
-  node: SchemaGraphNodeType
-): string {
-  const nodeSem = graph.semantics(node);
+class NodeRef {
+  static resolve(
+    graph: GraphAccessorInterface,
+    node: SchemaGraphNodeType
+  ): string {
+    const nodeSem = graph.semantics(node);
 
-  if (typeof nodeSem.ref === 'string') {
-    return graph.resolveRefId(nodeSem.ref);
+    if (typeof nodeSem.ref === 'string') {
+      return graph.resolveRefId(nodeSem.ref);
+    }
+
+    const xsd = XsdTypes.resolve(nodeSem);
+
+    if (xsd !== null) {
+      return xsd;
+    }
+
+    return node.id;
   }
-
-  const xsd = XsdTypes.resolve(nodeSem);
-
-  if (xsd !== null) {
-    return xsd;
-  }
-
-  return node.id;
 }
 
 function pushConditionalRelations(ctx: RelationsPushContextType): void {
@@ -49,7 +51,7 @@ function pushConditionalRelations(ctx: RelationsPushContextType): void {
     return;
   }
 
-  const ifRef = resolveNodeRef(graph, sem.ifNode);
+  const ifRef = NodeRef.resolve(graph, sem.ifNode);
   const conditionalStructure: { 'elseRef'?: string
     'ifRef': string;
     'kind': 'conditional';
@@ -59,10 +61,10 @@ function pushConditionalRelations(ctx: RelationsPushContextType): void {
   };
 
   if (sem.thenNode !== undefined) {
-    conditionalStructure.thenRef = resolveNodeRef(graph, sem.thenNode);
+    conditionalStructure.thenRef = NodeRef.resolve(graph, sem.thenNode);
   }
   if (sem.elseNode !== undefined) {
-    conditionalStructure.elseRef = resolveNodeRef(graph, sem.elseNode);
+    conditionalStructure.elseRef = NodeRef.resolve(graph, sem.elseNode);
   }
 
   relations.push({
@@ -83,7 +85,7 @@ function pushContainsRelations(ctx: RelationsPushContextType): void {
     return;
   }
 
-  const containsRef = resolveNodeRef(graph, sem.containsNode);
+  const containsRef = NodeRef.resolve(graph, sem.containsNode);
 
   relations.push({
     'predicate': OWL.someValuesFrom,
@@ -148,7 +150,7 @@ function pushDependentSchemaRelations(ctx: RelationsPushContextType): void {
     propName,
     schemaNode
   ] of sem.dependentSchemaEntries) {
-    const schemaRef = resolveNodeRef(graph, schemaNode);
+    const schemaRef = NodeRef.resolve(graph, schemaNode);
 
     relations.push({
       'metadata': {
@@ -232,7 +234,7 @@ function pushUserRestrictionRelations(
       // immediately rather than silently dropping a restriction relation.
       throw new GraphError(
         `restriction kind "${desc.kind}" has no entry in RESTRICTION_PREDICATE_MAP`,
-        { 'code': GraphErrorCode.VOCABULARY_UNSUPPORTED }
+        { 'code': GRAPH_ERROR_CODE.VOCABULARY_UNSUPPORTED }
       );
     }
 
@@ -259,7 +261,7 @@ function pushPatternPropertyRelations(ctx: RelationsPushContextType): void {
     pattern,
     schemaNode
   ] of sem.patternPropertyEntries) {
-    const schemaRef = resolveNodeRef(graph, schemaNode);
+    const schemaRef = NodeRef.resolve(graph, schemaNode);
 
     relations.push({
       'metadata': {
@@ -282,11 +284,11 @@ function pushPrefixItemRelations(ctx: RelationsPushContextType): void {
     index,
     itemNode
   ] of sem.prefixItems.entries()) {
-    const itemRef = resolveNodeRef(graph, itemNode);
+    const itemRef = NodeRef.resolve(graph, itemNode);
 
     relations.push({
       'metadata': {
-        'memberProperty': rdfMemberIri(index + 1),
+        'memberProperty': `rdf:_${index + 1}`,
         'position': index
       },
       'predicate': RDFS.member,
@@ -488,7 +490,7 @@ export const SchemaGraphRelations = {
         // (nodeMap was built without registering the ancestor node).
         throw new GraphError(
           `domain ancestor pointer "${domainPtr}" not found in nodeMap for node "${node.id}"`,
-          { 'code': GraphErrorCode.POINTER_NOT_FOUND }
+          { 'code': GRAPH_ERROR_CODE.POINTER_NOT_FOUND }
         );
       }
 

@@ -79,7 +79,9 @@ export class TypeStringEmitter {
     // Tuple from prefixItems
     if (sem.prefixItems.length > 0) {
       const members = sem.prefixItems.map((n) => {
-        return this.renderNode(n, visited);
+        const result = this.renderNode(n, visited);
+
+        return result;
       });
 
       return `[${members.join(', ')}]`;
@@ -208,7 +210,9 @@ export class TypeStringEmitter {
     // enum
     if (sem.enumValues !== undefined && sem.enumValues.length > 0) {
       return sem.enumValues.map((enumValue) => {
-        return this.renderLiteral(enumValue);
+        const result = this.renderLiteral(enumValue);
+
+        return result;
       }).join(' | ');
     }
 
@@ -225,14 +229,18 @@ export class TypeStringEmitter {
 
     if (unionMembers !== undefined && unionMembers.length > 0) {
       return unionMembers.map((n) => {
-        return this.renderNode(n, visited);
+        const result = this.renderNode(n, visited);
+
+        return result;
       }).join(' | ');
     }
 
     // allOf → intersection
     if (sem.allOf.length > 0) {
       return sem.allOf.map((n) => {
-        return this.renderNode(n, visited);
+        const result = this.renderNode(n, visited);
+
+        return result;
       }).join(' & ');
     }
 
@@ -252,7 +260,9 @@ export class TypeStringEmitter {
     // Primitives — may be multi-type union
     if (schemaTypes.length > 0) {
       return schemaTypes.map((jsonType) => {
-        return this.renderPrimitive(jsonType);
+        const result = this.renderPrimitive(jsonType);
+
+        return result;
       }).join(' | ');
     }
 

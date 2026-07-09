@@ -19,7 +19,7 @@ import type { QuadInterface } from '../interfaces/QuadInterface.js';
  * @group Graph
  */
 export type ResolveRestrictionOptionsType = {
-  readonly 'bnodeId': string;
-  readonly 'bnodePredicateMap': Map<string, QuadInterface[]> | undefined;
-  readonly 'curie': CurieInterface;
+  'bnodeId': string;
+  'bnodePredicateMap': Map<string, QuadInterface[]> | undefined;
+  'curie': CurieInterface;
 };

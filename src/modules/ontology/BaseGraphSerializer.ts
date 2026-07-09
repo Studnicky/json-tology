@@ -143,7 +143,9 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
   public serializeQuads(graphs: readonly SchemaGraphInterface[]): QuadInterface[] {
     const issuer = new IdentifierIssuer();
     const allQuads = graphs.flatMap((graph: SchemaGraphInterface): QuadInterface[] => {
-      return this.projectGraph(graph, issuer);
+      const result = this.projectGraph(graph, issuer);
+
+      return result;
     });
 
     // Emit plugin quads for non-core predicates

@@ -8,14 +8,14 @@ import type { SkolemizeFnType } from '../types/SkolemizeFnType.js';
 
 /** Arguments for the projectAbox function. */
 export type ProjectAboxArgsType = {
-  readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
-  readonly 'baseIri': string;
-  readonly 'curie'?: CurieInterface | undefined;
-  readonly 'data': unknown;
-  readonly 'entryNode'?: SchemaGraphNodeType | undefined;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'graphIri'?: string | undefined;
-  readonly 'iriFor'?: SkolemizeFnType | undefined;
-  readonly 'lookupGraph'?: LookupGraphFnType | undefined;
-  readonly 'predicateResolver'?: PredicateResolverFnType | undefined;
+  'annotationEmitMode'?: AnnotationEmitModeType | undefined;
+  'baseIri': string;
+  'curie'?: CurieInterface | undefined;
+  'data': unknown;
+  'entryNode'?: SchemaGraphNodeType | undefined;
+  'graph': SchemaGraphInterface;
+  'graphIri'?: string | undefined;
+  'iriFor'?: SkolemizeFnType | undefined;
+  'lookupGraph'?: LookupGraphFnType | undefined;
+  'predicateResolver'?: PredicateResolverFnType | undefined;
 };

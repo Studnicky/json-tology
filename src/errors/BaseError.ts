@@ -34,16 +34,22 @@ export class BaseError extends Error {
    * Format an array of validation errors into path-prefixed strings.
    */
   static formatErrors(errors: readonly ValidationErrorType[]): string[] {
-    return errors.map((error) => {
-      return BaseError.formatPath(error);
+    const formatted = errors.map((error) => {
+      const pathString = BaseError.formatPath(error);
+
+      return pathString;
     });
+
+    return formatted;
   }
 
   /**
    * Format a validation error as "path: message", using "root" when the path is empty.
    */
   static formatPath(error: ValidationErrorType): string {
-    return `${error.path === '' ? 'root' : error.path}: ${error.message}`;
+    const result = `${error.path === '' ? 'root' : error.path}: ${error.message}`;
+
+    return result;
   }
   /**
    * Normalize an unknown caught value into an `Error` suitable for a `.cause` chain.
