@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-07-09
+
 ### Added
 
 - **`docs/cross-package-typing.md`** — an end-to-end guide for a registry-in-one-package,
@@ -17,6 +19,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Adopted `@studnicky/eslint-config`.** All 31 custom rules (`@studnicky/*` and
+  `@studnicky/v8/*`) run as `error` project-wide. Resolving the resulting violations
+  drove several structural changes:
+  - **BREAKING: six package entry points restructured from flat files to
+    `<name>/index.ts` directories** (`src/value.ts` → `src/value/index.ts`, and
+    likewise for `schema`, `ontology`, `owl-gen`, `owl-gen-node`, `viz`) to satisfy
+    `no-export-alias`. Deep imports must update from `src/<name>.js` to
+    `src/<name>/index.js`; the package `exports` map subpaths (`json-tology/value`,
+    `json-tology/schema`, etc.) are unaffected.
+  - `JsonSchemaObjectType` is now composed via `Omit<JsonSchemaDocumentObjectType,
+    Keys> & { retyped fields }` instead of duplicating the nested-schema field list,
+    satisfying `no-prefer-existing-type` while preserving full type accuracy.
+  - `QuadInterface` re-declared as `interface QuadInterface extends Quad {}` instead
+    of a type re-export, satisfying `no-export-alias`.
+  - ~200 freestanding functions across `src/modules/` regrouped onto domain objects
+    (`noun.verb()` static methods), satisfying `no-freestanding-verb-noun`.
 - **BREAKING: constants-module exports use SCREAMING_SNAKE_CASE.** 24 exported
   constants in `src/constants/` are renamed for consistency with the project's
   constants-naming convention. Runtime string values are unchanged — only the
@@ -57,6 +75,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **CI: GitHub Packages installs now declare `packages: read`.** Every job that
+  installs `@studnicky/eslint-config` from GitHub Packages grants the `packages: read`
+  permission (or `write` for the publish jobs) alongside `NODE_AUTH_TOKEN`; the token
+  alone is not sufficient for cross-repo package reads without the matching
+  `permissions:` declaration.
 - **CI: `publish-gpr.yml` now triggers on tag push** (`v*.*.*`), not only `release: published`. A release created by `release.yml` runs under `GITHUB_TOKEN` and does not cascade the `release` event, so GPR publish never auto-fired; the tag-push trigger (a human/CLI `git push origin vX.Y.Z`) fixes it. A concurrency guard prevents a double-publish when both triggers fire for a human/PAT release.
 - **Release flow documented** in `docs/releasing.md`: merge-commit-based release/back-merge keeps `main` and `develop` convergent (the prior squash-only + linear-history policy made them diverge at every release).
 - **Full-IRI `#fragment` `$ref`s matching a registered hash-namespace `$id`** (e.g.
