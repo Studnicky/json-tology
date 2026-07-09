@@ -2,7 +2,7 @@ import type { ComputedFnType } from '../../types/ComputedFnType.js';
 import type { ComputedStoreInterface } from '../../interfaces/ComputedStoreInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { SchemaError } from '../../errors/SchemaError.js';
-import { SchemaErrorCode } from '../../constants/ERROR_CODES.js';
+import { SCHEMA_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { DataType } from '../data/DataType.js';
 
 export class ComputedStore implements ComputedStoreInterface {
@@ -70,7 +70,7 @@ export class ComputedStore implements ComputedStoreInterface {
         throw new SchemaError(
           `Schema "${schemaId}" has jt:computed property "${propName}" but no compute function is registered. Call addComputed() before or provide computeds at construction time.`,
           {
-            'code': SchemaErrorCode.COMPUTED_FN_MISSING,
+            'code': SCHEMA_ERROR_CODE.COMPUTED_FN_MISSING,
             schemaId
           }
         );

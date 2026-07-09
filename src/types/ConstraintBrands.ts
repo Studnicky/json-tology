@@ -57,7 +57,7 @@ declare const UNIQUE_ARRAY: unique symbol;
  *
  * @typeParam T - The inferred type of the `contains` sub-schema.
  */
-export type ContainsBrandType<T> = { readonly [CONTAINS]: T };
+export type ContainsBrandType<T> = { [CONTAINS]: T };
 
 /**
  * Phantom brand for the `contentEncoding` keyword.
@@ -80,7 +80,7 @@ export type ContainsBrandType<T> = { readonly [CONTAINS]: T };
  *
  * @typeParam T - The `contentEncoding` string literal (e.g. `'base64'`).
  */
-export type ContentEncodingBrandType<T extends string> = { readonly [CONTENT_ENCODING]: T };
+export type ContentEncodingBrandType<T extends string> = { [CONTENT_ENCODING]: T };
 
 /**
  * Phantom brand for the `contentMediaType` keyword.
@@ -104,7 +104,7 @@ export type ContentEncodingBrandType<T extends string> = { readonly [CONTENT_ENC
  *
  * @typeParam T - The `contentMediaType` string literal (e.g. `'application/json'`).
  */
-export type ContentMediaTypeBrandType<T extends string> = { readonly [CONTENT_MEDIA_TYPE]: T };
+export type ContentMediaTypeBrandType<T extends string> = { [CONTENT_MEDIA_TYPE]: T };
 
 /**
  * Phantom brand for the `$schema` dialect keyword.
@@ -127,7 +127,7 @@ export type ContentMediaTypeBrandType<T extends string> = { readonly [CONTENT_ME
  *
  * @typeParam T - The dialect URI string literal.
  */
-export type DialectBrandType<T extends string> = { readonly [DIALECT]: T };
+export type DialectBrandType<T extends string> = { [DIALECT]: T };
 
 /**
  * Phantom brand for the `exclusiveMaximum` keyword.
@@ -150,7 +150,7 @@ export type DialectBrandType<T extends string> = { readonly [DIALECT]: T };
  *
  * @typeParam TN - The numeric literal for the exclusive upper bound.
  */
-export type ExclusiveMaximumBrandType<TN extends number> = { readonly [EXCLUSIVE_MAXIMUM]: TN };
+export type ExclusiveMaximumBrandType<TN extends number> = { [EXCLUSIVE_MAXIMUM]: TN };
 
 /**
  * Phantom brand for the `exclusiveMinimum` keyword.
@@ -173,7 +173,7 @@ export type ExclusiveMaximumBrandType<TN extends number> = { readonly [EXCLUSIVE
  *
  * @typeParam TN - The numeric literal for the exclusive lower bound.
  */
-export type ExclusiveMinimumBrandType<TN extends number> = { readonly [EXCLUSIVE_MINIMUM]: TN };
+export type ExclusiveMinimumBrandType<TN extends number> = { [EXCLUSIVE_MINIMUM]: TN };
 
 /**
  * Phantom brand for the `format` keyword.
@@ -200,7 +200,7 @@ export type ExclusiveMinimumBrandType<TN extends number> = { readonly [EXCLUSIVE
  *
  * @typeParam TF - The format string literal (e.g. `'email'`, `'uuid'`).
  */
-export type FormatBrandType<TF extends string> = { readonly [FORMAT]: TF };
+export type FormatBrandType<TF extends string> = { [FORMAT]: TF };
 
 /**
  * Phantom brand for the `maxContains` keyword.
@@ -226,7 +226,7 @@ export type FormatBrandType<TF extends string> = { readonly [FORMAT]: TF };
  *
  * @typeParam TN - The numeric literal for the maximum contains count.
  */
-export type MaxContainsBrandType<TN extends number> = { readonly [MAX_CONTAINS]: TN };
+export type MaxContainsBrandType<TN extends number> = { [MAX_CONTAINS]: TN };
 
 /**
  * Phantom brand for the `maxItems` keyword.
@@ -249,7 +249,7 @@ export type MaxContainsBrandType<TN extends number> = { readonly [MAX_CONTAINS]:
  *
  * @typeParam TN - The numeric literal for the maximum item count.
  */
-export type MaxItemsBrandType<TN extends number> = { readonly [MAX_ITEMS]: TN };
+export type MaxItemsBrandType<TN extends number> = { [MAX_ITEMS]: TN };
 
 /**
  * Phantom brand for the `maxLength` keyword.
@@ -272,7 +272,7 @@ export type MaxItemsBrandType<TN extends number> = { readonly [MAX_ITEMS]: TN };
  *
  * @typeParam TN - The numeric literal for the maximum string length.
  */
-export type MaxLengthBrandType<TN extends number> = { readonly [MAX_LENGTH]: TN };
+export type MaxLengthBrandType<TN extends number> = { [MAX_LENGTH]: TN };
 
 /**
  * Phantom brand for the `maxProperties` keyword.
@@ -295,7 +295,7 @@ export type MaxLengthBrandType<TN extends number> = { readonly [MAX_LENGTH]: TN 
  *
  * @typeParam TN - The numeric literal for the maximum property count.
  */
-export type MaxPropertiesBrandType<TN extends number> = { readonly [MAX_PROPERTIES]: TN };
+export type MaxPropertiesBrandType<TN extends number> = { [MAX_PROPERTIES]: TN };
 
 /**
  * Phantom brand for the `maximum` keyword.
@@ -318,7 +318,7 @@ export type MaxPropertiesBrandType<TN extends number> = { readonly [MAX_PROPERTI
  *
  * @typeParam TN - The numeric literal for the inclusive upper bound.
  */
-export type MaximumBrandType<TN extends number> = { readonly [MAXIMUM]: TN };
+export type MaximumBrandType<TN extends number> = { [MAXIMUM]: TN };
 
 /**
  * Phantom brand for the `minContains` keyword.
@@ -344,7 +344,7 @@ export type MaximumBrandType<TN extends number> = { readonly [MAXIMUM]: TN };
  *
  * @typeParam TN - The numeric literal for the minimum contains count.
  */
-export type MinContainsBrandType<TN extends number> = { readonly [MIN_CONTAINS]: TN };
+export type MinContainsBrandType<TN extends number> = { [MIN_CONTAINS]: TN };
 
 /**
  * Phantom brand for the `minItems` keyword.
@@ -367,7 +367,7 @@ export type MinContainsBrandType<TN extends number> = { readonly [MIN_CONTAINS]:
  *
  * @typeParam TN - The numeric literal for the minimum item count.
  */
-export type MinItemsBrandType<TN extends number> = { readonly [MIN_ITEMS]: TN };
+export type MinItemsBrandType<TN extends number> = { [MIN_ITEMS]: TN };
 
 /**
  * Phantom brand for the `minLength` keyword.
@@ -390,7 +390,7 @@ export type MinItemsBrandType<TN extends number> = { readonly [MIN_ITEMS]: TN };
  *
  * @typeParam TN - The numeric literal for the minimum string length.
  */
-export type MinLengthBrandType<TN extends number> = { readonly [MIN_LENGTH]: TN };
+export type MinLengthBrandType<TN extends number> = { [MIN_LENGTH]: TN };
 
 /**
  * Phantom brand for the `minProperties` keyword.
@@ -413,7 +413,7 @@ export type MinLengthBrandType<TN extends number> = { readonly [MIN_LENGTH]: TN 
  *
  * @typeParam TN - The numeric literal for the minimum property count.
  */
-export type MinPropertiesBrandType<TN extends number> = { readonly [MIN_PROPERTIES]: TN };
+export type MinPropertiesBrandType<TN extends number> = { [MIN_PROPERTIES]: TN };
 
 /**
  * Phantom brand for the `minimum` keyword.
@@ -436,7 +436,7 @@ export type MinPropertiesBrandType<TN extends number> = { readonly [MIN_PROPERTI
  *
  * @typeParam TN - The numeric literal for the inclusive lower bound.
  */
-export type MinimumBrandType<TN extends number> = { readonly [MINIMUM]: TN };
+export type MinimumBrandType<TN extends number> = { [MINIMUM]: TN };
 
 /**
  * Phantom brand for the `multipleOf` keyword.
@@ -459,7 +459,7 @@ export type MinimumBrandType<TN extends number> = { readonly [MINIMUM]: TN };
  *
  * @typeParam TN - The numeric literal for the divisor.
  */
-export type MultipleOfBrandType<TN extends number> = { readonly [MULTIPLE_OF]: TN };
+export type MultipleOfBrandType<TN extends number> = { [MULTIPLE_OF]: TN };
 
 /**
  * Phantom brand for the `pattern` keyword.
@@ -482,7 +482,7 @@ export type MultipleOfBrandType<TN extends number> = { readonly [MULTIPLE_OF]: T
  *
  * @typeParam TP - The regex pattern string literal.
  */
-export type PatternBrandType<TP extends string> = { readonly [PATTERN]: TP };
+export type PatternBrandType<TP extends string> = { [PATTERN]: TP };
 
 /**
  * Phantom brand for the `$id` keyword.
@@ -505,7 +505,7 @@ export type PatternBrandType<TP extends string> = { readonly [PATTERN]: TP };
  *
  * @typeParam TId - The `$id` IRI string literal.
  */
-export type SchemaIdBrandType<TId extends string> = { readonly [SCHEMA_ID]: TId };
+export type SchemaIdBrandType<TId extends string> = { [SCHEMA_ID]: TId };
 
 /**
  * Phantom brand for the `uniqueItems: true` keyword.
@@ -528,7 +528,7 @@ export type SchemaIdBrandType<TId extends string> = { readonly [SCHEMA_ID]: TId 
  * @see {@link UniqueArrayBrandType}
  * @group Constraint Brands
  */
-export type UniqueItemsBrandType = { readonly [UNIQUE_ITEMS]: true };
+export type UniqueItemsBrandType = { [UNIQUE_ITEMS]: true };
 
 /**
  * Generic uniqueness brand parameterised by element type. Lets downstream APIs
@@ -555,7 +555,7 @@ export type UniqueItemsBrandType = { readonly [UNIQUE_ITEMS]: true };
  * @typeParam T - The element type of the unique array.
  */
 export type UniqueArrayBrandType<T> = UniqueItemsBrandType & {
-  readonly [UNIQUE_ARRAY]: T;
+  [UNIQUE_ARRAY]: T;
 };
 
 /**

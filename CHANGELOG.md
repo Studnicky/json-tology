@@ -17,6 +17,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING: constants-module exports use SCREAMING_SNAKE_CASE.** 24 exported
+  constants in `src/constants/` are renamed for consistency with the project's
+  constants-naming convention. Runtime string values are unchanged — only the
+  TypeScript identifier changes; update imports and references accordingly.
+  - `src/constants/ERROR_CODES.ts`: `SchemaErrorCode` → `SCHEMA_ERROR_CODE`,
+    `GraphErrorCode` → `GRAPH_ERROR_CODE`, `InstantiationErrorCode` →
+    `INSTANTIATION_ERROR_CODE`, `MaterializationErrorCode` →
+    `MATERIALIZATION_ERROR_CODE`, `OwlImportErrorCode` → `OWL_IMPORT_ERROR_CODE`,
+    `TransformErrorCode` → `TRANSFORM_ERROR_CODE`, `CoercionErrorCode` →
+    `COERCION_ERROR_CODE`, `SchemaLoadErrorCode` → `SCHEMA_LOAD_ERROR_CODE`.
+  - `src/constants/BASE_SCHEMAS.ts`: `DurationDef` → `DURATION_DEF`,
+    `ErrorDetailsDef` → `ERROR_DETAILS_DEF`, `ProgressDef` → `PROGRESS_DEF`,
+    `TimedDef` → `TIMED_DEF`, `TimestampedDef` → `TIMESTAMPED_DEF`,
+    `ResponseDef` → `RESPONSE_DEF`, `ResultDef` → `RESULT_DEF`,
+    `StateSnapshotDef` → `STATE_SNAPSHOT_DEF`, `SortOrderDef` →
+    `SORT_ORDER_DEF`, `CursorDef` → `CURSOR_DEF`, `PaginationDef` →
+    `PAGINATION_DEF`, `FilterDef` → `FILTER_DEF`, `PageDef` → `PAGE_DEF`.
+  - `src/constants/SCHEMAS.ts`: `SchemaLoadErrorSchema` →
+    `SCHEMA_LOAD_ERROR_SCHEMA`, `SchemaLoadResultSchema` →
+    `SCHEMA_LOAD_RESULT_SCHEMA`, `ValidationErrorSchema` →
+    `VALIDATION_ERROR_SCHEMA`.
 - **Schema-derived types are mutable by default.** Every type-producing surface
   (`InferType`, `InferSchemaType`, `MaterializedSchemaType`, `ParseOutputType`,
   `CanonicalShapeType`/`UnbrandType`, `BrandOutputType`) types object properties and

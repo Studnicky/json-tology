@@ -77,7 +77,7 @@ import type {
   RefNotFoundType
 } from './TypeErrors.js';
 import type { TransformBrandType } from '../types/TransformBrandType.js';
-import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
+import type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
 
 // ---------------------------------------------------------------------------
 // Recursion limits (type-level caps to prevent infinite expansion)

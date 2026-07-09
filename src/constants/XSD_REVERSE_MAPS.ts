@@ -361,7 +361,9 @@ export const SUPPORTED_XSD_DATATYPES: ReadonlySet<string> = new Set([
   // XSD types marked supported in ENTRIES (both prefixed and full forms)
   ...ENTRIES
     .filter((entry: XsdEntryType): boolean => {
-      return entry.supported;
+      const result = entry.supported;
+
+      return result;
     })
     .flatMap((entry: XsdEntryType): string[] => {
       return [

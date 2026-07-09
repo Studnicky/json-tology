@@ -31,6 +31,19 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface
  * @group Classes
  */
 export class VizDataCollector {
+  /**
+   * Derive a human-readable edge label from a `$ref` relation's source pointer.
+   * Array-container keywords (`items`, `prefixItems`, `additionalItems`) are
+   * skipped in favour of the enclosing property name.
+   */
+  static resolveEdgeLabel(pointer: string): string {
+    const parts = pointer.split('/');
+    const last = parts.at(-1) ?? '';
+    const isArrayKeyword = last === 'items' || last === 'prefixItems' || last === 'additionalItems';
+
+    return isArrayKeyword ? (parts.at(-2) ?? last) : last;
+  }
+
   private readonly registry: SchemaRegistryInterface;
 
   constructor(registry: SchemaRegistryInterface) {
@@ -40,7 +53,9 @@ export class VizDataCollector {
   public collect(): VizPayloadType {
     const graphs = this.registry.listGraphs();
     const registeredIds = new Set(this.registry.list().map((schema: Record<string, unknown>): string => {
-      return schema.$id as string;
+      const result = schema.$id as string;
+
+      return result;
     }));
 
     const nodes: VizNodeType[] = [];
@@ -99,21 +114,13 @@ function collectEdges(
     }
 
     result.push({
-      'label': resolveEdgeLabel(rel.source.pointer),
+      'label': VizDataCollector.resolveEdgeLabel(rel.source.pointer),
       'source': schemaId,
       'target': rel.target
     });
   }
 
   return result;
-}
-
-function resolveEdgeLabel(pointer: string): string {
-  const parts = pointer.split('/');
-  const last = parts.at(-1) ?? '';
-  const isArrayKeyword = last === 'items' || last === 'prefixItems' || last === 'additionalItems';
-
-  return isArrayKeyword ? (parts.at(-2) ?? last) : last;
 }
 
 function collectSchemaData(graph: SchemaGraphInterface, schemaId: string): VizSchemaDataType {

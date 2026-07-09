@@ -3,9 +3,9 @@ import type { AnnotatedEdgeStructureType } from '../types/AnnotatedEdgeStructure
 
 /** Arguments for resolveEdgeTargetIri. */
 export type ResolveEdgeTargetIriArgsType = {
-  readonly 'depth': number;
-  readonly 'edge': AnnotatedEdgeStructureType;
-  readonly 'minter': IriMinterInterface;
-  readonly 'path': string;
-  readonly 'target': unknown;
+  'depth': number;
+  'edge': AnnotatedEdgeStructureType;
+  'minter': IriMinterInterface;
+  'path': string;
+  'target': unknown;
 };

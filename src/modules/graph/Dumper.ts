@@ -9,7 +9,7 @@ import { EncodeError } from '../../errors/EncodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import {
-  GraphErrorCode, TransformErrorCode
+  GRAPH_ERROR_CODE, TRANSFORM_ERROR_CODE
 } from '../../constants/ERROR_CODES.js';
 import { SchemaIri } from './SchemaIri.js';
 
@@ -78,7 +78,7 @@ export class Dumper {
         `transform encoder failed at ${node.pointer}: ${causeError.message}`,
         {
           'cause': causeError,
-          'code': TransformErrorCode.TRANSFORM_ENCODE_FAILED,
+          'code': TRANSFORM_ERROR_CODE.TRANSFORM_ENCODE_FAILED,
           'direction': 'encode',
           'path': node.pointer,
           ...((schemaId !== undefined) && { 'schemaId': schemaId })
@@ -98,7 +98,9 @@ export class Dumper {
 
     if (Array.isArray(value)) {
       return value.map((item: unknown): unknown => {
-        return Dumper.applyJsonMode(item);
+        const result = Dumper.applyJsonMode(item);
+
+        return result;
       });
     }
 
@@ -134,7 +136,7 @@ export class Dumper {
 
     if (entry === undefined) {
       throw new GraphError(`Schema not registered: ${schemaId}`, {
-        'code': GraphErrorCode.REF_UNRESOLVED,
+        'code': GRAPH_ERROR_CODE.REF_UNRESOLVED,
         'pointer': schemaId
       });
     }
@@ -169,7 +171,7 @@ export class Dumper {
     const nodeSchema = DataType.isRecord(itemSchema) ? itemSchema : {};
 
     return value.map((item: unknown): unknown => {
-      return Dumper.dumpNode({
+      const result = Dumper.dumpNode({
         graph,
         'node': itemsNode,
         nodeSchema,
@@ -177,6 +179,8 @@ export class Dumper {
         registry,
         'value': item
       });
+
+      return result;
     });
   }
 
@@ -196,7 +200,7 @@ export class Dumper {
 
     if (entry === undefined) {
       throw new GraphError(`Schema not registered: ${schemaId}`, {
-        'code': GraphErrorCode.REF_UNRESOLVED,
+        'code': GRAPH_ERROR_CODE.REF_UNRESOLVED,
         'pointer': schemaId
       });
     }
@@ -400,7 +404,7 @@ export class Dumper {
 
     if (lookedUp === undefined) {
       throw new GraphError(`Unresolved schema reference: ${ref}`, {
-        'code': GraphErrorCode.REF_UNRESOLVED,
+        'code': GRAPH_ERROR_CODE.REF_UNRESOLVED,
         'pointer': ref
       });
     }

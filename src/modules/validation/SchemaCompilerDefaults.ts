@@ -26,6 +26,8 @@ export const SchemaCompilerDefaults = {
     lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,
     lookupGraph?: (id: string) => SchemaGraphInterface | undefined
   ): unknown {
-    return GraphEngineDefaults.synthesizeZeroValueForLookups(node, graph, lookup, lookupGraph);
+    const result = GraphEngineDefaults.synthesizeZeroValueForLookups(node, graph, lookup, lookupGraph);
+
+    return result;
   }
 } as const;

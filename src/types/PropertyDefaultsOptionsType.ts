@@ -5,8 +5,8 @@ import type { LookupSchemaFnType } from '../types/LookupSchemaFnType.js';
 
 /** Options for `buildPropertyDefaults`. */
 export type PropertyDefaultsOptionsType = {
-  readonly 'context': SchemaCompilerValidatePlanContextType;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'propertyEntries': ReadonlyMap<string, SchemaGraphNodeType>;
+  'context': SchemaCompilerValidatePlanContextType;
+  'graph': SchemaGraphInterface;
+  'lookupSchema': LookupSchemaFnType | undefined;
+  'propertyEntries': ReadonlyMap<string, SchemaGraphNodeType>;
 };

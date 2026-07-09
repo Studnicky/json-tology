@@ -18,7 +18,7 @@ import {
 } from 'node:test';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
 import { OwlImportError } from '../../src/errors/OwlImportError.js';
-import { OwlImportErrorCode } from '../../src/constants/ERROR_CODES.js';
+import { OWL_IMPORT_ERROR_CODE } from '../../src/constants/ERROR_CODES.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
 import {
   OWL, RDF
@@ -39,7 +39,7 @@ void describe('OwlImporter.import — malformed JSON-LD string', () => {
       },
       (err: unknown): boolean => {
         assert.ok(err instanceof OwlImportError, `expected OwlImportError, got ${String(err)}`);
-        assert.equal(err.code, OwlImportErrorCode.PARSE_FAILED);
+        assert.equal(err.code, OWL_IMPORT_ERROR_CODE.PARSE_FAILED);
 
         return true;
       }
@@ -53,7 +53,7 @@ void describe('OwlImporter.import — malformed JSON-LD string', () => {
       },
       (err: unknown): boolean => {
         assert.ok(err instanceof OwlImportError, `expected OwlImportError, got ${String(err)}`);
-        assert.equal(err.code, OwlImportErrorCode.PARSE_FAILED);
+        assert.equal(err.code, OWL_IMPORT_ERROR_CODE.PARSE_FAILED);
 
         return true;
       }
@@ -67,7 +67,7 @@ void describe('OwlImporter.import — malformed JSON-LD string', () => {
       },
       (err: unknown): boolean => {
         assert.ok(err instanceof OwlImportError, `expected OwlImportError, got ${String(err)}`);
-        assert.equal(err.code, OwlImportErrorCode.PARSE_FAILED);
+        assert.equal(err.code, OWL_IMPORT_ERROR_CODE.PARSE_FAILED);
 
         return true;
       }

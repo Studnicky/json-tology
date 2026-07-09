@@ -24,30 +24,30 @@ export type GenerateFromTboxOptionsType = {
    * Override the base IRI. When omitted the generator derives it from
    * the first schema `$id` in the import result.
    */
-  readonly 'baseIri'?: string | undefined;
+  'baseIri'?: string | undefined;
 
   /**
    * Extra header comment lines inserted after the banner.
    */
-  readonly 'header'?: readonly string[] | undefined;
+  'header'?: string[] | undefined;
 
   /**
    * The OWL 2 TBox source — a JSON-LD object, a JSON-LD string, or an
    * array of {@link QuadInterface} quads.
    */
-  readonly 'input': QuadInterface[] | Record<string, unknown> | string;
+  'input': QuadInterface[] | Record<string, unknown> | string;
 
   /**
    * Registry constant name (e.g. `'acl'` → `aclSchemas`, `acl`).
    * Defaults to `'registry'`.
    */
-  readonly 'name'?: string | undefined;
+  'name'?: string | undefined;
 
   /**
    * Human-readable label emitted in the banner (file path or IRI).
    * When omitted, derived from `input` when it is a string.
    */
-  readonly 'sourceLabel'?: string | undefined;
+  'sourceLabel'?: string | undefined;
 };
 
 /**
@@ -61,30 +61,30 @@ export type GenerateRegistryDirectoryOptionsType = {
    * Override the base IRI. When omitted the generator derives it from
    * the first schema `$id` in the import result.
    */
-  readonly 'baseIri'?: string | undefined;
+  'baseIri'?: string | undefined;
 
   /**
    * Extra header comment lines inserted after the banner in `index.ts`.
    */
-  readonly 'header'?: readonly string[] | undefined;
+  'header'?: string[] | undefined;
 
   /**
    * The OWL 2 TBox source — a JSON-LD object, a JSON-LD string, or an
    * array of {@link QuadInterface} quads.
    */
-  readonly 'input': QuadInterface[] | Record<string, unknown> | string;
+  'input': QuadInterface[] | Record<string, unknown> | string;
 
   /**
    * Registry constant name (e.g. `'acl'` → `aclSchemas`, `acl`).
    * Defaults to `'registry'`.
    */
-  readonly 'name'?: string | undefined;
+  'name'?: string | undefined;
 
   /**
    * Human-readable label emitted in the banner (file path or IRI).
    * When omitted, derived from `input` when it is a string.
    */
-  readonly 'sourceLabel'?: string | undefined;
+  'sourceLabel'?: string | undefined;
 };
 
 /**
@@ -96,16 +96,16 @@ export type GenerateRegistryDirectoryOptionsType = {
  */
 export type GenerateRegistryDirectoryEntityFileType = {
   /** Full IRI of the OWL class. */
-  readonly 'iri': string;
+  'iri': string;
   /** PascalCase class name without `Schema` suffix. */
-  readonly 'name': string;
+  'name': string;
   /**
    * Relative path inside the output directory, e.g. `entities/Person.ts`.
    * Resolve against an `outDir` to get the absolute write location.
    */
-  readonly 'path': string;
+  'path': string;
   /** Generated TypeScript source for this entity file. */
-  readonly 'source': string;
+  'source': string;
 };
 
 /**
@@ -113,9 +113,9 @@ export type GenerateRegistryDirectoryEntityFileType = {
  */
 export type GenerateRegistryDirectoryResultType = {
   /** Generated entity files (relative paths + source strings). */
-  readonly 'entityFiles': readonly GenerateRegistryDirectoryEntityFileType[];
+  'entityFiles': GenerateRegistryDirectoryEntityFileType[];
   /** Generated source for `index.ts`. */
-  readonly 'indexSource': string;
+  'indexSource': string;
 };
 
 /**
@@ -127,9 +127,9 @@ export type GenerateRegistryDirectoryResultType = {
  */
 export type WrittenEntityFileType = {
   /** Full IRI of the OWL class. */
-  readonly 'iri': string;
+  'iri': string;
   /** PascalCase class name without `Schema` suffix. */
-  readonly 'name': string;
+  'name': string;
   /** Absolute file path as written to disk. */
-  readonly 'path': string;
+  'path': string;
 };

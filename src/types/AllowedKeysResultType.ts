@@ -24,7 +24,7 @@
  * @group Validation
  */
 export type AllowedKeysResultType = {
-  readonly 'allowedKeys': Set<string> | undefined;
-  readonly 'allowedKeysForStrip': Set<string> | undefined;
-  readonly 'propertyAliases': Map<string, string>;
+  'allowedKeys': Set<string> | undefined;
+  'allowedKeysForStrip': Set<string> | undefined;
+  'propertyAliases': Map<string, string>;
 };

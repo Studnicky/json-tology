@@ -4,8 +4,8 @@ import type { RelationIndexType } from './RelationIndexType.js';
 
 /** Arguments for emitPropertyShapeTypeConstraints / emitPropertyShapeValueConstraints. */
 export type EmitPropertyShapeConstraintsArgsType = {
-  readonly 'bnodeId': string;
-  readonly 'entry': RelationIndexType;
-  readonly 'opts': { 'curie': CurieInterface | undefined };
-  readonly 'quads': QuadInterface[];
+  'bnodeId': string;
+  'entry': RelationIndexType;
+  'opts': { 'curie': CurieInterface | undefined };
+  'quads': QuadInterface[];
 };

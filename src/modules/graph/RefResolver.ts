@@ -21,16 +21,10 @@ export class RefResolver {
   static resolve(
     ref: string,
     graph: SchemaGraphInterface,
-    lookupSchema?: (id: string) => Record<string, unknown> | undefined,
-    lookupGraph?: (id: string) => SchemaGraphInterface | undefined
+    options: RefResolutionOptionsType = {}
   ): RefTargetType | undefined {
-    const opts: RefResolutionOptionsType = {
-      ...(lookupGraph !== undefined && { 'lookupGraph': lookupGraph }),
-      ...(lookupSchema !== undefined && { 'lookupSchema': lookupSchema })
-    };
-
     try {
-      return RefResolution.resolve(ref, graph, opts);
+      return RefResolution.resolve(ref, graph, options);
     } catch (error) {
       if (error instanceof GraphError) {
         return undefined;

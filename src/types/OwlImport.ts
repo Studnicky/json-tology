@@ -32,11 +32,11 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  */
 export type OwlImporterOptionsType = {
   /** Base IRI for the import session. Used when building OwlImportContextType. */
-  readonly 'baseIri': string;
+  'baseIri': string;
   /** Optional logger; defaults to SILENT_LOGGER. */
-  readonly 'logger'?: LoggerInterface;
+  'logger'?: LoggerInterface;
   /** Additional prefix mappings merged with STANDARD_PREFIXES. */
-  readonly 'prefixes'?: PrefixMapType;
+  'prefixes'?: PrefixMapType;
 };
 
 /**
@@ -141,13 +141,13 @@ export type OwlImportFragmentType = {
     'propertyIri': string; }>;
 
   /** owl:differentFrom pairs (individual IRI pairs asserted distinct). */
-  'differentFrom': ReadonlyArray<readonly [string, string]>;
+  'differentFrom': ReadonlyArray<[string, string]>;
 
   /** Named individuals (ABox assertions) found in the TBox input. */
   'individuals': ReadonlyArray<{
     'iri': string;
     'properties': Record<string, unknown>;
-    'types': readonly string[];
+    'types': string[];
   }>;
 
   /** Per-schema structural invariants produced during import (e.g. min/max cardinality checks). */
@@ -155,7 +155,7 @@ export type OwlImportFragmentType = {
     'schemaId': string; }>;
 
   /** owl:sameAs pairs (individual IRI pairs asserted identical). */
-  'sameAs': ReadonlyArray<readonly [string, string]>;
+  'sameAs': ReadonlyArray<[string, string]>;
 
   /** Per-class schema property deltas: classIri → partial JSON Schema object. */
   'schemaDeltas': ReadonlyMap<string, Partial<JsonSchemaDocumentObjectType>>;
@@ -210,7 +210,7 @@ export type OwlImportContextType = {
   'isDatatype': (iri: string) => boolean;
 
   /** Optional logger; defaults to SILENT_LOGGER at the call site. */
-  readonly 'logger'?: LoggerInterface;
+  'logger'?: LoggerInterface;
 
   /** Prefix-to-IRI map in effect for the import session. */
   'prefixes': PrefixMapType;
@@ -251,13 +251,13 @@ export type OwlImportResultType = {
     'propertyIri': string; }>;
 
   /** owl:differentFrom pairs extracted from the input graph. */
-  'differentFrom': ReadonlyArray<readonly [string, string]>;
+  'differentFrom': ReadonlyArray<[string, string]>;
 
   /** Named individuals (ABox assertions) found in the TBox input. */
   'individuals': ReadonlyArray<{
     'iri': string;
     'properties': Record<string, unknown>;
-    'types': readonly string[];
+    'types': string[];
   }>;
 
   /** Structural invariants derived from OWL axioms (e.g. cardinality constraints). */
@@ -265,10 +265,10 @@ export type OwlImportResultType = {
     'schemaId': string; }>;
 
   /** owl:sameAs pairs extracted from the input graph. */
-  'sameAs': ReadonlyArray<readonly [string, string]>;
+  'sameAs': ReadonlyArray<[string, string]>;
 
   /** JSON Schema objects reconstructed from TBox class declarations. */
-  'schemas': readonly JsonSchemaDocumentObjectType[];
+  'schemas': JsonSchemaDocumentObjectType[];
 
   /**
    * Axiom/predicate IRIs for valid constructs a dispatcher recognized but does

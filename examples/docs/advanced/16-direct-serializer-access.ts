@@ -10,8 +10,8 @@ import {
   GraphSchemaSerializer,
   GraphShaclSerializer,
   OntologyBuilder
-} from '../../../src/ontology.js';
-import { SchemaRegistry } from '../../../src/schema.js';
+} from '../../../src/ontology/index.js';
+import { SchemaRegistry } from '../../../src/schema/index.js';
 import { BookSchema } from '../bookstore/index.js';
 
 const registry = new SchemaRegistry();

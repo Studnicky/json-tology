@@ -127,10 +127,13 @@ export abstract class VocabProjection {
     entry: RelationIndexType,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
-    issuer?: IdentifierIssuerInterface,
-    graph?: SchemaGraphInterface,
-    predicateResolver?: PredicateResolverFnType
+    options?: { 'graph'?: SchemaGraphInterface | undefined;
+      'issuer'?: IdentifierIssuerInterface | undefined;
+      'predicateResolver'?: PredicateResolverFnType | undefined }
   ): QuadObjectType[] {
+    const {
+      graph, issuer, predicateResolver
+    } = options ?? {};
     const results: QuadObjectType[] = [];
     const depReqRels = entry.byPredicate.get(JT.dependentRequired) ?? [];
 
@@ -235,7 +238,9 @@ export abstract class VocabProjection {
     graph: SchemaGraphInterface | undefined,
     predicateResolver: PredicateResolverFnType | undefined
   ): string {
-    return PropertyProjection.resolvePredicateForClass(graph, subject, propertyName, predicateResolver);
+    const result = PropertyProjection.resolvePredicateForClass(graph, subject, propertyName, predicateResolver);
+
+    return result;
   }
 
   /**

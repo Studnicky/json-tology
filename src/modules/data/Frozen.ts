@@ -1,6 +1,8 @@
 export class Frozen {
   public static deepFreeze<T>(value: T): T {
-    return Frozen.freezeValue(value, new WeakSet());
+    const result = Frozen.freezeValue(value, new WeakSet());
+
+    return result;
   }
 
   private static freezeValue<T>(value: T, seen: WeakSet<object>): T {

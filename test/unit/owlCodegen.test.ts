@@ -33,7 +33,7 @@ function emptyResult(): OwlImportResultType {
   };
 }
 
-function resultFromSchemas(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultType {
+function resultFromSchemas(schemas: Array<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultType {
   return {
     'characteristics': [],
     'differentFrom': [],

@@ -3,8 +3,8 @@ import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js
 
 /** Options for `walkInheritedRef`. */
 export type WalkInheritedRefOptionsType = {
-  readonly 'currentGraph': SchemaGraphInterface;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'ref': string;
-  readonly 'walkFn': (g: SchemaGraphInterface, n: SchemaGraphNodeType) => void;
+  'currentGraph': SchemaGraphInterface;
+  'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
+  'ref': string;
+  'walkFn': (g: SchemaGraphInterface, n: SchemaGraphNodeType) => void;
 };

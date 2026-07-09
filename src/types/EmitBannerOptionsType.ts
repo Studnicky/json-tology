@@ -17,11 +17,11 @@
  */
 export type EmitBannerOptionsType = {
   /** Set of IRI base names that collided during name generation. */
-  readonly 'collisions': Set<string>;
+  'collisions': Set<string>;
   /** Extra comment lines to append after the standard banner. */
-  readonly 'header': readonly string[];
+  'header': string[];
   /** Human-readable source label (file path or IRI), or empty string. */
-  readonly 'sourceLabel': string;
+  'sourceLabel': string;
   /** ISO-8601 timestamp string. */
-  readonly 'ts': string;
+  'ts': string;
 };

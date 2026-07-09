@@ -21,7 +21,7 @@
 
 import type { InferType } from '../../../src/types/index.js';
 import { JsonTology } from '../../../src/index.js';
-import { generateFromTbox } from '../../../src/owl-gen.js';
+import { generateFromTbox } from '../../../src/owl-gen/index.js';
 import { dcatSubset } from '../ontologies/dcat-subset.js';
 
 // ---------------------------------------------------------------------------

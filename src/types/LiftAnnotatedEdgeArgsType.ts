@@ -6,11 +6,11 @@ import type { TripleTermIndexType } from '../types/TripleTermIndexType.js';
 
 /** Arguments for lifting an annotated edge back to its JS representation. */
 export type LiftAnnotatedEdgeArgsType = {
-  readonly 'classId': string;
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'edge': AnnotatedEdgeStructureType;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'subjectIri': string;
-  readonly 'subjectQuads': QuadInterface[];
-  readonly 'tripleTermIndex': TripleTermIndexType;
+  'classId': string;
+  'curie': CurieInterface | undefined;
+  'edge': AnnotatedEdgeStructureType;
+  'predicateResolver': PredicateResolverFnType | undefined;
+  'subjectIri': string;
+  'subjectQuads': QuadInterface[];
+  'tripleTermIndex': TripleTermIndexType;
 };

@@ -56,7 +56,9 @@ export class Value implements ValueInterface {
    * @throws {@link CoercionError} When the data cannot be coerced to satisfy the schema
    */
   public cast(schemaId: string, data: unknown): unknown {
-    return this.registry.cast(schemaId, data);
+    const result = this.registry.cast(schemaId, data);
+
+    return result;
   }
 
   /**
@@ -68,7 +70,9 @@ export class Value implements ValueInterface {
    * @throws {@link SchemaError} When the schema is not registered
    */
   public clean(schemaId: string, data: unknown): unknown {
-    return this.registry.clean(schemaId, data);
+    const result = this.registry.clean(schemaId, data);
+
+    return result;
   }
 
   /**
@@ -81,7 +85,9 @@ export class Value implements ValueInterface {
    * @throws {@link CoercionError} When the data cannot be coerced to satisfy the schema
    */
   public convert(schemaId: string, data: unknown): unknown {
-    return this.registry.convert(schemaId, data);
+    const result = this.registry.convert(schemaId, data);
+
+    return result;
   }
 
   /**
@@ -92,7 +98,9 @@ export class Value implements ValueInterface {
    * @throws {@link SchemaError} When the schema is not registered
    */
   public create(schemaId: string): unknown {
-    return this.registry.create(schemaId);
+    const result = this.registry.create(schemaId);
+
+    return result;
   }
 
   /**
@@ -105,7 +113,9 @@ export class Value implements ValueInterface {
    * @throws {@link DecodeError} When a decode transform fails
    */
   public instantiate(schemaId: string, data: unknown): unknown {
-    return this.registry.instantiate(schemaId, data);
+    const result = this.registry.instantiate(schemaId, data);
+
+    return result;
   }
 }
 
@@ -118,7 +128,7 @@ function diffAt(path: string, before: unknown, after: unknown, ops: DiffOpType[]
     const beforeObj = before;
     const afterObj = after;
 
-    for (const key in beforeObj) {
+    for (const key of Object.keys(beforeObj)) {
       const child = `${path}/${key}`;
 
       if (key in afterObj) {
@@ -130,7 +140,7 @@ function diffAt(path: string, before: unknown, after: unknown, ops: DiffOpType[]
         });
       }
     }
-    for (const key in afterObj) {
+    for (const key of Object.keys(afterObj)) {
       if (!(key in beforeObj)) {
         ops.push({
           'op': 'set',

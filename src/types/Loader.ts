@@ -4,12 +4,12 @@
 
 import type { InferType } from './Schema.js';
 import type {
-  SchemaLoadErrorSchema, SchemaLoadResultSchema
+  SCHEMA_LOAD_ERROR_SCHEMA, SCHEMA_LOAD_RESULT_SCHEMA
 } from '../constants/SCHEMAS.js';
 import type { JsonSchemaType } from './Schema.js';
 
 /**
- * TypeScript type inferred from `SchemaLoadErrorSchema` — describes a single schema-load failure.
+ * TypeScript type inferred from `SCHEMA_LOAD_ERROR_SCHEMA` — describes a single schema-load failure.
  *
  * @remarks
  * Produced by the schema loader when a load attempt fails. Shape: `{ file, message, reason, status? }`.
@@ -34,14 +34,14 @@ import type { JsonSchemaType } from './Schema.js';
  * @see {@link SchemaLoadResultType}
  * @group Schema Utilities
  */
-export type SchemaLoadErrorType = InferType<typeof SchemaLoadErrorSchema>;
+export type SchemaLoadErrorType = InferType<typeof SCHEMA_LOAD_ERROR_SCHEMA>;
 
 /**
  * Union of all valid `reason` values for a schema-load failure.
  *
  * @remarks
  * Derived from `SchemaLoadErrorType['reason']` so it stays in sync with the
- * enum defined in `SchemaLoadErrorSchema`.
+ * enum defined in `SCHEMA_LOAD_ERROR_SCHEMA`.
  *
  * @category Schema Utilities
  * @since 0.25.0
@@ -51,7 +51,7 @@ export type SchemaLoadErrorType = InferType<typeof SchemaLoadErrorSchema>;
 export type SchemaLoadReasonType = SchemaLoadErrorType['reason'];
 
 /**
- * TypeScript type inferred from `SchemaLoadResultSchema` — describes the aggregate outcome of a bulk schema-load operation.
+ * TypeScript type inferred from `SCHEMA_LOAD_RESULT_SCHEMA` — describes the aggregate outcome of a bulk schema-load operation.
  *
  * @remarks
  * Summarises loading one or more schemas. Shape: `{ successful, skipped, failed, errors }`.
@@ -76,7 +76,7 @@ export type SchemaLoadReasonType = SchemaLoadErrorType['reason'];
  * @see {@link SchemaLoadErrorType}
  * @group Schema Utilities
  */
-export type SchemaLoadResultType = InferType<typeof SchemaLoadResultSchema>;
+export type SchemaLoadResultType = InferType<typeof SCHEMA_LOAD_RESULT_SCHEMA>;
 
 /**
  * Pluggable async schema loader hook.

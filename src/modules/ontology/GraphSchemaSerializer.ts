@@ -102,19 +102,25 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
   ): void {
     if (semantics.allOf.length > 0) {
       result.allOf = semantics.allOf.map((n: SchemaGraphNodeType): boolean | Record<string, unknown> => {
-        return this.serializeNode(graph, n);
+        const serializedAllOfBranch = this.serializeNode(graph, n);
+
+        return serializedAllOfBranch;
       });
     }
 
     if (semantics.anyOf.length > 0) {
       result.anyOf = semantics.anyOf.map((n: SchemaGraphNodeType): boolean | Record<string, unknown> => {
-        return this.serializeNode(graph, n);
+        const serializedAnyOfBranch = this.serializeNode(graph, n);
+
+        return serializedAnyOfBranch;
       });
     }
 
     if (semantics.oneOf.length > 0) {
       result.oneOf = semantics.oneOf.map((n: SchemaGraphNodeType): boolean | Record<string, unknown> => {
-        return this.serializeNode(graph, n);
+        const serializedOneOfBranch = this.serializeNode(graph, n);
+
+        return serializedOneOfBranch;
       });
     }
 
@@ -441,7 +447,9 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
 
     if (semantics.prefixItems.length > 0) {
       result.prefixItems = semantics.prefixItems.map((n: SchemaGraphNodeType): boolean | Record<string, unknown> => {
-        return this.serializeNode(graph, n);
+        const serializedPrefixItem = this.serializeNode(graph, n);
+
+        return serializedPrefixItem;
       });
     }
 
@@ -478,7 +486,9 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
    * @returns JSON Schema object reconstructed from the graph
    */
   public serialize(graph: SchemaGraphInterface): Record<string, unknown> {
-    return this.serializeNode(graph, graph.rootNode) as Record<string, unknown>;
+    const result = this.serializeNode(graph, graph.rootNode) as Record<string, unknown>;
+
+    return result;
   }
 
   private serializeNode(

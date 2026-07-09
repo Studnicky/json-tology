@@ -33,20 +33,20 @@ void describe('subpath exports', () => {
     assert.equal(typeof mod.JsonTology, 'function', 'JsonTology class must be exported from "."');
   });
 
-  void it('dist/value.js — exports Value', async () => {
-    const mod = await import(`${PACKAGE_ROOT}/dist/value.js`) as ModuleShape;
+  void it('dist/value/index.js — exports Value', async () => {
+    const mod = await import(`${PACKAGE_ROOT}/dist/value/index.js`) as ModuleShape;
 
     assert.equal(typeof mod.Value, 'function', 'Value class must be exported from "./value"');
   });
 
-  void it('dist/schema.js — exports SchemaRegistry', async () => {
-    const mod = await import(`${PACKAGE_ROOT}/dist/schema.js`) as ModuleShape;
+  void it('dist/schema/index.js — exports SchemaRegistry', async () => {
+    const mod = await import(`${PACKAGE_ROOT}/dist/schema/index.js`) as ModuleShape;
 
     assert.equal(typeof mod.SchemaRegistry, 'function', 'SchemaRegistry class must be exported from "./schema"');
   });
 
-  void it('dist/ontology.js — exports OntologyBuilder', async () => {
-    const mod = await import(`${PACKAGE_ROOT}/dist/ontology.js`) as ModuleShape;
+  void it('dist/ontology/index.js — exports OntologyBuilder', async () => {
+    const mod = await import(`${PACKAGE_ROOT}/dist/ontology/index.js`) as ModuleShape;
 
     assert.equal(typeof mod.OntologyBuilder, 'function', 'OntologyBuilder class must be exported from "./ontology"');
   });
@@ -64,15 +64,15 @@ void describe('subpath exports', () => {
     assert.equal(typeof mod, 'object', 'interfaces subpath must resolve to a module object');
   });
 
-  void it('dist/owl-gen.js — exports generateFromTbox (browser-safe, no node imports)', async () => {
-    const mod = await import(`${PACKAGE_ROOT}/dist/owl-gen.js`) as ModuleShape;
+  void it('dist/owl-gen/index.js — exports generateFromTbox (browser-safe, no node imports)', async () => {
+    const mod = await import(`${PACKAGE_ROOT}/dist/owl-gen/index.js`) as ModuleShape;
 
     assert.equal(typeof mod.generateFromTbox, 'function', 'generateFromTbox must be exported from "./owl-gen"');
     assert.equal(typeof mod.generateRegistryDirectory, 'function', 'generateRegistryDirectory must be exported from "./owl-gen"');
   });
 
-  void it('dist/owl-gen-node.js — exports the Node file-writing skin', async () => {
-    const mod = await import(`${PACKAGE_ROOT}/dist/owl-gen-node.js`) as ModuleShape;
+  void it('dist/owl-gen-node/index.js — exports the Node file-writing skin', async () => {
+    const mod = await import(`${PACKAGE_ROOT}/dist/owl-gen-node/index.js`) as ModuleShape;
 
     assert.equal(typeof mod.writeFromTbox, 'function', 'writeFromTbox must be exported from "./owl-gen-node"');
     assert.equal(typeof mod.writeRegistryDirectory, 'function', 'writeRegistryDirectory must be exported from "./owl-gen-node"');

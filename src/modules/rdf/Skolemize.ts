@@ -48,7 +48,9 @@ const HEX_RADIX = 16;
 
 /** Lookup table mapping byte values (0–255) to two-digit hex strings. */
 const HEX_LOOKUP: readonly string[] = Array.from({ 'length': UUID_BYTE_MAX_PLUS_ONE }, (_: unknown, i: number): string => {
-  return i.toString(HEX_RADIX).padStart(UUID_HEX_PAD_LENGTH, '0');
+  const result = i.toString(HEX_RADIX).padStart(UUID_HEX_PAD_LENGTH, '0');
+
+  return result;
 });
 
 /** Return the hex string for a byte value, throwing if out of range. */
@@ -247,7 +249,9 @@ export class Skolemize {
    */
   public static uuid(): SkolemizeFnType {
     return (_ctx: Parameters<SkolemizeFnType>[0]): string => {
-      return `urn:uuid:${randomUuidV4()}`;
+      const result = `urn:uuid:${randomUuidV4()}`;
+
+      return result;
     };
   }
 

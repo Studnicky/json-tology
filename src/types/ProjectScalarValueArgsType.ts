@@ -5,11 +5,11 @@ import type { ProjectPropertyArgsType } from './ProjectPropertyArgsType.js';
 
 /** Arguments for projectStringValue / projectNumberValue — shared scalar value context. */
 export type ProjectScalarValueArgsType = {
-  readonly 'instanceIri': string;
-  readonly 'path': string;
-  readonly 'propertyIri': string;
-  readonly 'propertyNode': SchemaGraphNodeType;
-  readonly 'propertySemantics': ProjectPropertyArgsType['propertySemantics'];
-  readonly 'quadOpts': QuadFactoryQuadOptsType;
-  readonly 'quads': QuadInterface[];
+  'instanceIri': string;
+  'path': string;
+  'propertyIri': string;
+  'propertyNode': SchemaGraphNodeType;
+  'propertySemantics': ProjectPropertyArgsType['propertySemantics'];
+  'quadOpts': QuadFactoryQuadOptsType;
+  'quads': QuadInterface[];
 };

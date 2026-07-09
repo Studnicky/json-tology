@@ -4,9 +4,9 @@ import type { SchemaGraphRelationType } from './SchemaGraph.js';
 
 /** Arguments for emitRangeConstraint. */
 export type EmitRangeConstraintArgsType = {
-  readonly 'bnodeId': string;
-  readonly 'datatypeRels': readonly SchemaGraphRelationType[];
-  readonly 'opts': { 'curie': CurieInterface | undefined };
-  readonly 'quads': QuadInterface[];
-  readonly 'rangeRels': readonly SchemaGraphRelationType[];
+  'bnodeId': string;
+  'datatypeRels': SchemaGraphRelationType[];
+  'opts': { 'curie': CurieInterface | undefined };
+  'quads': QuadInterface[];
+  'rangeRels': SchemaGraphRelationType[];
 };

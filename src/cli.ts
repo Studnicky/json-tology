@@ -23,7 +23,7 @@ import pkg from '../package.json' with { 'type': 'json' };
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import type { SchemaRegistryInterface } from './interfaces/SchemaRegistryInterface.js';
 import { DataType } from './modules/data/DataType.js';
-import { SchemaErrorCode } from './constants/ERROR_CODES.js';
+import { SCHEMA_ERROR_CODE } from './constants/ERROR_CODES.js';
 import { GraphArtifact } from './modules/graph/GraphArtifact.js';
 import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
@@ -51,133 +51,132 @@ const CLI_PREFIXES: Record<string, string> = {
 // File and schema loading
 // ---------------------------------------------------------------------------
 
-function findFiles(pattern: string): string[] {
-  if (pattern.includes('*')) {
-    const dir = pattern.slice(0, pattern.indexOf('*')).replace(/\/$/u, '') || '.';
-    const ext = pattern.slice(pattern.lastIndexOf('.'));
-    const entries = readdirSync(resolve(dir), {
-      'encoding': 'utf8',
-      'recursive': true
-    });
-
-    return entries
-      .filter((entry: string): boolean => {
-        return entry.endsWith(ext);
-      })
-      .map((entry: string): string => {
-        return resolve(dir, entry);
-      })
-      .sort();
-  }
-
-  return [resolve(pattern)];
-}
-
-function loadSchemaFiles(schemaGlob: string): Array<Record<string, unknown>> {
-  const files = findFiles(schemaGlob);
-
-  if (files.length === 0) {
-    writer.err(`No files matched: ${schemaGlob}`);
-    writer.exit(1);
-  }
-
-  return files.map((filePath: string): Record<string, unknown> => {
-    const content = readFileSync(resolve(filePath), 'utf8');
-    let parsed: unknown;
-
-    try {
-      parsed = JSON.parse(content);
-    } catch (error) {
-      throw new SchemaError(`Invalid JSON in schema file: ${filePath}`, {
-        'code': SchemaErrorCode.INVALID_INPUT,
-        ...(error instanceof Error && { 'cause': error })
+class SchemaLoader {
+  static findFiles(pattern: string): string[] {
+    if (pattern.includes('*')) {
+      const dir = pattern.slice(0, pattern.indexOf('*')).replace(/\/$/u, '') || '.';
+      const ext = pattern.slice(pattern.lastIndexOf('.'));
+      const entries = readdirSync(resolve(dir), {
+        'encoding': 'utf8',
+        'recursive': true
       });
+
+      return entries
+        .filter((entry: string): boolean => {
+          const result = entry.endsWith(ext);
+
+          return result;
+        })
+        .map((entry: string): string => {
+          const result = resolve(dir, entry);
+
+          return result;
+        })
+        .sort();
     }
 
-    if (!DataType.isRecord(parsed)) {
-      throw new SchemaError(`Schema file is not a JSON object: ${filePath}`, { 'code': SchemaErrorCode.INVALID_INPUT });
-    }
-
-    return parsed;
-  });
-}
-
-function loadSchemas(schemaGlob: string): SchemaRegistryInterface {
-  const schemas = loadSchemaFiles(schemaGlob);
-  const registry = new SchemaRegistry();
-
-  for (const schema of schemas) {
-    const id = schema.$id;
-
-    if (typeof id === 'string') {
-      registry.set(schema, id);
-    }
+    return [resolve(pattern)];
   }
 
-  return registry;
+  static loadFiles(schemaGlob: string): Array<Record<string, unknown>> {
+    const files = SchemaLoader.findFiles(schemaGlob);
+
+    if (files.length === 0) {
+      writer.err(`No files matched: ${schemaGlob}`);
+      writer.exit(1);
+    }
+
+    return files.map((filePath: string): Record<string, unknown> => {
+      const content = readFileSync(resolve(filePath), 'utf8');
+      let parsed: unknown;
+
+      try {
+        parsed = JSON.parse(content);
+      } catch (error) {
+        throw new SchemaError(`Invalid JSON in schema file: ${filePath}`, {
+          'code': SCHEMA_ERROR_CODE.INVALID_INPUT,
+          ...(error instanceof Error && { 'cause': error })
+        });
+      }
+
+      if (!DataType.isRecord(parsed)) {
+        throw new SchemaError(`Schema file is not a JSON object: ${filePath}`, { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
+      }
+
+      return parsed;
+    });
+  }
+
+  static loadRegistry(schemaGlob: string): SchemaRegistryInterface {
+    const schemas = SchemaLoader.loadFiles(schemaGlob);
+    const registry = new SchemaRegistry();
+
+    for (const schema of schemas) {
+      const id = schema.$id;
+
+      if (typeof id === 'string') {
+        registry.set(schema, id);
+      }
+    }
+
+    return registry;
+  }
 }
 
 // ---------------------------------------------------------------------------
 // IRI resolution
 // ---------------------------------------------------------------------------
 
-function normalizeBaseIri(value: string): string {
-  return SchemaIri.normalizeBase(value);
-}
+class BaseIri {
+  static deriveFromSchemaId(schemaId: string): string {
+    // parseRef extracts the IRI base (before '#') in the canonical way.
+    const withoutHash = SchemaIri.parseRef(schemaId).id;
 
-function deriveBaseIriFromSchemaId(schemaId: string): string {
-  // parseRef extracts the IRI base (before '#') in the canonical way.
-  const withoutHash = SchemaIri.parseRef(schemaId).id;
+    try {
+      const parsed = new URL(withoutHash);
+      const pathname = parsed.pathname.replace(/\/$/u, '');
+      const lastSlash = pathname.lastIndexOf('/');
 
-  try {
-    const parsed = new URL(withoutHash);
-    const pathname = parsed.pathname.replace(/\/$/u, '');
-    const lastSlash = pathname.lastIndexOf('/');
+      parsed.hash = '';
+      parsed.search = '';
+      parsed.pathname = lastSlash <= 0 ? '/' : pathname.slice(0, lastSlash);
 
-    parsed.hash = '';
-    parsed.search = '';
-    parsed.pathname = lastSlash <= 0 ? '/' : pathname.slice(0, lastSlash);
+      return BaseIri.normalize(parsed.toString());
+    } catch {
+      const lastSlash = withoutHash.lastIndexOf('/');
 
-    return normalizeBaseIri(parsed.toString());
-  } catch {
-    const lastSlash = withoutHash.lastIndexOf('/');
-
-    return normalizeBaseIri(lastSlash <= 0 ? withoutHash : withoutHash.slice(0, lastSlash));
-  }
-}
-
-function resolveBaseIri(
-  graphs: readonly SchemaGraphInterface[],
-  configuredBaseIri: string | undefined
-): string {
-  if (configuredBaseIri !== undefined && configuredBaseIri !== '') {
-    return normalizeBaseIri(configuredBaseIri);
+      return BaseIri.normalize(lastSlash <= 0 ? withoutHash : withoutHash.slice(0, lastSlash));
+    }
   }
 
-  const firstRootSchema = graphs[0]?.rootSchema;
-  const firstSchemaId = typeof firstRootSchema === 'object'
-    ? (firstRootSchema).$id
-    : undefined;
+  static normalize(value: string): string {
+    const result = SchemaIri.normalizeBase(value);
 
-  if (typeof firstSchemaId !== 'string' || firstSchemaId === '') {
-    throw new SchemaError(
-      'Unable to derive base IRI from registered schemas. Pass --base-iri explicitly.',
-      { 'code': SchemaErrorCode.MISSING_ID }
-    );
+    return result;
   }
 
-  return deriveBaseIriFromSchemaId(firstSchemaId);
-}
+  static resolve(
+    graphs: readonly SchemaGraphInterface[],
+    configuredBaseIri: string | undefined
+  ): string {
+    if (configuredBaseIri !== undefined && configuredBaseIri !== '') {
+      return BaseIri.normalize(configuredBaseIri);
+    }
 
-function resolveSingleOutputPath(
-  outputDir: string,
-  outputFile: string | undefined,
-  defaultFileName: string
-): string {
-  return resolve(
-    outputDir,
-    outputFile === undefined || outputFile === '' ? defaultFileName : outputFile
-  );
+    const firstRootSchema = graphs[0]?.rootSchema;
+    const firstSchemaId = typeof firstRootSchema === 'object'
+      ? (firstRootSchema).$id
+      : undefined;
+
+    if (typeof firstSchemaId !== 'string' || firstSchemaId === '') {
+      throw new SchemaError(
+        'Unable to derive base IRI from registered schemas. Pass --base-iri explicitly.',
+        { 'code': SCHEMA_ERROR_CODE.MISSING_ID }
+      );
+    }
+
+    return BaseIri.deriveFromSchemaId(firstSchemaId);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -209,6 +208,18 @@ function derivePrefixFromIri(iri: URL): string {
   return (domain ?? 'ns').toLowerCase();
 }
 
+class IdUrl {
+  static parse(id: string): undefined | URL {
+    try {
+      return new URL(id);
+    } catch {
+      writer.err(`Skipping prefix derivation for unparseable $id URL: ${id}`);
+
+      return undefined;
+    }
+  }
+}
+
 function derivePrefixesFromSchemas(schemas: ReadonlyArray<Record<string, unknown>>): Record<string, string> {
   const prefixes: Record<string, string> = {};
 
@@ -219,12 +230,9 @@ function derivePrefixesFromSchemas(schemas: ReadonlyArray<Record<string, unknown
       continue;
     }
 
-    let parsed: URL;
+    const parsed = IdUrl.parse(id);
 
-    try {
-      parsed = new URL(id);
-    } catch {
-      writer.err(`Skipping prefix derivation for unparseable $id URL: ${id}`);
+    if (parsed === undefined) {
       continue;
     }
 
@@ -244,124 +252,141 @@ function derivePrefixesFromSchemas(schemas: ReadonlyArray<Record<string, unknown
 // Browser
 // ---------------------------------------------------------------------------
 
-function openBrowser(filePath: string): void {
-  const { platform } = process;
-  let cmd = 'xdg-open';
+class Browser {
+  static open(filePath: string): void {
+    const { platform } = process;
+    let cmd = 'xdg-open';
 
-  if (platform === 'darwin') {
-    cmd = 'open';
-  } else if (platform === 'win32') {
-    cmd = 'start';
-  }
-
-  execFile(cmd, [filePath], (error: ExecFileException | null): void => {
-    if (error) {
-      writer.err(`Failed to open browser: ${error.message}`);
+    if (platform === 'darwin') {
+      cmd = 'open';
+    } else if (platform === 'win32') {
+      cmd = 'start';
     }
-  });
+
+    execFile(cmd, [filePath], (error: ExecFileException | null): void => {
+      if (error) {
+        writer.err(`Failed to open browser: ${error.message}`);
+      }
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Build command
 // ---------------------------------------------------------------------------
 
-function buildOntologyOutput(opts: BuildOutputOptionsType): void {
-  const {
-    baseIri, graphs, output, outputFile
-  } = opts;
-  const serializer = new GraphOntologySerializer();
-  const quads = serializer.serializeQuads(graphs);
-  const builder = new OntologyBuilder({
-    baseIri,
-    'prefixes': CLI_PREFIXES
-  }).addFromQuads(quads);
-  const outPath = resolveSingleOutputPath(output, outputFile, 'ontology.jsonld');
+class Build {
+  private static graphOutput(
+    graphs: readonly SchemaGraphInterface[],
+    format: string,
+    output: string
+  ): void {
+    for (const graph of graphs) {
+      const { rootSchema } = graph;
 
-  writeFileSync(outPath, JSON.stringify(builder.jsonLdObject(), null, 2));
-  writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
-}
+      if (typeof rootSchema !== 'object' || typeof rootSchema.$id !== 'string') {
+        continue;
+      }
 
-function buildShaclOutput(opts: BuildOutputOptionsType): void {
-  const {
-    baseIri, graphs, output, outputFile
-  } = opts;
-  const serializer = new GraphShaclSerializer();
-  const shaclQuads = serializer.serializeQuads(graphs);
-  const builder = new OntologyBuilder({
-    baseIri,
-    'prefixes': CLI_PREFIXES
-  }).addShaclFromQuads(shaclQuads);
-  const outPath = resolveSingleOutputPath(output, outputFile, 'shacl.jsonld');
+      const schemaId = rootSchema.$id;
+      const safeName = basename(schemaId).replaceAll(/[^\w-]/gu, '_');
 
-  writeFileSync(outPath, JSON.stringify(builder.shaclObject(), null, 2));
-  writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
-}
+      if (format === 'artifact') {
+        const artifact = GraphArtifact.toArtifact(graph);
 
-function buildGraphOutput(
-  graphs: readonly SchemaGraphInterface[],
-  format: string,
-  output: string
-): void {
-  for (const graph of graphs) {
-    const { rootSchema } = graph;
+        writeFileSync(
+          resolve(output, `${safeName}.artifact.json`),
+          JSON.stringify(artifact, null, 2)
+        );
+      } else if (format === 'schema') {
+        const serializer = new GraphSchemaSerializer();
+        const result = serializer.serialize(graph);
 
-    if (typeof rootSchema !== 'object' || typeof rootSchema.$id !== 'string') {
-      continue;
+        writeFileSync(
+          resolve(output, `${safeName}.schema.json`),
+          JSON.stringify(result, null, 2)
+        );
+      } else {
+        writer.err(`Unknown format: ${format}`);
+        writer.exit(1);
+      }
     }
 
-    const schemaId = rootSchema.$id;
-    const safeName = basename(schemaId).replaceAll(/[^\w-]/gu, '_');
+    writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
+  }
 
-    if (format === 'artifact') {
-      const artifact = GraphArtifact.toArtifact(graph);
+  private static ontologyOutput(opts: BuildOutputOptionsType): void {
+    const {
+      baseIri, graphs, output, outputFile
+    } = opts;
+    const serializer = new GraphOntologySerializer();
+    const quads = serializer.serializeQuads(graphs);
+    const builder = new OntologyBuilder({
+      baseIri,
+      'prefixes': CLI_PREFIXES
+    }).addFromQuads(quads);
+    const outPath = Build.outputPath(output, outputFile, 'ontology.jsonld');
 
-      writeFileSync(
-        resolve(output, `${safeName}.artifact.json`),
-        JSON.stringify(artifact, null, 2)
-      );
-    } else if (format === 'schema') {
-      const serializer = new GraphSchemaSerializer();
-      const result = serializer.serialize(graph);
+    writeFileSync(outPath, JSON.stringify(builder.jsonLdObject(), null, 2));
+    writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
+  }
 
-      writeFileSync(
-        resolve(output, `${safeName}.schema.json`),
-        JSON.stringify(result, null, 2)
-      );
+  private static outputPath(
+    outputDir: string,
+    outputFile: string | undefined,
+    defaultFileName: string
+  ): string {
+    const result = resolve(
+      outputDir,
+      outputFile === undefined || outputFile === '' ? defaultFileName : outputFile
+    );
+
+    return result;
+  }
+
+  static async run(options: BuildOptionsType): Promise<void> {
+    const {
+      'baseIri': configuredBaseIri, format, output, outputFile, 'schema': schemaGlob
+    } = options;
+    const registry = SchemaLoader.loadRegistry(schemaGlob);
+
+    if (!existsSync(output)) {
+      mkdirSync(output, { 'recursive': true });
+    }
+
+    const graphs = registry.listGraphs();
+    const baseIri = BaseIri.resolve(graphs, configuredBaseIri);
+
+    const buildOpts: BuildOutputOptionsType = {
+      baseIri,
+      graphs,
+      output,
+      outputFile
+    };
+
+    if (format === 'ontology') {
+      Build.ontologyOutput(buildOpts);
+    } else if (format === 'shacl') {
+      Build.shaclOutput(buildOpts);
     } else {
-      writer.err(`Unknown format: ${format}`);
-      writer.exit(1);
+      Build.graphOutput(graphs, format, output);
     }
   }
 
-  writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
-}
+  private static shaclOutput(opts: BuildOutputOptionsType): void {
+    const {
+      baseIri, graphs, output, outputFile
+    } = opts;
+    const serializer = new GraphShaclSerializer();
+    const shaclQuads = serializer.serializeQuads(graphs);
+    const builder = new OntologyBuilder({
+      baseIri,
+      'prefixes': CLI_PREFIXES
+    }).addShaclFromQuads(shaclQuads);
+    const outPath = Build.outputPath(output, outputFile, 'shacl.jsonld');
 
-async function runBuild(options: BuildOptionsType): Promise<void> {
-  const {
-    'baseIri': configuredBaseIri, format, output, outputFile, 'schema': schemaGlob
-  } = options;
-  const registry = loadSchemas(schemaGlob);
-
-  if (!existsSync(output)) {
-    mkdirSync(output, { 'recursive': true });
-  }
-
-  const graphs = registry.listGraphs();
-  const baseIri = resolveBaseIri(graphs, configuredBaseIri);
-
-  const buildOpts: BuildOutputOptionsType = {
-    baseIri,
-    graphs,
-    output,
-    outputFile
-  };
-
-  if (format === 'ontology') {
-    buildOntologyOutput(buildOpts);
-  } else if (format === 'shacl') {
-    buildShaclOutput(buildOpts);
-  } else {
-    buildGraphOutput(graphs, format, output);
+    writeFileSync(outPath, JSON.stringify(builder.shaclObject(), null, 2));
+    writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
   }
 }
 
@@ -369,39 +394,41 @@ async function runBuild(options: BuildOptionsType): Promise<void> {
 // Viz command
 // ---------------------------------------------------------------------------
 
-async function runViz(options: VizOptionsType): Promise<void> {
-  const {
-    noOpen, output, 'schema': schemaGlob
-  } = options;
-  const schemas = loadSchemaFiles(schemaGlob);
-  const prefixes = derivePrefixesFromSchemas(schemas);
-  const registry = new SchemaRegistry(Object.keys(prefixes).length > 0 ? { prefixes } : undefined);
+class Viz {
+  static async run(options: VizOptionsType): Promise<void> {
+    const {
+      noOpen, output, 'schema': schemaGlob
+    } = options;
+    const schemas = SchemaLoader.loadFiles(schemaGlob);
+    const prefixes = derivePrefixesFromSchemas(schemas);
+    const registry = new SchemaRegistry(Object.keys(prefixes).length > 0 ? { prefixes } : undefined);
 
-  for (const schema of schemas) {
-    const id = schema.$id;
+    for (const schema of schemas) {
+      const id = schema.$id;
 
-    if (typeof id === 'string') {
-      registry.set(schema, id);
+      if (typeof id === 'string') {
+        registry.set(schema, id);
+      }
     }
-  }
 
-  const collector = new VizDataCollector(registry);
-  const payload = collector.collect();
-  const renderer = new HtmlRenderer();
-  const html = renderer.render(payload);
-  const outputPath = resolve(output);
-  const outputDir = dirname(outputPath);
+    const collector = new VizDataCollector(registry);
+    const payload = collector.collect();
+    const renderer = new HtmlRenderer();
+    const html = renderer.render(payload);
+    const outputPath = resolve(output);
+    const outputDir = dirname(outputPath);
 
-  if (!existsSync(outputDir)) {
-    mkdirSync(outputDir, { 'recursive': true });
-  }
+    if (!existsSync(outputDir)) {
+      mkdirSync(outputDir, { 'recursive': true });
+    }
 
-  writeFileSync(outputPath, html);
+    writeFileSync(outputPath, html);
 
-  writer.out(`Visualization written to ${outputPath}`);
+    writer.out(`Visualization written to ${outputPath}`);
 
-  if (!noOpen) {
-    openBrowser(outputPath);
+    if (!noOpen) {
+      Browser.open(outputPath);
+    }
   }
 }
 
@@ -422,50 +449,52 @@ async function readStdin(): Promise<string> {
   });
 }
 
-async function runOwlGen(
-  input: string,
-  opts: { 'baseIri'?: string;
-    'mode'?: string;
-    'name'?: string;
-    'out': string }
-): Promise<void> {
-  const {
-    writeFromTbox, writeRegistryDirectory
-  } = await import('./owl-gen-node.js');
-  const fs = await import('node:fs');
-  const path = await import('node:path');
+class OwlGen {
+  static async run(
+    input: string,
+    opts: { 'baseIri'?: string;
+      'mode'?: string;
+      'name'?: string;
+      'out': string }
+  ): Promise<void> {
+    const {
+      writeFromTbox, writeRegistryDirectory
+    } = await import('./owl-gen-node/index.js');
+    const fs = await import('node:fs');
+    const path = await import('node:path');
 
-  const jsonLdSource = input === '-'
-    ? await readStdin()
-    : fs.readFileSync(resolve(input), 'utf8');
+    const jsonLdSource = input === '-'
+      ? await readStdin()
+      : fs.readFileSync(resolve(input), 'utf8');
 
-  const parsed = JSON.parse(jsonLdSource) as Record<string, unknown>;
-  const inferredName = opts.name ?? basename(input, path.extname(input)).replaceAll(/[^a-zA-Z0-9]+/gu, '_');
-  const outPath = opts.out;
-  const isDirectoryMode = opts.mode === 'directory'
-    || (opts.mode !== 'single' && !outPath.endsWith('.ts'));
+    const parsed = JSON.parse(jsonLdSource) as Record<string, unknown>;
+    const inferredName = opts.name ?? basename(input, path.extname(input)).replaceAll(/[^a-zA-Z0-9]+/gu, '_');
+    const outPath = opts.out;
+    const isDirectoryMode = opts.mode === 'directory'
+      || (opts.mode !== 'single' && !outPath.endsWith('.ts'));
 
-  if (isDirectoryMode) {
-    const outDir = resolve(outPath);
-    const fileResult = writeRegistryDirectory({
-      ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
-      'input': parsed,
-      'name': inferredName,
-      'outDir': outDir,
-      'sourceLabel': input
-    });
+    if (isDirectoryMode) {
+      const outDir = resolve(outPath);
+      const fileResult = writeRegistryDirectory({
+        ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
+        'input': parsed,
+        'name': inferredName,
+        'outDir': outDir,
+        'sourceLabel': input
+      });
 
-    writer.out(`Generated registry directory (${fileResult.entityFiles.length} entities + index.ts) → ${outPath}`);
-  } else {
-    writeFromTbox({
-      ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
-      'input': parsed,
-      'name': inferredName,
-      'output': resolve(outPath),
-      'sourceLabel': input
-    });
+      writer.out(`Generated registry directory (${fileResult.entityFiles.length} entities + index.ts) → ${outPath}`);
+    } else {
+      writeFromTbox({
+        ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
+        'input': parsed,
+        'name': inferredName,
+        'output': resolve(outPath),
+        'sourceLabel': input
+      });
 
-    writer.out(`Generated ${opts.out} from ${input}`);
+      writer.out(`Generated ${opts.out} from ${input}`);
+    }
   }
 }
 
@@ -493,7 +522,7 @@ program
     'output': string;
     'outputFile'?: string;
     'schema': string }): Promise<void> => {
-    await runBuild(opts);
+    await Build.run(opts);
   });
 
 program
@@ -505,7 +534,7 @@ program
   .action(async (opts: { 'noOpen': boolean;
     'output': string;
     'schema': string }): Promise<void> => {
-    await runViz(opts);
+    await Viz.run(opts);
   });
 
 program
@@ -519,7 +548,7 @@ program
     'mode'?: string;
     'name'?: string;
     'out': string }): Promise<void> => {
-    await runOwlGen(input, opts);
+    await OwlGen.run(input, opts);
   });
 
 try {

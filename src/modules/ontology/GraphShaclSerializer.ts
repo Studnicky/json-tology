@@ -7,14 +7,18 @@ import { BaseGraphSerializer } from './BaseGraphSerializer.js';
 
 export class GraphShaclSerializer extends BaseGraphSerializer {
   protected corePredicates(): ReadonlySet<string> {
-    return SHACL_CORE_PREDICATES;
+    const result = SHACL_CORE_PREDICATES;
+
+    return result;
   }
 
   protected projectGraph(graph: SchemaGraphInterface, issuer?: IdentifierIssuerInterface): QuadInterface[] {
-    return ShaclProjection.graph(graph, {
+    const result = ShaclProjection.graph(graph, {
       'curie': this.curie,
       issuer,
       'predicateResolver': this.predicateResolver
     });
+
+    return result;
   }
 }

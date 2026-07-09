@@ -22,14 +22,14 @@ import {
 import { join } from 'node:path';
 import {
   generateFromTbox, generateRegistryDirectory
-} from './owl-gen.js';
+} from '../owl-gen/index.js';
 import type {
   GenerateFromTboxOptionsType,
   GenerateRegistryDirectoryOptionsType,
   WrittenEntityFileType
-} from './types/OwlGen.js';
+} from '../types/OwlGen.js';
 
-export type { WrittenEntityFileType } from './types/OwlGen.js';
+export type { WrittenEntityFileType } from '../types/OwlGen.js';
 
 /**
  * Generate TypeScript source from an OWL 2 TBox and write it to `output`.

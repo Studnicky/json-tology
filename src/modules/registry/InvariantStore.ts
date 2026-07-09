@@ -1,7 +1,7 @@
 import type { InvariantType } from '../../types/Invariant.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
 
-import { InstantiationErrorCode } from '../../constants/ERROR_CODES.js';
+import { INSTANTIATION_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
@@ -62,26 +62,7 @@ export class InvariantStore {
     const errors: ValidationErrorType[] = [];
 
     for (const invariant of invariants) {
-      let result: null | string | undefined;
-
-      try {
-        result = invariant.fn(value);
-      } catch (error) {
-        const causeError = BaseError.toCause(error);
-
-        throw new InstantiationError(
-          new ValidationErrors([{
-            'keyword': 'jt:invariant',
-            'message': `Invariant "${invariant.name}" threw: ${causeError.message}`,
-            'params': { 'invariant': invariant.name },
-            'path': invariant.pointer ?? ''
-          }]),
-          {
-            'cause': causeError,
-            'code': InstantiationErrorCode.INSTANTIATION_FAILED
-          }
-        );
-      }
+      const result = this.runInvariant(invariant, value);
 
       if (result !== null && result !== undefined) {
         errors.push({
@@ -94,5 +75,26 @@ export class InvariantStore {
     }
 
     return errors;
+  }
+
+  private runInvariant(invariant: InvariantType, value: unknown): null | string | undefined {
+    try {
+      return invariant.fn(value);
+    } catch (error) {
+      const causeError = BaseError.toCause(error);
+
+      throw new InstantiationError(
+        new ValidationErrors([{
+          'keyword': 'jt:invariant',
+          'message': `Invariant "${invariant.name}" threw: ${causeError.message}`,
+          'params': { 'invariant': invariant.name },
+          'path': invariant.pointer ?? ''
+        }]),
+        {
+          'cause': causeError,
+          'code': INSTANTIATION_ERROR_CODE.INSTANTIATION_FAILED
+        }
+      );
+    }
   }
 }

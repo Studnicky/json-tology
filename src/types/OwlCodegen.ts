@@ -10,17 +10,6 @@
  * @group OWL Codegen
  */
 
-export type { BuildEntityFileOptionsType } from '../types/BuildEntityFileOptionsType.js';
-export type { BuildIndexSourceOptionsType } from '../types/BuildIndexSourceOptionsType.js';
-export type { BuildNameMapResultType } from '../types/BuildNameMapResultType.js';
-export type { EmitBannerOptionsType } from '../types/EmitBannerOptionsType.js';
-export type { EmitRegistryOptionsType } from '../types/EmitRegistryOptionsType.js';
-export type { EmitSchemaConstantsOptionsType } from '../types/EmitSchemaConstantsOptionsType.js';
-export type { KahnStepOptionsType } from '../types/KahnStepOptionsType.js';
-export type { RegistryDirContextType } from '../types/RegistryDirContextType.js';
-export type { SerializeContextType } from '../types/SerializeContextType.js';
-export type { SingleFileBodyOptionsType } from '../types/SingleFileBodyOptionsType.js';
-
 /**
  * Named return type for {@link buildDepsMap}.
  *
@@ -81,31 +70,31 @@ export type OwlCodegenOptionsType = {
    * Base IRI used in the `JsonTology.create` call. Defaults to empty string,
    * which causes the generator to derive it from the first schema $id.
    */
-  readonly 'baseIri'?: string | undefined;
+  'baseIri'?: string | undefined;
 
   /**
    * Extra comment lines inserted immediately after the auto-generated banner.
    * Each element is emitted as a separate `// ` comment line.
    */
-  readonly 'header'?: readonly string[] | undefined;
+  'header'?: string[] | undefined;
 
   /**
    * Import path for `InferType`. Defaults to `'json-tology/types'`.
    */
-  readonly 'inferTypeImportPath'?: string | undefined;
+  'inferTypeImportPath'?: string | undefined;
 
   /**
    * Name of the exported registry array constant and registry instance.
    * E.g. `'foaf'` → `foafSchemas`, `foaf`.
    * Defaults to `'registry'`.
    */
-  readonly 'registryConstName'?: string | undefined;
+  'registryConstName'?: string | undefined;
 
   /**
    * Human-readable label for the source (file path or IRI) emitted in the
    * auto-generated banner.
    */
-  readonly 'sourceLabel'?: string | undefined;
+  'sourceLabel'?: string | undefined;
 };
 
 /**
@@ -113,13 +102,13 @@ export type OwlCodegenOptionsType = {
  */
 export type RegistryFileEntryType = {
   /** Full IRI of the OWL class this file represents. */
-  readonly 'iri': string;
+  'iri': string;
   /** PascalCase identifier (without `Schema` suffix), e.g. `Person`. */
-  readonly 'name': string;
+  'name': string;
   /** Relative path inside the output directory, e.g. `entities/Person.ts`. */
-  readonly 'path': string;
+  'path': string;
   /** The TypeScript source content of this entity file. */
-  readonly 'source': string;
+  'source': string;
 };
 
 /**
@@ -127,9 +116,9 @@ export type RegistryFileEntryType = {
  */
 export type RegistryFilesResultType = {
   /** Metadata + source for each generated `entities/<Name>.ts` file. */
-  readonly 'entityFiles': readonly RegistryFileEntryType[];
+  'entityFiles': RegistryFileEntryType[];
   /** Source content for the generated `index.ts` file. */
-  readonly 'indexSource': string;
+  'indexSource': string;
 };
 
 /**
@@ -140,24 +129,24 @@ export type OwlRegistryDirOptionsType = {
    * Base IRI used in the `JsonTology.create` call.
    * Defaults to an IRI derived from the first schema `$id`.
    */
-  readonly 'baseIri'?: string | undefined;
+  'baseIri'?: string | undefined;
 
   /**
    * Extra comment lines inserted after the auto-generated banner in the
    * `index.ts` file. Each element is emitted as a `// ` comment line.
    */
-  readonly 'header'?: readonly string[] | undefined;
+  'header'?: string[] | undefined;
 
   /**
    * Name of the exported registry constant and schemas array.
    * E.g. `'foaf'` → `foafSchemas`, `foaf`.
    * Defaults to `'registry'`.
    */
-  readonly 'registryConstName'?: string | undefined;
+  'registryConstName'?: string | undefined;
 
   /**
    * Human-readable label for the source (file path or IRI) emitted in the
    * auto-generated banner.
    */
-  readonly 'sourceLabel'?: string | undefined;
+  'sourceLabel'?: string | undefined;
 };

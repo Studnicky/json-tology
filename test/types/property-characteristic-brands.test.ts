@@ -35,18 +35,18 @@ function assert<T extends true>(): void {
 // ---------------------------------------------------------------------------
 
 assert<AssertEqualType<
-  PropertyCharacteristicConflictType<'relates', readonly ['symmetric', 'asymmetric']>['kind'],
+  PropertyCharacteristicConflictType<'relates', ['symmetric', 'asymmetric']>['kind'],
   'PropertyCharacteristicConflict'
 >>();
 
 assert<AssertEqualType<
-  PropertyCharacteristicConflictType<'relates', readonly ['symmetric', 'asymmetric']>['property'],
+  PropertyCharacteristicConflictType<'relates', ['symmetric', 'asymmetric']>['property'],
   'relates'
 >>();
 
 assert<AssertEqualType<
-  PropertyCharacteristicConflictType<'relates', readonly ['symmetric', 'asymmetric']>['conflicts'],
-  readonly ['symmetric', 'asymmetric']
+  PropertyCharacteristicConflictType<'relates', ['symmetric', 'asymmetric']>['conflicts'],
+  ['symmetric', 'asymmetric']
 >>();
 
 // ---------------------------------------------------------------------------

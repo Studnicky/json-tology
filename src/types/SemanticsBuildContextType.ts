@@ -16,13 +16,13 @@ import type { SchemaGraphNodeType } from './SchemaGraph.js';
  */
 export type SemanticsBuildContextType = {
   /** Live graph accessor for child/entry resolution. */
-  readonly 'graph': GraphAccessorInterface;
+  'graph': GraphAccessorInterface;
   /** The schema node being processed. */
-  readonly 'node': SchemaGraphNodeType;
+  'node': SchemaGraphNodeType;
   /** Resolved `$ref` string or undefined. */
-  readonly 'ref': string | undefined;
+  'ref': string | undefined;
   /** Callback to resolve a local fragment reference. */
-  readonly 'resolveLocalRef': (ref: string) => SchemaGraphNodeType;
+  'resolveLocalRef': (ref: string) => SchemaGraphNodeType;
   /** The raw schema record from `node.schema`. */
-  readonly 'schema': Record<string, unknown>;
+  'schema': Record<string, unknown>;
 };

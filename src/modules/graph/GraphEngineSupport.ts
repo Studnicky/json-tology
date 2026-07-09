@@ -4,7 +4,7 @@ import {
   VOCABULARY_FORMAT_ASSERTION
 } from '../../constants/DIALECT.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { DataType } from '../data/DataType.js';
 import { SchemaIri } from './SchemaIri.js';
 
@@ -23,7 +23,7 @@ export const GraphEngineSupport = {
     const schemaUri = typeof rootSchema.$schema === 'string' ? rootSchema.$schema : undefined;
 
     if (schemaUri !== undefined && !schemaUri.startsWith(CURRENT_DIALECT_PREFIX)) {
-      throw new GraphError(`Unsupported JSON Schema dialect: ${schemaUri}`, { 'code': GraphErrorCode.DIALECT_UNSUPPORTED });
+      throw new GraphError(`Unsupported JSON Schema dialect: ${schemaUri}`, { 'code': GRAPH_ERROR_CODE.DIALECT_UNSUPPORTED });
     }
 
     const rawVocabulary = DataType.isRecord(rootSchema.$vocabulary)
@@ -42,7 +42,7 @@ export const GraphEngineSupport = {
         enabled
       ] of Object.entries(rawVocabulary)) {
         if (enabled && !SUPPORTED_VOCABULARIES.has(uri)) {
-          throw new GraphError(`Unsupported required JSON Schema vocabulary: ${uri}`, { 'code': GraphErrorCode.VOCABULARY_UNSUPPORTED });
+          throw new GraphError(`Unsupported required JSON Schema vocabulary: ${uri}`, { 'code': GRAPH_ERROR_CODE.VOCABULARY_UNSUPPORTED });
         }
       }
 

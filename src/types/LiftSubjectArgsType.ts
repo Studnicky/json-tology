@@ -5,9 +5,9 @@ import type { LiftContextType } from './LiftContextType.js';
 
 /** Arguments for lifting a single subject's quads to a typed JS object. */
 export type LiftSubjectArgsType = {
-  readonly 'classId': string;
-  readonly 'ctx': LiftContextType;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'node': SchemaGraphNodeType;
-  readonly 'subjectQuads': QuadInterface[];
+  'classId': string;
+  'ctx': LiftContextType;
+  'graph': SchemaGraphInterface;
+  'node': SchemaGraphNodeType;
+  'subjectQuads': QuadInterface[];
 };

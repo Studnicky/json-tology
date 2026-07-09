@@ -18,7 +18,7 @@
  * Browser-safe: no node:fs, node:path, or node:url.
  */
 
-import { generateRegistryDirectory } from '../../../src/owl-gen.js';
+import { generateRegistryDirectory } from '../../../src/owl-gen/index.js';
 import { foafSubset } from '../ontologies/foaf-subset.js';
 
 // ---------------------------------------------------------------------------

@@ -36,6 +36,8 @@ export class Brand {
    * @typeParam TBranded - The branded target type to project into.
    */
   public static cast<TBranded>(value: unknown): TBranded {
-    return value as TBranded;
+    const result = value as TBranded;
+
+    return result;
   }
 }

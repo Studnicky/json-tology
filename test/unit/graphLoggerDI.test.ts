@@ -20,7 +20,7 @@ import { GraphArtifact } from '../../src/modules/graph/GraphArtifact.js';
 import { GraphError } from '../../src/errors/GraphError.js';
 import { DecodeError } from '../../src/errors/DecodeError.js';
 import {
-  GraphErrorCode, TransformErrorCode
+  GRAPH_ERROR_CODE, TRANSFORM_ERROR_CODE
 } from '../../src/constants/ERROR_CODES.js';
 import type { LoggerInterface } from '../../src/interfaces/LoggerInterface.js';
 
@@ -96,7 +96,7 @@ void describe('SchemaGraph logger DI', () => {
         return graph.resolvePointer('no-leading-slash');
       },
       (error: unknown) => {
-        return error instanceof GraphError && error.code === GraphErrorCode.POINTER_INVALID;
+        return error instanceof GraphError && error.code === GRAPH_ERROR_CODE.POINTER_INVALID;
       }
     );
     assert.ok(messages.some((m) => {
@@ -115,7 +115,7 @@ void describe('SchemaGraph logger DI', () => {
         return graph.resolveFragment('missing-anchor');
       },
       (error: unknown) => {
-        return error instanceof GraphError && error.code === GraphErrorCode.ANCHOR_NOT_FOUND;
+        return error instanceof GraphError && error.code === GRAPH_ERROR_CODE.ANCHOR_NOT_FOUND;
       }
     );
     assert.ok(messages.some((m) => {
@@ -131,7 +131,7 @@ void describe('SchemaGraph logger DI', () => {
         return graph.resolvePointer('/nonexistent');
       },
       (error: unknown) => {
-        return error instanceof GraphError && error.code === GraphErrorCode.POINTER_NOT_FOUND;
+        return error instanceof GraphError && error.code === GRAPH_ERROR_CODE.POINTER_NOT_FOUND;
       }
     );
   });
@@ -180,7 +180,7 @@ void describe('GraphArtifact logger DI', () => {
         return rebuilt.resolvePointer('/nonexistent');
       },
       (error: unknown) => {
-        return error instanceof GraphError && error.code === GraphErrorCode.POINTER_NOT_FOUND;
+        return error instanceof GraphError && error.code === GRAPH_ERROR_CODE.POINTER_NOT_FOUND;
       }
     );
   });
@@ -227,7 +227,7 @@ void describe('RefDecoder logger DI (end-to-end through the registry)', () => {
         return jt.instantiate(HostSchema.$id, { 'token': 'anything' });
       },
       (error: unknown) => {
-        return error instanceof DecodeError && error.code === TransformErrorCode.TRANSFORM_DECODE_FAILED;
+        return error instanceof DecodeError && error.code === TRANSFORM_ERROR_CODE.TRANSFORM_DECODE_FAILED;
       }
     );
     assert.ok(

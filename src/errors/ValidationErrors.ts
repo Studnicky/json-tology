@@ -170,6 +170,8 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
    * @returns Iterator yielding each ValidationErrorType in order
    */
   public [Symbol.iterator](): Iterator<ValidationErrorType> {
-    return this.items[Symbol.iterator]();
+    const result = this.items[Symbol.iterator]();
+
+    return result;
   }
 }

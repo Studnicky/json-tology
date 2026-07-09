@@ -11,7 +11,7 @@ import type {
 // Schema registry and format validators
 import type {
   FormatRegistry, SchemaRegistry
-} from '../../../src/schema.js';
+} from '../../../src/schema/index.js';
 
 // Types and interfaces only (compile-time, no runtime cost)
 import type { InferType } from '../../../src/types/index.js';

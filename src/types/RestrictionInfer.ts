@@ -69,7 +69,7 @@
  * @typeParam TOtherId - The `$id` IRI of the class declared disjoint.
  */
 export type DisjointWithBrandType<TOtherId extends string> = {
-  readonly '~jt:disjointWith': Readonly<Record<TOtherId, 'disjoint'>>;
+  '~jt:disjointWith': Readonly<Record<TOtherId, 'disjoint'>>;
 };
 
 /**
@@ -93,7 +93,7 @@ export type DisjointWithBrandType<TOtherId extends string> = {
  * @typeParam TOtherId - The `$id` IRI of the class this class is the complement of.
  */
 export type ComplementOfBrandType<TOtherId extends string> = {
-  readonly '~jt:complementOf': Readonly<Record<TOtherId, 'complement'>>;
+  '~jt:complementOf': Readonly<Record<TOtherId, 'complement'>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -388,13 +388,5 @@ export type ApplyRestrictionsType<TProps, TRestrictions extends readonly unknown
 export type ExtractRestrictionsType<TBody>
   = TBody extends { readonly 'jt:restrictions': infer R extends readonly unknown[] }
     ? R
-    : readonly [];
+    : [];
 
-// ---------------------------------------------------------------------------
-// Re-export property helpers that consumers of this module need.
-// ---------------------------------------------------------------------------
-
-
-export {
-  type ExtractPropertiesType, type ExtractRequiredType
-} from './Compose.js';

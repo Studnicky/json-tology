@@ -26,7 +26,7 @@ declare const BRAND: unique symbol;
  *
  * @typeParam TBrand - The string literal that identifies this brand.
  */
-export type BrandTagType<TBrand extends string> = { readonly [BRAND]: TBrand };
+export type BrandTagType<TBrand extends string> = { [BRAND]: TBrand };
 
 /**
  * A schema annotated with a brand name.

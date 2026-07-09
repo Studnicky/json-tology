@@ -2,7 +2,9 @@ import { Predicates } from '../data/Predicates.js';
 
 export const SchemaCompilerSupport = {
   coerceCompiledValue(types: string[], value: unknown): unknown {
-    return Predicates.coerceValue(types, value);
+    const result = Predicates.coerceValue(types, value);
+
+    return result;
   },
 
   normalizeKeywordTypes(type: string | string[] | undefined): string[] | undefined {

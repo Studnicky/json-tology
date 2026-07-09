@@ -20,16 +20,16 @@
       "types": "./dist/index.d.ts"
     },
     "./value": {
-      "import": "./dist/value.js",
-      "types": "./dist/value.d.ts"
+      "import": "./dist/value/index.js",
+      "types": "./dist/value/index.d.ts"
     },
     "./schema": {
-      "import": "./dist/schema.js",
-      "types": "./dist/schema.d.ts"
+      "import": "./dist/schema/index.js",
+      "types": "./dist/schema/index.d.ts"
     },
     "./ontology": {
-      "import": "./dist/ontology.js",
-      "types": "./dist/ontology.d.ts"
+      "import": "./dist/ontology/index.js",
+      "types": "./dist/ontology/index.d.ts"
     },
     "./types": {
       "import": "./dist/types/index.js",
@@ -40,16 +40,16 @@
       "types": "./dist/interfaces/index.d.ts"
     },
     "./owl-gen": {
-      "import": "./dist/owl-gen.js",
-      "types": "./dist/owl-gen.d.ts"
+      "import": "./dist/owl-gen/index.js",
+      "types": "./dist/owl-gen/index.d.ts"
     },
     "./owl-gen-node": {
-      "import": "./dist/owl-gen-node.js",
-      "types": "./dist/owl-gen-node.d.ts"
+      "import": "./dist/owl-gen-node/index.js",
+      "types": "./dist/owl-gen-node/index.d.ts"
     },
     "./viz": {
-      "import": "./dist/viz.js",
-      "types": "./dist/viz.d.ts"
+      "import": "./dist/viz/index.js",
+      "types": "./dist/viz/index.d.ts"
     }
   },
   "scripts": {
@@ -119,6 +119,7 @@
     "@codemirror/lang-javascript": "^6.2.5",
     "@eslint/js": "^10.0.1",
     "@sinclair/typebox": "^0.34.49",
+    "@studnicky/eslint-config": "^5.0.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/json-schema": "^7.0.15",
     "@types/jsonld": "^1.5.15",

@@ -5,10 +5,10 @@ import type { LookupSchemaFnType } from '../types/LookupSchemaFnType.js';
 
 /** Options for `compileRefValidator`. */
 export type RefValidatorOptionsType = {
-  readonly 'context': SchemaCompilerValidatePlanContextType;
-  readonly 'formatRegistry': FormatRegistryInterface;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'ref': string | undefined;
+  'context': SchemaCompilerValidatePlanContextType;
+  'formatRegistry': FormatRegistryInterface;
+  'graph': SchemaGraphInterface;
+  'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
+  'lookupSchema': LookupSchemaFnType | undefined;
+  'ref': string | undefined;
 };

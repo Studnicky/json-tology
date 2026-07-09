@@ -11,7 +11,7 @@ import type { PrefixMapType } from '../../types/OwlImport.js';
 import { DataType } from '../data/DataType.js';
 import { LogScope } from '../data/LogScope.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import { SchemaGraphRelations } from './SchemaGraphRelations.js';
@@ -318,7 +318,9 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
 
   static resolvePointer(rootSchema: JsonSchemaType, pointer: string): JsonSchemaType {
-    return SchemaGraphSupport.resolveSchemaAtPointer(rootSchema, pointer);
+    const result = SchemaGraphSupport.resolveSchemaAtPointer(rootSchema, pointer);
+
+    return result;
   }
   private allRelationsCache: SchemaGraphRelationType[] | undefined = undefined;
   private readonly anchorMap = new Map<string, SchemaGraphNodeType>();
@@ -392,7 +394,9 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
 
   public child(node: SchemaGraphNodeType, key: string): SchemaGraphNodeType | undefined {
-    return this.childMap.get(node)?.get(key);
+    const result = this.childMap.get(node)?.get(key);
+
+    return result;
   }
 
   /**
@@ -409,15 +413,21 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
 
   public domainOf(node: SchemaGraphNodeType): SchemaGraphNodeType | undefined {
-    return this.domainMap.get(node);
+    const result = this.domainMap.get(node);
+
+    return result;
   }
 
   public embeddedNode(id: string): SchemaGraphNodeType | undefined {
-    return this.embeddedIdMap.get(id);
+    const result = this.embeddedIdMap.get(id);
+
+    return result;
   }
 
   public embeddedSchemaIds(): IterableIterator<string> {
-    return this.embeddedIdMap.keys();
+    const result = this.embeddedIdMap.keys();
+
+    return result;
   }
 
   public entries(node: SchemaGraphNodeType, key: string): Array<[string, SchemaGraphNodeType]> {
@@ -617,7 +627,9 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
 
   public node(schema: Record<string, unknown>): SchemaGraphNodeType | undefined {
-    return this.identityMap.get(schema);
+    const result = this.identityMap.get(schema);
+
+    return result;
   }
 
   private nodeForPointer(pointer: string): SchemaGraphNodeType {
@@ -626,7 +638,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     if (mapNode === undefined) {
       this.logger.debug(LogScope.format('SchemaGraph', 'nodeForPointer', `node not found for pointer "${pointer}"`));
       throw new GraphError(`Schema graph node not found for pointer: ${pointer}`, {
-        'code': GraphErrorCode.POINTER_NOT_FOUND,
+        'code': GRAPH_ERROR_CODE.POINTER_NOT_FOUND,
         pointer
       });
     }
@@ -684,7 +696,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     if (anchored === undefined) {
       this.logger.debug(LogScope.format('SchemaGraph', 'resolveFragment', `unknown schema anchor "#${fragment}"`));
       throw new GraphError(`Unknown schema anchor: #${fragment}`, {
-        'code': GraphErrorCode.ANCHOR_NOT_FOUND,
+        'code': GRAPH_ERROR_CODE.ANCHOR_NOT_FOUND,
         'pointer': fragment
       });
     }
@@ -710,7 +722,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     if (!pointer.startsWith('/')) {
       this.logger.debug(LogScope.format('SchemaGraph', 'resolvePointer', `invalid JSON Pointer "${pointer}"`));
       throw new GraphError(`Invalid JSON Pointer: ${pointer}`, {
-        'code': GraphErrorCode.POINTER_INVALID,
+        'code': GRAPH_ERROR_CODE.POINTER_INVALID,
         pointer
       });
     }
@@ -720,7 +732,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     if (resolved === undefined) {
       this.logger.debug(LogScope.format('SchemaGraph', 'resolvePointer', `pointer not found "${pointer}"`));
       throw new GraphError(`Pointer not found: ${pointer}`, {
-        'code': GraphErrorCode.POINTER_NOT_FOUND,
+        'code': GRAPH_ERROR_CODE.POINTER_NOT_FOUND,
         pointer
       });
     }
@@ -752,7 +764,9 @@ export class SchemaGraph implements SchemaGraphInterface {
     }
 
     const sem = SchemaGraphSupport.extractSemantics(this, node, (ref: string): SchemaGraphNodeType => {
-      return this.resolveLocalRef(ref);
+      const result = this.resolveLocalRef(ref);
+
+      return result;
     });
 
     this.semanticMap.set(node, sem);
@@ -821,7 +835,9 @@ export class SchemaGraph implements SchemaGraphInterface {
       indexedList
     ] of nodeIndexed) {
       indexedRecord[key] = indexedList.map((indexedNode: SchemaGraphNodeType): string => {
-        return indexedNode.pointer;
+        const result = indexedNode.pointer;
+
+        return result;
       });
     }
 
@@ -829,6 +845,8 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
 
   public validateStructure(): StructureWarningType[] {
-    return SchemaGraphSupport.validateGraphStructure(this.nodeMap);
+    const result = SchemaGraphSupport.validateGraphStructure(this.nodeMap);
+
+    return result;
   }
 }

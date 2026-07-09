@@ -24,18 +24,18 @@ export type DatatypeIndexType = Map<string, PredicateValuesIndexType>;
 
 /** A parsed property shape. */
 export type PropertyShapeIndexType = {
-  readonly 'bnodeId': string;
-  readonly 'constraints': PredicateValuesIndexType;
-  readonly 'isDeactivated': boolean;
-  readonly 'path': string;
+  'bnodeId': string;
+  'constraints': PredicateValuesIndexType;
+  'isDeactivated': boolean;
+  'path': string;
 };
 
 /** A parsed node shape. */
 export type NodeShapeIndexType = {
-  readonly 'constraints': PredicateValuesIndexType;
-  readonly 'isDeactivated': boolean;
-  readonly 'propertyShapes': PropertyShapeIndexType[];
-  readonly 'shapeIri': string;
+  'constraints': PredicateValuesIndexType;
+  'isDeactivated': boolean;
+  'propertyShapes': PropertyShapeIndexType[];
+  'shapeIri': string;
 };
 
 /**
@@ -46,24 +46,24 @@ export type NodeShapeIndexType = {
  * overflow the stack.
  */
 export type ValidationContextType = {
-  readonly 'dataIndex': SubjectPredicateIndexType;
-  readonly 'datatypeBySubjectPredicate': DatatypeIndexType;
-  readonly 'dataTypeIndex': TypeIndexType;
-  readonly 'resolveShape': (shapeId: string) => NodeShapeIndexType | undefined;
-  readonly 'shapeIndex': SubjectPredicateIndexType;
-  readonly 'visited': Set<string>;
+  'dataIndex': SubjectPredicateIndexType;
+  'datatypeBySubjectPredicate': DatatypeIndexType;
+  'dataTypeIndex': TypeIndexType;
+  'resolveShape': (shapeId: string) => NodeShapeIndexType | undefined;
+  'shapeIndex': SubjectPredicateIndexType;
+  'visited': Set<string>;
 };
 
 /** Arguments shared across all constraint evaluators. */
 export type EvalArgsType = {
-  readonly 'constraints': PredicateValuesIndexType;
-  readonly 'dataIndex': SubjectPredicateIndexType;
-  readonly 'datatypeBySubjectPredicate': DatatypeIndexType;
-  readonly 'dataTypeIndex': TypeIndexType;
-  readonly 'focusNode': string;
-  readonly 'path': string;
-  readonly 'shapeId': string;
-  readonly 'shapeIndex': SubjectPredicateIndexType;
-  readonly 'valueCount': number;
-  readonly 'values': string[];
+  'constraints': PredicateValuesIndexType;
+  'dataIndex': SubjectPredicateIndexType;
+  'datatypeBySubjectPredicate': DatatypeIndexType;
+  'dataTypeIndex': TypeIndexType;
+  'focusNode': string;
+  'path': string;
+  'shapeId': string;
+  'shapeIndex': SubjectPredicateIndexType;
+  'valueCount': number;
+  'values': string[];
 };

@@ -48,7 +48,7 @@ function cleanTmpDir(): void {
 }
 
 /** Wrap an array of schemas as a minimal OwlImportResultType for codegen. */
-function resultFromSchemas(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultType {
+function resultFromSchemas(schemas: Array<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultType {
   return {
     'characteristics': [],
     'differentFrom': [],

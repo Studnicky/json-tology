@@ -6,9 +6,9 @@ import type { TripleTermIndexType } from '../types/TripleTermIndexType.js';
 
 /** Shared lift execution context — avoids passing 5–9 args through recursive calls. */
 export type LiftContextType = {
-  readonly 'allGroups': SubjectGroupType;
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'registry': SchemaRegistryInterface;
-  readonly 'tripleTermIndex': TripleTermIndexType;
+  'allGroups': SubjectGroupType;
+  'curie': CurieInterface | undefined;
+  'predicateResolver': PredicateResolverFnType | undefined;
+  'registry': SchemaRegistryInterface;
+  'tripleTermIndex': TripleTermIndexType;
 };

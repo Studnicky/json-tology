@@ -5,8 +5,8 @@ import type { LiftContextType } from './LiftContextType.js';
 
 /** Arguments for lifting a single quad object value to a typed JS value. */
 export type LiftSingleValueArgsType = {
-  readonly 'ctx': LiftContextType;
-  readonly 'obj': QuadObjectType;
-  readonly 'parentGraph': SchemaGraphInterface;
-  readonly 'targetNode': SchemaGraphNodeType;
+  'ctx': LiftContextType;
+  'obj': QuadObjectType;
+  'parentGraph': SchemaGraphInterface;
+  'targetNode': SchemaGraphNodeType;
 };

@@ -6,10 +6,10 @@ import type { LookupSchemaFnType } from '../types/LookupSchemaFnType.js';
 
 /** Options for `compilePropertyValidators`. */
 export type PropertyValidatorsOptionsType = {
-  readonly 'configStrict': boolean | undefined;
-  readonly 'context': SchemaCompilerValidatePlanContextType;
-  readonly 'formatRegistry': FormatRegistryInterface;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
-  readonly 'propertyEntries': ReadonlyMap<string, SchemaGraphNodeType>;
+  'configStrict': boolean | undefined;
+  'context': SchemaCompilerValidatePlanContextType;
+  'formatRegistry': FormatRegistryInterface;
+  'graph': SchemaGraphInterface;
+  'lookupSchema': LookupSchemaFnType | undefined;
+  'propertyEntries': ReadonlyMap<string, SchemaGraphNodeType>;
 };

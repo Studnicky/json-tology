@@ -232,7 +232,7 @@ export const VOCABULARY_CONTENT = 'https://json-schema.org/draft/2020-12/vocab/c
  * ```ts
  * for (const [uri, required] of Object.entries(vocab)) {
  *   if (!SUPPORTED_VOCABULARIES.has(uri) && required) {
- *     throw new GraphError(GraphErrorCode.VOCABULARY_UNSUPPORTED, uri);
+ *     throw new GraphError(GRAPH_ERROR_CODE.VOCABULARY_UNSUPPORTED, uri);
  *   }
  * }
  * ```

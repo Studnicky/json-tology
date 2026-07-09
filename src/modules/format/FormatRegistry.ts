@@ -142,35 +142,6 @@ function isUriReference(value: string): boolean {
 // Browser-compatible IP and IDN helpers (no node:net / node:url)
 // ---------------------------------------------------------------------------
 
-function validateIPv4Octet(part: string): boolean {
-  if (part.length === 0 || part.length > IPV4_OCTET_MAX_LENGTH) {
-    return false;
-  }
-  if (part.length > 1 && part.startsWith('0')) {
-    return false;
-  }
-  if (!/^\d+$/u.test(part)) {
-    return false;
-  }
-
-  return Number(part) <= IPV4_OCTET_MAX_VALUE;
-}
-
-function isIPv4(value: string): boolean {
-  const parts = value.split('.');
-
-  if (parts.length !== IPV4_PARTS_COUNT) {
-    return false;
-  }
-  for (const part of parts) {
-    if (!validateIPv4Octet(part)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 function countIPv6Groups(value: string): number {
   const withoutDC = value.replaceAll('::', ':').replaceAll(/^:|:$/gu, '');
 
@@ -216,165 +187,12 @@ function isBase64Char(code: number): boolean {
   return isAlphanumeric(code) || code === 0x2B || code === 0x2F;
 }
 
-function validateDateDigitsAndSeparators(value: string, offset: number): boolean {
-  for (let i = 0; i < DATE_YEAR_DIGIT_COUNT; i++) {
-    if (!isDigit(codeAt(value, offset + i))) {
-      return false;
-    }
-  }
-  // '-'
-  if (codeAt(value, offset + DATE_YEAR_DIGIT_COUNT) !== 0x2D) {
-    return false;
-  }
-  if (!isDigit(codeAt(value, offset + DATE_MONTH_OFFSET_1)) || !isDigit(codeAt(value, offset + DATE_MONTH_OFFSET_2))) {
-    return false;
-  }
-  if (codeAt(value, offset + DATE_DAY_SEPARATOR_OFFSET) !== 0x2D) {
-    return false;
-  }
-
-  return isDigit(codeAt(value, offset + DATE_DAY_OFFSET_1)) && isDigit(codeAt(value, offset + DATE_DAY_OFFSET_2));
-}
-
-function validateDate(value: string, offset: number): boolean {
-  if (offset + DATE_STRING_LENGTH > value.length) {
-    return false;
-  }
-  if (!validateDateDigitsAndSeparators(value, offset)) {
-    return false;
-  }
-  const month
-    = (codeAt(value, offset + DATE_MONTH_OFFSET_1) - 0x30) * DECIMAL_RADIX
-    + (codeAt(value, offset + DATE_MONTH_OFFSET_2) - 0x30);
-  const day
-    = (codeAt(value, offset + DATE_DAY_OFFSET_1) - 0x30) * DECIMAL_RADIX
-    + (codeAt(value, offset + DATE_DAY_OFFSET_2) - 0x30);
-
-  return month >= 1 && month <= DATE_MONTH_MAX && day >= 1 && day <= DATE_DAY_MAX;
-}
-
-function validateTimeHM(value: string, offset: number): false | number {
-  const h1 = codeAt(value, offset); const
-    h2 = codeAt(value, offset + 1);
-
-  if (!isDigit(h1) || !isDigit(h2)) {
-    return false;
-  }
-  const hour = (h1 - 0x30) * DECIMAL_RADIX + (h2 - 0x30);
-
-  if (hour > TIME_HOUR_MAX) {
-    return false;
-  }
-  // ':'
-  if (codeAt(value, offset + 2) !== 0x3A) {
-    return false;
-  }
-  const m1 = codeAt(value, offset + 3); const
-    m2 = codeAt(value, offset + 4);
-
-  if (!isDigit(m1) || !isDigit(m2)) {
-    return false;
-  }
-  if ((m1 - 0x30) * DECIMAL_RADIX + (m2 - 0x30) > TIME_MINUTE_MAX) {
-    return false;
-  }
-
-  return (m1 - 0x30) * DECIMAL_RADIX + (m2 - 0x30);
-}
-
-function validateTimeSeconds(value: string, offset: number): boolean {
-  if (codeAt(value, offset + TIME_SECONDS_COLON_OFFSET) !== 0x3A) {
-    return false;
-  }
-  const s1 = codeAt(value, offset + TIME_SECONDS_DIGIT_1_OFFSET); const
-    s2 = codeAt(value, offset + TIME_SECONDS_DIGIT_2_OFFSET);
-
-  if (!isDigit(s1) || !isDigit(s2)) {
-    return false;
-  }
-
-  // 60 for leap second
-  return (s1 - 0x30) * DECIMAL_RADIX + (s2 - 0x30) <= TIME_SECOND_MAX;
-}
-
 function advancePastFractionalSeconds(value: string, pos: number): false | number {
   if (pos >= value.length || !isDigit(codeAt(value, pos))) {
     return false;
   }
 
   return consumeDigits(value, pos);
-}
-
-function validateTime(value: string, offset: number): boolean {
-  if (offset + TIME_BASE_LENGTH > value.length) {
-    return false;
-  }
-  if (validateTimeHM(value, offset) === false) {
-    return false;
-  }
-  if (!validateTimeSeconds(value, offset)) {
-    return false;
-  }
-  let pos = offset + TIME_BASE_LENGTH;
-
-  // fractional seconds
-  if (pos < value.length && codeAt(value, pos) === 0x2E) {
-    const advanced = advancePastFractionalSeconds(value, pos + 1);
-
-    if (advanced === false) {
-      return false;
-    }
-    pos = advanced;
-  }
-
-  // no timezone required for bare time check
-  return pos === value.length;
-}
-
-function validateBinary(value: string): boolean {
-  if (value.length === 0 || value.length % 2 !== 0) {
-    return false;
-  }
-
-  for (let i = 0; i < value.length; i++) {
-    if (!isHexChar(codeAt(value, i))) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function validateByte(value: string): boolean {
-  if (value.length === 0) {
-    return true;
-  }
-  if (value.length % BASE64_CHUNK_SIZE !== 0) {
-    return false;
-  }
-  const padStart = value.indexOf('=');
-  const contentEnd = padStart === -1 ? value.length : padStart;
-
-  for (let i = 0; i < contentEnd; i++) {
-    if (!isBase64Char(codeAt(value, i))) {
-      return false;
-    }
-  }
-  if (padStart !== -1) {
-    const padLen = value.length - padStart;
-
-    if (padLen > BASE64_MAX_PADDING) {
-      return false;
-    }
-    for (let i = padStart; i < value.length; i++) {
-      // '='
-      if (codeAt(value, i) !== 0x3D) {
-        return false;
-      }
-    }
-  }
-
-  return true;
 }
 
 const DAYS_IN_MONTH: readonly number[] = Object.freeze([
@@ -392,92 +210,6 @@ const DAYS_IN_MONTH: readonly number[] = Object.freeze([
   DAYS_IN_DEC
 ]);
 
-function validateDateFormat(value: string): boolean {
-  if (value.length !== DATE_STRING_LENGTH) {
-    return false;
-  }
-  if (!validateDate(value, 0)) {
-    return false;
-  }
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(5, 7));
-  const day = Number(value.slice(8, 10));
-  const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-  const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
-
-  if (maxDay === undefined) {
-    return false;
-  }
-
-  return day >= 1 && day <= maxDay;
-}
-
-function validateDateTime(value: string): boolean {
-  // Minimum RFC 3339 date-time: YYYY-MM-DDThh:mm:ssZ = 20 chars
-  if (value.length < DATE_STRING_LENGTH + 1 + TIME_BASE_LENGTH + 1) {
-    return false;
-  }
-  // Validate full-date portion (chars 0–9): digit pattern, separators, and basic month/day ranges
-  if (!validateDate(value, 0)) {
-    return false;
-  }
-  // Leap-year-aware day bounds — allocation-free digit extraction
-  const year = (codeAt(value, 0) - 0x30) * 1000
-    + (codeAt(value, 1) - 0x30) * 100
-    + (codeAt(value, 2) - 0x30) * 10
-    + (codeAt(value, 3) - 0x30);
-  const month = (codeAt(value, DATE_MONTH_OFFSET_1) - 0x30) * DECIMAL_RADIX
-    + (codeAt(value, DATE_MONTH_OFFSET_2) - 0x30);
-  const day = (codeAt(value, DATE_DAY_OFFSET_1) - 0x30) * DECIMAL_RADIX
-    + (codeAt(value, DATE_DAY_OFFSET_2) - 0x30);
-  const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-  const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
-
-  if (maxDay === undefined || day < 1 || day > maxDay) {
-    return false;
-  }
-  // RFC 3339 allows 'T' or 't' as the date-time separator (index 10)
-  const sep = codeAt(value, DATE_STRING_LENGTH);
-
-  if (sep !== 0x54 && sep !== 0x74) {
-    return false;
-  }
-  // Time portion begins immediately after the separator (index 11)
-  const timeStart = DATE_STRING_LENGTH + 1;
-
-  if (validateTimeHM(value, timeStart) === false) {
-    return false;
-  }
-  if (!validateTimeSeconds(value, timeStart)) {
-    return false;
-  }
-  // Advance past the base time (HH:MM:SS)
-  let pos = timeStart + TIME_BASE_LENGTH;
-
-  // Optional fractional seconds: '.' followed by one or more digits
-  if (pos < value.length && codeAt(value, pos) === 0x2E) {
-    const afterDot = pos + 1;
-
-    pos = advancePastFractionalSecondsInFormat(value, afterDot);
-    // Require at least one digit after '.'
-    if (pos === afterDot) {
-      return false;
-    }
-  }
-  // RFC 3339 requires a time offset — accept uppercase or lowercase 'Z'
-  if (pos >= value.length) {
-    return false;
-  }
-  const tzChar = codeAt(value, pos);
-
-  // Handle lowercase 'z' (RFC 3339 §5.6 allows it)
-  if (tzChar === 0x7A) {
-    return pos + 1 === value.length;
-  }
-
-  return validateTimeOffset(value, pos);
-}
-
 function consumeDigits(value: string, start: number): number {
   let cur = start;
 
@@ -488,257 +220,536 @@ function consumeDigits(value: string, start: number): number {
   return cur;
 }
 
-function validateFractionalSeconds(value: string, afterDot: number): false | number {
-  if (afterDot >= value.length || !isDigit(codeAt(value, afterDot))) {
-    return false;
-  }
-  const cur = consumeDigits(value, afterDot);
-
-  // 'S'
-  if (cur >= value.length || codeAt(value, cur) !== 0x53) {
-    return false;
-  }
-
-  return cur + 1;
-}
-
-function validateDurationUnit(value: string, pos: number, inTime: boolean): false | number {
-  const cur = consumeDigits(value, pos);
-
-  if (cur >= value.length) {
-    return false;
-  }
-  const unit = codeAt(value, cur);
-
-  // '.' for fractional seconds
-  if (unit === 0x2E && inTime) {
-    return validateFractionalSeconds(value, cur + 1);
-  }
-
-  return cur + 1;
-}
-
-function validateDuration(value: string): boolean {
-  // 'P'
-  if (value.length < 2 || codeAt(value, 0) !== 0x50) {
-    return false;
-  }
-  let pos = 1;
-  let hasContent = false;
-  let inTime = false;
-
-  while (pos < value.length) {
-    const charCode = codeAt(value, pos);
-
-    // 'T'
-    if (charCode === 0x54 && !inTime) {
-      inTime = true;
-      pos++;
-      continue;
-    }
-    if (!isDigit(charCode)) {
-      return false;
-    }
-    const next = validateDurationUnit(value, pos, inTime);
-
-    if (next === false) {
-      return false;
-    }
-    pos = next;
-    hasContent = true;
-  }
-
-  return hasContent;
-}
-
-function validateEmail(value: string): boolean {
-  const at = value.indexOf('@');
-
-  if (at < 1 || at === value.length - 1) {
-    return false;
-  }
-  const dot = value.indexOf('.', at + 2);
-
-  if (dot < 0 || dot === value.length - 1) {
-    return false;
-  }
-  for (let i = 0; i < value.length; i++) {
-    if (codeAt(value, i) <= 0x20) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function validateIdnEmail(value: string): boolean {
-  const at = value.lastIndexOf('@');
-
-  if (at < 1 || at === value.length - 1) {
-    return false;
-  }
-  for (let i = 0; i < value.length; i++) {
-    const charCode = codeAt(value, i);
-
-    // whitespace or duplicate @
-    if (charCode <= 0x20 || (charCode === 0x40 && i !== at)) {
-      return false;
-    }
-  }
-  const domain = value.slice(at + 1);
-  const ascii = domainToAscii(domain);
-
-  return ascii !== null && ascii.length > 0;
-}
-
-function validateJsonPointer(value: string): boolean {
-  if (value.length === 0) {
-    return true;
-  }
-  // '/'
-  if (codeAt(value, 0) !== 0x2F) {
-    return false;
-  }
-
-  for (let i = 1; i < value.length; i++) {
-    // '~'
-    if (codeAt(value, i) === 0x7E) {
-      i++;
-      if (i >= value.length) {
-        return false;
-      }
-      const next = codeAt(value, i);
-
-      // must be '0' or '1'
-      if (next !== 0x30 && next !== 0x31) {
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
 function advancePastFractionalSecondsInFormat(value: string, startPos: number): number {
-  return consumeDigits(value, startPos);
+  const result = consumeDigits(value, startPos);
+
+  return result;
 }
 
-function validateTimeOffset(value: string, pos: number): boolean {
-  const tzChar = codeAt(value, pos);
+/**
+ * String-parsing predicates behind the built-in `format` validators.
+ *
+ * Grouped as a static-method-only class so every low-level string/date/uuid
+ * parser used to build {@link STRING_FORMAT_VALIDATORS} lives under one
+ * cohesive internal namespace rather than as scattered module-scope functions.
+ */
+class FormatValidators {
+  static binary(value: string): boolean {
+    if (value.length === 0 || value.length % 2 !== 0) {
+      return false;
+    }
 
-  // 'Z'
-  if (tzChar === 0x5A) {
-    return pos + 1 === value.length;
-  }
-  // '+' or '-'
-  if (tzChar !== 0x2B && tzChar !== 0x2D) {
-    return false;
-  }
-  // +HH:MM
-  if (pos + TIME_ZONE_OFFSET_LENGTH !== value.length) {
-    return false;
-  }
-  if (!isDigit(codeAt(value, pos + TIME_OFFSET_HOUR1)) || !isDigit(codeAt(value, pos + TIME_OFFSET_HOUR2))) {
-    return false;
-  }
-  if (codeAt(value, pos + TIME_OFFSET_COLON) !== 0x3A) {
-    return false;
-  }
+    for (let i = 0; i < value.length; i++) {
+      if (!isHexChar(codeAt(value, i))) {
+        return false;
+      }
+    }
 
-  return isDigit(codeAt(value, pos + TIME_OFFSET_MIN1)) && isDigit(codeAt(value, pos + TIME_OFFSET_MIN2));
-}
-
-function validateTimeFormat(value: string): boolean {
-  if (value.length < TIME_BASE_LENGTH) {
-    return false;
-  }
-  if (!validateTime(value, 0)) {
-    return false;
-  }
-  let pos = TIME_BASE_LENGTH;
-
-  // skip fractional seconds
-  if (pos < value.length && codeAt(value, pos) === 0x2E) {
-    pos = advancePastFractionalSecondsInFormat(value, pos + 1);
-  }
-  // no timezone is valid
-  if (pos === value.length) {
     return true;
   }
 
-  return validateTimeOffset(value, pos);
+  static byte(value: string): boolean {
+    if (value.length === 0) {
+      return true;
+    }
+    if (value.length % BASE64_CHUNK_SIZE !== 0) {
+      return false;
+    }
+    const padStart = value.indexOf('=');
+    const contentEnd = padStart === -1 ? value.length : padStart;
+
+    for (let i = 0; i < contentEnd; i++) {
+      if (!isBase64Char(codeAt(value, i))) {
+        return false;
+      }
+    }
+    if (padStart !== -1) {
+      const padLen = value.length - padStart;
+
+      if (padLen > BASE64_MAX_PADDING) {
+        return false;
+      }
+      for (let i = padStart; i < value.length; i++) {
+        // '='
+        if (codeAt(value, i) !== 0x3D) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  static date(value: string, offset: number): boolean {
+    if (offset + DATE_STRING_LENGTH > value.length) {
+      return false;
+    }
+    if (!FormatValidators.dateDigitsAndSeparators(value, offset)) {
+      return false;
+    }
+    const month
+      = (codeAt(value, offset + DATE_MONTH_OFFSET_1) - 0x30) * DECIMAL_RADIX
+      + (codeAt(value, offset + DATE_MONTH_OFFSET_2) - 0x30);
+    const day
+      = (codeAt(value, offset + DATE_DAY_OFFSET_1) - 0x30) * DECIMAL_RADIX
+      + (codeAt(value, offset + DATE_DAY_OFFSET_2) - 0x30);
+
+    return month >= 1 && month <= DATE_MONTH_MAX && day >= 1 && day <= DATE_DAY_MAX;
+  }
+
+  static dateDigitsAndSeparators(value: string, offset: number): boolean {
+    for (let i = 0; i < DATE_YEAR_DIGIT_COUNT; i++) {
+      if (!isDigit(codeAt(value, offset + i))) {
+        return false;
+      }
+    }
+    // '-'
+    if (codeAt(value, offset + DATE_YEAR_DIGIT_COUNT) !== 0x2D) {
+      return false;
+    }
+    if (!isDigit(codeAt(value, offset + DATE_MONTH_OFFSET_1)) || !isDigit(codeAt(value, offset + DATE_MONTH_OFFSET_2))) {
+      return false;
+    }
+    if (codeAt(value, offset + DATE_DAY_SEPARATOR_OFFSET) !== 0x2D) {
+      return false;
+    }
+
+    return isDigit(codeAt(value, offset + DATE_DAY_OFFSET_1)) && isDigit(codeAt(value, offset + DATE_DAY_OFFSET_2));
+  }
+
+  static dateFormat(value: string): boolean {
+    if (value.length !== DATE_STRING_LENGTH) {
+      return false;
+    }
+    if (!FormatValidators.date(value, 0)) {
+      return false;
+    }
+    const year = Number(value.slice(0, 4));
+    const month = Number(value.slice(5, 7));
+    const day = Number(value.slice(8, 10));
+    const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
+
+    if (maxDay === undefined) {
+      return false;
+    }
+
+    return day >= 1 && day <= maxDay;
+  }
+
+  static dateTime(value: string): boolean {
+    // Minimum RFC 3339 date-time: YYYY-MM-DDThh:mm:ssZ = 20 chars
+    if (value.length < DATE_STRING_LENGTH + 1 + TIME_BASE_LENGTH + 1) {
+      return false;
+    }
+    // Validate full-date portion (chars 0–9): digit pattern, separators, and basic month/day ranges
+    if (!FormatValidators.date(value, 0)) {
+      return false;
+    }
+    // Leap-year-aware day bounds — allocation-free digit extraction
+    const year = (codeAt(value, 0) - 0x30) * 1000
+      + (codeAt(value, 1) - 0x30) * 100
+      + (codeAt(value, 2) - 0x30) * 10
+      + (codeAt(value, 3) - 0x30);
+    const month = (codeAt(value, DATE_MONTH_OFFSET_1) - 0x30) * DECIMAL_RADIX
+      + (codeAt(value, DATE_MONTH_OFFSET_2) - 0x30);
+    const day = (codeAt(value, DATE_DAY_OFFSET_1) - 0x30) * DECIMAL_RADIX
+      + (codeAt(value, DATE_DAY_OFFSET_2) - 0x30);
+    const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
+
+    if (maxDay === undefined || day < 1 || day > maxDay) {
+      return false;
+    }
+    // RFC 3339 allows 'T' or 't' as the date-time separator (index 10)
+    const sep = codeAt(value, DATE_STRING_LENGTH);
+
+    if (sep !== 0x54 && sep !== 0x74) {
+      return false;
+    }
+    // Time portion begins immediately after the separator (index 11)
+    const timeStart = DATE_STRING_LENGTH + 1;
+
+    if (FormatValidators.timeHM(value, timeStart) === false) {
+      return false;
+    }
+    if (!FormatValidators.timeSeconds(value, timeStart)) {
+      return false;
+    }
+    // Advance past the base time (HH:MM:SS)
+    let pos = timeStart + TIME_BASE_LENGTH;
+
+    // Optional fractional seconds: '.' followed by one or more digits
+    if (pos < value.length && codeAt(value, pos) === 0x2E) {
+      const afterDot = pos + 1;
+
+      pos = advancePastFractionalSecondsInFormat(value, afterDot);
+      // Require at least one digit after '.'
+      if (pos === afterDot) {
+        return false;
+      }
+    }
+    // RFC 3339 requires a time offset — accept uppercase or lowercase 'Z'
+    if (pos >= value.length) {
+      return false;
+    }
+    const tzChar = codeAt(value, pos);
+
+    // Handle lowercase 'z' (RFC 3339 §5.6 allows it)
+    if (tzChar === 0x7A) {
+      return pos + 1 === value.length;
+    }
+
+    return FormatValidators.timeOffset(value, pos);
+  }
+
+  static duration(value: string): boolean {
+    // 'P'
+    if (value.length < 2 || codeAt(value, 0) !== 0x50) {
+      return false;
+    }
+    let pos = 1;
+    let hasContent = false;
+    let inTime = false;
+
+    while (pos < value.length) {
+      const charCode = codeAt(value, pos);
+
+      // 'T'
+      if (charCode === 0x54 && !inTime) {
+        inTime = true;
+        pos++;
+        continue;
+      }
+      if (!isDigit(charCode)) {
+        return false;
+      }
+      const next = FormatValidators.durationUnit(value, pos, inTime);
+
+      if (next === false) {
+        return false;
+      }
+      pos = next;
+      hasContent = true;
+    }
+
+    return hasContent;
+  }
+
+  static durationUnit(value: string, pos: number, inTime: boolean): false | number {
+    const cur = consumeDigits(value, pos);
+
+    if (cur >= value.length) {
+      return false;
+    }
+    const unit = codeAt(value, cur);
+
+    // '.' for fractional seconds
+    if (unit === 0x2E && inTime) {
+      return FormatValidators.fractionalSeconds(value, cur + 1);
+    }
+
+    return cur + 1;
+  }
+
+  static email(value: string): boolean {
+    const at = value.indexOf('@');
+
+    if (at < 1 || at === value.length - 1) {
+      return false;
+    }
+    const dot = value.indexOf('.', at + 2);
+
+    if (dot < 0 || dot === value.length - 1) {
+      return false;
+    }
+    for (let i = 0; i < value.length; i++) {
+      if (codeAt(value, i) <= 0x20) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  static fractionalSeconds(value: string, afterDot: number): false | number {
+    if (afterDot >= value.length || !isDigit(codeAt(value, afterDot))) {
+      return false;
+    }
+    const cur = consumeDigits(value, afterDot);
+
+    // 'S'
+    if (cur >= value.length || codeAt(value, cur) !== 0x53) {
+      return false;
+    }
+
+    return cur + 1;
+  }
+
+  static idnEmail(value: string): boolean {
+    const at = value.lastIndexOf('@');
+
+    if (at < 1 || at === value.length - 1) {
+      return false;
+    }
+    for (let i = 0; i < value.length; i++) {
+      const charCode = codeAt(value, i);
+
+      // whitespace or duplicate @
+      if (charCode <= 0x20 || (charCode === 0x40 && i !== at)) {
+        return false;
+      }
+    }
+    const domain = value.slice(at + 1);
+    const ascii = domainToAscii(domain);
+
+    return ascii !== null && ascii.length > 0;
+  }
+
+  static ipv4Octet(part: string): boolean {
+    if (part.length === 0 || part.length > IPV4_OCTET_MAX_LENGTH) {
+      return false;
+    }
+    if (part.length > 1 && part.startsWith('0')) {
+      return false;
+    }
+    if (!/^\d+$/u.test(part)) {
+      return false;
+    }
+
+    return Number(part) <= IPV4_OCTET_MAX_VALUE;
+  }
+
+  static jsonPointer(value: string): boolean {
+    if (value.length === 0) {
+      return true;
+    }
+    // '/'
+    if (codeAt(value, 0) !== 0x2F) {
+      return false;
+    }
+
+    for (let i = 1; i < value.length; i++) {
+      // '~'
+      if (codeAt(value, i) === 0x7E) {
+        i++;
+        if (i >= value.length) {
+          return false;
+        }
+        const next = codeAt(value, i);
+
+        // must be '0' or '1'
+        if (next !== 0x30 && next !== 0x31) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  static regex(value: string): boolean {
+    try {
+      new RegExp(value, 'u');
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  static time(value: string, offset: number): boolean {
+    if (offset + TIME_BASE_LENGTH > value.length) {
+      return false;
+    }
+    if (FormatValidators.timeHM(value, offset) === false) {
+      return false;
+    }
+    if (!FormatValidators.timeSeconds(value, offset)) {
+      return false;
+    }
+    let pos = offset + TIME_BASE_LENGTH;
+
+    // fractional seconds
+    if (pos < value.length && codeAt(value, pos) === 0x2E) {
+      const advanced = advancePastFractionalSeconds(value, pos + 1);
+
+      if (advanced === false) {
+        return false;
+      }
+      pos = advanced;
+    }
+
+    // no timezone required for bare time check
+    return pos === value.length;
+  }
+
+  static timeFormat(value: string): boolean {
+    if (value.length < TIME_BASE_LENGTH) {
+      return false;
+    }
+    if (!FormatValidators.time(value, 0)) {
+      return false;
+    }
+    let pos = TIME_BASE_LENGTH;
+
+    // skip fractional seconds
+    if (pos < value.length && codeAt(value, pos) === 0x2E) {
+      pos = advancePastFractionalSecondsInFormat(value, pos + 1);
+    }
+    // no timezone is valid
+    if (pos === value.length) {
+      return true;
+    }
+
+    return FormatValidators.timeOffset(value, pos);
+  }
+
+  static timeHM(value: string, offset: number): false | number {
+    const h1 = codeAt(value, offset); const
+      h2 = codeAt(value, offset + 1);
+
+    if (!isDigit(h1) || !isDigit(h2)) {
+      return false;
+    }
+    const hour = (h1 - 0x30) * DECIMAL_RADIX + (h2 - 0x30);
+
+    if (hour > TIME_HOUR_MAX) {
+      return false;
+    }
+    // ':'
+    if (codeAt(value, offset + 2) !== 0x3A) {
+      return false;
+    }
+    const m1 = codeAt(value, offset + 3); const
+      m2 = codeAt(value, offset + 4);
+
+    if (!isDigit(m1) || !isDigit(m2)) {
+      return false;
+    }
+    if ((m1 - 0x30) * DECIMAL_RADIX + (m2 - 0x30) > TIME_MINUTE_MAX) {
+      return false;
+    }
+
+    return (m1 - 0x30) * DECIMAL_RADIX + (m2 - 0x30);
+  }
+
+  static timeOffset(value: string, pos: number): boolean {
+    const tzChar = codeAt(value, pos);
+
+    // 'Z'
+    if (tzChar === 0x5A) {
+      return pos + 1 === value.length;
+    }
+    // '+' or '-'
+    if (tzChar !== 0x2B && tzChar !== 0x2D) {
+      return false;
+    }
+    // +HH:MM
+    if (pos + TIME_ZONE_OFFSET_LENGTH !== value.length) {
+      return false;
+    }
+    if (!isDigit(codeAt(value, pos + TIME_OFFSET_HOUR1)) || !isDigit(codeAt(value, pos + TIME_OFFSET_HOUR2))) {
+      return false;
+    }
+    if (codeAt(value, pos + TIME_OFFSET_COLON) !== 0x3A) {
+      return false;
+    }
+
+    return isDigit(codeAt(value, pos + TIME_OFFSET_MIN1)) && isDigit(codeAt(value, pos + TIME_OFFSET_MIN2));
+  }
+
+  static timeSeconds(value: string, offset: number): boolean {
+    if (codeAt(value, offset + TIME_SECONDS_COLON_OFFSET) !== 0x3A) {
+      return false;
+    }
+    const s1 = codeAt(value, offset + TIME_SECONDS_DIGIT_1_OFFSET); const
+      s2 = codeAt(value, offset + TIME_SECONDS_DIGIT_2_OFFSET);
+
+    if (!isDigit(s1) || !isDigit(s2)) {
+      return false;
+    }
+
+    // 60 for leap second
+    return (s1 - 0x30) * DECIMAL_RADIX + (s2 - 0x30) <= TIME_SECOND_MAX;
+  }
+
+  static uuid(value: string): boolean {
+    if (value.length !== UUID_STRING_LENGTH) {
+      return false;
+    }
+    if (codeAt(value, UUID_DASH_POS_1) !== 0x2D || codeAt(value, UUID_DASH_POS_2) !== 0x2D
+      || codeAt(value, UUID_DASH_POS_3) !== 0x2D || codeAt(value, UUID_DASH_POS_4) !== 0x2D) {
+      return false;
+    }
+    if (!FormatValidators.uuidVersion(value)) {
+      return false;
+    }
+    if (!FormatValidators.uuidVariant(value)) {
+      return false;
+    }
+
+    return FormatValidators.uuidHexPositions(value);
+  }
+
+  static uuidHexPositions(value: string): boolean {
+    for (let i = 0; i < UUID_STRING_LENGTH; i++) {
+      if (i === UUID_DASH_POS_1 || i === UUID_DASH_POS_2 || i === UUID_DASH_POS_3 || i === UUID_DASH_POS_4) {
+        continue;
+      }
+      if (!isHexChar(codeAt(value, i))) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  static uuidVariant(value: string): boolean {
+    const variant = codeAt(value, UUID_VARIANT_POS);
+
+    return (variant >= 0x38 && variant <= 0x39)
+      || variant === 0x61 || variant === 0x62
+      || variant === 0x41 || variant === 0x42;
+  }
+
+  static uuidVersion(value: string): boolean {
+    const version = codeAt(value, UUID_VERSION_POS);
+
+    return version >= 0x31 && version <= 0x38;
+  }
 }
 
-function validateUuidHexPositions(value: string): boolean {
-  for (let i = 0; i < UUID_STRING_LENGTH; i++) {
-    if (i === UUID_DASH_POS_1 || i === UUID_DASH_POS_2 || i === UUID_DASH_POS_3 || i === UUID_DASH_POS_4) {
-      continue;
-    }
-    if (!isHexChar(codeAt(value, i))) {
+function isIPv4(value: string): boolean {
+  const parts = value.split('.');
+
+  if (parts.length !== IPV4_PARTS_COUNT) {
+    return false;
+  }
+  for (const part of parts) {
+    if (!FormatValidators.ipv4Octet(part)) {
       return false;
     }
   }
 
   return true;
-}
-
-function validateUuidVersion(value: string): boolean {
-  const version = codeAt(value, UUID_VERSION_POS);
-
-  return version >= 0x31 && version <= 0x38;
-}
-
-function validateUuidVariant(value: string): boolean {
-  const variant = codeAt(value, UUID_VARIANT_POS);
-
-  return (variant >= 0x38 && variant <= 0x39)
-    || variant === 0x61 || variant === 0x62
-    || variant === 0x41 || variant === 0x42;
-}
-
-function validateUuid(value: string): boolean {
-  if (value.length !== UUID_STRING_LENGTH) {
-    return false;
-  }
-  if (codeAt(value, UUID_DASH_POS_1) !== 0x2D || codeAt(value, UUID_DASH_POS_2) !== 0x2D
-    || codeAt(value, UUID_DASH_POS_3) !== 0x2D || codeAt(value, UUID_DASH_POS_4) !== 0x2D) {
-    return false;
-  }
-  if (!validateUuidVersion(value)) {
-    return false;
-  }
-  if (!validateUuidVariant(value)) {
-    return false;
-  }
-
-  return validateUuidHexPositions(value);
-}
-
-function validateRegex(value: string): boolean {
-  try {
-    new RegExp(value, 'u');
-
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 const STRING_FORMAT_VALIDATORS: Record<string, FormatPredicateType> = {
   'binary': (value: unknown): boolean => {
-    return typeof value === 'string' && validateBinary(value);
+    return typeof value === 'string' && FormatValidators.binary(value);
   },
   'byte': (value: unknown): boolean => {
-    return typeof value === 'string' && validateByte(value);
+    return typeof value === 'string' && FormatValidators.byte(value);
   },
   'date': (value: unknown): boolean => {
-    return typeof value === 'string' && validateDateFormat(value);
+    return typeof value === 'string' && FormatValidators.dateFormat(value);
   },
   'duration': (value: unknown): boolean => {
-    return typeof value === 'string' && validateDuration(value);
+    return typeof value === 'string' && FormatValidators.duration(value);
   },
   'email': (value: unknown): boolean => {
-    return typeof value === 'string' && validateEmail(value);
+    return typeof value === 'string' && FormatValidators.email(value);
   },
   'hostname': (value: unknown): boolean => {
     return typeof value === 'string' && isAsciiHostname(value);
@@ -753,24 +764,24 @@ const STRING_FORMAT_VALIDATORS: Record<string, FormatPredicateType> = {
     return typeof value === 'string' && isUriLike(value);
   },
   'regex': (value: unknown): boolean => {
-    return typeof value === 'string' && validateRegex(value);
+    return typeof value === 'string' && FormatValidators.regex(value);
   },
   'time': (value: unknown): boolean => {
-    return typeof value === 'string' && validateTimeFormat(value);
+    return typeof value === 'string' && FormatValidators.timeFormat(value);
   },
   'uri': (value: unknown): boolean => {
     return typeof value === 'string' && isUriLike(value);
   },
   'uuid': (value: unknown): boolean => {
-    return typeof value === 'string' && validateUuid(value);
+    return typeof value === 'string' && FormatValidators.uuid(value);
   }
 };
 
 STRING_FORMAT_VALIDATORS['date-time'] = (value: unknown): boolean => {
-  return typeof value === 'string' && validateDateTime(value);
+  return typeof value === 'string' && FormatValidators.dateTime(value);
 };
 STRING_FORMAT_VALIDATORS['idn-email'] = (value: unknown): boolean => {
-  return typeof value === 'string' && validateIdnEmail(value);
+  return typeof value === 'string' && FormatValidators.idnEmail(value);
 };
 STRING_FORMAT_VALIDATORS['idn-hostname'] = (value: unknown): boolean => {
   if (typeof value !== 'string') {
@@ -784,7 +795,7 @@ STRING_FORMAT_VALIDATORS['iri-reference'] = (value: unknown): boolean => {
   return typeof value === 'string' && isUriReference(value);
 };
 STRING_FORMAT_VALIDATORS['json-pointer'] = (value: unknown): boolean => {
-  return typeof value === 'string' && validateJsonPointer(value);
+  return typeof value === 'string' && FormatValidators.jsonPointer(value);
 };
 STRING_FORMAT_VALIDATORS['uri-reference'] = (value: unknown): boolean => {
   return typeof value === 'string' && isUriReference(value);
@@ -884,7 +895,9 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @group Format
    */
   static isTrustedFormatPredicate(fn: FormatPredicateType): boolean {
-    return Object.hasOwn(fn, TRUSTED_MARKER);
+    const result = Object.hasOwn(fn, TRUSTED_MARKER);
+
+    return result;
   }
 
   private readonly validators = new Map<string, FormatPredicateType>();
@@ -896,7 +909,9 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @returns Validator function, or undefined if the format is not registered
    */
   get(name: string): FormatPredicateType | undefined {
-    return this.validators.get(name);
+    const result = this.validators.get(name);
+
+    return result;
   }
 
   /**
@@ -906,7 +921,9 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @returns True if the format is registered
    */
   has(name: string): boolean {
-    return this.validators.has(name);
+    const result = this.validators.has(name);
+
+    return result;
   }
 
   /**
@@ -925,16 +942,14 @@ export class FormatRegistry implements FormatRegistryInterface {
   /**
    * Register a built-in (trusted) format validator.
    *
-   * Brands the function with a non-enumerable {@link TRUSTED_MARKER} property so the
+   * Brands the function with a {@link TRUSTED_MARKER} property so the
    * hot-path executor can call it without a try/catch guard.
    */
   private setBuiltin(name: string, validator: FormatPredicateType): void {
-    Object.defineProperty(validator, TRUSTED_MARKER, {
-      'configurable': false,
-      'enumerable': false,
-      'value': true,
-      'writable': false
-    });
+    const marker: Record<string, boolean> = {};
+
+    marker[TRUSTED_MARKER] = true;
+    Object.assign(validator, marker);
     this.validators.set(name, validator);
   }
 }

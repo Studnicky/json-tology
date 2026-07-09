@@ -10,9 +10,7 @@ import type { JsonSchemaType } from '../../types/Schema.js';
 import type { LoaderType } from '../../types/Loader.js';
 import type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptionsType.js';
 import { SchemaLoadError } from '../../errors/SchemaLoadError.js';
-import { SchemaLoadErrorCode } from '../../constants/ERROR_CODES.js';
-
-export type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptionsType.js';
+import { SCHEMA_LOAD_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 
 /** Lowest HTTP status treated as a transient (retryable) server-side failure. */
 const HTTP_SERVER_ERROR_MIN = 500;
@@ -127,7 +125,7 @@ export const Loaders = {
       // carries the full IRI with no status noise.
       if (response.status >= HTTP_SERVER_ERROR_MIN) {
         throw new SchemaLoadError(`HTTP ${response.status} loading ${url}`, {
-          'code': SchemaLoadErrorCode.LOAD_FAILED,
+          'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
           'file': url,
           'reason': 'fetch-failed',
           'retryable': true,
@@ -152,7 +150,9 @@ export const Loaders = {
       : new Map(Object.entries(map));
 
     return (iri: string): Promise<JsonSchemaType | null> => {
-      return Promise.resolve(lookup.get(iri) ?? null);
+      const result = Promise.resolve(lookup.get(iri) ?? null);
+
+      return result;
     };
   }
 } as const;

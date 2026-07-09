@@ -19,10 +19,10 @@ export type ShaclValidationReportType = {
    * Whether the data graph conforms to the shapes graph.
    * `true` iff `results` contains no entries with `resultSeverity === 'Violation'`.
    */
-  readonly 'conforms': boolean;
+  'conforms': boolean;
   /**
    * All validation results produced during shape evaluation.
    * Empty when the data conforms.
    */
-  readonly 'results': readonly ShaclValidationResultType[];
+  'results': ShaclValidationResultType[];
 };

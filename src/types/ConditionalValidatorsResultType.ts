@@ -24,7 +24,7 @@ import type { OptionalValidateWithErrorsFnType } from '../types/Validation.js';
  * @group Validation
  */
 export type ConditionalValidatorsResultType = {
-  readonly 'elseValidator': OptionalValidateWithErrorsFnType;
-  readonly 'ifValidator': OptionalValidateWithErrorsFnType;
-  readonly 'thenValidator': OptionalValidateWithErrorsFnType;
+  'elseValidator': OptionalValidateWithErrorsFnType;
+  'ifValidator': OptionalValidateWithErrorsFnType;
+  'thenValidator': OptionalValidateWithErrorsFnType;
 };

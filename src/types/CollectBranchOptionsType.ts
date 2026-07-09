@@ -4,7 +4,7 @@ import type { BranchScanStateType } from './BranchScanStateType.js';
 
 /** Options for `collectBranchPropertyNames`. */
 export type CollectBranchOptionsType = {
-  readonly 'branchNode': SchemaGraphNodeType;
-  readonly 'scanState': BranchScanStateType;
-  readonly 'startGraph': SchemaGraphInterface;
+  'branchNode': SchemaGraphNodeType;
+  'scanState': BranchScanStateType;
+  'startGraph': SchemaGraphInterface;
 };

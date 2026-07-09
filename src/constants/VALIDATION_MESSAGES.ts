@@ -30,7 +30,9 @@
 export const VALIDATION_MESSAGES = {
   /** `additionalProperties: false` — the key is included at the call site. */
   'additionalProperties': (key: string): string => {
-    return `must NOT have additional property '${key}'`;
+    const result = `must NOT have additional property '${key}'`;
+
+    return result;
   },
 
   /** `anyOf` — value did not match any schema in the list. */
@@ -38,12 +40,16 @@ export const VALIDATION_MESSAGES = {
 
   /** `const` — value did not equal the required constant. */
   'const': (constValue: unknown): string => {
-    return `must be ${JSON.stringify(constValue)}`;
+    const result = `must be ${JSON.stringify(constValue)}`;
+
+    return result;
   },
 
   /** `contains` (min) — fewer than minContains items matched the contains schema. */
   'contains': (minContains: number): string => {
-    return `must contain at least ${minContains} matching items`;
+    const result = `must contain at least ${minContains} matching items`;
+
+    return result;
   },
 
   /** `contains` — no items matched and neither minContains nor maxContains is set. */
@@ -51,17 +57,23 @@ export const VALIDATION_MESSAGES = {
 
   /** `contentEncoding` — string did not decode under the named encoding. */
   'contentEncoding': (encoding: string): string => {
-    return `must be valid ${encoding}-encoded content`;
+    const result = `must be valid ${encoding}-encoded content`;
+
+    return result;
   },
 
   /** `contentMediaType` — decoded content did not parse as the named media type. */
   'contentMediaType': (mediaType: string): string => {
-    return `must be valid ${mediaType} content`;
+    const result = `must be valid ${mediaType} content`;
+
+    return result;
   },
 
   /** `dependentRequired` — a dependency property is missing. */
   'dependentRequired': (dependency: string, key: string): string => {
-    return `must have property '${dependency}' when '${key}' is present`;
+    const result = `must have property '${dependency}' when '${key}' is present`;
+
+    return result;
   },
 
   /** `enum` — value was not in the allowed set. */
@@ -69,12 +81,16 @@ export const VALIDATION_MESSAGES = {
 
   /** `exclusiveMaximum` — value equals or exceeds the exclusive upper bound. */
   'exclusiveMaximum': (limit: number): string => {
-    return `must be < ${limit}`;
+    const result = `must be < ${limit}`;
+
+    return result;
   },
 
   /** `exclusiveMinimum` — value equals or goes below the exclusive lower bound. */
   'exclusiveMinimum': (limit: number): string => {
-    return `must be > ${limit}`;
+    const result = `must be > ${limit}`;
+
+    return result;
   },
 
   /** `false` schema — the schema is the literal `false`. */
@@ -82,7 +98,9 @@ export const VALIDATION_MESSAGES = {
 
   /** `format` — value did not satisfy the registered format validator. */
   'format': (format: string): string => {
-    return `must match format "${format}"`;
+    const result = `must match format "${format}"`;
+
+    return result;
   },
 
   /** `items: false` after prefixItems — extra items beyond the tuple are forbidden. */
@@ -90,57 +108,79 @@ export const VALIDATION_MESSAGES = {
 
   /** Custom keyword — value failed a user-defined keyword validator. */
   'keyword': (kw: string): string => {
-    return `must pass "${kw}" validation`;
+    const result = `must pass "${kw}" validation`;
+
+    return result;
   },
 
   /** `maxContains` — more than maxContains items matched the contains schema. */
   'maxContains': (maxContains: number): string => {
-    return `must contain at most ${maxContains} matching items`;
+    const result = `must contain at most ${maxContains} matching items`;
+
+    return result;
   },
 
   /** `maximum` — value exceeds the inclusive upper bound. */
   'maximum': (limit: number): string => {
-    return `must be <= ${limit}`;
+    const result = `must be <= ${limit}`;
+
+    return result;
   },
 
   /** `maxItems` — array length exceeds the upper bound. */
   'maxItems': (limit: number): string => {
-    return `must have at most ${limit} items`;
+    const result = `must have at most ${limit} items`;
+
+    return result;
   },
 
   /** `maxLength` — string length exceeds the upper bound. */
   'maxLength': (limit: number): string => {
-    return `must NOT have more than ${limit} characters`;
+    const result = `must NOT have more than ${limit} characters`;
+
+    return result;
   },
 
   /** `maxProperties` — object has more properties than allowed. */
   'maxProperties': (limit: number): string => {
-    return `must NOT have more than ${limit} properties`;
+    const result = `must NOT have more than ${limit} properties`;
+
+    return result;
   },
 
   /** `minimum` — value is below the inclusive lower bound. */
   'minimum': (limit: number): string => {
-    return `must be >= ${limit}`;
+    const result = `must be >= ${limit}`;
+
+    return result;
   },
 
   /** `minItems` — array length is below the lower bound. */
   'minItems': (limit: number): string => {
-    return `must have at least ${limit} items`;
+    const result = `must have at least ${limit} items`;
+
+    return result;
   },
 
   /** `minLength` — string length is below the lower bound. */
   'minLength': (limit: number): string => {
-    return `must NOT have fewer than ${limit} characters`;
+    const result = `must NOT have fewer than ${limit} characters`;
+
+    return result;
   },
 
   /** `minProperties` — object has fewer properties than required. */
   'minProperties': (limit: number): string => {
-    return `must NOT have fewer than ${limit} properties`;
+    const result = `must NOT have fewer than ${limit} properties`;
+
+    return result;
   },
 
   /** `multipleOf` — value is not a multiple of the divisor. */
   'multipleOf': (divisor: number): string => {
-    return `must be a multiple of ${divisor}`;
+    const result = `must be a multiple of ${divisor}`;
+
+    return result;
   },
 
   /** `not` — value matched the negated schema. */
@@ -151,12 +191,16 @@ export const VALIDATION_MESSAGES = {
 
   /** `pattern` — string did not satisfy the regular expression. */
   'pattern': (pattern: string): string => {
-    return `must match pattern "${pattern}"`;
+    const result = `must match pattern "${pattern}"`;
+
+    return result;
   },
 
   /** `required` — a required property is absent. */
   'required': (key: string): string => {
-    return `must have required property '${key}'`;
+    const result = `must have required property '${key}'`;
+
+    return result;
   },
 
   /**

@@ -28,7 +28,7 @@ import { ExecContext } from './ExecContext.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { SchemaCompilerDefaults } from './SchemaCompilerDefaults.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import type {
@@ -92,7 +92,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private readonly logger: LoggerInterface;
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorType | undefined) | undefined;
 
-  private readonly validatePlanContext: SchemaCompilerValidatePlanContextType;
+  private validatePlanContext: SchemaCompilerValidatePlanContextType;
 
   /**
    * Create a SchemaCompiler with an optional cross-schema lookup for compiled validators
@@ -283,7 +283,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const ctx: SchemaCompilerValidatePlanContextType = {
       'activeCustomKeywords': this.activeCustomKeywords,
       'appliesFormatAssertions': (semantics: SchemaGraphSemanticsType): boolean => {
-        return this.appliesFormatAssertions(semantics);
+        const result = this.appliesFormatAssertions(semantics);
+
+        return result;
       },
       'compileNodeOrBooleanValidateWithErrors': (
         targetNode: SchemaGraphNodeType,
@@ -291,7 +293,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         schemaGraph: SchemaGraphInterface,
         schemaLookup?: (id: string) => Record<string, unknown> | undefined
       ): ValidateWithErrorsFnType => {
-        return this.compileNodeOrBooleanValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
+        const result = this.compileNodeOrBooleanValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
+
+        return result;
       },
       'compileNodeValidateWithErrors': (
         targetNode: SchemaGraphNodeType,
@@ -299,7 +303,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         schemaGraph: SchemaGraphInterface,
         schemaLookup?: (id: string) => Record<string, unknown> | undefined
       ): ValidateWithErrorsFnType => {
-        return this.compileNodeValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
+        const result = this.compileNodeValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
+
+        return result;
       },
       'resolveImplicitDefault': (
         node: SchemaGraphNodeType,
@@ -317,16 +323,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,
         lookupGraph: ((id: string) => SchemaGraphInterface | undefined) | undefined
       ): unknown => {
-        return SchemaCompilerDefaults.synthesizeZeroValue(node, graph, lookup, lookupGraph);
+        const result = SchemaCompilerDefaults.synthesizeZeroValue(node, graph, lookup, lookupGraph);
+
+        return result;
       }
     };
-
-    Object.defineProperty(ctx, 'activeCustomKeywords', {
-      'enumerable': true,
-      'get': (): KeywordDefinitionType[] => {
-        return this.activeCustomKeywords;
-      }
-    });
 
     return ctx;
   }
@@ -453,6 +454,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     this.activeCustomKeywords = engine.keywords();
     this.activeLookupGraph = engine.graphLookup();
+    // Rebuild the plan context now that `activeCustomKeywords` reflects this
+    // compile() call — the context built in the constructor captured the
+    // (empty) value at construction time.
+    this.validatePlanContext = this.buildValidatePlanContext();
 
     const validateWithErrorsFn = this.compileValidateWithErrors(schema, formatRegistry, resolvedGraph, lookupSchema);
     const checkFn = this.buildCheckFromValidate(validateWithErrorsFn);
@@ -469,7 +474,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       'check': checkFn,
       'compiled': true,
       'validate': (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
-        return this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn, treeHasUnevaluated);
+        const result = this.dispatchValidate(data, options, validateFn, checkFn, validateWithErrorsFn, treeHasUnevaluated);
+
+        return result;
       }
     };
   }
@@ -478,7 +485,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     if (schema) {
       return {
         'check': (_data: unknown): boolean => {
-          return true;
+          const result = true;
+
+          return result;
         },
         'compiled': true,
         'validate': (data: unknown): CompiledValidationResultType => {
@@ -493,7 +502,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     return {
       'check': (_data: unknown): boolean => {
-        return false;
+        const result = false;
+
+        return result;
       },
       'compiled': true,
       'validate': (data: unknown): CompiledValidationResultType => {
@@ -585,8 +596,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         graphNode,
         formatRegistry,
         graph,
-        lookupSchema,
-        this.activeLookupGraph
+        {
+          ...(this.activeLookupGraph !== undefined && { 'lookupGraph': this.activeLookupGraph }),
+          ...(lookupSchema !== undefined && { lookupSchema })
+        }
       );
 
       const baseExecutor = this.buildValidateWithErrorsExecution(plan);
@@ -613,7 +626,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const rootDefaultValue = rootSem === undefined ? undefined : rootSem.defaultValue;
 
     return (data: unknown, options?: CompiledValidateOptionsType): CompiledValidationResultType => {
-      return this.executeMutatingValidate(
+      const result = this.executeMutatingValidate(
         data,
         options,
         validateWithErrors,
@@ -623,6 +636,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         rootDefaultValue,
         trackEvaluated
       );
+
+      return result;
     };
   }
 
@@ -642,7 +657,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       this.logger.error(LogScope.format('SchemaCompiler', 'compileValidateWithErrors', 'Schema not found in graph — cannot compile validator'));
       throw new GraphError(
         'Schema not found in graph — cannot compile validator',
-        { 'code': GraphErrorCode.REF_NOT_FOUND }
+        { 'code': GRAPH_ERROR_CODE.REF_NOT_FOUND }
       );
     }
 
@@ -1450,7 +1465,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     ctx: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean; } {
-    return this.validateArrayFields(arr, path, ctx, plan.arrOpts);
+    const result = this.validateArrayFields(arr, path, ctx, plan.arrOpts);
+
+    return result;
   }
 
   private validateForbidExtra(
@@ -1611,7 +1628,9 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   ): { 'count': number;
     'earlyExit': boolean;
     'valid': boolean; } {
-    return this.validateObjectFields(obj, path, ctx, plan.objOpts);
+    const result = this.validateObjectFields(obj, path, ctx, plan.objOpts);
+
+    return result;
   }
 
   private validateObjectPrelude(

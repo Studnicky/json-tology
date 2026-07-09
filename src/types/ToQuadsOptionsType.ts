@@ -21,7 +21,7 @@ import type { SkolemizeFnType } from './SkolemizeFnType.js';
  * with this IRI.
  */
 export type ToQuadsOptionsType = {
-  readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
-  readonly 'graphIri'?: string | undefined;
-  readonly 'iriFor'?: SkolemizeFnType | string | undefined;
+  'annotationEmitMode'?: AnnotationEmitModeType | undefined;
+  'graphIri'?: string | undefined;
+  'iriFor'?: SkolemizeFnType | string | undefined;
 };

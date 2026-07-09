@@ -31,22 +31,18 @@ import { SchemaIri } from '../graph/SchemaIri.js';
 import type { JsonSchemaDocumentObjectType } from '../../types/Schema.js';
 import type {
   BuildDepsMapType,
-  BuildEntityFileOptionsType,
-  BuildInDegreeMapType,
-  BuildIndexSourceOptionsType,
-  BuildNameMapResultType,
-  EmitBannerOptionsType,
-  EmitRegistryOptionsType,
-  EmitSchemaConstantsOptionsType,
-  KahnStepOptionsType,
-  RegistryDirContextType,
-  SerializeContextType,
-  SingleFileBodyOptionsType
+  BuildInDegreeMapType
 } from '../../types/OwlCodegen.js';
-
-export type {
-  OwlCodegenOptionsType, OwlRegistryDirOptionsType, RegistryFileEntryType, RegistryFilesResultType
-} from '../../types/OwlCodegen.js';
+import type { BuildEntityFileOptionsType } from '../../types/BuildEntityFileOptionsType.js';
+import type { BuildIndexSourceOptionsType } from '../../types/BuildIndexSourceOptionsType.js';
+import type { BuildNameMapResultType } from '../../types/BuildNameMapResultType.js';
+import type { EmitBannerOptionsType } from '../../types/EmitBannerOptionsType.js';
+import type { EmitRegistryOptionsType } from '../../types/EmitRegistryOptionsType.js';
+import type { EmitSchemaConstantsOptionsType } from '../../types/EmitSchemaConstantsOptionsType.js';
+import type { KahnStepOptionsType } from '../../types/KahnStepOptionsType.js';
+import type { RegistryDirContextType } from '../../types/RegistryDirContextType.js';
+import type { SerializeContextType } from '../../types/SerializeContextType.js';
+import type { SingleFileBodyOptionsType } from '../../types/SingleFileBodyOptionsType.js';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -101,47 +97,6 @@ function localName(iri: string): string {
     .join('');
 }
 
-/**
- * Build a collision-free name → IRI map. When multiple IRIs collapse to the
- * same PascalCase name, suffix duplicates with `_2`, `_3`, etc.
- * Returns `{ nameMap, collisions }` where `collisions` is the set of base
- * names that collided (used for banner warnings).
- */
-function buildNameMap(iris: readonly string[]): BuildNameMapResultType {
-  // base name → first IRI that claimed it
-  const nameMap = new Map<string, string>();
-  const iriToName = new Map<string, string>();
-  const collisions = new Set<string>();
-  const counters = new Map<string, number>();
-
-  for (const iri of iris) {
-    const base = localName(iri);
-    const existing = nameMap.get(base);
-
-    if (existing === undefined) {
-      nameMap.set(base, iri);
-      iriToName.set(iri, base);
-      counters.set(base, 1);
-    } else {
-      collisions.add(base);
-      const n = (counters.get(base) ?? 1) + 1;
-
-      counters.set(base, n);
-      const suffixed = `${base}_${n}`;
-
-      iriToName.set(iri, suffixed);
-    }
-  }
-
-  // Build a clean iri→name map from iriToName
-  const result = new Map<string, string>(iriToName);
-
-  return {
-    collisions,
-    'nameMap': result
-  };
-}
-
 // ---------------------------------------------------------------------------
 // topoSort helpers
 // ---------------------------------------------------------------------------
@@ -171,58 +126,6 @@ function collectRefs(obj: unknown, irisSet: Set<string>, acc: Set<string>): void
   }
 }
 
-/** Build the forward dependency map: IRI → set of IRIs it depends on. */
-function buildDepsMap(
-  iris: readonly string[],
-  schemaByIri: Map<string, JsonSchemaDocumentObjectType>,
-  irisSet: Set<string>
-): BuildDepsMapType {
-  const deps = new Map<string, Set<string>>();
-
-  for (const iri of iris) {
-    const schema = schemaByIri.get(iri);
-    const refs = new Set<string>();
-
-    if (schema !== undefined) {
-      const {
-        '$id': _id,
-        ...rest
-      } = schema;
-
-      void _id;
-      collectRefs(rest, irisSet, refs);
-    }
-
-    deps.set(iri, refs);
-  }
-
-  return deps;
-}
-
-/** Build the initial in-degree map (number of deps each IRI has). */
-function buildInDegreeMap(iris: readonly string[], deps: BuildDepsMapType): BuildInDegreeMapType {
-  const fwdInDegree: BuildInDegreeMapType = new Map<string, number>();
-
-  for (const iri of iris) {
-    fwdInDegree.set(iri, deps.get(iri)?.size ?? 0);
-  }
-
-  return fwdInDegree;
-}
-
-/** Build the initial processing queue: IRIs with no dependencies first. */
-function buildInitialQueue(iris: readonly string[], fwdInDegree: Map<string, number>): string[] {
-  const queue: string[] = [];
-
-  for (const iri of iris) {
-    if ((fwdInDegree.get(iri) ?? 0) === 0) {
-      queue.push(iri);
-    }
-  }
-
-  return queue;
-}
-
 /** Reduce the in-degree of dependents and enqueue newly-zero entries. */
 function advanceKahnStep(opts: KahnStepOptionsType): void {
   const {
@@ -249,10 +152,630 @@ function advanceKahnStep(opts: KahnStepOptionsType): void {
   }
 }
 
+/**
+ * Derive the base IRI portion of an IRI (before '#' or last '/').
+ * Used to compute the default baseIri when one is not specified.
+ */
+function deriveBaseIri(firstIri: string): string {
+  const { id } = SchemaIri.parseRef(firstIri);
+
+  // parseRef returns id = everything before '#' (or the whole IRI when no '#').
+  // When the whole IRI was returned (no '#'), strip the last path segment.
+  if (id !== firstIri) {
+    // Had a '#' — id is the base.
+    return id;
+  }
+
+  const lastSlash = firstIri.lastIndexOf('/');
+
+  return lastSlash > 0 ? firstIri.slice(0, lastSlash) : firstIri;
+}
+
+// ---------------------------------------------------------------------------
+// toTypeScript helpers
+// ---------------------------------------------------------------------------
+
+/** Emit the auto-generated banner lines into an array. */
+function emitBanner(lines: string[], opts: EmitBannerOptionsType): void {
+  const {
+    collisions,
+    header,
+    sourceLabel,
+    ts
+  } = opts;
+
+  lines.push('// ============================================================');
+  lines.push('// AUTO-GENERATED — DO NOT EDIT');
+  lines.push(`// Generated: ${ts}`);
+
+  if (sourceLabel !== '') {
+    lines.push(`// Source:    ${sourceLabel}`);
+  }
+
+  if (collisions.size > 0) {
+    lines.push('//');
+    lines.push('// WARNING: IRI name collisions detected. Suffixed names used:');
+
+    for (const collidedName of [...collisions].sort()) {
+      lines.push(`//   ${collidedName} (_2, _3, ...)`);
+    }
+  }
+
+  for (const line of header) {
+    lines.push(`// ${line}`);
+  }
+
+  lines.push('// ============================================================');
+  lines.push('');
+}
+
+/** Emit owl:sameAs and addCharacteristic post-processing calls. */
+function emitPostProcessing(
+  lines: string[],
+  result: OwlImportResultType,
+  registryConstName: string
+): void {
+  if (result.sameAs.length > 0) {
+    lines.push('// owl:sameAs identity assertions');
+
+    for (const sameAsPair of result.sameAs) {
+      const iriA = sameAsPair[0];
+      const iriB = sameAsPair[1];
+
+      lines.push(`${registryConstName}.sameAs(${JSON.stringify(iriA)}, ${JSON.stringify(iriB)});`);
+    }
+
+    lines.push('');
+  }
+
+  if (result.characteristics.length > 0) {
+    lines.push('// OWL property characteristics');
+
+    for (const charEntry of result.characteristics) {
+      const {
+        characteristic,
+        propertyIri
+      } = charEntry;
+
+      lines.push(`${registryConstName}.registry.addCharacteristic(${JSON.stringify(propertyIri)}, ${JSON.stringify(characteristic)});`);
+    }
+
+    lines.push('');
+  }
+}
+
+/** Emit the index.ts imports from entity files. */
+function emitEntityImports(indexLines: string[], schemaNames: string[]): void {
+  for (const name of schemaNames) {
+    indexLines.push(`import { ${name}Schema } from './entities/${name}.js';`);
+  }
+
+  indexLines.push('');
+}
+
+/** Emit the type and schema constant re-exports in the index.ts. */
+function emitEntityReExports(indexLines: string[], schemaNames: string[]): void {
+  indexLines.push('// Type re-exports — consumers import named types from this index');
+
+  for (const name of schemaNames) {
+    indexLines.push(`export type { ${name} } from './entities/${name}.js';`);
+  }
+
+  indexLines.push('');
+
+  indexLines.push('// Schema constant re-exports');
+
+  for (const name of schemaNames) {
+    indexLines.push(`export { ${name}Schema } from './entities/${name}.js';`);
+  }
+
+  indexLines.push('');
+}
+
+/**
+ * OwlCodegen — code generator for OWL 2 TBox import results.
+ */
+export class OwlCodegen {
+  /**
+   * Build the forward dependency map: IRI → set of IRIs it depends on.
+   * Internal helper for {@link topoSort}.
+   */
+  static buildDepsMap(
+    iris: readonly string[],
+    schemaByIri: Map<string, JsonSchemaDocumentObjectType>,
+    irisSet: Set<string>
+  ): BuildDepsMapType {
+    const deps = new Map<string, Set<string>>();
+
+    for (const iri of iris) {
+      const schema = schemaByIri.get(iri);
+      const refs = new Set<string>();
+
+      if (schema !== undefined) {
+        const {
+          '$id': _id,
+          ...rest
+        } = schema;
+
+        void _id;
+        collectRefs(rest, irisSet, refs);
+      }
+
+      deps.set(iri, refs);
+    }
+
+    return deps;
+  }
+
+  /** Build all per-entity RegistryFileEntryType objects in dependency order. */
+  static buildEntityFiles(ctx: RegistryDirContextType): RegistryFileEntryType[] {
+    const entityFiles: RegistryFileEntryType[] = [];
+
+    for (const iri of ctx.sortedIris) {
+      const name = ctx.nameMap.get(iri);
+
+      if (name === undefined || name === '') {
+        continue;
+      }
+
+      const schema = ctx.schemas.find((schemaEntry: JsonSchemaDocumentObjectType): boolean => {
+        return schemaEntry.$id === iri;
+      });
+
+      if (schema === undefined) {
+        continue;
+      }
+
+      entityFiles.push({
+        'iri': iri,
+        name,
+        'path': `entities/${name}.ts`,
+        'source': OwlCodegen.buildEntityFileSource({
+          iri,
+          name,
+          'refsName': ctx.refsName,
+          schema,
+          'sourceLabel': ctx.sourceLabel,
+          'ts': ctx.ts
+        })
+      });
+    }
+
+    return entityFiles;
+  }
+
+  /** Build a single entity file source for registry-directory mode. */
+  static buildEntityFileSource(opts: BuildEntityFileOptionsType): string {
+    const {
+      iri,
+      name,
+      refsName,
+      schema,
+      sourceLabel,
+      ts
+    } = opts;
+    const entityLines: string[] = [];
+
+    entityLines.push('// ============================================================');
+    entityLines.push('// AUTO-GENERATED — DO NOT EDIT');
+    entityLines.push(`// Generated: ${ts}`);
+
+    if (sourceLabel !== '') {
+      entityLines.push(`// Source:    ${sourceLabel}`);
+    }
+
+    entityLines.push(`// IRI:       ${iri}`);
+    entityLines.push('// ============================================================');
+    entityLines.push('');
+    entityLines.push("import type { InferType } from 'json-tology/types';");
+    // Type-only import of the schema-set reference map from the index (erased at
+    // runtime, so no import cycle): threading it resolves cross-class `$ref`s to the
+    // precise sibling type instead of `unknown`.
+    entityLines.push(`import type { ${refsName} } from '../index.js';`);
+    entityLines.push('');
+
+    const literal = OwlCodegen.serializeSchemaLiteral(schema, 0);
+
+    entityLines.push(`export const ${name}Schema = ${literal} as const;`);
+    entityLines.push('');
+    entityLines.push(`export type ${name} = InferType<typeof ${name}Schema, ${refsName}>;`);
+    entityLines.push('');
+
+    return entityLines.join('\n');
+  }
+
+  /** Build the initial in-degree map (number of deps each IRI has). */
+  static buildInDegreeMap(iris: readonly string[], deps: BuildDepsMapType): BuildInDegreeMapType {
+    const fwdInDegree: BuildInDegreeMapType = new Map<string, number>();
+
+    for (const iri of iris) {
+      fwdInDegree.set(iri, deps.get(iri)?.size ?? 0);
+    }
+
+    return fwdInDegree;
+  }
+
+  /** Build the index.ts source string for registry-directory mode. */
+  static buildIndexSource(
+    ctx: RegistryDirContextType,
+    opts: BuildIndexSourceOptionsType,
+    result: OwlImportResultType
+  ): string {
+    const indexLines: string[] = [];
+
+    emitBanner(indexLines, {
+      'collisions': opts.collisions,
+      'header': opts.header,
+      'sourceLabel': ctx.sourceLabel,
+      'ts': ctx.ts
+    });
+
+    indexLines.push("import { JsonTology } from 'json-tology';");
+    indexLines.push("import type { SchemaReferencesMapType } from 'json-tology/types';");
+    indexLines.push('');
+
+    const schemaNames = OwlCodegen.extractSchemaNames(ctx.sortedIris, ctx.nameMap);
+
+    emitEntityImports(indexLines, schemaNames);
+    emitRegistryConstruction(indexLines, {
+      'effectiveBaseIri': opts.effectiveBaseIri,
+      'registryConstName': opts.registryConstName,
+      schemaNames,
+      'schemasConst': opts.schemasConst
+    });
+    // Exported reference map over the schema tuple. Each `entities/<Name>.ts`
+    // imports this (type-only) to thread it into its `InferType`, so cross-class
+    // `$ref`s resolve to precise sibling types across the directory.
+    indexLines.push(`export type ${ctx.refsName} = SchemaReferencesMapType<typeof ${opts.schemasConst}>;`);
+    indexLines.push('');
+    emitPostProcessing(indexLines, result, opts.registryConstName);
+    emitEntityReExports(indexLines, schemaNames);
+
+    indexLines.push('// ============================================================');
+    indexLines.push('// END AUTO-GENERATED');
+    indexLines.push('// ============================================================');
+    indexLines.push('');
+
+    return indexLines.join('\n');
+  }
+
+  /** Build the initial processing queue: IRIs with no dependencies first. */
+  static buildInitialQueue(iris: readonly string[], fwdInDegree: Map<string, number>): string[] {
+    const queue: string[] = [];
+
+    for (const iri of iris) {
+      if ((fwdInDegree.get(iri) ?? 0) === 0) {
+        queue.push(iri);
+      }
+    }
+
+    return queue;
+  }
+
+  /**
+   * Build a collision-free name → IRI map. When multiple IRIs collapse to the
+   * same PascalCase name, suffix duplicates with `_2`, `_3`, etc.
+   * Returns `{ nameMap, collisions }` where `collisions` is the set of base
+   * names that collided (used for banner warnings).
+   */
+  static buildNameMap(iris: readonly string[]): BuildNameMapResultType {
+    // base name → first IRI that claimed it
+    const nameMap = new Map<string, string>();
+    const iriToName = new Map<string, string>();
+    const collisions = new Set<string>();
+    const counters = new Map<string, number>();
+
+    for (const iri of iris) {
+      const base = localName(iri);
+      const existing = nameMap.get(base);
+
+      if (existing === undefined) {
+        nameMap.set(base, iri);
+        iriToName.set(iri, base);
+        counters.set(base, 1);
+      } else {
+        collisions.add(base);
+        const n = (counters.get(base) ?? 1) + 1;
+
+        counters.set(base, n);
+        const suffixed = `${base}_${n}`;
+
+        iriToName.set(iri, suffixed);
+      }
+    }
+
+    // Build a clean iri→name map from iriToName
+    const result = new Map<string, string>(iriToName);
+
+    return {
+      collisions,
+      'nameMap': result
+    };
+  }
+
+  /** Emit the body of a single-file output: constants, registry, types, post-processing, footer. */
+  static buildSingleFileBody(
+    lines: string[],
+    opts: SingleFileBodyOptionsType,
+    result: OwlImportResultType
+  ): void {
+    const schemasConst = `${opts.registryConstName}Schemas`;
+    const schemaNames = OwlCodegen.extractSchemaNames(opts.sortedIris, opts.nameMap);
+
+    lines.push("import { JsonTology } from 'json-tology';");
+    lines.push(`import type { InferType, SchemaReferencesMapType } from '${opts.inferTypeImportPath}';`);
+    lines.push('');
+    emitSchemaConstants(lines, {
+      'nameMap': opts.nameMap,
+      'schemas': opts.schemas,
+      'sortedIris': opts.sortedIris
+    });
+    emitRegistryConstruction(lines, {
+      'effectiveBaseIri': opts.effectiveBaseIri,
+      'registryConstName': opts.registryConstName,
+      schemaNames,
+      schemasConst
+    });
+    emitTypeAliases(lines, opts.sortedIris, opts.nameMap, schemasConst);
+    emitPostProcessing(lines, result, opts.registryConstName);
+    lines.push('// ============================================================');
+    lines.push('// END AUTO-GENERATED');
+    lines.push('// ============================================================');
+    lines.push('');
+  }
+
+  /** Extract the list of named schema identifiers from the name map. */
+  static extractSchemaNames(sortedIris: string[], nameMap: Map<string, string>): string[] {
+    const result: string[] = [];
+
+    for (const iri of sortedIris) {
+      const name = nameMap.get(iri);
+
+      if (name !== undefined && name !== '') {
+        result.push(name);
+      }
+    }
+
+    return result;
+  }
+
+  /** Filter schemas to consumer-facing class IRIs (no pointer-fragment entries). */
+  static filterSchemas(schemas: readonly JsonSchemaDocumentObjectType[]): JsonSchemaDocumentObjectType[] {
+    const result = schemas.filter((schema: JsonSchemaDocumentObjectType): boolean => {
+      // Skip $ids carrying a JSON-pointer fragment (e.g. `urn:x:EBook#/allOf/1/if`).
+      // These are internal scaffolds the forward projector emits when serialising
+      // complex `allOf` / `if/then/else` structures; they are not consumer-facing
+      // classes and would produce invalid TypeScript identifiers if exported.
+      return typeof schema.$id === 'string'
+        && schema.$id.length > 0
+        && !schema.$id.includes('#/');
+    });
+
+    return result;
+  }
+
+  /** Serialize an array to a stable TS `as const` literal string. */
+  static serializeArrayLiteral(arr: unknown[], ctx: SerializeContextType): string {
+    if (arr.length === 0) {
+      return '[]';
+    }
+
+    const items = arr
+      .map((item: unknown): string => {
+        const result = `${ctx.innerPad}${OwlCodegen.serializeSchemaLiteral(item, ctx.indent + 2)}`;
+
+        return result;
+      })
+      .join(',\n');
+
+    return `[\n${items},\n${ctx.pad}]`;
+  }
+
+  /** Serialize an object to a stable TS `as const` literal string. */
+  static serializeObjectLiteral(rec: Record<string, unknown>, ctx: SerializeContextType): string {
+    const keys = Object.keys(rec).sort();
+
+    if (keys.length === 0) {
+      return '{}';
+    }
+
+    const entries = keys
+      .map((key: string): string => {
+        const val = OwlCodegen.serializeSchemaLiteral(rec[key], ctx.indent + 2);
+
+        return `${ctx.innerPad}${JSON.stringify(key)}: ${val}`;
+      })
+      .join(',\n');
+
+    return `{\n${entries},\n${ctx.pad}}`;
+  }
+
+  /**
+   * Serialize a JSON Schema object to a stable TS `as const` literal string.
+   * Keys are sorted lexicographically per the perfectionist/sort-objects rule.
+   * Strings use JSON.stringify to avoid injection.
+   */
+  static serializeSchemaLiteral(obj: unknown, indent: number): string {
+    const pad = ' '.repeat(indent);
+    const innerPad = ' '.repeat(indent + 2);
+    const ctx: SerializeContextType = {
+      indent,
+      innerPad,
+      pad
+    };
+
+    if (obj === null) {
+      return 'null';
+    }
+
+    if (typeof obj === 'boolean' || typeof obj === 'number') {
+      return String(obj);
+    }
+
+    if (typeof obj === 'string') {
+      return JSON.stringify(obj);
+    }
+
+    if (Array.isArray(obj)) {
+      return OwlCodegen.serializeArrayLiteral(obj, ctx);
+    }
+
+    if (typeof obj === 'object') {
+      return OwlCodegen.serializeObjectLiteral(obj as Record<string, unknown>, ctx);
+    }
+
+    return 'undefined';
+  }
+
+  /**
+   * Generate registry-directory-mode TypeScript sources from an
+   * {@link OwlImportResultType}.
+   *
+   * @remarks
+   * Returns an in-memory description of one `entities/<Name>.ts` file per OWL
+   * class (schema literal + type alias) and one `index.ts` that imports all
+   * entities, builds the registry, and re-exports all types and schema
+   * constants. Writing the files to disk is the caller's responsibility.
+   *
+   * @example
+   * ```ts
+   * const { entityFiles, indexSource } = OwlCodegen.toRegistryFiles(result, { registryConstName: 'foaf' });
+   * for (const f of entityFiles) {
+   *   await fs.writeFile(path.join(outDir, f.path), f.source);
+   * }
+   * await fs.writeFile(path.join(outDir, 'index.ts'), indexSource);
+   * ```
+   *
+   * @param result  - The import result from `JsonTology.fromTbox()`.
+   * @param options - Codegen options (name, baseIri, etc.).
+   * @returns Entity file sources + index source.
+   *
+   * @category Codegen
+   * @since 0.18.0
+   * @see {@link OwlCodegen.toTypeScript}
+   * @group OWL Codegen
+   */
+  public static toRegistryFiles(
+    result: OwlImportResultType,
+    options: OwlRegistryDirOptionsType
+  ): RegistryFilesResultType {
+    const {
+      baseIri = '',
+      header = [],
+      registryConstName = 'registry',
+      sourceLabel = ''
+    } = options;
+
+    const schemas = OwlCodegen.filterSchemas(result.schemas);
+    const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
+      const id = schema.$id as string;
+
+      return id;
+    });
+    const sortedIris = topoSort(iris, schemas);
+    const {
+      collisions,
+      nameMap
+    } = OwlCodegen.buildNameMap(sortedIris);
+    const effectiveBaseIri = baseIri === '' ? deriveBaseIri(iris[0] ?? '') : baseIri;
+    const schemasConst = `${registryConstName}Schemas`;
+    const ctx: RegistryDirContextType = {
+      nameMap,
+      'refsName': `${schemasConst}Refs`,
+      schemas,
+      'sortedIris': sortedIris,
+      sourceLabel,
+      'ts': new Date().toISOString()
+    };
+
+    return {
+      'entityFiles': OwlCodegen.buildEntityFiles(ctx),
+      'indexSource': OwlCodegen.buildIndexSource(ctx, {
+        collisions,
+        'effectiveBaseIri': effectiveBaseIri,
+        header,
+        registryConstName,
+        schemasConst
+      }, result)
+    };
+  }
+
+  /**
+   * Generate a TypeScript source string from an {@link OwlImportResultType}.
+   *
+   * @remarks
+   * The returned string is ready to write to a `.ts` file. It contains an
+   * auto-generated banner, per-class schema constants ordered by dependency,
+   * a registry construction call, per-class type aliases, and post-processing
+   * calls for owl:sameAs and property characteristics.
+   *
+   * @example
+   * ```ts
+   * const ts = OwlCodegen.toTypeScript(result, { registryConstName: 'foaf' });
+   * await fs.writeFile('generated/foaf.ts', ts);
+   * ```
+   *
+   * @param result - The import result from `JsonTology.fromTbox()`.
+   * @param options - Codegen options (name, baseIri, etc.).
+   * @returns The generated TypeScript source string.
+   *
+   * @category Codegen
+   * @since 0.18.0
+   * @see {@link OwlCodegen.toRegistryFiles}
+   * @group OWL Codegen
+   */
+  public static toTypeScript(
+    result: OwlImportResultType,
+    options: OwlCodegenOptionsType
+  ): string {
+    const {
+      baseIri = '',
+      header = [],
+      inferTypeImportPath = 'json-tology/types',
+      registryConstName = 'registry',
+      sourceLabel = ''
+    } = options;
+
+    const schemas = OwlCodegen.filterSchemas(result.schemas);
+    const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
+      const id = schema.$id as string;
+
+      return id;
+    });
+
+    const sortedIris = topoSort(iris, schemas);
+    const {
+      collisions,
+      nameMap
+    } = OwlCodegen.buildNameMap(sortedIris);
+
+    const effectiveBaseIri = baseIri === '' ? deriveBaseIri(iris[0] ?? '') : baseIri;
+    const lines: string[] = [];
+    const ts = new Date().toISOString();
+
+    emitBanner(lines, {
+      collisions,
+      header,
+      sourceLabel,
+      'ts': ts
+    });
+    OwlCodegen.buildSingleFileBody(lines, {
+      effectiveBaseIri,
+      inferTypeImportPath,
+      nameMap,
+      registryConstName,
+      schemas,
+      'sortedIris': sortedIris
+    }, result);
+
+    return lines.join('\n');
+  }
+}
+
 /** Run Kahn's algorithm on the forward dependency graph and return sorted IRIs. */
 function kahnSort(iris: readonly string[], deps: BuildDepsMapType): string[] {
-  const fwdInDegree = buildInDegreeMap(iris, deps);
-  const queue = buildInitialQueue(iris, fwdInDegree);
+  const fwdInDegree = OwlCodegen.buildInDegreeMap(iris, deps);
+  const queue = OwlCodegen.buildInitialQueue(iris, fwdInDegree);
   const sorted: string[] = [];
   const visited = new Set<string>();
 
@@ -301,137 +824,9 @@ function topoSort(
     }
   }
 
-  const deps = buildDepsMap(iris, schemaByIri, irisSet);
+  const deps = OwlCodegen.buildDepsMap(iris, schemaByIri, irisSet);
 
   return kahnSort(iris, deps);
-}
-
-/**
- * Derive the base IRI portion of an IRI (before '#' or last '/').
- * Used to compute the default baseIri when one is not specified.
- */
-function deriveBaseIri(firstIri: string): string {
-  const { id } = SchemaIri.parseRef(firstIri);
-
-  // parseRef returns id = everything before '#' (or the whole IRI when no '#').
-  // When the whole IRI was returned (no '#'), strip the last path segment.
-  if (id !== firstIri) {
-    // Had a '#' — id is the base.
-    return id;
-  }
-
-  const lastSlash = firstIri.lastIndexOf('/');
-
-  return lastSlash > 0 ? firstIri.slice(0, lastSlash) : firstIri;
-}
-
-/** Serialize an array to a stable TS `as const` literal string. */
-function serializeArrayLiteral(arr: unknown[], ctx: SerializeContextType): string {
-  if (arr.length === 0) {
-    return '[]';
-  }
-
-  const items = arr
-    .map((item: unknown): string => {
-      return `${ctx.innerPad}${serializeSchemaLiteral(item, ctx.indent + 2)}`;
-    })
-    .join(',\n');
-
-  return `[\n${items},\n${ctx.pad}]`;
-}
-
-/** Serialize an object to a stable TS `as const` literal string. */
-function serializeObjectLiteral(rec: Record<string, unknown>, ctx: SerializeContextType): string {
-  const keys = Object.keys(rec).sort();
-
-  if (keys.length === 0) {
-    return '{}';
-  }
-
-  const entries = keys
-    .map((key: string): string => {
-      const val = serializeSchemaLiteral(rec[key], ctx.indent + 2);
-
-      return `${ctx.innerPad}${JSON.stringify(key)}: ${val}`;
-    })
-    .join(',\n');
-
-  return `{\n${entries},\n${ctx.pad}}`;
-}
-
-/**
- * Serialize a JSON Schema object to a stable TS `as const` literal string.
- * Keys are sorted lexicographically per the perfectionist/sort-objects rule.
- * Strings use JSON.stringify to avoid injection.
- */
-function serializeSchemaLiteral(obj: unknown, indent: number): string {
-  const pad = ' '.repeat(indent);
-  const innerPad = ' '.repeat(indent + 2);
-  const ctx: SerializeContextType = {
-    indent,
-    innerPad,
-    pad
-  };
-
-  if (obj === null) {
-    return 'null';
-  }
-
-  if (typeof obj === 'boolean' || typeof obj === 'number') {
-    return String(obj);
-  }
-
-  if (typeof obj === 'string') {
-    return JSON.stringify(obj);
-  }
-
-  if (Array.isArray(obj)) {
-    return serializeArrayLiteral(obj, ctx);
-  }
-
-  if (typeof obj === 'object') {
-    return serializeObjectLiteral(obj as Record<string, unknown>, ctx);
-  }
-
-  return 'undefined';
-}
-
-// ---------------------------------------------------------------------------
-// toTypeScript helpers
-// ---------------------------------------------------------------------------
-
-/** Emit the auto-generated banner lines into an array. */
-function emitBanner(lines: string[], opts: EmitBannerOptionsType): void {
-  const {
-    collisions,
-    header,
-    sourceLabel,
-    ts
-  } = opts;
-
-  lines.push('// ============================================================');
-  lines.push('// AUTO-GENERATED — DO NOT EDIT');
-  lines.push(`// Generated: ${ts}`);
-
-  if (sourceLabel !== '') {
-    lines.push(`// Source:    ${sourceLabel}`);
-  }
-
-  if (collisions.size > 0) {
-    lines.push('//');
-    lines.push('// WARNING: IRI name collisions detected. Suffixed names used:');
-
-    for (const collidedName of [...collisions].sort()) {
-      lines.push(`//   ${collidedName} (_2, _3, ...)`);
-    }
-  }
-
-  for (const line of header) {
-    lines.push(`// ${line}`);
-  }
-
-  lines.push('// ============================================================');
-  lines.push('');
 }
 
 /** Emit per-class schema constants in dependency order. */
@@ -457,7 +852,7 @@ function emitSchemaConstants(lines: string[], opts: EmitSchemaConstantsOptionsTy
       continue;
     }
 
-    const literal = serializeSchemaLiteral(schema, 0);
+    const literal = OwlCodegen.serializeSchemaLiteral(schema, 0);
 
     lines.push(`export const ${name}Schema = ${literal} as const;`);
     lines.push('');
@@ -478,7 +873,9 @@ function emitRegistryConstruction(lines: string[], opts: EmitRegistryOptionsType
   } else {
     const schemaRefs = schemaNames
       .map((constName: string): string => {
-        return `  ${constName}Schema`;
+        const result = `  ${constName}Schema`;
+
+        return result;
       })
       .join(',\n');
 
@@ -487,7 +884,7 @@ function emitRegistryConstruction(lines: string[], opts: EmitRegistryOptionsType
 
   lines.push('');
 
-  const createArg = serializeSchemaLiteral(
+  const createArg = OwlCodegen.serializeSchemaLiteral(
     {
       'baseIri': effectiveBaseIri,
       'schemas': '__SCHEMAS_PLACEHOLDER__'
@@ -511,7 +908,7 @@ function emitTypeAliases(
   nameMap: Map<string, string>,
   schemasConst: string
 ): void {
-  const names = extractSchemaNames(sortedIris, nameMap);
+  const names = OwlCodegen.extractSchemaNames(sortedIris, nameMap);
 
   if (names.length === 0) {
     return;
@@ -531,400 +928,4 @@ function emitTypeAliases(
   }
 
   lines.push('');
-}
-
-/** Emit owl:sameAs and addCharacteristic post-processing calls. */
-function emitPostProcessing(
-  lines: string[],
-  result: OwlImportResultType,
-  registryConstName: string
-): void {
-  if (result.sameAs.length > 0) {
-    lines.push('// owl:sameAs identity assertions');
-
-    for (const sameAsPair of result.sameAs) {
-      const iriA = sameAsPair[0];
-      const iriB = sameAsPair[1];
-
-      lines.push(`${registryConstName}.sameAs(${JSON.stringify(iriA)}, ${JSON.stringify(iriB)});`);
-    }
-
-    lines.push('');
-  }
-
-  if (result.characteristics.length > 0) {
-    lines.push('// OWL property characteristics');
-
-    for (const charEntry of result.characteristics) {
-      const {
-        characteristic,
-        propertyIri
-      } = charEntry;
-
-      lines.push(`${registryConstName}.registry.addCharacteristic(${JSON.stringify(propertyIri)}, ${JSON.stringify(characteristic)});`);
-    }
-
-    lines.push('');
-  }
-}
-
-/** Filter schemas to consumer-facing class IRIs (no pointer-fragment entries). */
-function filterSchemas(schemas: readonly JsonSchemaDocumentObjectType[]): JsonSchemaDocumentObjectType[] {
-  return schemas.filter((schema: JsonSchemaDocumentObjectType): boolean => {
-    // Skip $ids carrying a JSON-pointer fragment (e.g. `urn:x:EBook#/allOf/1/if`).
-    // These are internal scaffolds the forward projector emits when serialising
-    // complex `allOf` / `if/then/else` structures; they are not consumer-facing
-    // classes and would produce invalid TypeScript identifiers if exported.
-    return typeof schema.$id === 'string'
-      && schema.$id.length > 0
-      && !schema.$id.includes('#/');
-  });
-}
-
-/** Extract the list of named schema identifiers from the name map. */
-function extractSchemaNames(sortedIris: string[], nameMap: Map<string, string>): string[] {
-  const result: string[] = [];
-
-  for (const iri of sortedIris) {
-    const name = nameMap.get(iri);
-
-    if (name !== undefined && name !== '') {
-      result.push(name);
-    }
-  }
-
-  return result;
-}
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
-
-/** Emit the body of a single-file output: constants, registry, types, post-processing, footer. */
-function buildSingleFileBody(
-  lines: string[],
-  opts: SingleFileBodyOptionsType,
-  result: OwlImportResultType
-): void {
-  const schemasConst = `${opts.registryConstName}Schemas`;
-  const schemaNames = extractSchemaNames(opts.sortedIris, opts.nameMap);
-
-  lines.push("import { JsonTology } from 'json-tology';");
-  lines.push(`import type { InferType, SchemaReferencesMapType } from '${opts.inferTypeImportPath}';`);
-  lines.push('');
-  emitSchemaConstants(lines, {
-    'nameMap': opts.nameMap,
-    'schemas': opts.schemas,
-    'sortedIris': opts.sortedIris
-  });
-  emitRegistryConstruction(lines, {
-    'effectiveBaseIri': opts.effectiveBaseIri,
-    'registryConstName': opts.registryConstName,
-    schemaNames,
-    schemasConst
-  });
-  emitTypeAliases(lines, opts.sortedIris, opts.nameMap, schemasConst);
-  emitPostProcessing(lines, result, opts.registryConstName);
-  lines.push('// ============================================================');
-  lines.push('// END AUTO-GENERATED');
-  lines.push('// ============================================================');
-  lines.push('');
-}
-
-/**
- * OwlCodegen — code generator for OWL 2 TBox import results.
- */
-export class OwlCodegen {
-  /**
-   * Generate registry-directory-mode TypeScript sources from an
-   * {@link OwlImportResultType}.
-   *
-   * @remarks
-   * Returns an in-memory description of one `entities/<Name>.ts` file per OWL
-   * class (schema literal + type alias) and one `index.ts` that imports all
-   * entities, builds the registry, and re-exports all types and schema
-   * constants. Writing the files to disk is the caller's responsibility.
-   *
-   * @example
-   * ```ts
-   * const { entityFiles, indexSource } = OwlCodegen.toRegistryFiles(result, { registryConstName: 'foaf' });
-   * for (const f of entityFiles) {
-   *   await fs.writeFile(path.join(outDir, f.path), f.source);
-   * }
-   * await fs.writeFile(path.join(outDir, 'index.ts'), indexSource);
-   * ```
-   *
-   * @param result  - The import result from `JsonTology.fromTbox()`.
-   * @param options - Codegen options (name, baseIri, etc.).
-   * @returns Entity file sources + index source.
-   *
-   * @category Codegen
-   * @since 0.18.0
-   * @see {@link OwlCodegen.toTypeScript}
-   * @group OWL Codegen
-   */
-  public static toRegistryFiles(
-    result: OwlImportResultType,
-    options: OwlRegistryDirOptionsType
-  ): RegistryFilesResultType {
-    const {
-      baseIri = '',
-      header = [],
-      registryConstName = 'registry',
-      sourceLabel = ''
-    } = options;
-
-    const schemas = filterSchemas(result.schemas);
-    const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
-      return schema.$id as string;
-    });
-    const sortedIris = topoSort(iris, schemas);
-    const {
-      collisions,
-      nameMap
-    } = buildNameMap(sortedIris);
-    const effectiveBaseIri = baseIri === '' ? deriveBaseIri(iris[0] ?? '') : baseIri;
-    const schemasConst = `${registryConstName}Schemas`;
-    const ctx: RegistryDirContextType = {
-      nameMap,
-      'refsName': `${schemasConst}Refs`,
-      schemas,
-      'sortedIris': sortedIris,
-      sourceLabel,
-      'ts': new Date().toISOString()
-    };
-
-    return {
-      'entityFiles': buildEntityFiles(ctx),
-      'indexSource': buildIndexSource(ctx, {
-        collisions,
-        'effectiveBaseIri': effectiveBaseIri,
-        header,
-        registryConstName,
-        schemasConst
-      }, result)
-    };
-  }
-
-  /**
-   * Generate a TypeScript source string from an {@link OwlImportResultType}.
-   *
-   * @remarks
-   * The returned string is ready to write to a `.ts` file. It contains an
-   * auto-generated banner, per-class schema constants ordered by dependency,
-   * a registry construction call, per-class type aliases, and post-processing
-   * calls for owl:sameAs and property characteristics.
-   *
-   * @example
-   * ```ts
-   * const ts = OwlCodegen.toTypeScript(result, { registryConstName: 'foaf' });
-   * await fs.writeFile('generated/foaf.ts', ts);
-   * ```
-   *
-   * @param result - The import result from `JsonTology.fromTbox()`.
-   * @param options - Codegen options (name, baseIri, etc.).
-   * @returns The generated TypeScript source string.
-   *
-   * @category Codegen
-   * @since 0.18.0
-   * @see {@link OwlCodegen.toRegistryFiles}
-   * @group OWL Codegen
-   */
-  public static toTypeScript(
-    result: OwlImportResultType,
-    options: OwlCodegenOptionsType
-  ): string {
-    const {
-      baseIri = '',
-      header = [],
-      inferTypeImportPath = 'json-tology/types',
-      registryConstName = 'registry',
-      sourceLabel = ''
-    } = options;
-
-    const schemas = filterSchemas(result.schemas);
-    const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
-      return schema.$id as string;
-    });
-
-    const sortedIris = topoSort(iris, schemas);
-    const {
-      collisions,
-      nameMap
-    } = buildNameMap(sortedIris);
-
-    const effectiveBaseIri = baseIri === '' ? deriveBaseIri(iris[0] ?? '') : baseIri;
-    const lines: string[] = [];
-    const ts = new Date().toISOString();
-
-    emitBanner(lines, {
-      collisions,
-      header,
-      sourceLabel,
-      'ts': ts
-    });
-    buildSingleFileBody(lines, {
-      effectiveBaseIri,
-      inferTypeImportPath,
-      nameMap,
-      registryConstName,
-      schemas,
-      'sortedIris': sortedIris
-    }, result);
-
-    return lines.join('\n');
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Registry-directory mode helpers
-// ---------------------------------------------------------------------------
-
-/** Build a single entity file source for registry-directory mode. */
-function buildEntityFileSource(opts: BuildEntityFileOptionsType): string {
-  const {
-    iri,
-    name,
-    refsName,
-    schema,
-    sourceLabel,
-    ts
-  } = opts;
-  const entityLines: string[] = [];
-
-  entityLines.push('// ============================================================');
-  entityLines.push('// AUTO-GENERATED — DO NOT EDIT');
-  entityLines.push(`// Generated: ${ts}`);
-
-  if (sourceLabel !== '') {
-    entityLines.push(`// Source:    ${sourceLabel}`);
-  }
-
-  entityLines.push(`// IRI:       ${iri}`);
-  entityLines.push('// ============================================================');
-  entityLines.push('');
-  entityLines.push("import type { InferType } from 'json-tology/types';");
-  // Type-only import of the schema-set reference map from the index (erased at
-  // runtime, so no import cycle): threading it resolves cross-class `$ref`s to the
-  // precise sibling type instead of `unknown`.
-  entityLines.push(`import type { ${refsName} } from '../index.js';`);
-  entityLines.push('');
-
-  const literal = serializeSchemaLiteral(schema, 0);
-
-  entityLines.push(`export const ${name}Schema = ${literal} as const;`);
-  entityLines.push('');
-  entityLines.push(`export type ${name} = InferType<typeof ${name}Schema, ${refsName}>;`);
-  entityLines.push('');
-
-  return entityLines.join('\n');
-}
-
-/** Emit the index.ts imports from entity files. */
-function emitEntityImports(indexLines: string[], schemaNames: string[]): void {
-  for (const name of schemaNames) {
-    indexLines.push(`import { ${name}Schema } from './entities/${name}.js';`);
-  }
-
-  indexLines.push('');
-}
-
-/** Build all per-entity RegistryFileEntryType objects in dependency order. */
-function buildEntityFiles(ctx: RegistryDirContextType): RegistryFileEntryType[] {
-  const entityFiles: RegistryFileEntryType[] = [];
-
-  for (const iri of ctx.sortedIris) {
-    const name = ctx.nameMap.get(iri);
-
-    if (name === undefined || name === '') {
-      continue;
-    }
-
-    const schema = ctx.schemas.find((schemaEntry: JsonSchemaDocumentObjectType): boolean => {
-      return schemaEntry.$id === iri;
-    });
-
-    if (schema === undefined) {
-      continue;
-    }
-
-    entityFiles.push({
-      'iri': iri,
-      name,
-      'path': `entities/${name}.ts`,
-      'source': buildEntityFileSource({
-        iri,
-        name,
-        'refsName': ctx.refsName,
-        schema,
-        'sourceLabel': ctx.sourceLabel,
-        'ts': ctx.ts
-      })
-    });
-  }
-
-  return entityFiles;
-}
-
-/** Build the index.ts source string for registry-directory mode. */
-function buildIndexSource(
-  ctx: RegistryDirContextType,
-  opts: BuildIndexSourceOptionsType,
-  result: OwlImportResultType
-): string {
-  const indexLines: string[] = [];
-
-  emitBanner(indexLines, {
-    'collisions': opts.collisions,
-    'header': opts.header,
-    'sourceLabel': ctx.sourceLabel,
-    'ts': ctx.ts
-  });
-
-  indexLines.push("import { JsonTology } from 'json-tology';");
-  indexLines.push("import type { SchemaReferencesMapType } from 'json-tology/types';");
-  indexLines.push('');
-
-  const schemaNames = extractSchemaNames(ctx.sortedIris, ctx.nameMap);
-
-  emitEntityImports(indexLines, schemaNames);
-  emitRegistryConstruction(indexLines, {
-    'effectiveBaseIri': opts.effectiveBaseIri,
-    'registryConstName': opts.registryConstName,
-    schemaNames,
-    'schemasConst': opts.schemasConst
-  });
-  // Exported reference map over the schema tuple. Each `entities/<Name>.ts`
-  // imports this (type-only) to thread it into its `InferType`, so cross-class
-  // `$ref`s resolve to precise sibling types across the directory.
-  indexLines.push(`export type ${ctx.refsName} = SchemaReferencesMapType<typeof ${opts.schemasConst}>;`);
-  indexLines.push('');
-  emitPostProcessing(indexLines, result, opts.registryConstName);
-  emitEntityReExports(indexLines, schemaNames);
-
-  indexLines.push('// ============================================================');
-  indexLines.push('// END AUTO-GENERATED');
-  indexLines.push('// ============================================================');
-  indexLines.push('');
-
-  return indexLines.join('\n');
-}
-
-/** Emit the type and schema constant re-exports in the index.ts. */
-function emitEntityReExports(indexLines: string[], schemaNames: string[]): void {
-  indexLines.push('// Type re-exports — consumers import named types from this index');
-
-  for (const name of schemaNames) {
-    indexLines.push(`export type { ${name} } from './entities/${name}.js';`);
-  }
-
-  indexLines.push('');
-
-  indexLines.push('// Schema constant re-exports');
-
-  for (const name of schemaNames) {
-    indexLines.push(`export { ${name}Schema } from './entities/${name}.js';`);
-  }
-
-  indexLines.push('');
 }

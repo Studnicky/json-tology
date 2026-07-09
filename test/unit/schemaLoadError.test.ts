@@ -7,7 +7,7 @@ import {
   describe, it
 } from 'node:test';
 import { SchemaLoadError } from '../../src/errors/SchemaLoadError.js';
-import { SchemaLoadErrorCode } from '../../src/constants/ERROR_CODES.js';
+import { SCHEMA_LOAD_ERROR_CODE } from '../../src/constants/ERROR_CODES.js';
 import { Loaders } from '../../src/modules/loaders/Loaders.js';
 import type { SchemaLoadErrorType } from '../../src/types/Loader.js';
 
@@ -64,7 +64,7 @@ void describe('Loaders.fetch — HTTP status surfacing', { 'concurrency': false 
 void describe('SchemaLoadError — serialization', { 'concurrency': true }, () => {
   void it('toJson includes file, reason, and status', () => {
     const err = new SchemaLoadError('HTTP 503 loading https://example.com/Schema', {
-      'code': SchemaLoadErrorCode.LOAD_FAILED,
+      'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
       'file': 'https://example.com/Schema',
       'reason': 'fetch-failed',
       'retryable': true,
@@ -88,7 +88,7 @@ void describe('SchemaLoadError — serialization', { 'concurrency': true }, () =
 
   void it('toJson omits status when not present', () => {
     const err = new SchemaLoadError('missing $id', {
-      'code': SchemaLoadErrorCode.LOAD_FAILED,
+      'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
       'file': 'https://example.com/Schema',
       'reason': 'missing-id',
       'retryable': false
@@ -101,7 +101,7 @@ void describe('SchemaLoadError — serialization', { 'concurrency': true }, () =
 
   void it('toLoadError returns a valid SchemaLoadErrorType', () => {
     const err = new SchemaLoadError('HTTP 503 loading https://example.com/Schema', {
-      'code': SchemaLoadErrorCode.LOAD_FAILED,
+      'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
       'file': 'https://example.com/Schema',
       'reason': 'fetch-failed',
       'retryable': true,
@@ -118,7 +118,7 @@ void describe('SchemaLoadError — serialization', { 'concurrency': true }, () =
 
   void it('toLoadError omits status when undefined', () => {
     const err = new SchemaLoadError('missing $id', {
-      'code': SchemaLoadErrorCode.LOAD_FAILED,
+      'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
       'file': 'https://example.com/Schema',
       'reason': 'missing-id',
       'retryable': false

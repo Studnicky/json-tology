@@ -17,12 +17,12 @@ export type JsonTologyOptionsType<TSchemas extends readonly unknown[] = readonly
    * IRIs matching the well-known genid pattern are treated as blank
    * nodes during reconstruction.
    */
-  readonly 'defaultDeskolemize'?: boolean;
+  'defaultDeskolemize'?: boolean;
   /**
    * Default graph IRI applied to ABox quads when {@link toQuads} is called
    * without a per-call `graphIri`.
    */
-  readonly 'defaultGraphIri'?: string;
+  'defaultGraphIri'?: string;
   /**
    * When true (the default), property predicates are derived as flat shared
    * IRIs (canonical form). Set to `false` to derive class-scoped
@@ -76,14 +76,14 @@ export type JsonTologyOptionsType<TSchemas extends readonly unknown[] = readonly
   'enableStrictTypes'?: boolean;
   'enableTypeCast'?: boolean;
   'formats'?: Record<BuiltinFormatNameType | (Record<never, never> & string), (value: unknown) => boolean>;
-  'invariants'?: Record<string, readonly InvariantType[]>;
+  'invariants'?: Record<string, InvariantType[]>;
   /**
    * Default IRI minting strategy for {@link toQuads}. A string is treated
    * as a root-only IRI override (depth 0); nested objects fall through to
    * the default hash minter. A function is the full {@link SkolemizeFnType}
    * shape. Per-call options on `toQuads` override this default.
    */
-  readonly 'iriFor'?: SkolemizeFnType | string;
+  'iriFor'?: SkolemizeFnType | string;
   'keywords'?: KeywordDefinitionType[];
   'logger'?: LoggerInterface;
   'materializer'?: MaterializerOptionsType;
@@ -102,7 +102,7 @@ export type JsonTologyOptionsType<TSchemas extends readonly unknown[] = readonly
    * subject `iriFor` option: `iriFor` customises subject IRI minting,
    * `predicateFor` customises predicate IRI derivation.
    */
-  readonly 'predicateFor'?: PredicateForType;
+  'predicateFor'?: PredicateForType;
   /**
    * Pre-resolved schema bundle produced by {@link JsonTology.prefetch}. Schemas
    * passed via `schemas` register first; entries from the snapshot then fill any
@@ -113,5 +113,5 @@ export type JsonTologyOptionsType<TSchemas extends readonly unknown[] = readonly
   'prefetched'?: SnapshotType;
   'prefixes'?: Record<string, string>;
   'schemas'?: TSchemas;
-  'vocabularies'?: readonly VocabularyPluginInterface[];
+  'vocabularies'?: VocabularyPluginInterface[];
 };

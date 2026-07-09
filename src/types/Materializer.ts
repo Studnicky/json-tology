@@ -1,12 +1,22 @@
 import type { QuadInterface } from '../interfaces/QuadInterface.js';
 import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 import type { AboxProjectorInterface } from '../interfaces/AboxProjectorInterface.js';
+import type { AboxOptionsType } from './AboxOptionsType.js';
 
 export type MaterializationResultType = {
   'abox': QuadInterface[];
   'errors': string[];
   'valid': boolean;
   'value': unknown;
+};
+
+export type MaterializerRunOptionsType = {
+  /** Overrides passed through to ABox projection when baseIri is set. */
+  'aboxOptions'?: AboxOptionsType;
+  /** Base IRI for generated quad subjects; ABox projection runs only when set. */
+  'baseIri'?: string;
+  /** When true, synthesizes zero values for required properties instead of validating against provided data. */
+  'synthesizeDefaults'?: boolean;
 };
 
 export type MaterializerOptionsType = {

@@ -54,7 +54,9 @@ export class OntologyBuilder implements OntologyBuilderInterface {
   public async addFromJsonLd(doc: JsonLdDocInputType): Promise<this> {
     const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
     const quads = dataset.map((datasetQuad) => {
-      return QuadFactory.fromDatasetQuad(datasetQuad);
+      const result = QuadFactory.fromDatasetQuad(datasetQuad);
+
+      return result;
     });
 
     this.logger.debug(LogScope.format('OntologyBuilder', 'addFromJsonLd', `parsed ${quads.length} quads from JSON-LD`));
@@ -82,7 +84,9 @@ export class OntologyBuilder implements OntologyBuilderInterface {
   public async addShaclFromJsonLd(doc: JsonLdDocInputType): Promise<this> {
     const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
     const quads = dataset.map((datasetQuad) => {
-      return QuadFactory.fromDatasetQuad(datasetQuad);
+      const result = QuadFactory.fromDatasetQuad(datasetQuad);
+
+      return result;
     });
 
     this.logger.debug(LogScope.format('OntologyBuilder', 'addShaclFromJsonLd', `parsed ${quads.length} quads from JSON-LD`));
@@ -114,7 +118,9 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Generate JSON-LD as a JSON string.
    */
   public jsonLd(): string {
-    return JSON.stringify(this.jsonLdObject(), undefined, 2);
+    const result = JSON.stringify(this.jsonLdObject(), undefined, 2);
+
+    return result;
   }
 
   /**
@@ -132,13 +138,14 @@ export class OntologyBuilder implements OntologyBuilderInterface {
       BaseGraphSerializer.ensureArray(node, RDFS.subClassOf);
     }
 
-    return {
-      [JSONLD.context]: this.prefixes,
-      [JSONLD.graph]: nodes,
-      [JSONLD.id]: `${this.baseIri}/ontology/`,
-      [JSONLD.type]: 'owl:Ontology',
-      'rdfs:label': 'Generated Ontology'
-    };
+    const doc: Record<string, unknown> = { 'rdfs:label': 'Generated Ontology' };
+
+    doc[JSONLD.context] = this.prefixes;
+    doc[JSONLD.graph] = nodes;
+    doc[JSONLD.id] = `${this.baseIri}/ontology/`;
+    doc[JSONLD.type] = 'owl:Ontology';
+
+    return doc;
   }
 
   /**
@@ -165,10 +172,12 @@ export class OntologyBuilder implements OntologyBuilderInterface {
       BaseGraphSerializer.normalizeArrays(node, SHACL_ARRAY_KEYS);
     }
 
-    return {
-      [JSONLD.context]: shaclPrefixes,
-      [JSONLD.graph]: nodes
-    };
+    const doc: Record<string, unknown> = {};
+
+    doc[JSONLD.context] = shaclPrefixes;
+    doc[JSONLD.graph] = nodes;
+
+    return doc;
   }
 
   /**

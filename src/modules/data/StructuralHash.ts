@@ -11,13 +11,17 @@ import { DataType } from './DataType.js';
 
 export class StructuralHash {
   public static of(schema: Record<string, unknown>): string {
-    return Hash.value(StructuralHash.strip(schema));
+    const result = Hash.value(StructuralHash.strip(schema));
+
+    return result;
   }
 
   private static strip(value: unknown): unknown {
     if (Array.isArray(value)) {
       return value.map((item) => {
-        return StructuralHash.strip(item);
+        const result = StructuralHash.strip(item);
+
+        return result;
       });
     }
 

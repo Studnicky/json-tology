@@ -20,10 +20,10 @@ import { transform } from 'sucrase';
 
 import * as jtIndex from '../../../../src/index.js';
 import * as jtTypes from '../../../../src/types/index.js';
-import * as jtOwlGen from '../../../../src/owl-gen.js';
-import * as jtSchema from '../../../../src/schema.js';
-import * as jtValue from '../../../../src/value.js';
-import * as jtOntology from '../../../../src/ontology.js';
+import * as jtOwlGen from '../../../../src/owl-gen/index.js';
+import * as jtSchema from '../../../../src/schema/index.js';
+import * as jtValue from '../../../../src/value/index.js';
+import * as jtOntology from '../../../../src/ontology/index.js';
 import * as jtInterfaces from '../../../../src/interfaces/index.js';
 import * as schemaRegistry from '../../../../src/modules/registry/SchemaRegistry.js';
 import * as zod from 'zod';
@@ -51,11 +51,11 @@ const STATIC_MODULES: Readonly<Record<string, unknown>> = {
   'src/index': jtIndex,
   'src/interfaces/index': jtInterfaces,
   'src/modules/registry/SchemaRegistry': schemaRegistry,
-  'src/ontology': jtOntology,
-  'src/owl-gen': jtOwlGen,
-  'src/schema': jtSchema,
+  'src/ontology/index': jtOntology,
+  'src/owl-gen/index': jtOwlGen,
+  'src/schema/index': jtSchema,
   'src/types/index': jtTypes,
-  'src/value': jtValue,
+  'src/value/index': jtValue,
   valibot,
   zod
 };

@@ -17,9 +17,9 @@
  */
 export type SerializeContextType = {
   /** Current indentation depth (number of spaces). */
-  readonly 'indent': number;
+  'indent': number;
   /** Inner padding string for one level deeper. */
-  readonly 'innerPad': string;
+  'innerPad': string;
   /** Outer padding string for the current level. */
-  readonly 'pad': string;
+  'pad': string;
 };

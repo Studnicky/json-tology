@@ -26,14 +26,14 @@ import type { ProjectBaseArgsType } from './ProjectBaseArgsType.js';
  * @group ABox
  */
 export type ProjectPropertyArgsType = {
-  readonly 'instanceIri': string;
+  'instanceIri': string;
   /** Single predicate-derivation authority — forwarded to the recursive nested-instance projection. */
-  readonly 'propertyIri': string;
-  readonly 'propertyNode': SchemaGraphNodeType;
-  readonly 'propertySemantics': { 'format': string | undefined;
+  'propertyIri': string;
+  'propertyNode': SchemaGraphNodeType;
+  'propertySemantics': { 'format': string | undefined;
     'iriRef': boolean;
     'itemsNode': SchemaGraphNodeType | undefined;
     'language': string | undefined;
     'schemaTypes': string[] };
-  readonly 'value': unknown;
+  'value': unknown;
 } & ProjectBaseArgsType;

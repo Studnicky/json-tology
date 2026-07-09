@@ -4,10 +4,10 @@
  */
 
 export type PropIndexEntryType = {
-  readonly 'domains': string[];
-  readonly 'inverseOf': string[];
-  readonly 'propertyIri': string;
-  readonly 'range': null | string;
-  readonly 'subPropertyOf': string[];
-  readonly 'type': 'datatype' | 'object';
+  'domains': string[];
+  'inverseOf': string[];
+  'propertyIri': string;
+  'range': null | string;
+  'subPropertyOf': string[];
+  'type': 'datatype' | 'object';
 };

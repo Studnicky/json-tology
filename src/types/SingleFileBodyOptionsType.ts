@@ -19,15 +19,15 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  */
 export type SingleFileBodyOptionsType = {
   /** Effective base IRI for `JsonTology.create`. */
-  readonly 'effectiveBaseIri': string;
+  'effectiveBaseIri': string;
   /** Import path for `InferType`. */
-  readonly 'inferTypeImportPath': string;
+  'inferTypeImportPath': string;
   /** Map from IRI to PascalCase identifier. */
-  readonly 'nameMap': Map<string, string>;
+  'nameMap': Map<string, string>;
   /** Name of the exported registry constant. */
-  readonly 'registryConstName': string;
+  'registryConstName': string;
   /** All consumer-facing schemas. */
-  readonly 'schemas': JsonSchemaDocumentObjectType[];
+  'schemas': JsonSchemaDocumentObjectType[];
   /** Sorted IRIs in emission order. */
-  readonly 'sortedIris': string[];
+  'sortedIris': string[];
 };

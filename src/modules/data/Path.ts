@@ -15,7 +15,9 @@ export class Path {
       .split('/')
       .slice(1)
       .map((seg) => {
-        return seg.replaceAll('~1', '/').replaceAll('~0', '~');
+        const result = seg.replaceAll('~1', '/').replaceAll('~0', '~');
+
+        return result;
       });
 
     let result = '';
