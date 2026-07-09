@@ -130,10 +130,14 @@ class CatalogIsbn(Isbn):
 
 :::
 
-## Related / See also
+## Related
+
+- [`Compose.extend`](/composition/extend) - structural extension (produces allOf+$ref, maps to `rdfs:subClassOf`)
+- [`Compose.subClassOf`](/composition/sub-class-of) - explicit taxonomic subclass with optional multi-parent
+- [Graph concepts (TBox/ABox)](/advanced/graph-concepts)
+
+## See also
 
 - [OWL TBox output](/advanced/ontology#jt-totbox)
 - [SHACL output](/advanced/ontology#jt-toshacl)
-- [`Compose.extend`](/composition/extend) - structural extension (produces allOf+$ref, maps to `rdfs:subClassOf`)
-- [`Compose.subClassOf`](/composition/sub-class-of) - explicit taxonomic subclass with optional multi-parent
 - [Graph-native authoring](/advanced/graph-native-authoring) - why naming reduces drift

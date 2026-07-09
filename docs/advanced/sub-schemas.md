@@ -75,12 +75,12 @@ For ergonomic, refactor-safe, ontology-friendly authoring: name every value type
 
 ## GraphEngine self-ref and embedded `$id` resolution <Badge type="tip" text="Runtime" />
 
-When accessing the engine directly via `registry.engine(schemaObj).errors(data)`, self-references and embedded `$id` declarations inside `$defs` now resolve correctly.
+When accessing the engine directly via `registry.engine(schemaObj).errors(data)`, self-references and embedded `$id` declarations inside `$defs` resolve correctly on both the interpreted engine path and the compiled `registry.validate` fast-path.
 
 - **Self-references**: `$ref` pointing to the root schema's own `$id` resolves correctly on the interpreted path, matching the behaviour of the compiled path (`registry.validate`).
 - **Embedded `$id` in `$defs`**: `$ref` targets that point at an `$id` declared inside `$defs` (or any nested sub-schema) resolve on both the compiled and interpreted paths.
 
-Previously these only worked on the `registry.validate` compiled fast-path. The two paths now produce the same validation results for all `$ref` shapes.
+The two paths produce the same validation results for all `$ref` shapes.
 
 ## Related
 

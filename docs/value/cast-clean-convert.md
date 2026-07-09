@@ -22,92 +22,6 @@ Schema-aware instance methods on `jt.value`. All three operate against the regis
 
 <RunnableExample src="examples/docs/value/09-cast-query-params" />
 
-### Comparison
-
-::: code-group
-
-```ts [json-tology]
-const jt = JsonTology.create({ ..., enableTypeCast: true });
-const book = jt.value.cast(BookSchema.$id, rawData); // strings coerced
-```
-
-```ts [Zod]
-// Zod uses .instantiate() wrappers per-field:
-const BookSchema = z.object({
-  price:   z.coerce.number(),
-  inStock: z.coerce.boolean(),
-});
-const book = BookSchema.parse(rawData);
-```
-
-```ts [Valibot]
-import * as v from 'valibot';
-// Limitation: no schema-wide cast option. Wrap each coerced field
-// individually and rebuild the schema:
-const BookSchema = v.object({
-  price:   v.pipe(v.unknown(), v.transform(Number), v.number()),
-  inStock: v.pipe(v.unknown(), v.transform(Boolean), v.boolean()),
-});
-const book = v.parse(BookSchema, rawData);
-```
-
-```ts [io-ts]
-import * as t from 'io-ts';
-// Limitation: io-ts has no schema-wide coercion. Build a custom codec for
-// each field that needs to coerce string → number/boolean:
-const NumberFromString = new t.Type<number, string, unknown>(
-  'NumberFromString',
-  (input): input is number => typeof input === 'number',
-  (input, ctx) => {
-    const parsed = typeof input === 'string' ? Number(input) : input;
-    return typeof parsed === 'number' && !Number.isNaN(parsed)
-      ? t.success(parsed) : t.failure(input, ctx);
-  },
-  (output) => String(output),
-);
-const BookCodec = t.type({ price: NumberFromString /* ... */ });
-const decoded = BookCodec.decode(rawData);
-```
-
-```ts [TypeBox + Value]
-import { Value } from '@sinclair/typebox/value';
-const book = Value.Convert(BookSchema, rawData); // type conversion
-```
-
-```ts [AJV]
-// AJV has { coerceTypes: true } option:
-const ajv = new Ajv({ coerceTypes: true });
-ajv.validate(bookSchema, rawData); // rawData mutated in place
-```
-
-```py [Pydantic]
-# Pydantic v2 coerces compatible types by default (strict=False):
-book = Book.model_validate(raw_data)  # '14.99' → 14.99
-```
-
-
-```ts [Yup]
-// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
-```
-
-```ts [Joi]
-// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
-```
-
-```ts [Effect Schema]
-// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
-```
-
-```ts [ArkType]
-// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
-```
-
-```ts [Runtypes]
-// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
-```
-
-:::
-
 ---
 
 ## `value.clean` {#value-clean}
@@ -124,78 +38,6 @@ book = Book.model_validate(raw_data)  # '14.99' → 14.99
 
 <RunnableExample src="examples/docs/value/10-clean-strip-internal" />
 
-### Comparison
-
-::: code-group
-
-```ts [json-tology]
-const cleaned = jt.value.clean(BookSchema.$id, data);
-// Unknown properties stripped; validation error thrown if invalid
-```
-
-```ts [Zod]
-// Zod's default .parse() strips unknown keys:
-const cleaned = BookSchema.parse(data);
-```
-
-```ts [Valibot]
-import * as v from 'valibot';
-// v.object() strips unknown keys by default during v.parse:
-const cleaned = v.parse(BookSchema, data);
-// Use v.looseObject() to preserve unknowns; v.strictObject() to reject them.
-```
-
-```ts [io-ts]
-import * as t from 'io-ts';
-// t.type accepts unknown extra properties; use t.exact to strip them:
-const StrictBookCodec = t.exact(t.type({
-  isbn:    t.string,
-  title:   t.string,
-  authors: t.array(t.string),
-  price:   t.number,
-}));
-const result = StrictBookCodec.decode(data); // unknown keys removed in result.right
-```
-
-```ts [TypeBox + Value]
-import { Value } from '@sinclair/typebox/value';
-Value.Clean(BookSchema, Value.Clone(data)); // removes additional properties
-```
-
-```ts [AJV]
-// AJV with { removeAdditional: true }:
-const ajv = new Ajv({ removeAdditional: true });
-ajv.validate(bookSchema, data); // mutates data in place
-```
-
-```py [Pydantic]
-# Pydantic ignores extra fields by default (model_config extra='ignore'):
-cleaned = Book.model_validate(data)
-```
-
-
-```ts [Yup]
-// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
-```
-
-```ts [Joi]
-// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
-```
-
-```ts [Effect Schema]
-// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
-```
-
-```ts [ArkType]
-// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
-```
-
-```ts [Runtypes]
-// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
-```
-
-:::
-
 ---
 
 ## `value.convert` {#value-convert}
@@ -209,6 +51,127 @@ cleaned = Book.model_validate(data)
 #### Example 1: Convert types for a partial review without filling defaults
 
 <RunnableExample src="examples/docs/value/11-convert-types-no-defaults" />
+
+---
+
+## Comparison
+
+`cast` fills defaults, `clean` strips unknown properties, `convert` coerces types only. Other libraries rarely separate these three concerns; each tab notes how the library maps onto them.
+
+::: code-group
+
+```ts [json-tology]
+const jt = JsonTology.create({ ..., enableTypeCast: true });
+
+const book    = jt.value.cast(BookSchema.$id, rawData);   // cast: coerce + fill defaults
+const cleaned = jt.value.clean(BookSchema.$id, data);     // clean: strip unknown properties
+const partial = jt.value.convert(BookSchema.$id, rawData); // convert: coerce only, no defaults
+```
+
+```ts [Zod]
+// cast — .coerce wrappers per-field, defaults filled by Zod's own .default():
+const BookSchema = z.object({
+  price:   z.coerce.number(),
+  inStock: z.coerce.boolean(),
+});
+const book = BookSchema.parse(rawData);
+
+// clean — .parse() strips unknown keys by default (same mechanism as cast above):
+const cleaned = BookSchema.parse(data);
+
+// convert — Limitation: no built-in way to coerce without also applying
+// .default() on the same schema; requires a second schema without defaults.
+```
+
+```ts [Valibot]
+import * as v from 'valibot';
+
+// cast — Limitation: no schema-wide cast option. Wrap each coerced field
+// individually and rebuild the schema:
+const BookSchema = v.object({
+  price:   v.pipe(v.unknown(), v.transform(Number), v.number()),
+  inStock: v.pipe(v.unknown(), v.transform(Boolean), v.boolean()),
+});
+const book = v.parse(BookSchema, rawData);
+
+// clean — v.object() strips unknown keys by default during v.parse:
+const cleaned = v.parse(BookSchema, data);
+// Use v.looseObject() to preserve unknowns; v.strictObject() to reject them.
+
+// convert — same Limitation as cast: no schema-wide option to coerce
+// without a separate defaults step.
+```
+
+```ts [io-ts]
+import * as t from 'io-ts';
+
+// cast — Limitation: io-ts has no schema-wide coercion. Build a custom codec
+// for each field that needs to coerce string → number/boolean:
+const NumberFromString = new t.Type<number, string, unknown>(
+  'NumberFromString',
+  (input): input is number => typeof input === 'number',
+  (input, ctx) => {
+    const parsed = typeof input === 'string' ? Number(input) : input;
+    return typeof parsed === 'number' && !Number.isNaN(parsed)
+      ? t.success(parsed) : t.failure(input, ctx);
+  },
+  (output) => String(output),
+);
+const BookCodec = t.type({ price: NumberFromString /* ... */ });
+const decoded = BookCodec.decode(rawData);
+
+// clean — t.type accepts unknown extra properties; use t.exact to strip them:
+const StrictBookCodec = t.exact(t.type({
+  isbn:    t.string,
+  title:   t.string,
+  authors: t.array(t.string),
+  price:   t.number,
+}));
+const result = StrictBookCodec.decode(data); // unknown keys removed in result.right
+
+// convert — same custom-codec approach as cast, minus any default-filling logic.
+```
+
+```ts [TypeBox + Value]
+import { Value } from '@sinclair/typebox/value';
+
+const book    = Value.Convert(BookSchema, rawData);       // cast: type conversion
+Value.Clean(BookSchema, Value.Clone(data));                // clean: removes additional properties
+const partial = Value.Convert(PartialSchema, rawData);      // convert: same call against a schema with no defaults
+```
+
+```ts [AJV]
+// cast — { coerceTypes: true } combined with AJV's useDefaults:
+const ajv = new Ajv({ coerceTypes: true, useDefaults: true });
+ajv.validate(bookSchema, rawData); // rawData mutated in place
+
+// clean — { removeAdditional: true }:
+const ajvClean = new Ajv({ removeAdditional: true });
+ajvClean.validate(bookSchema, data); // mutates data in place
+
+// convert — { coerceTypes: true } alone, useDefaults omitted:
+const ajvConvert = new Ajv({ coerceTypes: true });
+ajvConvert.validate(bookSchema, rawData);
+```
+
+```py [Pydantic]
+# cast — Pydantic v2 coerces compatible types and fills defaults together
+# (strict=False is the default); the two are not separable:
+book = Book.model_validate(raw_data)  # '14.99' → 14.99
+
+# clean — extra fields are ignored by default (model_config extra='ignore'):
+cleaned = Book.model_validate(data)
+
+# convert — Limitation: no way to coerce types without also filling
+# defaults on the same model.
+```
+
+```ts [Yup / Joi / Effect Schema / ArkType / Runtypes]
+// Limitation: cast, clean, and convert are not directly supported as
+// separate operations in these libraries. See /comparisons for the matrix.
+```
+
+:::
 
 ## Related
 

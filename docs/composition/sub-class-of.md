@@ -2,9 +2,7 @@
 
 > Validation modes: [Validation modes reference](/validation-modes)
 
-These three methods complete the OWL class-axiom set on `Compose`. They are authored as plain JSON Schema documents - every concept lives behind a method, not behind a custom keyword on the schema literal.
-
-## Declaration
+**Declaration.** These three methods complete the OWL class-axiom set on `Compose`. They are authored as plain JSON Schema documents - every concept lives behind a method, not behind a custom keyword on the schema literal.
 
 <!-- inline-ts-ok: pseudocode signature group describing return shapes; not runnable expressions. -->
 ```ts
@@ -21,33 +19,35 @@ Compose.complementOf(other, body):           { $id, not: { $ref }, ...body }
 
 `body` always carries the new schema's `$id` and any structural keywords you would normally write inline (`type`, `properties`, `required`, `description`, etc.).
 
-## Use this when
+**Use this when**
 
 - **`subClassOf`** - you want explicit taxonomic narrowing with one OR multiple parents. Emits `rdfs:subClassOf` per parent in the OWL TBox.
 - **`disjointWith`** - two classes share no instances (e.g. `Weapon` and `Armor`). Emits `owl:disjointWith`.
 - **`complementOf`** - a class is the negation of another (e.g. `NonHumanRace` is everything that is not `HumanRace`). Emits `owl:complementOf`.
 
-## Don't use this when
+**Don't use this when**
 
 - You only need property-merging with a single parent - use [`Compose.extend`](/composition/extend), which is structurally equivalent (both produce `allOf + $ref`) but signals "extension" rather than "is-a".
 - You want type aliasing without OWL semantics - use [`Compose.equivalent`](/composition/equivalent).
 - You want individual-level identity (`owl:sameAs` between two ABox individuals) - use [`JsonTology.prototype.sameAs`](/advanced/sameas). Class axioms operate on the TBox layer.
 
-## Examples
+## Runnable examples
 
-### Example 1: single-parent subclass — runnable
+### Example 1: single-parent subclass
 
 <RunnableExample src="examples/docs/composition/48-sub-class-of" />
 
-### Example 2: disjoint classes — runnable
+### Example 2: disjoint classes
 
 <RunnableExample src="examples/docs/composition/49-disjoint-with" />
 
-### Example 3: complement class — runnable
+### Example 3: complement class
 
 <RunnableExample src="examples/docs/composition/50-complement-of" />
 
-### Example 4: single-parent subclass (bookstore domain)
+## Bookstore domain examples
+
+### Example 1: single-parent subclass (EBook)
 
 `EBook` is a `Book` with three extra fields. The full source lives in the shared bookstore domain:
 
@@ -177,10 +177,13 @@ class EBook(Book):
 
 :::
 
-## Related / See also
+## Related
 
 - [`Compose.extend`](/composition/extend) - property-merging extension (single parent, allOf+$ref shape, no explicit "subclass" semantic)
 - [`Compose.equivalent`](/composition/equivalent) - `owl:equivalentClass` for structurally identical types
 - [`Compose.intersection`](/composition/intersection) - generic `allOf` over multiple schemas
+
+## See also
+
 - [OWL TBox output](/advanced/ontology#jt-totbox)
 - [Graph-native authoring](/advanced/graph-native-authoring)

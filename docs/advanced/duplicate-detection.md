@@ -60,47 +60,11 @@ Additionally, transform-bearing schemas are separated from plain schemas by the 
 
 ## Escape hatches
 
-### 1. `enableStrictGraph: false` — downgrade all violations to warnings
+### 1. `enableStrictGraph: false`, `enableDuplicateDetection: false`, `enableInlineWarnings: false`
 
-Turns all graph-integrity violations into `logger.warn` calls. Neither inline shapes nor duplicate shapes throw.
+These three flags control enforcement strictness across the registry; see [Strict graph mode](/advanced/strict-graph-mode) for the full explanation of each — [`enableStrictGraph`](/advanced/strict-graph-mode#enablestrictgraph) downgrades all violations to warnings, `enableDuplicateDetection: false` disables the automatic duplicate scan, and `enableInlineWarnings: false` suppresses inline-shape warnings.
 
-<!-- inline-ts-ok: create-options sketch; `schemas: [...]` is a placeholder, not a standalone runnable program. -->
-```ts
-const entities = JsonTology.create({
-  baseIri: 'urn:bookstore:',
-  schemas: [...] as const,
-  enableStrictGraph: false,
-});
-```
-
-### 2. `enableDuplicateDetection: false` — disable duplicate scanning
-
-Stops `findDuplicates()` from running after each `register()` call. Inline-shape warnings are still active if `enableInlineWarnings` remains on. Use when you have a large nominal-primitive library and the duplicate scan overhead is noticeable during development, or while migrating a large codebase to named schemas incrementally.
-
-<!-- inline-ts-ok: create-options sketch; `schemas: [...]` is a placeholder, not a standalone runnable program. -->
-```ts
-const entities = JsonTology.create({
-  baseIri: 'urn:bookstore:',
-  schemas: [...] as const,
-  enableDuplicateDetection: false,
-});
-```
-
-### 3. `enableInlineWarnings: false` — suppress inline-shape warnings
-
-Stops registration-time warnings for inline constrained shapes when `enableStrictGraph` is also off.
-
-<!-- inline-ts-ok: create-options sketch; `schemas: [...]` is a placeholder, not a standalone runnable program. -->
-```ts
-const entities = JsonTology.create({
-  baseIri: 'urn:bookstore:',
-  schemas: [...] as const,
-  enableStrictGraph: false,
-  enableInlineWarnings: false,
-});
-```
-
-### 4. `format` as semantic typing — a legitimate structural differentiator
+### 2. `format` as semantic typing — a legitimate structural differentiator
 
 `format` is a standard JSON Schema keyword for semantic type annotation. Using it to distinguish schemas that share the same base type is not a hack — it is the standard JSON Schema approach.
 
@@ -154,15 +118,7 @@ Run this in CI as a ratchet: fix duplicates one at a time, then enable `enableSt
 
 ## Migrating to strict mode
 
-If you have an existing schema set with inline shapes and cannot refactor everything at once:
-
-1. Set `enableStrictGraph: false`, `enableDuplicateDetection: true` (warning mode).
-2. Run `registry.findDuplicates()` to get the full list.
-3. For each reported duplicate, extract the inline shape to a named schema file.
-4. Replace the inline occurrence with `{ $ref: NewSchema.$id }`.
-5. Register the new named schema alongside its sibling schemas.
-6. Confirm warnings are clear.
-7. Remove the `enableStrictGraph: false` override.
+See [Strict graph mode - migrating existing schemas](/advanced/strict-graph-mode#migrating-existing-schemas) for the full step-by-step walkthrough.
 
 ## Related
 

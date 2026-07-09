@@ -10,6 +10,8 @@
 
 **Declaration.** Attaches `decode` and `encode` functions to a schema using a `WeakMap` (the schema object is never mutated). Returns the same schema object with a widened TypeScript type `TransformedType<TSchema, TOut>`. After `Transform.create`, any call to `jt.instantiate(schema.$id, raw)` automatically applies the `decode` function **before** validation — the schema describes `decode`'s output, so validation (which fills defaults and strips unknown properties) runs on the decoded result. See [Canonical decode/default ordering](/instantiate-vs-materialize#canonical-decode-default-ordering) for the full sequence. The TypeScript return type changes from `InferSchemaType<TSchema>` to `TOut`.
 
+`decode` is typed `(raw: TWire) => Partial<CanonicalShapeType<TSchema, TReferences>>` — it may return just the fields it actually transforms, not the full canonical shape. `encode` is typed `(value: CanonicalShapeType<TSchema, TReferences>) => TWire` and always consumes the full canonical value, since `encode` runs on the validated, fully-defaulted result. See [Partial decode with `enableDefaults`](#partial-decode-with-enabledefaults) below.
+
 **Use this when** a wire-format value needs automatic conversion to a richer domain type - ISO date strings → `Date`, cents integers → floats, raw enums → branded enums, base64 strings → `Buffer`.
 
 **Don't use this when** you want multiple sequential transformations (use [`chain`](/transforms/chain) instead). Don't use it for nominal typing without runtime conversion (use [`brand`](/transforms/brand)).
@@ -29,6 +31,16 @@
 `jt.addTransform(schema, { decode, encode })` is the instance-bound counterpart to `Transform.create`. The key difference: `decode` input types resolve cross-registry `$ref`s through the instance's schema map, so a schema whose properties `$ref` registered primitives gets a fully-typed decode input — no cast, no `unknown`.
 
 <RunnableExample src="examples/docs/advanced/111-add-transform" />
+
+### Partial decode with `enableDefaults` {#partial-decode-with-enabledefaults}
+
+`decode` does not have to produce the full canonical value. `instantiate` runs `decode` before validation, so when the caller passes `{ enableDefaults: true }`, schema `default`s fill any required field `decode` left out — the same completion path `instantiate` uses for any other omitted field; see [Canonical decode/default ordering](/instantiate-vs-materialize#canonical-decode-default-ordering). A decoder whose only job is coercing one or two wire fields (env-var-style strings → numbers, for example) can return just those fields instead of re-declaring every schema default or reaching for a type assertion.
+
+This is narrower than [`Compose.getDefaults`](/composition/get-defaults) — `getDefaults` only reads a schema's declared `default`s into a plain object for form pre-population; it is not the completion mechanism for a partial `decode` result, and does not run `decode` or validation at all.
+
+#### Example 4: Env-var-style quantity coercion, rest filled by defaults
+
+<RunnableExample src="examples/docs/transforms/14-partial-decode-enable-defaults" />
 
 ### Bad examples - what NOT to do
 

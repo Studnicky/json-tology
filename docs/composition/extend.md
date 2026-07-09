@@ -135,6 +135,7 @@ class CustomerWithDiscount(Customer):
 - [`partial`](/composition/partial-required) - make all fields optional after extension
 - [`pick`](/composition/pick-omit) - keep only a subset of properties
 - [`Schemas`](/schemas#registry-methods) - registering extended schemas before use
+- [Graph concepts (TBox/ABox)](/advanced/graph-concepts)
 
 ## See also
 

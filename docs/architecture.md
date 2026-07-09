@@ -92,7 +92,7 @@ A change is complete only when:
 
 ## Public API Surface
 
-Nine package entry points control what consumers import. Internal imports reference defining files directly, not entry-point barrels.
+Nine package entry points control what consumers import. Internal imports reference defining files directly, not entry-point barrels. See [Package exports](/package-exports) for full per-subpath usage examples.
 
 | Entry point | Exports |
 |---|---|
