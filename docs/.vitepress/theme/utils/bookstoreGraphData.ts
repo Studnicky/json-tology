@@ -12,8 +12,8 @@ import {
   SimilarBookSchema
 } from '../../../../examples/docs/bookstore/index.js';
 import { aboxFixtures } from '../../../../examples/docs/bookstore/aboxFixtures.js';
-import type { QuadInterface } from '../../../../src/interfaces/Quad.js';
-import type { SkolemizeFnType } from '../../../../src/types/Skolemize.js';
+import type { QuadInterface } from '../../../../src/interfaces/QuadInterface.js';
+import type { SkolemizeFnType } from '../../../../src/types/SkolemizeFnType.js';
 import { JsonLdFormatter } from '../../../../src/modules/rdf/JsonLdFormatter.js';
 import { layoutLayer } from './graphLayout.js';
 import type { LayoutPosition } from './graphLayout.js';
