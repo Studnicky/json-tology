@@ -87,4 +87,5 @@ See [Error class hierarchy](/errors/classes) for the full `GraphError` surface.
 - [Composition](/composition/extend) - derive new schemas to register
 - [Validation modes](/validation-modes) - enforcement layer reference
 - [Argument conventions](/argument-conventions) - how registered schemas work as `SchemaRef`
+- [Runtime decoding across packages](/cross-package-typing) - registering a hash-namespace schema with CURIE `$ref`s in one package and consuming it, typed, from another
 - [jt: keywords](/schemas/jt-keywords) - json-tology-specific schema extensions

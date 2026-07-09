@@ -16,7 +16,7 @@ That is the whole pattern. The remainder of this page is variations, tradeoffs, 
 
 ## Why this works without a new API
 
-`Transform.create(schema, { decode, encode })` registers a wire-to-runtime pair on the schema. The pair is symmetric: `decode` runs after validation when `jt.instantiate` produces a value, and `encode` runs when `jt.encode` (or `jt.dump`) projects the value back to the wire shape.
+`Transform.create(schema, { decode, encode })` registers a wire-to-runtime pair on the schema. The pair is symmetric: `decode` runs **before** validation when `jt.instantiate` produces a value (the schema describes `decode`'s output, so validation runs on the decoded result — see [Canonical decode/default ordering](/instantiate-vs-materialize#canonical-decode-default-ordering)), and `encode` runs when `jt.encode` (or `jt.dump`) projects the value back to the wire shape.
 
 A class instance is just a runtime type that happens to carry methods on its prototype. There is nothing special about `new Foo()` that the registry needs to know about. Any function that takes a validated plain object and returns "the runtime thing" is a legal `decode`, and any function that returns the wire shape from "the runtime thing" is a legal `encode`.
 

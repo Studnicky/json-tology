@@ -55,7 +55,12 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
 
     const ref = node.$ref;
 
-    if (typeof ref === 'string' && !ref.startsWith('#')) {
+    // A `#`-bearing absolute IRI ref (e.g. `https://ns#Class`) may itself be a
+    // registered hash-namespace `$id`; check the ref as authored (and its
+    // CURIE/relative-expanded form) before falling to document#fragment
+    // semantics, which would otherwise strip the fragment and look up a base
+    // IRI that was never registered.
+    if (typeof ref === 'string' && !ref.startsWith('#') && !knownIds(ref) && !knownIds(resolve(ref))) {
       const refIri = SchemaIri.parseRef(ref).id;
       const resolved = resolve(refIri);
 
@@ -105,7 +110,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
 
     const ref = node.$ref;
 
-    if (typeof ref === 'string' && !ref.startsWith('#')) {
+    if (typeof ref === 'string' && !ref.startsWith('#') && !knownIds(ref) && !knownIds(resolve(ref))) {
       const refIri = SchemaIri.parseRef(ref).id;
       const resolved = resolve(refIri);
 

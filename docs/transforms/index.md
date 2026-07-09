@@ -2,7 +2,7 @@
 
 > Validation modes: [Validation modes reference](/validation-modes)
 
-`Transform` attaches decode/encode functions to schemas without mutating them (stored in a WeakMap). After a transform is registered, `instantiate()` automatically applies the decoder after validation.
+`Transform` attaches decode/encode functions to schemas without mutating them (stored in a WeakMap). After a transform is registered, `instantiate()` automatically applies the decoder before validation — decode's output is what gets validated, defaulted, and stripped. See [Canonical decode/default ordering](/instantiate-vs-materialize#canonical-decode-default-ordering).
 
 ## Methods
 

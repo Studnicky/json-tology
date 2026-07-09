@@ -8,7 +8,13 @@
  * Resolution precedence:
  * 1. Fragment-only ref (`#...`) → resolve within the supplied `graph`.
  * 2. Parse `{ id, fragment }` from the ref via `SchemaIri.parseRef`.
- * 3. Locate the target graph via `lookupGraph` → `lookupSchema` → `rootId` match.
+ * 2a. Literal full-ref lookup: when the ref carries a `#fragment`, it may
+ *     itself be a registered hash-namespace `$id` (e.g. `https://ns#Class`,
+ *     the idiomatic OWL/RDF pattern). Try `lookupGraph`/`lookupSchema`/`rootId`
+ *     against the ref exactly as authored before treating the `#` as
+ *     JSON-Schema document-fragment syntax.
+ * 3. Locate the target graph via `lookupGraph` → `lookupSchema` → `rootId` match
+ *    (against the fragment-stripped id).
  * 4. If a target graph is found, resolve any fragment within it.
  * 5. Embedded-$id fallback: search the root graph's O(1) `embeddedNode` index.
  *    When found, return `{ graph: graphFor(embeddedSchema), node: rootNode }` so
@@ -66,6 +72,16 @@ export class RefResolution {
     // Step 2: parse the ref into an id and optional fragment.
     const parsed = SchemaIri.parseRef(ref);
 
+    // Step 2a: literal full-ref lookup. Only meaningful when the ref carries
+    // a `#fragment` — otherwise `ref === parsed.id` and step 3 already covers it.
+    if (parsed.fragment !== '') {
+      const literalTarget = resolveLiteralRef(ref, graph, options);
+
+      if (literalTarget !== undefined) {
+        return literalTarget;
+      }
+    }
+
     // Step 3a: external graph lookup.
     const externalGraph = options.lookupGraph?.(parsed.id);
 
@@ -116,6 +132,48 @@ export class RefResolution {
       'pointer': ref
     });
   }
+}
+
+/**
+ * Try resolving `ref` as a literal, exact registered `$id` — i.e. without
+ * fragment-stripping. Mirrors steps 3a/3b/3c/5 of `RefResolution.resolve`, but
+ * keyed on the ref exactly as authored so a hash-namespace `$id` (e.g.
+ * `https://ns#Class`) matches even though it contains a `#`.
+ *
+ * Returns `undefined` when no literal match is found, so the caller falls
+ * through to the fragment-stripped resolution path unchanged.
+ */
+function resolveLiteralRef(
+  ref: string,
+  graph: SchemaGraphInterface,
+  options: RefResolutionOptionsType
+): RefTargetType | undefined {
+  const literalGraph = options.lookupGraph?.(ref);
+
+  if (literalGraph !== undefined) {
+    return resolveInGraph(literalGraph, '');
+  }
+
+  const literalSchema = options.lookupSchema?.(ref);
+
+  if (literalSchema !== undefined) {
+    return resolveInGraph(buildGraph(literalSchema, options), '');
+  }
+
+  if (options.rootId !== undefined && ref === options.rootId && options.rootSchema !== undefined) {
+    return resolveInGraph(buildGraph(options.rootSchema, options), '');
+  }
+
+  const embeddedLookupGraph = options.rootSchema === undefined
+    ? graph
+    : buildGraph(options.rootSchema, options);
+  const embeddedNode = embeddedLookupGraph.embeddedNode(ref);
+
+  if (embeddedNode !== undefined && DataType.isRecord(embeddedNode.schema)) {
+    return resolveInGraph(buildGraph(embeddedNode.schema, options), '');
+  }
+
+  return undefined;
 }
 
 /** Resolve an optional fragment within a graph and return the `RefTargetType`. */
