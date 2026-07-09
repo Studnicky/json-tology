@@ -65,7 +65,7 @@ console.assert(!('authors' in bibDefaults));
 // MaterializedSchemaType surfaces own properties only, so view the result as the
 // fully-resolved Book to read the inherited `isbn` precisely.
 const materialized = bookstoreEntities.materialize(BookSchema, {
-  'authors': aboxFixtures.rareBook.authors,
+  'authors': [...aboxFixtures.rareBook.authors],
   'isbn': aboxFixtures.rareBook.isbn,
   'price': aboxFixtures.rareBook.price,
   'printStatus': aboxFixtures.rareBook.printStatus,

@@ -13,6 +13,20 @@ See also [Utility types](./utility.md), [Range types](./ranges.md).
 
 ---
 
+## Mutability
+
+**Generated and inferred types are never `readonly`.** Every schema-derived type surface — `InferType`, `InferSchemaType`, `NominalSchemaType`, `MaterializedSchemaType`, `ParseOutputType` (the return type of `instantiate()`, `encode()`, `dump()`, and friends), `CanonicalShapeType`/`UnbrandType` (the type `materialize()` accepts and a normalize transform's `decode`/`encode` boundary produces), and `BrandOutputType` — types its object properties and array/tuple elements as plain, mutable TypeScript: `T[]`, not `readonly T[]` or `ReadonlyArray<T>`; `{ id: string }`, not `{ readonly id: string }`.
+
+Mutability is the default. Readonly-ness is a decision an individual consumer makes at their own usage site — never something the library imposes on every consumer of a generated type. Concretely:
+
+- A function parameter can always be declared `readonly T[]` even when the canonical inferred type for `T[]` is a plain mutable array — TypeScript allows passing a mutable array anywhere a `readonly` array is expected, never the reverse. Narrowing mutable → readonly is free; a library that hands back `readonly` by default forecloses that choice and forces every consumer who needs to reassign or mutate the value (build it up in a loop, sort it in place, patch a field before re-validating) into a workaround.
+- This applies uniformly across every type-producing surface in the package: authoring a schema and reading `InferType<typeof Schema>` produces the same mutability convention as calling `instantiate()`, `materialize()`, `encode()`, or `dump()` and reading the value back. There is exactly one convention, not one for compile-time inference and a different one for runtime construction.
+- The convention also matches [`@studnicky/types`'s `FromSchema`](https://github.com/Studnicky/substrate) and the wider TypeScript ecosystem's own `json-schema-to-ts`: a schema-inferred type is the *canonical* mutable shape. Consumers who need immutability — a Redux-style state slice, a value handed across a worker boundary, a defensive API boundary — opt in locally with their own `readonly`/`Readonly<T>` annotation rather than fighting the library's output type at every call site.
+
+Compile-time [constraint brands](/constraint-brands) (`FormatBrandType`, `MinItemsBrandType`, and friends) are unaffected by this — they are phantom `unique symbol` markers used to make structurally-different constraints incompatible types, not `readonly` modifiers on real properties, so they carry no mutability implication either way.
+
+---
+
 ## InferType
 
 Derives a TypeScript type from an `as const` JSON Schema literal.

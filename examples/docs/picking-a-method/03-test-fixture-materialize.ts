@@ -20,7 +20,10 @@ import {
 // so the materialize generic falls back to an untyped result).
 const order = bookstoreEntities.materialize(
   OrderSchema,
-  { ...aboxFixtures.order }
+  {
+    ...aboxFixtures.order,
+    'orderLines': [...aboxFixtures.order.orderLines]
+  }
 );
 
 console.assert(order.customerId === aboxFixtures.order.customerId);

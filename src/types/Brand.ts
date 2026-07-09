@@ -58,7 +58,7 @@ export type BrandedType<TSchema, TBrand extends string> = BrandTagType<TBrand> &
  *
  * @remarks
  * When `TSchema` extends {@link BrandTagType}, the inferred output type is
- * intersected with `{ readonly 'brand': B }` so that the brand name is visible
+ * intersected with `{ 'brand': B }` so that the brand name is visible
  * on the resulting JS type. For a non-branded schema this reduces to
  * `ParseOutputType<TSchema>` unchanged. Used internally by `InferType` to
  * propagate brand annotations from authored schemas to their inferred types.
@@ -66,7 +66,7 @@ export type BrandedType<TSchema, TBrand extends string> = BrandTagType<TBrand> &
  * @example
  * ```ts
  * type IdSchema = BrandedType<{ type: 'string' }, 'UserId'>;
- * type Id = BrandOutputType<IdSchema>; // string & { readonly brand: 'UserId' }
+ * type Id = BrandOutputType<IdSchema>; // string & { brand: 'UserId' }
  * ```
  *
  * @category Schema Utilities
@@ -78,6 +78,6 @@ export type BrandedType<TSchema, TBrand extends string> = BrandTagType<TBrand> &
  */
 export type BrandOutputType<TSchema>
   = TSchema extends BrandTagType<infer B extends string>
-    ? ParseOutputType<TSchema> & { readonly 'brand': B }
+    ? ParseOutputType<TSchema> & { 'brand': B }
     : ParseOutputType<TSchema>;
 

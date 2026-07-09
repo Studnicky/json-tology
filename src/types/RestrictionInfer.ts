@@ -136,9 +136,9 @@ declare const _TUPLE_CAP: 16;
 export type TupleCapType = typeof _TUPLE_CAP;
 
 /**
- * Build a readonly tuple of exactly `TN` elements of type `TItem`.
+ * Build a tuple of exactly `TN` elements of type `TItem`.
  *
- * Falls through to `readonly TItem[]` when `TN` exceeds {@link TupleCapType}.
+ * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapType}.
  *
  * @remarks
  * Used by `ApplyOneRestrictionType` to enforce exact-cardinality restrictions
@@ -146,7 +146,7 @@ export type TupleCapType = typeof _TUPLE_CAP;
  *
  * @example
  * ```ts
- * type T = BuildExactTupleType<string, 3>;  // readonly [string, string, string]
+ * type T = BuildExactTupleType<string, 3>;  // [string, string, string]
  * ```
  *
  * @category Restriction Inference
@@ -158,18 +158,18 @@ export type TupleCapType = typeof _TUPLE_CAP;
  * @typeParam TN - The required tuple length.
  * @typeParam TAcc - Accumulator (do not set manually).
  */
-export type BuildExactTupleType<TItem, TN extends number, TAcc extends readonly TItem[] = readonly []>
+export type BuildExactTupleType<TItem, TN extends number, TAcc extends TItem[] = []>
   = TAcc['length'] extends TN
     ? TAcc
     : TAcc['length'] extends TupleCapType
-      ? readonly TItem[]
-      : BuildExactTupleType<TItem, TN, readonly [TItem, ...TAcc]>;
+      ? TItem[]
+      : BuildExactTupleType<TItem, TN, [TItem, ...TAcc]>;
 
 /**
- * Build a readonly tuple with at least `TN` elements of type `TItem`.
+ * Build a tuple with at least `TN` elements of type `TItem`.
  *
- * The inferred type is `readonly [...TN×TItem, ...TItem[]]`. Falls through to
- * `readonly [TItem, ...TItem[]]` (non-empty) when `TN` exceeds {@link TupleCapType}.
+ * The inferred type is `[...TN×TItem, ...TItem[]]`. Falls through to
+ * `[TItem, ...TItem[]]` (non-empty) when `TN` exceeds {@link TupleCapType}.
  *
  * @remarks
  * Used by `ApplyOneRestrictionType` to enforce `minCardinality(prop, N)` at
@@ -177,7 +177,7 @@ export type BuildExactTupleType<TItem, TN extends number, TAcc extends readonly 
  *
  * @example
  * ```ts
- * type T = BuildAtLeastTupleType<string, 2>;  // readonly [string, string, ...string[]]
+ * type T = BuildAtLeastTupleType<string, 2>;  // [string, string, ...string[]]
  * ```
  *
  * @category Restriction Inference
@@ -189,18 +189,18 @@ export type BuildExactTupleType<TItem, TN extends number, TAcc extends readonly 
  * @typeParam TN - The minimum required tuple length.
  * @typeParam TAcc - Accumulator (do not set manually).
  */
-export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends readonly TItem[] = readonly []>
+export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends TItem[] = []>
   = TAcc['length'] extends TN
-    ? readonly [...TAcc, ...TItem[]]
+    ? [...TAcc, ...TItem[]]
     : TAcc['length'] extends TupleCapType
-      ? readonly [TItem, ...TItem[]]
-      : BuildAtLeastTupleType<TItem, TN, readonly [TItem, ...TAcc]>;
+      ? [TItem, ...TItem[]]
+      : BuildAtLeastTupleType<TItem, TN, [TItem, ...TAcc]>;
 
 /**
- * Build a union of readonly tuples with at most `TN` elements of type `TItem`.
+ * Build a union of tuples with at most `TN` elements of type `TItem`.
  *
- * Produces `readonly [] | readonly [TItem] | ... | readonly [TItem×TN]`.
- * Falls through to `readonly TItem[]` when `TN` exceeds {@link TupleCapType}.
+ * Produces `[] | [TItem] | ... | [TItem×TN]`.
+ * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapType}.
  *
  * @remarks
  * Used by `ApplyOneRestrictionType` to enforce `maxCardinality(prop, N)` at
@@ -209,7 +209,7 @@ export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends readonl
  * @example
  * ```ts
  * type T = BuildAtMostTupleType<string, 2>;
- * // readonly [] | readonly [string] | readonly [string, string]
+ * // [] | [string] | [string, string]
  * ```
  *
  * @category Restriction Inference
@@ -221,17 +221,17 @@ export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends readonl
  * @typeParam TN - The maximum allowed tuple length.
  * @typeParam TAcc - Accumulator (do not set manually).
  */
-export type BuildAtMostTupleType<TItem, TN extends number, TAcc extends readonly TItem[] = readonly []>
+export type BuildAtMostTupleType<TItem, TN extends number, TAcc extends TItem[] = []>
   = TAcc['length'] extends TN
     ? TAcc
     : TAcc['length'] extends TupleCapType
-      ? readonly TItem[]
-      : BuildAtMostTupleType<TItem, TN, readonly [TItem, ...TAcc]> | TAcc;
+      ? TItem[]
+      : BuildAtMostTupleType<TItem, TN, [TItem, ...TAcc]> | TAcc;
 
 /**
- * Build a union of readonly tuples whose lengths span `[TMin, TMax]` inclusive.
+ * Build a union of tuples whose lengths span `[TMin, TMax]` inclusive.
  *
- * Falls through to `readonly TItem[]` when the cap is reached.
+ * Falls through to `TItem[]` when the cap is reached.
  *
  * @remarks
  * Used by `NarrowArrayByItemsBoundsType` in `Infer.ts` when a schema declares
@@ -241,7 +241,7 @@ export type BuildAtMostTupleType<TItem, TN extends number, TAcc extends readonly
  * @example
  * ```ts
  * type T = BuildBoundedTupleType<string, 1, 3>;
- * // readonly [string] | readonly [string, string] | readonly [string, string, string]
+ * // [string] | [string, string] | [string, string, string]
  * ```
  *
  * @category Restriction Inference
@@ -258,15 +258,15 @@ export type BuildBoundedTupleType<
   TItem,
   TMin extends number,
   TMax extends number,
-  TAcc extends readonly TItem[] = readonly []
+  TAcc extends TItem[] = []
 >
   = TAcc['length'] extends TupleCapType
-    ? readonly TItem[]
+    ? TItem[]
     : TAcc['length'] extends TMax
       ? TAcc
       : TAcc['length'] extends TMin
-        ? BuildBoundedTupleType<TItem, TMin, TMax, readonly [TItem, ...TAcc]> | TAcc
-        : BuildBoundedTupleType<TItem, TMin, TMax, readonly [TItem, ...TAcc]>;
+        ? BuildBoundedTupleType<TItem, TMin, TMax, [TItem, ...TAcc]> | TAcc
+        : BuildBoundedTupleType<TItem, TMin, TMax, [TItem, ...TAcc]>;
 
 // ---------------------------------------------------------------------------
 // Restriction descriptor — matches the runtime shape from
@@ -295,7 +295,7 @@ type ElementOfArrayType<T> = T extends ReadonlyArray<infer E> ? E : T;
 
 type NarrowPropertyType<TProps, TKey extends string, TNarrow>
   = TKey extends keyof TProps
-    ? Omit<TProps, TKey> & Readonly<Record<TKey, TNarrow>>
+    ? Omit<TProps, TKey> & Record<TKey, TNarrow>
     : TProps;
 
 type ApplyOneRestrictionType<TProps, TRestriction>
@@ -318,13 +318,13 @@ type ApplyOneRestrictionType<TProps, TRestriction>
             : TProps
           : TRestriction extends RestrictionShapeType<'someValuesFrom', infer TProp extends string, string>
             ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>,
-              readonly [
+              [
                 ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>,
                 ...Array<ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>>
               ]>
             : TRestriction extends RestrictionShapeType<'allValuesFrom', infer TProp extends string, string>
               ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>,
-                ReadonlyArray<ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>>>
+                Array<ElementOfArrayType<TProps[keyof TProps & PropertyNameFromIriType<TProp>]>>>
               : TProps;
 
 /**
@@ -340,7 +340,7 @@ type ApplyOneRestrictionType<TProps, TRestriction>
  * ```ts
  * type Props = { friends: string[] };
  * type R = ApplyRestrictionsType<Props, [{ kind: 'minCardinality'; onProperty: 'friends'; value: 1 }]>;
- * // { friends: readonly [string, ...string[]] }
+ * // { friends: [string, ...string[]] }
  * ```
  *
  * @category Restriction Inference

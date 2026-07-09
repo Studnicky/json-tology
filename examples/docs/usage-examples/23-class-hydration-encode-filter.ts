@@ -75,7 +75,7 @@ const FilterEncodeOrderTransform = jt.addTransform(
 // Hydrate canonical JSON via encode — the instance will have the summarize method.
 const hydrated = jt.encode(
   FilterEncodeOrderTransform,
-  aboxFixtures.order
+  aboxFixtures.order as unknown as OrderWire
 );
 
 console.assert(typeof hydrated.summarize === 'function');

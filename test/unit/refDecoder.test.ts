@@ -285,7 +285,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
       'RED',
       'GREEN',
       'BLUE'
-    ]) as string[];
+    ]);
 
     assert.deepEqual(result, [
       'red',

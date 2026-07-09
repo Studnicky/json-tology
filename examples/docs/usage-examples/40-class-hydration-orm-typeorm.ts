@@ -88,7 +88,7 @@ const TypeOrmOrderTransform = jt.addTransform(TypeOrmOrderSchema, {
 });
 
 // Hydrate canonical JSON into a class instance — the encode direction.
-const entity = jt.encode(TypeOrmOrderTransform, aboxFixtures.order);
+const entity = jt.encode(TypeOrmOrderTransform, aboxFixtures.order as unknown as OrderWire);
 
 // Whatever flows out of `encode` is ready to call instance methods.
 entity.markShipped();

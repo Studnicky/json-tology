@@ -2,7 +2,7 @@
 
 **Construction helper.** Use `materialize` when you produce the data yourself - test fixtures, form scaffolding, default-filled instances. Validates the result by default and throws `MaterializationError` if validation fails. Pass `{ enablePartial: true }` to allow missing required-without-default fields for lenient construction.
 
-**Declaration.** Builds a fully-populated instance by merging optional partial input with the schema's declared `default` values. Returns a `MaterializedSchemaType<TSchema>`. Validates the merged result; throws `MaterializationError` on failure. Pass `{ enablePartial: true }` for lenient construction that accepts missing required fields. Does not strip unknown properties from partial input (partial is trusted); use [`instantiate`](/validation/instantiate) for untrusted input.
+**Declaration.** Builds a fully-populated instance by merging optional partial input with the schema's declared `default` values. Returns a `MaterializedSchemaType<TSchema>` — a plain mutable type, like every schema-derived type in json-tology (see [Mutability](/types/infer#mutability)). Validates the merged result; throws `MaterializationError` on failure. Pass `{ enablePartial: true }` for lenient construction that accepts missing required fields. Does not strip unknown properties from partial input (partial is trusted); use [`instantiate`](/validation/instantiate) for untrusted input.
 
 **Use this when** you have trusted partial data (from a factory, a test fixture, an admin form) and want the missing fields filled in from schema defaults. The canonical use case: creating a new entity with some known fields, leaving the rest to defaults.
 

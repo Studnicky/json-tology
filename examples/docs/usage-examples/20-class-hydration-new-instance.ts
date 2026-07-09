@@ -72,7 +72,7 @@ const NewOrderTransform = jt.addTransform(NewOrderSchema, {
 });
 
 // Hydrate canonical JSON via encode.
-const hydrated = jt.encode(NewOrderTransform, aboxFixtures.order);
+const hydrated = jt.encode(NewOrderTransform, aboxFixtures.order as unknown as OrderWire);
 
 console.assert(hydrated instanceof OrderViaNew);
 console.assert(hydrated.summary().startsWith('order '));

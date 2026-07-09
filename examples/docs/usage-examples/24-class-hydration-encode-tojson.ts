@@ -71,7 +71,7 @@ const ToJsonOrderTransform = jt.addTransform(ToJsonOrderSchema, {
 // Hydrate canonical JSON via encode.
 const hydrated = jt.encode(
   ToJsonOrderTransform,
-  aboxFixtures.order
+  aboxFixtures.order as unknown as OrderWire
 );
 
 // The instance has toJSON; decode will call it when lowering back to JSON.

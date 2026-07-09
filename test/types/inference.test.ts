@@ -576,7 +576,7 @@ type ContainsResult = InferType<typeof _ContainsSchema>;
 // `contains` narrows the element type to the contains schema (number) and adds
 // the ContainsBrand carrying that element type — the runtime-only "at least one
 // match" constraint is reflected as a compile-time brand.
-assert<AssertEqual<ContainsResult, ContainsBrandType<number> & readonly number[]>>();
+assert<AssertEqual<ContainsResult, ContainsBrandType<number> & number[]>>();
 
 /**
  * `propertyNames` — Constrains object keys at runtime. TypeScript cannot
