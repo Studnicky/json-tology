@@ -4,9 +4,9 @@ import type { PredicateResolverFnType } from './PredicateResolverFnType.js';
 import type { SkolemizeFnType } from './SkolemizeFnType.js';
 
 export type AboxOptionsType = {
-  readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
-  readonly 'curie'?: CurieInterface | undefined;
-  readonly 'graphIri'?: string | undefined;
-  readonly 'iriFor'?: SkolemizeFnType | undefined;
-  readonly 'predicateResolver'?: PredicateResolverFnType | undefined;
+  'annotationEmitMode'?: AnnotationEmitModeType | undefined;
+  'curie'?: CurieInterface | undefined;
+  'graphIri'?: string | undefined;
+  'iriFor'?: SkolemizeFnType | undefined;
+  'predicateResolver'?: PredicateResolverFnType | undefined;
 };

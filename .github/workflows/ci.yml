@@ -10,8 +10,10 @@ jobs:
     name: Smoke (Fast)
     permissions:
       contents: read
+      packages: read
     runs-on: ubuntu-latest
     env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TSX_CACHE: 1
     steps:
       - uses: actions/checkout@v6
@@ -51,12 +53,14 @@ jobs:
     name: Unit & Integration (${{ matrix.task }})
     permissions:
       contents: read
+      packages: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         task: [unit, integration, type-check]
     env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TSX_CACHE: 1
     steps:
       - uses: actions/checkout@v6
@@ -89,12 +93,14 @@ jobs:
     name: E2E & Types (${{ matrix.task }})
     permissions:
       contents: read
+      packages: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         task: [e2e, types]
     env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TSX_CACHE: 1
     steps:
       - uses: actions/checkout@v6
@@ -129,7 +135,10 @@ jobs:
     name: Lint
     permissions:
       contents: read
+      packages: read
     runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
 
@@ -150,7 +159,10 @@ jobs:
     name: Static Analysis
     permissions:
       contents: read
+      packages: read
     runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
 

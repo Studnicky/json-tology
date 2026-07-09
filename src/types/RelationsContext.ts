@@ -10,9 +10,9 @@ import type { GraphAccessorInterface } from '../interfaces/GraphAccessorInterfac
  * @internal
  */
 export type RelationsContextType = {
-  readonly 'graph': GraphAccessorInterface;
-  readonly 'node': SchemaGraphNodeType;
-  readonly 'sem': SchemaGraphSemanticsType;
+  'graph': GraphAccessorInterface;
+  'node': SchemaGraphNodeType;
+  'sem': SchemaGraphSemanticsType;
 };
 
 /**
@@ -21,7 +21,7 @@ export type RelationsContextType = {
  * @internal
  */
 export type RelationsPushContextType = RelationsContextType & {
-  readonly 'relations': SchemaGraphRelationType[];
+  'relations': SchemaGraphRelationType[];
 };
 
 /**
@@ -30,7 +30,7 @@ export type RelationsPushContextType = RelationsContextType & {
  * @internal
  */
 export type CardinalityContextType = RelationsPushContextType & {
-  readonly 'nodeMap': Map<string, SchemaGraphNodeType>;
+  'nodeMap': Map<string, SchemaGraphNodeType>;
 };
 
 /**
@@ -39,5 +39,5 @@ export type CardinalityContextType = RelationsPushContextType & {
  * @internal
  */
 export type TypeRelationsContextType = RelationsPushContextType & {
-  readonly 'nonNullTypes': string[];
+  'nonNullTypes': string[];
 };

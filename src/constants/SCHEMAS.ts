@@ -5,11 +5,11 @@
  * Describes a failure encountered while loading a schema file. Carries the
  * source `file` path, a human-readable `message`, and a `reason` enum that
  * classifies the failure type (e.g. `'missing-id'`, `'duplicate-anchor'`,
- * `'invalid-json'`). Used as an item type within `SchemaLoadResultSchema`.
+ * `'invalid-json'`). Used as an item type within `SCHEMA_LOAD_RESULT_SCHEMA`.
  *
  * @example
  * ```ts
- * const err: InferType<typeof SchemaLoadErrorSchema> = {
+ * const err: InferType<typeof SCHEMA_LOAD_ERROR_SCHEMA> = {
  *   file: 'schemas/User.json',
  *   message: 'Schema is missing $id',
  *   reason: 'missing-id'
@@ -18,11 +18,11 @@
  *
  * @category Schemas
  * @since 0.1.0
- * @see SchemaLoadResultSchema
+ * @see SCHEMA_LOAD_RESULT_SCHEMA
  * @defaultValue `{ $id: 'https://json-tology.dev/SchemaLoadError', type: 'object', ... }`
  * @group Constants
  */
-export const SchemaLoadErrorSchema = {
+export const SCHEMA_LOAD_ERROR_SCHEMA = {
   '$id': 'https://json-tology.dev/SchemaLoadError',
   'properties': {
     'file': { 'type': 'string' },
@@ -61,7 +61,7 @@ export const SchemaLoadErrorSchema = {
  *
  * @example
  * ```ts
- * const result: InferType<typeof SchemaLoadResultSchema> = {
+ * const result: InferType<typeof SCHEMA_LOAD_RESULT_SCHEMA> = {
  *   errors: [],
  *   failed: 0,
  *   skipped: 1,
@@ -71,12 +71,12 @@ export const SchemaLoadErrorSchema = {
  *
  * @category Schemas
  * @since 0.1.0
- * @see SchemaLoadErrorSchema
+ * @see SCHEMA_LOAD_ERROR_SCHEMA
  * @defaultValue `{ $id: 'https://json-tology.dev/SchemaLoadResult', type: 'object', ... }`
  * @group Constants
  */
-export const SchemaLoadResultSchema = {
-  '$defs': { 'SchemaLoadError': SchemaLoadErrorSchema },
+export const SCHEMA_LOAD_RESULT_SCHEMA = {
+  '$defs': { 'SchemaLoadError': SCHEMA_LOAD_ERROR_SCHEMA },
   '$id': 'https://json-tology.dev/SchemaLoadResult',
   'properties': {
     'errors': {
@@ -107,7 +107,7 @@ export const SchemaLoadResultSchema = {
  *
  * @example
  * ```ts
- * const err: InferType<typeof ValidationErrorSchema> = {
+ * const err: InferType<typeof VALIDATION_ERROR_SCHEMA> = {
  *   keyword: 'required',
  *   message: "must have required property 'id'",
  *   params: { missingProperty: 'id' },
@@ -117,11 +117,11 @@ export const SchemaLoadResultSchema = {
  *
  * @category Schemas
  * @since 0.1.0
- * @see SchemaLoadErrorSchema
+ * @see SCHEMA_LOAD_ERROR_SCHEMA
  * @defaultValue `{ $id: 'https://json-tology.dev/ValidationError', type: 'object', ... }`
  * @group Constants
  */
-export const ValidationErrorSchema = {
+export const VALIDATION_ERROR_SCHEMA = {
   '$id': 'https://json-tology.dev/ValidationError',
   'properties': {
     'keyword': {

@@ -1,5 +1,5 @@
 import type { InferSchemaType } from './Infer.js';
-import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
+import type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
 import type {
   ApplyRestrictionsType,
   ComplementOfBrandType,
@@ -60,8 +60,6 @@ type ApplyRestrictionsToInferredType<TSchema, TInferred>
       ? ApplyRestrictionsType<TInferred, FindRestrictionsType<TSchema>>
       : TInferred
     : TInferred;
-
-export type { InferSchemaType } from './Infer.js';
 
 /**
  * Derive the TypeScript wire type from a JSON Schema, including OWL class-axiom brands and property restriction narrowing.
@@ -194,64 +192,64 @@ export type JsonSchemaTypeNameType
  * @group Schema Utilities
  */
 export type JsonSchemaDocumentObjectType = {
-  readonly '$anchor'?: string;
-  readonly '$comment'?: string;
-  readonly '$defs'?: Readonly<Record<string, JsonSchemaDocumentType>>;
-  readonly '$dynamicAnchor'?: string;
-  readonly '$dynamicRef'?: string;
-  readonly '$id'?: string;
-  readonly '$recursiveAnchor'?: boolean;
-  readonly '$recursiveRef'?: string;
-  readonly '$ref'?: string;
+  '$anchor'?: string;
+  '$comment'?: string;
+  '$defs'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  '$dynamicAnchor'?: string;
+  '$dynamicRef'?: string;
+  '$id'?: string;
+  '$recursiveAnchor'?: boolean;
+  '$recursiveRef'?: string;
+  '$ref'?: string;
   // ── Core: identifiers and references ────────────────────────────
-  readonly '$schema'?: string;
-  readonly '$vocabulary'?: Readonly<Record<string, boolean>>;
+  '$schema'?: string;
+  '$vocabulary'?: Readonly<Record<string, boolean>>;
 
-  readonly 'additionalProperties'?: JsonSchemaDocumentType;
+  'additionalProperties'?: JsonSchemaDocumentType;
   // ── Applicators: composition ────────────────────────────────────
-  readonly 'allOf'?: readonly JsonSchemaDocumentType[];
-  readonly 'anyOf'?: readonly JsonSchemaDocumentType[];
-  readonly 'asymmetric'?: boolean;
+  'allOf'?: readonly JsonSchemaDocumentType[];
+  'anyOf'?: readonly JsonSchemaDocumentType[];
+  'asymmetric'?: boolean;
 
-  readonly 'const'?: unknown;
-  readonly 'contains'?: JsonSchemaDocumentType;
+  'const'?: unknown;
+  'contains'?: JsonSchemaDocumentType;
   // ── Content ─────────────────────────────────────────────────────
-  readonly 'contentEncoding'?: string;
+  'contentEncoding'?: string;
 
-  readonly 'contentMediaType'?: string;
-  readonly 'contentSchema'?: JsonSchemaDocumentType;
-  readonly 'default'?: unknown;
-  readonly 'dependentRequired'?: Readonly<Record<string, readonly string[]>>;
-  readonly 'dependentSchemas'?: Readonly<Record<string, JsonSchemaDocumentType>>;
-  readonly 'deprecated'?: boolean;
+  'contentMediaType'?: string;
+  'contentSchema'?: JsonSchemaDocumentType;
+  'default'?: unknown;
+  'dependentRequired'?: Readonly<Record<string, readonly string[]>>;
+  'dependentSchemas'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  'deprecated'?: boolean;
 
-  readonly 'description'?: string;
+  'description'?: string;
   // ── OWL 2 class axioms ──────────────────────────────────────────
-  readonly 'disjointWith'?: string;
-  readonly 'else'?: JsonSchemaDocumentType;
-  readonly 'enum'?: readonly unknown[];
+  'disjointWith'?: string;
+  'else'?: JsonSchemaDocumentType;
+  'enum'?: readonly unknown[];
 
-  readonly 'equivalentTo'?: string;
-  readonly 'examples'?: readonly unknown[];
-  readonly 'exclusiveMaximum'?: number;
+  'equivalentTo'?: string;
+  'examples'?: readonly unknown[];
+  'exclusiveMaximum'?: number;
 
-  readonly 'exclusiveMinimum'?: number;
+  'exclusiveMinimum'?: number;
   // ── Format (annotation by default in 2020-12) ───────────────────
-  readonly 'format'?: string;
-  readonly 'functional'?: boolean;
+  'format'?: string;
+  'functional'?: boolean;
   // ── Applicators: conditional ────────────────────────────────────
-  readonly 'if'?: JsonSchemaDocumentType;
+  'if'?: JsonSchemaDocumentType;
   // ── OWL 2 property characteristics ──────────────────────────────
-  readonly 'inverseFunctional'?: boolean;
+  'inverseFunctional'?: boolean;
 
-  readonly 'inverseOf'?: string;
-  readonly 'irreflexive'?: boolean;
-  readonly 'items'?: JsonSchemaDocumentType;
+  'inverseOf'?: string;
+  'irreflexive'?: boolean;
+  'items'?: JsonSchemaDocumentType;
 
   // ── json-tology directives ──────────────────────────────────────
-  readonly 'jt:computed'?: boolean;
-  readonly 'jt:config'?: Record<string, unknown>;
-  readonly 'jt:frozen'?: boolean;
+  'jt:computed'?: boolean;
+  'jt:config'?: Record<string, unknown>;
+  'jt:frozen'?: boolean;
   /**
    * OWL 2 §9.5 — composite key uniqueness constraints declared via `owl:hasKey`.
    *
@@ -259,56 +257,56 @@ export type JsonSchemaDocumentObjectType = {
    * Each entry is an array of property IRIs that together form a composite key.
    * At most one unique instance per (P1, P2, …) combination is allowed.
    */
-  readonly 'jt:hasKey'?: ReadonlyArray<readonly string[]>;
-  readonly 'jt:restrictions'?: ReadonlyArray<Record<string, unknown>>;
-  readonly 'jt:strict'?: boolean;
+  'jt:hasKey'?: ReadonlyArray<readonly string[]>;
+  'jt:restrictions'?: ReadonlyArray<Record<string, unknown>>;
+  'jt:strict'?: boolean;
 
-  readonly 'maxContains'?: number;
-  readonly 'maximum'?: number;
+  'maxContains'?: number;
+  'maximum'?: number;
   // ── Validation: arrays ──────────────────────────────────────────
-  readonly 'maxItems'?: number;
+  'maxItems'?: number;
   // ── Validation: strings ─────────────────────────────────────────
-  readonly 'maxLength'?: number;
+  'maxLength'?: number;
 
   // ── Validation: objects ─────────────────────────────────────────
-  readonly 'maxProperties'?: number;
+  'maxProperties'?: number;
 
-  readonly 'minContains'?: number;
-  readonly 'minimum'?: number;
-  readonly 'minItems'?: number;
+  'minContains'?: number;
+  'minimum'?: number;
+  'minItems'?: number;
 
-  readonly 'minLength'?: number;
-  readonly 'minProperties'?: number;
+  'minLength'?: number;
+  'minProperties'?: number;
   // ── Validation: numbers ─────────────────────────────────────────
-  readonly 'multipleOf'?: number;
-  readonly 'not'?: JsonSchemaDocumentType;
-  readonly 'oneOf'?: readonly JsonSchemaDocumentType[];
-  readonly 'pattern'?: string;
-  readonly 'patternProperties'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  'multipleOf'?: number;
+  'not'?: JsonSchemaDocumentType;
+  'oneOf'?: readonly JsonSchemaDocumentType[];
+  'pattern'?: string;
+  'patternProperties'?: Readonly<Record<string, JsonSchemaDocumentType>>;
 
   // ── Applicators: arrays ─────────────────────────────────────────
-  readonly 'prefixItems'?: readonly JsonSchemaDocumentType[];
+  'prefixItems'?: readonly JsonSchemaDocumentType[];
   // ── Applicators: objects ────────────────────────────────────────
-  readonly 'properties'?: Readonly<Record<string, JsonSchemaDocumentType>>;
-  readonly 'propertyNames'?: JsonSchemaDocumentType;
-  readonly 'rdfs:domain'?: string;
-  readonly 'rdfs:range'?: string;
-  readonly 'readOnly'?: boolean;
-  readonly 'reflexive'?: boolean;
-  readonly 'required'?: readonly string[];
+  'properties'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  'propertyNames'?: JsonSchemaDocumentType;
+  'rdfs:domain'?: string;
+  'rdfs:range'?: string;
+  'readOnly'?: boolean;
+  'reflexive'?: boolean;
+  'required'?: readonly string[];
 
-  readonly 'symmetric'?: boolean;
-  readonly 'then'?: JsonSchemaDocumentType;
+  'symmetric'?: boolean;
+  'then'?: JsonSchemaDocumentType;
   // ── Meta-data ───────────────────────────────────────────────────
-  readonly 'title'?: string;
-  readonly 'transitive'?: boolean;
+  'title'?: string;
+  'transitive'?: boolean;
 
   // ── Validation: any instance ────────────────────────────────────
-  readonly 'type'?: JsonSchemaTypeNameType | readonly JsonSchemaTypeNameType[];
-  readonly 'unevaluatedItems'?: JsonSchemaDocumentType;
-  readonly 'unevaluatedProperties'?: JsonSchemaDocumentType;
-  readonly 'uniqueItems'?: boolean;
-  readonly 'writeOnly'?: boolean;
+  'type'?: JsonSchemaTypeNameType | readonly JsonSchemaTypeNameType[];
+  'unevaluatedItems'?: JsonSchemaDocumentType;
+  'unevaluatedProperties'?: JsonSchemaDocumentType;
+  'uniqueItems'?: boolean;
+  'writeOnly'?: boolean;
 };
 
 /**

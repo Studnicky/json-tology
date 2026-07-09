@@ -11,8 +11,8 @@ import type { XsdJsonSchemaPrimitiveType } from './XsdJsonSchemaPrimitiveType.js
  * @internal
  */
 export type XsdEntryType = {
-  readonly 'full': string;
-  readonly 'prefixed': string;
-  readonly 'primitive': XsdJsonSchemaPrimitiveType;
-  readonly 'supported': boolean;
+  'full': string;
+  'prefixed': string;
+  'primitive': XsdJsonSchemaPrimitiveType;
+  'supported': boolean;
 };

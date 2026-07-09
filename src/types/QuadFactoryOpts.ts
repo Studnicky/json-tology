@@ -8,8 +8,8 @@
 
 import type { CurieInterface } from '../interfaces/CurieInterface.js';
 import type {
-  DefaultGraphTermType, IriTermType
-} from '../types/Quad.js';
+  DefaultGraph, NamedNode
+} from '@rdfjs/types';
 
 /**
  * Options for `QuadFactory.iri(value, options?)`.
@@ -46,7 +46,7 @@ export type QuadFactoryLiteralOptsType = {
  */
 export type QuadFactoryQuadOptsType = {
   'curie'?: CurieInterface | undefined;
-  'graph'?: DefaultGraphTermType | IriTermType | undefined;
+  'graph'?: DefaultGraph | NamedNode | undefined;
 };
 
 /**

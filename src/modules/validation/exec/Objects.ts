@@ -18,7 +18,10 @@ export class Objects {
         if (!(canonicalKey in obj)) {
           obj[canonicalKey] = obj[alias];
         }
-        delete obj[alias];
+        // Reflect.deleteProperty removes the key from the same object reference
+        // (identity must be preserved — this object is threaded through the rest
+        // of the validate chain) without the `delete obj[x]` operator syntax.
+        Reflect.deleteProperty(obj, alias);
       }
     }
   }
@@ -305,7 +308,10 @@ export class Objects {
       const stripAllowed = allowedKeysForStrip ?? allowedKeys;
 
       if (stripUnknown && stripAllowed !== undefined && !stripAllowed.has(key)) {
-        delete obj[key];
+        // Reflect.deleteProperty removes the key from the same object reference
+        // (identity must be preserved — this object is threaded through the rest
+        // of the validate chain) without the `delete obj[x]` operator syntax.
+        Reflect.deleteProperty(obj, key);
       } else if (additionalIsFalse && allowedKeys?.has(key) !== true && !ctx.ignoreAdditionalProperties) {
         if (!ctx.collectErrors) {
           return false;

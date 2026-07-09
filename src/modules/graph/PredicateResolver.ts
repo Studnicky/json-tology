@@ -4,7 +4,7 @@ import type { PredicateResolverFnType } from '../../types/PredicateResolverFnTyp
 import { DataType } from '../data/DataType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { SchemaIri } from './SchemaIri.js';
 
 /** Highest ASCII control character codepoint (inclusive). */
@@ -28,7 +28,7 @@ function assertSingleFragment(iri: string): void {
   if (iri.indexOf('#') !== iri.lastIndexOf('#')) {
     throw new GraphError(
       `Predicate IRI has more than one '#' fragment (invalid per RFC 3987): ${JSON.stringify(iri)}`,
-      { 'code': GraphErrorCode.INVALID_PREDICATE_IRI }
+      { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
     );
   }
 }
@@ -48,87 +48,94 @@ function assertPredicateIriSafe(iri: string): void {
     if (code <= CONTROL_CHAR_MAX || (code >= DEL_CODEPOINT && code <= C1_CONTROL_MAX)) {
       throw new GraphError(
         `Predicate IRI contains a control character or space (codepoint 0x${code.toString(HEX_RADIX)}): ${JSON.stringify(iri)}`,
-        { 'code': GraphErrorCode.INVALID_PREDICATE_IRI }
+        { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
       );
     }
   }
 }
 
 /**
- * Steps 1 + 2: resolve an explicit `x-jt-predicate` annotation or absolute
- * `$id` from the property schema. Returns the validated IRI or `undefined`.
+ * PredicateResolutionStep — the individual resolution steps of the predicate
+ * IRI derivation precedence, grouped as a single domain object since they are
+ * cohesive sub-steps of the same algorithm (see `PredicateResolver.resolve`).
  */
-function resolveSchemaAnnotation(propertySchema: JsonSchemaType): string | undefined {
-  if (!DataType.isRecord(propertySchema)) {
+class PredicateResolutionStep {
+  /**
+   * Step 4: build the canonical flat predicate IRI from `baseIri` and
+   * `propertyName`, inserting a `/` separator unless the base already ends with
+   * a delimiter (`/`, `#`, or `:` for URN namespaces).
+   */
+  static canonicalFlat(baseIri: string, propertyName: string): string {
+    const endsWithDelimiter = baseIri.endsWith('/') || baseIri.endsWith('#') || baseIri.endsWith(':');
+    const separator = endsWithDelimiter ? '' : '/';
+
+    return `${baseIri}${separator}${propertyName}`;
+  }
+
+  /**
+   * Steps 1 + 2: resolve an explicit `x-jt-predicate` annotation or absolute
+   * `$id` from the property schema. Returns the validated IRI or `undefined`.
+   */
+  static schemaAnnotation(propertySchema: JsonSchemaType): string | undefined {
+    if (!DataType.isRecord(propertySchema)) {
+      return undefined;
+    }
+
+    // 1. Explicit per-property binding via x-jt-predicate (must be non-empty string)
+    const explicitPredicate = propertySchema['x-jt-predicate'];
+
+    if (typeof explicitPredicate === 'string' && explicitPredicate !== '') {
+      assertPredicateIriSafe(explicitPredicate);
+
+      return explicitPredicate;
+    }
+
+    // 2. Absolute $id on the property schema — scheme must precede `://`
+    // (rejects leading `://garbage` where indexOf returns 0)
+    const propertyId = propertySchema.$id;
+
+    if (typeof propertyId === 'string' && propertyId.indexOf('://') > 0) {
+      assertPredicateIriSafe(propertyId);
+
+      return propertyId;
+    }
+
     return undefined;
   }
 
-  // 1. Explicit per-property binding via x-jt-predicate (must be non-empty string)
-  const explicitPredicate = propertySchema['x-jt-predicate'];
+  /**
+   * Step 3: invoke the `predicateFor` callback and return the result, or
+   * `undefined` if the callback is absent or returns a non-string value.
+   * Wraps callback errors as `GraphError` with code `INVALID_PREDICATE_IRI`.
+   */
+  static viaCallback(
+    predicateFor: PredicateForType | undefined,
+    classId: string,
+    propertyName: string
+  ): string | undefined {
+    if (predicateFor === undefined) {
+      return undefined;
+    }
 
-  if (typeof explicitPredicate === 'string' && explicitPredicate !== '') {
-    assertPredicateIriSafe(explicitPredicate);
+    let resolved: string | undefined;
 
-    return explicitPredicate;
+    try {
+      resolved = predicateFor({
+        classId,
+        propertyName
+      });
+    } catch (error) {
+      throw new GraphError(
+        `predicateFor callback threw for property "${propertyName}" on class "${classId}"`,
+        {
+          'cause': BaseError.toCause(error),
+          'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI
+        }
+      );
+    }
+
+    return typeof resolved === 'string' ? resolved : undefined;
   }
-
-  // 2. Absolute $id on the property schema — scheme must precede `://`
-  // (rejects leading `://garbage` where indexOf returns 0)
-  const propertyId = propertySchema.$id;
-
-  if (typeof propertyId === 'string' && propertyId.indexOf('://') > 0) {
-    assertPredicateIriSafe(propertyId);
-
-    return propertyId;
-  }
-
-  return undefined;
-}
-
-/**
- * Step 3: invoke the `predicateFor` callback and return the result, or
- * `undefined` if the callback is absent or returns a non-string value.
- * Wraps callback errors as `GraphError` with code `INVALID_PREDICATE_IRI`.
- */
-function resolveViaCallback(
-  predicateFor: PredicateForType | undefined,
-  classId: string,
-  propertyName: string
-): string | undefined {
-  if (predicateFor === undefined) {
-    return undefined;
-  }
-
-  let resolved: string | undefined;
-
-  try {
-    resolved = predicateFor({
-      classId,
-      propertyName
-    });
-  } catch (error) {
-    throw new GraphError(
-      `predicateFor callback threw for property "${propertyName}" on class "${classId}"`,
-      {
-        'cause': BaseError.toCause(error),
-        'code': GraphErrorCode.INVALID_PREDICATE_IRI
-      }
-    );
-  }
-
-  return typeof resolved === 'string' ? resolved : undefined;
-}
-
-/**
- * Step 4: build the canonical flat predicate IRI from `baseIri` and
- * `propertyName`, inserting a `/` separator unless the base already ends with
- * a delimiter (`/`, `#`, or `:` for URN namespaces).
- */
-function resolveCanonicalFlat(baseIri: string, propertyName: string): string {
-  const endsWithDelimiter = baseIri.endsWith('/') || baseIri.endsWith('#') || baseIri.endsWith(':');
-  const separator = endsWithDelimiter ? '' : '/';
-
-  return `${baseIri}${separator}${propertyName}`;
 }
 
 /**
@@ -164,10 +171,12 @@ export const PredicateResolver = {
     return (ctx: { readonly 'classId': string;
       readonly 'propertyName': string;
       readonly 'propertySchema': JsonSchemaType }): string => {
-      return PredicateResolver.resolve({
+      const result = PredicateResolver.resolve({
         ...ctx,
         ...config
       });
+
+      return result;
     };
   },
 
@@ -201,7 +210,7 @@ export const PredicateResolver = {
     } = args;
 
     // 1 + 2. Explicit annotation or absolute $id on the property schema.
-    const schemaIri = resolveSchemaAnnotation(propertySchema);
+    const schemaIri = PredicateResolutionStep.schemaAnnotation(propertySchema);
 
     if (schemaIri !== undefined) {
       assertSingleFragment(schemaIri);
@@ -210,7 +219,7 @@ export const PredicateResolver = {
     }
 
     // 3. predicateFor callback.
-    const callbackIri = resolveViaCallback(predicateFor, classId, propertyName);
+    const callbackIri = PredicateResolutionStep.viaCallback(predicateFor, classId, propertyName);
 
     if (callbackIri !== undefined) {
       assertSingleFragment(callbackIri);
@@ -220,7 +229,7 @@ export const PredicateResolver = {
 
     // 4. Default — canonical flat.
     if (enableCanonicalPredicates !== false) {
-      const canonicalIri = resolveCanonicalFlat(baseIri, propertyName);
+      const canonicalIri = PredicateResolutionStep.canonicalFlat(baseIri, propertyName);
 
       assertSingleFragment(canonicalIri);
 

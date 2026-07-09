@@ -12,7 +12,9 @@ import { DataType } from './DataType.js';
 export class Operations {
   /** Deep clone a value using `structuredClone`. */
   static clone<T>(value: T): T {
-    return structuredClone(value);
+    const result = structuredClone(value);
+
+    return result;
   }
 
   /**
@@ -43,6 +45,8 @@ export class Operations {
       result = root;
     }
     let current: unknown = result;
+    let parent: Record<string, unknown> | undefined;
+    let parentSegment = '';
 
     for (let i = 0; i < segments.length - 1; i++) {
       const segment = segments[i];
@@ -60,17 +64,19 @@ export class Operations {
       }
 
       const child = current[segment];
-      let next: unknown;
 
       if (DataType.isPlainObject(child)) {
-        next = { ...(child as object) };
+        current[segment] = { ...(child as object) };
       } else if (Array.isArray(child)) {
-        next = [...(child as unknown[])];
+        current[segment] = [...(child as unknown[])];
       } else {
-        next = child;
+        current[segment] = child;
       }
 
-      current[segment] = next;
+      const next = current[segment];
+
+      parent = current;
+      parentSegment = segment;
       current = next;
     }
 
@@ -88,7 +94,15 @@ export class Operations {
       if (Array.isArray(current)) {
         (current as unknown[]).splice(Number(lastSegment), 1);
       } else if (DataType.isRecord(current)) {
-        delete current[lastSegment];
+        const withoutSegment = Object.fromEntries(Object.entries(current).filter(([key]): boolean => {
+          return key !== lastSegment;
+        }));
+
+        if (parent === undefined) {
+          result = withoutSegment;
+        } else {
+          parent[parentSegment] = withoutSegment;
+        }
       }
     }
 

@@ -8,5 +8,5 @@
  *   computed fields accumulated by successive `addComputed` calls.
  */
 export type ComputedExtensionBrandType<TFields> = {
-  readonly '~jt:computedFields': TFields;
+  '~jt:computedFields': TFields;
 };

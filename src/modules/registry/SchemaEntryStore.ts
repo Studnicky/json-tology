@@ -80,7 +80,9 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
   }
 
   public entries(): IterableIterator<[string, SchemaRegistryEntryType]> {
-    return this.byId.entries();
+    const result = this.byId.entries();
+
+    return result;
   }
 
   public findDuplicates(): readonly DuplicateReportEntryType[] {
@@ -147,23 +149,33 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
   }
 
   public get(schemaId: string): SchemaRegistryEntryType | undefined {
-    return this.byId.get(schemaId);
+    const result = this.byId.get(schemaId);
+
+    return result;
   }
 
   public getByHash(hash: string): string | undefined {
-    return this.hashes.get(hash);
+    const result = this.hashes.get(hash);
+
+    return result;
   }
 
   public has(schemaId: string): boolean {
-    return this.byId.has(schemaId);
+    const result = this.byId.has(schemaId);
+
+    return result;
   }
 
   public hasHash(hash: string): boolean {
-    return this.hashes.has(hash);
+    const result = this.hashes.has(hash);
+
+    return result;
   }
 
   public keys(): IterableIterator<string> {
-    return this.byId.keys();
+    const result = this.byId.keys();
+
+    return result;
   }
 
   public get revision(): number {
@@ -175,7 +187,34 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
   }
 
   public values(): IterableIterator<SchemaRegistryEntryType> {
-    return this.byId.values();
+    const result = this.byId.values();
+
+    return result;
+  }
+
+  private walkCompositionForDuplicates(
+    schemaId: string,
+    schema: Record<string, unknown>,
+    pointer: string,
+    compositionKey: 'allOf' | 'anyOf' | 'oneOf',
+    topLevelHashes: Map<string, string>,
+    results: DuplicateReportEntryType[]
+  ): void {
+    const compositionArr = schema[compositionKey];
+
+    if (!Array.isArray(compositionArr)) {
+      return;
+    }
+
+    for (const [
+      idx,
+      subSchema
+    ] of compositionArr.entries()) {
+      if (!DataType.isRecord(subSchema)) {
+        continue;
+      }
+      this.walkForDuplicates(schemaId, subSchema, `${pointer}/${compositionKey}/${idx}`, topLevelHashes, results);
+    }
   }
 
   private walkForDuplicates(
@@ -215,25 +254,9 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
       }
     }
 
-    for (const compositionKey of [
-      'allOf',
-      'anyOf',
-      'oneOf'
-    ]) {
-      const compositionArr = schema[compositionKey];
-
-      if (Array.isArray(compositionArr)) {
-        for (const [
-          idx,
-          subSchema
-        ] of compositionArr.entries()) {
-          if (!DataType.isRecord(subSchema)) {
-            continue;
-          }
-          this.walkForDuplicates(schemaId, subSchema, `${pointer}/${compositionKey}/${idx}`, topLevelHashes, results);
-        }
-      }
-    }
+    this.walkCompositionForDuplicates(schemaId, schema, pointer, 'allOf', topLevelHashes, results);
+    this.walkCompositionForDuplicates(schemaId, schema, pointer, 'anyOf', topLevelHashes, results);
+    this.walkCompositionForDuplicates(schemaId, schema, pointer, 'oneOf', topLevelHashes, results);
 
     if (DataType.isRecord(schema.$defs)) {
       for (const [

@@ -6,11 +6,8 @@
  * `@rdfjs/data-model` at runtime.
  *
  * The factory output IS the rdf/js spec type — no conversion needed at any
- * consumer boundary. `IriTermType`, `BnodeTermType`, `LiteralTermType`, and
- * `DefaultGraphTermType` are direct re-exports of `@rdfjs/types#NamedNode`,
- * `BlankNode`, `Literal`, and `DefaultGraph`. `Terms.quad()` produces a
- * `@rdfjs/types#Quad` complete with `termType: 'Quad'`, `value: ''`, and the
- * spec `equals(other)` method.
+ * consumer boundary. `Terms.quad()` produces a `@rdfjs/types#Quad` complete
+ * with `termType: 'Quad'`, `value: ''`, and the spec `equals(other)` method.
  *
  * RDF lists are not a term type — they are emitted as `rdf:first` /
  * `rdf:rest` / `rdf:nil` triple sequences by `src/modules/rdf/Lists.ts` at
@@ -36,10 +33,10 @@
  */
 
 import type {
-  Quad, Term
+  BlankNode, DefaultGraph, Literal, NamedNode, Quad, Term
 } from '@rdfjs/types';
 import type {
-  BnodeTermType, DefaultGraphTermType, IriTermType, LiteralTermType, QuadObjectType, TermType
+  QuadObjectType, TermType
 } from '../../types/Quad.js';
 
 import { DECIMAL_RADIX } from '../../constants/FORMAT_VALIDATION.js';
@@ -58,7 +55,7 @@ import {
 // (https://rdf.js.org/data-model-spec/#term-interface) and handles both.
 // ---------------------------------------------------------------------------
 
-function iriEquals(self: IriTermType, other: null | TermType | undefined): boolean {
+function iriEquals(self: NamedNode, other: null | TermType | undefined): boolean {
   if (other === null || other === undefined) {
     return false;
   }
@@ -66,7 +63,7 @@ function iriEquals(self: IriTermType, other: null | TermType | undefined): boole
   return other.termType === 'NamedNode' && other.value === self.value;
 }
 
-function bnodeEquals(self: BnodeTermType, other: null | TermType | undefined): boolean {
+function bnodeEquals(self: BlankNode, other: null | TermType | undefined): boolean {
   if (other === null || other === undefined) {
     return false;
   }
@@ -74,7 +71,7 @@ function bnodeEquals(self: BnodeTermType, other: null | TermType | undefined): b
   return other.termType === 'BlankNode' && other.value === self.value;
 }
 
-function literalEquals(self: LiteralTermType, other: null | TermType | undefined): boolean {
+function literalEquals(self: Literal, other: null | TermType | undefined): boolean {
   if (other === null || other === undefined) {
     return false;
   }
@@ -114,7 +111,7 @@ function quadEquals(self: Quad, other: null | Term | undefined): boolean {
 // DefaultGraph singleton
 // ---------------------------------------------------------------------------
 
-const DEFAULT_GRAPH_SINGLETON: DefaultGraphTermType = Object.freeze({
+const DEFAULT_GRAPH_SINGLETON: DefaultGraph = Object.freeze({
   'equals': defaultGraphEquals,
   'termType': 'DefaultGraph' as const,
   'value': '' as const
@@ -159,7 +156,7 @@ function stringifyValue(value: unknown): string {
  *
  * Returns the bare IRI string; the caller wraps it via `Terms.iri`.
  */
-function extractValueObjectDatatypeIri(value: unknown): string | undefined {
+function extract(value: unknown): string | undefined {
   if (typeof value !== 'object' || value === null) {
     return undefined;
   }
@@ -180,10 +177,12 @@ function extractValueObjectDatatypeIri(value: unknown): string | undefined {
 // ---------------------------------------------------------------------------
 
 export const Terms = {
-  blank(value: string): BnodeTermType {
-    const term: BnodeTermType = {
+  blank(value: string): BlankNode {
+    const term: BlankNode = {
       'equals'(other: null | TermType | undefined): boolean {
-        return bnodeEquals(term, other);
+        const result = bnodeEquals(term, other);
+
+        return result;
       },
       'termType': 'BlankNode',
       value
@@ -200,7 +199,7 @@ export const Terms = {
    * `Terms.literal`. Used by `Lift` and `fromQuads` so consumers never have to
    * hand-decode XSD-tagged literals.
    */
-  decodeLiteral(literal: LiteralTermType): unknown {
+  decodeLiteral(literal: Literal): unknown {
     const raw = literal.value;
     const dt = localXsdName(literal.datatype.value);
 
@@ -230,14 +229,18 @@ export const Terms = {
     return raw;
   },
 
-  defaultGraph(): DefaultGraphTermType {
-    return DEFAULT_GRAPH_SINGLETON;
+  defaultGraph(): DefaultGraph {
+    const result = DEFAULT_GRAPH_SINGLETON;
+
+    return result;
   },
 
-  iri(value: string): IriTermType {
-    const term: IriTermType = {
+  iri(value: string): NamedNode {
+    const term: NamedNode = {
       'equals'(other: null | TermType | undefined): boolean {
-        return iriEquals(term, other);
+        const result = iriEquals(term, other);
+
+        return result;
       },
       'termType': 'NamedNode',
       value
@@ -260,18 +263,20 @@ export const Terms = {
    */
   literal(
     value: unknown,
-    options?: { 'datatype'?: IriTermType;
+    options?: { 'datatype'?: NamedNode;
       'language'?: string }
-  ): LiteralTermType {
-    const valueObjectDatatypeIri = extractValueObjectDatatypeIri(value);
+  ): Literal {
+    const valueObjectDatatypeIri = extract(value);
     const datatype = options?.datatype
       ?? Terms.iri(valueObjectDatatypeIri ?? inferDatatypeIri(value));
     const language = options?.language ?? '';
     const stringValue = stringifyValue(value);
-    const term: LiteralTermType = {
+    const term: Literal = {
       datatype,
       'equals'(other: null | TermType | undefined): boolean {
-        return literalEquals(term, other);
+        const result = literalEquals(term, other);
+
+        return result;
       },
       language,
       'termType': 'Literal',
@@ -292,14 +297,16 @@ export const Terms = {
    * triple), per the rdf/js data model `Quad_Subject` union.
    */
   quad(
-    subject: BnodeTermType | IriTermType | Quad,
-    predicate: IriTermType,
+    subject: BlankNode | NamedNode | Quad,
+    predicate: NamedNode,
     object: QuadObjectType,
-    graph?: BnodeTermType | DefaultGraphTermType | IriTermType
+    graph?: BlankNode | DefaultGraph | NamedNode
   ): Quad {
     const quad: Quad = {
       'equals'(other: null | TermType | undefined): boolean {
-        return quadEquals(quad, other);
+        const result = quadEquals(quad, other);
+
+        return result;
       },
       'graph': graph ?? DEFAULT_GRAPH_SINGLETON,
       object,
@@ -323,13 +330,15 @@ export const Terms = {
    * its subject.
    */
   tripleTerm(
-    subject: BnodeTermType | IriTermType,
-    predicate: IriTermType,
+    subject: BlankNode | NamedNode,
+    predicate: NamedNode,
     object: QuadObjectType
   ): Quad {
     const term: Quad = {
       'equals'(other: null | TermType | undefined): boolean {
-        return quadEquals(term, other);
+        const result = quadEquals(term, other);
+
+        return result;
       },
       'graph': DEFAULT_GRAPH_SINGLETON,
       object,

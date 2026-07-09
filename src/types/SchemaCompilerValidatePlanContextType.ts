@@ -7,27 +7,27 @@ import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js
 import type { ValidateWithErrorsFnType } from '../types/Validation.js';
 
 export type SchemaCompilerValidatePlanContextType = {
-  readonly 'activeCustomKeywords': KeywordDefinitionType[];
-  readonly 'appliesFormatAssertions': (sem: SchemaGraphSemanticsType) => boolean;
-  readonly 'compileNodeOrBooleanValidateWithErrors': (
+  'activeCustomKeywords': KeywordDefinitionType[];
+  'appliesFormatAssertions': (sem: SchemaGraphSemanticsType) => boolean;
+  'compileNodeOrBooleanValidateWithErrors': (
     node: SchemaGraphNodeType,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ) => ValidateWithErrorsFnType;
-  readonly 'compileNodeValidateWithErrors': (
+  'compileNodeValidateWithErrors': (
     graphNode: SchemaGraphNodeType,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ) => ValidateWithErrorsFnType;
-  readonly 'resolveImplicitDefault': (
+  'resolveImplicitDefault': (
     node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
     lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
     visited: Set<unknown>
   ) => unknown;
-  readonly 'synthesizeZeroValue': (
+  'synthesizeZeroValue': (
     node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,
     lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,

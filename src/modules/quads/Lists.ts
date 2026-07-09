@@ -8,10 +8,10 @@
  *   _:bN rdf:rest  rdf:nil .
  */
 
-import type { Quad } from '@rdfjs/types';
 import type {
-  BnodeTermType, IriTermType, QuadObjectType
-} from '../../types/Quad.js';
+  BlankNode, NamedNode, Quad
+} from '@rdfjs/types';
+import type { QuadObjectType } from '../../types/Quad.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
 import type { ListBuildResultType } from '../../types/ListBuildResultType.js';
 import type { OptionalListObjectType } from '../../types/OptionalListObjectType.js';
@@ -46,7 +46,7 @@ let listBnodeCounter = 0;
  * Issue a blank node term. If `issuer` is provided, uses the per-call issuer's
  * counter (concurrent-safe). Otherwise falls back to a module-level counter.
  */
-function nextListBnodeWithFallback(issuer: IdentifierIssuerInterface | undefined): BnodeTermType {
+function nextListBnodeWithFallback(issuer: IdentifierIssuerInterface | undefined): BlankNode {
   if (issuer !== undefined) {
     return Terms.blank(issuer.getId());
   }
@@ -58,11 +58,11 @@ function nextListBnodeWithFallback(issuer: IdentifierIssuerInterface | undefined
 // Subject-predicate match helpers for collect()
 // ---------------------------------------------------------------------------
 
-function isFirstTriple(quad: Quad, cursor: BnodeTermType | IriTermType): boolean {
+function isFirstTriple(quad: Quad, cursor: BlankNode | NamedNode): boolean {
   return quad.subject.equals(cursor) && isRdfFirst(quad.predicate.value);
 }
 
-function isRestTriple(quad: Quad, cursor: BnodeTermType | IriTermType): boolean {
+function isRestTriple(quad: Quad, cursor: BlankNode | NamedNode): boolean {
   return quad.subject.equals(cursor) && isRdfRest(quad.predicate.value);
 }
 
@@ -85,11 +85,13 @@ function isValidGraph(quad: Quad): boolean {
 // ---------------------------------------------------------------------------
 
 function collectStep(
-  cursor: BnodeTermType | IriTermType,
+  cursor: BlankNode | NamedNode,
   allQuads: readonly Quad[]
 ): CollectStepResultType {
   const firstQuad = allQuads.find((quad: Quad): boolean => {
-    return isFirstTriple(quad, cursor);
+    const result = isFirstTriple(quad, cursor);
+
+    return result;
   });
 
   if (firstQuad === undefined) {
@@ -105,7 +107,9 @@ function collectStep(
     : undefined;
 
   const restQuad = allQuads.find((quad: Quad): boolean => {
-    return isRestTriple(quad, cursor);
+    const result = isRestTriple(quad, cursor);
+
+    return result;
   });
 
   if (restQuad === undefined) {
@@ -154,7 +158,7 @@ function collectStep(
  *
  * @example
  * ```ts
- * resetListBnodeCounter(); // reset before a deterministic test run
+ * Lists.reset(); // reset before a deterministic test run
  * ```
  *
  * @category RDF
@@ -163,7 +167,7 @@ function collectStep(
  * @group Lists
  * @returns void
  */
-function resetListBnodeCounter(): void {
+function reset(): void {
   listBnodeCounter = 0;
 }
 
@@ -203,7 +207,7 @@ function build(
 
   const triples: Quad[] = [];
   const head = nextListBnodeWithFallback(issuer);
-  let current: BnodeTermType = head;
+  let current: BlankNode = head;
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -253,7 +257,7 @@ function build(
  * @group Lists
  */
 function collect(
-  head: BnodeTermType | IriTermType,
+  head: BlankNode | NamedNode,
   allQuads: readonly Quad[]
 ): QuadObjectType[] {
   if (head.termType === 'NamedNode' && isRdfNil(head.value)) {
@@ -262,7 +266,7 @@ function collect(
 
   const items: QuadObjectType[] = [];
   const seen = new Set<string>();
-  let current: BnodeTermType | IriTermType = head;
+  let current: BlankNode | NamedNode = head;
 
   while (!seen.has(`${current.termType}:${current.value}`)) {
     seen.add(`${current.termType}:${current.value}`);
@@ -381,5 +385,5 @@ export const Lists = {
   isRdfNil,
   isRdfRest,
   narrowExternalQuads,
-  resetListBnodeCounter
+  reset
 } as const;

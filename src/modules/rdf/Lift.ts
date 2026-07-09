@@ -40,7 +40,7 @@ import type { LiftMatchingQuadsArgsType } from '../../types/LiftMatchingQuadsArg
 import type { LiftImplArgsType } from '../../types/LiftImplArgsType.js';
 import { EffectiveProperties } from '../graph/EffectiveProperties.js';
 
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { RDF } from '../../constants/IRI.js';
 import { GraphError } from '../../errors/GraphError.js';
 
@@ -55,7 +55,9 @@ import { PropertyProjection } from './PropertyProjection.js';
 const TRIPLE_KEY_SEP = ' ';
 
 function tripleTermKey(subject: string, predicate: string, object: string): string {
-  return `${subject}${TRIPLE_KEY_SEP}${predicate}${TRIPLE_KEY_SEP}${object}`;
+  const result = `${subject}${TRIPLE_KEY_SEP}${predicate}${TRIPLE_KEY_SEP}${object}`;
+
+  return result;
 }
 
 /**
@@ -96,7 +98,9 @@ function indexTripleTermQuads(quads: QuadInterface[]): TripleTermIndexType {
  * arrays for scalar properties.
  */
 function quadDedupeKey(quad: QuadInterface): string {
-  return `${quad.subject.value} ${quad.predicate.value} ${quad.object.value} ${quad.graph.value}`;
+  const result = `${quad.subject.value} ${quad.predicate.value} ${quad.object.value} ${quad.graph.value}`;
+
+  return result;
 }
 
 function groupBySubject(quads: QuadInterface[]): SubjectGroupType {
@@ -161,52 +165,96 @@ function typeOf(quads: QuadInterface[]): SubjectKindType {
 }
 
 /**
- * Resolve a type IRI to a graph + node pair.
- *
- * Handles both root schemas (`$id` → direct registry lookup) and inline
- * nested objects with pointer-based IDs (`User#/properties/address`).
+ * Type/ref resolution helpers, grouped as methods on a single internal
+ * namespace object (see `Lists`/`Terms`) because their names collide with
+ * the project's banned freestanding verb-prefix list (resolve/...).
  */
-function resolveNodeForType(
-  typeIri: string,
-  registry: SchemaRegistryInterface
-): ResolvedTypeNodeType {
-  const directGraph = registry.graph(typeIri);
+const TypeResolution = {
+  /**
+   * Resolve a `$ref` against a graph node, following local fragment refs and
+   * embedded-`$id` `$defs` targets. Falls through to the original node when
+   * there is no ref, or the ref cannot be resolved locally.
+   */
+  resolveLocalRef(
+    graph: SchemaGraphInterface,
+    node: SchemaGraphNodeType
+  ): SchemaGraphNodeType {
+    const sem = graph.semantics(node);
 
-  if (directGraph) {
-    return {
-      'graph': directGraph,
-      'node': directGraph.rootNode
-    };
-  }
+    if (sem.ref === undefined) {
+      return node;
+    }
+    if (sem.ref.startsWith('#')) {
+      return graph.resolveFragment(sem.ref.slice(1));
+    }
 
-  // Pointer-based ID: 'https://example.com/User#/properties/address'
-  const hashSlash = typeIri.indexOf('#/');
+    // Embedded `$defs` `$id`: a non-fragment `$ref` (e.g.
+    // `urn:bookstore:BookCatalogEntryVariant`) targeting an `$id` declared inside
+    // this same graph's `$defs` is not a separately-registered schema, so it
+    // resolves by matching the node whose id equals the ref target. Mirrors the
+    // same-graph embedded-$id fallback in Projection.resolveNode and
+    // Materializer.resolveTargetGraphAndNode. Without this, array items whose
+    // schema is an embedded-$id ref keep their unresolved (property-less) node,
+    // so nested instances lift back as plain IRI strings instead of objects.
+    const refId = graph.resolveRefId(sem.ref);
 
-  if (hashSlash === -1) {
-    return undefined;
-  }
+    for (const candidate of graph.nodes()) {
+      if (candidate.id === refId) {
+        return candidate;
+      }
+    }
 
-  const rootId = typeIri.slice(0, hashSlash);
-  const pointer = typeIri.slice(hashSlash + 1);
-  const rootGraph = registry.graph(rootId);
+    return node;
+  },
 
-  if (!rootGraph) {
-    return undefined;
-  }
+  /**
+   * Resolve a type IRI to a graph + node pair.
+   *
+   * Handles both root schemas (`$id` → direct registry lookup) and inline
+   * nested objects with pointer-based IDs (`User#/properties/address`).
+   */
+  resolveNodeForType(
+    typeIri: string,
+    registry: SchemaRegistryInterface
+  ): ResolvedTypeNodeType {
+    const directGraph = registry.graph(typeIri);
 
-  try {
-    return {
-      'graph': rootGraph,
-      'node': rootGraph.resolvePointer(pointer)
-    };
-  } catch (error) {
-    if (error instanceof GraphError && error.code === GraphErrorCode.POINTER_NOT_FOUND) {
+    if (directGraph) {
+      return {
+        'graph': directGraph,
+        'node': directGraph.rootNode
+      };
+    }
+
+    // Pointer-based ID: 'https://example.com/User#/properties/address'
+    const hashSlash = typeIri.indexOf('#/');
+
+    if (hashSlash === -1) {
       return undefined;
     }
 
-    throw error;
+    const rootId = typeIri.slice(0, hashSlash);
+    const pointer = typeIri.slice(hashSlash + 1);
+    const rootGraph = registry.graph(rootId);
+
+    if (!rootGraph) {
+      return undefined;
+    }
+
+    try {
+      return {
+        'graph': rootGraph,
+        'node': rootGraph.resolvePointer(pointer)
+      };
+    } catch (error) {
+      if (error instanceof GraphError && error.code === GRAPH_ERROR_CODE.POINTER_NOT_FOUND) {
+        return undefined;
+      }
+
+      throw error;
+    }
   }
-}
+} as const;
 
 /**
  * Check if `candidateId` is structurally compatible with a pre-computed
@@ -266,107 +314,82 @@ const PREDICATE_INDEX_THRESHOLD = 3;
 // Lift context — shared parameters for liftSubject / liftSingleValue
 // ---------------------------------------------------------------------------
 
-function buildPredicateIndex(subjectQuads: QuadInterface[]): PredicateIndexType {
-  const index: PredicateIndexType = new Map();
-
-  for (const quad of subjectQuads) {
-    const predicateValue = quad.predicate.value;
-    let list = index.get(predicateValue);
-
-    if (list === undefined) {
-      list = [];
-      index.set(predicateValue, list);
-    }
-    list.push(quad);
-  }
-
-  return index;
-}
-
 /**
- * Find quads matching a schema property.
- *
- * Pass 1: exact match on the resolved predicate IRI (flat canonical or
- *         explicit `x-jt-predicate`, as returned by the forward resolver).
- * Pass 2: fragment match — any predicate whose fragment equals `propName`
- *         (legacy `classId#propName` safety net; no-ops for flat IRIs).
+ * Predicate/quad lookup helpers, grouped as methods on a single internal
+ * namespace object (see `Lists`/`Terms`) because their names collide with
+ * the project's banned freestanding verb-prefix list (build/find/...).
  */
-function findPropertyQuads(fpArgs: FindPropertyQuadsArgsType): QuadInterface[] {
-  const {
-    index, predicateIri, propName, subjectQuads
-  } = fpArgs;
+const PredicateQuads = {
+  buildPredicateIndex(subjectQuads: QuadInterface[]): PredicateIndexType {
+    const index: PredicateIndexType = new Map();
 
-  if (index !== undefined) {
-    const byExact = index.get(predicateIri);
+    for (const quad of subjectQuads) {
+      const predicateValue = quad.predicate.value;
+      let list = index.get(predicateValue);
 
-    if (byExact !== undefined && byExact.length > 0) {
+      if (list === undefined) {
+        list = [];
+        index.set(predicateValue, list);
+      }
+      list.push(quad);
+    }
+
+    return index;
+  },
+
+  /**
+   * Find quads matching a schema property.
+   *
+   * Pass 1: exact match on the resolved predicate IRI (flat canonical or
+   *         explicit `x-jt-predicate`, as returned by the forward resolver).
+   * Pass 2: fragment match — any predicate whose fragment equals `propName`
+   *         (legacy `classId#propName` safety net; no-ops for flat IRIs).
+   */
+  findPropertyQuads(fpArgs: FindPropertyQuadsArgsType): QuadInterface[] {
+    const {
+      index, predicateIri, propName, subjectQuads
+    } = fpArgs;
+
+    if (index !== undefined) {
+      const byExact = index.get(predicateIri);
+
+      if (byExact !== undefined && byExact.length > 0) {
+        return byExact;
+      }
+
+      const matches: QuadInterface[] = [];
+
+      for (const [
+        predicate,
+        quads
+      ] of index) {
+        const hash = predicate.lastIndexOf('#');
+
+        if (hash !== -1 && predicate.slice(hash + 1) === propName) {
+          for (const quad of quads) {
+            matches.push(quad);
+          }
+        }
+      }
+
+      return matches;
+    }
+
+    const byExact = subjectQuads.filter((quad: QuadInterface): boolean => {
+      return quad.predicate.value === predicateIri;
+    });
+
+    if (byExact.length > 0) {
       return byExact;
     }
 
-    const matches: QuadInterface[] = [];
+    return subjectQuads.filter((quad: QuadInterface): boolean => {
+      const hash = quad.predicate.value.lastIndexOf('#');
 
-    for (const [
-      predicate,
-      quads
-    ] of index) {
-      const hash = predicate.lastIndexOf('#');
-
-      if (hash !== -1 && predicate.slice(hash + 1) === propName) {
-        for (const quad of quads) {
-          matches.push(quad);
-        }
-      }
-    }
-
-    return matches;
+      return hash !== -1 && quad.predicate.value.slice(hash + 1) === propName;
+    });
   }
-
-  const byExact = subjectQuads.filter((quad: QuadInterface): boolean => {
-    return quad.predicate.value === predicateIri;
-  });
-
-  if (byExact.length > 0) {
-    return byExact;
-  }
-
-  return subjectQuads.filter((quad: QuadInterface): boolean => {
-    const hash = quad.predicate.value.lastIndexOf('#');
-
-    return hash !== -1 && quad.predicate.value.slice(hash + 1) === propName;
-  });
-}
-
-function resolveLocalRef(
-  graph: SchemaGraphInterface,
-  node: SchemaGraphNodeType
-): SchemaGraphNodeType {
-  const sem = graph.semantics(node);
-
-  if (sem.ref === undefined) {
-    return node;
-  }
-  if (sem.ref.startsWith('#')) {
-    return graph.resolveFragment(sem.ref.slice(1));
-  }
-
-  // Embedded `$defs` `$id`: a non-fragment `$ref` (e.g.
-  // `urn:bookstore:BookCatalogEntryVariant`) targeting an `$id` declared inside
-  // this same graph's `$defs` is not a separately-registered schema, so it
-  // resolves by matching the node whose id equals the ref target. Mirrors the
-  // same-graph embedded-$id fallback in Projection.resolveNode and
-  // Materializer.resolveTargetGraphAndNode. Without this, array items whose
-  // schema is an embedded-$id ref keep their unresolved (property-less) node,
-  // so nested instances lift back as plain IRI strings instead of objects.
-  const refId = graph.resolveRefId(sem.ref);
-
-  for (const candidate of graph.nodes()) {
-    if (candidate.id === refId) {
-      return candidate;
-    }
-  }
-
-  return node;
-}
+} as const;
 
 /**
  * Lift an annotated edge back to its `{ target, annotations }` shape.
@@ -454,14 +477,18 @@ function collectEffectiveLiftProperties(
   node: SchemaGraphNodeType,
   registry: SchemaRegistryInterface
 ): EffectivePropertyMapType {
-  return EffectiveProperties.collectMemo(
+  const result = EffectiveProperties.collectMemo(
     effectivePropertiesCache,
     graph,
     node,
     (refId: string): SchemaGraphInterface | undefined => {
-      return registry.graph(refId);
+      const refGraph = registry.graph(refId);
+
+      return refGraph;
     }
   );
+
+  return result;
 }
 
 function liftPropertyValue(pvArgs: LiftPropertyValueArgsType): unknown {
@@ -494,7 +521,7 @@ function liftPropertyValue(pvArgs: LiftPropertyValueArgsType): unknown {
   // Expand CURIE predicates (e.g. 'bk:title' → full IRI) so they match the
   // full-IRI predicates emitted by toQuads/QuadFactory.
   const predicateIri = ctx.curie === undefined ? rawPredicateIri : ctx.curie.expandIfNeeded(rawPredicateIri);
-  const matching = findPropertyQuads({
+  const matching = PredicateQuads.findPropertyQuads({
     index,
     predicateIri,
     propName,
@@ -505,11 +532,11 @@ function liftPropertyValue(pvArgs: LiftPropertyValueArgsType): unknown {
     return undefined;
   }
 
-  const resolvedNode = resolveLocalRef(propGraph, propNode);
+  const resolvedNode = TypeResolution.resolveLocalRef(propGraph, propNode);
   const propSem = propGraph.semantics(resolvedNode);
   const isArray = propSem.schemaTypes.includes('array');
   const nestedNode = propSem.itemsNode
-    ? resolveLocalRef(propGraph, propSem.itemsNode)
+    ? TypeResolution.resolveLocalRef(propGraph, propSem.itemsNode)
     : resolvedNode;
 
   return liftMatchingQuads({
@@ -569,7 +596,7 @@ function liftSubject(args: LiftSubjectArgsType): LiftedObjectType {
   const subjectIri = firstSubjectQuad === undefined ? classId : firstSubjectQuad.subject.value;
   const effectiveProperties = collectEffectiveLiftProperties(graph, node, ctx.registry);
   const index = effectiveProperties.size > PREDICATE_INDEX_THRESHOLD
-    ? buildPredicateIndex(subjectQuads)
+    ? PredicateQuads.buildPredicateIndex(subjectQuads)
     : undefined;
 
   for (const [
@@ -611,7 +638,7 @@ function liftSingleValue(args: LiftSingleValueArgsType): unknown {
 
     if (refType !== undefined) {
       // Try resolving via registry (handles pointer-based IDs too)
-      const resolved = resolveNodeForType(refType, ctx.registry);
+      const resolved = TypeResolution.resolveNodeForType(refType, ctx.registry);
 
       if (resolved) {
         return liftSubject({
@@ -670,7 +697,7 @@ function liftInstancesImpl(
   const {
     curie, predicateResolver, registry
   } = args;
-  const targetResolved = resolveNodeForType(schemaId, registry);
+  const targetResolved = TypeResolution.resolveNodeForType(schemaId, registry);
 
   if (!targetResolved) {
     return [];
@@ -769,10 +796,12 @@ export const Lift = {
     registry: SchemaRegistryInterface,
     options?: LiftOptionsType
   ): unknown[] {
-    return liftInstancesImpl(schemaId, quads, {
+    const result = liftInstancesImpl(schemaId, quads, {
       'curie': options?.curie,
       'predicateResolver': options?.predicateResolver,
       registry
     });
+
+    return result;
   }
 } as const;

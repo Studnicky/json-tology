@@ -86,7 +86,7 @@ const OrderRecordTransform = jt.addTransform(OrderRecordSchema, {
 });
 
 // Hydrate canonical JSON into a class instance — the encode direction.
-const hydrated = jt.encode(OrderRecordTransform, aboxFixtures.order);
+const hydrated = jt.encode(OrderRecordTransform, aboxFixtures.order as unknown as OrderWire);
 
 console.assert(hydrated instanceof OrderRecord);
 console.assert(hydrated.totalWithTax() > aboxFixtures.order.orderTotal.amount);

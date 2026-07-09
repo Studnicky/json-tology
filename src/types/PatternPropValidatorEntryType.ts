@@ -23,6 +23,6 @@ import type { ValidateWithErrorsFnType } from '../types/Validation.js';
  * @group Validation
  */
 export type PatternPropValidatorEntryType = {
-  readonly 'regex': RegExp;
-  readonly 'validator': ValidateWithErrorsFnType;
+  'regex': RegExp;
+  'validator': ValidateWithErrorsFnType;
 };

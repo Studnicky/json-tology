@@ -1,7 +1,7 @@
 import type { CurieInterface } from '../interfaces/CurieInterface.js';
 import type {
-  DefaultGraphTermType, IriTermType
-} from './Quad.js';
+  DefaultGraph, NamedNode
+} from '@rdfjs/types';
 
 /** Pre-built options object passed to QuadFactory.quad — avoids per-call allocation.
  *
@@ -21,6 +21,6 @@ import type {
  * @group ABox
  */
 export type QuadOptsType = {
-  readonly 'curie'?: CurieInterface | undefined;
-  readonly 'graph'?: DefaultGraphTermType | IriTermType | undefined;
+  'curie'?: CurieInterface | undefined;
+  'graph'?: DefaultGraph | NamedNode | undefined;
 };

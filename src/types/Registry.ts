@@ -1,11 +1,9 @@
 import type { DuplicateSchemaIdType } from './TypeErrors.js';
 import type { ParseOutputType } from './Transform.js';
 import type { DefaultCreatorInterface } from '../interfaces/DefaultCreatorInterface.js';
-import type { FormatRegistryInterface } from '../interfaces/FormatRegistryInterface.js';
 import type { InvariantType } from './Invariant.js';
 import type { SchemaRegistryInterface } from '../interfaces/SchemaRegistryInterface.js';
-import type { KeywordDefinitionType } from './GraphEngine.js';
-import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
+import type { GraphEngineOptionsType } from './GraphEngine.js';
 import type { VocabularyPluginInterface } from '../interfaces/VocabularyPluginInterface.js';
 
 /** Build a cross-schema references map: `{ [$id]: SchemaType }` for $ref resolution.
@@ -128,7 +126,7 @@ export type UniqueSchemaIdsType<T extends readonly unknown[]>
     'true': BrandedDuplicatesType<T>;
   }[`${HasDuplicateIdsType<T>}`];
 
-export type RegistryOptionsType = {
+export type RegistryOptionsType = Pick<GraphEngineOptionsType, 'formatRegistry' | 'keywords' | 'logger' | 'maxSchemaDepth'> & {
   /**
    * Factory that builds the default-instance creator for `create()`. Injected
    * by the facade so the registry depends on {@link DefaultCreatorInterface}
@@ -176,11 +174,7 @@ export type RegistryOptionsType = {
   'enableStrictGraph'?: boolean;
   'enableStrictTypes'?: boolean;
   'enableTypeCast'?: boolean;
-  'formatRegistry'?: FormatRegistryInterface;
-  'invariants'?: Record<string, readonly InvariantType[]>;
-  'keywords'?: KeywordDefinitionType[];
-  'logger'?: LoggerInterface;
-  'maxSchemaDepth'?: number;
+  'invariants'?: Record<string, InvariantType[]>;
   'prefixes'?: Record<string, string>;
-  'vocabularies'?: readonly VocabularyPluginInterface[];
+  'vocabularies'?: VocabularyPluginInterface[];
 };

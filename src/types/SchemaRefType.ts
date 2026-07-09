@@ -14,4 +14,4 @@
  */
 export type SchemaRefType<TRefs = Record<never, never>>
   = | (keyof TRefs & string)
-  | (Record<string, unknown> & { readonly '$id': string });
+  | (Record<string, unknown> & { '$id': string });

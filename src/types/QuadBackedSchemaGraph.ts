@@ -82,11 +82,7 @@ export type NodeMapType = Map<string, SchemaGraphNodeType>;
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type LiteralTagsType = {
-  readonly 'datatype'?: string;
-  readonly 'language'?: string;
-  readonly 'termType'?: 'BlankNode' | 'Literal' | 'NamedNode';
-};
+export type LiteralTagsType = Partial<Pick<ListItemType, 'datatype' | 'language' | 'termType'>>;
 
 /**
  * Named return type for the optional result of {@link resolveRestrictionBnode}.
@@ -154,14 +150,14 @@ export type OptionalChildNodeType = SchemaGraphNodeType | undefined;
  * @group Graph
  */
 export type RestrictionResultType = {
-  readonly 'metadata': Record<string, unknown>;
-  readonly 'structure': {
-    readonly 'constraint': string;
-    readonly 'kind': 'restriction';
-    readonly 'onProperty': string;
-    readonly 'value': unknown;
+  'metadata': Record<string, unknown>;
+  'structure': {
+    'constraint': string;
+    'kind': 'restriction';
+    'onProperty': string;
+    'value': unknown;
   };
-  readonly 'targetIri': string;
+  'targetIri': string;
 };
 
 /**
@@ -184,7 +180,7 @@ export type RestrictionResultType = {
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type CollectedListType = readonly ListItemType[];
+export type CollectedListType = ListItemType[];
 
 /**
  * Named return type for {@link entries} (the public class method).
@@ -247,7 +243,7 @@ export type OptionalNodeType = SchemaGraphNodeType | undefined;
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type SubjectRelationsType = readonly SchemaGraphRelationType[];
+export type SubjectRelationsType = SchemaGraphRelationType[];
 
 /**
  * Named return type for {@link rootSchema} (the getter).
@@ -269,8 +265,3 @@ export type SubjectRelationsType = readonly SchemaGraphRelationType[];
  * @group Graph
  */
 export type RootSchemaRecordType = Record<string, unknown>;
-
-export type { BuildRelationsOptionsType } from '../types/BuildRelationsOptionsType.js';
-export { type SubjectIndexType } from '../types/OwlImport.js';
-
-export type { ResolveRestrictionOptionsType } from '../types/ResolveRestrictionOptionsType.js';

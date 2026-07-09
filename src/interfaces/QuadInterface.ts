@@ -1,6 +1,9 @@
+import type { Quad } from '@rdfjs/types';
+
 /**
- * `QuadInterface` is the canonical rdf/js spec quad — re-exported from
- * `@rdfjs/types#Quad` as the project's public quad surface.
+ * `QuadInterface` is the canonical rdf/js spec quad — extends
+ * `@rdfjs/types#Quad` as the project's public quad surface, under this
+ * project's own `*Interface`-suffixed naming convention.
  *
  * Quads produced by `toQuads`, `toTbox`, and `toShacl` are directly compatible
  * with the broader Node.js RDF ecosystem (n3, rdf-ext, jsonld, @graphy,
@@ -13,4 +16,4 @@
  *
  * @see {@link https://rdf.js.org/data-model-spec/#quad-interface rdf/js Quad spec}
  */
-export type { Quad as QuadInterface } from '@rdfjs/types';
+export interface QuadInterface extends Quad {}

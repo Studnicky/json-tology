@@ -66,9 +66,9 @@ export type RestrictionKindType
  * @group Schema Utilities
  */
 export type RestrictionDescriptorType = {
-  readonly 'kind': RestrictionKindType;
-  readonly 'onProperty': string;
-  readonly 'value': boolean | number | string;
+  'kind': RestrictionKindType;
+  'onProperty': string;
+  'value': boolean | number | string;
 };
 
 /**
@@ -129,8 +129,6 @@ export type TypedRestrictionRefType<
   readonly 'onProperty': TProp;
   readonly 'value': TValue;
 }>>;
-
-export { RESTRICTION_TAG } from '../constants/RESTRICTION.js';
 
 /**
  * Type guard — narrows an unknown value to a {@link RestrictionRefType}.

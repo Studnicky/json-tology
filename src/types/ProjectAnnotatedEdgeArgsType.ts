@@ -5,23 +5,23 @@ import type { QuadFactoryQuadOptsType } from './QuadFactoryOpts.js';
 import type { QuadInterface } from '../interfaces/QuadInterface.js';
 import type { AnnotatedEdgeStructureType } from '../types/AnnotatedEdgeStructureType.js';
 import type {
-  DefaultGraphTermType, IriTermType
-} from '../types/Quad.js';
+  DefaultGraph, NamedNode
+} from '@rdfjs/types';
 import type { PredicateResolverFnType } from '../types/PredicateResolverFnType.js';
 
 /** Arguments for projectAnnotatedEdge. */
 export type ProjectAnnotatedEdgeArgsType = {
-  readonly 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'depth': number;
-  readonly 'edge': AnnotatedEdgeStructureType;
-  readonly 'graphTerm': DefaultGraphTermType | IriTermType;
-  readonly 'instanceIri': string;
-  readonly 'minter': IriMinterInterface;
-  readonly 'path': string;
-  readonly 'predicateResolver': PredicateResolverFnType;
-  readonly 'quadOpts': QuadFactoryQuadOptsType;
-  readonly 'quads': QuadInterface[];
-  readonly 'sourceId': string;
-  readonly 'value': unknown;
+  'annotationEmitMode'?: AnnotationEmitModeType | undefined;
+  'curie': CurieInterface | undefined;
+  'depth': number;
+  'edge': AnnotatedEdgeStructureType;
+  'graphTerm': DefaultGraph | NamedNode;
+  'instanceIri': string;
+  'minter': IriMinterInterface;
+  'path': string;
+  'predicateResolver': PredicateResolverFnType;
+  'quadOpts': QuadFactoryQuadOptsType;
+  'quads': QuadInterface[];
+  'sourceId': string;
+  'value': unknown;
 };

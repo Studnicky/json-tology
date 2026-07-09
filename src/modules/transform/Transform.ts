@@ -37,7 +37,7 @@ import { Brand } from '../data/Brand.js';
 import type {
   CanonicalShapeType
 } from '../../types/Infer.js';
-import type { JsonTologyReferencesInterface } from '../../types/SchemaReferences.js';
+import type { JsonTologyReferencesInterface } from '../../interfaces/JsonTologyReferencesInterface.js';
 import type { TransformFnsType } from '../../types/TransformFnsType.js';
 import type {
   AnyTransformStageType,
@@ -98,7 +98,9 @@ export class Transform {
     TSchema extends JsonSchemaDocumentType,
     TBrand extends string
   >(schema: TSchema, _: TBrand): BrandedType<TSchema, TBrand> {
-    return Brand.cast<BrandedType<TSchema, TBrand>>(schema);
+    const result = Brand.cast<BrandedType<TSchema, TBrand>>(schema);
+
+    return result;
   }
 
   /**
@@ -124,14 +126,22 @@ export class Transform {
     const stages = transforms as ReadonlyArray<TransformStageType<unknown, unknown>>;
     const composed: TransformFnsType = {
       'decode': (value: unknown): unknown => {
-        return stages.reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
-          return transform.decode(accumulator);
+        const result = stages.reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
+          const decoded = transform.decode(accumulator);
+
+          return decoded;
         }, value);
+
+        return result;
       },
       'encode': (value: unknown): unknown => {
-        return [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
-          return transform.encode(accumulator);
+        const result = [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
+          const encoded = transform.encode(accumulator);
+
+          return encoded;
         }, value);
+
+        return result;
       }
     };
 
@@ -143,7 +153,7 @@ export class Transform {
   /**
    * Attach decode and encode functions to a schema.
    *
-   * - `decode` is called by instantiate() after validation succeeds.
+   * - `decode` is called by instantiate() before validation runs.
    * - `encode` converts a decoded value back to the wire representation.
    *
    * The schema object is returned unchanged at runtime; only the TypeScript
@@ -158,8 +168,12 @@ export class Transform {
     fns: {
       // A normalize transform's `decode` consumes the raw wire payload `TWire`
       // (author-supplied; not derived from the schema) and produces the schema's
-      // canonical, branded form. `encode` is the inverse. The schema describes
-      // `decode`'s OUTPUT, so validation runs on the decoded result.
+      // canonical, branded form — or a subset of it. `instantiate()` runs
+      // decode → applyDefaults → validate, so a `decode` used with
+      // `enableDefaults: true` only needs to return the fields it actually
+      // transforms; schema `default`s fill the rest before validation. `encode`
+      // is the inverse and always consumes the full canonical value, since
+      // `encode` runs on the validated, fully-defaulted result.
       //
       // `TReferences` is the ref-resolving canonical path: a `$ref`-bearing (or
       // composed) schema resolves its canonical output type instead of degrading
@@ -171,7 +185,7 @@ export class Transform {
       // Both sides speak the brand-free structural canonical (`CanonicalShapeType`):
       // `decode` produces plain values (no per-leaf `Brand.cast()`), and `validate`
       // — run by `instantiate` — is the boundary that certifies the branded form.
-      'decode': (raw: TWire) => CanonicalShapeType<TSchema, TReferences>;
+      'decode': (raw: TWire) => Partial<CanonicalShapeType<TSchema, TReferences>>;
       'encode': (value: CanonicalShapeType<TSchema, TReferences>) => TWire;
     }
   ): TransformedType<TSchema, TWire> {
@@ -187,7 +201,9 @@ export class Transform {
    * @returns The registered decode/encode pair, or `undefined` if none.
    */
   public static getDecoder(schema: JsonSchemaDocumentObjectType): TransformFnsType | undefined {
-    return transformRegistry.get(schema);
+    const result = transformRegistry.get(schema);
+
+    return result;
   }
 
   /**

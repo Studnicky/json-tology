@@ -33,6 +33,10 @@ Use `InferType<T>` everywhere you need the TypeScript type corresponding to a sc
 
 The `addresses` array has `default: []` in the schema - at the type level it remains optional because `default` is a runtime concept; at runtime `instantiate()` always fills it in.
 
+This is the "default optional InferType" case: the property is optional in the `InferType` result but always present after `instantiate()`. A consumer that needs the field **required** downstream — for example, assigning the inferred type into a shape checked under `exactOptionalPropertyTypes` — has two options: declare the property in the schema's own `required` array too (a property can carry both `default` and `required` at once, and `InferType` then infers it as non-optional while `instantiate()` still fills it in when the caller omits it), or accept the optional type and narrow it at the call site.
+
+<RunnableExample src="examples/docs/types/55-infertype-default-required-downstream" />
+
 #### Example 2: Integer range, enum, and const
 
 <RunnableExample src="examples/docs/types/46-infertype-range-enum-const" />
@@ -45,7 +49,23 @@ When a schema references another by absolute IRI, pass a reference map as the se
 
 <RunnableExample src="examples/docs/types/47-infertype-cross-schema-refs" />
 
-Without the reference map, `items` resolves to `RefNotFoundInterface<'...'>` at the element level — a compile-error brand, not a silent `unknown`. An unresolved cross-schema `$ref` is a compile error: thread the reference map (or register the target schema) so it resolves. A bare `$ref` to the schema's own `$id` still resolves without a map.
+Without the reference map, `items` resolves to `RefNotFoundType<'...'>` at the element level — a compile-error brand, not a silent `unknown`. An unresolved cross-schema `$ref` is a compile error: thread the reference map (or register the target schema) so it resolves. A bare `$ref` to the schema's own `$id` still resolves without a map.
+
+#### Example 4: CURIE-keyed cross-schema `$ref` resolution
+
+A hash-namespace `$id` (`https://ns#Class`) is the idiomatic OWL form, and the recommended way to reference a sibling schema in that namespace is a CURIE `$ref` (`'ns:Class'`). The reference map key always matches the `$ref` string **as authored** — a CURIE `$ref` needs a CURIE-keyed map entry, an absolute-IRI `$ref` (as in Example 3) needs an absolute-IRI-keyed entry. Mixing the two (a CURIE `$ref` with an IRI-keyed map, or vice versa) is a map miss, which resolves to `RefNotFoundType` exactly as if no map had been supplied at all.
+
+<RunnableExample src="examples/docs/types/53-infertype-curie-ref-map" />
+
+### Troubleshooting: RefNotFoundType (`{ kind: 'RefNotFound', unresolvedRef }`) in an inferred type
+
+If a property in an `InferType` result looks like `{ readonly kind: 'RefNotFound'; readonly unresolvedRef: '...' }`, that is `RefNotFoundType<'...'>` — a deliberate compile-error brand json-tology emits when a cross-schema `$ref` has no matching entry in the reference map. It is not a sign that "inference degrades to `unknown`"; the type system is telling you the reference map is missing or mismatched.
+
+**Do not hand-roll a `*Type` by hand when you see `RefNotFoundType`.** Adding a manually-written type to work around what looks like a broken inference defeats `InferType`: the hand-rolled type silently drifts from the schema the moment a property is renamed or added, because nothing re-checks it against the schema literal. Thread the reference map instead — same call, one extra type argument, and the type tracks the schema again.
+
+<RunnableExample src="examples/docs/types/54-antipattern-handrolled-type-refnotfound" />
+
+Searchable terms for this failure mode: `RefNotFound`, `unresolvedRef`, `kind unresolvedRef`. See also [Runtime decoding across packages](/cross-package-typing) for the same pattern applied to a registry split across two packages, including why `instantiate`'s return type cannot always be trusted across a package boundary even after the reference map is threaded correctly on the type side.
 
 ### Comparison
 
@@ -138,6 +158,7 @@ class Customer(BaseModel):
 
 - [Constraint Brands](/constraint-brands) - format, string, numeric, array brands
 - `InferSchemaType` - explicit root control for sub-schema inference
+- [Runtime decoding across packages](/cross-package-typing) - CURIE-keyed reference maps, and why `instantiate`'s return type doesn't always survive a package boundary
 - [Schemas](/schemas) - how schemas are registered
 
 ---
@@ -316,3 +337,17 @@ class Customer(BaseModel):
 
 - [Constraint Brands](/constraint-brands) - full brand reference and configuration
 - `Transform.brand` - explicit nominal brands on schema `$id`
+
+---
+
+## Mutability
+
+**Generated and inferred types are never `readonly`.** Every schema-derived type surface — `InferType`, `InferSchemaType`, `NominalSchemaType`, `MaterializedSchemaType`, `ParseOutputType` (the return type of `instantiate()`, `encode()`, `dump()`, and friends), `CanonicalShapeType`/`UnbrandType` (the type `materialize()` accepts and a normalize transform's `decode`/`encode` boundary produces), and `BrandOutputType` — types its object properties and array/tuple elements as plain, mutable TypeScript: `T[]`, not `readonly T[]` or `ReadonlyArray<T>`; `{ id: string }`, not `{ readonly id: string }`.
+
+Mutability is the default. Readonly-ness is a decision an individual consumer makes at their own usage site — never something the library imposes on every consumer of a generated type. Concretely:
+
+- A function parameter can always be declared `readonly T[]` even when the canonical inferred type for `T[]` is a plain mutable array — TypeScript allows passing a mutable array anywhere a `readonly` array is expected, never the reverse. Narrowing mutable → readonly is free; a library that hands back `readonly` by default forecloses that choice and forces every consumer who needs to reassign or mutate the value (build it up in a loop, sort it in place, patch a field before re-validating) into a workaround.
+- This applies uniformly across every type-producing surface in the package: authoring a schema and reading `InferType<typeof Schema>` produces the same mutability convention as calling `instantiate()`, `materialize()`, `encode()`, or `dump()` and reading the value back. There is exactly one convention, not one for compile-time inference and a different one for runtime construction.
+- The convention also matches [`@studnicky/types`'s `FromSchema`](https://github.com/Studnicky/substrate) and the wider TypeScript ecosystem's own `json-schema-to-ts`: a schema-inferred type is the *canonical* mutable shape. Consumers who need immutability — a Redux-style state slice, a value handed across a worker boundary, a defensive API boundary — opt in locally with their own `readonly`/`Readonly<T>` annotation rather than fighting the library's output type at every call site.
+
+Compile-time [constraint brands](/constraint-brands) (`FormatBrandType`, `MinItemsBrandType`, and friends) are unaffected by this — they are phantom `unique symbol` markers used to make structurally-different constraints incompatible types, not `readonly` modifiers on real properties, so they carry no mutability implication either way.

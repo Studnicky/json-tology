@@ -115,13 +115,17 @@ export class Predicates {
     [
       'array',
       (value: unknown): boolean => {
-        return Array.isArray(value);
+        const result = Array.isArray(value);
+
+        return result;
       }
     ],
     [
       'integer',
       (value: unknown): boolean => {
-        return Predicates.isIntegerValue(value);
+        const result = Predicates.isIntegerValue(value);
+
+        return result;
       }
     ],
     [
@@ -133,7 +137,9 @@ export class Predicates {
     [
       'number',
       (value: unknown): boolean => {
-        return Predicates.isFiniteNumber(value);
+        const result = Predicates.isFiniteNumber(value);
+
+        return result;
       }
     ],
     [
@@ -304,6 +310,22 @@ export class Predicates {
     return value;
   }
 
+  private static decodeBase64Safe(value: string, urlSafe: boolean): null | string {
+    try {
+      // Normalise url-safe alphabet to standard before decoding
+      const normalised = urlSafe
+        ? value.replaceAll('-', '+').replaceAll('_', '/')
+        : value;
+
+      // atob is available in Node 16+ and all browsers
+      const decoded = atob(normalised);
+
+      return decoded;
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * Check that all required property keys are present in the object.
    *
@@ -317,9 +339,11 @@ export class Predicates {
    * @group Object
    */
   static hasAllRequiredProperties(value: Record<string, unknown>, required: string[]): boolean {
-    return required.every((key: string): boolean => {
+    const result = required.every((key: string): boolean => {
       return key in value;
     });
+
+    return result;
   }
 
   /**
@@ -335,9 +359,13 @@ export class Predicates {
    * @group Object
    */
   static hasNoAdditionalProperties(value: Record<string, unknown>, allowedKeys: Set<string>): boolean {
-    return Object.keys(value).every((key: string): boolean => {
-      return allowedKeys.has(key);
+    const result = Object.keys(value).every((key: string): boolean => {
+      const isAllowed = allowedKeys.has(key);
+
+      return isAllowed;
     });
+
+    return result;
   }
 
   /**
@@ -402,9 +430,13 @@ export class Predicates {
    * @group Type
    */
   static matchesAnyType(schemaTypes: string[], value: unknown): boolean {
-    return schemaTypes.some((schemaType: string): boolean => {
-      return Predicates.matchesType(schemaType, value);
+    const result = schemaTypes.some((schemaType: string): boolean => {
+      const matches = Predicates.matchesType(schemaType, value);
+
+      return matches;
     });
+
+    return result;
   }
 
   /**
@@ -438,7 +470,9 @@ export class Predicates {
    * @group Const
    */
   static satisfiesConst(value: unknown, constValue: unknown): boolean {
-    return DataType.deepEqual(value, constValue);
+    const result = DataType.deepEqual(value, constValue);
+
+    return result;
   }
 
   /**
@@ -497,7 +531,7 @@ export class Predicates {
       return true;
     }
 
-    return decodeBase64Safe(value, encoding === 'base64url') !== null;
+    return Predicates.decodeBase64Safe(value, encoding === 'base64url') !== null;
   }
 
   /**
@@ -531,7 +565,7 @@ export class Predicates {
     let content = value;
 
     if (encoding !== undefined && SUPPORTED_CONTENT_ENCODINGS.has(encoding)) {
-      const decoded = decodeBase64Safe(value, encoding === 'base64url');
+      const decoded = Predicates.decodeBase64Safe(value, encoding === 'base64url');
 
       if (decoded === null) {
         return false;
@@ -560,9 +594,13 @@ export class Predicates {
    * @group Enum
    */
   static satisfiesEnum(value: unknown, enumValues: unknown[]): boolean {
-    return enumValues.some((enumValue: unknown): boolean => {
-      return DataType.deepEqual(value, enumValue);
+    const result = enumValues.some((enumValue: unknown): boolean => {
+      const isEqual = DataType.deepEqual(value, enumValue);
+
+      return isEqual;
     });
+
+    return result;
   }
 
   /**
@@ -794,7 +832,9 @@ export class Predicates {
    * @group String
    */
   static satisfiesPattern(value: string, regex: RegExp): boolean {
-    return regex.test(value);
+    const result = regex.test(value);
+
+    return result;
   }
 
   /**
@@ -818,22 +858,6 @@ export class Predicates {
     }
 
     return true;
-  }
-}
-
-function decodeBase64Safe(value: string, urlSafe: boolean): null | string {
-  try {
-    // Normalise url-safe alphabet to standard before decoding
-    const normalised = urlSafe
-      ? value.replaceAll('-', '+').replaceAll('_', '/')
-      : value;
-
-    // atob is available in Node 16+ and all browsers
-    const decoded = atob(normalised);
-
-    return decoded;
-  } catch {
-    return null;
   }
 }
 

@@ -77,8 +77,6 @@
  */
 import type { JsonTologyTypeConfigInterface } from '../interfaces/JsonTologyTypeConfigInterface.js';
 
-export type { JsonTologyTypeConfigInterface } from '../interfaces/JsonTologyTypeConfigInterface.js';
-
 /**
  * Closed set of recognised brand-configuration flags.
  *

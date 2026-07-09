@@ -30,8 +30,10 @@ For deeper investigation:
 
 ```bash
 npm run bench         # human-readable console output, no markdown
-npm run bench:flame   # 0x flame graph profiling under .flame/
+npm run bench:flame   # Node's built-in CPU profiler, writes a .cpuprofile under .flame/
 ```
+
+Open the generated `.flame/flame.cpuprofile` in Chrome DevTools' Performance panel (Load profile) or VS Code's built-in profile viewer.
 
 ## How to read each table
 

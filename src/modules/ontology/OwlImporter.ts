@@ -6,7 +6,7 @@
  * characteristics, owl:sameAs pairs, named individuals, and an unsupported-
  * axiom log for anything no dispatcher could handle.
  *
- * normalizeInput resolves JSON-LD string/object inputs via the synchronous
+ * Quads.normalize resolves JSON-LD string/object inputs via the synchronous
  * compact-walker (no external dependency for OwlProjection output). For arbitrary
  * JSON-LD, importAsync() delegates to the optional `jsonld` peerDependency.
  * SchemaGraph.fromQuads (the structural inverse of OwlProjection.graph) populates
@@ -43,7 +43,7 @@ import {
 } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { SUPPORTED_XSD_DATATYPES } from '../../constants/XSD_REVERSE_MAPS.js';
 import { OwlImportError } from '../../errors/OwlImportError.js';
-import { OwlImportErrorCode } from '../../constants/ERROR_CODES.js';
+import { OWL_IMPORT_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { DataType } from '../data/DataType.js';
 import { Terms } from '../quads/Terms.js';
@@ -59,33 +59,8 @@ import { PropertyRestrictions } from './importDispatch/PropertyRestrictions.js';
 
 
 // ---------------------------------------------------------------------------
-// mergeFragments helpers
+// Fragments — merge OwlImportFragmentType[] and resolve schema deltas
 // ---------------------------------------------------------------------------
-
-/** Merge all schema deltas from a list of fragments into a single map. */
-function mergeSchemaDeltas(fragments: OwlImportFragmentType[]): Map<string, Partial<JsonSchemaDocumentObjectType>> {
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-
-  for (const fragment of fragments) {
-    for (const [
-      iri,
-      delta
-    ] of fragment.schemaDeltas) {
-      const existing = schemaDeltas.get(iri);
-
-      if (existing === undefined) {
-        schemaDeltas.set(iri, { ...delta });
-      } else {
-        schemaDeltas.set(iri, {
-          ...existing,
-          ...delta
-        });
-      }
-    }
-  }
-
-  return schemaDeltas;
-}
 
 /** Flatten a list of fragment arrays into a single array. */
 function flattenFragmentArrays<T>(fragments: OwlImportFragmentType[], key: keyof OwlImportFragmentType): T[] {
@@ -100,47 +75,116 @@ function flattenFragmentArrays<T>(fragments: OwlImportFragmentType[], key: keyof
   return result;
 }
 
-function mergeFragments(fragments: OwlImportFragmentType[]): OwlImportFragmentType {
-  const schemaDeltas = mergeSchemaDeltas(fragments);
-  const invariants = flattenFragmentArrays<{ 'invariant': InvariantType;
-    'schemaId': string; }>(fragments, 'invariants');
-  const characteristics = flattenFragmentArrays<{ 'characteristic': string;
-    'propertyIri': string; }>(fragments, 'characteristics');
-  const sameAs = flattenFragmentArrays<readonly [string, string]>(fragments, 'sameAs');
-  const individuals = flattenFragmentArrays<{
-    'iri': string;
-    'properties': Record<string, unknown>;
-    'types': readonly string[];
-  }>(fragments, 'individuals');
-  const differentFromRaw = flattenFragmentArrays<readonly [string, string]>(fragments, 'differentFrom');
+/** Merge, deduplicate, and resolve dispatcher-produced OwlImportFragmentType instances. */
+class Fragments {
+  public static merge(fragments: OwlImportFragmentType[]): OwlImportFragmentType {
+    const schemaDeltas = Fragments.mergeDeltas(fragments);
+    const invariants = flattenFragmentArrays<{ 'invariant': InvariantType;
+      'schemaId': string; }>(fragments, 'invariants');
+    const characteristics = flattenFragmentArrays<{ 'characteristic': string;
+      'propertyIri': string; }>(fragments, 'characteristics');
+    const sameAs = flattenFragmentArrays<[string, string]>(fragments, 'sameAs');
+    const individuals = flattenFragmentArrays<{
+      'iri': string;
+      'properties': Record<string, unknown>;
+      'types': string[];
+    }>(fragments, 'individuals');
+    const differentFromRaw = flattenFragmentArrays<[string, string]>(fragments, 'differentFrom');
 
-  // Deduplicate differentFrom pairs by canonical key
-  const seenDiff = new Set<string>();
-  const differentFrom: Array<readonly [string, string]> = [];
+    // Deduplicate differentFrom pairs by canonical key
+    const seenDiff = new Set<string>();
+    const differentFrom: Array<[string, string]> = [];
 
-  for (const [
-    a,
-    b
-  ] of differentFromRaw) {
-    const key = a < b ? `${a}\0${b}` : `${b}\0${a}`;
+    for (const [
+      a,
+      b
+    ] of differentFromRaw) {
+      const key = a < b ? `${a}\0${b}` : `${b}\0${a}`;
 
-    if (!seenDiff.has(key)) {
-      seenDiff.add(key);
-      differentFrom.push([
-        a,
-        b
-      ] as const);
+      if (!seenDiff.has(key)) {
+        seenDiff.add(key);
+        differentFrom.push([
+          a,
+          b
+        ]);
+      }
     }
+
+    return {
+      characteristics,
+      differentFrom,
+      individuals,
+      invariants,
+      sameAs,
+      'schemaDeltas': schemaDeltas
+    };
   }
 
-  return {
-    characteristics,
-    differentFrom,
-    individuals,
-    invariants,
-    sameAs,
-    'schemaDeltas': schemaDeltas
-  };
+  /** Merge all schema deltas from a list of fragments into a single map. */
+  public static mergeDeltas(fragments: OwlImportFragmentType[]): Map<string, Partial<JsonSchemaDocumentObjectType>> {
+    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+
+    for (const fragment of fragments) {
+      for (const [
+        iri,
+        delta
+      ] of fragment.schemaDeltas) {
+        const existing = schemaDeltas.get(iri);
+
+        if (existing === undefined) {
+          schemaDeltas.set(iri, { ...delta });
+        } else {
+          schemaDeltas.set(iri, {
+            ...existing,
+            ...delta
+          });
+        }
+      }
+    }
+
+    return schemaDeltas;
+  }
+
+  /**
+   * Convert the merged schemaDeltas map into final JsonSchemaDocumentObjectType
+   * objects, resolving cross-class $ref IRIs where possible.
+   *
+   * All class IRIs from the input graph receive a minimal schema object
+   * `{ $id: classIri }` as a baseline. Dispatcher-populated deltas are merged
+   * in before the final schema objects are emitted.
+   */
+  public static resolveSchemas(
+    merged: OwlImportFragmentType,
+    allClassIris: ReadonlySet<string>
+  ): JsonSchemaDocumentObjectType[] {
+    const schemas: JsonSchemaDocumentObjectType[] = [];
+
+    for (const classIri of allClassIris) {
+      const delta = merged.schemaDeltas.get(classIri) ?? {};
+      const schema: JsonSchemaDocumentObjectType = {
+        '$id': classIri,
+        ...delta
+      };
+
+      schemas.push(schema);
+    }
+
+    // Also emit schemas for delta keys not in allClassIris (defensive — should
+    // not happen in practice, but guards against dispatcher bugs).
+    for (const [
+      iri,
+      delta
+    ] of merged.schemaDeltas) {
+      if (!allClassIris.has(iri)) {
+        schemas.push({
+          '$id': iri,
+          ...delta
+        });
+      }
+    }
+
+    return schemas;
+  }
 }
 
 /**
@@ -213,7 +257,9 @@ function collectDatatypeIris(quads: QuadInterface[]): ReadonlySet<string> {
 }
 
 function isDatatypeIri(iri: string): boolean {
-  return SUPPORTED_XSD_DATATYPES.has(iri);
+  const result = SUPPORTED_XSD_DATATYPES.has(iri);
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -234,7 +280,9 @@ async function tryLoadJsonLd(): Promise<JsonLdModuleType | null> {
     // the missing package is caught at runtime rather than compile time.
     // The `catch` returns null, which the caller handles gracefully.
     const mod = await import('jsonld').catch((): null => {
-      return null;
+      const result = null;
+
+      return result;
     });
 
     if (mod === null) {
@@ -248,162 +296,160 @@ async function tryLoadJsonLd(): Promise<JsonLdModuleType | null> {
 }
 
 // ---------------------------------------------------------------------------
-// fromJsonLdRdfOutput — convert jsonld.js output to QuadInterface[]
+// Quads — normalise import input (JSON-LD string/object/RDF-JS output) into
+// QuadInterface[]
 // ---------------------------------------------------------------------------
 
-/** Build a single QuadInterface from an external RDF/JS quad shape. */
-function buildQuadFromExternal(quad: ExternalRdfJsQuadType): QuadInterface {
-  const obj = quad.object;
-  let objectTerm: QuadObjectType;
+/** Normalise import input formats (JSON-LD compact docs, jsonld.js RDF output) into QuadInterface[]. */
+class Quads {
+  /** Build a single QuadInterface from an external RDF/JS quad shape. */
+  public static fromExternal(quad: ExternalRdfJsQuadType): QuadInterface {
+    const obj = quad.object;
+    let objectTerm: QuadObjectType;
 
-  if (obj.termType === 'Literal') {
-    const datatypeIri = obj.datatype?.value !== undefined && obj.datatype.value !== ''
-      ? obj.datatype.value
-      : XSD.string;
-    const language = obj.language !== undefined && obj.language !== '' ? obj.language : undefined;
+    if (obj.termType === 'Literal') {
+      const datatypeIri = obj.datatype?.value !== undefined && obj.datatype.value !== ''
+        ? obj.datatype.value
+        : XSD.string;
+      const language = obj.language !== undefined && obj.language !== '' ? obj.language : undefined;
 
-    objectTerm = Terms.literal(obj.value, {
-      'datatype': Terms.iri(datatypeIri),
-      ...(!(language === undefined) && { language })
-    });
-  } else if (obj.termType === 'BlankNode') {
-    objectTerm = Terms.blank(obj.value);
-  } else {
-    objectTerm = Terms.iri(obj.value);
-  }
-
-  return Terms.quad(
-    Terms.iri(quad.subject.value),
-    Terms.iri(quad.predicate.value),
-    objectTerm,
-    Terms.defaultGraph()
-  );
-}
-
-/**
- * Convert jsonld.js v8 N-Quads or object graph output to QuadInterface[].
- */
-function fromJsonLdRdfOutput(rdfOutput: unknown): QuadInterface[] {
-  if (typeof rdfOutput === 'string') {
-    return JsonLdToQuads.fromNQuads(rdfOutput);
-  }
-
-  // Object graph: { '@default': [ { subject, predicate, object } ] }
-  if (typeof rdfOutput !== 'object' || rdfOutput === null) {
-    return [];
-  }
-  const rdfObj = rdfOutput as Record<string, unknown>;
-  const defaultGraph = rdfObj['@default'];
-
-  if (!Array.isArray(defaultGraph)) {
-    return [];
-  }
-
-  return defaultGraph
-    .filter((quad: unknown): quad is ExternalRdfJsQuadType => {
-      return typeof quad === 'object' && quad !== null;
-    })
-    .map((quad: ExternalRdfJsQuadType): QuadInterface => {
-      return buildQuadFromExternal(quad);
-    });
-}
-
-// ---------------------------------------------------------------------------
-// normalizeJsonLdInput — synchronous compact JSON-LD walker
-// ---------------------------------------------------------------------------
-
-/**
- * Normalise a JSON-LD object (already parsed from string) to QuadInterface[].
- *
- * Handles the compact JSON-LD format that OntologyBuilder produces:
- * - @context: prefix-to-IRI map (prefix label to IRI prefix string)
- * - @graph: array of subject nodes with @id, @type, and predicate entries
- *
- * For arbitrary JSON-LD documents, use importAsync() with jsonld.toRDF.
- */
-function normalizeJsonLdInput(doc: Record<string, unknown>): QuadInterface[] {
-  const rawContext = doc['@context'];
-  const context: Record<string, string> = (
-    typeof rawContext === 'object'
-    && rawContext !== null
-    && !Array.isArray(rawContext)
-  )
-    ? (rawContext as Record<string, string>)
-    : {};
-
-  const rawGraph = doc['@graph'];
-
-  if (Array.isArray(rawGraph)) {
-    return JsonLdToQuads.fromNodes(rawGraph as Array<Record<string, unknown>>, context);
-  }
-
-  return [];
-}
-
-// ---------------------------------------------------------------------------
-// normalizeInput — main sync entry point
-// ---------------------------------------------------------------------------
-
-/**
- * Normalise the import input into a flat QuadInterface[].
- *
- * - `QuadInterface[]` → passthrough (already canonical).
- * - `string` → JSON.parse then treated as a JSON-LD object.
- * - `object` → walked as a compact JSON-LD document.
- *
- * The synchronous walker handles the compact format that OwlProjection +
- * OntologyBuilder emit. For arbitrary JSON-LD documents use importAsync()
- * which calls jsonld.toRDF via the optional peerDependency.
- */
-function normalizeInput(jsonLd: QuadInterface[] | Record<string, unknown> | string): QuadInterface[] {
-  if (Array.isArray(jsonLd)) {
-    return jsonLd;
-  }
-
-  if (typeof jsonLd === 'string') {
-    let parsed: unknown;
-
-    try {
-      parsed = JSON.parse(jsonLd);
-    } catch (error) {
-      const msg = `Failed to parse JSON-LD string: ${error instanceof Error ? error.message : String(error)}`;
-      const base = {
-        'axiomIri': 'https://www.w3.org/TR/json-ld/',
-        'code': OwlImportErrorCode.PARSE_FAILED,
-        'subjectIri': null
-      } as const;
-
-      throw error instanceof Error
-        ? new OwlImportError(msg, {
-          ...base,
-          'cause': error
-        })
-        : new OwlImportError(msg, base);
+      objectTerm = Terms.literal(obj.value, {
+        'datatype': Terms.iri(datatypeIri),
+        ...(!(language === undefined) && { language })
+      });
+    } else if (obj.termType === 'BlankNode') {
+      objectTerm = Terms.blank(obj.value);
+    } else {
+      objectTerm = Terms.iri(obj.value);
     }
 
-    if (!DataType.isRecord(parsed)) {
-      let parsedKind: string = typeof parsed;
+    return Terms.quad(
+      Terms.iri(quad.subject.value),
+      Terms.iri(quad.predicate.value),
+      objectTerm,
+      Terms.defaultGraph()
+    );
+  }
 
-      if (parsed === null) {
-        parsedKind = 'null';
-      } else if (Array.isArray(parsed)) {
-        parsedKind = 'array';
+  /**
+   * Normalise a JSON-LD object (already parsed from string) to QuadInterface[].
+   *
+   * Handles the compact JSON-LD format that OntologyBuilder produces:
+   * - @context: prefix-to-IRI map (prefix label to IRI prefix string)
+   * - @graph: array of subject nodes with @id, @type, and predicate entries
+   *
+   * For arbitrary JSON-LD documents, use importAsync() with jsonld.toRDF.
+   */
+  public static fromJsonLd(doc: Record<string, unknown>): QuadInterface[] {
+    const rawContext = doc['@context'];
+    const context: Record<string, string> = (
+      typeof rawContext === 'object'
+      && rawContext !== null
+      && !Array.isArray(rawContext)
+    )
+      ? (rawContext as Record<string, string>)
+      : {};
+
+    const rawGraph = doc['@graph'];
+
+    if (Array.isArray(rawGraph)) {
+      return JsonLdToQuads.fromNodes(rawGraph as Array<Record<string, unknown>>, context);
+    }
+
+    return [];
+  }
+
+  /**
+   * Convert jsonld.js v8 N-Quads or object graph output to QuadInterface[].
+   */
+  public static fromJsonLdRdf(rdfOutput: unknown): QuadInterface[] {
+    if (typeof rdfOutput === 'string') {
+      return JsonLdToQuads.fromNQuads(rdfOutput);
+    }
+
+    // Object graph: { '@default': [ { subject, predicate, object } ] }
+    if (typeof rdfOutput !== 'object' || rdfOutput === null) {
+      return [];
+    }
+    const rdfObj = rdfOutput as Record<string, unknown>;
+    const defaultGraph = rdfObj['@default'];
+
+    if (!Array.isArray(defaultGraph)) {
+      return [];
+    }
+
+    return defaultGraph
+      .filter((quad: unknown): quad is ExternalRdfJsQuadType => {
+        return typeof quad === 'object' && quad !== null;
+      })
+      .map((quad: ExternalRdfJsQuadType): QuadInterface => {
+        const result = Quads.fromExternal(quad);
+
+        return result;
+      });
+  }
+
+  /**
+   * Normalise the import input into a flat QuadInterface[].
+   *
+   * - `QuadInterface[]` → passthrough (already canonical).
+   * - `string` → JSON.parse then treated as a JSON-LD object.
+   * - `object` → walked as a compact JSON-LD document.
+   *
+   * The synchronous walker handles the compact format that OwlProjection +
+   * OntologyBuilder emit. For arbitrary JSON-LD documents use importAsync()
+   * which calls jsonld.toRDF via the optional peerDependency.
+   */
+  public static normalize(jsonLd: QuadInterface[] | Record<string, unknown> | string): QuadInterface[] {
+    if (Array.isArray(jsonLd)) {
+      return jsonLd;
+    }
+
+    if (typeof jsonLd === 'string') {
+      let parsed: unknown;
+
+      try {
+        parsed = JSON.parse(jsonLd);
+      } catch (error) {
+        const msg = `Failed to parse JSON-LD string: ${error instanceof Error ? error.message : String(error)}`;
+        const base = {
+          'axiomIri': 'https://www.w3.org/TR/json-ld/',
+          'code': OWL_IMPORT_ERROR_CODE.PARSE_FAILED,
+          'subjectIri': null
+        } as const;
+
+        throw error instanceof Error
+          ? new OwlImportError(msg, {
+            ...base,
+            'cause': error
+          })
+          : new OwlImportError(msg, base);
       }
 
-      throw new OwlImportError(
-        `JSON-LD string must parse to a JSON object; got ${parsedKind}`,
-        {
-          'axiomIri': 'https://www.w3.org/TR/json-ld/',
-          'code': OwlImportErrorCode.PARSE_FAILED,
-          'subjectIri': null
+      if (!DataType.isRecord(parsed)) {
+        let parsedKind: string = typeof parsed;
+
+        if (parsed === null) {
+          parsedKind = 'null';
+        } else if (Array.isArray(parsed)) {
+          parsedKind = 'array';
         }
-      );
+
+        throw new OwlImportError(
+          `JSON-LD string must parse to a JSON object; got ${parsedKind}`,
+          {
+            'axiomIri': 'https://www.w3.org/TR/json-ld/',
+            'code': OWL_IMPORT_ERROR_CODE.PARSE_FAILED,
+            'subjectIri': null
+          }
+        );
+      }
+
+      return Quads.fromJsonLd(parsed);
     }
 
-    return normalizeJsonLdInput(parsed);
+    return Quads.fromJsonLd(jsonLd);
   }
-
-  return normalizeJsonLdInput(jsonLd);
 }
 
 // ---------------------------------------------------------------------------
@@ -483,7 +529,7 @@ export class OwlImporter {
    *   sameAs, individuals, and unsupported entries.
    */
   public import(jsonLd: QuadInterface[] | Record<string, unknown> | string): OwlImportResultType {
-    const quads = normalizeInput(jsonLd);
+    const quads = Quads.normalize(jsonLd);
     const graph = SchemaGraph.fromQuads(quads, {
       'baseIri': this.baseIri,
       'prefixes': this.prefixes
@@ -523,8 +569,8 @@ export class OwlImporter {
       fragments.push(dispatcher(quads, ctx));
     }
 
-    const merged = mergeFragments(fragments);
-    const schemas = resolveSchemaDeltas(merged, allClassIris);
+    const merged = Fragments.merge(fragments);
+    const schemas = Fragments.resolveSchemas(merged, allClassIris);
 
     if (unsupported.length > 0) {
       this.logger.warn(LogScope.format('OwlImporter', 'import', `${unsupported.length} unsupported construct(s) recorded`));
@@ -563,7 +609,7 @@ export class OwlImporter {
     if (Array.isArray(jsonLd)) {
       quads = jsonLd;
     } else {
-      const syncResult = normalizeInput(jsonLd);
+      const syncResult = Quads.normalize(jsonLd);
 
       if (syncResult.length > 0) {
         quads = syncResult;
@@ -577,7 +623,7 @@ export class OwlImporter {
             + 'Install it with: npm install jsonld',
             {
               'axiomIri': 'https://www.w3.org/TR/json-ld/',
-              'code': OwlImportErrorCode.PEER_DEPENDENCY_MISSING,
+              'code': OWL_IMPORT_ERROR_CODE.PEER_DEPENDENCY_MISSING,
               'subjectIri': null
             }
           );
@@ -588,55 +634,10 @@ export class OwlImporter {
           : jsonLd;
         const rdfOutput = await jsonLdModule.toRDF(doc, { 'format': 'application/n-quads' });
 
-        quads = fromJsonLdRdfOutput(rdfOutput);
+        quads = Quads.fromJsonLdRdf(rdfOutput);
       }
     }
 
     return this.import(quads);
   }
-}
-
-// ---------------------------------------------------------------------------
-// Schema delta resolution
-// ---------------------------------------------------------------------------
-
-/**
- * Convert the merged schemaDeltas map into final JsonSchemaDocumentObjectType
- * objects, resolving cross-class $ref IRIs where possible.
- *
- * All class IRIs from the input graph receive a minimal schema object
- * `{ $id: classIri }` as a baseline. Dispatcher-populated deltas are merged
- * in before the final schema objects are emitted.
- */
-function resolveSchemaDeltas(
-  merged: OwlImportFragmentType,
-  allClassIris: ReadonlySet<string>
-): readonly JsonSchemaDocumentObjectType[] {
-  const schemas: JsonSchemaDocumentObjectType[] = [];
-
-  for (const classIri of allClassIris) {
-    const delta = merged.schemaDeltas.get(classIri) ?? {};
-    const schema: JsonSchemaDocumentObjectType = {
-      '$id': classIri,
-      ...delta
-    };
-
-    schemas.push(schema);
-  }
-
-  // Also emit schemas for delta keys not in allClassIris (defensive — should
-  // not happen in practice, but guards against dispatcher bugs).
-  for (const [
-    iri,
-    delta
-  ] of merged.schemaDeltas) {
-    if (!allClassIris.has(iri)) {
-      schemas.push({
-        '$id': iri,
-        ...delta
-      });
-    }
-  }
-
-  return schemas;
 }

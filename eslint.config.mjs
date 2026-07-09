@@ -1,5 +1,7 @@
 import js from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
+import { plugin as studnickyPlugin } from '@studnicky/eslint-config';
+import { v8Plugin as studnickyV8Plugin } from '@studnicky/eslint-config/v8';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import perfectionist from 'eslint-plugin-perfectionist';
@@ -10,7 +12,21 @@ import globals from 'globals';
 import { noocodec } from './eslint-rules/noocodec.mjs';
 
 // Custom @noocodec rules live in the portable extension `eslint-rules/noocodec.mjs`
-// (canonical home: noocodec-bot; copied verbatim between @noocodec projects).
+// (canonical home: noocodec-bot; copied verbatim between @noocodec projects — left
+// unmodified here). `noocodec/interface-must-be-contract` and
+// `noocodec/type-alias-must-end-type` are superseded by the more capable
+// `@studnicky/eslint-config` equivalents below and are no longer wired in;
+// `noocodec/filename-matches-export` has no `@studnicky` equivalent that covers
+// one-interface-per-file (their `single-export` rule exempts the `interfaces`
+// topology folder entirely) and stays wired.
+
+// Every custom rule `@studnicky/eslint-config` exports, enforced project-wide.
+const studnickyPluginRules = Object.fromEntries(
+  Object.keys(studnickyPlugin.rules).map((name) => [`@studnicky/${name}`, 'error'])
+);
+const studnickyV8PluginRules = Object.fromEntries(
+  Object.keys(studnickyV8Plugin.rules).map((name) => [`@studnicky/v8/${name}`, 'error'])
+);
 
 // ---------------------------------------------------------------------------
 // Rule sets
@@ -225,7 +241,13 @@ const typeScriptPluginRules = {
   '@typescript-eslint/no-dupe-class-members': 'error',
   '@typescript-eslint/no-duplicate-type-constituents': 'error',
   '@typescript-eslint/no-empty-function': 'error',
-  '@typescript-eslint/no-empty-object-type': 'error',
+  // 'with-single-extends' permits `interface X extends Y {}` — the idiom this
+  // project uses to give an external/third-party type a project-conventional
+  // *Interface-suffixed name without introducing a real structural difference
+  // (e.g. QuadInterface extends rdf/js's Quad). A fully empty interface with
+  // no extends clause (a declaration-merge target) is still flagged — those
+  // are scoped exceptions where they occur, not blanket-permitted here.
+  '@typescript-eslint/no-empty-object-type': ['error', { 'allowInterfaces': 'with-single-extends' }],
   '@typescript-eslint/no-explicit-any': 'error',
   '@typescript-eslint/no-floating-promises': 'error',
   '@typescript-eslint/no-implied-eval': 'error',
@@ -457,6 +479,8 @@ const jsModulePlugins = {
 
 const typeScriptPlugins = {
   '@stylistic': stylistic,
+  '@studnicky': studnickyPlugin,
+  '@studnicky/v8': studnickyV8Plugin,
   '@typescript-eslint': tsPlugin,
   'noocodec': noocodec,
   'perfectionist': perfectionist,
@@ -546,8 +570,73 @@ export default [
       ...typeScriptPluginRules,
       ...unicornPluginRules,
       ...regexpPluginRules,
-      'noocodec/interface-must-be-contract': ['error', { 'allow': ['JsonTologyReferencesInterface', 'JsonTologyTypeConfigInterface'] }]
+      ...studnickyPluginRules,
+      ...studnickyV8PluginRules,
+      '@studnicky/interface-must-be-contract': ['error', { 'allow': ['JsonTologyReferencesInterface', 'JsonTologyTypeConfigInterface'] }]
     }
+  },
+
+  // Declaration-merging targets: only `interface` supports declaration merging,
+  // so these two consumer-extensibility points cannot become `type` aliases
+  // without breaking real functionality (module augmentation). The underlying
+  // @typescript-eslint findings these two files need suppressed are scoped here
+  // at the config level, not via inline eslint-disable comments, so
+  // @studnicky/no-suppression-comments has nothing to flag in source.
+  {
+    files: ['src/interfaces/JsonTologyReferencesInterface.ts'],
+    rules: { '@typescript-eslint/no-empty-object-type': 'off' }
+  },
+  {
+    files: ['src/interfaces/JsonTologyTypeConfigInterface.ts'],
+    rules: { '@typescript-eslint/consistent-indexed-object-style': 'off' }
+  },
+
+  // Authoring-input contracts: `@studnicky/no-readonly-in-data-type` targets
+  // GENERATED/INFERRED output types (InferType, ParseOutputType,
+  // MaterializedSchemaType, and friends — see docs/types/infer.md#mutability)
+  // where the library invents and hands back a value, so forcing `readonly`
+  // would be an unwanted opinion the consumer cannot escape. Schema.ts is the
+  // opposite direction: JsonSchemaDocumentObjectType/JsonSchemaDocumentType
+  // describe the shape of what a consumer AUTHORS and hands TO the library,
+  // always as an `as const` literal per this repo's mandatory authoring
+  // convention (see CLAUDE.md's own canonical schema example). `as const`
+  // infers deeply readonly array/tuple fields, so the array-typed fields on
+  // these types must accept `readonly T[]` to be wide enough for both a
+  // mutable array and an `as const` literal — the rule's blanket ban doesn't
+  // yet distinguish an authoring-input contract from a generated-output type.
+  // Scoped here at the config level, not via inline eslint-disable comments,
+  // so @studnicky/no-suppression-comments has nothing to flag in source. A
+  // future patch to the upstream rule that recognizes this distinction
+  // natively can remove this override.
+  {
+    files: ['src/types/Schema.ts', 'src/types/JsonSchemaObjectType.ts'],
+    rules: { '@studnicky/no-readonly-in-data-type': 'off' }
+  },
+
+  // Generic constraints that accept authored input: `TSchemas extends readonly
+  // unknown[]` (JsonTologyOptionsType, UniqueSchemaIdsType), `TStages extends
+  // readonly AnyTransformStageType[]` (ValidateChainType), and `graphs: readonly
+  // SchemaGraphInterface[]` (BuildOutputOptionsType) all widen a constraint or
+  // field to `readonly` so an `as const` consumer literal (a schema tuple, a
+  // transform-stage array) or a readonly getter's return value (SchemaGraph[]
+  // from SchemaRegistry.listGraphs()) satisfies them — the same
+  // accept-both-mutable-and-readonly rationale as the authoring-input contracts
+  // above, just expressed as a generic bound or an internal field instead of a
+  // schema property. The rule's own carve-out already exempts `readonly` inside
+  // a `TSConditionalType`'s `extends`/`check` clause for exactly this reason
+  // (narrows what's accepted, not what's produced); it does not yet extend that
+  // exemption to a type parameter's `extends` constraint or to a field that
+  // merely re-exposes another readonly-returning API. Scoped here at the config
+  // level, not via inline eslint-disable comments, so
+  // @studnicky/no-suppression-comments has nothing to flag in source.
+  {
+    files: [
+      'src/types/BuildOutputOptionsType.ts',
+      'src/types/JsonTologyOptionsType.ts',
+      'src/types/Registry.ts',
+      'src/types/Transform.ts'
+    ],
+    rules: { '@studnicky/no-readonly-in-data-type': 'off' }
   },
 
   // Test files (relaxed rules)
@@ -609,7 +698,6 @@ export default [
   {
     files: ['src/types/**/*.ts'],
     rules: {
-      'noocodec/type-alias-must-end-type': 'error',
       'no-restricted-syntax': [
         'error',
         ...syntaxRestrictions,

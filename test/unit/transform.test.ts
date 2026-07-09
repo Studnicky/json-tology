@@ -47,6 +47,48 @@ const UserSchema = {
   'type': 'object'
 } as const;
 
+const BookWireSchema = {
+  '$id': 'https://myapp.io/BookWire',
+  'properties': {
+    'available': {
+      'default': true,
+      'type': 'boolean'
+    },
+    'isbn': { 'type': 'string' },
+    'stock': {
+      'default': 0,
+      'type': 'number'
+    },
+    'title': { 'type': 'string' }
+  },
+  'required': [
+    'isbn',
+    'title',
+    'available',
+    'stock'
+  ],
+  'type': 'object'
+} as const;
+
+// decode returns only `isbn`/`title` (a genuine partial, no cast); the
+// schema's `default`s for `available`/`stock` are required to complete the
+// canonical value when instantiate() runs with `enableDefaults: true`.
+const BookWireCodec = Transform.create(BookWireSchema, {
+  'decode': (raw: { 'isbn13': string;
+    'title': string }) => {
+    return {
+      'isbn': raw.isbn13,
+      'title': raw.title
+    };
+  },
+  'encode': (book) => {
+    return {
+      'isbn13': book.isbn,
+      'title': book.title
+    };
+  }
+});
+
 const IdentitySchema = Transform.create(
   {
     '$id': 'https://myapp.io/Identity',
@@ -181,6 +223,35 @@ void describe('Transform.create()', () => {
       check(jt);
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Transform.create() — partial decode completed by enableDefaults
+// ---------------------------------------------------------------------------
+
+void describe('Transform.create() — decode returns a partial value under enableDefaults', () => {
+  void it('happy: instantiate() fills schema defaults for fields decode omitted', () => {
+    const jt = JsonTology.create({
+      'baseIri': 'https://myapp.io',
+      'schemas': [BookWireCodec] as const
+    });
+
+    const book = jt.instantiate(
+      BookWireCodec,
+      {
+        'isbn13': '9780743273565',
+        'title': 'Gatsby'
+      },
+      { 'enableDefaults': true }
+    );
+
+    assert.deepEqual(book, {
+      'available': true,
+      'isbn': '9780743273565',
+      'stock': 0,
+      'title': 'Gatsby'
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

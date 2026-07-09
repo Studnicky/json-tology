@@ -17,7 +17,7 @@ import {
   describe, it
 } from 'node:test';
 
-import type { InferSchemaType } from '../../src/types/Schema.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 
 // ============================================================================
 // Utility: type-level equality check

@@ -13,10 +13,10 @@ import type { RelationIndexType } from './RelationIndexType.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 
 export type ProjectionEmitContextType = {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'index': Map<string, RelationIndexType>;
-  readonly 'issuer': IdentifierIssuerInterface | undefined;
-  readonly 'predicateResolver': PredicateResolverFnType | undefined;
-  readonly 'quads': QuadInterface[];
+  'curie': CurieInterface | undefined;
+  'graph': SchemaGraphInterface;
+  'index': Map<string, RelationIndexType>;
+  'issuer': IdentifierIssuerInterface | undefined;
+  'predicateResolver': PredicateResolverFnType | undefined;
+  'quads': QuadInterface[];
 };

@@ -3,5 +3,5 @@ import type { ShaclEmitBaseArgsType } from './ShaclEmitBaseArgsType.js';
 
 /** Arguments for emitNodeShapeComposition. */
 export type EmitNodeShapeCompositionArgsType = ShaclEmitBaseArgsType & {
-  readonly 'shaclVocab': VocabProjection;
+  'shaclVocab': VocabProjection;
 };

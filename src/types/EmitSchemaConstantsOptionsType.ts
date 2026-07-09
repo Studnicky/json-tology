@@ -19,9 +19,9 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  */
 export type EmitSchemaConstantsOptionsType = {
   /** Map from IRI to PascalCase identifier. */
-  readonly 'nameMap': Map<string, string>;
+  'nameMap': Map<string, string>;
   /** All consumer-facing schemas. */
-  readonly 'schemas': JsonSchemaDocumentObjectType[];
+  'schemas': JsonSchemaDocumentObjectType[];
   /** IRIs in emission order. */
-  readonly 'sortedIris': string[];
+  'sortedIris': string[];
 };

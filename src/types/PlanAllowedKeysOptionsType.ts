@@ -5,8 +5,8 @@ import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js
 
 /** Options for `buildPlanAllowedKeys`. */
 export type PlanAllowedKeysOptionsType = {
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-  readonly 'propertyEntries': ReadonlyMap<string, SchemaGraphNodeType>;
-  readonly 'sem': SchemaGraphSemanticsType;
+  'graph': SchemaGraphInterface;
+  'lookupGraph': ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
+  'propertyEntries': ReadonlyMap<string, SchemaGraphNodeType>;
+  'sem': SchemaGraphSemanticsType;
 };

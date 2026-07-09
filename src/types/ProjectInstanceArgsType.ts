@@ -25,6 +25,6 @@ import type { ProjectBaseArgsType } from './ProjectBaseArgsType.js';
  * @group ABox
  */
 export type ProjectInstanceArgsType = ProjectBaseArgsType & {
-  readonly 'data': Record<string, unknown>;
-  readonly 'node': SchemaGraphNodeType;
+  'data': Record<string, unknown>;
+  'node': SchemaGraphNodeType;
 };

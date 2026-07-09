@@ -585,6 +585,103 @@ import { Logger } from '../utils/Logger.js';
         }
       );
     });
+
+    // Regression: a `$ref` written as a full absolute IRI containing a
+    // `#fragment` (the idiomatic OWL/RDF hash-namespace `$id` form, e.g.
+    // `https://ns#StringValue`) must resolve when a schema is registered
+    // under that exact `$id`. Previously the fragment was stripped before
+    // the registry lookup, so the base IRI (never registered) was checked
+    // instead and every such ref failed with REF_UNRESOLVED.
+    void it('resolves a full-IRI #fragment $ref that matches a registered hash-namespace $id', () => {
+      const StringValueSchema = {
+        '$id': 'https://ns.test/ontology#StringValue',
+        'type': 'string'
+      } as const;
+
+      const EntrySchema = {
+        '$id': 'https://ns.test/ontology#Entry',
+        'properties': { 'u': { '$ref': 'https://ns.test/ontology#StringValue' } },
+        'required': ['u'],
+        'type': 'object'
+      } as const;
+
+      const registry = JsonTology.create({
+        'baseIri': 'urn:test:',
+        'enableStrictGraph': true,
+        'logger': logger,
+        'schemas': [
+          StringValueSchema,
+          EntrySchema
+        ]
+      });
+
+      const result = registry.instantiate('https://ns.test/ontology#Entry', { 'u': 'admin' });
+
+      assert.deepStrictEqual(result, { 'u': 'admin' });
+
+      const errors = registry.validate('https://ns.test/ontology#Entry', { 'u': 42 });
+
+      assert.ok(errors.length > 0, 'expected type-mismatch validation error');
+    });
+
+    void it('resolves a full-IRI #fragment $ref with enableStrictGraph: false', () => {
+      const StringValueSchema = {
+        '$id': 'https://ns.test/ontology2#StringValue',
+        'type': 'string'
+      } as const;
+
+      const EntrySchema = {
+        '$id': 'https://ns.test/ontology2#Entry',
+        'properties': { 'u': { '$ref': 'https://ns.test/ontology2#StringValue' } },
+        'required': ['u'],
+        'type': 'object'
+      } as const;
+
+      const registry = JsonTology.create({
+        'baseIri': 'urn:test:',
+        'enableStrictGraph': false,
+        'logger': logger,
+        'schemas': [
+          StringValueSchema,
+          EntrySchema
+        ]
+      });
+
+      const result = registry.instantiate('https://ns.test/ontology2#Entry', { 'u': 'admin' });
+
+      assert.deepStrictEqual(result, { 'u': 'admin' });
+    });
+
+    // Regression companion: the CURIE form of the same reference must
+    // continue to resolve exactly as before (no regression from the fix).
+    void it('continues to resolve a CURIE $ref against a hash-namespace $id (no regression)', () => {
+      const StringValueSchema = {
+        '$id': 'https://ns.test/ontology3#StringValue',
+        'type': 'string'
+      } as const;
+
+      const EntrySchema = {
+        '$id': 'https://ns.test/ontology3#Entry',
+        'properties': { 'u': { '$ref': 'tor:StringValue' } },
+        'required': ['u'],
+        'type': 'object'
+      } as const;
+
+      const registry = JsonTology.create({
+        'baseIri': 'urn:test:',
+        'enableStrictGraph': true,
+        'logger': logger,
+        'prefixes': { 'tor': 'https://ns.test/ontology3#' },
+        'schemas': [
+          StringValueSchema,
+          EntrySchema
+        ]
+      });
+
+      const result = registry.instantiate('https://ns.test/ontology3#Entry', { 'u': 'admin' });
+
+      assert.deepStrictEqual(result, { 'u': 'admin' });
+    });
   });
 
   // ---------------------------------------------------------------------------

@@ -5,6 +5,57 @@ import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**
+ * Compiled array-item validation helpers shared by the {@link Arrays} exec methods.
+ */
+class SingleItem {
+  static validate(
+    validator: ValidateWithErrorsFnType,
+    arr: unknown[],
+    index: number,
+    path: string,
+    ctx: ExecContextType
+  ): 'early-exit' | 'invalid' | 'valid' {
+    const childPath = `${path}/${index}`;
+    const result = validator(arr[index], childPath, ctx);
+
+    if (result.value !== arr[index]) {
+      arr[index] = result.value;
+    }
+
+    if (!result.valid) {
+      return ctx.collectErrors ? 'invalid' : 'early-exit';
+    }
+
+    return 'valid';
+  }
+}
+
+/**
+ * `sh:contains`-style cardinality error message resolution for the compiled
+ * `contains` keyword.
+ */
+class ContainsError {
+  static resolve(
+    count: number,
+    minContains: number | undefined,
+    maxContains: number | undefined
+  ): string | undefined {
+    // Effective minimum: if minContains is absent, the default is 1 (JSON Schema spec).
+    // Use the same `contains(n)` path as the interpreter (GraphEngine) for parity.
+    const effectiveMin = minContains ?? 1;
+
+    if (count < effectiveMin) {
+      return VALIDATION_MESSAGES.contains(effectiveMin);
+    }
+    if (maxContains !== undefined && count > maxContains) {
+      return VALIDATION_MESSAGES.maxContains(maxContains);
+    }
+
+    return undefined;
+  }
+}
+
+/**
  * Compiled array-keyword validators used by the hot-path schema executor.
  *
  * All methods mutate the caller-supplied `errors` array in place and return
@@ -91,7 +142,7 @@ export class Arrays {
     }
 
     const pre = errors.length;
-    const containsError = resolveContainsError(count, minContains, maxContains);
+    const containsError = ContainsError.resolve(count, minContains, maxContains);
 
     if (containsError !== undefined) {
       errors.push(BaseError.validationError(path, 'contains', containsError));
@@ -119,7 +170,7 @@ export class Arrays {
     let valid = true;
 
     for (let i = startIndex; i < arr.length; i++) {
-      const outcome = validateSingleItem(itemValidator, arr, i, path, ctx);
+      const outcome = SingleItem.validate(itemValidator, arr, i, path, ctx);
 
       if (outcome === 'early-exit') {
         return {
@@ -161,7 +212,7 @@ export class Arrays {
         continue;
       }
 
-      const outcome = validateSingleItem(validator, arr, i, path, ctx);
+      const outcome = SingleItem.validate(validator, arr, i, path, ctx);
 
       if (outcome === 'early-exit') {
         return {
@@ -179,44 +230,4 @@ export class Arrays {
       valid
     };
   }
-}
-
-function resolveContainsError(
-  count: number,
-  minContains: number | undefined,
-  maxContains: number | undefined
-): string | undefined {
-  // Effective minimum: if minContains is absent, the default is 1 (JSON Schema spec).
-  // Use the same `contains(n)` path as the interpreter (GraphEngine) for parity.
-  const effectiveMin = minContains ?? 1;
-
-  if (count < effectiveMin) {
-    return VALIDATION_MESSAGES.contains(effectiveMin);
-  }
-  if (maxContains !== undefined && count > maxContains) {
-    return VALIDATION_MESSAGES.maxContains(maxContains);
-  }
-
-  return undefined;
-}
-
-function validateSingleItem(
-  validator: ValidateWithErrorsFnType,
-  arr: unknown[],
-  index: number,
-  path: string,
-  ctx: ExecContextType
-): 'early-exit' | 'invalid' | 'valid' {
-  const childPath = `${path}/${index}`;
-  const result = validator(arr[index], childPath, ctx);
-
-  if (result.value !== arr[index]) {
-    arr[index] = result.value;
-  }
-
-  if (!result.valid) {
-    return ctx.collectErrors ? 'invalid' : 'early-exit';
-  }
-
-  return 'valid';
 }

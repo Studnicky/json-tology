@@ -3,7 +3,7 @@
  * Carries a validated value; errors is always undefined.
  */
 export type PassResultType<T> = {
-  readonly 'data': T;
-  readonly 'errors': undefined;
-  readonly 'success': true;
+  'data': T;
+  'errors': undefined;
+  'success': true;
 };

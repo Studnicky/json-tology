@@ -87,7 +87,9 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   public rootSchemaId(): string | undefined {
-    return GraphEngineSupport.schemaId(this.rootSchema);
+    const result = GraphEngineSupport.schemaId(this.rootSchema);
+
+    return result;
   }
 
   public schemaLookup(): ((schemaId: string) => Record<string, unknown> | undefined) | undefined {

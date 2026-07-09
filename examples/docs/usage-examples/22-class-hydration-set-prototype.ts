@@ -79,7 +79,7 @@ const ProtoOrderTransform = jt.addTransform(ProtoOrderSchema, {
 });
 
 // Hydrate canonical JSON via encode.
-const hydrated = jt.encode(ProtoOrderTransform, { ...aboxFixtures.order });
+const hydrated = jt.encode(ProtoOrderTransform, { ...aboxFixtures.order } as unknown as OrderWire);
 
 console.assert(hydrated instanceof OrderViaProto);
 console.assert(hydrated.lineCount() === aboxFixtures.order.orderLines.length);

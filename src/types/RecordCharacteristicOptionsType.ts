@@ -8,10 +8,10 @@ import type {
 } from './OwlImport.js';
 
 export type RecordCharacteristicOptionsType = {
-  readonly 'characteristicName': string;
-  readonly 'characteristicTarget': string;
-  readonly 'ctx': OwlImportContextType;
-  readonly 'fragment': OwlImportFragmentType;
-  readonly 'propertyIri': string;
-  readonly 'seen': Set<string>;
+  'characteristicName': string;
+  'characteristicTarget': string;
+  'ctx': OwlImportContextType;
+  'fragment': OwlImportFragmentType;
+  'propertyIri': string;
+  'seen': Set<string>;
 };

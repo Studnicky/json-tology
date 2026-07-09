@@ -6,8 +6,8 @@ import type { SchemaLoadResultType } from '../types/Loader.js';
  * where the schema was fetched from and the wall-clock fetch time.
  */
 export type SnapshotProvenanceType = {
-  readonly 'fetchedAt': string;
-  readonly 'source': string;
+  'fetchedAt': string;
+  'source': string;
 };
 
 /**
@@ -26,8 +26,8 @@ export type SnapshotProvenanceType = {
  * the registry).
  */
 export type SnapshotType = {
-  readonly 'loadResult'?: SchemaLoadResultType;
-  readonly 'provenance'?: Readonly<Record<string, SnapshotProvenanceType>>;
-  readonly 'schemas': ReadonlyMap<string, JsonSchemaType>;
-  readonly 'version': 1;
+  'loadResult'?: SchemaLoadResultType;
+  'provenance'?: Readonly<Record<string, SnapshotProvenanceType>>;
+  'schemas': ReadonlyMap<string, JsonSchemaType>;
+  'version': 1;
 };

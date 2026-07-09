@@ -8,7 +8,7 @@ import type { ResolvedRefTargetType } from '../../types/ResolvedRefTargetType.js
 import { BaseError } from '../../errors/BaseError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
 import { TransformError } from '../../errors/TransformError.js';
-import { TransformErrorCode } from '../../constants/ERROR_CODES.js';
+import { TRANSFORM_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { Transform } from '../transform/Transform.js';
 import { DataType } from '../data/DataType.js';
 import { LogScope } from '../data/LogScope.js';
@@ -27,17 +27,19 @@ const refTargetCache = new WeakMap<
   WeakMap<SchemaGraphNodeType, null | ResolvedRefTargetType>
 >();
 
-function getGraphCache(graph: SchemaGraphInterface): WeakMap<SchemaGraphNodeType, null | ResolvedRefTargetType> {
-  const existing = refTargetCache.get(graph);
+class GraphCache {
+  static get(graph: SchemaGraphInterface): WeakMap<SchemaGraphNodeType, null | ResolvedRefTargetType> {
+    const existing = refTargetCache.get(graph);
 
-  if (existing !== undefined) {
-    return existing;
+    if (existing !== undefined) {
+      return existing;
+    }
+    const cache = new WeakMap<SchemaGraphNodeType, null | ResolvedRefTargetType>();
+
+    refTargetCache.set(graph, cache);
+
+    return cache;
   }
-  const cache = new WeakMap<SchemaGraphNodeType, null | ResolvedRefTargetType>();
-
-  refTargetCache.set(graph, cache);
-
-  return cache;
 }
 
 /**
@@ -83,13 +85,13 @@ export class RefDecoder {
         schemaId === undefined
           ? {
             'cause': causeError,
-            'code': TransformErrorCode.TRANSFORM_DECODE_FAILED,
+            'code': TRANSFORM_ERROR_CODE.TRANSFORM_DECODE_FAILED,
             'direction': 'decode',
             'path': ''
           }
           : {
             'cause': causeError,
-            'code': TransformErrorCode.TRANSFORM_DECODE_FAILED,
+            'code': TRANSFORM_ERROR_CODE.TRANSFORM_DECODE_FAILED,
             'direction': 'decode',
             'path': '',
             'schemaId': schemaId
@@ -337,7 +339,7 @@ export class RefDecoder {
     // Per-graph, per-source-node cache for the resolved cross-schema target.
     // Resolution is node-deterministic: the same source node always resolves
     // to the same targetGraph/targetNode/targetSchema triple.
-    const graphCache = getGraphCache(graph);
+    const graphCache = GraphCache.get(graph);
 
     if (graphCache.has(node)) {
       const cached = graphCache.get(node);
@@ -357,8 +359,16 @@ export class RefDecoder {
 
     // Cache miss — resolve and store.
     const parsed = SchemaIri.parseRef(refTarget);
-    const targetId = registry.resolveSchemaId(parsed.id);
-    const targetSchema = registry.getSchema(targetId);
+
+    // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be
+    // a registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall
+    // to fragment-stripped resolution when no such registration matches
+    // exactly.
+    const literalSchema = parsed.fragment === ''
+      ? undefined
+      : registry.getSchema(registry.resolveSchemaId(refTarget));
+    const targetSchema = literalSchema ?? registry.getSchema(registry.resolveSchemaId(parsed.id));
+    const targetFragment = literalSchema === undefined ? parsed.fragment : '';
 
     if (targetSchema === undefined) {
       graphCache.set(node, null);
@@ -380,9 +390,9 @@ export class RefDecoder {
       return RefDecoder.decodeWithSchema(targetSchema, value);
     }
 
-    const targetNode = parsed.fragment === ''
+    const targetNode = targetFragment === ''
       ? targetGraph.rootNode
-      : targetGraph.resolveFragment(parsed.fragment);
+      : targetGraph.resolveFragment(targetFragment);
 
     graphCache.set(node, {
       'targetGraph': targetGraph,

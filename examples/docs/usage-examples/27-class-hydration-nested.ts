@@ -70,7 +70,7 @@ const CustomerRecordTransform = jt.addTransform(CustomerRecordSchema, {
 
 // Compose multiple class transforms by encoding each separately:
 // First, hydrate the buyer using its own transform.
-const customerWire = aboxFixtures.customer;
+const customerWire = aboxFixtures.customer as unknown as CustomerWire;
 const hydratedBuyer = jt.encode(CustomerRecordTransform, customerWire);
 
 console.assert(hydratedBuyer instanceof CustomerRecord);

@@ -24,7 +24,7 @@ import { SchemaCompiler } from '../../src/modules/validation/SchemaCompiler.js';
 import { SchemaCompilerPlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
 import { SchemaCompilerDefaults } from '../../src/modules/validation/SchemaCompilerDefaults.js';
 import { GraphError } from '../../src/errors/GraphError.js';
-import { GraphErrorCode } from '../../src/constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../src/constants/ERROR_CODES.js';
 import { JsonTology } from '../../src/index.js';
 import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistryInterface.js';
 import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContextType.js';
@@ -125,7 +125,7 @@ void describe('Fix 1 — compileValidateWithErrors: missing graph node', () => {
       },
       (err: unknown) => {
         assert.ok(err instanceof GraphError, 'error must be GraphError');
-        assert.equal(err.code, GraphErrorCode.REF_NOT_FOUND);
+        assert.equal(err.code, GRAPH_ERROR_CODE.REF_NOT_FOUND);
 
         return true;
       }
@@ -162,7 +162,7 @@ void describe('Fix 2 — SchemaCompilerDefaults.resolveRef: unresolvable $ref', 
       },
       (err: unknown) => {
         assert.ok(err instanceof GraphError, 'error must be GraphError');
-        assert.equal(err.code, GraphErrorCode.REF_NOT_FOUND);
+        assert.equal(err.code, GRAPH_ERROR_CODE.REF_NOT_FOUND);
 
         return true;
       }
@@ -199,7 +199,7 @@ void describe('Fix 3 — SchemaCompilerDefaults.resolveDynamicRef: unresolvable 
       },
       (err: unknown) => {
         assert.ok(err instanceof GraphError, 'error must be GraphError');
-        assert.equal(err.code, GraphErrorCode.REF_NOT_FOUND);
+        assert.equal(err.code, GRAPH_ERROR_CODE.REF_NOT_FOUND);
 
         return true;
       }
@@ -234,7 +234,7 @@ void describe('Fix 4a — compileDynamicRefValidator: bad $dynamicRef throws', (
       },
       (err: unknown) => {
         assert.ok(err instanceof GraphError, 'error must be GraphError');
-        assert.equal(err.code, GraphErrorCode.REF_NOT_FOUND);
+        assert.equal(err.code, GRAPH_ERROR_CODE.REF_NOT_FOUND);
 
         return true;
       }

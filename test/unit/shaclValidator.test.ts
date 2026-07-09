@@ -24,8 +24,9 @@ import {
 } from '../../src/constants/IRI.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
-  BnodeTermType, IriTermType, QuadObjectType
-} from '../../src/types/Quad.js';
+  BlankNode, NamedNode
+} from '@rdfjs/types';
+import type { QuadObjectType } from '../../src/types/Quad.js';
 
 // ---------------------------------------------------------------------------
 // Shared base IRI — all schemas and instances live under this namespace
@@ -1324,7 +1325,7 @@ function iriObjQuad(subject: string, predicate: string, objectIri: string): Quad
   return Terms.quad(Terms.iri(subject), Terms.iri(predicate), Terms.iri(objectIri));
 }
 
-function shapeQuad(subject: BnodeTermType | IriTermType, predicate: string, object: QuadObjectType): QuadInterface {
+function shapeQuad(subject: BlankNode | NamedNode, predicate: string, object: QuadObjectType): QuadInterface {
   return Terms.quad(subject, Terms.iri(predicate), object);
 }
 

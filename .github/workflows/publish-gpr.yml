@@ -39,6 +39,8 @@ jobs:
           scope: '@studnicky'
 
       - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm ci --include=dev --include=optional
 
       - name: Build

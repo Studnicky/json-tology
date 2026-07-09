@@ -4,7 +4,7 @@
 
 **Trust boundary.** Use `instantiate` when data crosses into your system from outside - HTTP request bodies, queue messages, file imports, IPC payloads. Failure means the caller sent invalid data; `InstantiationError` carries the full structured error list for your error response.
 
-**Declaration.** Validates input data against a registered schema, applies `default` values declared on schema properties, runs any registered `Transform` decoders, strips unknown properties, and returns a fully typed result. Throws `InstantiationError` on validation failure. The input is deep-cloned before mutation - the original is never modified.
+**Declaration.** Runs any registered `Transform` decoder first, then validates the decoded data against the registered schema, applies `default` values declared on schema properties, strips unknown properties, and returns a fully typed result. Throws `InstantiationError` on validation failure. The input is deep-cloned before mutation - the original is never modified. See [Canonical decode/default ordering](/instantiate-vs-materialize#canonical-decode-default-ordering) for the full sequence.
 
 **Use this when** you have an unknown-shape input (a request body, a queue message, a config blob, a database row) and you want a typed, validated, defaults-applied domain object - or a typed exception. This is the right method 80% of the time when data enters your application boundary. Prefer this over calling `validate` and then mapping fields manually.
 

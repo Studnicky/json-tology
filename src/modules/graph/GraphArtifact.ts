@@ -15,7 +15,7 @@ import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { GraphArtifactType } from '../../types/GraphArtifactType.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { DataType } from '../data/DataType.js';
 import { LogScope } from '../data/LogScope.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
@@ -42,28 +42,28 @@ export class GraphArtifact {
     if (!DataType.isRecord(artifact)) {
       throw new GraphError(
         'Artifact must be an object. Regenerate the artifact.',
-        { 'code': GraphErrorCode.ARTIFACT_INVALID }
+        { 'code': GRAPH_ERROR_CODE.ARTIFACT_INVALID }
       );
     }
 
     if (!('metadata' in artifact)) {
       throw new GraphError(
         'Artifact is missing metadata. Regenerate the artifact.',
-        { 'code': GraphErrorCode.ARTIFACT_INVALID }
+        { 'code': GRAPH_ERROR_CODE.ARTIFACT_INVALID }
       );
     }
 
     if (!('normIR' in artifact) || !('semanticsHashes' in artifact)) {
       throw new GraphError(
         'Unsupported legacy artifact format. Regenerate the artifact.',
-        { 'code': GraphErrorCode.ARTIFACT_INVALID }
+        { 'code': GRAPH_ERROR_CODE.ARTIFACT_INVALID }
       );
     }
 
     if (!this.isArtifact(artifact)) {
       throw new GraphError(
         'Artifact shape is invalid. Regenerate the artifact.',
-        { 'code': GraphErrorCode.ARTIFACT_INVALID }
+        { 'code': GRAPH_ERROR_CODE.ARTIFACT_INVALID }
       );
     }
 
@@ -76,7 +76,7 @@ export class GraphArtifact {
       logger.warn(LogScope.format('GraphArtifact', 'fromArtifact', `schema hash mismatch (artifact=${artifact.metadata.schemaHash}, actual=${actualSchemaHash}); artifact is stale`));
       throw new GraphError(
         `Schema hash mismatch: artifact=${artifact.metadata.schemaHash}, actual=${actualSchemaHash}. Regenerate the artifact.`,
-        { 'code': GraphErrorCode.ARTIFACT_STALE }
+        { 'code': GRAPH_ERROR_CODE.ARTIFACT_STALE }
       );
     }
 
@@ -89,7 +89,7 @@ export class GraphArtifact {
         logger.warn(LogScope.format('GraphArtifact', 'fromArtifact', `semantics hash mismatch at "${node.pointer || '(root)'}" (artifact=${expected}, rebuilt=${actual}); artifact is stale`));
         throw new GraphError(
           `Semantics hash mismatch at ${node.pointer || '(root)'}: artifact=${expected}, rebuilt=${actual}. Regenerate the artifact.`,
-          { 'code': GraphErrorCode.ARTIFACT_STALE }
+          { 'code': GRAPH_ERROR_CODE.ARTIFACT_STALE }
         );
       }
     }

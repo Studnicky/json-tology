@@ -62,6 +62,7 @@ But the graph is *there* either way. When you decide to query it (with `entities
 - [Graph concepts](/advanced/graph-concepts) - TBox/ABox, OWA, subClassOf, equivalentClass
 - [Ontology and Graphs](/advanced/ontology) - `toTbox`, `toShacl`, `ontology`, `toQuads`
 - [Graph-native authoring](/advanced/graph-native-authoring) - named primitives and `$ref`
+- [Runtime decoding across packages](/cross-package-typing) - the same graph, registered in one package and typed from another
 
 ## See also
 

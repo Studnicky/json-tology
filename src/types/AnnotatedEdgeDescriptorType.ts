@@ -15,7 +15,7 @@ import type { JsonSchemaType } from '../types/Schema.js';
  */
 
 export type AnnotatedEdgeDescriptorType = {
-  readonly 'annotations': Record<string, JsonSchemaType>;
-  readonly 'predicate': string;
-  readonly 'targetRef': string;
+  'annotations': Record<string, JsonSchemaType>;
+  'predicate': string;
+  'targetRef': string;
 };

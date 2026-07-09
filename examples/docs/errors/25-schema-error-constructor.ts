@@ -3,24 +3,24 @@
  *
  * `message` is the required positional. `code`, `schemaId`, and `cause`
  * travel in the required options bag. The code values come from the
- * exported `SchemaErrorCode` map.
+ * exported `SCHEMA_ERROR_CODE` map.
  */
 
 import {
-  SchemaError, SchemaErrorCode
+  SCHEMA_ERROR_CODE, SchemaError
 } from '../../../src/index.js';
 
 const schemaId = 'urn:bookstore:Order';
 const cause = new Error('vocabulary not registered');
 
-const missingId = new SchemaError('schema is missing $id', { 'code': SchemaErrorCode.MISSING_ID });
+const missingId = new SchemaError('schema is missing $id', { 'code': SCHEMA_ERROR_CODE.MISSING_ID });
 const structure = new SchemaError('invalid structure', {
-  'code': SchemaErrorCode.STRUCTURE_INVALID,
+  'code': SCHEMA_ERROR_CODE.STRUCTURE_INVALID,
   schemaId
 });
 const dialect = new SchemaError('unsupported dialect', {
   cause,
-  'code': SchemaErrorCode.DIALECT_UNSUPPORTED,
+  'code': SCHEMA_ERROR_CODE.DIALECT_UNSUPPORTED,
   schemaId
 });
 

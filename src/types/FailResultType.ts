@@ -5,7 +5,7 @@ import type { ValidationErrors } from '../errors/ValidationErrors.js';
  * Carries validation errors; data is always undefined.
  */
 export type FailResultType = {
-  readonly 'data': undefined;
-  readonly 'errors': ValidationErrors;
-  readonly 'success': false;
+  'data': undefined;
+  'errors': ValidationErrors;
+  'success': false;
 };

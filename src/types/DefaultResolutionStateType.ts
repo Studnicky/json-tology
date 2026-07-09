@@ -14,8 +14,8 @@ import type { DefaultResolutionContextType } from './DefaultResolutionContextTyp
  * @internal
  */
 export type DefaultResolutionStateType = {
-  readonly 'context': DefaultResolutionContextType;
-  readonly 'dynamicScope': DynamicScopeEntryType[];
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'visited': Set<string>;
+  'context': DefaultResolutionContextType;
+  'dynamicScope': DynamicScopeEntryType[];
+  'graph': SchemaGraphInterface;
+  'visited': Set<string>;
 };

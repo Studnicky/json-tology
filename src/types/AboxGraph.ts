@@ -7,16 +7,16 @@ export type AboxLiftFnType = (iri: string) => unknown;
 
 /** A (predicate IRI, object IRI-or-literal-value) pair stored in the bySubject index. */
 export type AboxPredicateObjectType = {
-  readonly 'object': string;
+  'object': string;
   /** termType of the original quad object — Literal or NamedNode */
-  readonly 'objectTermType': 'BlankNode' | 'Literal' | 'NamedNode';
-  readonly 'predicate': string;
+  'objectTermType': 'BlankNode' | 'Literal' | 'NamedNode';
+  'predicate': string;
 };
 
 /** A (predicate IRI, subject IRI) pair stored in the byObject index. */
 export type AboxPredicateSubjectType = {
-  readonly 'predicate': string;
-  readonly 'subject': string;
+  'predicate': string;
+  'subject': string;
 };
 
 /**
@@ -31,9 +31,9 @@ export type AboxPredicateSubjectType = {
  */
 export type AboxIdentityDescriptorType = {
   /** Class IRI that owns this identity (the inverse-functional property's domain). */
-  readonly 'owningClass': string;
+  'owningClass': string;
   /** Canonical predicate IRI of the identity property (e.g. the full IRI for `customerId`). */
-  readonly 'predicate': string;
+  'predicate': string;
   /** Range primitive IRI (the identity datatype's schema `$id`, e.g. `urn:bookstore:CustomerId`). */
-  readonly 'range': string;
+  'range': string;
 };

@@ -3,8 +3,8 @@ import type { IdentifierIssuerInterface } from '../interfaces/IdentifierIssuerIn
 
 /** Shared conversion context — groups per-call mutable state for JSON-LD to quads conversion. */
 export type ConversionContextType = {
-  readonly 'allQuads': QuadInterface[];
-  readonly 'bnodeMap': Map<Record<string, unknown>, string>;
-  readonly 'context': Record<string, string>;
-  readonly 'counter': IdentifierIssuerInterface;
+  'allQuads': QuadInterface[];
+  'bnodeMap': Map<Record<string, unknown>, string>;
+  'context': Record<string, string>;
+  'counter': IdentifierIssuerInterface;
 };

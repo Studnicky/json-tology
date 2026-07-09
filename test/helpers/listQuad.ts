@@ -20,17 +20,18 @@
 
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type {
-  BnodeTermType, DefaultGraphTermType, IriTermType, QuadObjectType
-} from '../../src/types/Quad.js';
+  BlankNode, DefaultGraph, NamedNode
+} from '@rdfjs/types';
+import type { QuadObjectType } from '../../src/types/Quad.js';
 
 import { Lists } from '../../src/modules/quads/Lists.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
 
 export function listQuad(
-  subject: BnodeTermType | IriTermType,
-  predicate: IriTermType,
+  subject: BlankNode | NamedNode,
+  predicate: NamedNode,
   items: readonly QuadObjectType[],
-  graph: DefaultGraphTermType | IriTermType = Terms.defaultGraph()
+  graph: DefaultGraph | NamedNode = Terms.defaultGraph()
 ): QuadInterface[] {
   const {
     head, triples

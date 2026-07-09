@@ -40,9 +40,11 @@ import type {
 } from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
-import type { PrefixMapType } from '../../types/OwlImport.js';
+import type { QuadObjectType } from '../../types/Quad.js';
 import type {
-  BuildRelationsOptionsType,
+  PrefixMapType, SubjectIndexType
+} from '../../types/OwlImport.js';
+import type {
   CollectedListType,
   LiteralTagsType,
   NodeEntriesType,
@@ -50,15 +52,15 @@ import type {
   OptionalChildNodeType,
   OptionalNodeType,
   OptionalRestrictionType,
-  ResolveRestrictionOptionsType,
   RootSchemaRecordType,
-  SubjectIndexType,
   SubjectPredicateQuadsIndexType,
   SubjectRelationsType
 } from '../../types/QuadBackedSchemaGraph.js';
+import type { BuildRelationsOptionsType } from '../../types/BuildRelationsOptionsType.js';
+import type { ResolveRestrictionOptionsType } from '../../types/ResolveRestrictionOptionsType.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import {
   OWL, RDF, RDFS
 } from '../../constants/IRI.js';
@@ -75,76 +77,6 @@ import { Terms } from '../quads/Terms.js';
 import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
 
 // OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
-
-function buildPredicateIndex(subjectIndex: SubjectIndexType): SubjectPredicateQuadsIndexType {
-  const index: SubjectPredicateQuadsIndexType = new Map();
-
-  for (const [
-    subject,
-    quads
-  ] of subjectIndex) {
-    const predicateMap = new Map<string, QuadInterface[]>();
-
-    for (const quad of quads) {
-      const predicateValue = quad.predicate.value;
-      let list = predicateMap.get(predicateValue);
-
-      if (list === undefined) {
-        list = [];
-        predicateMap.set(predicateValue, list);
-      }
-      list.push(quad);
-    }
-    index.set(subject, predicateMap);
-  }
-
-  return index;
-}
-
-// ---------------------------------------------------------------------------
-// Build SchemaGraphNodeType stubs from the quad subject index
-// ---------------------------------------------------------------------------
-
-function buildNodeMap(
-  subjectIndex: SubjectIndexType,
-  predicateIndex: SubjectPredicateQuadsIndexType,
-  curie: CurieInterface
-): NodeMapType {
-  const nodeMap: NodeMapType = new Map();
-
-  for (const [
-    subject,
-    predicateMap
-  ] of predicateIndex) {
-    // Only create a node when the subject has a recognised OWL type assertion.
-    const typeQuads = predicateMap.get(RDF.type) ?? [];
-    const hasOWLType = typeQuads.some((typeQuad: QuadInterface): boolean => {
-      return typeQuad.object.termType === 'NamedNode'
-        && (OWL_NODE_TYPE_IRIS.has(typeQuad.object.value) || OWL_NODE_TYPE_IRIS.has(curie.compact(typeQuad.object.value)));
-    });
-
-    if (!hasOWLType) {
-      // Blank nodes and OWL ontology declarations without a recognised type
-      // are indexed but not exposed as primary nodes.
-      // We still need them in subjectIndex for restriction look-up below.
-      continue;
-    }
-
-    // Build a minimal schema stub: { $id } so that node.schema.id is accessible.
-    const schema: Record<string, unknown> = { '$id': subject };
-
-    nodeMap.set(subject, {
-      'id': subject,
-      'pointer': '',
-      'schema': schema
-    });
-  }
-
-  // Suppress unused parameter warning — subjectIndex used by callers for bnode lookup.
-  void subjectIndex;
-
-  return nodeMap;
-}
 
 // ---------------------------------------------------------------------------
 // Build SchemaGraphRelationType[] from indexed quads
@@ -226,218 +158,286 @@ function nodeOrStub(
   return stub;
 }
 
-function buildRelations(opts: BuildRelationsOptionsType): SchemaGraphRelationType[] {
-  const {
-    curie,
-    nodeMap,
-    predicateIndex,
-    stubMap
-  } = opts;
-  const relations: SchemaGraphRelationType[] = [];
+// ---------------------------------------------------------------------------
+// QuadGraphBuilder — cohesive graph-construction helpers used by the
+// QuadBackedSchemaGraph constructor and by relations() when resolving
+// restriction blank nodes.
+// ---------------------------------------------------------------------------
 
-  for (const [
-    subject,
-    predicateMap
-  ] of predicateIndex) {
-    const sourceNode = nodeOrStub(subject, nodeMap, stubMap);
-    const isNamedSubject = nodeMap.has(subject);
+class QuadGraphBuilder {
+  public static nodeMap(
+    subjectIndex: SubjectIndexType,
+    predicateIndex: SubjectPredicateQuadsIndexType,
+    curie: CurieInterface
+  ): NodeMapType {
+    const nodeMap: NodeMapType = new Map();
 
     for (const [
-      rawPredicate,
-      quads
-    ] of predicateMap) {
-      const predicate = curie.compact(rawPredicate);
+      subject,
+      predicateMap
+    ] of predicateIndex) {
+      // Only create a node when the subject has a recognised OWL type assertion.
+      const typeQuads = predicateMap.get(RDF.type) ?? [];
+      const hasOWLType = typeQuads.some((typeQuad: QuadInterface): boolean => {
+        return typeQuad.object.termType === 'NamedNode'
+          && (OWL_NODE_TYPE_IRIS.has(typeQuad.object.value) || OWL_NODE_TYPE_IRIS.has(curie.compact(typeQuad.object.value)));
+      });
 
-      // rdf:type → collect as types on relations (used by ProjectionIndex)
-      if (RDF_TYPE_PREDICATES.has(rawPredicate)) {
-        for (const quad of quads) {
-          if (quad.object.termType !== 'NamedNode') {
-            continue;
-          }
-          const typeIri = curie.compact(quad.object.value);
-
-          relations.push({
-            'predicate': RDF.type,
-            'source': sourceNode,
-            'target': typeIri,
-            'termType': 'NamedNode'
-          });
-        }
+      if (!hasOWLType) {
+        // Blank nodes and OWL ontology declarations without a recognised type
+        // are indexed but not exposed as primary nodes.
+        // We still need them in subjectIndex for restriction look-up below.
         continue;
       }
 
-      // rdfs:subClassOf — may point to a blank-node Restriction; resolve inline.
-      // Only triggered for named-class subjects; bnode-sourced subClassOf is
-      // emitted via the generic branch below so its sibling predicates remain
-      // walkable via relationsForSubject().
-      if (isNamedSubject && (predicate === RDFS.subClassOf || rawPredicate === RDFS.subClassOf)) {
-        for (const quad of quads) {
-          if (quad.object.termType === 'BlankNode') {
-            // Attempt to resolve the restriction blank node.
-            const bnodeId = quad.object.value;
-            const bnodePredicateMap = predicateIndex.get(bnodeId);
-            const restriction = resolveRestrictionBnode({
-              bnodeId,
-              'bnodePredicateMap': bnodePredicateMap,
-              curie
-            });
+      // Build a minimal schema stub: { $id } so that node.schema.id is accessible.
+      const schema: Record<string, unknown> = { '$id': subject };
 
-            if (restriction === undefined) {
-              relations.push({
-                'predicate': RDFS.subClassOf,
-                'source': sourceNode,
-                'target': bnodeId,
-                'termType': 'BlankNode'
-              });
-            } else {
-              relations.push({
-                'metadata': restriction.metadata,
-                'predicate': RDFS.subClassOf,
-                'source': sourceNode,
-                'structure': restriction.structure,
-                'target': restriction.targetIri,
-                'termType': 'BlankNode'
-              });
+      nodeMap.set(subject, {
+        'id': subject,
+        'pointer': '',
+        'schema': schema
+      });
+    }
+
+    // Suppress unused parameter warning — subjectIndex used by callers for bnode lookup.
+    void subjectIndex;
+
+    return nodeMap;
+  }
+
+  public static predicateIndex(subjectIndex: SubjectIndexType): SubjectPredicateQuadsIndexType {
+    const index: SubjectPredicateQuadsIndexType = new Map();
+
+    for (const [
+      subject,
+      quads
+    ] of subjectIndex) {
+      const predicateMap = new Map<string, QuadInterface[]>();
+
+      for (const quad of quads) {
+        const predicateValue = quad.predicate.value;
+        let list = predicateMap.get(predicateValue);
+
+        if (list === undefined) {
+          list = [];
+          predicateMap.set(predicateValue, list);
+        }
+        list.push(quad);
+      }
+      index.set(subject, predicateMap);
+    }
+
+    return index;
+  }
+
+  public static relations(opts: BuildRelationsOptionsType): SchemaGraphRelationType[] {
+    const {
+      curie,
+      nodeMap,
+      predicateIndex,
+      stubMap
+    } = opts;
+    const relations: SchemaGraphRelationType[] = [];
+
+    for (const [
+      subject,
+      predicateMap
+    ] of predicateIndex) {
+      const sourceNode = nodeOrStub(subject, nodeMap, stubMap);
+      const isNamedSubject = nodeMap.has(subject);
+
+      for (const [
+        rawPredicate,
+        quads
+      ] of predicateMap) {
+        const predicate = curie.compact(rawPredicate);
+
+        // rdf:type → collect as types on relations (used by ProjectionIndex)
+        if (RDF_TYPE_PREDICATES.has(rawPredicate)) {
+          for (const quad of quads) {
+            if (quad.object.termType !== 'NamedNode') {
+              continue;
             }
-          } else if (quad.object.termType === 'NamedNode') {
-            const targetIri = curie.compact(quad.object.value);
-            const targetNode = nodeMap.get(quad.object.value) ?? nodeMap.get(targetIri);
+            const typeIri = curie.compact(quad.object.value);
 
             relations.push({
-              'predicate': RDFS.subClassOf,
+              'predicate': RDF.type,
               'source': sourceNode,
-              'target': targetNode ?? targetIri,
+              'target': typeIri,
               'termType': 'NamedNode'
             });
           }
+          continue;
         }
+
+        // rdfs:subClassOf — may point to a blank-node Restriction; resolve inline.
+        // Only triggered for named-class subjects; bnode-sourced subClassOf is
+        // emitted via the generic branch below so its sibling predicates remain
+        // walkable via relationsForSubject().
+        if (isNamedSubject && (predicate === RDFS.subClassOf || rawPredicate === RDFS.subClassOf)) {
+          for (const quad of quads) {
+            if (quad.object.termType === 'BlankNode') {
+              // Attempt to resolve the restriction blank node.
+              const bnodeId = quad.object.value;
+              const bnodePredicateMap = predicateIndex.get(bnodeId);
+              const restriction = QuadGraphBuilder.restrictionBnode({
+                bnodeId,
+                'bnodePredicateMap': bnodePredicateMap,
+                curie
+              });
+
+              if (restriction === undefined) {
+                relations.push({
+                  'predicate': RDFS.subClassOf,
+                  'source': sourceNode,
+                  'target': bnodeId,
+                  'termType': 'BlankNode'
+                });
+              } else {
+                relations.push({
+                  'metadata': restriction.metadata,
+                  'predicate': RDFS.subClassOf,
+                  'source': sourceNode,
+                  'structure': restriction.structure,
+                  'target': restriction.targetIri,
+                  'termType': 'BlankNode'
+                });
+              }
+            } else if (quad.object.termType === 'NamedNode') {
+              const targetIri = curie.compact(quad.object.value);
+              const targetNode = nodeMap.get(quad.object.value) ?? nodeMap.get(targetIri);
+
+              relations.push({
+                'predicate': RDFS.subClassOf,
+                'source': sourceNode,
+                'target': targetNode ?? targetIri,
+                'termType': 'NamedNode'
+              });
+            }
+          }
+          continue;
+        }
+
+        // All other predicates — emit a relation per quad with literal-tag preservation.
+        for (const quad of quads) {
+          const targetValue = objectIriValue(quad, curie);
+          const targetNode = nodeMap.get(targetValue);
+          const tags = literalTagsForQuad(quad);
+
+          relations.push({
+            ...tags,
+            'predicate': predicate,
+            'source': sourceNode,
+            'target': targetNode ?? targetValue
+          });
+        }
+      }
+    }
+
+    return relations;
+  }
+
+  // OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
+  private static restrictionBnode(opts: ResolveRestrictionOptionsType): OptionalRestrictionType {
+    const {
+      bnodeId,
+      bnodePredicateMap,
+      curie
+    } = opts;
+
+    if (bnodePredicateMap === undefined) {
+      return undefined;
+    }
+
+    // Check it's typed as owl:Restriction
+    const typeQuads = bnodePredicateMap.get(RDF.type) ?? [];
+    const isRestriction = typeQuads.some((typeQuad) => {
+      return typeQuad.object.termType === 'NamedNode'
+        && typeQuad.object.value === OWL.Restriction;
+    });
+
+    if (!isRestriction) {
+      return undefined;
+    }
+
+    // Extract owl:onProperty
+    const onPropertyQuads = bnodePredicateMap.get(OWL.onProperty) ?? [];
+
+    if (onPropertyQuads.length === 0) {
+      return undefined;
+    }
+    const onPropertyQuad = onPropertyQuads[0];
+
+    if (onPropertyQuad === undefined) {
+      return undefined;
+    }
+
+    const onPropertyIri = curie.compact(onPropertyQuad.object.termType === 'NamedNode' ? onPropertyQuad.object.value : '');
+
+    // Find the constraint predicate
+    for (const [
+      rawPred,
+      constraintQuads
+    ] of bnodePredicateMap) {
+      if (!OWL_RESTRICTION_CONSTRAINT_IRIS.has(rawPred)) {
+        continue;
+      }
+      // Keep constraint as full IRI — downstream importDispatch handlers compare
+      // against OWL.* constants from IRI.ts (full IRIs), not compact CURIEs.
+      const constraint = rawPred;
+      const constraintQuad = constraintQuads.at(0);
+
+      if (constraintQuad === undefined) {
         continue;
       }
 
-      // All other predicates — emit a relation per quad with literal-tag preservation.
-      for (const quad of quads) {
-        const targetValue = objectIriValue(quad, curie);
-        const targetNode = nodeMap.get(targetValue);
-        const tags = literalTagsForQuad(quad);
+      let value: unknown;
+      let targetIri: string;
 
-        relations.push({
-          ...tags,
-          'predicate': predicate,
-          'source': sourceNode,
-          'target': targetNode ?? targetValue
-        });
+      switch (constraintQuad.object.termType) {
+        case 'BlankNode':
+          value = constraintQuad.object.value;
+          targetIri = constraintQuad.object.value;
+
+          break;
+
+        case 'Literal':
+          value = Terms.decodeLiteral(constraintQuad.object);
+          targetIri = String(constraintQuad.object.value);
+
+          break;
+
+        case 'NamedNode':
+          // Keep as full IRI — no compact form in restriction value targets.
+          targetIri = constraintQuad.object.value;
+          value = targetIri;
+
+          break;
+
+        case 'Quad':
+        case 'Variable':
+          // RDF* quoted-triple / SPARQL variable — not a valid restriction value.
+          continue;
       }
-    }
-  }
 
-  return relations;
-}
-
-// ---------------------------------------------------------------------------
-// Restriction blank-node resolver
-// ---------------------------------------------------------------------------
-
-
-// OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
-
-function resolveRestrictionBnode(opts: ResolveRestrictionOptionsType): OptionalRestrictionType {
-  const {
-    bnodeId,
-    bnodePredicateMap,
-    curie
-  } = opts;
-
-  if (bnodePredicateMap === undefined) {
-    return undefined;
-  }
-
-  // Check it's typed as owl:Restriction
-  const typeQuads = bnodePredicateMap.get(RDF.type) ?? [];
-  const isRestriction = typeQuads.some((typeQuad) => {
-    return typeQuad.object.termType === 'NamedNode'
-      && typeQuad.object.value === OWL.Restriction;
-  });
-
-  if (!isRestriction) {
-    return undefined;
-  }
-
-  // Extract owl:onProperty
-  const onPropertyQuads = bnodePredicateMap.get(OWL.onProperty) ?? [];
-
-  if (onPropertyQuads.length === 0) {
-    return undefined;
-  }
-  const onPropertyQuad = onPropertyQuads[0];
-
-  if (onPropertyQuad === undefined) {
-    return undefined;
-  }
-
-  const onPropertyIri = curie.compact(onPropertyQuad.object.termType === 'NamedNode' ? onPropertyQuad.object.value : '');
-
-  // Find the constraint predicate
-  for (const [
-    rawPred,
-    constraintQuads
-  ] of bnodePredicateMap) {
-    if (!OWL_RESTRICTION_CONSTRAINT_IRIS.has(rawPred)) {
-      continue;
-    }
-    // Keep constraint as full IRI — downstream importDispatch handlers compare
-    // against OWL.* constants from IRI.ts (full IRIs), not compact CURIEs.
-    const constraint = rawPred;
-    const constraintQuad = constraintQuads.at(0);
-
-    if (constraintQuad === undefined) {
-      continue;
+      return {
+        'metadata': {
+          'onProperty': onPropertyIri,
+          'restrictionBnode': bnodeId
+        },
+        'structure': {
+          constraint,
+          'kind': 'restriction',
+          'onProperty': onPropertyIri,
+          value
+        },
+        'targetIri': targetIri
+      };
     }
 
-    let value: unknown;
-    let targetIri: string;
-
-    switch (constraintQuad.object.termType) {
-      case 'BlankNode':
-        value = constraintQuad.object.value;
-        targetIri = constraintQuad.object.value;
-
-        break;
-
-      case 'Literal':
-        value = Terms.decodeLiteral(constraintQuad.object);
-        targetIri = String(constraintQuad.object.value);
-
-        break;
-
-      case 'NamedNode':
-        // Keep as full IRI — no compact form in restriction value targets.
-        targetIri = constraintQuad.object.value;
-        value = targetIri;
-
-        break;
-
-      case 'Quad':
-      case 'Variable':
-        // RDF* quoted-triple / SPARQL variable — not a valid restriction value.
-        continue;
-    }
-
-    return {
-      'metadata': {
-        'onProperty': onPropertyIri,
-        'restrictionBnode': bnodeId
-      },
-      'structure': {
-        constraint,
-        'kind': 'restriction',
-        'onProperty': onPropertyIri,
-        value
-      },
-      'targetIri': targetIri
-    };
+    return undefined;
   }
-
-  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -476,13 +476,13 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     };
     const curie = new Curie(mergedPrefixes);
     const subjectIndex = QuadFactory.indexBySubject(quads);
-    const predicateIndex = buildPredicateIndex(subjectIndex);
+    const predicateIndex = QuadGraphBuilder.predicateIndex(subjectIndex);
     const stubMap = new Map<string, SchemaGraphNodeType>();
 
     this.quads = quads;
-    this.nodeMap = buildNodeMap(subjectIndex, predicateIndex, curie);
+    this.nodeMap = QuadGraphBuilder.nodeMap(subjectIndex, predicateIndex, curie);
     this.nodeList = [...this.nodeMap.values()];
-    this.relationList = buildRelations({
+    this.relationList = QuadGraphBuilder.relations({
       curie,
       'nodeMap': this.nodeMap,
       'predicateIndex': predicateIndex,
@@ -502,7 +502,9 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
   // dispatchers traverse allRelations() and nodes() directly.
 
   public child(_node: SchemaGraphNodeType, _key: string): OptionalChildNodeType {
-    return undefined;
+    const result = undefined;
+
+    return result;
   }
 
   /**
@@ -536,14 +538,18 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     const headTerm = looksLikeIri
       ? {
         'equals': () => {
-          return false;
+          const result = false;
+
+          return result;
         },
         'termType': 'NamedNode' as const,
         'value': head
       }
       : {
         'equals': () => {
-          return false;
+          const result = false;
+
+          return result;
         },
         'termType': 'BlankNode' as const,
         'value': head
@@ -559,21 +565,9 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
             'termType': 'BlankNode'
           });
           break;
-        case 'Literal': {
-          const decoded = Terms.decodeLiteral(item);
-
-          // Encode the typed JS value via String() so the `target` field
-          // remains a plain string per the ListItemType contract; callers
-          // recover the typed value by re-applying Terms.decodeLiteral semantics
-          // through the `datatype` IRI we preserve below.
-          result.push({
-            'datatype': item.datatype.value,
-            'language': item.language,
-            'target': decoded === null || decoded === undefined ? item.value : String(decoded),
-            'termType': 'Literal'
-          });
+        case 'Literal':
+          result.push(this.literalListItem(item));
           break;
-        }
         case 'NamedNode':
           result.push({
             'target': item.value,
@@ -593,7 +587,9 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
    * WeakMap index. Returns undefined for all nodes.
    */
   public domainOf(_node: SchemaGraphNodeType): SchemaGraphNodeType | undefined {
-    return undefined;
+    const result = undefined;
+
+    return result;
   }
 
   /**
@@ -602,7 +598,9 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
    * Returns undefined for all ids.
    */
   public embeddedNode(_id: string): SchemaGraphNodeType | undefined {
-    return undefined;
+    const result = undefined;
+
+    return result;
   }
 
   /**
@@ -611,7 +609,9 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
    * Returns an empty iterator.
    */
   public embeddedSchemaIds(): IterableIterator<string> {
-    return [][Symbol.iterator]();
+    const result = [][Symbol.iterator]();
+
+    return result;
   }
 
   public entries(_node: SchemaGraphNodeType, _key: string): NodeEntriesType {
@@ -648,6 +648,24 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return schema[key];
   }
 
+  /**
+   * Decode a `Literal` list item collected by `collectList`. Encodes the
+   * typed JS value via String() so the `target` field remains a plain
+   * string per the ListItemType contract; callers recover the typed value
+   * by re-applying Terms.decodeLiteral semantics through the `datatype`
+   * IRI preserved here.
+   */
+  private literalListItem(item: Extract<QuadObjectType, { 'termType': 'Literal' }>): ListItemType {
+    const decoded = Terms.decodeLiteral(item);
+
+    return {
+      'datatype': item.datatype.value,
+      'language': item.language,
+      'target': decoded === null || decoded === undefined ? item.value : String(decoded),
+      'termType': 'Literal'
+    };
+  }
+
   public node(schema: Record<string, unknown>): OptionalNodeType {
     const id = schema.$id;
 
@@ -663,9 +681,11 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
   }
 
   public relations(node: SchemaGraphNodeType): SchemaGraphRelationType[] {
-    return this.relationList.filter((rel) => {
+    const result = this.relationList.filter((rel) => {
       return rel.source.id === node.id;
     });
+
+    return result;
   }
 
   public relationsForSubject(subjectIri: string): SubjectRelationsType {
@@ -693,7 +713,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
 
     if (node === undefined) {
       throw new GraphError(`Unknown fragment in quad-backed graph: #${fragment}`, {
-        'code': GraphErrorCode.ANCHOR_NOT_FOUND,
+        'code': GRAPH_ERROR_CODE.ANCHOR_NOT_FOUND,
         'pointer': fragment
       });
     }
@@ -706,7 +726,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
 
     if (node === undefined) {
       throw new GraphError(`Node not found for pointer in quad-backed graph: ${pointer}`, {
-        'code': GraphErrorCode.POINTER_NOT_FOUND,
+        'code': GRAPH_ERROR_CODE.POINTER_NOT_FOUND,
         pointer
       });
     }
@@ -741,7 +761,9 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
 
   public semantics(_node: SchemaGraphNodeType): SchemaGraphSemanticsType {
     // Quad-backed graphs do not populate semantics — dispatchers use allRelations().
-    return EMPTY_SEMANTICS;
+    const result = EMPTY_SEMANTICS;
+
+    return result;
   }
 
   public validateStructure(): StructureWarningType[] {

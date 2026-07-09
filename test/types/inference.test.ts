@@ -9,9 +9,8 @@
  */
 
 import type { ContainsBrandType } from '../../src/types/ConstraintBrands.js';
-import type {
-  InferSchemaType, InferType
-} from '../../src/types/Schema.js';
+import type { InferType } from '../../src/types/Schema.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 import type { RefNotFoundType } from '../../src/types/TypeErrors.js';
 
 
@@ -576,7 +575,7 @@ type ContainsResult = InferType<typeof _ContainsSchema>;
 // `contains` narrows the element type to the contains schema (number) and adds
 // the ContainsBrand carrying that element type — the runtime-only "at least one
 // match" constraint is reflected as a compile-time brand.
-assert<AssertEqual<ContainsResult, ContainsBrandType<number> & readonly number[]>>();
+assert<AssertEqual<ContainsResult, ContainsBrandType<number> & number[]>>();
 
 /**
  * `propertyNames` — Constrains object keys at runtime. TypeScript cannot

@@ -10,6 +10,6 @@ import type { CurieInterface } from '../interfaces/CurieInterface.js';
 import type { PredicateResolverFnType } from '../types/PredicateResolverFnType.js';
 
 export type LiftOptionsType = {
-  readonly 'curie'?: CurieInterface | undefined;
-  readonly 'predicateResolver'?: PredicateResolverFnType | undefined;
+  'curie'?: CurieInterface | undefined;
+  'predicateResolver'?: PredicateResolverFnType | undefined;
 };

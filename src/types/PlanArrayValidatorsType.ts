@@ -27,7 +27,7 @@ import type {
  * @group Validation
  */
 export type PlanArrayValidatorsType = {
-  readonly 'containsValidator': OptionalValidateWithErrorsFnType;
-  readonly 'itemValidator': OptionalValidateWithErrorsFnType;
-  readonly 'prefixValidators': undefined | ValidateWithErrorsFnType[];
+  'containsValidator': OptionalValidateWithErrorsFnType;
+  'itemValidator': OptionalValidateWithErrorsFnType;
+  'prefixValidators': undefined | ValidateWithErrorsFnType[];
 };

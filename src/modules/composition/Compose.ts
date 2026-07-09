@@ -30,9 +30,8 @@ import type {
   RestrictionDescriptorType, RestrictionKindType, RestrictionRefType, TypedRestrictionRefType
 } from '../../types/Restriction.js';
 import type { ValidateSchemaType } from '../../types/SchemaValidation.js';
-import {
-  isRestrictionRef, RESTRICTION_TAG
-} from '../../types/Restriction.js';
+import { isRestrictionRef } from '../../types/Restriction.js';
+import { RESTRICTION_TAG } from '../../constants/RESTRICTION.js';
 import { DataType } from '../data/DataType.js';
 import { Brand } from '../../modules/data/Brand.js';
 import {
@@ -40,24 +39,6 @@ import {
   EXTEND_SKIP_KEYS,
   RESTRICTIONS_KEY
 } from '../../constants/COMPOSITION.js';
-
-function makeRestriction<
-  TKind extends RestrictionKindType,
-  TProp extends string,
-  TValue extends boolean | number | string
->(
-  kind: TKind,
-  onProperty: TProp,
-  value: TValue
-): TypedRestrictionRefType<TKind, TProp, TValue> {
-  return {
-    [RESTRICTION_TAG]: {
-      kind,
-      onProperty,
-      value
-    }
-  };
-}
 
 /**
  * Schema composition utilities.
@@ -95,7 +76,9 @@ export class Compose {
     propIri: TProp,
     rangeClassIri: TRange
   ): TypedRestrictionRefType<'allValuesFrom', TProp, TRange> {
-    return makeRestriction('allValuesFrom', propIri, rangeClassIri);
+    const result = Compose.makeRestriction('allValuesFrom', propIri, rangeClassIri);
+
+    return result;
   }
 
   /**
@@ -185,7 +168,9 @@ export class Compose {
     propIri: TProp,
     n: TN
   ): TypedRestrictionRefType<'cardinality', TProp, TN> {
-    return makeRestriction('cardinality', propIri, n);
+    const result = Compose.makeRestriction('cardinality', propIri, n);
+
+    return result;
   }
 
   /**
@@ -503,7 +488,9 @@ export class Compose {
     propIri: TProp,
     value: TValue
   ): TypedRestrictionRefType<'hasValue', TProp, TValue> {
-    return makeRestriction('hasValue', propIri, value);
+    const result = Compose.makeRestriction('hasValue', propIri, value);
+
+    return result;
   }
 
   /**
@@ -533,13 +520,41 @@ export class Compose {
   }
 
   /**
+   * Build a tagged restriction ref carrying `kind`, `onProperty`, and `value`
+   * under the well-known `RESTRICTION_TAG` key. Shared by every restriction
+   * factory method (`allValuesFrom`, `cardinality`, `hasValue`,
+   * `maxCardinality`, `minCardinality`, `someValuesFrom`).
+   */
+  private static makeRestriction<
+    TKind extends RestrictionKindType,
+    TProp extends string,
+    TValue extends boolean | number | string
+  >(
+    kind: TKind,
+    onProperty: TProp,
+    value: TValue
+  ): TypedRestrictionRefType<TKind, TProp, TValue> {
+    const restriction: Record<string, unknown> = {};
+
+    restriction[RESTRICTION_TAG] = {
+      kind,
+      onProperty,
+      value
+    };
+
+    return Brand.cast<TypedRestrictionRefType<TKind, TProp, TValue>>(restriction);
+  }
+
+  /**
    * Restrict a property to at most `n` values (`owl:maxCardinality`).
    */
   public static maxCardinality<TProp extends string, TN extends number>(
     propIri: TProp,
     n: TN
   ): TypedRestrictionRefType<'maxCardinality', TProp, TN> {
-    return makeRestriction('maxCardinality', propIri, n);
+    const result = Compose.makeRestriction('maxCardinality', propIri, n);
+
+    return result;
   }
 
   private static mergeJtConfig(
@@ -565,7 +580,9 @@ export class Compose {
     propIri: TProp,
     n: TN
   ): TypedRestrictionRefType<'minCardinality', TProp, TN> {
-    return makeRestriction('minCardinality', propIri, n);
+    const result = Compose.makeRestriction('minCardinality', propIri, n);
+
+    return result;
   }
 
   /**
@@ -610,16 +627,16 @@ export class Compose {
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): OmitSchemaType<TSchema, TKeys, TId> {
     const source: Record<string, unknown> = schema;
     const rawOmitProps = source.properties;
-    const sourceProps = DataType.isRecord(rawOmitProps)
-      ? { ...rawOmitProps }
-      : {};
     const sourceRequired = Array.isArray(source.required) ? (source.required as string[]) : [];
 
     const keysToOmit = new Set(keys as readonly string[]);
 
-    for (const key of keys) {
-      delete sourceProps[key];
-    }
+    const sourceProps = DataType.isRecord(rawOmitProps)
+      ? Object.fromEntries(Object.entries(rawOmitProps).filter(([key]): boolean => {
+        return !keysToOmit.has(key);
+      }))
+      : {};
+
     const remainingRequired = sourceRequired.filter((requiredKey: string): boolean => {
       return !keysToOmit.has(requiredKey);
     });
@@ -653,10 +670,13 @@ export class Compose {
     TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TId extends string
   >(schema: TSchema, newId: TId): PartialSchemaType<TSchema, TId> {
-    const source: Record<string, unknown> = { ...schema };
-
-    delete source.required;
-    source.$id = newId;
+    const {
+      'required': _required, ...withoutRequired
+    } = schema as Record<string, unknown>;
+    const source: Record<string, unknown> = {
+      ...withoutRequired,
+      '$id': newId
+    };
 
     return Brand.cast<PartialSchemaType<TSchema, TId>>(source);
   }
@@ -691,7 +711,9 @@ export class Compose {
     }
 
     const pickedRequired = sourceRequired.filter((requiredKey: string): boolean => {
-      return (keys as readonly string[]).includes(requiredKey);
+      const result = (keys as readonly string[]).includes(requiredKey);
+
+      return result;
     });
 
     const result: Record<string, unknown> = {
@@ -746,7 +768,9 @@ export class Compose {
     propIri: TProp,
     rangeClassIri: TRange
   ): TypedRestrictionRefType<'someValuesFrom', TProp, TRange> {
-    return makeRestriction('someValuesFrom', propIri, rangeClassIri);
+    const result = Compose.makeRestriction('someValuesFrom', propIri, rangeClassIri);
+
+    return result;
   }
 
   /**

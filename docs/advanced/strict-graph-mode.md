@@ -67,11 +67,12 @@ With `enableStrictGraph: false`, inline shapes and duplicates emit `logger.warn`
 
 If you have an existing codebase with inline shapes that cannot be refactored at once, start with strict mode off:
 
-1. Run [`registry.findDuplicates()`](/registry/find-duplicates) on your existing schema set.
-2. For each duplicate, extract the shape to a named schema file.
-3. Replace inline occurrences with `{ $ref: newSchema.$id }`.
-4. Confirm all warnings are clear.
-5. Remove the `enableStrictGraph: false` override to restore the default enforcement.
+1. Set `enableStrictGraph: false` and leave `enableDuplicateDetection` on (the default), so violations surface as warnings instead of throws.
+2. Run [`registry.findDuplicates()`](/registry/find-duplicates) on your existing schema set to get the full list.
+3. For each duplicate, extract the shape to a named schema file and register it alongside its sibling schemas.
+4. Replace inline occurrences with `{ $ref: newSchema.$id }`.
+5. Confirm all warnings are clear.
+6. Remove the `enableStrictGraph: false` override to restore the default enforcement.
 
 ## CI script example
 

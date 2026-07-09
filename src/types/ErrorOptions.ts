@@ -24,65 +24,65 @@ import type { SchemaLoadReasonType } from './Loader.js';
 import type { TransformDirectionType } from './TransformDirectionType.js';
 
 export type BaseErrorOptionsType = {
-  readonly 'cause'?: Error;
-  readonly 'code': string;
+  'cause'?: Error;
+  'code': string;
   /**
    * Set `true` only for transient failures whose cause is external and may clear
    * on retry (e.g. HTTP 5xx). Omit (defaults to `false`) for deterministic
    * failures that recur on identical input. See {@link BaseError.retryable}.
    */
-  readonly 'retryable'?: boolean;
+  'retryable'?: boolean;
 };
 
 export type CoercionErrorOptionsType
   = Omit<BaseErrorOptionsType, 'code'> & {
-    readonly 'code': CoercionErrorCodeType;
+    'code': CoercionErrorCodeType;
   };
 
 export type GraphErrorOptionsType
   = Omit<BaseErrorOptionsType, 'code'> & {
-    readonly 'code': GraphErrorCodeType;
-    readonly 'pointer'?: string;
+    'code': GraphErrorCodeType;
+    'pointer'?: string;
   };
 
 export type InstantiationErrorOptionsType
   = Omit<BaseErrorOptionsType, 'code'> & {
-    readonly 'code': InstantiationErrorCodeType;
-    readonly 'message'?: string;
+    'code': InstantiationErrorCodeType;
+    'message'?: string;
   };
 
 export type MaterializationErrorOptionsType
   = Omit<BaseErrorOptionsType, 'code'> & {
-    readonly 'code': MaterializationErrorCodeType;
-    readonly 'message'?: string;
-    readonly 'validationErrors': string[];
+    'code': MaterializationErrorCodeType;
+    'message'?: string;
+    'validationErrors': string[];
   };
 
 export type OwlImportErrorOptionsType
   = Omit<BaseErrorOptionsType, 'code'> & {
-    readonly 'axiomIri': string;
-    readonly 'code': OwlImportErrorCodeType;
-    readonly 'subjectIri': null | string;
+    'axiomIri': string;
+    'code': OwlImportErrorCodeType;
+    'subjectIri': null | string;
   };
 
 export type SchemaErrorOptionsType
   = Omit<BaseErrorOptionsType, 'code'> & {
-    readonly 'code': SchemaErrorCodeType;
-    readonly 'schemaId'?: string;
+    'code': SchemaErrorCodeType;
+    'schemaId'?: string;
   };
 
 export type TransformErrorOptionsType
   = Omit<BaseErrorOptionsType, 'code'> & {
-    readonly 'code': TransformErrorCodeType;
-    readonly 'direction': TransformDirectionType;
-    readonly 'path'?: string;
-    readonly 'schemaId'?: string;
+    'code': TransformErrorCodeType;
+    'direction': TransformDirectionType;
+    'path'?: string;
+    'schemaId'?: string;
   };
 
 export type SchemaLoadErrorOptionsType
   = Omit<BaseErrorOptionsType, 'code'> & {
-    readonly 'code': SchemaLoadErrorCodeType;
-    readonly 'file': string;
-    readonly 'reason': SchemaLoadReasonType;
-    readonly 'status'?: number;
+    'code': SchemaLoadErrorCodeType;
+    'file': string;
+    'reason': SchemaLoadReasonType;
+    'status'?: number;
   };

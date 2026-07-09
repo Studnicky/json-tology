@@ -68,7 +68,7 @@ const prismaOrderTransform = jt.addTransform(PrismaOrderSchema, {
 });
 
 // Hydrate canonical JSON into a Prisma order instance.
-const order = jt.encode(prismaOrderTransform, aboxFixtures.order);
+const order = jt.encode(prismaOrderTransform, aboxFixtures.order as unknown as OrderWire);
 
 console.assert(order instanceof PrismaOrder);
 console.assert(order.orderId === aboxFixtures.order.orderId);

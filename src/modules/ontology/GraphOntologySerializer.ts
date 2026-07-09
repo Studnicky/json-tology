@@ -7,14 +7,18 @@ import { BaseGraphSerializer } from './BaseGraphSerializer.js';
 
 export class GraphOntologySerializer extends BaseGraphSerializer {
   protected corePredicates(): ReadonlySet<string> {
-    return OWL_CORE_PREDICATES;
+    const result = OWL_CORE_PREDICATES;
+
+    return result;
   }
 
   protected projectGraph(graph: SchemaGraphInterface, issuer?: IdentifierIssuerInterface): QuadInterface[] {
-    return OwlProjection.graph(graph, {
+    const result = OwlProjection.graph(graph, {
       'curie': this.curie,
       issuer,
       'predicateResolver': this.predicateResolver
     });
+
+    return result;
   }
 }

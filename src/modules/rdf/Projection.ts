@@ -37,7 +37,7 @@ import {
 } from '../../constants/IRI.js';
 import { XsdTypes } from '../quads/XsdTypes.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
-import { MaterializationErrorCode } from '../../constants/ERROR_CODES.js';
+import { MATERIALIZATION_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { DataType } from '../data/DataType.js';
 import { PredicateResolver } from '../graph/PredicateResolver.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
@@ -83,7 +83,7 @@ export const Projection = {
       'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
       'predicateResolver'?: PredicateResolverFnType | undefined }
   ): QuadInterface[] {
-    return projectAbox({
+    const result = projectAbox({
       'annotationEmitMode': options?.annotationEmitMode,
       baseIri,
       'curie': options?.curie,
@@ -95,6 +95,8 @@ export const Projection = {
       'lookupGraph': options?.lookupGraph,
       'predicateResolver': options?.predicateResolver
     });
+
+    return result;
   }
 } as const;
 
@@ -144,6 +146,34 @@ class IriMinter {
   }
 }
 
+/**
+ * Node resolution, grouped as a method on a single-method internal namespace
+ * object (see `Lists`/`Terms`) because the name collides with the project's
+ * banned freestanding verb-prefix list (resolve/...).
+ */
+const NodeResolution = {
+  resolveNode(
+    graph: SchemaGraphInterface,
+    node: SchemaGraphNodeType,
+    lookupGraph?: ((schemaId: string) => SchemaGraphInterface | undefined)
+  ): RefTargetType {
+    const nodeSemantics = graph.semantics(node);
+
+    if (nodeSemantics.ref === undefined) {
+      return {
+        graph,
+        node
+      };
+    }
+
+    return RefResolution.resolve(
+      nodeSemantics.ref,
+      graph,
+      lookupGraph === undefined ? {} : { 'lookupGraph': lookupGraph }
+    );
+  }
+} as const;
+
 function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
   const {
     annotationEmitMode, baseIri, curie, data, entryNode, graph, graphIri, iriFor, lookupGraph, predicateResolver
@@ -151,7 +181,7 @@ function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
 
   const quads: QuadInterface[] = [];
   const rootNode = entryNode ?? graph.rootNode;
-  const resolved = resolveNode(graph, rootNode);
+  const resolved = NodeResolution.resolveNode(graph, rootNode);
 
   if (!DataType.isRecord(data)) {
     return quads;
@@ -161,7 +191,7 @@ function projectAbox(args: ProjectAboxArgsType): QuadInterface[] {
     throw new MaterializationError(
       resolved.node.id,
       {
-        'code': MaterializationErrorCode.CYCLIC_DATA,
+        'code': MATERIALIZATION_ERROR_CODE.CYCLIC_DATA,
         'message': `Cyclic data detected during projection of ${resolved.node.id}`,
         'validationErrors': ['cyclic data detected at root']
       }
@@ -204,27 +234,6 @@ function defaultInstanceIri(baseIri: string, classId: string, data: unknown): st
   const contentHash = Hash.value(data);
 
   return `${baseIri}/instances/${SchemaIri.escapeSegment(classId)}-${contentHash}`;
-}
-
-function resolveNode(
-  graph: SchemaGraphInterface,
-  node: SchemaGraphNodeType,
-  lookupGraph?: ((schemaId: string) => SchemaGraphInterface | undefined)
-): RefTargetType {
-  const nodeSemantics = graph.semantics(node);
-
-  if (nodeSemantics.ref === undefined) {
-    return {
-      graph,
-      node
-    };
-  }
-
-  return RefResolution.resolve(
-    nodeSemantics.ref,
-    graph,
-    lookupGraph === undefined ? {} : { 'lookupGraph': lookupGraph }
-  );
 }
 
 /**
@@ -287,7 +296,7 @@ function unwrapSingleRef(
       const member = meaningful[0];
 
       if (member !== undefined && graph.semantics(member).ref !== undefined) {
-        return resolveNode(graph, member, lookupGraph);
+        return NodeResolution.resolveNode(graph, member, lookupGraph);
       }
     }
 
@@ -302,7 +311,7 @@ function unwrapSingleRef(
     const member = semantics.allOf[0];
 
     if (member !== undefined && graph.semantics(member).ref !== undefined) {
-      return resolveNode(graph, member, lookupGraph);
+      return NodeResolution.resolveNode(graph, member, lookupGraph);
     }
   }
 
@@ -442,7 +451,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgsType): void {
     propertyName,
     'propertySchema': propertyNode.schema
   });
-  const directlyResolved = resolveNode(propertyGraph, propertyNode, lookupGraph);
+  const directlyResolved = NodeResolution.resolveNode(propertyGraph, propertyNode, lookupGraph);
   // Follow a transparent wrapper — `anyOf`/`oneOf [{ $ref: X }, null]` or
   // `allOf [{ $ref: X }]` — to the referenced target so the leaf datatype
   // (e.g. xsd:dateTime) and the nested node's rdf:type (the class $id, not a
@@ -479,7 +488,7 @@ function projectInstance(args: ProjectInstanceArgsType): string {
     throw new MaterializationError(
       node.id,
       {
-        'code': MaterializationErrorCode.CYCLIC_DATA,
+        'code': MATERIALIZATION_ERROR_CODE.CYCLIC_DATA,
         'message': `Cyclic data detected during projection of ${node.id} at ${path === '' ? 'root' : path}`,
         'validationErrors': [`cyclic data detected at ${path === '' ? 'root' : path}`]
       }
@@ -535,27 +544,34 @@ function projectInstance(args: ProjectInstanceArgsType): string {
  * - an object carrying an `@id` / `id` IRI, or
  * - a nested instance object — minted via the IRI minter.
  */
-function resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgsType): string {
-  const {
-    depth, edge, minter, path, target
-  } = args;
+/**
+ * Edge-target resolution, grouped as a method on a single-method internal
+ * namespace object (see `Lists`/`Terms`) because the name collides with the
+ * project's banned freestanding verb-prefix list (resolve/...).
+ */
+const EdgeTarget = {
+  resolveEdgeTargetIri(args: ResolveEdgeTargetIriArgsType): string {
+    const {
+      depth, edge, minter, path, target
+    } = args;
 
-  if (typeof target === 'string') {
-    return target;
-  }
-
-  if (DataType.isRecord(target)) {
-    const idValue = target['@id'] ?? target.id;
-
-    if (typeof idValue === 'string') {
-      return idValue;
+    if (typeof target === 'string') {
+      return target;
     }
 
-    return minter.mint(edge.edgeTarget, target, `${path}/target`, depth + 1);
-  }
+    if (DataType.isRecord(target)) {
+      const idValue = target['@id'] ?? target.id;
 
-  return String(target);
-}
+      if (typeof idValue === 'string') {
+        return idValue;
+      }
+
+      return minter.mint(edge.edgeTarget, target, `${path}/target`, depth + 1);
+    }
+
+    return String(target);
+  }
+} as const;
 
 /**
  * Build a `QuadObjectType` term for an annotation value.
@@ -619,7 +635,9 @@ function isAbsoluteIri(value: string): boolean {
 }
 
 function isClassRange(rangeRef: string): boolean {
-  return Curie.isAbsolute(rangeRef);
+  const result = Curie.isAbsolute(rangeRef);
+
+  return result;
 }
 
 /**
@@ -688,7 +706,7 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
     throw new MaterializationError(
       sourceId,
       {
-        'code': MaterializationErrorCode.MISSING_GRAPH_IRI,
+        'code': MATERIALIZATION_ERROR_CODE.MISSING_GRAPH_IRI,
         'message': `Annotated edge ${edge.edgePredicate} at ${path} requires a graphIri: a triple term carries no graph membership, so the base triple and its annotations must share one named graph. Pass { graphIri } to toQuads.`,
         'validationErrors': [`annotated edge ${edge.edgePredicate} requires an explicit graphIri`]
       }
@@ -699,14 +717,14 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgsType): void {
     throw new MaterializationError(
       sourceId,
       {
-        'code': MaterializationErrorCode.MATERIALIZATION_FAILED,
+        'code': MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED,
         'message': `Annotated edge ${edge.edgePredicate} at ${path} expects { target, annotations }, received ${typeof value}.`,
         'validationErrors': [`annotated edge ${edge.edgePredicate} value must be an object with target + annotations`]
       }
     );
   }
 
-  const targetIri = resolveEdgeTargetIri({
+  const targetIri = EdgeTarget.resolveEdgeTargetIri({
     depth,
     edge,
     minter,
@@ -812,7 +830,7 @@ function projectStringValue(value: string, ctx: ProjectScalarValueArgsType): voi
       throw new MaterializationError(
         propertyNode.id,
         {
-          'code': MaterializationErrorCode.INVALID_IRI_VALUE,
+          'code': MATERIALIZATION_ERROR_CODE.INVALID_IRI_VALUE,
           'message': `Property ${propertyIri} (x-jt-iriRef) received an invalid IRI: "${value}". Expected an absolute IRI with an allowed scheme (http/https/urn/ftp/file) and no control characters or spaces.`,
           'validationErrors': [`invalid IRI value at ${path}: ${value}`]
         }
@@ -851,7 +869,7 @@ function projectNumberValue(value: number, ctx: ProjectScalarValueArgsType): voi
     throw new MaterializationError(
       propertyNode.id,
       {
-        'code': MaterializationErrorCode.NON_FINITE_NUMBER,
+        'code': MATERIALIZATION_ERROR_CODE.NON_FINITE_NUMBER,
         'message': `Non-finite numeric value (${String(value)}) at ${path} cannot be serialized as an RDF literal. Supply a finite number.`,
         'validationErrors': [`non-finite numeric value at ${path}`]
       }
@@ -876,7 +894,7 @@ function projectObjectValue(args: ProjectPropertyArgsType, path: string, value: 
   let targetNode = propertyNode;
 
   if (propertySemantics.itemsNode !== undefined) {
-    const resolvedItems = resolveNode(graph, propertySemantics.itemsNode, lookupGraph);
+    const resolvedItems = NodeResolution.resolveNode(graph, propertySemantics.itemsNode, lookupGraph);
 
     targetGraph = resolvedItems.graph;
     targetNode = resolvedItems.node;

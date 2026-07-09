@@ -6,9 +6,9 @@
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 
 export type ApplyRestrictionsOptionsType = {
-  readonly 'delta': Record<string, unknown>;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void;
-  readonly 'schemaType': 'boolean' | 'integer' | 'number' | 'string' | undefined;
-  readonly 'subjectIri': string;
+  'delta': Record<string, unknown>;
+  'graph': SchemaGraphInterface;
+  'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void;
+  'schemaType': 'boolean' | 'integer' | 'number' | 'string' | undefined;
+  'subjectIri': string;
 };

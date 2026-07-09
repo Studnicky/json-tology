@@ -9,9 +9,9 @@ import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js
 
 export type ClassExprResolveContextType = {
   /** All known class IRIs in the import context, used for $ref resolution. */
-  readonly 'allClassIris': ReadonlySet<string>;
+  'allClassIris': ReadonlySet<string>;
   /** Current recursion depth — guards against infinite blank-node cycles. */
-  readonly 'depth': number;
+  'depth': number;
   /** The schema graph being traversed. */
-  readonly 'graph': SchemaGraphInterface;
+  'graph': SchemaGraphInterface;
 };

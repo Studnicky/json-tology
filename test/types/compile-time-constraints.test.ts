@@ -463,7 +463,7 @@ type FixedArray = InferType<typeof _FixedArraySchema>;
 // type level rather than by a literal assignment.
 assert<AssertEqualType<
   FixedArray,
-  MaxItemsBrandType<3> & MinItemsBrandType<3> & readonly [string, string, string]
+  [string, string, string] & MaxItemsBrandType<3> & MinItemsBrandType<3>
 >>();
 
 const _MinArraySchema = {
@@ -479,7 +479,7 @@ type MinArray = InferType<typeof _MinArraySchema>;
 // Min-length tuple: at least 2 numbers, then rest — carries the minItems brand.
 assert<AssertEqualType<
   MinArray,
-  MinItemsBrandType<2> & readonly [number, number, ...number[]]
+  [number, number, ...number[]] & MinItemsBrandType<2>
 >>();
 
 // ---------------------------------------------------------------------------

@@ -11,35 +11,42 @@ release→main PR then had to be conflict-resolved by hand.
 | Merge | Method | Why |
 |-------|--------|-----|
 | feature → `develop` | **squash** | keep `develop` history clean, one commit per feature |
-| release → `main` | **merge commit** | preserve `develop`'s tip as a parent of `main`, so `develop` stays an ancestor of `main` |
-| back-merge `main` → `develop` | **fast-forward** (now possible) | `develop` is already an ancestor of `main`'s release merge, so it FFs forward — no divergent commit, no conflict next time |
+| release branch → `main` | **merge commit** | preserve the release branch (which carries `develop`'s tip) as a parent of `main`, so `develop` stays an ancestor of `main` |
+| back-merge `main` → `develop` | **merge commit**, via a `develop`-based branch | brings `main`'s release commit back so the branches re-converge — no divergent squash |
 
 ### Required repository settings
 
-These must stay set (they are repo/branch config, not code):
+Current repo/branch config (not code) that this flow depends on:
 
-- Repo: **Allow merge commits** = on (already enabled), **Allow squash** = on.
-- Branch protection on `main` **and** `develop`: **Require linear history** = **off**.
-  (Linear history forbids merge commits, which blocks the convergent release/back-merge
-  above. Squash feature merges remain linear-friendly regardless.)
-
-  Apply with:
-
-  ```sh
-  # disable required-linear-history (needs the full protection PUT; do via the
-  # GitHub UI: Settings → Branches → main/develop → uncheck "Require linear history",
-  # or PATCH the protection object via the API with required_linear_history=false).
-  ```
+- Repo: **Allow merge commits** = on, **Allow squash** = on. *(set)*
+- Branch protection on `main` **and** `develop`: **Require linear history** = **off**. *(set)*
+  Linear history forbids merge commits, which would block the convergent release/back-merge
+  below. Squash feature merges stay linear-friendly regardless. (Set via the GitHub UI —
+  Settings → Branches — or a full protection `PUT` with `required_linear_history=false`;
+  there is no granular toggle endpoint.)
+- Branch protection: **Require branches to be up to date before merging**
+  (`required_status_checks.strict`) = **on**. This shapes the steps below: any branch
+  merged into `main`/`develop` must first be brought up to date with its base. A *direct*
+  `main → develop` PR therefore cannot merge (its head is permanently behind `develop`) —
+  the back-merge runs through a `develop`-based branch instead.
 
 ## Release steps
 
-1. From `develop`: bump `package.json` (`npm version <x.y.z> --no-git-tag-version`),
-   run `npm run stamp-version`, finalize the `CHANGELOG.md` `[x.y.z]` section with the date.
-2. Open the release PR `develop → main`; wait for green CI; **merge with a merge commit**.
-3. Tag on `main` after merge: `git tag -a vX.Y.Z -m "…" && git push origin vX.Y.Z`.
+1. Cut a `release/vX.Y.Z` branch from `develop`. Bump `package.json`
+   (`npm version <x.y.z> --no-git-tag-version`), run `npm run stamp-version`, finalize the
+   `CHANGELOG.md` `[x.y.z]` section with the date.
+2. **Bring the release branch up to date with `main`** — `git merge origin/main` on the
+   release branch and resolve any divergence *once*, here, before the PR. (This is required
+   by the strict up-to-date check and is what keeps the release→main PR conflict-free.)
+3. Open the release PR `release/vX.Y.Z → main`; wait for green CI; **merge with a merge
+   commit** (not squash — squash re-breaks ancestry).
+4. Tag on `main` after merge: `git tag -a vX.Y.Z -m "…" && git push origin vX.Y.Z`.
    The pushed tag triggers `release.yml` (GitHub release) and `publish-gpr.yml`
    (GitHub Packages publish — see below).
-4. Back-merge `main → develop` as a **fast-forward** so the branches re-converge.
+5. Back-merge to `develop`: cut a `chore/back-merge-vX.Y.Z` branch from `develop`, merge
+   `origin/main` into it (merge commit), PR → `develop`, and merge. `develop` now contains
+   `main`'s release commit, so the two branches share lineage and the *next* release merges
+   cleanly.
 
 ## Publishing
 

@@ -1,5 +1,6 @@
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 import type { LookupSchemaFnType } from './LookupSchemaFnType.js';
+import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 
 /**
  * Options bag for the canonical `RefResolution.resolve` method.
@@ -15,11 +16,14 @@ import type { LookupSchemaFnType } from './LookupSchemaFnType.js';
  *   rather than the external registry. Mirrors the self-ref short-circuit in GraphEngine.
  * `rootSchema` — the root schema object at the current resolution site; required when
  *   `rootId` is provided or when embedded-$id fallback must walk the root graph's index.
+ * `logger` — optional logger for trace/debug diagnostics during resolution; defaults
+ *   to a silent logger when omitted.
  */
 export type RefResolutionOptionsType = {
-  readonly 'graphFor'?: (schema: Record<string, unknown>) => SchemaGraphInterface;
-  readonly 'lookupGraph'?: (schemaId: string) => SchemaGraphInterface | undefined;
-  readonly 'lookupSchema'?: LookupSchemaFnType;
-  readonly 'rootId'?: string;
-  readonly 'rootSchema'?: Record<string, unknown>;
+  'graphFor'?: (schema: Record<string, unknown>) => SchemaGraphInterface;
+  'logger'?: LoggerInterface;
+  'lookupGraph'?: (schemaId: string) => SchemaGraphInterface | undefined;
+  'lookupSchema'?: LookupSchemaFnType;
+  'rootId'?: string;
+  'rootSchema'?: Record<string, unknown>;
 };

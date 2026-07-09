@@ -31,7 +31,9 @@ import type {
   OwlImportFragmentType
 } from '../../../types/OwlImport.js';
 import type { InvariantType } from '../../../types/Invariant.js';
-import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
+import type {
+  JsonSchemaDocumentObjectType, JsonSchemaDocumentType
+} from '../../../types/Schema.js';
 import type { RestrictionStructureType } from '../../../types/RestrictionStructureType.js';
 import type { MutablePropertySchemaType } from '../../../types/MutablePropertySchemaType.js';
 import {
@@ -39,176 +41,6 @@ import {
   RDFS
 } from '../../../constants/IRI.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
-
-// ---------------------------------------------------------------------------
-// Schema delta helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Merge a property-level schema patch into the `properties` map of a class
- * delta. Returns the updated delta.
- */
-function mergePropertyPatch(
-  delta: Partial<JsonSchemaDocumentObjectType>,
-  propName: string,
-  patch: MutablePropertySchemaType
-): Partial<JsonSchemaDocumentObjectType> {
-  const existing = delta.properties ?? {};
-  const existingProp = existing[propName];
-  const merged: Record<string, unknown> = typeof existingProp === 'object'
-    ? { ...(existingProp as Record<string, unknown>) }
-    : {};
-
-  if ('const' in patch) {
-    merged.const = patch.const;
-  }
-  if (patch.items !== undefined) {
-    merged.items = patch.items;
-  }
-  if (patch.minItems !== undefined) {
-    merged.minItems = patch.minItems;
-  }
-  if (patch.maxItems !== undefined) {
-    merged.maxItems = patch.maxItems;
-  }
-
-  return {
-    ...delta,
-    'properties': {
-      ...existing,
-      [propName]: merged
-    }
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Restriction kind → schema patch
-// ---------------------------------------------------------------------------
-
-/**
- * Returns the JSON Schema patch for a structural restriction, or null when
- * the constraint is an invariant-only kind (someValuesFrom).
- */
-function structuralPatch(
-  constraint: string,
-  value: unknown
-): MutablePropertySchemaType | null {
-  switch (constraint) {
-    case OWL.allValuesFrom:
-      if (typeof value !== 'string' || value === '') {
-        return null;
-      }
-
-      return { 'items': { '$ref': value } };
-
-    case OWL.cardinality: {
-      const n = Number(value);
-
-      if (!Number.isFinite(n)) {
-        return null;
-      }
-
-      return {
-        'maxItems': n,
-        'minItems': n
-      };
-    }
-
-    case OWL.hasValue:
-      // Literal values and IRI individuals both → const: v
-      return { 'const': value };
-
-    case OWL.maxCardinality: {
-      const n = Number(value);
-
-      if (!Number.isFinite(n)) {
-        return null;
-      }
-
-      return { 'maxItems': n };
-    }
-
-    case OWL.maxQualifiedCardinality: {
-      const n = Number(value);
-
-      if (!Number.isFinite(n)) {
-        return null;
-      }
-
-      return { 'maxItems': n };
-    }
-
-    case OWL.minCardinality: {
-      const n = Number(value);
-
-      if (!Number.isFinite(n)) {
-        return null;
-      }
-
-      return { 'minItems': n };
-    }
-
-    case OWL.minQualifiedCardinality: {
-      const n = Number(value);
-
-      if (!Number.isFinite(n)) {
-        return null;
-      }
-
-      return { 'minItems': n };
-    }
-
-    case OWL.someValuesFrom:
-      // someValuesFrom is invariant-only — handled separately
-      return null;
-
-    default:
-      return null;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// someValuesFrom invariant
-// ---------------------------------------------------------------------------
-
-/**
- * Build a per-instance invariant that asserts at least one element of the
- * named array property validates as the given class IRI.
- *
- * JSON Schema cannot express "at least one array element matches C" purely
- * structurally, so we emit a runtime invariant.
- */
-function buildSomeValuesFromInvariant(
-  propName: string,
-  classIri: string
-): InvariantType {
-  const name = `owl:someValuesFrom(${propName}, ${classIri})`;
-
-  return {
-    'fn': (instance: unknown): null | string => {
-      if (typeof instance !== 'object' || instance === null) {
-        return null;
-      }
-      const obj = instance as Record<string, unknown>;
-      const arr = obj[propName];
-
-      if (!Array.isArray(arr)) {
-        return null;
-      }
-      // someValuesFrom is satisfied when at least one element is non-null
-      // and structurally present. Full class-level validation would require
-      // a compiled validator — this invariant checks existence as a proxy.
-      const satisfied = arr.some((element) => {
-        return element !== null && element !== undefined;
-      });
-
-      return satisfied
-        ? null
-        : `owl:someValuesFrom constraint: property "${propName}" must contain at least one value satisfying <${classIri}>`;
-    },
-    name
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Public entry point
@@ -228,6 +60,77 @@ function buildSomeValuesFromInvariant(
  * @returns OwlImportFragmentType with schemaDeltas and invariants populated.
  */
 export class PropertyRestrictions {
+  /**
+   * Build a per-instance invariant that asserts at least one element of the
+   * named array property validates as the given class IRI.
+   *
+   * JSON Schema cannot express "at least one array element matches C" purely
+   * structurally, so we emit a runtime invariant.
+   */
+  private static buildSomeValuesFromInvariant(
+    propName: string,
+    classIri: string
+  ): InvariantType {
+    const name = `owl:someValuesFrom(${propName}, ${classIri})`;
+
+    return {
+      'fn': (instance: unknown): null | string => {
+        if (typeof instance !== 'object' || instance === null) {
+          return null;
+        }
+        const obj = instance as Record<string, unknown>;
+        const arr = obj[propName];
+
+        if (!Array.isArray(arr)) {
+          return null;
+        }
+        // someValuesFrom is satisfied when at least one element is non-null
+        // and structurally present. Full class-level validation would require
+        // a compiled validator — this invariant checks existence as a proxy.
+        const satisfied = arr.some((element) => {
+          return element !== null && element !== undefined;
+        });
+
+        return satisfied
+          ? null
+          : `owl:someValuesFrom constraint: property "${propName}" must contain at least one value satisfying <${classIri}>`;
+      },
+      name
+    };
+  }
+
+  /**
+   * Compute a numeric cardinality schema patch, or null when the value is
+   * not a finite number.
+   */
+  private static cardinalityPatch(
+    value: unknown,
+    kind: 'both' | 'max' | 'min'
+  ): MutablePropertySchemaType | null {
+    const n = Number(value);
+
+    if (!Number.isFinite(n)) {
+      return null;
+    }
+
+    switch (kind) {
+      case 'both':
+        return {
+          'maxItems': n,
+          'minItems': n
+        };
+
+      case 'max':
+        return { 'maxItems': n };
+
+      case 'min':
+        return { 'minItems': n };
+
+      default:
+        return null;
+    }
+  }
+
   public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
     const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
     const invariants: Array<{
@@ -275,7 +178,7 @@ export class PropertyRestrictions {
       // Handle someValuesFrom → invariant
       if (constraint === OWL.someValuesFrom) {
         if (typeof value === 'string' && value !== '') {
-          const inv = buildSomeValuesFromInvariant(propName, value);
+          const inv = PropertyRestrictions.buildSomeValuesFromInvariant(propName, value);
 
           invariants.push({
             'invariant': inv,
@@ -288,7 +191,7 @@ export class PropertyRestrictions {
       }
 
       // All other constraints → structural schema delta
-      const patch = structuralPatch(constraint, value);
+      const patch = PropertyRestrictions.structuralPatch(constraint, value);
 
       if (patch === null) {
         ctx.reportUnsupported(constraint, classIri);
@@ -296,7 +199,7 @@ export class PropertyRestrictions {
       }
 
       const existing = schemaDeltas.get(classIri) ?? {};
-      const updated = mergePropertyPatch(existing, propName, patch);
+      const updated = PropertyRestrictions.mergePropertyPatch(existing, propName, patch);
 
       schemaDeltas.set(classIri, updated);
     }
@@ -309,5 +212,85 @@ export class PropertyRestrictions {
       'sameAs': [],
       schemaDeltas
     };
+  }
+
+  /**
+   * Merge a property-level schema patch into the `properties` map of a class
+   * delta. Returns the updated delta.
+   */
+  private static mergePropertyPatch(
+    delta: Partial<JsonSchemaDocumentObjectType>,
+    propName: string,
+    patch: MutablePropertySchemaType
+  ): Partial<JsonSchemaDocumentObjectType> {
+    const existing = delta.properties ?? {};
+    const existingProp = existing[propName];
+    const merged: JsonSchemaDocumentObjectType = typeof existingProp === 'object'
+      ? { ...existingProp }
+      : {};
+
+    if ('const' in patch) {
+      merged.const = patch.const;
+    }
+    if (patch.items !== undefined) {
+      merged.items = patch.items;
+    }
+    if (patch.minItems !== undefined) {
+      merged.minItems = patch.minItems;
+    }
+    if (patch.maxItems !== undefined) {
+      merged.maxItems = patch.maxItems;
+    }
+
+    const properties: Record<string, JsonSchemaDocumentType> = { ...existing };
+
+    properties[propName] = merged;
+
+    return {
+      ...delta,
+      properties
+    };
+  }
+
+  /**
+   * Returns the JSON Schema patch for a structural restriction, or null when
+   * the constraint is an invariant-only kind (someValuesFrom).
+   */
+  private static structuralPatch(
+    constraint: string,
+    value: unknown
+  ): MutablePropertySchemaType | null {
+    switch (constraint) {
+      case OWL.allValuesFrom:
+        return typeof value === 'string' && value !== ''
+          ? { 'items': { '$ref': value } }
+          : null;
+
+      case OWL.cardinality:
+        return PropertyRestrictions.cardinalityPatch(value, 'both');
+
+      case OWL.hasValue:
+        // Literal values and IRI individuals both → const: v
+        return { 'const': value };
+
+      case OWL.maxCardinality:
+        return PropertyRestrictions.cardinalityPatch(value, 'max');
+
+      case OWL.maxQualifiedCardinality:
+        return PropertyRestrictions.cardinalityPatch(value, 'max');
+
+      case OWL.minCardinality:
+        return PropertyRestrictions.cardinalityPatch(value, 'min');
+
+      case OWL.minQualifiedCardinality:
+        return PropertyRestrictions.cardinalityPatch(value, 'min');
+
+      case OWL.someValuesFrom:
+        // someValuesFrom is invariant-only — handled separately
+        return null;
+
+      default:
+        return null;
+    }
   }
 }

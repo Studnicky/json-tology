@@ -54,8 +54,8 @@
  * @typeParam TKey - The offending key (either the map key or a dependency entry).
  */
 export type DependentRequiredKeyNotInPropertiesType<TKey extends string> = {
-  readonly 'invalidKey': TKey;
-  readonly 'kind': 'DependentRequiredKeyNotInProperties';
+  'invalidKey': TKey;
+  'kind': 'DependentRequiredKeyNotInProperties';
 };
 
 /**
@@ -80,8 +80,8 @@ export type DependentRequiredKeyNotInPropertiesType<TKey extends string> = {
  * @typeParam TKey - The offending discriminator property name.
  */
 export type IfDiscriminatorNotInPropertiesType<TKey extends string> = {
-  readonly 'invalidKey': TKey;
-  readonly 'kind': 'IfDiscriminatorNotInProperties';
+  'invalidKey': TKey;
+  'kind': 'IfDiscriminatorNotInProperties';
 };
 
 /**
@@ -110,9 +110,9 @@ export type RequiredKeyNotInPropertiesType<
   TKey extends string,
   TActual extends string
 > = {
-  readonly 'actualPropertyKeys': TActual;
-  readonly 'invalidKey': TKey;
-  readonly 'kind': 'RequiredKeyNotInProperties';
+  'actualPropertyKeys': TActual;
+  'invalidKey': TKey;
+  'kind': 'RequiredKeyNotInProperties';
 };
 
 /**
@@ -140,8 +140,8 @@ export type RequiredKeyNotInPropertiesType<
  * @typeParam TId - The duplicated `$id` IRI literal.
  */
 export type DuplicateSchemaIdType<TId extends string> = {
-  readonly 'duplicateId': TId;
-  readonly 'kind': 'DuplicateSchemaId';
+  'duplicateId': TId;
+  'kind': 'DuplicateSchemaId';
 };
 
 /**
@@ -168,8 +168,8 @@ export type DuplicateSchemaIdType<TId extends string> = {
  * @typeParam TRef - The unresolved `$ref` IRI literal.
  */
 export type RefNotFoundType<TRef extends string> = {
-  readonly 'kind': 'RefNotFound';
-  readonly 'unresolvedRef': TRef;
+  'kind': 'RefNotFound';
+  'unresolvedRef': TRef;
 };
 
 /**
@@ -201,9 +201,9 @@ export type AnchorNotFoundType<
   TBase extends string,
   TAnchor extends string
 > = {
-  readonly 'inSchema': TBase;
-  readonly 'kind': 'AnchorNotFound';
-  readonly 'unresolvedAnchor': TAnchor;
+  'inSchema': TBase;
+  'kind': 'AnchorNotFound';
+  'unresolvedAnchor': TAnchor;
 };
 
 /**
@@ -237,10 +237,10 @@ export type ChainMismatchType<
   TProduced,
   TExpected
 > = {
-  readonly 'expectedByThisStage': TExpected;
-  readonly 'kind': 'ChainMismatch';
-  readonly 'producedByPriorStage': TProduced;
-  readonly 'stageIndex': TStageIndex;
+  'expectedByThisStage': TExpected;
+  'kind': 'ChainMismatch';
+  'producedByPriorStage': TProduced;
+  'stageIndex': TStageIndex;
 };
 
 /**
@@ -272,9 +272,9 @@ export type ChainSchemaMismatchType<
   TCanonical,
   TLastStageOut
 > = {
-  readonly 'kind': 'ChainSchemaMismatch';
-  readonly 'lastStageDecodeOutput': TLastStageOut;
-  readonly 'schemaCanonicalType': TCanonical;
+  'kind': 'ChainSchemaMismatch';
+  'lastStageDecodeOutput': TLastStageOut;
+  'schemaCanonicalType': TCanonical;
 };
 
 /**
@@ -453,11 +453,11 @@ export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorB
  */
 export type PropertyCharacteristicConflictType<
   TProperty extends string,
-  TConflicts extends readonly string[]
+  TConflicts extends string[]
 > = {
-  readonly 'conflicts': TConflicts;
-  readonly 'kind': 'PropertyCharacteristicConflict';
-  readonly 'property': TProperty;
+  'conflicts': TConflicts;
+  'kind': 'PropertyCharacteristicConflict';
+  'property': TProperty;
 };
 
 /**
@@ -491,13 +491,13 @@ export type PropertyCharacteristicConflictType<
 export type CheckPropertyCharacteristicsType<TName extends string, TProp>
   = TProp extends { readonly 'asymmetric': true;
     readonly 'symmetric': true; }
-    ? PropertyCharacteristicConflictType<TName, readonly ['symmetric', 'asymmetric']>
+    ? PropertyCharacteristicConflictType<TName, ['symmetric', 'asymmetric']>
     : TProp extends { readonly 'irreflexive': true;
       readonly 'reflexive': true; }
-      ? PropertyCharacteristicConflictType<TName, readonly ['reflexive', 'irreflexive']>
+      ? PropertyCharacteristicConflictType<TName, ['reflexive', 'irreflexive']>
       : TProp extends { readonly 'asymmetric': true;
         readonly 'reflexive': true }
-        ? PropertyCharacteristicConflictType<TName, readonly ['asymmetric', 'reflexive']>
+        ? PropertyCharacteristicConflictType<TName, ['asymmetric', 'reflexive']>
         : never;
 
 /**

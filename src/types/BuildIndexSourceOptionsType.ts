@@ -17,13 +17,13 @@
  */
 export type BuildIndexSourceOptionsType = {
   /** Set of IRI base names that collided during name generation. */
-  readonly 'collisions': Set<string>;
+  'collisions': Set<string>;
   /** Effective base IRI for `JsonTology.create`. */
-  readonly 'effectiveBaseIri': string;
+  'effectiveBaseIri': string;
   /** Extra comment lines for the banner. */
-  readonly 'header': readonly string[];
+  'header': string[];
   /** Name of the exported registry constant. */
-  readonly 'registryConstName': string;
+  'registryConstName': string;
   /** Name of the schemas array constant. */
-  readonly 'schemasConst': string;
+  'schemasConst': string;
 };

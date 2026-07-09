@@ -5,7 +5,7 @@ import type { SchemaGraphSemanticsType } from './SchemaGraph.js';
 
 export type PlanCompileWithSemanticsType = Omit<GraphCompileBaseOptionsType<SchemaCompilerValidatePlanContextType>, 'lookupSchema'> & {
   /** Optional cross-schema lookup by `$id`. */
-  readonly 'lookupSchema': LookupSchemaFnType | undefined;
+  'lookupSchema': LookupSchemaFnType | undefined;
   /** The schema graph semantics used during plan compilation. */
-  readonly 'sem': SchemaGraphSemanticsType;
+  'sem': SchemaGraphSemanticsType;
 };

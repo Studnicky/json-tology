@@ -77,7 +77,7 @@ import type {
   RefNotFoundType
 } from './TypeErrors.js';
 import type { TransformBrandType } from '../types/TransformBrandType.js';
-import type { JsonTologyReferencesInterface } from './SchemaReferences.js';
+import type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
 
 // ---------------------------------------------------------------------------
 // Recursion limits (type-level caps to prevent infinite expansion)
@@ -440,7 +440,7 @@ type InferEnumType<T>
  * - both, `min < max` → union of tuples length `min..max`
  *
  * Capped at `TupleCapType = 16`. Above the cap, falls through to
- * `ReadonlyArray<TItem>`.
+ * `TItem[]`.
  */
 type NarrowArrayByItemsBoundsType<TItem, T>
   = T extends {
@@ -454,7 +454,7 @@ type NarrowArrayByItemsBoundsType<TItem, T>
       ? BuildAtLeastTupleType<TItem, TMin>
       : T extends { readonly 'maxItems': infer TMax extends number }
         ? BuildAtMostTupleType<TItem, TMax>
-        : readonly TItem[];
+        : TItem[];
 
 /**
  * Pairwise-distinctness check across a tuple of literal-typed elements.
@@ -512,27 +512,27 @@ type InferArrayShapeType<T, TRoot, TReferences>
   = T extends { readonly 'items': infer I;
     readonly 'prefixItems': readonly [...infer TPrefix];
     readonly 'type': 'array' }
-    ? readonly [...{ readonly [K in keyof TPrefix]: InferSchemaType<TPrefix[K], TRoot, TReferences> },
+    ? [...{ [K in keyof TPrefix]: InferSchemaType<TPrefix[K], TRoot, TReferences> },
       ...Array<InferSchemaType<I, TRoot, TReferences>>]
     // items + minItems and/or maxItems → tuple narrowing
     : T extends { readonly 'items': infer I;
       readonly 'type': 'array' }
       ? T extends { readonly 'maxItems': number } | { readonly 'minItems': number }
         ? NarrowArrayByItemsBoundsType<InferSchemaType<I, TRoot, TReferences>, T>
-        : ReadonlyArray<InferSchemaType<I, TRoot, TReferences>>
+        : Array<InferSchemaType<I, TRoot, TReferences>>
       // prefixItems only
       : T extends { readonly 'prefixItems': readonly [...infer TPrefix];
         readonly 'type': 'array' }
-        ? readonly [...{ readonly [K in keyof TPrefix]: InferSchemaType<TPrefix[K], TRoot, TReferences> }]
+        ? [...{ [K in keyof TPrefix]: InferSchemaType<TPrefix[K], TRoot, TReferences> }]
         // contains only (no items) — element type narrows to contains schema
         : T extends { readonly 'contains': infer C;
           readonly 'type': 'array' }
-          ? ReadonlyArray<InferSchemaType<C, TRoot, TReferences>>
+          ? Array<InferSchemaType<C, TRoot, TReferences>>
           // raw minItems / maxItems on a typeless-element array → tuple of unknown
           : T extends { readonly 'type': 'array' }
             ? T extends { readonly 'maxItems': number } | { readonly 'minItems': number }
               ? NarrowArrayByItemsBoundsType<unknown, T>
-              : readonly unknown[]
+              : unknown[]
             : never;
 
 // ---------------------------------------------------------------------------
@@ -543,16 +543,16 @@ type ExtractRequiredKeysType<T>
   = T extends { readonly 'required': ReadonlyArray<infer K extends string> } ? K : never;
 
 type InferObjectTypePropsType<TProps, TRequired extends string, TRoot, TReferences> = SimplifyType<
-  { readonly [K in keyof TProps & string as K extends TRequired ? K : never]:
+  { [K in keyof TProps & string as K extends TRequired ? K : never]:
     InferSchemaType<TProps[K], TRoot, TReferences> }
-  & { readonly [K in keyof TProps & string as K extends TRequired ? never : K]?:
+  & { [K in keyof TProps & string as K extends TRequired ? never : K]?:
     InferSchemaType<TProps[K], TRoot, TReferences> }
 >;
 
 type InferAdditionalType<T, TRoot, TReferences>
   = T extends { readonly 'additionalProperties': false } ? unknown
     : T extends { readonly 'additionalProperties': infer A }
-      ? { readonly [key: string]: InferSchemaType<A, TRoot, TReferences> }
+      ? { [key: string]: InferSchemaType<A, TRoot, TReferences> }
       : unknown;
 
 /**
@@ -562,7 +562,7 @@ type InferAdditionalType<T, TRoot, TReferences>
  */
 type InferPatternPropertiesType<TPP, TRoot, TReferences>
   = IntersectMappedValuesType<{
-    [K in keyof TPP & string]: { readonly [P in PatternToKeyType<K>]?: InferSchemaType<TPP[K], TRoot, TReferences> }
+    [K in keyof TPP & string]: { [P in PatternToKeyType<K>]?: InferSchemaType<TPP[K], TRoot, TReferences> }
   }>;
 
 /** Merge dependentSchemas properties as optional (sound over-approximation). */
@@ -625,8 +625,8 @@ type InferObjectType<T, TRoot, TReferences>
       }
         ? InferObjectBrandsType<T>
           & (T extends { readonly 'additionalProperties': infer A }
-            ? { readonly [P in K]?: InferSchemaType<A, TRoot, TReferences> }
-            : { readonly [P in K]?: unknown })
+            ? { [P in K]?: InferSchemaType<A, TRoot, TReferences> }
+            : { [P in K]?: unknown })
       // propertyNames: { pattern } — key type narrowed via PatternToKeyType.
       // Unrecognised patterns resolve PatternToKeyType to `string`, keeping the
       // fallback identical to the open-object catch-all.
@@ -636,8 +636,8 @@ type InferObjectType<T, TRoot, TReferences>
         }
           ? InferObjectBrandsType<T>
           & (T extends { readonly 'additionalProperties': infer A }
-            ? { readonly [P in PatternToKeyType<KP>]?: InferSchemaType<A, TRoot, TReferences> }
-            : { readonly [P in PatternToKeyType<KP>]?: unknown })
+            ? { [P in PatternToKeyType<KP>]?: InferSchemaType<A, TRoot, TReferences> }
+            : { [P in PatternToKeyType<KP>]?: unknown })
         // additionalProperties-only object (no declared properties): the value
         // schema still types the index signature, so a `$ref` here resolves
         // (and a miss brands) rather than collapsing to Record<string, unknown>.
@@ -667,7 +667,7 @@ type InferAnyOfType<T, TRoot, TReferences>
 type InferOneOfType<T, TRoot, TReferences>
   = T extends { readonly 'discriminator': { readonly 'propertyName': infer P extends string };
     readonly 'oneOf': ReadonlyArray<infer V> }
-    ? InferSchemaType<V, TRoot, TReferences> & { readonly [K in P]: unknown }
+    ? InferSchemaType<V, TRoot, TReferences> & { [K in P]: unknown }
     : T extends { readonly 'oneOf': ReadonlyArray<infer V> }
       ? InferSchemaType<V, TRoot, TReferences>
       : never;
@@ -962,7 +962,7 @@ type IfPropertyNarrowingType<TPropSchema>
         : never;
 
 /**
- * Build the narrowing object for an if clause: a `{ readonly [K]: V }` shape
+ * Build the narrowing object for an if clause: a `{ [K]: V }` shape
  * to intersect with the then branch. Resolves to `never` (sentinel) when the
  * if clause doesn't qualify — every property in `if.properties` must be in
  * `required` and must produce a non-`never` value type via
@@ -981,7 +981,7 @@ type IfNarrowingObjectType<TIf>
       // Reject if any property resolved to `never` — that property couldn't
       // be narrowed, so the whole conjunction is unsafe. Also reject when
       // there are no properties at all (empty conjunction is meaningless).
-      ? { readonly [K in keyof P & string]: IfPropertyNarrowingType<P[K]> } extends infer TNarrow
+      ? { [K in keyof P & string]: IfPropertyNarrowingType<P[K]> } extends infer TNarrow
         ? [TNarrow[keyof TNarrow & string]] extends [never]
           ? never
           : keyof P & string extends never
@@ -1041,10 +1041,10 @@ type InferAnnotatedEdgeType<TEdge, TRoot, TReferences>
     readonly 'targetRef': infer TTargetRef extends string;
   }
     ? {
-      readonly 'annotations': {
-        readonly [K in keyof TAnnotations]: InferSchemaType<TAnnotations[K], TRoot, TReferences>
+      'annotations': {
+        [K in keyof TAnnotations]: InferSchemaType<TAnnotations[K], TRoot, TReferences>
       };
-      readonly 'target': InferRefType<{ readonly '$ref': TTargetRef }, TRoot, TReferences>;
+      'target': InferRefType<{ readonly '$ref': TTargetRef }, TRoot, TReferences>;
     }
     : unknown;
 
@@ -1310,10 +1310,10 @@ export type MaterializedSchemaType<T, TRoot = T, TReferences = JsonTologyReferen
   = T extends { readonly 'properties': infer TProps;
     readonly 'type': 'object' }
     ? SimplifyType<
-      { readonly [K in keyof TProps & string
+      { [K in keyof TProps & string
         as K extends ExtractRequiredKeysType<T> | PropertiesWithDefaultType<TProps> ? K : never]:
         InferSchemaType<TProps[K], TRoot, TReferences> }
-      & { readonly [K in keyof TProps & string
+      & { [K in keyof TProps & string
         as K extends ExtractRequiredKeysType<T> | PropertiesWithDefaultType<TProps> ? never : K]?:
         InferSchemaType<TProps[K], TRoot, TReferences> }
     >
@@ -1868,10 +1868,10 @@ export type ExhaustiveType<T extends never> = T;
  */
 export type UnbrandArrayType<T>
   = T extends readonly [infer THead, ...infer TTail]
-    ? readonly [UnbrandType<THead>, ...UnbrandArrayType<TTail>]
+    ? [UnbrandType<THead>, ...UnbrandArrayType<TTail>]
     : T extends ReadonlyArray<infer TElem>
-      ? ReadonlyArray<UnbrandType<TElem>>
-      : readonly [];
+      ? Array<UnbrandType<TElem>>
+      : [];
 
 /**
  * Strip constraint brands from a schema-inferred type while preserving its

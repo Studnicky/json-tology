@@ -4,10 +4,10 @@ import type { QuadObjectType } from './Quad.js';
 
 /** Arguments for emitQualifiedCardinalityRestriction. */
 export type EmitQualifiedCardinalityRestrictionArgsType = {
-  readonly 'cardinalityPredicate': string;
-  readonly 'containsIriObject': QuadObjectType;
-  readonly 'ctx': ProjectionEmitContextType;
-  readonly 'onProp': string;
-  readonly 'rels': readonly SchemaGraphRelationType[];
-  readonly 'subject': string;
+  'cardinalityPredicate': string;
+  'containsIriObject': QuadObjectType;
+  'ctx': ProjectionEmitContextType;
+  'onProp': string;
+  'rels': SchemaGraphRelationType[];
+  'subject': string;
 };

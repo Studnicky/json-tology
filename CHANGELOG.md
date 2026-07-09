@@ -7,10 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-07-09
+
+### Added
+
+- **`docs/cross-package-typing.md`** — an end-to-end guide for a registry-in-one-package,
+  consumer-in-another setup: CURIE `$ref` authoring, `InferType` with a CURIE-keyed
+  reference map, and why `instantiate()`'s own return type — keyed by the registry's
+  absolute `$id`s — cannot be trusted across a package boundary, with the recommended
+  re-derive-locally idiom.
+
+### Changed
+
+- **Adopted `@studnicky/eslint-config`.** All 31 custom rules (`@studnicky/*` and
+  `@studnicky/v8/*`) run as `error` project-wide. Resolving the resulting violations
+  drove several structural changes:
+  - **BREAKING: six package entry points restructured from flat files to
+    `<name>/index.ts` directories** (`src/value.ts` → `src/value/index.ts`, and
+    likewise for `schema`, `ontology`, `owl-gen`, `owl-gen-node`, `viz`) to satisfy
+    `no-export-alias`. Deep imports must update from `src/<name>.js` to
+    `src/<name>/index.js`; the package `exports` map subpaths (`json-tology/value`,
+    `json-tology/schema`, etc.) are unaffected.
+  - `JsonSchemaObjectType` is now composed via `Omit<JsonSchemaDocumentObjectType,
+    Keys> & { retyped fields }` instead of duplicating the nested-schema field list,
+    satisfying `no-prefer-existing-type` while preserving full type accuracy.
+  - `QuadInterface` re-declared as `interface QuadInterface extends Quad {}` instead
+    of a type re-export, satisfying `no-export-alias`.
+  - ~200 freestanding functions across `src/modules/` regrouped onto domain objects
+    (`noun.verb()` static methods), satisfying `no-freestanding-verb-noun`.
+- **BREAKING: constants-module exports use SCREAMING_SNAKE_CASE.** 24 exported
+  constants in `src/constants/` are renamed for consistency with the project's
+  constants-naming convention. Runtime string values are unchanged — only the
+  TypeScript identifier changes; update imports and references accordingly.
+  - `src/constants/ERROR_CODES.ts`: `SchemaErrorCode` → `SCHEMA_ERROR_CODE`,
+    `GraphErrorCode` → `GRAPH_ERROR_CODE`, `InstantiationErrorCode` →
+    `INSTANTIATION_ERROR_CODE`, `MaterializationErrorCode` →
+    `MATERIALIZATION_ERROR_CODE`, `OwlImportErrorCode` → `OWL_IMPORT_ERROR_CODE`,
+    `TransformErrorCode` → `TRANSFORM_ERROR_CODE`, `CoercionErrorCode` →
+    `COERCION_ERROR_CODE`, `SchemaLoadErrorCode` → `SCHEMA_LOAD_ERROR_CODE`.
+  - `src/constants/BASE_SCHEMAS.ts`: `DurationDef` → `DURATION_DEF`,
+    `ErrorDetailsDef` → `ERROR_DETAILS_DEF`, `ProgressDef` → `PROGRESS_DEF`,
+    `TimedDef` → `TIMED_DEF`, `TimestampedDef` → `TIMESTAMPED_DEF`,
+    `ResponseDef` → `RESPONSE_DEF`, `ResultDef` → `RESULT_DEF`,
+    `StateSnapshotDef` → `STATE_SNAPSHOT_DEF`, `SortOrderDef` →
+    `SORT_ORDER_DEF`, `CursorDef` → `CURSOR_DEF`, `PaginationDef` →
+    `PAGINATION_DEF`, `FilterDef` → `FILTER_DEF`, `PageDef` → `PAGE_DEF`.
+  - `src/constants/SCHEMAS.ts`: `SchemaLoadErrorSchema` →
+    `SCHEMA_LOAD_ERROR_SCHEMA`, `SchemaLoadResultSchema` →
+    `SCHEMA_LOAD_RESULT_SCHEMA`, `ValidationErrorSchema` →
+    `VALIDATION_ERROR_SCHEMA`.
+- **Schema-derived types are mutable by default.** Every type-producing surface
+  (`InferType`, `InferSchemaType`, `MaterializedSchemaType`, `ParseOutputType`,
+  `CanonicalShapeType`/`UnbrandType`, `BrandOutputType`) types object properties and
+  array/tuple elements as plain mutable TypeScript (`T[]`, `{ id: string }`) instead of
+  `readonly T[]`/`ReadonlyArray<T>`/`{ readonly id: string }`. A mutable array is
+  assignable wherever a `readonly` array is expected but not the reverse, so existing
+  call sites that already treat generated values as read-only are unaffected; consumers
+  who need immutability opt in locally with their own `readonly`/`Readonly<T>`
+  annotation. See [Mutability](/types/infer#mutability).
+- **`Transform.create`'s `decode` accepts a partial return.** `decode` is now typed
+  `(raw: TWire) => Partial<CanonicalShapeType<TSchema, TReferences>>` instead of the
+  full canonical shape, matching runtime behavior: `instantiate(..., { enableDefaults:
+  true })` already runs `decode` before filling schema defaults and validating, so a
+  normalize `decode` that only transforms a few wire fields no longer needs to
+  duplicate every schema `default` or use a type assertion. `encode`'s parameter type
+  is unchanged (it consumes the full, validated canonical value).
+
 ### Fixed
 
+- **CI: GitHub Packages installs now declare `packages: read`.** Every job that
+  installs `@studnicky/eslint-config` from GitHub Packages grants the `packages: read`
+  permission (or `write` for the publish jobs) alongside `NODE_AUTH_TOKEN`; the token
+  alone is not sufficient for cross-repo package reads without the matching
+  `permissions:` declaration.
 - **CI: `publish-gpr.yml` now triggers on tag push** (`v*.*.*`), not only `release: published`. A release created by `release.yml` runs under `GITHUB_TOKEN` and does not cascade the `release` event, so GPR publish never auto-fired; the tag-push trigger (a human/CLI `git push origin vX.Y.Z`) fixes it. A concurrency guard prevents a double-publish when both triggers fire for a human/PAT release.
 - **Release flow documented** in `docs/releasing.md`: merge-commit-based release/back-merge keeps `main` and `develop` convergent (the prior squash-only + linear-history policy made them diverge at every release).
+- **Full-IRI `#fragment` `$ref`s matching a registered hash-namespace `$id`** (e.g.
+  `https://ns#Class`, the idiomatic OWL/RDF form) now resolve correctly, at both
+  schema-registration time and validate/instantiate/materialize/dump runtime. Every
+  `$ref` resolution site (`SchemaRefWalker`, `RefResolution`, `SchemaCompilerPlan`,
+  `Dumper`, `RefDecoder`) tries the literal `$ref` string against the registry before
+  falling back to document-fragment semantics, which previously stripped everything
+  from `#` onward and looked up a base IRI that was never registered. CURIE refs,
+  fragment-less path IRIs, and in-document `#`-only fragment refs are unaffected.
+- **`docs/instantiate-vs-materialize.md` and four related pages stated the decode/default
+  ordering backwards** (validate-then-decode instead of the actual decode-then-validate).
+  Fixed, with a canonical ordering statement and a passthrough-decode example.
+
+### Removed
+
+- **`docs/proposals/specialized-per-schema-validators.md`** — a deferred/not-planned
+  performance proposal with a named revisit trigger, not an open item.
 
 ## [0.26.0] - 2026-06-18
 

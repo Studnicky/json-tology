@@ -11,93 +11,104 @@ import { DataType } from '../data/DataType.js';
 import type { DefaultResolutionStateType } from '../../types/DefaultResolutionStateType.js';
 import type { RefTargetType } from '../../types/RefTargetType.js';
 import type { LookupSchemaFnType } from '../../types/LookupSchemaFnType.js';
+import type { RefResolutionOptionsType } from '../../types/RefResolutionOptionsType.js';
 import { RefResolver } from './RefResolver.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 
 function propertiesFromSemantics(sem: SchemaGraphSemanticsType): ReadonlyMap<string, SchemaGraphNodeType> {
-  return sem.properties;
+  const result = sem.properties;
+
+  return result;
 }
 
-/** Build an implicit default from a node's property tree, if any properties yield values. */
-function buildImplicitObjectDefault(
-  state: DefaultResolutionStateType,
-  node: SchemaGraphNodeType,
-  depth: number
-): Record<string, unknown> | undefined {
-  const sem = state.graph.semantics(node);
-  const result: Record<string, unknown> = {};
-  let hasValue = false;
+/**
+ * ImplicitDefaultValue — recursively resolves a node's implicit default value,
+ * including the object-tree case where the default is assembled from each
+ * property's own implicit default. The two resolution steps are mutually
+ * recursive, so they live as static methods on a single class.
+ */
+class ImplicitDefaultValue {
+  /** Build an implicit default from a node's property tree, if any properties yield values. */
+  static buildObject(
+    state: DefaultResolutionStateType,
+    node: SchemaGraphNodeType,
+    depth: number
+  ): Record<string, unknown> | undefined {
+    const sem = state.graph.semantics(node);
+    const result: Record<string, unknown> = {};
+    let hasValue = false;
 
-  for (const [
-    key,
-    childNode
-  ] of propertiesFromSemantics(sem)) {
-    const childValue = createImplicitDefaultValueInternal(state, childNode, depth + 1);
+    for (const [
+      key,
+      childNode
+    ] of propertiesFromSemantics(sem)) {
+      const childValue = ImplicitDefaultValue.create(state, childNode, depth + 1);
 
-    if (childValue !== undefined) {
-      result[key] = childValue;
-      hasValue = true;
+      if (childValue !== undefined) {
+        result[key] = childValue;
+        hasValue = true;
+      }
     }
+
+    return hasValue ? result : undefined;
   }
 
-  return hasValue ? result : undefined;
-}
+  static create(
+    state: DefaultResolutionStateType,
+    node: SchemaGraphNodeType,
+    depth: number
+  ): unknown {
+    if (depth > MAX_DEFAULT_DEPTH) {
+      return undefined;
+    }
 
-function createImplicitDefaultValueInternal(
-  state: DefaultResolutionStateType,
-  node: SchemaGraphNodeType,
-  depth: number
-): unknown {
-  if (depth > MAX_DEFAULT_DEPTH) {
+    if (typeof node.schema === 'boolean') {
+      return undefined;
+    }
+
+    if (state.visited.has(node.id)) {
+      return undefined;
+    }
+    state.visited.add(node.id);
+
+    const sem = state.graph.semantics(node);
+    const defaultValue = sem.hasDefault ? sem.defaultValue : undefined;
+    const ref = sem.ref;
+    const dynamicRef = sem.dynamicRef;
+
+    if (defaultValue !== undefined) {
+      return GraphEngineSupport.cloneDefault(defaultValue);
+    }
+    if (typeof ref === 'string') {
+      const {
+        'graph': rGraph, 'node': rNode
+      } = state.context.resolveRef(ref, state.graph);
+
+      return ImplicitDefaultValue.create({
+        ...state,
+        'graph': rGraph
+      }, rNode, depth + 1);
+    }
+    if (typeof dynamicRef === 'string') {
+      const {
+        'graph': rGraph, 'node': rNode
+      } = state.context.resolveDynamicRef(dynamicRef, state.graph, state.dynamicScope);
+
+      return ImplicitDefaultValue.create({
+        ...state,
+        'graph': rGraph
+      }, rNode, depth + 1);
+    }
+
+    const hasProperties = sem.properties.size > 0;
+
+    if (sem.schemaTypes.includes('object') || hasProperties) {
+      return ImplicitDefaultValue.buildObject(state, node, depth);
+    }
+
     return undefined;
   }
-
-  if (typeof node.schema === 'boolean') {
-    return undefined;
-  }
-
-  if (state.visited.has(node.id)) {
-    return undefined;
-  }
-  state.visited.add(node.id);
-
-  const sem = state.graph.semantics(node);
-  const defaultValue = sem.hasDefault ? sem.defaultValue : undefined;
-  const ref = sem.ref;
-  const dynamicRef = sem.dynamicRef;
-
-  if (defaultValue !== undefined) {
-    return GraphEngineSupport.cloneDefault(defaultValue);
-  }
-  if (typeof ref === 'string') {
-    const {
-      'graph': rGraph, 'node': rNode
-    } = state.context.resolveRef(ref, state.graph);
-
-    return createImplicitDefaultValueInternal({
-      ...state,
-      'graph': rGraph
-    }, rNode, depth + 1);
-  }
-  if (typeof dynamicRef === 'string') {
-    const {
-      'graph': rGraph, 'node': rNode
-    } = state.context.resolveDynamicRef(dynamicRef, state.graph, state.dynamicScope);
-
-    return createImplicitDefaultValueInternal({
-      ...state,
-      'graph': rGraph
-    }, rNode, depth + 1);
-  }
-
-  const hasProperties = sem.properties.size > 0;
-
-  if (sem.schemaTypes.includes('object') || hasProperties) {
-    return buildImplicitObjectDefault(state, node, depth);
-  }
-
-  return undefined;
 }
 
 /** Resolve zero-value for primitive schema types. Returns a sentinel undefined when type is unknown. */
@@ -247,66 +258,74 @@ function synthesizeZeroValueInternal(
   return null;
 }
 
-function buildCompilerDefaultContext(
-  lookupSchema: LookupSchemaFnType | undefined,
-  lookupGraph?: (id: string) => SchemaGraphInterface | undefined
-): DefaultResolutionContextType {
-  return {
-    resolveDynamicRef(
-      dynamicRef: string,
-      currentGraph: SchemaGraphInterface,
-      dynamicScope
-    ): RefTargetType {
-      const resolved = RefResolver.resolve(dynamicRef, currentGraph, lookupSchema, lookupGraph);
+/** CompilerDefaultContext — builds a DefaultResolutionContextType from lookup callbacks. */
+class CompilerDefaultContext {
+  static build(
+    lookupSchema: LookupSchemaFnType | undefined,
+    lookupGraph?: (id: string) => SchemaGraphInterface | undefined
+  ): DefaultResolutionContextType {
+    const refOptions: RefResolutionOptionsType = {
+      ...(lookupSchema !== undefined && { 'lookupSchema': lookupSchema }),
+      ...(lookupGraph !== undefined && { 'lookupGraph': lookupGraph })
+    };
 
-      if (resolved === undefined) {
-        // observability: throw is surfaced to caller (SchemaCompiler.compile → GraphEngineDefaults)
-        throw new GraphError(
-          `Cannot resolve $dynamicRef '${dynamicRef}' — schema not found`,
-          {
-            'code': GraphErrorCode.REF_NOT_FOUND,
-            'pointer': dynamicRef
+    return {
+      resolveDynamicRef(
+        dynamicRef: string,
+        currentGraph: SchemaGraphInterface,
+        dynamicScope
+      ): RefTargetType {
+        const resolved = RefResolver.resolve(dynamicRef, currentGraph, refOptions);
+
+        if (resolved === undefined) {
+          // observability: throw is surfaced to caller (SchemaCompiler.compile → GraphEngineDefaults)
+          throw new GraphError(
+            `Cannot resolve $dynamicRef '${dynamicRef}' — schema not found`,
+            {
+              'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
+              'pointer': dynamicRef
+            }
+          );
+        }
+
+        // Mirror the dynamic scope walk from resolveDynamicRefTarget in SchemaCompilerPlan.
+        const fragment = GraphEngineSupport.extractNamedFragment(dynamicRef);
+        const resolvedSem = resolved.graph.semantics(resolved.node);
+        const resolvedAnchor = resolvedSem.dynamicAnchor;
+
+        if (fragment === undefined || resolvedAnchor !== fragment) {
+          return resolved;
+        }
+
+        for (const entry of dynamicScope) {
+          if (entry.anchor === fragment) {
+            return {
+              'graph': entry.graph,
+              'node': entry.node
+            };
           }
-        );
-      }
+        }
 
-      // Mirror the dynamic scope walk from resolveDynamicRefTarget in SchemaCompilerPlan.
-      const fragment = GraphEngineSupport.extractNamedFragment(dynamicRef);
-      const resolvedSem = resolved.graph.semantics(resolved.node);
-      const resolvedAnchor = resolvedSem.dynamicAnchor;
+        return resolved;
+      },
+      resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetType {
+        const resolved = RefResolver.resolve(ref, currentGraph, refOptions);
 
-      if (fragment === undefined || resolvedAnchor !== fragment) {
+        if (resolved === undefined) {
+          // observability: throw is surfaced to caller (SchemaCompiler.compile → GraphEngineDefaults)
+          throw new GraphError(
+            `Cannot resolve $ref '${ref}' — schema not found`,
+            {
+              'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
+              'pointer': ref
+            }
+          );
+        }
+
         return resolved;
       }
-
-      for (const entry of dynamicScope) {
-        if (entry.anchor === fragment) {
-          return {
-            'graph': entry.graph,
-            'node': entry.node
-          };
-        }
-      }
-
-      return resolved;
-    },
-    resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetType {
-      const resolved = RefResolver.resolve(ref, currentGraph, lookupSchema, lookupGraph);
-
-      if (resolved === undefined) {
-        // observability: throw is surfaced to caller (SchemaCompiler.compile → GraphEngineDefaults)
-        throw new GraphError(
-          `Cannot resolve $ref '${ref}' — schema not found`,
-          {
-            'code': GraphErrorCode.REF_NOT_FOUND,
-            'pointer': ref
-          }
-        );
-      }
-
-      return resolved;
-    }
-  };
+    };
+  }
 }
 
 /**
@@ -337,12 +356,14 @@ export const GraphEngineDefaults = {
     graph: SchemaGraphInterface,
     dynamicScope: DynamicScopeEntryType[]
   ): unknown {
-    return createImplicitDefaultValueInternal({
+    const result = ImplicitDefaultValue.create({
       context,
       dynamicScope,
       graph,
       'visited': new Set<string>()
     }, node, 0);
+
+    return result;
   },
 
   createImplicitDefaultValueForLookups(
@@ -352,9 +373,9 @@ export const GraphEngineDefaults = {
     lookupGraph: ((id: string) => SchemaGraphInterface | undefined) | undefined,
     visited: Set<string>
   ): unknown {
-    const context = buildCompilerDefaultContext(lookupSchema, lookupGraph);
+    const context = CompilerDefaultContext.build(lookupSchema, lookupGraph);
 
-    return createImplicitDefaultValueInternal({
+    return ImplicitDefaultValue.create({
       context,
       'dynamicScope': [],
       graph,
@@ -369,12 +390,14 @@ export const GraphEngineDefaults = {
     dynamicScope: DynamicScopeEntryType[],
     visited: Set<string>
   ): unknown {
-    return createImplicitDefaultValueInternal({
+    const result = ImplicitDefaultValue.create({
       context,
       dynamicScope,
       graph,
       visited
     }, node, 0);
+
+    return result;
   },
 
   synthesizeZeroValue(
@@ -383,12 +406,14 @@ export const GraphEngineDefaults = {
     graph: SchemaGraphInterface,
     dynamicScope: DynamicScopeEntryType[]
   ): unknown {
-    return synthesizeZeroValueInternal({
+    const result = synthesizeZeroValueInternal({
       context,
       dynamicScope,
       graph,
       'visited': new Set<string>()
     }, node, 0);
+
+    return result;
   },
 
   synthesizeZeroValueForLookups(
@@ -397,7 +422,7 @@ export const GraphEngineDefaults = {
     lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,
     lookupGraph?: (id: string) => SchemaGraphInterface | undefined
   ): unknown {
-    const context = buildCompilerDefaultContext(lookup, lookupGraph);
+    const context = CompilerDefaultContext.build(lookup, lookupGraph);
 
     return synthesizeZeroValueInternal({
       context,

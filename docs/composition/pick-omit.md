@@ -146,6 +146,10 @@ class BookSummary(BaseModel):
 
 <RunnableExample src="examples/docs/composition/26-omit-from-registry" />
 
+### Argument validation <Badge type="info" text="Compile-time" />
+
+`keys` are bound to `keyof properties`, the same constraint `pick` uses. Passing a key that does not exist in the source schema's `properties` is a compile-time error rather than a silent no-op.
+
 ### Comparison
 
 ::: code-group

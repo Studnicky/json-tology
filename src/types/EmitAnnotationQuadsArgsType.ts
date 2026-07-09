@@ -6,11 +6,11 @@ import type { PredicateResolverFnType } from '../types/PredicateResolverFnType.j
 
 /** Arguments for emitAnnotationQuads. */
 export type EmitAnnotationQuadsArgsType = {
-  readonly 'annotationValues': Record<string, unknown>;
-  readonly 'classId': string;
-  readonly 'edge': AnnotatedEdgeStructureType;
-  readonly 'predicateResolver': PredicateResolverFnType;
-  readonly 'quadOpts': QuadFactoryQuadOptsType;
-  readonly 'quads': QuadInterface[];
-  readonly 'tripleTerm': Quad;
+  'annotationValues': Record<string, unknown>;
+  'classId': string;
+  'edge': AnnotatedEdgeStructureType;
+  'predicateResolver': PredicateResolverFnType;
+  'quadOpts': QuadFactoryQuadOptsType;
+  'quads': QuadInterface[];
+  'tripleTerm': Quad;
 };

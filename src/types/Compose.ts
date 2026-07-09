@@ -98,7 +98,7 @@ export type ExtractPropertiesType<T>
  * @typeParam TParent - The parent schema or tuple of parent schemas.
  * @typeParam TBody - The subclass body schema whose `$id` must not collide.
  */
-export type ValidateSubClassOfBodyType<TParent, TBody extends { readonly '$id': string }>
+export type ValidateSubClassOfBodyType<TParent, TBody extends { '$id': string }>
   = TParent extends ReadonlyArray<{ readonly '$id': infer TParentIds extends string }>
     ? TBody['$id'] extends TParentIds
       ? SelfSubClassType<TBody['$id']>
@@ -307,8 +307,8 @@ export type ExtendSchemaType<
   TAdditional extends Record<string, unknown>,
   TId extends string
 > = Omit<TSchema, '$id' | 'properties'> & {
-  readonly '$id': TId;
-  readonly 'properties': ExtractPropertiesType<TSchema> & { readonly [K in keyof TAdditional]: TAdditional[K] };
+  '$id': TId;
+  'properties': ExtractPropertiesType<TSchema> & { [K in keyof TAdditional]: TAdditional[K] };
 };
 
 /**
@@ -336,7 +336,7 @@ export type ExtendSchemaType<
  * @typeParam TId - The `$id` string for the resulting partial schema.
  */
 export type PartialSchemaType<TSchema, TId extends string>
-  = Omit<TSchema, '$id' | 'required'> & { readonly '$id': TId };
+  = Omit<TSchema, '$id' | 'required'> & { '$id': TId };
 
 /**
  * Derive a required schema type by replacing `required` with all property
@@ -364,8 +364,8 @@ export type PartialSchemaType<TSchema, TId extends string>
  */
 export type RequiredSchemaType<TSchema, TId extends string>
   = Omit<TSchema, '$id' | 'required'> & {
-    readonly '$id': TId;
-    readonly 'required': ReadonlyArray<keyof ExtractPropertiesType<TSchema>>;
+    '$id': TId;
+    'required': ReadonlyArray<keyof ExtractPropertiesType<TSchema>>;
   };
 
 /**
@@ -407,13 +407,13 @@ export type RequiredSchemaType<TSchema, TId extends string>
 export type AnnotatedEdgeSchemaType<
   TPredicate extends string,
   TTargetRef extends string,
-  TAnnotations extends Record<string, { readonly '$ref': string }>
+  TAnnotations extends Record<string, { '$ref': string }>
 > = {
-  readonly '$id'?: string;
-  readonly 'jt:annotatedEdge': {
-    readonly 'annotations': TAnnotations;
-    readonly 'predicate': TPredicate;
-    readonly 'targetRef': TTargetRef;
+  '$id'?: string;
+  'jt:annotatedEdge': {
+    'annotations': TAnnotations;
+    'predicate': TPredicate;
+    'targetRef': TTargetRef;
   };
 };
 
@@ -446,8 +446,8 @@ export type IntersectionSchemaType<
   TSchemas extends ReadonlyArray<Record<string, unknown>>,
   TId extends string
 > = {
-  readonly '$id': TId;
-  readonly 'allOf': TSchemas;
+  '$id': TId;
+  'allOf': TSchemas;
 };
 
 /**
@@ -482,9 +482,9 @@ export type DiscriminatedUnionSchemaType<
   TVariants extends ReadonlyArray<Record<string, unknown>>,
   TId extends string
 > = {
-  readonly '$id': TId;
-  readonly 'discriminator': { readonly 'propertyName': TDiscriminator };
-  readonly 'oneOf': TVariants;
+  '$id': TId;
+  'discriminator': { 'propertyName': TDiscriminator };
+  'oneOf': TVariants;
 };
 
 /**
@@ -515,10 +515,10 @@ export type PickSchemaType<
   TKeys extends string,
   TId extends string
 > = {
-  readonly '$id': TId;
-  readonly 'properties': Pick<ExtractPropertiesType<TSchema>, keyof ExtractPropertiesType<TSchema> & TKeys>;
-  readonly 'required': ReadonlyArray<ExtractRequiredType<TSchema> & TKeys>;
-  readonly 'type': 'object';
+  '$id': TId;
+  'properties': Pick<ExtractPropertiesType<TSchema>, keyof ExtractPropertiesType<TSchema> & TKeys>;
+  'required': ReadonlyArray<ExtractRequiredType<TSchema> & TKeys>;
+  'type': 'object';
 };
 
 /**
@@ -549,10 +549,10 @@ export type OmitSchemaType<
   TKeys extends string,
   TId extends string
 > = {
-  readonly '$id': TId;
-  readonly 'properties': Omit<ExtractPropertiesType<TSchema>, TKeys>;
-  readonly 'required': ReadonlyArray<Exclude<ExtractRequiredType<TSchema>, TKeys>>;
-  readonly 'type': 'object';
+  '$id': TId;
+  'properties': Omit<ExtractPropertiesType<TSchema>, TKeys>;
+  'required': ReadonlyArray<Exclude<ExtractRequiredType<TSchema>, TKeys>>;
+  'type': 'object';
 };
 
 type SubClassOfAllOfType<TParent, TBody>
@@ -589,11 +589,11 @@ type SubClassOfAllOfType<TParent, TBody>
  */
 export type SubClassOfSchemaType<
   TParent,
-  TBody extends Record<string, unknown> & { readonly '$id': string }
+  TBody extends Record<string, unknown> & { '$id': string }
 >
   = Omit<TBody, '$id'> & {
-    readonly '$id': TBody['$id'];
-    readonly 'allOf': SubClassOfAllOfType<TParent, TBody>;
+    '$id': TBody['$id'];
+    'allOf': SubClassOfAllOfType<TParent, TBody>;
   };
 
 /**
@@ -621,12 +621,12 @@ export type SubClassOfSchemaType<
  * @group Compose
  */
 export type DisjointWithSchemaType<
-  TOther extends { readonly '$id': string },
-  TBody extends Record<string, unknown> & { readonly '$id': string }
+  TOther extends { '$id': string },
+  TBody extends Record<string, unknown> & { '$id': string }
 >
   = Omit<TBody, '$id' | 'disjointWith'> & {
-    readonly '$id': TBody['$id'];
-    readonly 'disjointWith': TOther['$id'];
+    '$id': TBody['$id'];
+    'disjointWith': TOther['$id'];
   };
 
 /**
@@ -654,10 +654,10 @@ export type DisjointWithSchemaType<
  * @group Compose
  */
 export type ComplementOfSchemaType<
-  TOther extends { readonly '$id': string },
-  TBody extends Record<string, unknown> & { readonly '$id': string }
+  TOther extends { '$id': string },
+  TBody extends Record<string, unknown> & { '$id': string }
 >
   = Omit<TBody, '$id' | 'not'> & {
-    readonly '$id': TBody['$id'];
-    readonly 'not': { readonly '$ref': TOther['$id'] };
+    '$id': TBody['$id'];
+    'not': { '$ref': TOther['$id'] };
   };

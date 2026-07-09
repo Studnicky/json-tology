@@ -1,8 +1,7 @@
 import type { CurieInterface } from '../interfaces/CurieInterface.js';
 import type { SchemaGraphNodeType } from './SchemaGraph.js';
-import type {
-  SubjectIndexType, SubjectPredicateQuadsIndexType
-} from '../types/QuadBackedSchemaGraph.js';
+import type { SubjectPredicateQuadsIndexType } from '../types/QuadBackedSchemaGraph.js';
+import type { SubjectIndexType } from '../types/OwlImport.js';
 
 /**
  * Options for {@link buildRelations}.
@@ -17,9 +16,9 @@ import type {
  * @group Graph
  */
 export type BuildRelationsOptionsType = {
-  readonly 'curie': CurieInterface;
-  readonly 'nodeMap': Map<string, SchemaGraphNodeType>;
-  readonly 'predicateIndex': SubjectPredicateQuadsIndexType;
-  readonly 'stubMap': Map<string, SchemaGraphNodeType>;
-  readonly 'subjectIndex': SubjectIndexType;
+  'curie': CurieInterface;
+  'nodeMap': Map<string, SchemaGraphNodeType>;
+  'predicateIndex': SubjectPredicateQuadsIndexType;
+  'stubMap': Map<string, SchemaGraphNodeType>;
+  'subjectIndex': SubjectIndexType;
 };

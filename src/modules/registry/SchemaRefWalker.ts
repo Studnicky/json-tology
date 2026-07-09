@@ -10,7 +10,7 @@ import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalkerInterface.js';
 
 import { GraphError } from '../../errors/GraphError.js';
-import { GraphErrorCode } from '../../constants/ERROR_CODES.js';
+import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { DataType } from '../data/DataType.js';
 import { LogScope } from '../data/LogScope.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
@@ -55,7 +55,12 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
 
     const ref = node.$ref;
 
-    if (typeof ref === 'string' && !ref.startsWith('#')) {
+    // A `#`-bearing absolute IRI ref (e.g. `https://ns#Class`) may itself be a
+    // registered hash-namespace `$id`; check the ref as authored (and its
+    // CURIE/relative-expanded form) before falling to document#fragment
+    // semantics, which would otherwise strip the fragment and look up a base
+    // IRI that was never registered.
+    if (typeof ref === 'string' && !ref.startsWith('#') && !knownIds(ref) && !knownIds(resolve(ref))) {
       const refIri = SchemaIri.parseRef(ref).id;
       const resolved = resolve(refIri);
 
@@ -105,7 +110,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
 
     const ref = node.$ref;
 
-    if (typeof ref === 'string' && !ref.startsWith('#')) {
+    if (typeof ref === 'string' && !ref.startsWith('#') && !knownIds(ref) && !knownIds(resolve(ref))) {
       const refIri = SchemaIri.parseRef(ref).id;
       const resolved = resolve(refIri);
 
@@ -113,7 +118,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
         throw new GraphError(
           `unresolved $ref: ${ref} (referenced from ${parentSchemaId})`,
           {
-            'code': GraphErrorCode.REF_UNRESOLVED,
+            'code': GRAPH_ERROR_CODE.REF_UNRESOLVED,
             'pointer': ref
           }
         );
