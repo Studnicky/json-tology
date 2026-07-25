@@ -2,22 +2,48 @@
  * AboxGraph type aliases — index structures for the typed ABox graph cursor.
  */
 
+import type { InferType } from './Schema.js';
+
 /** Lifts a resource IRI to its typed JS instance (memoised by the owning graph). */
-export type AboxLiftFnType = (iri: string) => unknown;
+export type AboxLiftFunctionType = (iri: string) => unknown;
 
 /** A (predicate IRI, object IRI-or-literal-value) pair stored in the bySubject index. */
-export type AboxPredicateObjectType = {
-  'object': string;
-  /** termType of the original quad object — Literal or NamedNode */
-  'objectTermType': 'BlankNode' | 'Literal' | 'NamedNode';
-  'predicate': string;
-};
+export const AboxPredicateObjectTypeSchema = {
+  'properties': {
+    'object': { 'type': 'string' },
+    'objectTermType': {
+      'enum': [
+        'BlankNode',
+        'Literal',
+        'NamedNode'
+      ]
+    },
+    'predicate': { 'type': 'string' }
+  },
+  'required': [
+    'object',
+    'objectTermType',
+    'predicate'
+  ],
+  'type': 'object'
+} as const;
+
+export type AboxPredicateObjectType = InferType<typeof AboxPredicateObjectTypeSchema>;
 
 /** A (predicate IRI, subject IRI) pair stored in the byObject index. */
-export type AboxPredicateSubjectType = {
-  'predicate': string;
-  'subject': string;
-};
+export const AboxPredicateSubjectTypeSchema = {
+  'properties': {
+    'predicate': { 'type': 'string' },
+    'subject': { 'type': 'string' }
+  },
+  'required': [
+    'predicate',
+    'subject'
+  ],
+  'type': 'object'
+} as const;
+
+export type AboxPredicateSubjectType = InferType<typeof AboxPredicateSubjectTypeSchema>;
 
 /**
  * Describes the inverse-functional identity of a class: which class owns the
@@ -29,11 +55,18 @@ export type AboxPredicateSubjectType = {
  * flat predicate is shared by foreign-key holders (`Order.customerId`,
  * `Review.customerId`) whose declarations are not inverse-functional.
  */
-export type AboxIdentityDescriptorType = {
-  /** Class IRI that owns this identity (the inverse-functional property's domain). */
-  'owningClass': string;
-  /** Canonical predicate IRI of the identity property (e.g. the full IRI for `customerId`). */
-  'predicate': string;
-  /** Range primitive IRI (the identity datatype's schema `$id`, e.g. `urn:bookstore:CustomerId`). */
-  'range': string;
-};
+export const AboxIdentityDescriptorTypeSchema = {
+  'properties': {
+    'owningClass': { 'type': 'string' },
+    'predicate': { 'type': 'string' },
+    'range': { 'type': 'string' }
+  },
+  'required': [
+    'owningClass',
+    'predicate',
+    'range'
+  ],
+  'type': 'object'
+} as const;
+
+export type AboxIdentityDescriptorType = InferType<typeof AboxIdentityDescriptorTypeSchema>;

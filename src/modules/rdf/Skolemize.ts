@@ -1,7 +1,7 @@
 /**
  * Skolemize — strategies for minting IRIs for ABox subjects.
  *
- * Each static method returns a {@link SkolemizeFnType} suitable for the
+ * Each static method returns a {@link SkolemizeFunctionType} suitable for the
  * `iriFor` option on `toQuads`. Strategies can be composed via
  * `Skolemize.compose(...)` — the first non-undefined return wins. When a
  * strategy returns `undefined`, the projection's built-in default IRI minter
@@ -13,11 +13,12 @@
  * RDF 1.1 §3.5 (Replacing Blank Nodes with IRIs).
  */
 
-import type { SkolemizeFnType } from '../../types/SkolemizeFnType.js';
+import type { SkolemizeFunctionType } from '../../types/SkolemizeFunctionType.js';
 import { Hash } from '../hash/Hash.js';
+import { WELL_KNOWN_GENID_PATTERN } from '../../constants/GRAPH_REGEXES.js';
 import {
   UUID_BYTE_LENGTH,
-  UUID_BYTE_MAX_PLUS_ONE,
+  UUID_BYTE_MAXIMUM_PLUS_ONE,
   UUID_HEX_PAD_LENGTH,
   UUID_SEG0_B0,
   UUID_SEG0_B1,
@@ -47,83 +48,17 @@ import {
 const HEX_RADIX = 16;
 
 /** Lookup table mapping byte values (0–255) to two-digit hex strings. */
-const HEX_LOOKUP: readonly string[] = Array.from({ 'length': UUID_BYTE_MAX_PLUS_ONE }, (_: unknown, i: number): string => {
-  const result = i.toString(HEX_RADIX).padStart(UUID_HEX_PAD_LENGTH, '0');
+const HEX_LOOKUP: string[] = Array.from({ 'length': UUID_BYTE_MAXIMUM_PLUS_ONE });
 
-  return result;
-});
-
-/** Return the hex string for a byte value, throwing if out of range. */
-function hexAt(byte: number | undefined): string {
-  if (byte === undefined) {
-    throw new Error('UUID byte index out of bounds');
-  }
-
-  const hex = HEX_LOOKUP.at(byte);
-
-  if (hex === undefined) {
-    throw new Error(`HEX_LOOKUP out of bounds: ${byte}`);
-  }
-
-  return hex;
+for (let byteValue = 0; byteValue < UUID_BYTE_MAXIMUM_PLUS_ONE; byteValue += 1) {
+  HEX_LOOKUP[byteValue] = byteValue.toString(HEX_RADIX).padStart(UUID_HEX_PAD_LENGTH, '0');
 }
-
-function stripTrailingSlash(iri: string): string {
-  let result = iri;
-
-  while (result.endsWith('/')) {
-    result = result.slice(0, -1);
-  }
-
-  return result;
-}
-
-function randomUuidV4(): string {
-  const cryptoObj = (globalThis as { 'crypto'?: { 'getRandomValues'?: (b: Uint8Array) => Uint8Array;
-    'randomUUID'?: () => string } }).crypto;
-
-  if (cryptoObj?.randomUUID !== undefined) {
-    return cryptoObj.randomUUID();
-  }
-
-  const bytes = new Uint8Array(UUID_BYTE_LENGTH);
-
-  if (cryptoObj?.getRandomValues === undefined) {
-    for (let i = 0; i < bytes.length; i++) {
-      bytes[i] = Math.floor(Math.random() * UUID_BYTE_MAX_PLUS_ONE);
-    }
-  } else {
-    cryptoObj.getRandomValues(bytes);
-  }
-
-  const versionByte = bytes.at(UUID_VERSION_BYTE_INDEX);
-  const variantByte = bytes.at(UUID_VARIANT_BYTE_INDEX);
-
-  if (versionByte === undefined || variantByte === undefined) {
-    throw new Error('UUID byte array too short');
-  }
-
-  bytes[UUID_VERSION_BYTE_INDEX] = (versionByte & UUID_VERSION_MASK) | UUID_VERSION_SET;
-  bytes[UUID_VARIANT_BYTE_INDEX] = (variantByte & UUID_VARIANT_MASK) | UUID_VARIANT_SET;
-
-  return (
-    `${hexAt(bytes.at(UUID_SEG0_B0)) + hexAt(bytes.at(UUID_SEG0_B1))
-    + hexAt(bytes.at(UUID_SEG0_B2)) + hexAt(bytes.at(UUID_SEG0_B3))}-${
-      hexAt(bytes.at(UUID_SEG1_B0))}${hexAt(bytes.at(UUID_SEG1_B1))}-${
-      hexAt(bytes.at(UUID_SEG2_B0))}${hexAt(bytes.at(UUID_SEG2_B1))}-${
-      hexAt(bytes.at(UUID_SEG3_B0))}${hexAt(bytes.at(UUID_SEG3_B1))}-${
-      hexAt(bytes.at(UUID_SEG4_B0))}${hexAt(bytes.at(UUID_SEG4_B1))
-    }${hexAt(bytes.at(UUID_SEG4_B2))}${hexAt(bytes.at(UUID_SEG4_B3))
-    }${hexAt(bytes.at(UUID_SEG4_B4))}${hexAt(bytes.at(UUID_SEG4_B5))}`
-  );
-}
-
 
 /**
  * IRI minting strategies for RDF blank-node Skolemization.
  *
  * @remarks
- * Each static method returns a `SkolemizeFnType` suitable for the `iriFor`
+ * Each static method returns a `SkolemizeFunctionType` suitable for the `iriFor`
  * option on `toQuads`. Strategies compose via `Skolemize.compose(...)` —
  * the first non-`undefined` return wins. When a strategy returns `undefined`,
  * the projection's built-in default IRI minter takes over, emitting
@@ -143,7 +78,7 @@ function randomUuidV4(): string {
  *
  * @category RDF
  * @since 0.1.0
- * @see {@link SkolemizeFnType}
+ * @see {@link SkolemizeFunctionType}
  * @group Skolemize
  */
 export class Skolemize {
@@ -152,18 +87,18 @@ export class Skolemize {
    * `fromQuads({ deskolemize: true })` and consumers writing custom
    * deskolemization passes.
    */
-  public static readonly WELL_KNOWN_GENID_PATTERN = /\/\.well-known\/genid\//u;
+  public static readonly WELL_KNOWN_GENID_PATTERN = WELL_KNOWN_GENID_PATTERN;
 
   /**
    * Compose multiple strategies. The first strategy returning a defined
    * IRI wins; later strategies are not consulted.
    */
-  public static compose(...strategies: readonly SkolemizeFnType[]): SkolemizeFnType {
-    return (ctx: Parameters<SkolemizeFnType>[0]): string | undefined => {
+  public static compose(...strategies: readonly SkolemizeFunctionType[]): SkolemizeFunctionType {
+    return (context: Parameters<SkolemizeFunctionType>[0]): string | undefined => {
       let resolved: string | undefined;
 
       for (const strategy of strategies) {
-        const candidate = strategy(ctx);
+        const candidate = strategy(context);
 
         if (candidate !== undefined) {
           resolved = candidate;
@@ -186,13 +121,13 @@ export class Skolemize {
   public static fromProperty(
     name: string,
     options?: { 'baseIri'?: string;
-      'fallback'?: SkolemizeFnType }
-  ): SkolemizeFnType {
+      'fallback'?: SkolemizeFunctionType }
+  ): SkolemizeFunctionType {
     const fallback = options?.fallback
       ?? Skolemize.hash(options?.baseIri === undefined ? undefined : { 'baseIri': options.baseIri });
 
-    return (ctx: Parameters<SkolemizeFnType>[0]): string | undefined => {
-      const { value } = ctx;
+    return (context: Parameters<SkolemizeFunctionType>[0]): string | undefined => {
+      const { value } = context;
 
       if (value !== null && typeof value === 'object' && name in value) {
         const candidate = (value as Record<string, unknown>)[name];
@@ -202,11 +137,11 @@ export class Skolemize {
 
           return base === undefined
             ? candidate
-            : `${stripTrailingSlash(base)}/${encodeURIComponent(candidate)}`;
+            : `${Skolemize.stripTrailingSlash(base)}/${encodeURIComponent(candidate)}`;
         }
       }
 
-      return fallback(ctx);
+      return fallback(context);
     };
   }
 
@@ -216,20 +151,35 @@ export class Skolemize {
    * baseIri is configured at any layer (registry or strategy), letting
    * the caller's default kick in.
    */
-  public static hash(options?: { 'baseIri'?: string }): SkolemizeFnType {
+  public static hash(options?: { 'baseIri'?: string }): SkolemizeFunctionType {
     const base = options?.baseIri;
 
-    return (ctx: Parameters<SkolemizeFnType>[0]): string | undefined => {
+    return (context: Parameters<SkolemizeFunctionType>[0]): string | undefined => {
       let result: string | undefined;
 
       if (base !== undefined) {
-        const contentHash = Hash.value(ctx.value);
+        const contentHash = Hash.value(context.value);
 
-        result = `${stripTrailingSlash(base)}/instances/${contentHash}`;
+        result = `${Skolemize.stripTrailingSlash(base)}/instances/${contentHash}`;
       }
 
       return result;
     };
+  }
+
+  /** Return the hex string for a byte value, throwing if out of range. */
+  private static hexAt(byte: number | undefined): string {
+    if (byte === undefined) {
+      throw new Error('UUID byte index out of bounds');
+    }
+
+    const hex = HEX_LOOKUP.at(byte);
+
+    if (hex === undefined) {
+      throw new Error(`HEX_LOOKUP out of bounds: ${byte}`);
+    }
+
+    return hex;
   }
 
   /**
@@ -243,13 +193,65 @@ export class Skolemize {
     return Skolemize.WELL_KNOWN_GENID_PATTERN.test(iri);
   }
 
+  private static randomUuidV4(): string {
+    const cryptoObject = (globalThis as { 'crypto'?: { 'getRandomValues'?: (b: Uint8Array) => Uint8Array;
+      'randomUUID'?: () => string } }).crypto;
+
+    if (cryptoObject?.randomUUID !== undefined) {
+      return cryptoObject.randomUUID();
+    }
+
+    const bytes = new Uint8Array(UUID_BYTE_LENGTH);
+
+    if (cryptoObject?.getRandomValues === undefined) {
+      const { length } = bytes;
+
+      for (let i = 0; i < length; i++) {
+        bytes[i] = Math.floor(Math.random() * UUID_BYTE_MAXIMUM_PLUS_ONE);
+      }
+    } else {
+      cryptoObject.getRandomValues(bytes);
+    }
+
+    const versionByte = bytes.at(UUID_VERSION_BYTE_INDEX);
+    const variantByte = bytes.at(UUID_VARIANT_BYTE_INDEX);
+
+    if (versionByte === undefined || variantByte === undefined) {
+      throw new Error('UUID byte array too short');
+    }
+
+    bytes[UUID_VERSION_BYTE_INDEX] = (versionByte & UUID_VERSION_MASK) | UUID_VERSION_SET;
+    bytes[UUID_VARIANT_BYTE_INDEX] = (variantByte & UUID_VARIANT_MASK) | UUID_VARIANT_SET;
+
+    return (
+      `${Skolemize.hexAt(bytes.at(UUID_SEG0_B0)) + Skolemize.hexAt(bytes.at(UUID_SEG0_B1))
+      + Skolemize.hexAt(bytes.at(UUID_SEG0_B2)) + Skolemize.hexAt(bytes.at(UUID_SEG0_B3))}-${
+        Skolemize.hexAt(bytes.at(UUID_SEG1_B0))}${Skolemize.hexAt(bytes.at(UUID_SEG1_B1))}-${
+        Skolemize.hexAt(bytes.at(UUID_SEG2_B0))}${Skolemize.hexAt(bytes.at(UUID_SEG2_B1))}-${
+        Skolemize.hexAt(bytes.at(UUID_SEG3_B0))}${Skolemize.hexAt(bytes.at(UUID_SEG3_B1))}-${
+        Skolemize.hexAt(bytes.at(UUID_SEG4_B0))}${Skolemize.hexAt(bytes.at(UUID_SEG4_B1))
+      }${Skolemize.hexAt(bytes.at(UUID_SEG4_B2))}${Skolemize.hexAt(bytes.at(UUID_SEG4_B3))
+      }${Skolemize.hexAt(bytes.at(UUID_SEG4_B4))}${Skolemize.hexAt(bytes.at(UUID_SEG4_B5))}`
+    );
+  }
+
+  private static stripTrailingSlash(iri: string): string {
+    let result = iri;
+
+    while (result.endsWith('/')) {
+      result = result.slice(0, -1);
+    }
+
+    return result;
+  }
+
   /**
    * Mint a URN UUID v4 IRI. Non-deterministic — useful when fresh
    * identity on every emission is desired.
    */
-  public static uuid(): SkolemizeFnType {
-    return (_ctx: Parameters<SkolemizeFnType>[0]): string => {
-      const result = `urn:uuid:${randomUuidV4()}`;
+  public static uuid(): SkolemizeFunctionType {
+    return (_context: Parameters<SkolemizeFunctionType>[0]): string => {
+      const result = `urn:uuid:${Skolemize.randomUuidV4()}`;
 
       return result;
     };
@@ -262,11 +264,11 @@ export class Skolemize {
    * IRIs of this shape are reversible by `fromQuads({ deskolemize: true })`,
    * which treats them as blank nodes when reconstructing typed objects.
    */
-  public static wellKnownGenid(baseIri: string): SkolemizeFnType {
-    const root = stripTrailingSlash(baseIri);
+  public static wellKnownGenid(baseIri: string): SkolemizeFunctionType {
+    const root = Skolemize.stripTrailingSlash(baseIri);
 
-    return (ctx: Parameters<SkolemizeFnType>[0]): string => {
-      const contentHash = Hash.value(ctx.value);
+    return (context: Parameters<SkolemizeFunctionType>[0]): string => {
+      const contentHash = Hash.value(context.value);
 
       return `${root}/.well-known/genid/${contentHash}`;
     };

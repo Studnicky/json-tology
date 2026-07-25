@@ -10,8 +10,8 @@ Compose.someValuesFrom(propIri, rangeClassIri): RestrictionRefType
 Compose.allValuesFrom(propIri, rangeClassIri): RestrictionRefType
 Compose.hasValue(propIri, value): RestrictionRefType
 Compose.cardinality(propIri, n): RestrictionRefType
-Compose.minCardinality(propIri, n): RestrictionRefType
-Compose.maxCardinality(propIri, n): RestrictionRefType
+Compose.minimumCardinality(propIri, n): RestrictionRefType
+Compose.maximumCardinality(propIri, n): RestrictionRefType
 
 Compose.subClassOf(restriction, body): typeof body
 ```

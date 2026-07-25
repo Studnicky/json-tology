@@ -3,7 +3,7 @@ import type { GraphSerializerInterface } from '../../interfaces/GraphSerializerI
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPluginInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
 import { Curie } from '../quads/Curie.js';
 import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
@@ -66,15 +66,15 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
       return;
     }
 
-    const obj = node as Record<string, unknown>;
+    const object = node as Record<string, unknown>;
 
     for (const key of keys) {
-      if (obj[key] !== undefined && !Array.isArray(obj[key])) {
-        obj[key] = [obj[key]];
+      if (object[key] !== undefined && !Array.isArray(object[key])) {
+        object[key] = [object[key]];
       }
     }
 
-    for (const value of Object.values(obj)) {
+    for (const value of Object.values(object)) {
       BaseGraphSerializer.normalizeArrays(value, keys);
     }
   }
@@ -90,14 +90,16 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
     'prefix': string }> | undefined;
   protected readonly curie: CurieInterface;
 
-  protected readonly predicateResolver: PredicateResolverFnType | undefined;
+  protected readonly predicateResolver: PredicateResolverFunctionType | undefined;
 
   protected readonly vocabularies: readonly VocabularyPluginInterface[];
 
   public constructor(options?: { 'curie'?: CurieInterface;
-    'predicateResolver'?: PredicateResolverFnType | undefined;
+    'predicateResolver'?: PredicateResolverFunctionType | undefined;
     'vocabularies'?: readonly VocabularyPluginInterface[] }) {
-    this.curie = options?.curie ?? new Curie({ ...STANDARD_PREFIXES });
+    const defaultPrefixes: Record<string, string> = Object.fromEntries(Object.entries(STANDARD_PREFIXES));
+
+    this.curie = options?.curie ?? new Curie(defaultPrefixes);
     this.predicateResolver = options?.predicateResolver;
     this.vocabularies = options?.vocabularies ?? [];
   }

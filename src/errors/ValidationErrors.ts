@@ -4,6 +4,7 @@
 
 import type {
   AggregateViewType,
+  ProblemDetailsOverridesType,
   ProblemDetailsType,
   ValidationErrorType
 } from '../types/Validation.js';
@@ -133,11 +134,11 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
    *
    * Defaults: type 'https://json-tology.dev/problems/validation',
    * title 'Validation failed', status 422.
-   * Pass `overrides` to attach `instance`, retarget `status`, or customize `title`.
+   * Pass `overrides` to attach `instance`, retarget `status`, or customize `title`/`type`.
    *
-   * @param overrides - Partial overrides merged over the default payload
+   * @param overrides - Explicit field overrides merged over the default payload
    */
-  public report(overrides?: Partial<ProblemDetailsType>): ProblemDetailsType {
+  public report(overrides?: ProblemDetailsOverridesType): ProblemDetailsType {
     const count = this.items.length;
     const detail = count === 1
       ? '1 validation error'

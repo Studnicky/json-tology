@@ -35,44 +35,44 @@ export type BaseErrorOptionsType = {
 };
 
 export type CoercionErrorOptionsType
-  = Omit<BaseErrorOptionsType, 'code'> & {
+  = BaseErrorOptionsType & {
     'code': CoercionErrorCodeType;
   };
 
 export type GraphErrorOptionsType
-  = Omit<BaseErrorOptionsType, 'code'> & {
+  = BaseErrorOptionsType & {
     'code': GraphErrorCodeType;
     'pointer'?: string;
   };
 
 export type InstantiationErrorOptionsType
-  = Omit<BaseErrorOptionsType, 'code'> & {
+  = BaseErrorOptionsType & {
     'code': InstantiationErrorCodeType;
     'message'?: string;
   };
 
 export type MaterializationErrorOptionsType
-  = Omit<BaseErrorOptionsType, 'code'> & {
+  = BaseErrorOptionsType & {
     'code': MaterializationErrorCodeType;
     'message'?: string;
     'validationErrors': string[];
   };
 
 export type OwlImportErrorOptionsType
-  = Omit<BaseErrorOptionsType, 'code'> & {
+  = BaseErrorOptionsType & {
     'axiomIri': string;
     'code': OwlImportErrorCodeType;
     'subjectIri': null | string;
   };
 
 export type SchemaErrorOptionsType
-  = Omit<BaseErrorOptionsType, 'code'> & {
+  = BaseErrorOptionsType & {
     'code': SchemaErrorCodeType;
     'schemaId'?: string;
   };
 
 export type TransformErrorOptionsType
-  = Omit<BaseErrorOptionsType, 'code'> & {
+  = BaseErrorOptionsType & {
     'code': TransformErrorCodeType;
     'direction': TransformDirectionType;
     'path'?: string;
@@ -80,7 +80,7 @@ export type TransformErrorOptionsType
   };
 
 export type SchemaLoadErrorOptionsType
-  = Omit<BaseErrorOptionsType, 'code'> & {
+  = BaseErrorOptionsType & {
     'code': SchemaLoadErrorCodeType;
     'file': string;
     'reason': SchemaLoadReasonType;

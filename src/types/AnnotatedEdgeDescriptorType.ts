@@ -5,7 +5,7 @@ import type { JsonSchemaType } from '../types/Schema.js';
  * `node.schema['jt:annotatedEdge']` by `extractSemantics`.
  *
  * Captures the three authored fields before IRI resolution so that
- * `pushAnnotatedEdgeRelations` can resolve them once via `graph.resolveRefId`
+ * `pushAnnotatedEdgeRelations` can resolve them once via `graph.resolveReferenceId`
  * and build the `RelationStructureType` without re-reading `node.schema`.
  *
  * Each annotation is carried as its full authored sub-schema (a `JsonSchemaType`

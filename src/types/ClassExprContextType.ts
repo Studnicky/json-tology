@@ -10,5 +10,5 @@ export type ClassExprContextType = {
   'allClassIris': ReadonlySet<string>;
   'graph': SchemaGraphInterface;
   'reportUnsupported': (axiomIri: string, subjectIri: string) => void;
-  'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
+  'schemaDeltas': Map<string, JsonSchemaDocumentObjectType>;
 };

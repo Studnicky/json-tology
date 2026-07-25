@@ -133,7 +133,7 @@ void describe('Fix 1 — ShaclProjection: no orphaned sh:PropertyShape on abort'
   void it('success path (valid minCardinality restriction) emits at least one sh:PropertyShape', () => {
     // Sanity-check that the collect-then-commit path still emits on success.
     const schema = Compose.subClassOf(
-      Compose.minCardinality('urn:example:Doc#title', 1),
+      Compose.minimumCardinality('urn:example:Doc#title', 1),
       {
         '$id': 'urn:example:Doc',
         'properties': { 'title': { 'type': 'string' } },
@@ -311,8 +311,8 @@ void describe('Fix 3 — OwlProjection: missing onProperty throws INVALID_PREDIC
       resolvePointer(pointer) {
         return realGraph.resolvePointer(pointer);
       },
-      resolveRefId(ref) {
-        return realGraph.resolveRefId(ref);
+      resolveReferenceId(ref) {
+        return realGraph.resolveReferenceId(ref);
       },
       'rootNode': realGraph.rootNode,
       'rootSchema': realGraph.rootSchema,

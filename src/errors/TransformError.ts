@@ -13,8 +13,8 @@ import { BaseError } from './BaseError.js';
 
 export class TransformError extends BaseError {
   public readonly direction: TransformErrorOptionsType['direction'];
-  public readonly path?: string;
-  public readonly schemaId?: string;
+  public readonly path: string | undefined;
+  public readonly schemaId: string | undefined;
 
   /**
    * Create a TransformError with a direction, code, and optional context.
@@ -27,12 +27,8 @@ export class TransformError extends BaseError {
     super(message, options);
     this.name = 'TransformError';
     this.direction = options.direction;
-    if (options.schemaId !== undefined) {
-      this.schemaId = options.schemaId;
-    }
-    if (options.path !== undefined) {
-      this.path = options.path;
-    }
+    this.schemaId = options.schemaId;
+    this.path = options.path;
   }
 
   /**

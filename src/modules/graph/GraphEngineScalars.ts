@@ -29,16 +29,181 @@ import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
  * );
  * ```
  */
+/** Container-coercion helpers for `GraphEngineScalars.coerceGraphValue`. */
+class ContainerCoercion {
+  static fallback(schemaTypes: string[], coerced: unknown): unknown {
+    if (schemaTypes.includes('object') && Predicates.inferValueType(coerced) !== 'object') {
+      return {};
+    }
+    if (schemaTypes.includes('array') && !Array.isArray(coerced)) {
+      return [];
+    }
+
+    return coerced;
+  }
+
+  static nullContainer(schemaTypes: string[]): unknown {
+    if (schemaTypes.includes('object')) {
+      return {};
+    }
+    if (schemaTypes.includes('array')) {
+      return [];
+    }
+
+    return null;
+  }
+}
+
+/** Numeric-constraint error accumulation for `GraphEngineScalars.validateNumberConstraints`. */
+class NumberConstraintErrors {
+  static pushFormat(
+    path: string,
+    value: number,
+    format: string | undefined,
+    formatRegistry: FormatRegistryInterface,
+    formatAssertions: boolean,
+    errors: ValidationErrorType[]
+  ): void {
+    if (format === undefined) {
+      return;
+    }
+    const validator = formatRegistry.get(format);
+
+    if (validator !== undefined && formatAssertions && !validator(value)) {
+      errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format), { format }));
+    }
+  }
+
+  static pushMultipleOf(
+    path: string,
+    value: number,
+    multipleOf: number | undefined,
+    errors: ValidationErrorType[]
+  ): void {
+    if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
+      errors.push(BaseError.validationError(path, 'multipleOf', VALIDATION_MESSAGES.multipleOf(multipleOf), { multipleOf }));
+    }
+  }
+
+  static pushRange(
+    path: string,
+    value: number,
+    sem: SchemaGraphSemanticsType,
+    errors: ValidationErrorType[]
+  ): void {
+    const {
+      exclusiveMaximum, exclusiveMinimum, maximum, minimum, multipleOf
+    } = sem;
+
+    if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
+      errors.push(BaseError.validationError(path, 'minimum', VALIDATION_MESSAGES.minimum(minimum), { 'limit': minimum }));
+    }
+    if (maximum !== undefined && !Predicates.satisfiesMaximum(value, maximum)) {
+      errors.push(BaseError.validationError(path, 'maximum', VALIDATION_MESSAGES.maximum(maximum), { 'limit': maximum }));
+    }
+    if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(value, exclusiveMinimum)) {
+      errors.push(BaseError.validationError(path, 'exclusiveMinimum', VALIDATION_MESSAGES.exclusiveMinimum(exclusiveMinimum), { 'limit': exclusiveMinimum }));
+    }
+    if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(value, exclusiveMaximum)) {
+      errors.push(BaseError.validationError(path, 'exclusiveMaximum', VALIDATION_MESSAGES.exclusiveMaximum(exclusiveMaximum), { 'limit': exclusiveMaximum }));
+    }
+    NumberConstraintErrors.pushMultipleOf(path, value, multipleOf, errors);
+  }
+}
+
+/** String-constraint error accumulation for `GraphEngineScalars.validateStringConstraints`. */
+class StringConstraintErrors {
+  static pushContentEncoding(
+    path: string,
+    value: string,
+    contentEncoding: string | undefined,
+    contentAssertions: boolean,
+    errors: ValidationErrorType[]
+  ): void {
+    if (contentEncoding === undefined || !contentAssertions) {
+      return;
+    }
+
+    if (!Predicates.satisfiesContentEncoding(value, contentEncoding)) {
+      errors.push(BaseError.validationError(path, 'contentEncoding', VALIDATION_MESSAGES.contentEncoding(contentEncoding), { 'contentEncoding': contentEncoding }));
+    }
+  }
+
+  static pushContentMediaType(
+    path: string,
+    value: string,
+    contentMediaType: string | undefined,
+    contentEncoding: string | undefined,
+    contentAssertions: boolean,
+    errors: ValidationErrorType[]
+  ): void {
+    if (contentMediaType === undefined || !contentAssertions) {
+      return;
+    }
+
+    if (!Predicates.satisfiesContentMediaType(value, contentMediaType, contentEncoding)) {
+      errors.push(BaseError.validationError(path, 'contentMediaType', VALIDATION_MESSAGES.contentMediaType(contentMediaType), { 'contentMediaType': contentMediaType }));
+    }
+  }
+
+  static pushFormat(
+    path: string,
+    value: string,
+    format: string | undefined,
+    formatRegistry: FormatRegistryInterface,
+    formatAssertions: boolean,
+    errors: ValidationErrorType[]
+  ): void {
+    if (format === undefined) {
+      return;
+    }
+    const validator = formatRegistry.get(format);
+
+    if (validator !== undefined && formatAssertions && !validator(value)) {
+      errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format), { format }));
+    }
+  }
+
+  static pushLength(
+    path: string,
+    value: string,
+    sem: SchemaGraphSemanticsType,
+    errors: ValidationErrorType[]
+  ): void {
+    const minimum = sem.minLength;
+    const maximum = sem.maxLength;
+
+    if (minimum !== undefined && !Predicates.satisfiesMinimumLength(value, minimum)) {
+      errors.push(BaseError.validationError(path, 'minLength', VALIDATION_MESSAGES.minLength(minimum), { 'limit': minimum }));
+    }
+    if (maximum !== undefined && !Predicates.satisfiesMaximumLength(value, maximum)) {
+      errors.push(BaseError.validationError(path, 'maxLength', VALIDATION_MESSAGES.maxLength(maximum), { 'limit': maximum }));
+    }
+  }
+
+  static pushPattern(
+    path: string,
+    value: string,
+    pattern: string | undefined,
+    regexFor: (pattern: string) => RegExp,
+    errors: ValidationErrorType[]
+  ): void {
+    if (pattern !== undefined && !Predicates.satisfiesPattern(value, regexFor(pattern))) {
+      errors.push(BaseError.validationError(path, 'pattern', VALIDATION_MESSAGES.pattern(pattern), { pattern }));
+    }
+  }
+}
+
 export const GraphEngineScalars = {
   coerceGraphValue(schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown {
     if (value === null && materializeContainers && schemaTypes.length > 0) {
-      return coerceNullContainer(schemaTypes);
+      return ContainerCoercion.nullContainer(schemaTypes);
     }
 
     const coerced = Predicates.coerceValue(schemaTypes, value);
 
     if (materializeContainers) {
-      return coerceContainerFallback(schemaTypes, coerced);
+      return ContainerCoercion.fallback(schemaTypes, coerced);
     }
 
     return coerced;
@@ -59,8 +224,8 @@ export const GraphEngineScalars = {
   ): ValidationErrorType[] {
     const errors: ValidationErrorType[] = [];
 
-    pushNumberRangeErrors(path, value, sem, errors);
-    pushNumberFormatError(path, value, sem.format, formatRegistry, formatAssertions, errors);
+    NumberConstraintErrors.pushRange(path, value, sem, errors);
+    NumberConstraintErrors.pushFormat(path, value, sem.format, formatRegistry, formatAssertions, errors);
 
     return errors;
   },
@@ -76,168 +241,12 @@ export const GraphEngineScalars = {
   ): ValidationErrorType[] {
     const errors: ValidationErrorType[] = [];
 
-    pushStringLengthErrors(path, value, sem, errors);
-    pushStringPatternError(path, value, sem.pattern, regexFor, errors);
-    pushStringFormatError(path, value, sem.format, formatRegistry, formatAssertions, errors);
-    pushContentEncodingError(path, value, sem.contentEncoding, contentAssertions, errors);
-    pushContentMediaTypeError(path, value, sem.contentMediaType, sem.contentEncoding, contentAssertions, errors);
+    StringConstraintErrors.pushLength(path, value, sem, errors);
+    StringConstraintErrors.pushPattern(path, value, sem.pattern, regexFor, errors);
+    StringConstraintErrors.pushFormat(path, value, sem.format, formatRegistry, formatAssertions, errors);
+    StringConstraintErrors.pushContentEncoding(path, value, sem.contentEncoding, contentAssertions, errors);
+    StringConstraintErrors.pushContentMediaType(path, value, sem.contentMediaType, sem.contentEncoding, contentAssertions, errors);
 
     return errors;
   }
 } as const;
-
-function coerceNullContainer(schemaTypes: string[]): unknown {
-  if (schemaTypes.includes('object')) {
-    return {};
-  }
-  if (schemaTypes.includes('array')) {
-    return [];
-  }
-
-  return null;
-}
-
-function coerceContainerFallback(schemaTypes: string[], coerced: unknown): unknown {
-  if (schemaTypes.includes('object') && Predicates.inferValueType(coerced) !== 'object') {
-    return {};
-  }
-  if (schemaTypes.includes('array') && !Array.isArray(coerced)) {
-    return [];
-  }
-
-  return coerced;
-}
-
-function pushNumberRangeErrors(
-  path: string,
-  value: number,
-  sem: SchemaGraphSemanticsType,
-  errors: ValidationErrorType[]
-): void {
-  const {
-    exclusiveMaximum, exclusiveMinimum, maximum, minimum, multipleOf
-  } = sem;
-
-  if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
-    errors.push(BaseError.validationError(path, 'minimum', VALIDATION_MESSAGES.minimum(minimum), { 'limit': minimum }));
-  }
-  if (maximum !== undefined && !Predicates.satisfiesMaximum(value, maximum)) {
-    errors.push(BaseError.validationError(path, 'maximum', VALIDATION_MESSAGES.maximum(maximum), { 'limit': maximum }));
-  }
-  if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(value, exclusiveMinimum)) {
-    errors.push(BaseError.validationError(path, 'exclusiveMinimum', VALIDATION_MESSAGES.exclusiveMinimum(exclusiveMinimum), { 'limit': exclusiveMinimum }));
-  }
-  if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(value, exclusiveMaximum)) {
-    errors.push(BaseError.validationError(path, 'exclusiveMaximum', VALIDATION_MESSAGES.exclusiveMaximum(exclusiveMaximum), { 'limit': exclusiveMaximum }));
-  }
-  pushMultipleOfError(path, value, multipleOf, errors);
-}
-
-function pushMultipleOfError(
-  path: string,
-  value: number,
-  multipleOf: number | undefined,
-  errors: ValidationErrorType[]
-): void {
-  if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
-    errors.push(BaseError.validationError(path, 'multipleOf', VALIDATION_MESSAGES.multipleOf(multipleOf), { multipleOf }));
-  }
-}
-
-function pushNumberFormatError(
-  path: string,
-  value: number,
-  format: string | undefined,
-  formatRegistry: FormatRegistryInterface,
-  formatAssertions: boolean,
-  errors: ValidationErrorType[]
-): void {
-  if (format === undefined) {
-    return;
-  }
-  const validator = formatRegistry.get(format);
-
-  if (validator !== undefined && formatAssertions && !validator(value)) {
-    errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format), { format }));
-  }
-}
-
-function pushStringLengthErrors(
-  path: string,
-  value: string,
-  sem: SchemaGraphSemanticsType,
-  errors: ValidationErrorType[]
-): void {
-  const minimum = sem.minLength;
-  const maximum = sem.maxLength;
-
-  if (minimum !== undefined && !Predicates.satisfiesMinLength(value, minimum)) {
-    errors.push(BaseError.validationError(path, 'minLength', VALIDATION_MESSAGES.minLength(minimum), { 'limit': minimum }));
-  }
-  if (maximum !== undefined && !Predicates.satisfiesMaxLength(value, maximum)) {
-    errors.push(BaseError.validationError(path, 'maxLength', VALIDATION_MESSAGES.maxLength(maximum), { 'limit': maximum }));
-  }
-}
-
-function pushStringPatternError(
-  path: string,
-  value: string,
-  pattern: string | undefined,
-  regexFor: (pattern: string) => RegExp,
-  errors: ValidationErrorType[]
-): void {
-  if (pattern !== undefined && !Predicates.satisfiesPattern(value, regexFor(pattern))) {
-    errors.push(BaseError.validationError(path, 'pattern', VALIDATION_MESSAGES.pattern(pattern), { pattern }));
-  }
-}
-
-function pushStringFormatError(
-  path: string,
-  value: string,
-  format: string | undefined,
-  formatRegistry: FormatRegistryInterface,
-  formatAssertions: boolean,
-  errors: ValidationErrorType[]
-): void {
-  if (format === undefined) {
-    return;
-  }
-  const validator = formatRegistry.get(format);
-
-  if (validator !== undefined && formatAssertions && !validator(value)) {
-    errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format), { format }));
-  }
-}
-
-function pushContentEncodingError(
-  path: string,
-  value: string,
-  contentEncoding: string | undefined,
-  contentAssertions: boolean,
-  errors: ValidationErrorType[]
-): void {
-  if (contentEncoding === undefined || !contentAssertions) {
-    return;
-  }
-
-  if (!Predicates.satisfiesContentEncoding(value, contentEncoding)) {
-    errors.push(BaseError.validationError(path, 'contentEncoding', VALIDATION_MESSAGES.contentEncoding(contentEncoding), { 'contentEncoding': contentEncoding }));
-  }
-}
-
-function pushContentMediaTypeError(
-  path: string,
-  value: string,
-  contentMediaType: string | undefined,
-  contentEncoding: string | undefined,
-  contentAssertions: boolean,
-  errors: ValidationErrorType[]
-): void {
-  if (contentMediaType === undefined || !contentAssertions) {
-    return;
-  }
-
-  if (!Predicates.satisfiesContentMediaType(value, contentMediaType, contentEncoding)) {
-    errors.push(BaseError.validationError(path, 'contentMediaType', VALIDATION_MESSAGES.contentMediaType(contentMediaType), { 'contentMediaType': contentMediaType }));
-  }
-}

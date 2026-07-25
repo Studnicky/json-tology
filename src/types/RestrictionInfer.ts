@@ -229,7 +229,7 @@ export type BuildAtMostTupleType<TItem, TN extends number, TAcc extends TItem[] 
       : BuildAtMostTupleType<TItem, TN, [TItem, ...TAcc]> | TAcc;
 
 /**
- * Build a union of tuples whose lengths span `[TMin, TMax]` inclusive.
+ * Build a union of tuples whose lengths span `[TMinimum, TMaximum]` inclusive.
  *
  * Falls through to `TItem[]` when the cap is reached.
  *
@@ -250,23 +250,23 @@ export type BuildAtMostTupleType<TItem, TN extends number, TAcc extends TItem[] 
  * @group Restriction Inference
  *
  * @typeParam TItem - The element type.
- * @typeParam TMin - Inclusive lower bound for the tuple length.
- * @typeParam TMax - Inclusive upper bound for the tuple length.
+ * @typeParam TMinimum - Inclusive lower bound for the tuple length.
+ * @typeParam TMaximum - Inclusive upper bound for the tuple length.
  * @typeParam TAcc - Accumulator (do not set manually).
  */
 export type BuildBoundedTupleType<
   TItem,
-  TMin extends number,
-  TMax extends number,
+  TMinimum extends number,
+  TMaximum extends number,
   TAcc extends TItem[] = []
 >
   = TAcc['length'] extends TupleCapType
     ? TItem[]
-    : TAcc['length'] extends TMax
+    : TAcc['length'] extends TMaximum
       ? TAcc
-      : TAcc['length'] extends TMin
-        ? BuildBoundedTupleType<TItem, TMin, TMax, [TItem, ...TAcc]> | TAcc
-        : BuildBoundedTupleType<TItem, TMin, TMax, [TItem, ...TAcc]>;
+      : TAcc['length'] extends TMinimum
+        ? BuildBoundedTupleType<TItem, TMinimum, TMaximum, [TItem, ...TAcc]> | TAcc
+        : BuildBoundedTupleType<TItem, TMinimum, TMaximum, [TItem, ...TAcc]>;
 
 // ---------------------------------------------------------------------------
 // Restriction descriptor — matches the runtime shape from
@@ -277,11 +277,10 @@ type RestrictionShapeType<
   TKind extends string,
   TProperty extends string,
   TValue
-> = {
-  readonly 'kind': TKind;
-  readonly 'onProperty': TProperty;
-  readonly 'value': TValue;
-};
+>
+  = { readonly 'kind': TKind }
+  & { readonly 'onProperty': TProperty }
+  & { readonly 'value': TValue };
 
 // ---------------------------------------------------------------------------
 // Property element extraction — pulls element type out of an array property.
@@ -299,8 +298,8 @@ type NarrowPropertyType<TProps, TKey extends string, TNarrow>
     : TProps;
 
 type ApplyOneRestrictionType<TProps, TRestriction>
-  = TRestriction extends RestrictionShapeType<'hasValue', infer TProp extends string, infer TVal>
-    ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>, TVal>
+  = TRestriction extends RestrictionShapeType<'hasValue', infer TProp extends string, infer TValue>
+    ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>, TValue>
     : TRestriction extends RestrictionShapeType<'cardinality', infer TProp extends string, infer TN>
       ? TN extends number
         ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>,

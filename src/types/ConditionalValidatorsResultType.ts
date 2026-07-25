@@ -1,4 +1,5 @@
-import type { OptionalValidateWithErrorsFnType } from '../types/Validation.js';
+import type { OptionalValidateWithErrorsFunctionType } from '../types/Validation.js';
+import type { IdentityType } from './IdentityType.js';
 
 /**
  * Conditional validators compiled from `if`, `then`, and `else` schema keywords.
@@ -23,8 +24,8 @@ import type { OptionalValidateWithErrorsFnType } from '../types/Validation.js';
  * @see {@link CompositionValidatorsResultType}
  * @group Validation
  */
-export type ConditionalValidatorsResultType = {
-  'elseValidator': OptionalValidateWithErrorsFnType;
-  'ifValidator': OptionalValidateWithErrorsFnType;
-  'thenValidator': OptionalValidateWithErrorsFnType;
-};
+export type ConditionalValidatorsResultType = IdentityType<{
+  'elseValidator': OptionalValidateWithErrorsFunctionType;
+  'ifValidator': OptionalValidateWithErrorsFunctionType;
+  'thenValidator': OptionalValidateWithErrorsFunctionType;
+}>;

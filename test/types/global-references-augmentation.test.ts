@@ -20,7 +20,7 @@
 import type {
   CanonicalShapeType, InferType
 } from '../../src/types/index.js';
-import type { RefNotFoundType } from '../../src/types/TypeErrors.js';
+import type { ReferenceNotFoundType } from '../../src/types/TypeErrors.js';
 
 type AssertAssignable<TSource, TTarget>
   = [TSource] extends [TTarget] ? true : false;
@@ -80,7 +80,7 @@ assert<AssertAssignable<ChatMessage['text'], string>>();
 // Negative: it must NOT be the unresolved brand that an unregistered $ref
 // would produce.
 assert<AssertAssignable<
-  ChatMessage['channel'] extends RefNotFoundType<string> ? false : true,
+  ChatMessage['channel'] extends ReferenceNotFoundType<string> ? false : true,
   true
 >>();
 

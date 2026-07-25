@@ -2,15 +2,36 @@
  * Diff operation types — expressed as json-tology schemas and plain types.
  */
 
-export type SetOpType = {
-  'op': 'set';
-  'path': string;
-  'value': unknown;
-};
+import type { InferType } from './Schema.js';
 
-export type DelOpType = {
-  'op': 'delete';
-  'path': string;
-};
+export const SET_OP_SCHEMA = {
+  'properties': {
+    'op': { 'const': 'set' },
+    'path': { 'type': 'string' },
+    'value': true
+  },
+  'required': [
+    'op',
+    'path',
+    'value'
+  ],
+  'type': 'object'
+} as const;
+
+export type SetOpType = InferType<typeof SET_OP_SCHEMA>;
+
+export const DEL_OP_SCHEMA = {
+  'properties': {
+    'op': { 'const': 'delete' },
+    'path': { 'type': 'string' }
+  },
+  'required': [
+    'op',
+    'path'
+  ],
+  'type': 'object'
+} as const;
+
+export type DelOpType = InferType<typeof DEL_OP_SCHEMA>;
 
 export type DiffOpType = DelOpType | SetOpType;

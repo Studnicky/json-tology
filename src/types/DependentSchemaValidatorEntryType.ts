@@ -1,4 +1,5 @@
-import type { ValidateWithErrorsFnType } from '../types/Validation.js';
+import type { ValidateWithErrorsFunctionType } from '../types/Validation.js';
+import type { IdentityType } from './IdentityType.js';
 
 /**
  * A dependent-schema trigger entry pairing a property name with its validator.
@@ -22,7 +23,7 @@ import type { ValidateWithErrorsFnType } from '../types/Validation.js';
  * @see {@link DependentSchemaValidatorsResultType}
  * @group Validation
  */
-export type DependentSchemaValidatorEntryType = {
+export type DependentSchemaValidatorEntryType = IdentityType<{
   'trigger': string;
-  'validator': ValidateWithErrorsFnType;
-};
+  'validator': ValidateWithErrorsFunctionType;
+}>;

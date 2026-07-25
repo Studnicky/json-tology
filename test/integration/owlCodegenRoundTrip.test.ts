@@ -210,7 +210,7 @@ void describe('OwlCodegen round-trip integration', () => {
   void it('threads the reference map so cross-class $refs resolve to sibling types (not unknown)', () => {
     // Class A references class B by absolute IRI. The generated per-class type
     // must thread the schema-set reference map so `A['link']` resolves to B's
-    // inferred shape. If it degraded to `unknown` or `RefNotFoundType`, the
+    // inferred shape. If it degraded to `unknown` or `ReferenceNotFoundType`, the
     // appended compile-time proof would fail to compile and fail this test —
     // guarding the ontology → TypeScript → (resolved types) round-trip.
     const schemaB = {

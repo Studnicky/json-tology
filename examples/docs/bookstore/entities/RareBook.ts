@@ -7,7 +7,7 @@ import { PrintBookSchema } from './PrintBook.js';
  *
  * Demonstrates `Compose.subClassOf` chained with restriction descriptors:
  *
- *   - `Compose.maxCardinality(authors, 1)`   — a rare book is authored by at
+ *   - `Compose.maximumCardinality(authors, 1)`   — a rare book is authored by at
  *     most one person (the OWL semantic; JSON Schema's `minItems: 1` from the
  *     parent still requires at least one).
  *   - `Compose.someValuesFrom(authors, AuthorName)` — at least one value of
@@ -25,7 +25,7 @@ import { PrintBookSchema } from './PrintBook.js';
 const AUTHORS_PROP = 'urn:bookstore:Book#authors';
 
 export const RareBookSchema = Compose.subClassOf(
-  Compose.maxCardinality(AUTHORS_PROP, 1),
+  Compose.maximumCardinality(AUTHORS_PROP, 1),
   Compose.subClassOf(
     Compose.someValuesFrom(AUTHORS_PROP, AuthorNameSchema.$id),
     Compose.subClassOf(PrintBookSchema, {

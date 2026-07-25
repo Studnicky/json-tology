@@ -95,68 +95,6 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
   ]
 ]);
 
-// ---------------------------------------------------------------------------
-// Empty fragment factory
-// ---------------------------------------------------------------------------
-
-function emptyFragment(): OwlImportFragmentType {
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    'schemaDeltas': new Map()
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Characteristic record accumulator
-// ---------------------------------------------------------------------------
-
-/**
- * Attempt to record a characteristic for the relation's source property.
- * Skips when the source IRI is not a known property subject (even after
- * curie compaction), reporting it as unsupported.
- */
-function recordCharacteristic(options: RecordCharacteristicOptionsType): void {
-  const {
-    characteristicName,
-    characteristicTarget,
-    ctx,
-    fragment,
-    propertyIri,
-    seen
-  } = options;
-
-  if (!ctx.allPropertyIris.has(propertyIri)) {
-    const compacted = ctx.curie.compact(propertyIri);
-
-    if (!ctx.allPropertyIris.has(compacted)) {
-      ctx.reportUnsupported(characteristicTarget, propertyIri);
-
-      return;
-    }
-  }
-
-  const key = `${propertyIri}::${characteristicName}`;
-
-  if (seen.has(key)) {
-    return;
-  }
-  seen.add(key);
-
-  const mutableCharacteristics = fragment.characteristics as Array<{
-    'characteristic': string;
-    'propertyIri': string;
-  }>;
-
-  mutableCharacteristics.push({
-    'characteristic': characteristicName,
-    'propertyIri': propertyIri
-  });
-}
-
 /**
  * Process OWL 2 property characteristic axioms (functional, transitive, symmetric,
  * etc.) and return a partial import fragment.
@@ -193,11 +131,11 @@ function recordCharacteristic(options: RecordCharacteristicOptionsType): void {
  * @group importDispatch
  */
 export class Characteristics {
-  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-    const fragment = emptyFragment();
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+    const fragment = Characteristics.emptyFragment();
     const seen = new Set<string>();
 
-    for (const relation of ctx.graph.allRelations()) {
+    for (const relation of context.graph.allRelations()) {
       if (relation.predicate !== RDF.type) {
         continue;
       }
@@ -212,10 +150,10 @@ export class Characteristics {
         continue;
       }
 
-      recordCharacteristic({
+      Characteristics.recordCharacteristic({
         characteristicName,
         'characteristicTarget': relation.target,
-        ctx,
+        'ctx': context,
         fragment,
         'propertyIri': relation.source.id,
         seen
@@ -223,5 +161,60 @@ export class Characteristics {
     }
 
     return fragment;
+  }
+
+  /** Return an empty OwlImportFragmentType with all buckets initialised. */
+  private static emptyFragment(): OwlImportFragmentType {
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      'schemaDeltas': new Map()
+    };
+  }
+
+  /**
+   * Attempt to record a characteristic for the relation's source property.
+   * Skips when the source IRI is not a known property subject (even after
+   * curie compaction), reporting it as unsupported.
+   */
+  private static recordCharacteristic(options: RecordCharacteristicOptionsType): void {
+    const {
+      characteristicName,
+      characteristicTarget,
+      'ctx': context,
+      fragment,
+      propertyIri,
+      seen
+    } = options;
+
+    if (!context.allPropertyIris.has(propertyIri)) {
+      const compacted = context.curie.compact(propertyIri);
+
+      if (!context.allPropertyIris.has(compacted)) {
+        context.reportUnsupported(characteristicTarget, propertyIri);
+
+        return;
+      }
+    }
+
+    const key = `${propertyIri}::${characteristicName}`;
+
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+
+    const mutableCharacteristics = fragment.characteristics as Array<{
+      'characteristic': string;
+      'propertyIri': string;
+    }>;
+
+    mutableCharacteristics.push({
+      'characteristic': characteristicName,
+      'propertyIri': propertyIri
+    });
   }
 }

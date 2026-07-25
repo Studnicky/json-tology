@@ -17,13 +17,13 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaCompilerPlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
 import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistryInterface.js';
 import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContextType.js';
-import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
+import type { ValidateWithErrorsFunctionType } from '../../src/types/Validation.js';
 
 // ---------------------------------------------------------------------------
 // Stub context
 // ---------------------------------------------------------------------------
 
-const passValidator: ValidateWithErrorsFnType = (value) => {
+const passValidator: ValidateWithErrorsFunctionType = (value) => {
   return {
     'valid': true,
     'value': value

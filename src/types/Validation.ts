@@ -9,7 +9,7 @@ import type { ExecContextType } from '../types/ExecContextType.js';
 
 import type { PatternPropValidatorEntryType } from '../types/PatternPropValidatorEntryType.js';
 import type { DependentSchemaValidatorEntryType } from '../types/DependentSchemaValidatorEntryType.js';
-import type { RefTargetType } from '../types/RefTargetType.js';
+import type { ReferenceTargetType } from '../types/ReferenceTargetType.js';
 
 /**
  * Result of a boolean coercion attempt — `undefined` when the value is unrecognised.
@@ -169,6 +169,43 @@ export type ProblemDetailsType = {
 };
 
 /**
+ * Caller-supplied overrides accepted by `ValidationErrors.report()` — the
+ * subset of {@link ProblemDetailsType} fields a caller may retarget: `instance`,
+ * `status`, `title`, and `type`. `detail` and `errors` are always computed by
+ * `report()` and are not overridable.
+ *
+ * @category Validation
+ * @since 0.1.0
+ * @see {@link ProblemDetailsType}
+ * @group Validation
+ */
+export type ProblemDetailsOverridesType
+  = | {
+    'instance': string;
+    'status'?: number;
+    'title'?: string;
+    'type'?: string;
+  }
+  | {
+    'instance'?: string;
+    'status': number;
+    'title'?: string;
+    'type'?: string;
+  }
+  | {
+    'instance'?: string;
+    'status'?: number;
+    'title': string;
+    'type'?: string;
+  }
+  | {
+    'instance'?: string;
+    'status'?: number;
+    'title'?: string;
+    'type': string;
+  };
+
+/**
  * The TypeScript type inferred from `VALIDATION_ERROR_SCHEMA`.
  *
  * @remarks
@@ -190,7 +227,7 @@ export type ProblemDetailsType = {
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link ValidateWithErrorsFnType}
+ * @see {@link ValidateWithErrorsFunctionType}
  * @group Validation
  */
 export type ValidationErrorType = InferType<typeof VALIDATION_ERROR_SCHEMA>;
@@ -211,13 +248,22 @@ export type ValidationErrorType = InferType<typeof VALIDATION_ERROR_SCHEMA>;
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link ValidateWithErrorsFnType}
+ * @see {@link ValidateWithErrorsFunctionType}
  * @group Validation
  */
-export type ValidateWithErrorsResultType = {
-  'valid': boolean;
-  'value': unknown;
-};
+export const VALIDATE_WITH_ERRORS_RESULT_SCHEMA = {
+  'properties': {
+    'valid': { 'type': 'boolean' },
+    'value': {}
+  },
+  'required': [
+    'valid',
+    'value'
+  ],
+  'type': 'object'
+} as const;
+
+export type ValidateWithErrorsResultType = InferType<typeof VALIDATE_WITH_ERRORS_RESULT_SCHEMA>;
 
 /**
  * The compiled validator function signature used throughout the validation engine.
@@ -230,20 +276,20 @@ export type ValidateWithErrorsResultType = {
  *
  * @example
  * ```ts
- * const validate: ValidateWithErrorsFnType = registry.compile(schema);
+ * const validate: ValidateWithErrorsFunctionType = registry.compile(schema);
  * const ctx: ExecContextType = { errors: [], collectErrors: true, applyDefaults: false, coerce: false, ignoreAdditionalProperties: false, synthesizeDefaults: false, stripUnknown: false, refStack: new Set(), dynamicScope: [], evaluatedItems: undefined, evaluatedProperties: undefined, depth: 0, maxDepth: 100, trackEvaluated: false };
  * const { valid } = validate(data, '', ctx);
  * ```
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link OptionalValidateWithErrorsFnType}
+ * @see {@link OptionalValidateWithErrorsFunctionType}
  * @group Validation
  */
-export type ValidateWithErrorsFnType = (
+export type ValidateWithErrorsFunctionType = (
   value: unknown,
   path: string,
-  ctx: ExecContextType
+  context: ExecContextType
 ) => ValidateWithErrorsResultType;
 
 /**
@@ -256,15 +302,15 @@ export type ValidateWithErrorsFnType = (
  *
  * @example
  * ```ts
- * const thenValidator: OptionalValidateWithErrorsFnType = hasThen ? compileFn(thenSchema) : undefined;
+ * const thenValidator: OptionalValidateWithErrorsFunctionType = hasThen ? compileFn(thenSchema) : undefined;
  * ```
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link ValidateWithErrorsFnType}
+ * @see {@link ValidateWithErrorsFunctionType}
  * @group Validation
  */
-export type OptionalValidateWithErrorsFnType = undefined | ValidateWithErrorsFnType;
+export type OptionalValidateWithErrorsFunctionType = undefined | ValidateWithErrorsFunctionType;
 
 /**
  * A map from property name to its compiled validator function.
@@ -283,7 +329,7 @@ export type OptionalValidateWithErrorsFnType = undefined | ValidateWithErrorsFnT
  * @since 0.1.0
  * @group Validation
  */
-export type PropValidatorsMapType = Map<string, ValidateWithErrorsFnType>;
+export type PropValidatorsMapType = Map<string, ValidateWithErrorsFunctionType>;
 
 /**
  * A map from property name to its default value descriptor.
@@ -445,16 +491,16 @@ export type DependentSchemaValidatorsResultType = DependentSchemaValidatorEntryT
  *
  * @example
  * ```ts
- * const result: BranchRefResultType = resolver.resolve(ref);
+ * const result: BranchReferenceResultType = resolver.resolve(ref);
  * if (result === undefined) { errors.push({ keyword: '$ref', ... }); }
  * ```
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link BranchRefResultType}
+ * @see {@link BranchReferenceResultType}
  * @group Validation
  */
-export type BranchRefResultType = RefTargetType | undefined;
+export type BranchReferenceResultType = ReferenceTargetType | undefined;
 
 /**
  * Filtered `dependentRequired` entries — only those with non-empty value arrays.

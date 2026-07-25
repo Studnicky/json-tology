@@ -1,14 +1,24 @@
+import type { InferType } from '../types/Schema.js';
 import type { JsonSchemaType } from '../types/Schema.js';
 import type { SchemaLoadResultType } from '../types/Loader.js';
+
+export const SNAPSHOT_PROVENANCE_SCHEMA = {
+  'properties': {
+    'fetchedAt': { 'type': 'string' },
+    'source': { 'type': 'string' }
+  },
+  'required': [
+    'fetchedAt',
+    'source'
+  ],
+  'type': 'object'
+} as const;
 
 /**
  * Per-schema provenance record produced by {@link JsonTology.prefetch}. Records
  * where the schema was fetched from and the wall-clock fetch time.
  */
-export type SnapshotProvenanceType = {
-  'fetchedAt': string;
-  'source': string;
-};
+export type SnapshotProvenanceType = InferType<typeof SNAPSHOT_PROVENANCE_SCHEMA>;
 
 /**
  * Result of a {@link JsonTology.prefetch} call: a bundle of schemas keyed by `$id`,

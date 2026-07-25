@@ -43,6 +43,7 @@ import type {
   AnyTransformStageType,
   TransformStageType
 } from '../../types/TransformStage.js';
+import type { PartialCanonicalShapeType } from '../../types/PartialCanonicalShapeType.js';
 
 
 // ---------------------------------------------------------------------------
@@ -50,6 +51,38 @@ import type {
 // ---------------------------------------------------------------------------
 
 const transformRegistry = new WeakMap<object, TransformFnsType>();
+
+// ---------------------------------------------------------------------------
+// Composed chain stages — real class methods instead of per-call closures
+// ---------------------------------------------------------------------------
+
+class ComposedTransformStages implements TransformFnsType {
+  readonly #stages: ReadonlyArray<TransformStageType<unknown, unknown>>;
+
+  constructor(stages: ReadonlyArray<TransformStageType<unknown, unknown>>) {
+    this.#stages = stages;
+  }
+
+  decode(value: unknown): unknown {
+    const result = this.#stages.reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
+      const decoded = transform.decode(accumulator);
+
+      return decoded;
+    }, value);
+
+    return result;
+  }
+
+  encode(value: unknown): unknown {
+    const result = [...this.#stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
+      const encoded = transform.encode(accumulator);
+
+      return encoded;
+    }, value);
+
+    return result;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Transform class
@@ -118,32 +151,13 @@ export class Transform {
    */
   public static chain<
     TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
-    TStages extends readonly AnyTransformStageType[]
+    TStages extends AnyTransformStageType[]
   >(
     schema: TSchema,
     transforms: TStages & ValidateChainType<TStages, CanonicalShapeType<TSchema>>
   ): TransformedType<TSchema, ChainWireType<TStages>> {
-    const stages = transforms as ReadonlyArray<TransformStageType<unknown, unknown>>;
-    const composed: TransformFnsType = {
-      'decode': (value: unknown): unknown => {
-        const result = stages.reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
-          const decoded = transform.decode(accumulator);
-
-          return decoded;
-        }, value);
-
-        return result;
-      },
-      'encode': (value: unknown): unknown => {
-        const result = [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
-          const encoded = transform.encode(accumulator);
-
-          return encoded;
-        }, value);
-
-        return result;
-      }
-    };
+    const stages = transforms as unknown as ReadonlyArray<TransformStageType<unknown, unknown>>;
+    const composed = new ComposedTransformStages(stages);
 
     transformRegistry.set(schema, composed);
 
@@ -185,7 +199,7 @@ export class Transform {
       // Both sides speak the brand-free structural canonical (`CanonicalShapeType`):
       // `decode` produces plain values (no per-leaf `Brand.cast()`), and `validate`
       // — run by `instantiate` — is the boundary that certifies the branded form.
-      'decode': (raw: TWire) => Partial<CanonicalShapeType<TSchema, TReferences>>;
+      'decode': (raw: TWire) => PartialCanonicalShapeType<TSchema, TReferences>;
       'encode': (value: CanonicalShapeType<TSchema, TReferences>) => TWire;
     }
   ): TransformedType<TSchema, TWire> {

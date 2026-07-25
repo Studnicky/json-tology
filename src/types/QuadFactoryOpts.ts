@@ -7,9 +7,8 @@
  */
 
 import type { CurieInterface } from '../interfaces/CurieInterface.js';
-import type {
-  DefaultGraph, NamedNode
-} from '@rdfjs/types';
+import type { IdentityType } from './IdentityType.js';
+import type { QuadOptionsType } from './QuadOptionsType.js';
 
 /**
  * Options for `QuadFactory.iri(value, options?)`.
@@ -17,9 +16,9 @@ import type {
  * Provide `curie` to expand compact IRIs (`prefix:local`) against a
  * shared `CurieInterface` instance.
  */
-export type QuadFactoryIriOptsType = {
+export type QuadFactoryIriOptionsType = IdentityType<{
   'curie'?: CurieInterface | undefined;
-};
+}>;
 
 /**
  * Options for `QuadFactory.literal(value, datatype, options?)`.
@@ -27,7 +26,7 @@ export type QuadFactoryIriOptsType = {
  * Provide `curie` to expand compact CURIE datatypes against a shared
  * `CurieInterface` instance.
  */
-export type QuadFactoryLiteralOptsType = {
+export type QuadFactoryLiteralOptionsType = IdentityType<{
   'curie'?: CurieInterface | undefined;
   /**
    * BCP47 language tag. When a non-empty string is supplied the literal is
@@ -35,7 +34,7 @@ export type QuadFactoryLiteralOptsType = {
    * `datatype` argument is ignored.
    */
   'language'?: string | undefined;
-};
+}>;
 
 /**
  * Options for `QuadFactory.quad(subject, predicate, object, options?)`.
@@ -44,16 +43,13 @@ export type QuadFactoryLiteralOptsType = {
  * - `graph` sets the rdf/js graph term on the produced quad
  *   (defaults to the default-graph singleton).
  */
-export type QuadFactoryQuadOptsType = {
-  'curie'?: CurieInterface | undefined;
-  'graph'?: DefaultGraph | NamedNode | undefined;
-};
+export type QuadFactoryQuadOptionsType = IdentityType<QuadOptionsType>;
 
 /**
  * Options for `QuadFactory.emitLiterals` /
  * `QuadFactory.emitConstraintLiteral` — shared shape across the
  * literal-emission helpers.
  */
-export type QuadFactoryEmitOptsType = {
+export type QuadFactoryEmitOptionsType = IdentityType<{
   'curie'?: CurieInterface | undefined;
-};
+}>;

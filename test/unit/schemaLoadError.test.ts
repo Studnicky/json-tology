@@ -130,19 +130,19 @@ void describe('SchemaLoadError — serialization', { 'concurrency': true }, () =
   });
 });
 
-// Test 3: RefResolutionLoader non-string $id → SchemaLoadError
-void describe('RefResolutionLoader — non-string $id → SchemaLoadError', { 'concurrency': true }, () => {
+// Test 3: ReferenceResolutionLoader non-string $id → SchemaLoadError
+void describe('ReferenceResolutionLoader — non-string $id → SchemaLoadError', { 'concurrency': true }, () => {
   void it('loadRootIds throws SchemaLoadError with reason missing-id when loader returns schema with non-string $id', async () => {
-    // Import RefResolutionLoader and SchemaRegistry here
-    const { RefResolutionLoader } = await import('../../src/modules/registry/RefResolutionLoader.js');
+    // Import ReferenceResolutionLoader and SchemaRegistry here
+    const { ReferenceResolutionLoader } = await import('../../src/modules/registry/ReferenceResolutionLoader.js');
     const { SchemaRegistry } = await import('../../src/modules/registry/SchemaRegistry.js');
 
     const registry = new SchemaRegistry();
-    const refLoader = new RefResolutionLoader(registry);
+    const referenceLoader = new ReferenceResolutionLoader(registry);
 
     await assert.rejects(
       () => {
-        return refLoader.loadRootIds(['https://ex/NullId'], async (_iri) => {
+        return referenceLoader.loadRootIds(['https://ex/NullId'], async (_iri) => {
           return {
             '$id': 123 as unknown as string,
             'type': 'string'

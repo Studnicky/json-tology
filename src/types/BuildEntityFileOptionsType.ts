@@ -1,4 +1,23 @@
+import type { InferType } from './Schema.js';
 import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
+
+export const BuildEntityFileOptionsTypeSchema = {
+  'properties': {
+    'iri': { 'type': 'string' },
+    'name': { 'type': 'string' },
+    'refsName': { 'type': 'string' },
+    'sourceLabel': { 'type': 'string' },
+    'ts': { 'type': 'string' }
+  },
+  'required': [
+    'iri',
+    'name',
+    'refsName',
+    'sourceLabel',
+    'ts'
+  ],
+  'type': 'object'
+} as const;
 
 /**
  * Options object for the {@link buildEntityFileSource} helper.
@@ -17,17 +36,5 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  * @see {@link OwlCodegen.toRegistryFiles}
  * @group OWL Codegen
  */
-export type BuildEntityFileOptionsType = {
-  /** Full IRI of the OWL class. */
-  'iri': string;
-  /** PascalCase identifier for this class. */
-  'name': string;
-  /** Name of the schema-set reference-map type exported by `index.ts`. */
-  'refsName': string;
-  /** The JSON Schema object for this class. */
-  'schema': JsonSchemaDocumentObjectType;
-  /** Human-readable source label (file path or IRI), or empty string. */
-  'sourceLabel': string;
-  /** ISO-8601 timestamp string. */
-  'ts': string;
-};
+export type BuildEntityFileOptionsType = InferType<typeof BuildEntityFileOptionsTypeSchema>
+  & { 'schema': JsonSchemaDocumentObjectType };

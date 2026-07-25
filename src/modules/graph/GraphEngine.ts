@@ -7,6 +7,7 @@ import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInt
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { EffectiveOptionsType } from '../../types/EffectiveOptionsType.js';
+import type { GraphEngineRestOptionsType } from '../../types/GraphEngineRestOptionsType.js';
 
 import { DataType } from '../data/DataType.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
@@ -32,10 +33,31 @@ import type { JsonSchemaDocumentType } from '../../types/Schema.js';
  * @group Graph
  */
 export class GraphEngine implements GraphEngineInterface {
+  /**
+   * Merge caller-supplied options over `DEFAULT_OPTIONS`, omitting `lookupGraph`/
+   * `lookupSchema` entirely (rather than setting them to `undefined`) when absent,
+   * since `EffectiveOptionsType` is compiled under `exactOptionalPropertyTypes`.
+   */
+  private static buildEffectiveOptions(rest: GraphEngineRestOptionsType): EffectiveOptionsType {
+    return {
+      'allowAdditionalProperties': rest.allowAdditionalProperties ?? DEFAULT_OPTIONS.allowAdditionalProperties,
+      'applyDefaults': rest.applyDefaults ?? DEFAULT_OPTIONS.applyDefaults,
+      'castTypes': rest.castTypes ?? DEFAULT_OPTIONS.castTypes,
+      'collectErrors': rest.collectErrors ?? DEFAULT_OPTIONS.collectErrors,
+      'enforceSchemaProperties': rest.enforceSchemaProperties ?? DEFAULT_OPTIONS.enforceSchemaProperties,
+      ...(rest.lookupGraph !== undefined && { 'lookupGraph': rest.lookupGraph }),
+      ...(rest.lookupSchema !== undefined && { 'lookupSchema': rest.lookupSchema }),
+      'materializeContainers': rest.materializeContainers ?? DEFAULT_OPTIONS.materializeContainers,
+      'maxSchemaDepth': rest.maxSchemaDepth ?? DEFAULT_OPTIONS.maxSchemaDepth,
+      'removeAdditionalProperties': rest.removeAdditionalProperties ?? DEFAULT_OPTIONS.removeAdditionalProperties,
+      'synthesizeDefaults': rest.synthesizeDefaults ?? DEFAULT_OPTIONS.synthesizeDefaults
+    };
+  }
   private readonly customKeywords: KeywordDefinitionType[];
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
   private readonly logger: LoggerInterface;
+
   private readonly options: EffectiveOptionsType;
 
   public constructor(public readonly rootSchema: JsonSchemaDocumentType, options: GraphEngineOptionsType = {}) {
@@ -46,10 +68,7 @@ export class GraphEngine implements GraphEngineInterface {
     this.formatRegistry = formatRegistry ?? FormatRegistry.builtin();
     this.customKeywords = keywords ?? [];
     this.logger = logger ?? SILENT_LOGGER;
-    this.options = {
-      ...DEFAULT_OPTIONS,
-      ...rest
-    };
+    this.options = GraphEngine.buildEffectiveOptions(rest);
     this.logger.trace(LogScope.format('GraphEngine', 'constructor', `engine built for ${GraphEngineSupport.schemaId(rootSchema) ?? '<anonymous>'}`));
   }
 

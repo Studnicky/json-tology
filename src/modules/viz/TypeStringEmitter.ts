@@ -6,6 +6,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface
 import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from '../../types/SchemaGraph.js';
+import { VALID_IDENTIFIER } from '../../constants/PATH.js';
 
 /**
  * Emits TypeScript type definitions derived from a schema graph.
@@ -68,7 +69,7 @@ export class TypeStringEmitter {
    */
   private formatKey(key: string): string {
     // A valid JS identifier: starts with letter/$/_; followed by alphanumeric/$/_
-    if (/^[A-Za-z_$][\w$]*$/u.test(key)) {
+    if (VALID_IDENTIFIER.test(key)) {
       return key;
     }
 

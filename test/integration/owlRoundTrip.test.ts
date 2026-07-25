@@ -447,9 +447,9 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
     const PROP_IRI = `${CLASS_IRI}#items`;
 
     const schema = Compose.subClassOf(
-      Compose.maxCardinality(PROP_IRI, 2),
+      Compose.maximumCardinality(PROP_IRI, 2),
       Compose.subClassOf(
-        Compose.minCardinality(PROP_IRI, 1),
+        Compose.minimumCardinality(PROP_IRI, 1),
         {
           '$id': CLASS_IRI,
           'type': 'object' as const

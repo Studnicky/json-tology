@@ -1,7 +1,7 @@
-import type { ShaclEmitBaseArgsType } from './ShaclEmitBaseArgsType.js';
+import type { ShaclEmitBaseArgumentsType } from './ShaclEmitBaseArgumentsType.js';
 
 /** Arguments for emitPropertyShape. */
-export type EmitPropertyShapeArgsType = ShaclEmitBaseArgsType & {
+export type EmitPropertyShapeArgumentListType = ShaclEmitBaseArgumentsType & {
   'bnodeId': string;
   'classId': string;
   'overridePathClassId': string | undefined;

@@ -598,7 +598,10 @@ import {
             'baseIri': 'urn:test:',
             'enableStrictGraph': false
           });
-          const result = tology.materializer.execute(ConfigSchema, inp, { 'baseIri': 'https://example.io' });
+          const result = tology.materializer.execute(ConfigSchema, {
+            'baseIri': 'https://example.io',
+            'data': inp
+          });
 
           assert.equal(result.valid, valid);
           if (errs) {
@@ -614,7 +617,10 @@ import {
           'baseIri': 'urn:test:',
           'enableStrictGraph': false
         });
-        const ok = tology.materializer.execute(ConfigSchema, { 'name': 'test' }, { 'baseIri': 'https://example.io' });
+        const ok = tology.materializer.execute(ConfigSchema, {
+          'baseIri': 'https://example.io',
+          'data': { 'name': 'test' }
+        });
 
         assert.equal((ok.value as Record<string, unknown>).name, 'test');
         assert.ok(Array.isArray(ok.abox));

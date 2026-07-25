@@ -1,3 +1,5 @@
+import type { IdentityType } from './IdentityType.js';
+
 /**
  * A single stage in a {@link Transform.chain} chain.
  *
@@ -6,10 +8,10 @@
  * `TIn`. Compile-time pairwise validation is performed by
  * `ValidateChainType` in `src/types/Transform.js`.
  */
-export type TransformStageType<TIn, TOut> = {
+export type TransformStageType<TIn, TOut> = IdentityType<{
   'decode': (input: TIn) => TOut;
   'encode': (output: TOut) => TIn;
-};
+}>;
 
 /**
  * Bivariant-friendly upper bound for any chain stage. Function parameters
@@ -20,7 +22,7 @@ export type TransformStageType<TIn, TOut> = {
  * `TIn` / `TOut`, which lets generic constraints accept arbitrary
  * specialisations without resorting to `any`.
  */
-export type AnyTransformStageType = {
+export type AnyTransformStageType = IdentityType<{
   'decode': (input: never) => unknown;
   'encode': (output: never) => unknown;
-};
+}>;

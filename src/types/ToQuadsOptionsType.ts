@@ -1,5 +1,6 @@
 import type { AnnotationEmitModeType } from './AnnotationEmitModeType.js';
-import type { SkolemizeFnType } from './SkolemizeFnType.js';
+import type { IdentityType } from './IdentityType.js';
+import type { SkolemizeFunctionType } from './SkolemizeFunctionType.js';
 
 /**
  * Per-call options accepted by `toQuads`.
@@ -20,8 +21,8 @@ import type { SkolemizeFnType } from './SkolemizeFnType.js';
  * `graphIri` — when set, every emitted quad has its `graph` field stamped
  * with this IRI.
  */
-export type ToQuadsOptionsType = {
+export type ToQuadsOptionsType = IdentityType<{
   'annotationEmitMode'?: AnnotationEmitModeType | undefined;
   'graphIri'?: string | undefined;
-  'iriFor'?: SkolemizeFnType | string | undefined;
-};
+  'iriFor'?: SkolemizeFunctionType | string | undefined;
+}>;

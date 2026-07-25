@@ -18,7 +18,18 @@
  * @see {@link PatternPropValidatorEntryType}
  * @group Validation
  */
-export type KeyPatternCheckResultType = {
-  'matched': boolean;
-  'valid': boolean;
-};
+import type { InferType } from './Schema.js';
+
+const _KeyPatternCheckResultSchema = {
+  'properties': {
+    'matched': { 'type': 'boolean' },
+    'valid': { 'type': 'boolean' }
+  },
+  'required': [
+    'matched',
+    'valid'
+  ],
+  'type': 'object'
+} as const;
+
+export type KeyPatternCheckResultType = InferType<typeof _KeyPatternCheckResultSchema>;

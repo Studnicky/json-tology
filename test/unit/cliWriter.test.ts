@@ -67,8 +67,8 @@ void describe('CliWriter — Good: normal writes', () => {
     try {
       const cliWriter = new CliWriter();
 
-      cliWriter.err('something went wrong');
-      cliWriter.err('and again');
+      cliWriter.error('something went wrong');
+      cliWriter.error('and again');
 
       assert.strictEqual(capturedErr.length, 2);
       assert.strictEqual(capturedErr[0], 'something went wrong\n');
@@ -101,7 +101,7 @@ void describe('CliWriter — Good: normal writes', () => {
       const cliWriter = new CliWriter();
 
       cliWriter.out('stdout-message');
-      cliWriter.err('stderr-message');
+      cliWriter.error('stderr-message');
       cliWriter.out('stdout-message-2');
 
       assert.strictEqual(capturedOut.length, 2);
@@ -150,7 +150,7 @@ void describe('CliWriter — Bad: edge inputs do not throw', () => {
         cliWriter.out('');
       });
       assert.doesNotThrow(() => {
-        cliWriter.err('');
+        cliWriter.error('');
       });
       assert.strictEqual(capturedOut[0], '\n');
       assert.strictEqual(capturedErr[0], '\n');
@@ -185,7 +185,7 @@ void describe('CliWriter — Bad: edge inputs do not throw', () => {
         cliWriter.out(large);
       });
       assert.doesNotThrow(() => {
-        cliWriter.err(large);
+        cliWriter.error(large);
       });
       assert.strictEqual(capturedOut[0], `${large}\n`);
       assert.strictEqual(capturedErr[0], `${large}\n`);
@@ -222,7 +222,7 @@ void describe('CliWriter — Ugly: special bytes pass through unchanged', () => 
       const cliWriter = new CliWriter();
 
       cliWriter.out('line1\nline2\nline3');
-      cliWriter.err('error\ndetail');
+      cliWriter.error('error\ndetail');
 
       assert.strictEqual(capturedOut[0], 'line1\nline2\nline3\n');
       assert.strictEqual(capturedErr[0], 'error\ndetail\n');
@@ -255,7 +255,7 @@ void describe('CliWriter — Ugly: special bytes pass through unchanged', () => 
       const ansiGreen = '[32mgreen text[0m';
 
       cliWriter.out(ansiRed);
-      cliWriter.err(ansiGreen);
+      cliWriter.error(ansiGreen);
 
       assert.strictEqual(capturedOut[0], `${ansiRed}\n`);
       assert.strictEqual(capturedErr[0], `${ansiGreen}\n`);
@@ -308,7 +308,7 @@ void describe('CliWriter — Interface: mock writer can be injected', () => {
     const errMessages: string[] = [];
 
     const mock: CliWriterInterface = {
-      err(message: string): void {
+      error(message: string): void {
         errMessages.push(message);
       },
       exit(_: number): never {
@@ -321,7 +321,7 @@ void describe('CliWriter — Interface: mock writer can be injected', () => {
 
     function invoke(writer: CliWriterInterface, msg: string): void {
       writer.out(msg);
-      writer.err(`err:${msg}`);
+      writer.error(`err:${msg}`);
     }
 
     invoke(mock, 'injected');
@@ -337,7 +337,7 @@ void describe('CliWriter — Interface: mock writer can be injected', () => {
 
   void it('mock exit() is called with the correct code and propagates as a testable throw', () => {
     const mock: CliWriterInterface = {
-      err(): void {
+      error(): void {
         // no-op
       },
       exit(code: number): never {
@@ -360,7 +360,7 @@ void describe('CliWriter — Interface: mock writer can be injected', () => {
     const cliWriter: CliWriterInterface = new CliWriter();
 
     assert.ok(typeof cliWriter.out === 'function');
-    assert.ok(typeof cliWriter.err === 'function');
+    assert.ok(typeof cliWriter.error === 'function');
     assert.ok(typeof cliWriter.exit === 'function');
   });
 });

@@ -48,63 +48,132 @@ import {
   DECIMAL_XSD_TYPE_NAMES, INTEGER_XSD_TYPE_NAMES
 } from '../../constants/XSD_MAPS.js';
 
-// ---------------------------------------------------------------------------
-// Equality helpers
-//
-// The `equals` signature accepts `null | undefined` to match the rdf/js spec
-// (https://rdf.js.org/data-model-spec/#term-interface) and handles both.
-// ---------------------------------------------------------------------------
+/**
+ * Term-construction and literal-decoding support for the {@link Terms} factory.
+ *
+ * The `equals*` methods accept `null | undefined` to match the rdf/js spec
+ * (https://rdf.js.org/data-model-spec/#term-interface) and handle both.
+ *
+ * Each factory function (Terms.blank, Terms.iri, ...) constructs a fresh term
+ * object per call, but the `equals` method itself must be a single, pre-built
+ * function reference — not an inline closure rebuilt on every call — so V8 can
+ * treat every term of a given kind as sharing one hidden class. `this` is bound
+ * to the owning term automatically via the `term.equals(other)` call form.
+ */
+class TermSupport {
+  static bnodeEquals(this: BlankNode, other: null | TermType | undefined): boolean {
+    if (other === null || other === undefined) {
+      return false;
+    }
 
-function iriEquals(self: NamedNode, other: null | TermType | undefined): boolean {
-  if (other === null || other === undefined) {
-    return false;
+    return other.termType === 'BlankNode' && other.value === this.value;
   }
 
-  return other.termType === 'NamedNode' && other.value === self.value;
-}
+  static defaultGraphEquals(other: null | TermType | undefined): boolean {
+    if (other === null || other === undefined) {
+      return false;
+    }
 
-function bnodeEquals(self: BlankNode, other: null | TermType | undefined): boolean {
-  if (other === null || other === undefined) {
-    return false;
+    return other.termType === 'DefaultGraph';
   }
 
-  return other.termType === 'BlankNode' && other.value === self.value;
-}
+  /**
+   * Extract a JSON-LD value-object datatype-IRI hint (`{'@type': 'xsd:...'}`)
+   * when one is embedded in the raw literal input. Used by `Terms.literal`
+   * to honour the structured form that OwlProjection / SHACL projections emit.
+   *
+   * Returns the bare IRI string; the caller wraps it via `Terms.iri`.
+   */
+  static extractValueObjectDatatypeIri(value: unknown): string | undefined {
+    if (typeof value !== 'object' || value === null) {
+      return undefined;
+    }
+    const objectValue = value as Record<string, unknown>;
 
-function literalEquals(self: Literal, other: null | TermType | undefined): boolean {
-  if (other === null || other === undefined) {
-    return false;
+    // Only treat as a JSON-LD value-object when `@value` is present. A node
+    // with `@type` but no `@value` (e.g. `{'@type': 'owl:Class', ...}`) is a
+    // node identifier, not a typed literal.
+    if (!('@value' in objectValue) || typeof objectValue['@type'] !== 'string') {
+      return undefined;
+    }
+
+    return objectValue['@type'];
   }
 
-  if (other.termType !== 'Literal') {
-    return false;
+  static inferDatatypeIri(value: unknown): string {
+    if (typeof value === 'number') {
+      return Number.isInteger(value) ? XSD.integer : XSD.double;
+    }
+    if (typeof value === 'boolean') {
+      return XSD.boolean;
+    }
+    if (value instanceof Date) {
+      return XSD.dateTime;
+    }
+
+    return XSD.string;
   }
 
-  return other.value === self.value
-    && other.language === self.language
-    && other.datatype.value === self.datatype.value;
-}
+  static iriEquals(this: NamedNode, other: null | TermType | undefined): boolean {
+    if (other === null || other === undefined) {
+      return false;
+    }
 
-function defaultGraphEquals(other: null | TermType | undefined): boolean {
-  if (other === null || other === undefined) {
-    return false;
+    return other.termType === 'NamedNode' && other.value === this.value;
   }
 
-  return other.termType === 'DefaultGraph';
-}
+  static literalEquals(this: Literal, other: null | TermType | undefined): boolean {
+    if (other === null || other === undefined) {
+      return false;
+    }
 
-function quadEquals(self: Quad, other: null | Term | undefined): boolean {
-  if (other === null || other === undefined) {
-    return false;
-  }
-  if (other.termType !== 'Quad') {
-    return false;
+    if (other.termType !== 'Literal') {
+      return false;
+    }
+
+    return other.value === this.value
+      && other.language === this.language
+      && other.datatype.value === this.datatype.value;
   }
 
-  return self.subject.equals(other.subject)
-    && self.predicate.equals(other.predicate)
-    && self.object.equals(other.object)
-    && self.graph.equals(other.graph);
+  static localXsdName(iri: string): string {
+    const normalised = TermSupport.normaliseDatatypeIri(iri);
+
+    return normalised.startsWith(XSD_COMPACT_PREFIX) ? normalised.slice(XSD_COMPACT_PREFIX.length) : normalised;
+  }
+
+  static normaliseDatatypeIri(iri: string): string {
+    if (iri.startsWith(XSD_IRI_PREFIX)) {
+      return `xsd:${iri.slice(XSD_IRI_PREFIX.length)}`;
+    }
+
+    return iri;
+  }
+
+  static quadEquals(this: Quad, other: null | Term | undefined): boolean {
+    if (other === null || other === undefined) {
+      return false;
+    }
+    if (other.termType !== 'Quad') {
+      return false;
+    }
+
+    return this.subject.equals(other.subject)
+      && this.predicate.equals(other.predicate)
+      && this.object.equals(other.object)
+      && this.graph.equals(other.graph);
+  }
+
+  static stringifyValue(value: unknown): string {
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    if (typeof value === 'object' && value !== null && '@value' in (value as Record<string, unknown>)) {
+      return String((value as Record<string, unknown>)['@value']);
+    }
+
+    return String(value);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -112,65 +181,10 @@ function quadEquals(self: Quad, other: null | Term | undefined): boolean {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_GRAPH_SINGLETON: DefaultGraph = Object.freeze({
-  'equals': defaultGraphEquals,
+  'equals': TermSupport.defaultGraphEquals,
   'termType': 'DefaultGraph' as const,
   'value': '' as const
 });
-
-// ---------------------------------------------------------------------------
-// Datatype inference
-//
-// When no explicit datatype is provided, infer the canonical XSD datatype
-// from the JS type of the value. Strings default to xsd:string.
-// ---------------------------------------------------------------------------
-
-function inferDatatypeIri(value: unknown): string {
-  if (typeof value === 'number') {
-    return Number.isInteger(value) ? XSD.integer : XSD.double;
-  }
-  if (typeof value === 'boolean') {
-    return XSD.boolean;
-  }
-  if (value instanceof Date) {
-    return XSD.dateTime;
-  }
-
-  return XSD.string;
-}
-
-function stringifyValue(value: unknown): string {
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-  if (typeof value === 'object' && value !== null && '@value' in (value as Record<string, unknown>)) {
-    return String((value as Record<string, unknown>)['@value']);
-  }
-
-  return String(value);
-}
-
-/**
- * Extract a JSON-LD value-object datatype-IRI hint (`{'@type': 'xsd:...'}`)
- * when one is embedded in the raw literal input. Used by `Terms.literal`
- * to honour the structured form that OwlProjection / SHACL projections emit.
- *
- * Returns the bare IRI string; the caller wraps it via `Terms.iri`.
- */
-function extract(value: unknown): string | undefined {
-  if (typeof value !== 'object' || value === null) {
-    return undefined;
-  }
-  const obj = value as Record<string, unknown>;
-
-  // Only treat as a JSON-LD value-object when `@value` is present. A node
-  // with `@type` but no `@value` (e.g. `{'@type': 'owl:Class', ...}`) is a
-  // node identifier, not a typed literal.
-  if (!('@value' in obj) || typeof obj['@type'] !== 'string') {
-    return undefined;
-  }
-
-  return obj['@type'];
-}
 
 // ---------------------------------------------------------------------------
 // Term factory
@@ -179,11 +193,7 @@ function extract(value: unknown): string | undefined {
 export const Terms = {
   blank(value: string): BlankNode {
     const term: BlankNode = {
-      'equals'(other: null | TermType | undefined): boolean {
-        const result = bnodeEquals(term, other);
-
-        return result;
-      },
+      'equals': TermSupport.bnodeEquals,
       'termType': 'BlankNode',
       value
     };
@@ -201,20 +211,20 @@ export const Terms = {
    */
   decodeLiteral(literal: Literal): unknown {
     const raw = literal.value;
-    const dt = localXsdName(literal.datatype.value);
+    const dt = TermSupport.localXsdName(literal.datatype.value);
 
     if (dt === 'boolean') {
       return raw === 'true' || raw === '1';
     }
     if (INTEGER_XSD_TYPE_NAMES.has(dt)) {
-      const num = Number.parseInt(raw, DECIMAL_RADIX);
+      const parsedInteger = Number.parseInt(raw, DECIMAL_RADIX);
 
-      return Number.isFinite(num) ? num : raw;
+      return Number.isFinite(parsedInteger) ? parsedInteger : raw;
     }
     if (DECIMAL_XSD_TYPE_NAMES.has(dt)) {
-      const num = Number.parseFloat(raw);
+      const parsedFloat = Number.parseFloat(raw);
 
-      return Number.isFinite(num) ? num : raw;
+      return Number.isFinite(parsedFloat) ? parsedFloat : raw;
     }
     // Return the original lexical string for temporal types.
     // Schemas represent dates/times as `type: 'string'` with a `format`
@@ -237,11 +247,7 @@ export const Terms = {
 
   iri(value: string): NamedNode {
     const term: NamedNode = {
-      'equals'(other: null | TermType | undefined): boolean {
-        const result = iriEquals(term, other);
-
-        return result;
-      },
+      'equals': TermSupport.iriEquals,
       'termType': 'NamedNode',
       value
     };
@@ -266,18 +272,14 @@ export const Terms = {
     options?: { 'datatype'?: NamedNode;
       'language'?: string }
   ): Literal {
-    const valueObjectDatatypeIri = extract(value);
+    const valueObjectDatatypeIri = TermSupport.extractValueObjectDatatypeIri(value);
     const datatype = options?.datatype
-      ?? Terms.iri(valueObjectDatatypeIri ?? inferDatatypeIri(value));
+      ?? Terms.iri(valueObjectDatatypeIri ?? TermSupport.inferDatatypeIri(value));
     const language = options?.language ?? '';
-    const stringValue = stringifyValue(value);
+    const stringValue = TermSupport.stringifyValue(value);
     const term: Literal = {
       datatype,
-      'equals'(other: null | TermType | undefined): boolean {
-        const result = literalEquals(term, other);
-
-        return result;
-      },
+      'equals': TermSupport.literalEquals,
       language,
       'termType': 'Literal',
       'value': stringValue
@@ -303,11 +305,7 @@ export const Terms = {
     graph?: BlankNode | DefaultGraph | NamedNode
   ): Quad {
     const quad: Quad = {
-      'equals'(other: null | TermType | undefined): boolean {
-        const result = quadEquals(quad, other);
-
-        return result;
-      },
+      'equals': TermSupport.quadEquals,
       'graph': graph ?? DEFAULT_GRAPH_SINGLETON,
       object,
       predicate,
@@ -335,11 +333,7 @@ export const Terms = {
     object: QuadObjectType
   ): Quad {
     const term: Quad = {
-      'equals'(other: null | TermType | undefined): boolean {
-        const result = quadEquals(term, other);
-
-        return result;
-      },
+      'equals': TermSupport.quadEquals,
       'graph': DEFAULT_GRAPH_SINGLETON,
       object,
       predicate,
@@ -351,27 +345,5 @@ export const Terms = {
     return term;
   }
 } as const;
-
-// ---------------------------------------------------------------------------
-// Literal decoding helpers — used by `Terms.decodeLiteral`.
-//
-// Reads `literal.datatype.value` and parses the string `literal.value` back
-// into the canonical JS type (number, boolean, Date, string). Used by `Lift`
-// and `fromQuads` so consumers never have to hand-decode XSD-tagged literals.
-// ---------------------------------------------------------------------------
-
-function normaliseDatatypeIri(iri: string): string {
-  if (iri.startsWith(XSD_IRI_PREFIX)) {
-    return `xsd:${iri.slice(XSD_IRI_PREFIX.length)}`;
-  }
-
-  return iri;
-}
-
-function localXsdName(iri: string): string {
-  const normalised = normaliseDatatypeIri(iri);
-
-  return normalised.startsWith(XSD_COMPACT_PREFIX) ? normalised.slice(XSD_COMPACT_PREFIX.length) : normalised;
-}
 
 // INTEGER_XSD_TYPE_NAMES and DECIMAL_XSD_TYPE_NAMES imported from XSD_MAPS

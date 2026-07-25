@@ -13,7 +13,7 @@
  *
  * @category Schema keywords
  * @since 0.1.0
- * @see MIN_PROPERTY_POINTER_PARTS
+ * @see MINIMUM_PROPERTY_POINTER_PARTS
  * @defaultValue `3`
  * @group Constants
  */
@@ -29,7 +29,7 @@ export const DEFS_POINTER_PARTS_LENGTH = 3;
  * @example
  * ```ts
  * const parts = pointer.split('/');
- * if (parts.length >= MIN_PROPERTY_POINTER_PARTS) { ... }
+ * if (parts.length >= MINIMUM_PROPERTY_POINTER_PARTS) { ... }
  * ```
  *
  * @category Schema keywords
@@ -38,7 +38,7 @@ export const DEFS_POINTER_PARTS_LENGTH = 3;
  * @defaultValue `3`
  * @group Constants
  */
-export const MIN_PROPERTY_POINTER_PARTS = 3;
+export const MINIMUM_PROPERTY_POINTER_PARTS = 3;
 
 /**
  * Complete set of JSON Schema draft-2020-12 keywords recognized by json-tology.

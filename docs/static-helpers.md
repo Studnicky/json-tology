@@ -65,7 +65,7 @@ Options marked <Badge type="info" text="Compile-time" /> affect type inference o
 | `maxSchemaDepth` | `number` | _(no limit)_ | Maximum schema-graph traversal depth. Protects against pathological schemas. |
 | `logger` | `LoggerInterface` | `SILENT_LOGGER` | Logger for warnings (`enableInlineWarnings`, `enableDuplicateDetection`). Must be set for warnings to surface. |
 | `invariants` | `Record<string, InvariantInterface[]>` | `{}` | Cross-field invariant functions, keyed by schema `$id`. |
-| `computeds` | `Record<string, Record<string, ComputedFnType>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |
+| `computeds` | `Record<string, Record<string, ComputedFunctionType>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |
 
 ### Type inference options
 

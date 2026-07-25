@@ -152,9 +152,9 @@ export class Predicates {
 
   /**
    * Count Unicode code points without allocating an intermediate array.
-   * Equivalent to `[...str].length` but allocation-free.
+   * Equivalent to `[...value].length` but allocation-free.
    *
-   * @param str - The string to measure.
+   * @param value - The string to measure.
    * @returns The number of Unicode code points in the string.
    *
    * @remarks
@@ -165,12 +165,13 @@ export class Predicates {
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/codePointAt}
    * @group String
    */
-  static codePointLength(str: string): number {
+  static codePointLength(value: string): number {
     let length = 0;
+    const valueLength = value.length;
 
-    for (let index = 0; index < str.length; index++) {
+    for (let index = 0; index < valueLength; index++) {
       length++;
-      const code = str.codePointAt(index);
+      const code = value.codePointAt(index);
 
       if (code !== undefined && code > 0xFF_FF) {
         index++;
@@ -184,17 +185,18 @@ export class Predicates {
    * Return `true` as soon as `target` code points have been counted, without
    * completing a full walk of the string.
    *
-   * Used by `satisfiesMinLength` in the residual band `[m, 2m)` to stop early.
+   * Used by `satisfiesMinimumLength` in the residual band `[m, 2m)` to stop early.
    */
-  private static codePointLengthAtLeast(str: string, target: number): boolean {
+  private static codePointLengthAtLeast(value: string, target: number): boolean {
     let count = 0;
+    const valueLength = value.length;
 
-    for (let index = 0; index < str.length; index++) {
+    for (let index = 0; index < valueLength; index++) {
       count++;
       if (count >= target) {
         return true;
       }
-      const code = str.codePointAt(index);
+      const code = value.codePointAt(index);
 
       if (code !== undefined && code > 0xFF_FF) {
         index++;
@@ -208,17 +210,18 @@ export class Predicates {
    * Return `false` as soon as the code-point count exceeds `limit`, without
    * completing a full walk of the string.
    *
-   * Used by `satisfiesMaxLength` when `value.length > maximum`.
+   * Used by `satisfiesMaximumLength` when `value.length > maximum`.
    */
-  private static codePointLengthAtMost(str: string, limit: number): boolean {
+  private static codePointLengthAtMost(value: string, limit: number): boolean {
     let count = 0;
+    const valueLength = value.length;
 
-    for (let index = 0; index < str.length; index++) {
+    for (let index = 0; index < valueLength; index++) {
       count++;
       if (count > limit) {
         return false;
       }
-      const code = str.codePointAt(index);
+      const code = value.codePointAt(index);
 
       if (code !== undefined && code > 0xFF_FF) {
         index++;
@@ -417,6 +420,16 @@ export class Predicates {
     return typeof value === 'number' && Number.isInteger(value);
   }
 
+  private static isValidJson(content: string): boolean {
+    try {
+      JSON.parse(content);
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * Check that a value matches at least one of the given schema types.
    *
@@ -575,7 +588,7 @@ export class Predicates {
     }
 
     if (mediaType === 'application/json') {
-      return isValidJson(content);
+      return Predicates.isValidJson(content);
     }
 
     return true;
@@ -663,7 +676,7 @@ export class Predicates {
    * @see {@link https://json-schema.org/understanding-json-schema/reference/array#length}
    * @group Array
    */
-  static satisfiesMaxItems(value: unknown[], maximum: number): boolean {
+  static satisfiesMaximumItems(value: unknown[], maximum: number): boolean {
     return value.length <= maximum;
   }
 
@@ -685,7 +698,7 @@ export class Predicates {
    * @see {@link https://json-schema.org/understanding-json-schema/reference/string#length}
    * @group String
    */
-  static satisfiesMaxLength(value: string, maximum: number): boolean {
+  static satisfiesMaximumLength(value: string, maximum: number): boolean {
     // cp <= len, so len <= M guarantees cp <= M.
     if (value.length <= maximum) {
       return true;
@@ -707,7 +720,7 @@ export class Predicates {
    * @see {@link https://json-schema.org/understanding-json-schema/reference/object#size}
    * @group Object
    */
-  static satisfiesMaxProperties(value: Record<string, unknown>, maximum: number): boolean {
+  static satisfiesMaximumProperties(value: Record<string, unknown>, maximum: number): boolean {
     return Object.keys(value).length <= maximum;
   }
 
@@ -739,7 +752,7 @@ export class Predicates {
    * @see {@link https://json-schema.org/understanding-json-schema/reference/array#length}
    * @group Array
    */
-  static satisfiesMinItems(value: unknown[], minimum: number): boolean {
+  static satisfiesMinimumItems(value: unknown[], minimum: number): boolean {
     return value.length >= minimum;
   }
 
@@ -762,15 +775,15 @@ export class Predicates {
    * @see {@link https://json-schema.org/understanding-json-schema/reference/string#length}
    * @group String
    */
-  static satisfiesMinLength(value: string, minimum: number): boolean {
-    const len = value.length;
+  static satisfiesMinimumLength(value: string, minimum: number): boolean {
+    const length = value.length;
 
     // cp <= len, so len < m guarantees cp < m.
-    if (len < minimum) {
+    if (length < minimum) {
       return false;
     }
     // cp >= ceil(len/2), so len >= 2*m guarantees cp >= m.
-    if (len >= minimum * 2) {
+    if (length >= minimum * 2) {
       return true;
     }
 
@@ -790,7 +803,7 @@ export class Predicates {
    * @see {@link https://json-schema.org/understanding-json-schema/reference/object#size}
    * @group Object
    */
-  static satisfiesMinProperties(value: Record<string, unknown>, minimum: number): boolean {
+  static satisfiesMinimumProperties(value: Record<string, unknown>, minimum: number): boolean {
     return Object.keys(value).length >= minimum;
   }
 
@@ -849,8 +862,10 @@ export class Predicates {
    * @group Array
    */
   static satisfiesUniqueItems(value: unknown[]): boolean {
-    for (let index = 0; index < value.length; index++) {
-      for (let other = index + 1; other < value.length; other++) {
+    const valueLength = value.length;
+
+    for (let index = 0; index < valueLength; index++) {
+      for (let other = index + 1; other < valueLength; other++) {
         if (DataType.deepEqual(value[index], value[other])) {
           return false;
         }
@@ -858,15 +873,5 @@ export class Predicates {
     }
 
     return true;
-  }
-}
-
-function isValidJson(content: string): boolean {
-  try {
-    JSON.parse(content);
-
-    return true;
-  } catch {
-    return false;
   }
 }

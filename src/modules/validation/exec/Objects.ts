@@ -1,4 +1,4 @@
-import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
+import type { ValidateWithErrorsFunctionType } from '../../../types/Validation.js';
 import type { ExecContextType } from '../../../types/ExecContextType.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { DataType } from '../../data/DataType.js';
@@ -7,27 +7,27 @@ import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 export class Objects {
   static applyAliases(
-    obj: Record<string, unknown>,
+    object: Record<string, unknown>,
     propertyAliases: Map<string, string>
   ): void {
     for (const [
       alias,
       canonicalKey
     ] of propertyAliases) {
-      if (alias in obj) {
-        if (!(canonicalKey in obj)) {
-          obj[canonicalKey] = obj[alias];
+      if (alias in object) {
+        if (!(canonicalKey in object)) {
+          object[canonicalKey] = object[alias];
         }
         // Reflect.deleteProperty removes the key from the same object reference
         // (identity must be preserved — this object is threaded through the rest
-        // of the validate chain) without the `delete obj[x]` operator syntax.
-        Reflect.deleteProperty(obj, alias);
+        // of the validate chain) without the `delete object[x]` operator syntax.
+        Reflect.deleteProperty(object, alias);
       }
     }
   }
 
   static applyDefaults(
-    obj: Record<string, unknown>,
+    object: Record<string, unknown>,
     propertyDefaults: Map<string, { 'defaultValue': unknown;
       'hasDefault': boolean }>
   ): void {
@@ -35,8 +35,8 @@ export class Objects {
       key,
       propDefault
     ] of propertyDefaults) {
-      if (!(key in obj) && propDefault.hasDefault) {
-        obj[key] = GraphEngineSupport.cloneDefault(propDefault.defaultValue);
+      if (!(key in object) && propDefault.hasDefault) {
+        object[key] = GraphEngineSupport.cloneDefault(propDefault.defaultValue);
       }
     }
   }
@@ -45,7 +45,7 @@ export class Objects {
     path: string,
     value: unknown,
     depRequiredEntries: Array<[string, string[]]>,
-    ctx: ExecContextType
+    context: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (depRequiredEntries.length === 0 || !DataType.isRecord(value)) {
@@ -55,23 +55,23 @@ export class Objects {
       };
     }
 
-    const obj = value;
+    const object = value;
     let valid = true;
 
     for (const [
       trigger,
       deps
     ] of depRequiredEntries) {
-      if (trigger in obj) {
+      if (trigger in object) {
         for (const dep of deps) {
-          if (!(dep in obj)) {
-            if (!ctx.collectErrors) {
+          if (!(dep in object)) {
+            if (!context.collectErrors) {
               return {
                 'earlyExit': true,
                 'valid': false
               };
             }
-            ctx.errors.push(BaseError.validationError(path, 'dependentRequired', VALIDATION_MESSAGES.dependentRequired(dep, trigger), {
+            context.errors.push(BaseError.validationError(path, 'dependentRequired', VALIDATION_MESSAGES.dependentRequired(dep, trigger), {
               'missingProperty': dep,
               'property': trigger
             }));
@@ -90,31 +90,31 @@ export class Objects {
   /** Validate one property declared in `properties`. Returns whether it is valid. */
   private static validateKnownProperty(
     childPath: string,
-    ctx: ExecContextType,
+    context: ExecContextType,
     key: string,
-    obj: Record<string, unknown>,
+    object: Record<string, unknown>,
     propertyDefaults: Map<string, { 'defaultValue': unknown;
       'hasDefault': boolean }>,
-    propValidator: ValidateWithErrorsFnType
+    propValidator: ValidateWithErrorsFunctionType
   ): boolean {
-    let propValue = obj[key];
+    let propValue = object[key];
 
-    if (ctx.applyDefaults && propValue === undefined) {
+    if (context.applyDefaults && propValue === undefined) {
       const propDefault = propertyDefaults.get(key);
 
       if (propDefault?.hasDefault === true) {
         propValue = GraphEngineSupport.cloneDefault(propDefault.defaultValue);
-        obj[key] = propValue;
+        object[key] = propValue;
       }
     }
 
-    const propResult = propValidator(propValue, childPath, ctx);
+    const propResult = propValidator(propValue, childPath, context);
 
     if (!propResult.valid) {
       return false;
     }
     if (propResult.value !== propValue) {
-      obj[key] = propResult.value;
+      object[key] = propResult.value;
     }
 
     return true;
@@ -122,24 +122,24 @@ export class Objects {
 
   static validateProperties(
     path: string,
-    obj: Record<string, unknown>,
-    propValidators: Map<string, ValidateWithErrorsFnType>,
+    object: Record<string, unknown>,
+    propValidators: Map<string, ValidateWithErrorsFunctionType>,
     patternPropValidators: Array<{ 'regex': RegExp;
-      'validator': ValidateWithErrorsFnType }> | undefined,
+      'validator': ValidateWithErrorsFunctionType }> | undefined,
     additionalIsFalse: boolean,
-    additionalValidator: undefined | ValidateWithErrorsFnType,
+    additionalValidator: undefined | ValidateWithErrorsFunctionType,
     allowedKeys: Set<string> | undefined,
     stripUnknown: boolean,
     propertyDefaults: Map<string, { 'defaultValue': unknown;
       'hasDefault': boolean }>,
-    ctx: ExecContextType,
+    context: ExecContextType,
     allowedKeysForStrip?: Set<string>
   ): { 'count': number;
     'earlyExit': boolean;
     'valid': boolean } {
     let valid = true;
     const pathPrefix = path === '' ? '/' : `${path}/`;
-    const keys = Object.keys(obj);
+    const keys = Object.keys(object);
 
     for (const key of keys) {
       const propValidator = propValidators.get(key);
@@ -154,15 +154,15 @@ export class Objects {
           allowedKeysForStrip ?? allowedKeys,
           pathPrefix,
           key,
-          ctx,
-          obj,
+          context,
+          object,
           patternPropValidators,
           stripUnknown
         )
-        : Objects.validateKnownProperty(pathPrefix + key, ctx, key, obj, propertyDefaults, propValidator);
+        : Objects.validateKnownProperty(pathPrefix + key, context, key, object, propertyDefaults, propValidator);
 
       if (!propOk) {
-        if (!ctx.collectErrors) {
+        if (!context.collectErrors) {
           return {
             'count': 0,
             'earlyExit': true,
@@ -182,7 +182,7 @@ export class Objects {
 
   static validatePropertyCount(
     path: string,
-    obj: Record<string, unknown>,
+    object: Record<string, unknown>,
     minProperties: number | undefined,
     maxProperties: number | undefined,
     errors: Array<ReturnType<typeof BaseError.validationError>>,
@@ -192,7 +192,7 @@ export class Objects {
       return true;
     }
 
-    const count = precomputedCount ?? Object.keys(obj).length;
+    const count = precomputedCount ?? Object.keys(object).length;
     const pre = errors.length;
 
     if (minProperties !== undefined && count < minProperties) {
@@ -208,8 +208,8 @@ export class Objects {
   static validatePropertyNames(
     path: string,
     value: unknown,
-    propertyNamesValidator: undefined | ValidateWithErrorsFnType,
-    ctx: ExecContextType
+    propertyNamesValidator: undefined | ValidateWithErrorsFunctionType,
+    context: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (propertyNamesValidator === undefined || !DataType.isRecord(value)) {
@@ -223,10 +223,10 @@ export class Objects {
     const pathPrefix = path === '' ? '/' : `${path}/`;
 
     for (const key of Object.keys(value)) {
-      const pnResult = propertyNamesValidator(key, pathPrefix + key, ctx);
+      const pnResult = propertyNamesValidator(key, pathPrefix + key, context);
 
       if (!pnResult.valid) {
-        if (!ctx.collectErrors) {
+        if (!context.collectErrors) {
           return {
             'earlyExit': true,
             'valid': false
@@ -244,7 +244,7 @@ export class Objects {
 
   static validateRequired(
     path: string,
-    obj: Record<string, unknown>,
+    object: Record<string, unknown>,
     required: string[] | undefined,
     errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
@@ -255,7 +255,7 @@ export class Objects {
     const pre = errors.length;
 
     for (const key of required) {
-      if (!(key in obj)) {
+      if (!(key in object)) {
         errors.push(BaseError.validationError(path, 'required', VALIDATION_MESSAGES.required(key), { 'missingProperty': key }));
       }
     }
@@ -266,15 +266,15 @@ export class Objects {
   /** Validate one property not declared in `properties` (patternProperties/additionalProperties/strip). Returns whether it is valid. */
   private static validateUnknownProperty(
     additionalIsFalse: boolean,
-    additionalValidator: undefined | ValidateWithErrorsFnType,
+    additionalValidator: undefined | ValidateWithErrorsFunctionType,
     allowedKeys: Set<string> | undefined,
     allowedKeysForStrip: Set<string> | undefined,
     pathPrefix: string,
     key: string,
-    ctx: ExecContextType,
-    obj: Record<string, unknown>,
+    context: ExecContextType,
+    object: Record<string, unknown>,
     patternPropValidators: Array<{ 'regex': RegExp;
-      'validator': ValidateWithErrorsFnType }> | undefined,
+      'validator': ValidateWithErrorsFunctionType }> | undefined,
     stripUnknown: boolean
   ): boolean {
     let matchedPattern = false;
@@ -285,16 +285,16 @@ export class Objects {
         if (pp.regex.test(key)) {
           matchedPattern = true;
           const childPath = pathPrefix + key;
-          const ppResult = pp.validator(obj[key], childPath, ctx);
+          const ppResult = pp.validator(object[key], childPath, context);
 
           if (!ppResult.valid) {
-            if (!ctx.collectErrors) {
+            if (!context.collectErrors) {
               return false;
             }
             valid = false;
           }
-          if (ppResult.value !== obj[key]) {
-            obj[key] = ppResult.value;
+          if (ppResult.value !== object[key]) {
+            object[key] = ppResult.value;
           }
         }
       }
@@ -310,26 +310,26 @@ export class Objects {
       if (stripUnknown && stripAllowed !== undefined && !stripAllowed.has(key)) {
         // Reflect.deleteProperty removes the key from the same object reference
         // (identity must be preserved — this object is threaded through the rest
-        // of the validate chain) without the `delete obj[x]` operator syntax.
-        Reflect.deleteProperty(obj, key);
-      } else if (additionalIsFalse && allowedKeys?.has(key) !== true && !ctx.ignoreAdditionalProperties) {
-        if (!ctx.collectErrors) {
+        // of the validate chain) without the `delete object[x]` operator syntax.
+        Reflect.deleteProperty(object, key);
+      } else if (additionalIsFalse && allowedKeys?.has(key) !== true && !context.ignoreAdditionalProperties) {
+        if (!context.collectErrors) {
           return false;
         }
-        ctx.errors.push(BaseError.validationError(pathPrefix + key, 'additionalProperties', VALIDATION_MESSAGES.additionalProperties(key)));
+        context.errors.push(BaseError.validationError(pathPrefix + key, 'additionalProperties', VALIDATION_MESSAGES.additionalProperties(key)));
         valid = false;
       } else if (additionalValidator !== undefined) {
         const childPath = pathPrefix + key;
-        const addResult = additionalValidator(obj[key], childPath, ctx);
+        const addResult = additionalValidator(object[key], childPath, context);
 
         if (!addResult.valid) {
-          if (!ctx.collectErrors) {
+          if (!context.collectErrors) {
             return false;
           }
           valid = false;
         }
-        if (addResult.value !== obj[key]) {
-          obj[key] = addResult.value;
+        if (addResult.value !== object[key]) {
+          object[key] = addResult.value;
         }
       }
     }

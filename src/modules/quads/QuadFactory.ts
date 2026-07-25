@@ -19,9 +19,9 @@ import type { QuadObjectType } from '../../types/Quad.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import type {
-  QuadFactoryIriOptsType,
-  QuadFactoryLiteralOptsType,
-  QuadFactoryQuadOptsType
+  QuadFactoryIriOptionsType,
+  QuadFactoryLiteralOptionsType,
+  QuadFactoryQuadOptionsType
 } from '../../types/QuadFactoryOpts.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
 import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
@@ -37,25 +37,6 @@ import {
 // ---------------------------------------------------------------------------
 
 let bnodeCounter = 0;
-
-/**
- * Validate that a finalized predicate IRI is absolute. A predicate that is
- * still a compact CURIE (`prefix:local` with an unregistered prefix) after
- * expansion would otherwise be emitted as an invalid IRI. Absolute forms
- * recognised: `://` (with a non-empty scheme) or a `urn:` namespace.
- *
- * Predicates may never be blank nodes, so a `_:` value is also rejected.
- */
-function assertAbsolutePredicate(predicate: string): void {
-  if (predicate.indexOf('://') > 0 || predicate.startsWith('urn:')) {
-    return;
-  }
-
-  throw new GraphError(
-    `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`,
-    { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
-  );
-}
 
 // ---------------------------------------------------------------------------
 // QuadFactory — static-only class
@@ -99,16 +80,35 @@ export class QuadFactory {
     tripleTerm: Quad,
     annotationPredicate: string,
     annotationValue: QuadObjectType,
-    options?: QuadFactoryQuadOptsType
+    options?: QuadFactoryQuadOptionsType
   ): QuadInterface {
     const {
       curie, graph
     } = options ?? {};
     const expandedPredicate = curie ? curie.expandIfNeeded(annotationPredicate) : annotationPredicate;
 
-    assertAbsolutePredicate(expandedPredicate);
+    QuadFactory.assertAbsolutePredicate(expandedPredicate);
 
     return Terms.quad(tripleTerm, Terms.iri(expandedPredicate), annotationValue, graph);
+  }
+
+  /**
+   * Validate that a finalized predicate IRI is absolute. A predicate that is
+   * still a compact CURIE (`prefix:local` with an unregistered prefix) after
+   * expansion would otherwise be emitted as an invalid IRI. Absolute forms
+   * recognised: `://` (with a non-empty scheme) or a `urn:` namespace.
+   *
+   * Predicates may never be blank nodes, so a `_:` value is also rejected.
+   */
+  private static assertAbsolutePredicate(predicate: string): void {
+    if (predicate.indexOf('://') > 0 || predicate.startsWith('urn:')) {
+      return;
+    }
+
+    throw new GraphError(
+      `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`,
+      { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
+    );
   }
 
   static bnode(id: string): QuadObjectType {
@@ -128,20 +128,20 @@ export class QuadFactory {
     const predicate = Terms.iri(datasetQuad.predicate.value);
 
     let object: QuadObjectType;
-    const obj = datasetQuad.object;
+    const rawObject = datasetQuad.object;
 
-    if (obj.termType === 'BlankNode') {
-      object = Terms.blank(obj.value);
-    } else if (obj.termType === 'Literal') {
-      const datatypeIri = obj.datatype?.value ?? XSD.string;
-      const language = obj.language ?? '';
+    if (rawObject.termType === 'BlankNode') {
+      object = Terms.blank(rawObject.value);
+    } else if (rawObject.termType === 'Literal') {
+      const datatypeIri = rawObject.datatype?.value ?? XSD.string;
+      const language = rawObject.language ?? '';
 
-      object = Terms.literal(obj.value, {
+      object = Terms.literal(rawObject.value, {
         'datatype': Terms.iri(datatypeIri),
         language
       });
     } else {
-      object = Terms.iri(obj.value);
+      object = Terms.iri(rawObject.value);
     }
 
     let graph;
@@ -184,7 +184,7 @@ export class QuadFactory {
    * Build an IRI term. When `options.curie` is provided, compact CURIEs
    * (`prefix:local`) are expanded against the shared `Curie` instance.
    */
-  static iri(value: string, options?: QuadFactoryIriOptsType): QuadObjectType {
+  static iri(value: string, options?: QuadFactoryIriOptionsType): QuadObjectType {
     const curie = options?.curie;
     const expandedValue = curie === undefined ? value : curie.expandIfNeeded(value);
 
@@ -195,7 +195,7 @@ export class QuadFactory {
    * Build a typed literal term. `datatype` is expanded from compact CURIE
    * form when `options.curie` is provided.
    */
-  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptsType): QuadObjectType {
+  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptionsType): QuadObjectType {
     const curie = options?.curie;
     const language = options?.language;
 
@@ -242,7 +242,7 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptsType
+    options?: QuadFactoryQuadOptionsType
   ): QuadInterface {
     const {
       curie, graph
@@ -250,7 +250,7 @@ export class QuadFactory {
     const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
     const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
 
-    assertAbsolutePredicate(expandedPredicate);
+    QuadFactory.assertAbsolutePredicate(expandedPredicate);
 
     const subjectTerm = expandedSubject.startsWith('_:')
       ? Terms.blank(expandedSubject)
@@ -306,13 +306,13 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptsType
+    options?: QuadFactoryQuadOptionsType
   ): Quad {
     const { curie } = options ?? {};
     const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
     const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
 
-    assertAbsolutePredicate(expandedPredicate);
+    QuadFactory.assertAbsolutePredicate(expandedPredicate);
 
     const subjectTerm = expandedSubject.startsWith('_:')
       ? Terms.blank(expandedSubject)

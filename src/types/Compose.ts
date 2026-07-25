@@ -397,7 +397,7 @@ export type RequiredSchemaType<TSchema, TId extends string>
  * ```
  *
  * @typeParam TPredicate - Literal IRI string for the edge predicate.
- * @typeParam TTargetRef - Literal IRI string for the target class `$ref`.
+ * @typeParam TTargetReference - Literal IRI string for the target class `$ref`.
  * @typeParam TAnnotations - Record mapping annotation property names to their `$ref` subschemas.
  * @category Compose
  * @since 0.1.0
@@ -406,16 +406,17 @@ export type RequiredSchemaType<TSchema, TId extends string>
  */
 export type AnnotatedEdgeSchemaType<
   TPredicate extends string,
-  TTargetRef extends string,
+  TTargetReference extends string,
   TAnnotations extends Record<string, { '$ref': string }>
-> = {
-  '$id'?: string;
-  'jt:annotatedEdge': {
-    'annotations': TAnnotations;
-    'predicate': TPredicate;
-    'targetRef': TTargetRef;
-  };
-};
+>
+  = { '$id'?: string }
+    & {
+      'jt:annotatedEdge': {
+        'annotations': TAnnotations;
+        'predicate': TPredicate;
+        'targetRef': TTargetReference;
+      };
+    };
 
 /**
  * Schema shape produced by `Compose.intersection` — an `allOf` composition
@@ -445,10 +446,9 @@ export type AnnotatedEdgeSchemaType<
 export type IntersectionSchemaType<
   TSchemas extends ReadonlyArray<Record<string, unknown>>,
   TId extends string
-> = {
-  '$id': TId;
-  'allOf': TSchemas;
-};
+>
+  = { '$id': TId }
+    & { 'allOf': TSchemas };
 
 /**
  * Schema shape produced by `Compose.discriminatedUnion` — a `oneOf` union
@@ -481,11 +481,12 @@ export type DiscriminatedUnionSchemaType<
   TDiscriminator extends string,
   TVariants extends ReadonlyArray<Record<string, unknown>>,
   TId extends string
-> = {
-  '$id': TId;
-  'discriminator': { 'propertyName': TDiscriminator };
-  'oneOf': TVariants;
-};
+>
+  = { '$id': TId }
+    & {
+      'discriminator': { 'propertyName': TDiscriminator };
+      'oneOf': TVariants;
+    };
 
 /**
  * Schema shape produced by `Compose.pick` — a structural subset of a base
@@ -516,7 +517,7 @@ export type PickSchemaType<
   TId extends string
 > = {
   '$id': TId;
-  'properties': Pick<ExtractPropertiesType<TSchema>, keyof ExtractPropertiesType<TSchema> & TKeys>;
+  'properties': { [K in keyof ExtractPropertiesType<TSchema> & TKeys]: ExtractPropertiesType<TSchema>[K] };
   'required': ReadonlyArray<ExtractRequiredType<TSchema> & TKeys>;
   'type': 'object';
 };
@@ -550,7 +551,9 @@ export type OmitSchemaType<
   TId extends string
 > = {
   '$id': TId;
-  'properties': Omit<ExtractPropertiesType<TSchema>, TKeys>;
+  'properties': {
+    [K in Exclude<keyof ExtractPropertiesType<TSchema>, TKeys>]: ExtractPropertiesType<TSchema>[K];
+  };
   'required': ReadonlyArray<Exclude<ExtractRequiredType<TSchema>, TKeys>>;
   'type': 'object';
 };

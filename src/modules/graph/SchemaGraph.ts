@@ -704,15 +704,15 @@ export class SchemaGraph implements SchemaGraphInterface {
     return anchored;
   }
 
-  private resolveLocalRef(ref: string): SchemaGraphNodeType {
-    if (ref === '#') {
+  private resolveLocalReference(reference: string): SchemaGraphNodeType {
+    if (reference === '#') {
       return this.rootNode;
     }
-    if (ref.startsWith('#/')) {
-      return this.resolvePointer(ref.slice(1));
+    if (reference.startsWith('#/')) {
+      return this.resolvePointer(reference.slice(1));
     }
 
-    return this.resolveFragment(ref.slice(1));
+    return this.resolveFragment(reference.slice(1));
   }
 
   public resolvePointer(pointer: string): SchemaGraphNodeType {
@@ -740,12 +740,12 @@ export class SchemaGraph implements SchemaGraphInterface {
     return resolved;
   }
 
-  public resolveRefId(ref: string): string {
-    if (!ref.startsWith('#')) {
-      return ref;
+  public resolveReferenceId(reference: string): string {
+    if (!reference.startsWith('#')) {
+      return reference;
     }
 
-    return this.resolveLocalRef(ref).id;
+    return this.resolveLocalReference(reference).id;
   }
 
   public get rootNode(): SchemaGraphNodeType {
@@ -763,8 +763,8 @@ export class SchemaGraph implements SchemaGraphInterface {
       return cached;
     }
 
-    const sem = SchemaGraphSupport.extractSemantics(this, node, (ref: string): SchemaGraphNodeType => {
-      const result = this.resolveLocalRef(ref);
+    const sem = SchemaGraphSupport.extractSemantics(this, node, (reference: string): SchemaGraphNodeType => {
+      const result = this.resolveLocalReference(reference);
 
       return result;
     });

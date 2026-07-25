@@ -1,4 +1,5 @@
-import type { ValidateWithErrorsFnType } from '../types/Validation.js';
+import type { ValidateWithErrorsFunctionType } from '../types/Validation.js';
+import type { IdentityType } from './IdentityType.js';
 
 /**
  * Composition validators compiled from `allOf`, `anyOf`, and `oneOf` schema keywords.
@@ -24,8 +25,8 @@ import type { ValidateWithErrorsFnType } from '../types/Validation.js';
  * @see {@link ConditionalValidatorsResultType}
  * @group Validation
  */
-export type CompositionValidatorsResultType = {
-  'allOfValidators': undefined | ValidateWithErrorsFnType[];
-  'anyOfValidators': undefined | ValidateWithErrorsFnType[];
-  'oneOfValidators': undefined | ValidateWithErrorsFnType[];
-};
+export type CompositionValidatorsResultType = IdentityType<{
+  'allOfValidators': undefined | ValidateWithErrorsFunctionType[];
+  'anyOfValidators': undefined | ValidateWithErrorsFunctionType[];
+  'oneOfValidators': undefined | ValidateWithErrorsFunctionType[];
+}>;

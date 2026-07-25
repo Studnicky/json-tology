@@ -1,15 +1,15 @@
-import type { QuadFactoryQuadOptsType } from './QuadFactoryOpts.js';
+import type { QuadFactoryQuadOptionsType } from './QuadFactoryOpts.js';
 import type { QuadInterface } from '../interfaces/QuadInterface.js';
 import type { AnnotatedEdgeStructureType } from './AnnotatedEdgeStructureType.js';
-import type { PredicateResolverFnType } from './PredicateResolverFnType.js';
+import type { PredicateResolverFunctionType } from './PredicateResolverFunctionType.js';
 
 /** Arguments for emitFlatAnnotationQuads. */
-export type EmitFlatAnnotationQuadsArgsType = {
+export type EmitFlatAnnotationQuadsArgumentListType = {
   'annotationValues': Record<string, unknown>;
   'classId': string;
   'edge': AnnotatedEdgeStructureType;
   'instanceIri': string;
-  'predicateResolver': PredicateResolverFnType;
-  'quadOpts': QuadFactoryQuadOptsType;
+  'predicateResolver': PredicateResolverFunctionType;
+  'quadOptions': QuadFactoryQuadOptionsType;
   'quads': QuadInterface[];
 };

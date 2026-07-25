@@ -1,3 +1,4 @@
+import type { InferType } from './Schema.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 
 /**
@@ -46,12 +47,12 @@ export type CompiledValidationResultType = {
  * @see {@link CompiledValidationResultType}
  * @group Validation
  */
-export type CompiledValidatorType = {
-  'check': (data: unknown) => boolean;
-  /** True if this is a real compiled validator (not engine fallback) */
-  'compiled': boolean;
-  'validate': (data: unknown, options?: CompiledValidateOptionsType) => CompiledValidationResultType;
-};
+export type CompiledValidatorType
+  = {
+    'check': (data: unknown) => boolean;
+    'validate': (data: unknown, options?: CompiledValidateOptionsType) => CompiledValidationResultType;
+  }
+    & { 'compiled': boolean };
 
 /**
  * Options controlling runtime behaviour of {@link CompiledValidatorType.validate}.
@@ -73,12 +74,17 @@ export type CompiledValidatorType = {
  * @see {@link CompiledValidatorType}
  * @group Validation
  */
-export type CompiledValidateOptionsType = {
-  'applyDefaults'?: boolean;
-  'castTypes'?: boolean;
-  'collectErrors'?: boolean;
-  'enforceSchemaProperties'?: boolean;
-  'ignoreAdditionalProperties'?: boolean;
-  'removeAdditionalProperties'?: boolean;
-  'synthesizeDefaults'?: boolean;
-};
+export const CompiledValidateOptionsTypeSchema = {
+  'properties': {
+    'applyDefaults': { 'type': 'boolean' },
+    'castTypes': { 'type': 'boolean' },
+    'collectErrors': { 'type': 'boolean' },
+    'enforceSchemaProperties': { 'type': 'boolean' },
+    'ignoreAdditionalProperties': { 'type': 'boolean' },
+    'removeAdditionalProperties': { 'type': 'boolean' },
+    'synthesizeDefaults': { 'type': 'boolean' }
+  },
+  'type': 'object'
+} as const;
+
+export type CompiledValidateOptionsType = InferType<typeof CompiledValidateOptionsTypeSchema>;

@@ -7,7 +7,8 @@ import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js
 
 export type ExtractFacetOptionsType = {
   'bnodeId': string;
+  'schemaType': 'boolean' | 'integer' | 'number' | 'string' | undefined;
+} & {
   'graph': SchemaGraphInterface;
   'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void;
-  'schemaType': 'boolean' | 'integer' | 'number' | 'string' | undefined;
 };

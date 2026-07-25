@@ -13,6 +13,26 @@ import {
   OWL, XSD
 } from '../../constants/IRI.js';
 
+/**
+ * Map lookups — kept as static class methods (rather than inline bracket
+ * access inside XsdTypes' object-literal methods) so the property lookup is
+ * not a computed MemberExpression nested inside an object literal, which
+ * breaks V8 hidden classes.
+ */
+class XsdMapLookup {
+  static baseType(type: string): null | string {
+    return BASE_TYPE_MAP[type] ?? null;
+  }
+
+  static numberFormat(format: string): null | string {
+    return format in NUMBER_FORMAT_MAP ? (NUMBER_FORMAT_MAP[format] ?? null) : null;
+  }
+
+  static stringFormat(format: string): null | string {
+    return format in STRING_FORMAT_MAP ? (STRING_FORMAT_MAP[format] ?? null) : null;
+  }
+}
+
 export const XsdTypes = {
   /**
    * Resolve the XSD type from a schema node's semantics (types array + format).
@@ -33,7 +53,7 @@ export const XsdTypes = {
       return types.length > 0 ? OWL.Nothing : null;
     }
     if (nonNull.length === 1) {
-      const singleType = nonNull[0];
+      const singleType = nonNull.at(0);
 
       if (singleType === undefined) {
         return null;
@@ -60,15 +80,15 @@ export const XsdTypes = {
     }
     if (type === 'string') {
       return format !== undefined && format in STRING_FORMAT_MAP
-        ? (STRING_FORMAT_MAP[format] ?? null)
+        ? XsdMapLookup.stringFormat(format)
         : XSD.string;
     }
     if (type === 'number' || type === 'integer') {
       return format !== undefined && format in NUMBER_FORMAT_MAP
-        ? (NUMBER_FORMAT_MAP[format] ?? null)
-        : (BASE_TYPE_MAP[type] ?? null);
+        ? XsdMapLookup.numberFormat(format)
+        : XsdMapLookup.baseType(type);
     }
 
-    return BASE_TYPE_MAP[type] ?? null;
+    return XsdMapLookup.baseType(type);
   }
 } as const;

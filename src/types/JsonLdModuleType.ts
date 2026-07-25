@@ -6,6 +6,8 @@
  * walker.
  */
 
-export type JsonLdModuleType = {
-  'toRDF': (doc: unknown, opts?: { 'format'?: string }) => Promise<unknown>
-};
+import type { IdentityType } from './IdentityType.js';
+
+export type JsonLdModuleType = IdentityType<{
+  'toRDF': (document: unknown, options?: { 'format'?: string }) => Promise<unknown>
+}>;

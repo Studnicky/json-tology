@@ -9,7 +9,7 @@ const CodeSchema = {
 } as const;
 
 type Code = InferType<typeof CodeSchema>;
-// string & MinLengthBrandType<3> & MaxLengthBrandType<10>
+// string & MinimumLengthBrandType<3> & MaximumLengthBrandType<10>
 
 const jt = JsonTology.create({
   'baseIri': 'urn:brands:',

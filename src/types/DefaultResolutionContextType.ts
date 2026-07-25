@@ -1,15 +1,16 @@
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 import type { DynamicScopeEntryType } from './DynamicScopeEntryType.js';
-import type { RefTargetType } from './RefTargetType.js';
+import type { ReferenceTargetType } from './ReferenceTargetType.js';
+import type { IdentityType } from './IdentityType.js';
 
-export type DefaultResolutionContextType = {
-  'resolveDynamicRef': (
-    ref: string,
+export type DefaultResolutionContextType = IdentityType<{
+  'resolveDynamicReference': (
+    reference: string,
     currentGraph: SchemaGraphInterface,
     dynamicScope: DynamicScopeEntryType[]
-  ) => RefTargetType;
-  'resolveRef': (
-    ref: string,
+  ) => ReferenceTargetType;
+  'resolveReference': (
+    reference: string,
     currentGraph: SchemaGraphInterface
-  ) => RefTargetType;
-};
+  ) => ReferenceTargetType;
+}>;

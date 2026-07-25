@@ -1,3 +1,5 @@
+import type { IdentityType } from './IdentityType.js';
+
 declare const TRANSFORM_WIRE: unique symbol;
 
 /**
@@ -9,4 +11,4 @@ declare const TRANSFORM_WIRE: unique symbol;
  * wire type is non-derivable from the schema, so the brand records `TWire` so
  * `encode` and `dump` can recover the wire representation.
  */
-export type TransformBrandType<TWire> = { [TRANSFORM_WIRE]: TWire };
+export type TransformBrandType<TWire> = IdentityType<{ [TRANSFORM_WIRE]: TWire }>;

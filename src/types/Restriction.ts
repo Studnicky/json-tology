@@ -1,7 +1,9 @@
+import type { InferType } from './Schema.js';
+
 /**
  * Restriction — opaque type produced by `Compose.someValuesFrom`,
  * `Compose.allValuesFrom`, `Compose.hasValue`, `Compose.cardinality`,
- * `Compose.minCardinality`, and `Compose.maxCardinality`.
+ * `Compose.minimumCardinality`, and `Compose.maximumCardinality`.
  *
  * Carries enough information for the OWL TBox projection to emit an
  * anonymous `owl:Restriction` class (`_:b{n} rdf:type owl:Restriction;
@@ -42,7 +44,7 @@ export type RestrictionKindType
   | 'someValuesFrom';
 
 /**
- * Descriptor payload embedded inside a {@link RestrictionRefType} phantom tag.
+ * Descriptor payload embedded inside a {@link RestrictionReferenceType} phantom tag.
  *
  * @remarks
  * Carries the three fields that fully describe an OWL 2 property restriction:
@@ -62,14 +64,39 @@ export type RestrictionKindType
  *
  * @category Schema Utilities
  * @since 0.10.0
- * @see {@link RestrictionRefType}
+ * @see {@link RestrictionReferenceType}
  * @group Schema Utilities
  */
-export type RestrictionDescriptorType = {
-  'kind': RestrictionKindType;
-  'onProperty': string;
-  'value': boolean | number | string;
-};
+export const RESTRICTION_DESCRIPTOR_SCHEMA = {
+  'properties': {
+    'kind': {
+      'enum': [
+        'allValuesFrom',
+        'cardinality',
+        'hasValue',
+        'maxCardinality',
+        'minCardinality',
+        'someValuesFrom'
+      ]
+    },
+    'onProperty': { 'type': 'string' },
+    'value': {
+      'type': [
+        'boolean',
+        'number',
+        'string'
+      ]
+    }
+  },
+  'required': [
+    'kind',
+    'onProperty',
+    'value'
+  ],
+  'type': 'object'
+} as const;
+
+export type RestrictionDescriptorType = InferType<typeof RESTRICTION_DESCRIPTOR_SCHEMA>;
 
 /**
  * Phantom-tagged wrapper that marks a schema as carrying an OWL 2 restriction.
@@ -78,25 +105,25 @@ export type RestrictionDescriptorType = {
  * The `'~jt:restriction'` key is a compile-time-only phantom tag. The only
  * valid producers are the `Compose.*` restriction factory methods
  * (`Compose.someValuesFrom`, `Compose.allValuesFrom`, `Compose.hasValue`,
- * `Compose.cardinality`, `Compose.minCardinality`, `Compose.maxCardinality`).
+ * `Compose.cardinality`, `Compose.minimumCardinality`, `Compose.maximumCardinality`).
  * The OWL TBox projection reads this tag to emit an anonymous
  * `owl:Restriction` blank node when the restriction is composed via
  * `Compose.subClassOf(restriction, body)`.
  *
  * @example
  * ```ts
- * const ref: RestrictionRefType = Compose.hasValue('https://schema.org/color', 'red');
+ * const ref: RestrictionReferenceType = Compose.hasValue('https://schema.org/color', 'red');
  * ```
  *
  * @category Schema Utilities
  * @since 0.10.0
- * @see {@link TypedRestrictionRefType}
+ * @see {@link TypedRestrictionReferenceType}
  * @group Schema Utilities
  */
-export type RestrictionRefType = Readonly<Record<'~jt:restriction', RestrictionDescriptorType>>;
+export type RestrictionReferenceType = Readonly<Record<'~jt:restriction', RestrictionDescriptorType>>;
 
 /**
- * Typed variant of {@link RestrictionRefType} that preserves the specific
+ * Typed variant of {@link RestrictionReferenceType} that preserves the specific
  * `kind`, `onProperty`, and `value` as literal-type parameters.
  *
  * @remarks
@@ -108,19 +135,19 @@ export type RestrictionRefType = Readonly<Record<'~jt:restriction', RestrictionD
  *
  * @example
  * ```ts
- * type R = TypedRestrictionRefType<'hasValue', 'https://schema.org/color', 'red'>;
+ * type R = TypedRestrictionReferenceType<'hasValue', 'https://schema.org/color', 'red'>;
  * ```
  *
  * @category Schema Utilities
  * @since 0.10.0
- * @see {@link RestrictionRefType}
+ * @see {@link RestrictionReferenceType}
  * @group Schema Utilities
  *
  * @typeParam TKind - The specific OWL restriction kind (discriminant literal).
  * @typeParam TProp - The `onProperty` IRI as a string literal.
  * @typeParam TValue - The restriction value as a boolean, number, or string literal.
  */
-export type TypedRestrictionRefType<
+export type TypedRestrictionReferenceType<
   TKind extends RestrictionKindType,
   TProp extends string,
   TValue extends boolean | number | string
@@ -131,7 +158,7 @@ export type TypedRestrictionRefType<
 }>>;
 
 /**
- * Type guard — narrows an unknown value to a {@link RestrictionRefType}.
+ * Type guard — narrows an unknown value to a {@link RestrictionReferenceType}.
  *
  * @remarks
  * Checks that `value` is a non-null object containing the phantom key
@@ -141,23 +168,25 @@ export type TypedRestrictionRefType<
  *
  * @example
  * ```ts
- * if (isRestrictionRef(candidate)) {
+ * if (RestrictionGuards.isRestrictionReference(candidate)) {
  *   const kind = candidate['~jt:restriction'].kind;
  * }
  * ```
  *
  * @category Schema Utilities
  * @since 0.10.0
- * @see {@link RestrictionRefType}
+ * @see {@link RestrictionReferenceType}
  * @group Schema Utilities
  *
  * @param value - The value to test.
- * @returns `true` when `value` satisfies the {@link RestrictionRefType} shape.
+ * @returns `true` when `value` satisfies the {@link RestrictionReferenceType} shape.
  */
-export function isRestrictionRef(value: unknown): value is RestrictionRefType {
-  return (
-    typeof value === 'object'
-    && value !== null
-    && '~jt:restriction' in value
-  );
+export class RestrictionGuards {
+  static isRestrictionReference(value: unknown): value is RestrictionReferenceType {
+    return (
+      typeof value === 'object'
+      && value !== null
+      && '~jt:restriction' in value
+    );
+  }
 }

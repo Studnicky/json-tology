@@ -1,2 +1,2 @@
-export type PredicateForType = (ctx: { readonly 'classId': string;
+export type PredicateForType = (context: { readonly 'classId': string;
   readonly 'propertyName': string }) => string | undefined;

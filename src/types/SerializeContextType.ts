@@ -1,3 +1,19 @@
+import type { InferType } from './Schema.js';
+
+export const SERIALIZE_CONTEXT_SCHEMA = {
+  'properties': {
+    'indent': { 'type': 'number' },
+    'innerPad': { 'type': 'string' },
+    'pad': { 'type': 'string' }
+  },
+  'required': [
+    'indent',
+    'innerPad',
+    'pad'
+  ],
+  'type': 'object'
+} as const;
+
 /**
  * Serialization context for the literal-serializer helpers.
  *
@@ -15,11 +31,4 @@
  * @see {@link OwlCodegen.toTypeScript}
  * @group OWL Codegen
  */
-export type SerializeContextType = {
-  /** Current indentation depth (number of spaces). */
-  'indent': number;
-  /** Inner padding string for one level deeper. */
-  'innerPad': string;
-  /** Outer padding string for the current level. */
-  'pad': string;
-};
+export type SerializeContextType = InferType<typeof SERIALIZE_CONTEXT_SCHEMA>;

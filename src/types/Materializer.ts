@@ -2,6 +2,10 @@ import type { QuadInterface } from '../interfaces/QuadInterface.js';
 import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 import type { AboxProjectorInterface } from '../interfaces/AboxProjectorInterface.js';
 import type { AboxOptionsType } from './AboxOptionsType.js';
+import type { InferType } from './Schema.js';
+import type {
+  MATERIALIZER_OPTIONS_SCHEMA, MATERIALIZER_RUN_OPTIONS_SCHEMA
+} from '../constants/SCHEMAS.js';
 
 export type MaterializationResultType = {
   'abox': QuadInterface[];
@@ -10,13 +14,9 @@ export type MaterializationResultType = {
   'value': unknown;
 };
 
-export type MaterializerRunOptionsType = {
+export type MaterializerRunOptionsType = InferType<typeof MATERIALIZER_RUN_OPTIONS_SCHEMA> & {
   /** Overrides passed through to ABox projection when baseIri is set. */
   'aboxOptions'?: AboxOptionsType;
-  /** Base IRI for generated quad subjects; ABox projection runs only when set. */
-  'baseIri'?: string;
-  /** When true, synthesizes zero values for required properties instead of validating against provided data. */
-  'synthesizeDefaults'?: boolean;
 };
 
 export type MaterializerOptionsType = {
@@ -32,10 +32,4 @@ export type MaterializerOptionsType = {
    * Receives warn on materialization failure and error on unresolvable $ref.
    */
   'logger'?: LoggerInterface;
-  /**
-   * When true, extra keys not declared in schema properties are allowed through
-   * even if the schema has additionalProperties: false.
-   * Default: false.
-   */
-  'passAdditionalProperties'?: boolean;
-};
+} & InferType<typeof MATERIALIZER_OPTIONS_SCHEMA>;

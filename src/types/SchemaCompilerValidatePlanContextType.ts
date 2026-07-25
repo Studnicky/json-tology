@@ -4,7 +4,7 @@ import type {
   SchemaGraphNodeType, SchemaGraphSemanticsType
 } from './SchemaGraph.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
-import type { ValidateWithErrorsFnType } from '../types/Validation.js';
+import type { ValidateWithErrorsFunctionType } from '../types/Validation.js';
 
 export type SchemaCompilerValidatePlanContextType = {
   'activeCustomKeywords': KeywordDefinitionType[];
@@ -14,13 +14,13 @@ export type SchemaCompilerValidatePlanContextType = {
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
-  ) => ValidateWithErrorsFnType;
+  ) => ValidateWithErrorsFunctionType;
   'compileNodeValidateWithErrors': (
     graphNode: SchemaGraphNodeType,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
-  ) => ValidateWithErrorsFnType;
+  ) => ValidateWithErrorsFunctionType;
   'resolveImplicitDefault': (
     node: SchemaGraphNodeType,
     graph: SchemaGraphInterface,

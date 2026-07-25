@@ -462,3 +462,25 @@ export const RESTRICTION_PREDICATE_MAP: Readonly<Partial<Record<string, string>>
   'minCardinality': OWL.minCardinality,
   'someValuesFrom': OWL.someValuesFrom
 });
+
+// ---------------------------------------------------------------------------
+// OWL property characteristic IRIs
+// ---------------------------------------------------------------------------
+
+/**
+ * OWL 2 property characteristic class IRIs emitted as `rdf:type` quads for a
+ * property, in projection order.
+ *
+ * @category Ontology
+ * @since 0.1.0
+ * @group Constants
+ */
+export const OWL_PROPERTY_CHARACTERISTICS: readonly string[] = [
+  OWL.TransitiveProperty,
+  OWL.SymmetricProperty,
+  OWL.AsymmetricProperty,
+  OWL.FunctionalProperty,
+  OWL.InverseFunctionalProperty,
+  OWL.ReflexiveProperty,
+  OWL.IrreflexiveProperty
+];

@@ -1,5 +1,5 @@
 import type { CustomKeywordEntryType } from './CustomKeywordEntryType.js';
-import type { ValidateWithErrorsFnType } from '../types/Validation.js';
+import type { ValidateWithErrorsFunctionType } from '../types/Validation.js';
 import type { JtExtraType } from '../types/JtConfig.js';
 import type { DynamicScopeEntryType } from './DynamicScopeEntryType.js';
 import type { ArrayValidationOptionsType } from './ArrayValidationOptionsType.js';
@@ -7,16 +7,16 @@ import type { ObjectValidationOptionsType } from './ObjectValidationOptionsType.
 
 export type CompiledNodeValidationPlanType = {
   'additionalIsFalse': boolean;
-  'additionalValidator': undefined | ValidateWithErrorsFnType;
-  'allOfValidators': undefined | ValidateWithErrorsFnType[];
+  'additionalValidator': undefined | ValidateWithErrorsFunctionType;
+  'allOfValidators': undefined | ValidateWithErrorsFunctionType[];
   'allowedKeys': Set<string> | undefined;
   'allowedKeysForStrip': Set<string> | undefined;
-  'anyOfValidators': undefined | ValidateWithErrorsFnType[];
+  'anyOfValidators': undefined | ValidateWithErrorsFunctionType[];
   /** Precomputed array validation options bag (compile-time constant from plan fields). */
   'arrOpts': ArrayValidationOptionsType;
-  'complementValidator': undefined | ValidateWithErrorsFnType;
+  'complementValidator': undefined | ValidateWithErrorsFunctionType;
   'constVal': unknown;
-  'containsValidator': undefined | ValidateWithErrorsFnType;
+  'containsValidator': undefined | ValidateWithErrorsFunctionType;
   'contentAssertionsEnabled': boolean;
   'contentEncoding': string | undefined;
   'contentMediaType': string | undefined;
@@ -24,12 +24,12 @@ export type CompiledNodeValidationPlanType = {
   'defaultValue': unknown;
   'depRequiredEntries': Array<[string, string[]]>;
   'depSchemaValidators': Array<{ 'trigger': string;
-    'validator': ValidateWithErrorsFnType; }> | undefined;
+    'validator': ValidateWithErrorsFunctionType; }> | undefined;
   /** Compiled validator for `$dynamicRef`, or `undefined` if absent. */
-  'dynamicRefValidator': undefined | ValidateWithErrorsFnType;
+  'dynamicRefValidator': undefined | ValidateWithErrorsFunctionType;
   /** Pre-built dynamic scope entry for `$dynamicAnchor` on this node, or `undefined` if absent. */
   'dynamicScopeEntry': DynamicScopeEntryType | undefined;
-  'elseValidator': undefined | ValidateWithErrorsFnType;
+  'elseValidator': undefined | ValidateWithErrorsFunctionType;
   'enumSet': Set<boolean | null | number | string> | undefined;
   'enumValues': undefined | unknown[];
   'exclusiveMaximum': number | undefined;
@@ -38,8 +38,8 @@ export type CompiledNodeValidationPlanType = {
   'formatValidator': ((value: unknown) => boolean) | undefined;
   'hasConst': boolean;
   'hasDefault': boolean;
-  'ifValidator': undefined | ValidateWithErrorsFnType;
-  'itemValidator': undefined | ValidateWithErrorsFnType;
+  'ifValidator': undefined | ValidateWithErrorsFunctionType;
+  'itemValidator': undefined | ValidateWithErrorsFunctionType;
   'jtExtra': JtExtraType | undefined;
   'jtStrictPerField': Map<string, boolean> | undefined;
   'maxContains': number | undefined;
@@ -55,22 +55,22 @@ export type CompiledNodeValidationPlanType = {
   'multipleOf': number | undefined;
   /** Precomputed object validation options bag (compile-time constant from plan fields). */
   'objOpts': ObjectValidationOptionsType;
-  'oneOfValidators': undefined | ValidateWithErrorsFnType[];
+  'oneOfValidators': undefined | ValidateWithErrorsFunctionType[];
   'pattern': string | undefined;
   'patternPropValidators': Array<{ 'regex': RegExp;
-    'validator': ValidateWithErrorsFnType; }> | undefined;
+    'validator': ValidateWithErrorsFunctionType; }> | undefined;
   'patternRegex': RegExp | undefined;
-  'prefixValidators': undefined | ValidateWithErrorsFnType[];
+  'prefixValidators': undefined | ValidateWithErrorsFunctionType[];
   'propertyAliases': Map<string, string>;
   'propertyDefaults': Map<string, { 'defaultValue': unknown;
     'hasDefault': boolean; }>;
-  'propertyNamesValidator': undefined | ValidateWithErrorsFnType;
+  'propertyNamesValidator': undefined | ValidateWithErrorsFunctionType;
   'propertyZeroValueSynthesizers': Map<string, () => unknown>;
-  'propValidators': Map<string, ValidateWithErrorsFnType>;
-  'rdfsRangeValidator': undefined | ValidateWithErrorsFnType;
-  'refValidator': undefined | ValidateWithErrorsFnType;
+  'propValidators': Map<string, ValidateWithErrorsFunctionType>;
+  'rdfsRangeValidator': undefined | ValidateWithErrorsFunctionType;
+  'refValidator': undefined | ValidateWithErrorsFunctionType;
   'required': string[] | undefined;
-  'thenValidator': undefined | ValidateWithErrorsFnType;
+  'thenValidator': undefined | ValidateWithErrorsFunctionType;
   /**
    * Precompiled type predicate (compile-time constant).
    * - `undefined` when `types` is empty (no type constraint).
@@ -83,11 +83,11 @@ export type CompiledNodeValidationPlanType = {
    * Compiled validator for `unevaluatedItems` node, or `false` when
    * `unevaluatedItems: false` (reject all), or `undefined` when absent.
    */
-  'unevaluatedItemsValidator': false | undefined | ValidateWithErrorsFnType;
+  'unevaluatedItemsValidator': false | undefined | ValidateWithErrorsFunctionType;
   /**
    * Compiled validator for `unevaluatedProperties` node, or `false` when
    * `unevaluatedProperties: false` (reject all), or `undefined` when absent.
    */
-  'unevaluatedPropertiesValidator': false | undefined | ValidateWithErrorsFnType;
+  'unevaluatedPropertiesValidator': false | undefined | ValidateWithErrorsFunctionType;
   'uniqueItems': boolean;
 };

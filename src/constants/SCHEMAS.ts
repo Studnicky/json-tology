@@ -149,3 +149,174 @@ export const VALIDATION_ERROR_SCHEMA = {
   ],
   'type': 'object'
 } as const;
+
+/** JSON Schema for the schema-expressible fields of `MaterializerRunOptionsType`. */
+export const MATERIALIZER_RUN_OPTIONS_SCHEMA = {
+  'properties': {
+    'baseIri': { 'type': 'string' },
+    'synthesizeDefaults': { 'type': 'boolean' }
+  },
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `MaterializerOptionsType`. */
+export const MATERIALIZER_OPTIONS_SCHEMA = {
+  'properties': { 'passAdditionalProperties': { 'type': 'boolean' } },
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `MutablePropertySchemaType`. */
+export const MUTABLE_PROPERTY_SCHEMA_SCHEMA = {
+  'properties': {
+    'maxItems': { 'type': 'number' },
+    'minItems': { 'type': 'number' }
+  },
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `NormalizedToQuadsOptionsType`. */
+export const NORMALIZED_TO_QUADS_OPTIONS_SCHEMA = {
+  'additionalProperties': false,
+  'properties': {},
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `OwlCodegenOptionsType`. */
+export const OWL_CODEGEN_OPTIONS_SCHEMA = {
+  'additionalProperties': false,
+  'properties': {},
+  'type': 'object'
+} as const;
+
+/** JSON Schema for `RegistryFileEntryType`. */
+export const REGISTRY_FILE_ENTRY_SCHEMA = {
+  'properties': {
+    'iri': { 'type': 'string' },
+    'name': { 'type': 'string' },
+    'path': { 'type': 'string' },
+    'source': { 'type': 'string' }
+  },
+  'required': [
+    'iri',
+    'name',
+    'path',
+    'source'
+  ],
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `OwlRegistryDirOptionsType`. */
+export const OWL_REGISTRY_DIR_OPTIONS_SCHEMA = {
+  'additionalProperties': false,
+  'properties': {},
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `GenerateFromTboxOptionsType`. */
+export const GENERATE_FROM_TBOX_OPTIONS_SCHEMA = {
+  'additionalProperties': false,
+  'properties': {},
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `GenerateRegistryDirectoryOptionsType`. */
+export const GENERATE_REGISTRY_DIRECTORY_OPTIONS_SCHEMA = {
+  'additionalProperties': false,
+  'properties': {},
+  'type': 'object'
+} as const;
+
+/** JSON Schema for `GenerateRegistryDirectoryEntityFileType`. */
+export const GENERATE_REGISTRY_DIRECTORY_ENTITY_FILE_SCHEMA = {
+  'properties': {
+    'iri': { 'type': 'string' },
+    'name': { 'type': 'string' },
+    'path': { 'type': 'string' },
+    'source': { 'type': 'string' }
+  },
+  'required': [
+    'iri',
+    'name',
+    'path',
+    'source'
+  ],
+  'type': 'object'
+} as const;
+
+/** JSON Schema for `WrittenEntityFileType`. */
+export const WRITTEN_ENTITY_FILE_SCHEMA = {
+  'properties': {
+    'iri': { 'type': 'string' },
+    'name': { 'type': 'string' },
+    'path': { 'type': 'string' }
+  },
+  'required': [
+    'iri',
+    'name',
+    'path'
+  ],
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `OwlImporterOptionsType`. */
+export const OWL_IMPORTER_OPTIONS_SCHEMA = {
+  'properties': {
+    'baseIri': { 'type': 'string' },
+    'prefixes': {
+      'additionalProperties': { 'type': 'string' },
+      'type': 'object'
+    }
+  },
+  'required': ['baseIri'],
+  'type': 'object'
+} as const;
+
+/** JSON Schema for `ParsedLiteralType`. */
+export const PARSED_LITERAL_SCHEMA = {
+  'properties': {
+    'datatype': { 'type': 'string' },
+    'language': { 'type': 'string' },
+    'value': { 'type': 'string' }
+  },
+  'required': [
+    'datatype',
+    'language',
+    'value'
+  ],
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `PassResultType`. */
+export const PASS_RESULT_SCHEMA = {
+  'properties': { 'success': { 'const': true } },
+  'required': ['success'],
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `PlanArrayValidatorsType`. */
+export const PLAN_ARRAY_VALIDATORS_SCHEMA = {
+  'additionalProperties': false,
+  'properties': {},
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `PlanCompileWithSemanticsType`. */
+export const PLAN_COMPILE_WITH_SEMANTICS_SCHEMA = {
+  'additionalProperties': false,
+  'properties': {},
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `PlanPreludeType`. */
+export const PLAN_PRELUDE_SCHEMA = {
+  'additionalProperties': false,
+  'properties': {},
+  'type': 'object'
+} as const;
+
+/** JSON Schema for the schema-expressible fields of `ProjectAboxArgumentListType`. */
+export const PROJECT_ABOX_ARGUMENT_LIST_SCHEMA = {
+  'properties': { 'baseIri': { 'type': 'string' } },
+  'required': ['baseIri'],
+  'type': 'object'
+} as const;

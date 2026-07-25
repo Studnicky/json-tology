@@ -5,10 +5,10 @@
  * arguments, matching the Pino/Fastify call signatures.
  */
 export interface LoggerInterface {
-  debug(msg: string, ...args: unknown[]): void;
-  error(msg: string, ...args: unknown[]): void;
-  fatal(msg: string, ...args: unknown[]): void;
-  info(msg: string, ...args: unknown[]): void;
-  trace(msg: string, ...args: unknown[]): void;
-  warn(msg: string, ...args: unknown[]): void;
+  debug(msg: string, ...argumentList: unknown[]): void;
+  error(msg: string, ...argumentList: unknown[]): void;
+  fatal(msg: string, ...argumentList: unknown[]): void;
+  info(msg: string, ...argumentList: unknown[]): void;
+  trace(msg: string, ...argumentList: unknown[]): void;
+  warn(msg: string, ...argumentList: unknown[]): void;
 }

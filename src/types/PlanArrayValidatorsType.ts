@@ -1,6 +1,8 @@
 import type {
-  OptionalValidateWithErrorsFnType, ValidateWithErrorsFnType
+  OptionalValidateWithErrorsFunctionType, ValidateWithErrorsFunctionType
 } from '../types/Validation.js';
+import type { InferType } from './Schema.js';
+import type { PLAN_ARRAY_VALIDATORS_SCHEMA } from '../constants/SCHEMAS.js';
 
 /**
  * Array-related validators compiled for a validation plan node.
@@ -26,8 +28,8 @@ import type {
  * @see {@link CompositionValidatorsResultType}
  * @group Validation
  */
-export type PlanArrayValidatorsType = {
-  'containsValidator': OptionalValidateWithErrorsFnType;
-  'itemValidator': OptionalValidateWithErrorsFnType;
-  'prefixValidators': undefined | ValidateWithErrorsFnType[];
+export type PlanArrayValidatorsType = InferType<typeof PLAN_ARRAY_VALIDATORS_SCHEMA> & {
+  'containsValidator': OptionalValidateWithErrorsFunctionType;
+  'itemValidator': OptionalValidateWithErrorsFunctionType;
+  'prefixValidators': undefined | ValidateWithErrorsFunctionType[];
 };

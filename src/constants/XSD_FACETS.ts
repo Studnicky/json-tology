@@ -161,15 +161,16 @@ const FACET_ENTRIES: readonly FacetEntryType[] = [
  * @defaultValue Derived from `FACET_ENTRIES` where `shaclPredicate !== null`
  */
 export const SHACL_TO_XSD_FACET: ReadonlyMap<string, string> = new Map(FACET_ENTRIES
-  .filter((entry: FacetEntryType): boolean => {
-    return entry.shaclPredicate !== null;
-  })
-  .map((entry: FacetEntryType): [string, string] => {
-    return [
-      entry.shaclPredicate as string,
-      entry.facetPrefixed
-    ];
-  }));
+  .reduce((accumulator: Array<[string, string]>, entry: FacetEntryType): Array<[string, string]> => {
+    if (entry.shaclPredicate !== null) {
+      accumulator.push([
+        entry.shaclPredicate,
+        entry.facetPrefixed
+      ]);
+    }
+
+    return accumulator;
+  }, []));
 
 /**
  * XSD_FACET_DATATYPE — XSD facet prefixed name → XSD datatype IRI for the facet value literal.

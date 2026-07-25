@@ -1,3 +1,7 @@
+import {
+  ALLOF_PATH_ONLY_RE, ALLOF_PATH_PREFIX_RE
+} from '../../constants/GRAPH_REGEXES.js';
+
 export class SchemaIri {
   static escapeSegment(value: string): string {
     const result = encodeURIComponent(value).replaceAll('%2F', '/');
@@ -26,13 +30,13 @@ export class SchemaIri {
   }
 
   static lastSegment(subject: string): string {
-    const hashIdx = subject.indexOf('#');
+    const hashIndex = subject.indexOf('#');
 
-    if (hashIdx === -1) {
+    if (hashIndex === -1) {
       return subject;
     }
 
-    const segments = subject.slice(hashIdx + 1).split('/');
+    const segments = subject.slice(hashIndex + 1).split('/');
 
     return segments.at(-1) ?? '';
   }
@@ -59,11 +63,11 @@ export class SchemaIri {
     return base;
   }
 
-  static parseRef(ref: string): { 'fragment': string;
+  static parseReference(reference: string): { 'fragment': string;
     'id': string } {
-    const hashIndex = ref.indexOf('#');
-    const id = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-    const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
+    const hashIndex = reference.indexOf('#');
+    const id = hashIndex === -1 ? reference : reference.slice(0, hashIndex);
+    const fragment = hashIndex === -1 ? '' : reference.slice(hashIndex + 1);
 
     return {
       fragment,
@@ -100,30 +104,30 @@ export class SchemaIri {
    * ```
    */
   static propertyName(iri: string): string {
-    const hashIdx = iri.indexOf('#');
+    const hashIndex = iri.indexOf('#');
 
-    if (hashIdx !== -1) {
-      const fragment = iri.slice(hashIdx + 1);
-      const propsIdx = fragment.indexOf('/properties/');
+    if (hashIndex !== -1) {
+      const fragment = iri.slice(hashIndex + 1);
+      const propertiesIndex = fragment.indexOf('/properties/');
 
-      if (propsIdx !== -1) {
+      if (propertiesIndex !== -1) {
         // JSON-pointer form: take the segment right after '/properties/'
-        const afterProps = fragment.slice(propsIdx + '/properties/'.length);
-        const slashIdx = afterProps.indexOf('/');
+        const afterProps = fragment.slice(propertiesIndex + '/properties/'.length);
+        const slashIndex = afterProps.indexOf('/');
 
-        return slashIdx === -1 ? afterProps : afterProps.slice(0, slashIdx);
+        return slashIndex === -1 ? afterProps : afterProps.slice(0, slashIndex);
       }
 
       // Bare fragment — last segment after '/'
-      const slashIdx = fragment.lastIndexOf('/');
+      const slashIndex = fragment.lastIndexOf('/');
 
-      return slashIdx === -1 ? fragment : fragment.slice(slashIdx + 1);
+      return slashIndex === -1 ? fragment : fragment.slice(slashIndex + 1);
     }
 
     // No fragment — last path segment
-    const slashIdx = iri.lastIndexOf('/');
+    const slashIndex = iri.lastIndexOf('/');
 
-    return slashIdx === -1 ? iri : iri.slice(slashIdx + 1);
+    return slashIndex === -1 ? iri : iri.slice(slashIndex + 1);
   }
 
   /**
@@ -156,16 +160,16 @@ export class SchemaIri {
    */
   static splitAtProperties(fragment: string): undefined | { 'parent': string;
     'property': string } {
-    const propsIdx = fragment.lastIndexOf('/properties/');
+    const propertiesIndex = fragment.lastIndexOf('/properties/');
 
-    if (propsIdx === -1) {
+    if (propertiesIndex === -1) {
       return undefined;
     }
 
-    const parent = fragment.slice(0, propsIdx);
-    const afterProps = fragment.slice(propsIdx + '/properties/'.length);
-    const slashIdx = afterProps.indexOf('/');
-    const property = slashIdx === -1 ? afterProps : afterProps.slice(0, slashIdx);
+    const parent = fragment.slice(0, propertiesIndex);
+    const afterProps = fragment.slice(propertiesIndex + '/properties/'.length);
+    const slashIndex = afterProps.indexOf('/');
+    const property = slashIndex === -1 ? afterProps : afterProps.slice(0, slashIndex);
 
     return {
       parent,
@@ -180,9 +184,9 @@ export class SchemaIri {
     // and only the JSON-pointer/anchor fragment that follows the final `#`
     // (e.g. `/properties/skos:prefLabel`) is returned as `fragment`. For
     // single-hash subjects this is identical to splitting at the first `#`.
-    const hashIdx = subject.lastIndexOf('#');
+    const hashIndex = subject.lastIndexOf('#');
 
-    if (hashIdx === -1) {
+    if (hashIndex === -1) {
       return {
         'base': subject,
         'fragment': null
@@ -190,8 +194,8 @@ export class SchemaIri {
     }
 
     return {
-      'base': subject.slice(0, hashIdx),
-      'fragment': subject.slice(hashIdx + 1)
+      'base': subject.slice(0, hashIndex),
+      'fragment': subject.slice(hashIndex + 1)
     };
   }
 
@@ -202,13 +206,13 @@ export class SchemaIri {
       return subject;
     }
 
-    const propsIdx = parts.fragment.lastIndexOf('/properties/');
+    const propertiesIndex = parts.fragment.lastIndexOf('/properties/');
 
-    if (propsIdx === -1) {
+    if (propertiesIndex === -1) {
       return parts.base;
     }
 
-    const parentPointer = parts.fragment.slice(0, propsIdx);
+    const parentPointer = parts.fragment.slice(0, propertiesIndex);
 
     if (parentPointer === '') {
       return parts.base;
@@ -222,8 +226,8 @@ export class SchemaIri {
     // A pointer that descends into a nested object (`/allOf/N/properties/x`) is
     // left intact — its structural parent is that nested object, not the class.
     // Kept consistent with the domain logic in SchemaGraphRelations.
-    const strippedPointer = /^(?:\/allOf\/\d+)+$/u.test(parentPointer)
-      ? parentPointer.replace(/^(?:\/allOf\/\d+)+/u, '')
+    const strippedPointer = ALLOF_PATH_ONLY_RE.test(parentPointer)
+      ? parentPointer.replace(ALLOF_PATH_PREFIX_RE, '')
       : parentPointer;
 
     return strippedPointer === '' ? parts.base : `${parts.base}#${strippedPointer}`;

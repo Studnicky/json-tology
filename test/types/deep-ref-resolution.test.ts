@@ -24,7 +24,7 @@
  * ## Unreachable refs fail uniformly
  *
  * A `$ref` the reference graph does not reach resolves to
- * `RefNotFoundType<TRef>` (or `AnchorNotFoundType` for a fragment
+ * `ReferenceNotFoundType<TRef>` (or `AnchorNotFoundType` for a fragment
  * whose anchor is missing on a reachable base) — the same brand whether or not
  * a references map is present. Resolution never degrades to a silent `unknown`:
  * an unresolved cross-schema `$ref` is a compile-time error brand, surfaced in
@@ -39,7 +39,7 @@ import type {
   SchemaReferencesMapType
 } from '../../src/types/index.js';
 import type { SchemaMapFromTupleType } from '../../src/types/Registry.js';
-import type { RefNotFoundType } from '../../src/types/TypeErrors.js';
+import type { ReferenceNotFoundType } from '../../src/types/TypeErrors.js';
 
 // ---------------------------------------------------------------------------
 // Bidirectional assignability helpers (same style as other type tests)
@@ -204,7 +204,7 @@ assert<AssertAssignableType<OrderType, { readonly 'orderId': string }>>();
 
 // ---------------------------------------------------------------------------
 // 2. Unreachable refs fail uniformly — without a references map and without
-// embedding, a cross-schema $ref resolves to RefNotFoundType, NOT a
+// embedding, a cross-schema $ref resolves to ReferenceNotFoundType, NOT a
 // silent unknown. The brand surfaces the unresolved IRI at compile time.
 // ---------------------------------------------------------------------------
 
@@ -214,7 +214,7 @@ type StandaloneOrder = InferType<typeof OrderSchema>;
 // via a references map → the brand names the unresolved IRI.
 assert<AssertAssignableType<
   StandaloneOrder['customer'],
-  RefNotFoundType<'urn:test:Customer'>
+  ReferenceNotFoundType<'urn:test:Customer'>
 >>();
 
 // Standalone Money: each cross-schema $ref is unreachable → its own brand.
@@ -222,11 +222,11 @@ type StandaloneMoney = InferType<typeof MoneySchema>;
 
 assert<AssertAssignableType<
   StandaloneMoney['amount'],
-  RefNotFoundType<'urn:test:Amount'>
+  ReferenceNotFoundType<'urn:test:Amount'>
 >>();
 assert<AssertAssignableType<
   StandaloneMoney['currency'],
-  RefNotFoundType<'urn:test:CurrencyCode'>
+  ReferenceNotFoundType<'urn:test:CurrencyCode'>
 >>();
 
 // ---------------------------------------------------------------------------

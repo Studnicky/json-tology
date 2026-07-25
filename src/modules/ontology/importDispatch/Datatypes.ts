@@ -55,103 +55,8 @@ import { ImportRelation } from './ImportRelation.js';
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Graph-native helpers (local)
-// ---------------------------------------------------------------------------
-
-/**
- * Extract a number from a Literal-typed relation target.
- * Returns null when the target is not a Literal or not numeric.
- */
-function literalNumber(relation: SchemaGraphRelationType): null | number {
-  if (relation.termType !== 'Literal') {
-    return null;
-  }
-  const raw = ImportRelation.targetValue(relation);
-  const num = Number(raw);
-
-  return Number.isFinite(num) ? num : null;
-}
-
-// ---------------------------------------------------------------------------
-// Infer type from enum values
-// ---------------------------------------------------------------------------
-
-/** Infer the JSON Schema primitive type for a single value. */
-function inferValueType(val: unknown): 'boolean' | 'integer' | 'number' | 'string' {
-  if (typeof val === 'boolean') {
-    return 'boolean';
-  }
-  if (typeof val === 'number') {
-    return Number.isInteger(val) ? 'integer' : 'number';
-  }
-
-  return 'string';
-}
-
-/** Promote two numeric types when they are compatible (integer/number blend). */
-function promoteNumericTypes(
-  first: 'boolean' | 'integer' | 'number' | 'string',
-  second: 'boolean' | 'integer' | 'number' | 'string'
-): 'number' | undefined {
-  if ((first === 'integer' && second === 'number') || (first === 'number' && second === 'integer')) {
-    return 'number';
-  }
-
-  return undefined;
-}
-
-/**
- * Infer the JSON Schema type from a homogeneous array of enum values.
- * Returns undefined when the array is empty or heterogeneous.
- */
-function inferEnumType(values: unknown[]): 'boolean' | 'integer' | 'number' | 'string' | undefined {
-  if (values.length === 0) {
-    return undefined;
-  }
-
-  let seenType: 'boolean' | 'integer' | 'number' | 'string' | undefined;
-
-  for (const val of values) {
-    const valType = inferValueType(val);
-
-    if (seenType === undefined) {
-      seenType = valType;
-      continue;
-    }
-
-    if (seenType === valType) {
-      continue;
-    }
-
-    const promoted = promoteNumericTypes(seenType, valType);
-
-    if (promoted === undefined) {
-      return undefined;
-    }
-    seenType = promoted;
-  }
-
-  return seenType;
-}
-
-// ---------------------------------------------------------------------------
 // Facet kind handlers — one per descriptor.kind
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Empty fragment helper
-// ---------------------------------------------------------------------------
-
-function emptyFragment(): OwlImportFragmentType {
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    'schemaDeltas': new Map()
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Public dispatcher
@@ -227,10 +132,10 @@ export class Datatypes {
     const firstMultipleOf = multipleOf[0];
 
     if (firstMultipleOf !== undefined) {
-      const moNum = literalNumber(firstMultipleOf);
+      const moNumber = Datatypes.literalNumber(firstMultipleOf);
 
-      if (moNum !== null) {
-        delta.multipleOf = moNum;
+      if (moNumber !== null) {
+        delta.multipleOf = moNumber;
       }
     }
 
@@ -238,10 +143,10 @@ export class Datatypes {
     const firstFormatRel = formatRels[0];
 
     if (firstFormatRel !== undefined) {
-      const fmtStr = ImportRelation.literalString(firstFormatRel);
+      const formatString = ImportRelation.literalString(firstFormatRel);
 
-      if (fmtStr !== null) {
-        delta.format = fmtStr;
+      if (formatString !== null) {
+        delta.format = formatString;
       }
     }
   }
@@ -288,20 +193,20 @@ export class Datatypes {
 
   /** Apply a `fractionDigits` facet: multipleOf = 10^-n. */
   private static applyFractionDigits(fr: SchemaGraphRelationType, delta: Record<string, unknown>): void {
-    const num = literalNumber(fr);
+    const number = Datatypes.literalNumber(fr);
 
-    if (num !== null && num >= 0) {
-      delta.multipleOf = Math.pow(DECIMAL_RADIX, -num);
+    if (number !== null && number >= 0) {
+      delta.multipleOf = Math.pow(DECIMAL_RADIX, -number);
     }
   }
 
   /** Apply a `length` facet: minLength = maxLength = n. */
   private static applyLengthFacet(fr: SchemaGraphRelationType, delta: Record<string, unknown>): void {
-    const num = literalNumber(fr);
+    const number = Datatypes.literalNumber(fr);
 
-    if (num !== null) {
-      delta.minLength = num;
-      delta.maxLength = num;
+    if (number !== null) {
+      delta.minLength = number;
+      delta.maxLength = number;
     }
   }
 
@@ -311,10 +216,10 @@ export class Datatypes {
     delta: Record<string, unknown>,
     key: string
   ): void {
-    const num = literalNumber(fr);
+    const number = Datatypes.literalNumber(fr);
 
-    if (num !== null) {
-      delta[key] = num;
+    if (number !== null) {
+      delta[key] = number;
     }
   }
 
@@ -358,7 +263,7 @@ export class Datatypes {
         delta.enum = enumValues;
 
         if (!('type' in delta)) {
-          const inferred = inferEnumType(enumValues);
+          const inferred = Datatypes.inferEnumType(enumValues);
 
           if (inferred !== undefined) {
             delta.type = inferred;
@@ -374,10 +279,10 @@ export class Datatypes {
     delta: Record<string, unknown>,
     key: string
   ): void {
-    const str = ImportRelation.literalString(fr);
+    const string = ImportRelation.literalString(fr);
 
-    if (str !== null) {
-      delta[key] = str;
+    if (string !== null) {
+      delta[key] = string;
     }
   }
 
@@ -419,8 +324,8 @@ export class Datatypes {
     return Terms.decodeLiteral(literalTerm);
   }
 
-  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-    const graph = ctx.graph;
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+    const graph = context.graph;
     const datatypeIris = new Set<string>();
 
     for (const relation of graph.allRelations()) {
@@ -435,13 +340,13 @@ export class Datatypes {
     }
 
     if (datatypeIris.size === 0) {
-      return emptyFragment();
+      return Datatypes.emptyFragment();
     }
 
-    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+    const schemaDeltas = new Map<string, JsonSchemaDocumentObjectType>();
 
     for (const datatypeIri of datatypeIris) {
-      const delta = Datatypes.resolveDatatypeIri(datatypeIri, graph, ctx.reportUnsupported);
+      const delta = Datatypes.resolveDatatypeIri(datatypeIri, graph, context.reportUnsupported);
 
       schemaDeltas.set(datatypeIri, delta);
     }
@@ -453,6 +358,18 @@ export class Datatypes {
       'invariants': [],
       'sameAs': [],
       schemaDeltas
+    };
+  }
+
+  /** Return an empty OwlImportFragmentType with all buckets initialised. */
+  private static emptyFragment(): OwlImportFragmentType {
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      'schemaDeltas': new Map()
     };
   }
 
@@ -485,7 +402,7 @@ export class Datatypes {
    *
    * Multiple predicates on one blank node are all applied.
    */
-  private static extractFacetFromBnode(options: ExtractFacetOptionsType): Partial<JsonSchemaDocumentObjectType> {
+  private static extractFacetFromBnode(options: ExtractFacetOptionsType): JsonSchemaDocumentObjectType {
     const {
       bnodeId, graph, reportUnsupported
     } = options;
@@ -505,13 +422,85 @@ export class Datatypes {
   }
 
   /**
+   * Infer the JSON Schema type from a homogeneous array of enum values.
+   * Returns undefined when the array is empty or heterogeneous.
+   */
+  private static inferEnumType(values: unknown[]): 'boolean' | 'integer' | 'number' | 'string' | undefined {
+    if (values.length === 0) {
+      return undefined;
+    }
+
+    let seenType: 'boolean' | 'integer' | 'number' | 'string' | undefined;
+
+    for (const value of values) {
+      const valueType = Datatypes.inferValueType(value);
+
+      if (seenType === undefined) {
+        seenType = valueType;
+        continue;
+      }
+
+      if (seenType === valueType) {
+        continue;
+      }
+
+      const promoted = Datatypes.promoteNumericTypes(seenType, valueType);
+
+      if (promoted === undefined) {
+        return undefined;
+      }
+      seenType = promoted;
+    }
+
+    return seenType;
+  }
+
+  /** Infer the JSON Schema primitive type for a single value. */
+  private static inferValueType(value: unknown): 'boolean' | 'integer' | 'number' | 'string' {
+    if (typeof value === 'boolean') {
+      return 'boolean';
+    }
+    if (typeof value === 'number') {
+      return Number.isInteger(value) ? 'integer' : 'number';
+    }
+
+    return 'string';
+  }
+
+  /**
+   * Extract a number from a Literal-typed relation target.
+   * Returns null when the target is not a Literal or not numeric.
+   */
+  private static literalNumber(relation: SchemaGraphRelationType): null | number {
+    if (relation.termType !== 'Literal') {
+      return null;
+    }
+    const raw = ImportRelation.targetValue(relation);
+    const number = Number(raw);
+
+    return Number.isFinite(number) ? number : null;
+  }
+
+  /** Promote two numeric types when they are compatible (integer/number blend). */
+  private static promoteNumericTypes(
+    first: 'boolean' | 'integer' | 'number' | 'string',
+    second: 'boolean' | 'integer' | 'number' | 'string'
+  ): 'number' | undefined {
+    if ((first === 'integer' && second === 'number') || (first === 'number' && second === 'integer')) {
+      return 'number';
+    }
+
+    return undefined;
+  }
+
+  /**
    * Process a single `rdfs:Datatype` subject and return its schema delta.
    */
   private static resolveDatatypeIri(
     subjectIri: string,
     graph: SchemaGraphInterface,
     reportUnsupported: (axiomIri: string, subjectIri: null | string) => void
-  ): Partial<JsonSchemaDocumentObjectType> {
+  ): JsonSchemaDocumentObjectType {
     const delta: Record<string, unknown> = {};
 
     const schemaType = Datatypes.applyOnDatatype(subjectIri, graph, delta);

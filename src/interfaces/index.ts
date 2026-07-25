@@ -18,7 +18,7 @@ export type * from './LoggerInterface.js';
 export type * from './MaterializerInterface.js';
 export type * from './OntologyBuilderInterface.js';
 export type * from './QuadInterface.js';
-export type * from './RefDecoderInterface.js';
+export type * from './ReferenceDecoderInterface.js';
 export type * from './SameAsStoreInterface.js';
 export type * from './SchemaCompilerInterface.js';
 export type * from './SchemaEntryStoreInterface.js';
@@ -30,7 +30,7 @@ export type * from './VocabularyPluginInterface.js';
 
 // Intentionally unexported — internal implementation details not part of the public callable surface:
 // - BuildOptions      (internal graph serializer construction options)
-// - RefResolutionLoader (internal loader wiring; consumers use LoaderType from src/types/)
-// - SchemaRefWalker   (internal ref traversal; not a consumer-facing callable)
+// - ReferenceResolutionLoader (internal loader wiring; consumers use LoaderType from src/types/)
+// - SchemaReferenceWalker   (internal ref traversal; not a consumer-facing callable)
 // - VizOptions        (internal visualization options; consumed only by the viz subpath)
 // - XsdJsonSchemaPrimitiveType (internal XSD→JSON-Schema reverse-map shape; consumed by constants + import dispatch)

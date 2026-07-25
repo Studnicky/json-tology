@@ -13,7 +13,7 @@ import {
 } from '../../../../examples/docs/bookstore/index.js';
 import { aboxFixtures } from '../../../../examples/docs/bookstore/aboxFixtures.js';
 import type { QuadInterface } from '../../../../src/interfaces/QuadInterface.js';
-import type { SkolemizeFnType } from '../../../../src/types/SkolemizeFnType.js';
+import type { SkolemizeFunctionType } from '../../../../src/types/SkolemizeFunctionType.js';
 import { JsonLdFormatter } from '../../../../src/modules/rdf/JsonLdFormatter.js';
 import { layoutLayer } from './graphLayout.js';
 import type { LayoutPosition } from './graphLayout.js';
@@ -771,7 +771,7 @@ function shortHash(input: string): string {
  * legible (`/id/the-neverending-story__a3f1k2`) instead of opaque skolem
  * hashes. The display label strips the `__hash` suffix (see {@link nodeLabel}).
  */
-const aboxIriFor: SkolemizeFnType = (ctx) => {
+const aboxIriFor: SkolemizeFunctionType = (ctx) => {
   const value = ctx.value;
 
   if (value === null || typeof value !== 'object') {

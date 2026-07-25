@@ -1,8 +1,8 @@
 /**
- * Compile-time shape assertions for PredicateResolverFnType.
+ * Compile-time shape assertions for PredicateResolverFunctionType.
  *
  * Verifies that the resolver function type:
- *   1. Accepts a ctx object with readonly classId, propertyName, and a
+ *   1. Accepts a context object with readonly classId, propertyName, and a
  *      JsonSchemaType propertySchema.
  *   2. Returns a string (a full IRI or CURIE, expanded later).
  *
@@ -14,7 +14,7 @@ import {
 } from 'node:test';
 
 import type { JsonSchemaType } from '../../src/types/Schema.js';
-import type { PredicateResolverFnType } from '../../src/types/PredicateResolverFnType.js';
+import type { PredicateResolverFunctionType } from '../../src/types/PredicateResolverFunctionType.js';
 
 // ---------------------------------------------------------------------------
 // Bidirectional equality helper
@@ -31,30 +31,30 @@ function assert<T extends true>(): void {
 // Return type is string
 // ---------------------------------------------------------------------------
 
-assert<AssertEqualType<ReturnType<PredicateResolverFnType>, string>>();
+assert<AssertEqualType<ReturnType<PredicateResolverFunctionType>, string>>();
 
 // ---------------------------------------------------------------------------
-// Parameter is the expected ctx shape
+// Parameter is the expected context shape
 // ---------------------------------------------------------------------------
 
-type CtxType = Parameters<PredicateResolverFnType>[0];
+type ContextType = Parameters<PredicateResolverFunctionType>[0];
 
-assert<AssertEqualType<CtxType['classId'], string>>();
-assert<AssertEqualType<CtxType['propertyName'], string>>();
-assert<AssertEqualType<CtxType['propertySchema'], JsonSchemaType>>();
+assert<AssertEqualType<ContextType['classId'], string>>();
+assert<AssertEqualType<ContextType['propertyName'], string>>();
+assert<AssertEqualType<ContextType['propertySchema'], JsonSchemaType>>();
 
 // ---------------------------------------------------------------------------
 // A conforming implementation type-checks and is assignable
 // ---------------------------------------------------------------------------
 
-const _impl: PredicateResolverFnType = (ctx) => {
-  return `${ctx.classId}#${ctx.propertyName}`;
+const _impl: PredicateResolverFunctionType = (context) => {
+  return `${context.classId}#${context.propertyName}`;
 };
 
 void _impl;
 
 // node:test wrapper so the file is a valid test module
-void describe('PredicateResolverFnType — compile-time shape', () => {
+void describe('PredicateResolverFunctionType — compile-time shape', () => {
   void it('asserts at compile time', () => {
     void 0;
   });

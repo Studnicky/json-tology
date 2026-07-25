@@ -3,9 +3,10 @@
  * during property restriction processing in the PropertyRestrictions dispatcher.
  */
 
-export type MutablePropertySchemaType = {
+import type { InferType } from './Schema.js';
+import type { MUTABLE_PROPERTY_SCHEMA_SCHEMA } from '../constants/SCHEMAS.js';
+
+export type MutablePropertySchemaType = InferType<typeof MUTABLE_PROPERTY_SCHEMA_SCHEMA> & {
   'const'?: unknown;
   'items'?: { '$ref': string };
-  'maxItems'?: number;
-  'minItems'?: number;
 };

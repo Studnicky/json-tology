@@ -2,6 +2,7 @@ import type {
   SchemaGraphNodeType, SchemaGraphRelationType, SchemaGraphSemanticsType
 } from './SchemaGraph.js';
 import type { GraphAccessorInterface } from '../interfaces/GraphAccessorInterface.js';
+import type { IdentityType } from './IdentityType.js';
 
 /**
  * Common context bundle for relation-push helpers that need graph + node + semantics.
@@ -9,11 +10,11 @@ import type { GraphAccessorInterface } from '../interfaces/GraphAccessorInterfac
  *
  * @internal
  */
-export type RelationsContextType = {
+export type RelationsContextType = IdentityType<{
   'graph': GraphAccessorInterface;
   'node': SchemaGraphNodeType;
   'sem': SchemaGraphSemanticsType;
-};
+}>;
 
 /**
  * Extended context that also carries the mutable accumulator.

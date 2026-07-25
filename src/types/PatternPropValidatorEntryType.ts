@@ -1,4 +1,4 @@
-import type { ValidateWithErrorsFnType } from '../types/Validation.js';
+import type { ValidateWithErrorsFunctionType } from '../types/Validation.js';
 
 /**
  * A pattern-property entry pairing a validate-with-errors function with its compiled regex.
@@ -24,5 +24,5 @@ import type { ValidateWithErrorsFnType } from '../types/Validation.js';
  */
 export type PatternPropValidatorEntryType = {
   'regex': RegExp;
-  'validator': ValidateWithErrorsFnType;
+  'validator': ValidateWithErrorsFunctionType;
 };

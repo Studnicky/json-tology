@@ -1,7 +1,7 @@
 /**
  * Graph-layer logger DI.
  *
- * Verifies that SchemaGraph (instance), GraphArtifact (static), and RefDecoder
+ * Verifies that SchemaGraph (instance), GraphArtifact (static), and ReferenceDecoder
  * (static) emit `[Component.operation]`-scoped log messages at their notable
  * failure branches when a logger is supplied, and that the silent default keeps
  * those paths working when no logger is given (including graphs built via the
@@ -208,7 +208,7 @@ const HostSchema = {
   'type': 'object'
 } as const;
 
-void describe('RefDecoder logger DI (end-to-end through the registry)', () => {
+void describe('ReferenceDecoder logger DI (end-to-end through the registry)', () => {
   void it('logs an error scope when a $ref decoder throws during instantiate', () => {
     const {
       logger, messages
@@ -232,9 +232,9 @@ void describe('RefDecoder logger DI (end-to-end through the registry)', () => {
     );
     assert.ok(
       messages.some((m) => {
-        return m.level === 'error' && m.msg.includes('[RefDecoder.run]');
+        return m.level === 'error' && m.msg.includes('[ReferenceDecoder.run]');
       }),
-      'expected an error log scoped to RefDecoder.run, proving registry -> RefDecoder logger wiring'
+      'expected an error log scoped to ReferenceDecoder.run, proving registry -> ReferenceDecoder logger wiring'
     );
   });
 });

@@ -9,7 +9,22 @@
  * (src/constants/XSD_REVERSE_MAPS.ts) and by the OWL import property dispatch.
  */
 
-export type XsdJsonSchemaPrimitiveType = {
-  'format'?: string;
-  'type': 'boolean' | 'integer' | 'number' | 'string';
-};
+import type { InferType } from './Schema.js';
+
+export const XSD_JSON_SCHEMA_PRIMITIVE_SCHEMA = {
+  'properties': {
+    'format': { 'type': 'string' },
+    'type': {
+      'enum': [
+        'boolean',
+        'integer',
+        'number',
+        'string'
+      ]
+    }
+  },
+  'required': ['type'],
+  'type': 'object'
+} as const;
+
+export type XsdJsonSchemaPrimitiveType = InferType<typeof XSD_JSON_SCHEMA_PRIMITIVE_SCHEMA>;

@@ -1,12 +1,12 @@
 import type { CurieInterface } from '../interfaces/CurieInterface.js';
 import type { AnnotationEmitModeType } from './AnnotationEmitModeType.js';
-import type { PredicateResolverFnType } from './PredicateResolverFnType.js';
-import type { SkolemizeFnType } from './SkolemizeFnType.js';
+import type { PredicateResolverFunctionType } from './PredicateResolverFunctionType.js';
+import type { SkolemizeFunctionType } from './SkolemizeFunctionType.js';
 
-export type AboxOptionsType = {
-  'annotationEmitMode'?: AnnotationEmitModeType | undefined;
-  'curie'?: CurieInterface | undefined;
-  'graphIri'?: string | undefined;
-  'iriFor'?: SkolemizeFnType | undefined;
-  'predicateResolver'?: PredicateResolverFnType | undefined;
-};
+export type AboxOptionsType = Partial<{
+  'annotationEmitMode': AnnotationEmitModeType | undefined;
+  'curie': CurieInterface | undefined;
+  'graphIri': string | undefined;
+  'iriFor': SkolemizeFunctionType | undefined;
+  'predicateResolver': PredicateResolverFunctionType | undefined;
+}>;

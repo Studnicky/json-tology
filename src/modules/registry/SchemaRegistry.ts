@@ -20,7 +20,7 @@ import type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryT
 import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStoreInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { StructureWarningType } from '../../types/SchemaGraph.js';
-import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalkerInterface.js';
+import type { SchemaReferenceWalkerInterface } from '../../interfaces/SchemaReferenceWalkerInterface.js';
 import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntryType.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
@@ -35,7 +35,7 @@ import { InstantiationError } from '../../errors/InstantiationError.js';
 import { TransformError } from '../../errors/TransformError.js';
 import { ComputedStore } from './ComputedStore.js';
 import { SchemaEntryStore } from './SchemaEntryStore.js';
-import { SchemaRefWalker } from './SchemaRefWalker.js';
+import { SchemaReferenceWalker } from './SchemaReferenceWalker.js';
 import { DifferentFromStore } from './DifferentFromStore.js';
 import { SameAsStore } from './SameAsStore.js';
 import { Curie } from '../quads/Curie.js';
@@ -46,7 +46,7 @@ import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
 import type { DefaultCreatorInterface } from '../../interfaces/DefaultCreatorInterface.js';
-import { RefDecoder } from '../graph/RefDecoder.js';
+import { ReferenceDecoder } from '../graph/ReferenceDecoder.js';
 import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
@@ -85,11 +85,6 @@ const CHARACTERISTIC_TO_KEY: Readonly<Partial<Record<string, string>>> = Object.
   'Transitive': 'transitive'
 });
 
-function isStringItem(value: unknown): boolean {
-  return typeof value === 'string';
-}
-
-
 /**
  * Central registry for JSON Schemas used by validation, instantiation, materialization,
  * and ontology generation.
@@ -117,6 +112,9 @@ function isStringItem(value: unknown): boolean {
  * @group Core
  */
 export class SchemaRegistry implements SchemaRegistryInterface {
+  private static isStringItem(value: unknown): boolean {
+    return typeof value === 'string';
+  }
   /**
    * Resolve registry option booleans to their effective values.
    * Centralises the defaults so the constructor complexity is reduced.
@@ -155,8 +153,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
   public readonly castTypes: boolean;
   private readonly compiler: SchemaCompilerInterface;
-  public readonly computedStore: ComputedStore;
 
+  public readonly computedStore: ComputedStore;
   public readonly curie: CurieInterface | undefined;
   private readonly defaultCreatorFactory: ((registry: SchemaRegistryInterface) => DefaultCreatorInterface) | undefined;
   public readonly differentFromStore: DifferentFromStore;
@@ -169,14 +167,15 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly invariants: InvariantStore;
   private readonly keywords: KeywordDefinitionType[] | undefined;
   private readonly logger: LoggerInterface;
-  private readonly lookupGraphFn: (id: string) => SchemaGraphInterface | undefined;
-  private readonly maxSchemaDepth: number | undefined;
-  private readonly refDecoderRegistry: {
+  private readonly lookupGraphFunction: (id: string) => SchemaGraphInterface | undefined;
+  private readonly maximumSchemaDepth: number | undefined;
+  private readonly referenceDecoderRegistry: {
     'getGraph': (target: Record<string, unknown>) => SchemaGraphInterface | undefined;
     'getSchema': (targetId: string) => Record<string, unknown> | undefined;
     'resolveSchemaId': (rawId: string) => string;
   };
-  private readonly refs: SchemaRefWalkerInterface;
+  private readonly refs: SchemaReferenceWalkerInterface;
+
   public readonly sameAsStore: SameAsStore;
 
   private readonly store: SchemaEntryStoreInterface;
@@ -195,49 +194,56 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.enableInlineWarnings = config.enableInlineWarnings;
     this.enableDuplicateDetection = config.enableDuplicateDetection;
     this.vocabularies = config.vocabularies;
-    this.maxSchemaDepth = config.maxSchemaDepth;
+    this.maximumSchemaDepth = config.maxSchemaDepth;
     this.instantiateOptions = config.instantiateOptions;
 
     const mergedPrefixes = this.buildMergedPrefixes(this.vocabularies, options?.prefixes);
 
     this.curie = Object.keys(mergedPrefixes).length > 0 ? new Curie(mergedPrefixes) : undefined;
     this.computedStore = new ComputedStore();
-    this.refs = new SchemaRefWalker({ 'logger': this.logger });
+    this.refs = new SchemaReferenceWalker({ 'logger': this.logger });
     this.store = new SchemaEntryStore();
     this.sameAsStore = new SameAsStore();
     this.differentFromStore = new DifferentFromStore();
     this.formatRegistry = options?.formatRegistry;
     this.keywords = options?.keywords;
     this.invariants = new InvariantStore(options?.invariants);
-    this.lookupGraphFn = (id: string): SchemaGraphInterface | undefined => {
+    this.lookupGraphFunction = (id: string): SchemaGraphInterface | undefined => {
       const result = this.graph(id);
 
       return result;
     };
-    this.refDecoderRegistry = {
-      'getGraph': (target: Record<string, unknown>): SchemaGraphInterface | undefined => {
-        const found = this.store.get(target.$id as string);
+    const getGraph = (target: Record<string, unknown>): SchemaGraphInterface | undefined => {
+      const found = this.store.get(target.$id as string);
 
-        return found === undefined ? undefined : this.graphOf(found);
-      },
-      'getSchema': (targetId: string): Record<string, unknown> | undefined => {
-        const result = this.store.get(targetId)?.schema;
-
-        return result;
-      },
-      'resolveSchemaId': (rawId: string): string => {
-        const result = this.resolve(rawId);
-
-        return result;
-      }
+      return found === undefined ? undefined : this.graphOf(found);
     };
+    const getSchema = (targetId: string): Record<string, unknown> | undefined => {
+      const result = this.store.get(targetId)?.schema;
+
+      return result;
+    };
+    const resolveSchemaId = (rawId: string): string => {
+      const result = this.resolve(rawId);
+
+      return result;
+    };
+
+    this.referenceDecoderRegistry = {
+      getGraph,
+      getSchema,
+      resolveSchemaId
+    };
+
+    const lookupCompiled = (schemaId: string): CompiledValidatorType | undefined => {
+      return this.store.has(schemaId)
+        ? this.compiled(schemaId)
+        : undefined;
+    };
+
     this.compiler = new SchemaCompiler({
       'logger': this.logger,
-      'lookupCompiled': (schemaId: string): CompiledValidatorType | undefined => {
-        return this.store.has(schemaId)
-          ? this.compiled(schemaId)
-          : undefined;
-      }
+      lookupCompiled
     });
   }
 
@@ -323,11 +329,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    */
   private applyComputedField(
     name: string,
-    fn: (data: Record<string, unknown>) => unknown,
+    computeFunction: (data: Record<string, unknown>) => unknown,
     coerced: Record<string, unknown>
   ): void {
     try {
-      coerced[name] = fn(coerced);
+      coerced[name] = computeFunction(coerced);
     } catch (error) {
       const causeError = BaseError.toCause(error);
 
@@ -357,9 +363,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     for (const [
       name,
-      fn
+      computeFunction
     ] of Object.entries(computedMap)) {
-      this.applyComputedField(name, fn, coerced);
+      this.applyComputedField(name, computeFunction, coerced);
     }
   }
 
@@ -367,9 +373,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Deep-freeze the decoded value when the schema declares `jt:frozen: true`
    * or `jt:config.frozen: true`. Returns the value unchanged otherwise.
    */
-  private applyFrozenSeal(schemaObj: Record<string, unknown>, decoded: unknown): unknown {
-    const isFrozen = schemaObj['jt:frozen'] === true
-      || (DataType.isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true);
+  private applyFrozenSeal(schemaObject: Record<string, unknown>, decoded: unknown): unknown {
+    const isFrozen = schemaObject['jt:frozen'] === true
+      || (DataType.isRecord(schemaObject['jt:config']) && schemaObject['jt:config'].frozen === true);
 
     return isFrozen ? Frozen.deepFreeze(decoded) : decoded;
   }
@@ -500,12 +506,12 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return;
     }
 
-    const dupMsg = duplicates.map((dup: DuplicateReportEntryType): string => {
+    const duplicateMessage = duplicates.map((dup: DuplicateReportEntryType): string => {
       const result = `"${dup.schemaId}#${dup.pointer}" duplicates "${dup.equivalentTo}"`;
 
       return result;
     }).join('; ');
-    const message = `Duplicate schema shapes detected: ${dupMsg}`;
+    const message = `Duplicate schema shapes detected: ${duplicateMessage}`;
 
     if (this.enableStrictGraph) {
       throw new SchemaError(message, {
@@ -875,6 +881,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.store.clear();
   }
 
+
   private collectAnchors(schema: Record<string, unknown>, seen: Set<string>, schemaId: string): void {
     if (typeof schema.$anchor === 'string') {
       if (seen.has(schema.$anchor)) {
@@ -908,12 +915,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
-
   /**
    * Collect all non-fragment cross-schema $ref IRIs reachable from the given schema
    * that are not yet registered. Used by the loader walker in JsonTology.resolveAllRefs.
    */
-  public collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string> {
+  public collectUnresolvedReferenceIris(schema: Record<string, unknown>): ReadonlySet<string> {
     // Embedded-$id knowledge comes solely from the canonical graph. The schema
     // walked here is not yet registered (loader-driven resolution), so build a
     // graph over it to enumerate its embedded sub-schema ids.
@@ -1013,8 +1019,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Throws `DecodeError` when the decoder throws an unexpected error,
    * or re-throws `TransformError` when the decoder surfaces a known failure.
    */
-  private decodeWithTransform(schemaObj: Record<string, unknown>, value: unknown, schemaId: string): unknown {
-    const decoder = Transform.getDecoder(schemaObj);
+  private decodeWithTransform(schemaObject: Record<string, unknown>, value: unknown, schemaId: string): unknown {
+    const decoder = Transform.getDecoder(schemaObject);
 
     if (decoder === undefined) {
       return value;
@@ -1063,34 +1069,36 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       // engine share the same graph instance (graphOf is memoised).
       const entryGraph = this.graphOf(entry);
 
+      const lookupSchema = (lookupSchemaId: string): Record<string, unknown> | undefined => {
+        // 1. Cross-registry lookup: other top-level registered schemas.
+        //    Resolve CURIE refs against the canonical store key first.
+        const resolvedId = this.resolve(lookupSchemaId);
+        const storeSchema = this.store.get(resolvedId)?.schema;
+
+        if (storeSchema !== undefined) {
+          return storeSchema;
+        }
+
+        // 2. Embedded $id lookup via the canonical graph index.
+        //    GraphEngine.resolveRefGraph resolves embedded $ids through the
+        //    root graph's embeddedNode() at runtime, but SchemaCompiler also
+        //    calls lookupSchema at compile time to build compiled validators
+        //    for $ref targets. Both callers therefore get the schema through
+        //    the same graph-owned index — one source, two access points.
+        const embeddedNode = entryGraph.embeddedNode(lookupSchemaId)
+          ?? entryGraph.embeddedNode(resolvedId);
+
+        if (embeddedNode !== undefined && DataType.isRecord(embeddedNode.schema)) {
+          return embeddedNode.schema;
+        }
+
+        return undefined;
+      };
+
       const engineOptions: GraphEngineOptionsType = {
         'logger': this.logger,
-        'lookupGraph': this.lookupGraphFn,
-        'lookupSchema': (lookupSchemaId: string): Record<string, unknown> | undefined => {
-          // 1. Cross-registry lookup: other top-level registered schemas.
-          //    Resolve CURIE refs against the canonical store key first.
-          const resolvedId = this.resolve(lookupSchemaId);
-          const storeSchema = this.store.get(resolvedId)?.schema;
-
-          if (storeSchema !== undefined) {
-            return storeSchema;
-          }
-
-          // 2. Embedded $id lookup via the canonical graph index.
-          //    GraphEngine.resolveRefGraph resolves embedded $ids through the
-          //    root graph's embeddedNode() at runtime, but SchemaCompiler also
-          //    calls lookupSchema at compile time to build compiled validators
-          //    for $ref targets. Both callers therefore get the schema through
-          //    the same graph-owned index — one source, two access points.
-          const embeddedNode = entryGraph.embeddedNode(lookupSchemaId)
-            ?? entryGraph.embeddedNode(resolvedId);
-
-          if (embeddedNode !== undefined && DataType.isRecord(embeddedNode.schema)) {
-            return embeddedNode.schema;
-          }
-
-          return undefined;
-        }
+        'lookupGraph': this.lookupGraphFunction,
+        lookupSchema
       };
 
       if (this.formatRegistry !== undefined) {
@@ -1099,8 +1107,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       if (this.keywords !== undefined && this.keywords.length > 0) {
         engineOptions.keywords = this.keywords;
       }
-      if (this.maxSchemaDepth !== undefined) {
-        engineOptions.maxSchemaDepth = this.maxSchemaDepth;
+      if (this.maximumSchemaDepth !== undefined) {
+        engineOptions.maxSchemaDepth = this.maximumSchemaDepth;
       }
 
       entry.engine = new GraphEngine(entry.schema, engineOptions);
@@ -1216,14 +1224,14 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiledFromEntry(entry);
     const resolvedOptions = this.resolveInstantiateOptions(callOptions?.enableDefaults);
     const input = callOptions?.clone === false ? data : structuredClone(data);
-    const schemaObj = typeof schema === 'string' ? entry.schema : schema;
+    const schemaObject = typeof schema === 'string' ? entry.schema : schema;
 
     // Normalize first: decode the raw wire payload into the schema's canonical
     // form — the root transform reshapes the whole payload, then nested $ref
     // decoders run over the canonical structure. Validation + strip then run on
     // the decoded result, because the schema describes the transform's OUTPUT.
-    const rootDecoded = this.decodeWithTransform(schemaObj, input, schemaId);
-    const decoded = RefDecoder.run(this.graphOf(entry), rootDecoded, this.refDecoderRegistry, this.logger);
+    const rootDecoded = this.decodeWithTransform(schemaObject, input, schemaId);
+    const decoded = ReferenceDecoder.run(this.graphOf(entry), rootDecoded, this.referenceDecoderRegistry, this.logger);
 
     const result = compiled.validate(decoded, resolvedOptions);
 
@@ -1237,7 +1245,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.applyComputedFields(computedNames, computedMap, coerced);
 
-    return this.applyFrozenSeal(schemaObj, coerced);
+    return this.applyFrozenSeal(schemaObject, coerced);
   }
 
   public is(
@@ -1268,21 +1276,25 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public list(): ReadonlyArray<Record<string, unknown>> {
-    const result = Array.from(this.store.values(), (entry: SchemaRegistryEntryType): Record<string, unknown> => {
-      const entrySchema = entry.schema;
+    const result: Array<Record<string, unknown>> = Array.from({ 'length': this.store.size });
+    let index = 0;
 
-      return entrySchema;
-    });
+    for (const entry of this.store.values()) {
+      result[index] = entry.schema;
+      index++;
+    }
 
     return result;
   }
 
   public listGraphs(): readonly SchemaGraphInterface[] {
-    const result = Array.from(this.store.values(), (entry: SchemaRegistryEntryType): SchemaGraphInterface => {
-      const entryGraph = this.graphOf(entry);
+    const result: SchemaGraphInterface[] = Array.from({ 'length': this.store.size });
+    let index = 0;
 
-      return entryGraph;
-    });
+    for (const entry of this.store.values()) {
+      result[index] = this.graphOf(entry);
+      index++;
+    }
 
     return result;
   }
@@ -1379,7 +1391,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (Array.isArray(raw)) {
       return (raw as unknown[]).filter((item): item is string => {
-        const result = isStringItem(item);
+        const result = SchemaRegistry.isStringItem(item);
 
         return result;
       });

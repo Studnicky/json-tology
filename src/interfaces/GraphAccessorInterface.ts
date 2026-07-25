@@ -11,6 +11,6 @@ export interface GraphAccessorInterface {
   domainOf(node: SchemaGraphNodeType): SchemaGraphNodeType | undefined;
   entries(node: SchemaGraphNodeType, key: string): Array<[string, SchemaGraphNodeType]>;
   indexedChildren(node: SchemaGraphNodeType, key: string): SchemaGraphNodeType[];
-  resolveRefId(ref: string): string;
+  resolveReferenceId(ref: string): string;
   semantics(node: SchemaGraphNodeType): SchemaGraphSemanticsType;
 }

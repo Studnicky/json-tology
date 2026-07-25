@@ -2,6 +2,7 @@ import type { FormatRegistryInterface } from '../interfaces/FormatRegistryInterf
 import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 import type { ValidationErrorType } from '../types/Validation.js';
+import type { InferType } from './Schema.js';
 
 /**
  * Execution context passed to custom keyword validators during schema traversal.
@@ -31,9 +32,10 @@ import type { ValidationErrorType } from '../types/Validation.js';
  */
 export type KeywordContextType = {
   'parentData': unknown;
+  'rootData': unknown;
+} & {
   'parentKey': number | string;
   'path': string;
-  'rootData': unknown;
 };
 
 /**
@@ -70,6 +72,7 @@ export type KeywordContextType = {
 export type KeywordDefinitionType = {
   'keyword': string;
   'type'?: string | string[];
+} & {
   'validate': (schema: unknown, data: unknown, context: KeywordContextType) => boolean | ValidationErrorType[];
 };
 
@@ -128,4 +131,45 @@ export type GraphEngineOptionsType = {
   'removeAdditionalProperties'?: boolean;
   'synthesizeDefaults'?: boolean;
 };
+
+/**
+ * Default `GraphEngine` option values — every field of {@link GraphEngineOptionsType}
+ * that carries a static default, spelled out explicitly and required.
+ *
+ * @remarks
+ * Excludes `formatRegistry`, `keywords`, `logger`, `lookupGraph`, and `lookupSchema`,
+ * which have no static default and are supplied per call.
+ *
+ * @category GraphEngine
+ * @since 0.1.0
+ * @see {@link GraphEngineOptionsType}
+ * @group GraphEngine
+ */
+export const DefaultGraphEngineOptionsSchema = {
+  'properties': {
+    'allowAdditionalProperties': { 'type': 'boolean' },
+    'applyDefaults': { 'type': 'boolean' },
+    'castTypes': { 'type': 'boolean' },
+    'collectErrors': { 'type': 'boolean' },
+    'enforceSchemaProperties': { 'type': 'boolean' },
+    'materializeContainers': { 'type': 'boolean' },
+    'maxSchemaDepth': { 'type': 'number' },
+    'removeAdditionalProperties': { 'type': 'boolean' },
+    'synthesizeDefaults': { 'type': 'boolean' }
+  },
+  'required': [
+    'allowAdditionalProperties',
+    'applyDefaults',
+    'castTypes',
+    'collectErrors',
+    'enforceSchemaProperties',
+    'materializeContainers',
+    'maxSchemaDepth',
+    'removeAdditionalProperties',
+    'synthesizeDefaults'
+  ],
+  'type': 'object'
+} as const;
+
+export type DefaultGraphEngineOptionsType = InferType<typeof DefaultGraphEngineOptionsSchema>;
 

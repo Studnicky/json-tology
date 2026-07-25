@@ -6,6 +6,7 @@ import type { ValidationErrors } from '../errors/ValidationErrors.js';
  */
 export type FailResultType = {
   'data': undefined;
-  'errors': ValidationErrors;
   'success': false;
+} & {
+  'errors': ValidationErrors;
 };

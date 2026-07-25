@@ -256,7 +256,7 @@ void describe('importPropertyRestrictions', () => {
   void describe('owl:minCardinality', () => {
     void it('sets minItems', () => {
       const schema = Compose.subClassOf(
-        Compose.minCardinality(PROP_IRI, 2),
+        Compose.minimumCardinality(PROP_IRI, 2),
         {
           '$id': CLASS_IRI,
           'type': 'object'
@@ -276,7 +276,7 @@ void describe('importPropertyRestrictions', () => {
   void describe('owl:maxCardinality', () => {
     void it('sets maxItems', () => {
       const schema = Compose.subClassOf(
-        Compose.maxCardinality(PROP_IRI, 5),
+        Compose.maximumCardinality(PROP_IRI, 5),
         {
           '$id': CLASS_IRI,
           'type': 'object'
@@ -296,9 +296,9 @@ void describe('importPropertyRestrictions', () => {
   void describe('multiple restrictions on the same property', () => {
     void it('merges minCardinality + maxCardinality into a single property delta', () => {
       const schema = Compose.subClassOf(
-        Compose.minCardinality(PROP_IRI, 1),
+        Compose.minimumCardinality(PROP_IRI, 1),
         Compose.subClassOf(
-          Compose.maxCardinality(PROP_IRI, 5),
+          Compose.maximumCardinality(PROP_IRI, 5),
           {
             '$id': CLASS_IRI,
             'type': 'object'
@@ -374,7 +374,7 @@ void describe('importPropertyRestrictions', () => {
   void describe('OwlImporter integration', () => {
     void it('PropertyRestrictions projects owl:maxCardinality without marking it unsupported', () => {
       const schema = Compose.subClassOf(
-        Compose.maxCardinality(PROP_IRI, 3),
+        Compose.maximumCardinality(PROP_IRI, 3),
         {
           '$id': CLASS_IRI,
           'type': 'object'

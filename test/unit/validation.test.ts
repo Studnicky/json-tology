@@ -2,9 +2,9 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
-// Validation type aliases (ValidateWithErrorsFnType, ValidationErrorType) are internal contracts for the exec primitives below.
+// Validation type aliases (ValidateWithErrorsFunctionType, ValidationErrorType) are internal contracts for the exec primitives below.
 import type {
-  ValidateWithErrorsFnType, ValidationErrorType
+  ValidateWithErrorsFunctionType, ValidationErrorType
 } from '../../src/types/Validation.js';
 import type { ExecContextType } from '../../src/types/ExecContextType.js';
 import {
@@ -4293,13 +4293,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 // Source: arrays.test.ts
 // ===========================================================================
 {
-  const passing: ValidateWithErrorsFnType = (value: unknown) => {
+  const passing: ValidateWithErrorsFunctionType = (value: unknown) => {
     return {
       'valid': true,
       value
     };
   };
-  const failing: ValidateWithErrorsFnType = (value, path, ctx) => {
+  const failing: ValidateWithErrorsFunctionType = (value, path, ctx) => {
     if (ctx.collectErrors) {
       ctx.errors.push(BaseError.validationError(path, 'type', 'mock'));
     }
@@ -4310,7 +4310,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     };
   };
 
-  const oneMatchValidator: ValidateWithErrorsFnType = (value: unknown) => {
+  const oneMatchValidator: ValidateWithErrorsFunctionType = (value: unknown) => {
     return {
       'valid': value === 1,
       value
@@ -4583,14 +4583,14 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 // Source: objects.test.ts
 // ===========================================================================
 {
-  const passingValidatorImpl: ValidateWithErrorsFnType = (value: unknown) => {
+  const passingValidatorImpl: ValidateWithErrorsFunctionType = (value: unknown) => {
     return {
       'valid': true,
       'value': value
     };
   };
 
-  const failingValidatorImpl: ValidateWithErrorsFnType = (
+  const failingValidatorImpl: ValidateWithErrorsFunctionType = (
     value: unknown,
     path: string,
     ctx: ExecContextType
@@ -4608,16 +4608,16 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     };
   };
 
-  function passingValidator(): ValidateWithErrorsFnType {
+  function passingValidator(): ValidateWithErrorsFunctionType {
     return passingValidatorImpl;
   }
 
-  function failingValidator(): ValidateWithErrorsFnType {
+  function failingValidator(): ValidateWithErrorsFunctionType {
     return failingValidatorImpl;
   }
 
-  function coercingValidator(coercedValue: unknown): ValidateWithErrorsFnType {
-    const impl: ValidateWithErrorsFnType = () => {
+  function coercingValidator(coercedValue: unknown): ValidateWithErrorsFunctionType {
+    const impl: ValidateWithErrorsFunctionType = () => {
       return {
         'valid': true,
         'value': coercedValue
@@ -5089,14 +5089,14 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 // Source: compositionExec.test.ts
 // ===========================================================================
 {
-  const passingValidatorImpl: ValidateWithErrorsFnType = (value: unknown) => {
+  const passingValidatorImpl: ValidateWithErrorsFunctionType = (value: unknown) => {
     return {
       'valid': true,
       'value': value
     };
   };
 
-  const failingValidatorImpl: ValidateWithErrorsFnType = (
+  const failingValidatorImpl: ValidateWithErrorsFunctionType = (
     value: unknown,
     path: string,
     ctx: ExecContextType
@@ -5114,11 +5114,11 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     };
   };
 
-  function passingValidator(): ValidateWithErrorsFnType {
+  function passingValidator(): ValidateWithErrorsFunctionType {
     return passingValidatorImpl;
   }
 
-  function failingValidator(): ValidateWithErrorsFnType {
+  function failingValidator(): ValidateWithErrorsFunctionType {
     return failingValidatorImpl;
   }
 

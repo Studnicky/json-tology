@@ -591,8 +591,8 @@ export default [
     rules: { '@typescript-eslint/consistent-indexed-object-style': 'off' }
   },
 
-  // Authoring-input contracts: `@studnicky/no-readonly-in-data-type` targets
-  // GENERATED/INFERRED output types (InferType, ParseOutputType,
+  // Authoring-input contracts: `@studnicky/type-alias-invariants`'s `noReadonly`
+  // check targets GENERATED/INFERRED output types (InferType, ParseOutputType,
   // MaterializedSchemaType, and friends — see docs/types/infer.md#mutability)
   // where the library invents and hands back a value, so forcing `readonly`
   // would be an unwanted opinion the consumer cannot escape. Schema.ts is the
@@ -602,15 +602,16 @@ export default [
   // convention (see CLAUDE.md's own canonical schema example). `as const`
   // infers deeply readonly array/tuple fields, so the array-typed fields on
   // these types must accept `readonly T[]` to be wide enough for both a
-  // mutable array and an `as const` literal — the rule's blanket ban doesn't
-  // yet distinguish an authoring-input contract from a generated-output type.
-  // Scoped here at the config level, not via inline eslint-disable comments,
-  // so @studnicky/no-suppression-comments has nothing to flag in source. A
-  // future patch to the upstream rule that recognizes this distinction
-  // natively can remove this override.
+  // mutable array and an `as const` literal — the check doesn't yet distinguish
+  // an authoring-input contract from a generated-output type. Only `noReadonly`
+  // is scoped off here; the rule's other checks (derivedFromSchema, mustEndType,
+  // noAliasing, noPreferExisting) still apply. Scoped here at the config level,
+  // not via inline eslint-disable comments, so @studnicky/no-suppression-comments
+  // has nothing to flag in source. A future patch to the upstream rule that
+  // recognizes this distinction natively can remove this override.
   {
     files: ['src/types/Schema.ts', 'src/types/JsonSchemaObjectType.ts'],
-    rules: { '@studnicky/no-readonly-in-data-type': 'off' }
+    rules: { '@studnicky/type-alias-invariants': ['error', { noReadonly: false }] }
   },
 
   // Generic constraints that accept authored input: `TSchemas extends readonly
@@ -626,8 +627,10 @@ export default [
   // a `TSConditionalType`'s `extends`/`check` clause for exactly this reason
   // (narrows what's accepted, not what's produced); it does not yet extend that
   // exemption to a type parameter's `extends` constraint or to a field that
-  // merely re-exposes another readonly-returning API. Scoped here at the config
-  // level, not via inline eslint-disable comments, so
+  // merely re-exposes another readonly-returning API. Only `noReadonly` is
+  // scoped off here; the rule's other checks (derivedFromSchema, mustEndType,
+  // noAliasing, noPreferExisting) still apply. Scoped here at the config level,
+  // not via inline eslint-disable comments, so
   // @studnicky/no-suppression-comments has nothing to flag in source.
   {
     files: [
@@ -636,7 +639,7 @@ export default [
       'src/types/Registry.ts',
       'src/types/Transform.ts'
     ],
-    rules: { '@studnicky/no-readonly-in-data-type': 'off' }
+    rules: { '@studnicky/type-alias-invariants': ['error', { noReadonly: false }] }
   },
 
   // Test files (relaxed rules)

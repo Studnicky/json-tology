@@ -11,7 +11,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { RelationIndexType } from '../../types/RelationIndexType.js';
 import type { OptionalAnnotatedEdgeType } from '../../types/OptionalAnnotatedEdgeType.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { DataType } from '../data/DataType.js';
 import { GraphError } from '../../errors/GraphError.js';
@@ -70,16 +70,16 @@ export class PropertyProjection {
    * This function merges the copies that previously appeared in
    * `OwlProjection.emitPropertyQuads` and `OwlProjection.resolveArrayPropertyCanonicalId`.
    */
-  static resolveCanonicalIri(args: {
+  static resolveCanonicalIri(argumentList: {
     readonly 'fallback': (propSubject: string) => string;
     readonly 'graph': SchemaGraphInterface;
-    readonly 'predicateResolver': PredicateResolverFnType | undefined;
+    readonly 'predicateResolver': PredicateResolverFunctionType | undefined;
     readonly 'propEntry': RelationIndexType;
     readonly 'propSubject': string;
   }): string {
     const {
       fallback, graph, predicateResolver, propEntry, propSubject
-    } = args;
+    } = argumentList;
 
     if (predicateResolver === undefined) {
       return fallback(propSubject);
@@ -118,7 +118,7 @@ export class PropertyProjection {
     graph: SchemaGraphInterface | undefined,
     classId: string,
     propertyName: string,
-    predicateResolver: PredicateResolverFnType | undefined
+    predicateResolver: PredicateResolverFunctionType | undefined
   ): string {
     if (predicateResolver === undefined || graph === undefined) {
       return SchemaIri.propertyIri(classId, propertyName);
@@ -153,7 +153,7 @@ export class PropertyProjection {
   static resolveRestriction(
     onProperty: string,
     graph: SchemaGraphInterface,
-    predicateResolver: PredicateResolverFnType | undefined
+    predicateResolver: PredicateResolverFunctionType | undefined
   ): string {
     if (predicateResolver === undefined) {
       return onProperty;

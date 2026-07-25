@@ -1,4 +1,5 @@
-import type { XsdJsonSchemaPrimitiveType } from './XsdJsonSchemaPrimitiveType.js';
+import type { InferType } from './Schema.js';
+import { XSD_JSON_SCHEMA_PRIMITIVE_SCHEMA } from './XsdJsonSchemaPrimitiveType.js';
 
 /**
  * One row in the canonical XSD type table.
@@ -10,9 +11,20 @@ import type { XsdJsonSchemaPrimitiveType } from './XsdJsonSchemaPrimitiveType.js
  *
  * @internal
  */
-export type XsdEntryType = {
-  'full': string;
-  'prefixed': string;
-  'primitive': XsdJsonSchemaPrimitiveType;
-  'supported': boolean;
-};
+export const XSD_ENTRY_SCHEMA = {
+  'properties': {
+    'full': { 'type': 'string' },
+    'prefixed': { 'type': 'string' },
+    'primitive': XSD_JSON_SCHEMA_PRIMITIVE_SCHEMA,
+    'supported': { 'type': 'boolean' }
+  },
+  'required': [
+    'full',
+    'prefixed',
+    'primitive',
+    'supported'
+  ],
+  'type': 'object'
+} as const;
+
+export type XsdEntryType = InferType<typeof XSD_ENTRY_SCHEMA>;

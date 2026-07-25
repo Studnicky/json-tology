@@ -44,37 +44,6 @@ import {
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
 import { ImportRelation } from './ImportRelation.js';
 
-// ---------------------------------------------------------------------------
-// Relation-target extraction helpers — read from graph relations
-// ---------------------------------------------------------------------------
-
-/**
- * Extract the language tag of a Literal-typed relation target.
- * Returns the empty string for untagged literals or non-literal targets.
- */
-function literalLanguage(relation: SchemaGraphRelationType): string {
-  if (relation.termType !== 'Literal') {
-    return '';
-  }
-
-  return relation.language ?? '';
-}
-
-/**
- * Append a string value into a lang-keyed map.
- * Uses `''` (empty string) as the key for untagged literals.
- */
-function appendLangValue(map: Map<string, string[]>, lang: string, value: string): void {
-  const key = lang === '' ? '' : lang.toLowerCase();
-  const existing = map.get(key);
-
-  if (existing === undefined) {
-    map.set(key, [value]);
-  } else {
-    existing.push(value);
-  }
-}
-
 /**
  * Process OWL 2 and RDFS annotation axioms (rdfs:label, rdfs:comment,
  * owl:deprecated, skos:definition, etc.) and return a partial import fragment.
@@ -101,6 +70,21 @@ function appendLangValue(map: Map<string, string[]>, lang: string, value: string
  * @group OWL Import
  */
 export class Annotations {
+  /**
+   * Append a string value into a lang-keyed map.
+   * Uses `''` (empty string) as the key for untagged literals.
+   */
+  private static appendLangValue(map: Map<string, string[]>, lang: string, value: string): void {
+    const key = lang === '' ? '' : lang.toLowerCase();
+    const existing = map.get(key);
+
+    if (existing === undefined) {
+      map.set(key, [value]);
+    } else {
+      existing.push(value);
+    }
+  }
+
   /** Process a single comment relation and append to the accumulator. */
   private static applyCommentRelation(
     relation: SchemaGraphRelationType,
@@ -109,7 +93,7 @@ export class Annotations {
     const value = ImportRelation.literalString(relation);
 
     if (value !== null) {
-      appendLangValue(acc.comments, literalLanguage(relation), value);
+      Annotations.appendLangValue(acc.comments, Annotations.literalLanguage(relation), value);
     }
   }
 
@@ -118,8 +102,10 @@ export class Annotations {
     const labelI18n = Annotations.buildI18nRecord(acc.labels);
 
     if (labelI18n !== null) {
+      const existingLabelI18n = delta['jt:i18n'] as Record<string, unknown> | undefined;
+
       delta['jt:i18n'] = {
-        ...delta['jt:i18n'] as Record<string, unknown> | undefined,
+        ...existingLabelI18n,
         'label': labelI18n
       };
     }
@@ -127,10 +113,10 @@ export class Annotations {
     const commentI18n = Annotations.buildI18nRecord(acc.comments);
 
     if (commentI18n !== null) {
-      const existingI18n = delta['jt:i18n'] as Record<string, unknown> | undefined ?? {};
+      const existingCommentI18n = delta['jt:i18n'] as Record<string, unknown> | undefined ?? {};
 
       delta['jt:i18n'] = {
-        ...existingI18n,
+        ...existingCommentI18n,
         'description': commentI18n
       };
     }
@@ -163,7 +149,7 @@ export class Annotations {
     const value = ImportRelation.literalString(relation);
 
     if (value !== null) {
-      appendLangValue(acc.labels, literalLanguage(relation), value);
+      Annotations.appendLangValue(acc.labels, Annotations.literalLanguage(relation), value);
     }
   }
 
@@ -171,8 +157,8 @@ export class Annotations {
   private static buildCommentString(acc: AnnotationAccumulatorType): string {
     const commentParts: string[] = [];
 
-    for (const versionStr of acc.versionInfo) {
-      commentParts.push(`version: ${versionStr}`);
+    for (const versionString of acc.versionInfo) {
+      commentParts.push(`version: ${versionString}`);
     }
     for (const iri of acc.isDefinedBy) {
       commentParts.push(`definedBy: ${iri}`);
@@ -190,10 +176,10 @@ export class Annotations {
 
     Annotations.applyLabelFields(delta, acc);
 
-    const commentStr = Annotations.buildCommentString(acc);
+    const commentString = Annotations.buildCommentString(acc);
 
-    if (commentStr !== '') {
-      delta.$comment = commentStr;
+    if (commentString !== '') {
+      delta.$comment = commentString;
     }
 
     Annotations.applyI18nFields(delta, acc);
@@ -250,18 +236,18 @@ export class Annotations {
 
   /** Process all graph relations and populate the accumulator map. */
   private static collectAnnotations(
-    ctx: OwlImportContextType,
+    context: OwlImportContextType,
     accumulators: Map<string, AnnotationAccumulatorType>
   ): void {
-    for (const relation of ctx.graph.allRelations()) {
+    for (const relation of context.graph.allRelations()) {
       Annotations.dispatchRelation(relation, accumulators);
     }
   }
 
-  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
     const accumulators = new Map<string, AnnotationAccumulatorType>();
 
-    Annotations.collectAnnotations(ctx, accumulators);
+    Annotations.collectAnnotations(context, accumulators);
 
     return {
       'characteristics': [],
@@ -301,7 +287,7 @@ export class Annotations {
       const value = ImportRelation.literalString(relation);
 
       if (value !== null) {
-        appendLangValue(acc.altLabels, literalLanguage(relation), value);
+        Annotations.appendLangValue(acc.altLabels, Annotations.literalLanguage(relation), value);
       }
     }
   }
@@ -374,6 +360,18 @@ export class Annotations {
     accumulators.set(subjectIri, acc);
 
     return acc;
+  }
+
+  /**
+   * Extract the language tag of a Literal-typed relation target.
+   * Returns the empty string for untagged literals or non-literal targets.
+   */
+  private static literalLanguage(relation: SchemaGraphRelationType): string {
+    if (relation.termType !== 'Literal') {
+      return '';
+    }
+
+    return relation.language ?? '';
   }
 
   /** Accumulator factory. */

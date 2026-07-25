@@ -1,6 +1,6 @@
 import type { AboxGraph } from './AboxGraph.js';
 import type { CursorInterface } from '../../interfaces/CursorInterface.js';
-import type { AboxLiftFnType } from '../../types/AboxGraph.js';
+import type { AboxLiftFunctionType } from '../../types/AboxGraph.js';
 
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
@@ -34,14 +34,14 @@ import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 export class Cursor implements CursorInterface {
   private readonly graph: AboxGraph;
   private readonly iriList: readonly string[];
-  private readonly lift: AboxLiftFnType;
+  private readonly lift: AboxLiftFunctionType;
 
   /**
    * @param iriList - The current resource IRI selection.
    * @param graph - The owning graph, providing the navigation index.
    * @param lift - Memoised IRI → typed-instance lift.
    */
-  public constructor(iriList: readonly string[], graph: AboxGraph, lift: AboxLiftFnType) {
+  public constructor(iriList: readonly string[], graph: AboxGraph, lift: AboxLiftFunctionType) {
     this.iriList = iriList;
     this.graph = graph;
     this.lift = lift;
@@ -265,9 +265,9 @@ export class Cursor implements CursorInterface {
     ], this.graph, this.lift);
   }
 
-  public where(fn: (instance: unknown) => boolean): CursorInterface {
+  public where(predicateFunction: (instance: unknown) => boolean): CursorInterface {
     const next = this.iriList.filter((iri: string): boolean => {
-      const result = fn(this.lift(iri));
+      const result = predicateFunction(this.lift(iri));
 
       return result;
     });

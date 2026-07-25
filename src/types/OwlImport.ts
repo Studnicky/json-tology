@@ -10,7 +10,10 @@ import type { CurieInterface } from '../interfaces/CurieInterface.js';
 import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 import type { QuadInterface } from '../interfaces/QuadInterface.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
-import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
+import type {
+  InferType, JsonSchemaDocumentObjectType
+} from '../types/Schema.js';
+import type { OWL_IMPORTER_OPTIONS_SCHEMA } from '../constants/SCHEMAS.js';
 
 /**
  * Options accepted by the {@link OwlImporter} constructor.
@@ -30,13 +33,9 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
  * @see {@link OwlImportContextType}
  * @group Import
  */
-export type OwlImporterOptionsType = {
-  /** Base IRI for the import session. Used when building OwlImportContextType. */
-  'baseIri': string;
+export type OwlImporterOptionsType = InferType<typeof OWL_IMPORTER_OPTIONS_SCHEMA> & {
   /** Optional logger; defaults to SILENT_LOGGER. */
   'logger'?: LoggerInterface;
-  /** Additional prefix mappings merged with STANDARD_PREFIXES. */
-  'prefixes'?: PrefixMapType;
 };
 
 /**
@@ -81,7 +80,7 @@ export type PrefixMapType = Record<string, string>;
  *
  * @category OWL Import
  * @since 0.15.0
- * @see {@link DispatcherFnType}
+ * @see {@link DispatcherFunctionType}
  * @group Import
  */
 export type SubjectIndexType = Map<string, QuadInterface[]>;
@@ -98,7 +97,7 @@ export type SubjectIndexType = Map<string, QuadInterface[]>;
  *
  * @example
  * ```ts
- * const dispatcher: DispatcherFnType = (quads, ctx) => {
+ * const dispatcher: DispatcherFunctionType = (quads, ctx) => {
  *   return { characteristics: [], individuals: [], invariants: [], sameAs: [], schemaDeltas: new Map() };
  * };
  * ```
@@ -108,7 +107,7 @@ export type SubjectIndexType = Map<string, QuadInterface[]>;
  * @see {@link OwlImportFragmentType}
  * @group Dispatchers
  */
-export type DispatcherFnType = (quads: QuadInterface[], ctx: OwlImportContextType) => OwlImportFragmentType;
+export type DispatcherFunctionType = (quads: QuadInterface[], context: OwlImportContextType) => OwlImportFragmentType;
 
 /**
  * The value returned by each dispatcher after processing its axiom group.
@@ -158,7 +157,7 @@ export type OwlImportFragmentType = {
   'sameAs': ReadonlyArray<[string, string]>;
 
   /** Per-class schema property deltas: classIri → partial JSON Schema object. */
-  'schemaDeltas': ReadonlyMap<string, Partial<JsonSchemaDocumentObjectType>>;
+  'schemaDeltas': ReadonlyMap<string, JsonSchemaDocumentObjectType>;
 };
 
 /**

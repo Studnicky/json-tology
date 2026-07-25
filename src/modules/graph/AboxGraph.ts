@@ -27,12 +27,12 @@ import type { CursorInterface } from '../../interfaces/CursorInterface.js';
 import type { SchemaCursorInterface } from '../../interfaces/SchemaCursorInterface.js';
 import type {
   AboxIdentityDescriptorType,
-  AboxLiftFnType,
+  AboxLiftFunctionType,
   AboxPredicateObjectType,
   AboxPredicateSubjectType
 } from '../../types/AboxGraph.js';
-import type { AboxLiftSubjectFnType } from '../../types/AboxLiftSubjectFnType.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { AboxLiftSubjectFunctionType } from '../../types/AboxLiftSubjectFunctionType.js';
+import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
 
 import {
   RDF, RDFS
@@ -42,20 +42,55 @@ import { SchemaCursor } from './SchemaCursor.js';
 import { Terms } from '../quads/Terms.js';
 
 
-function isLiteralObject(termType: AboxPredicateObjectType['objectTermType']): boolean {
-  return termType === 'Literal';
+/** Quad-object helpers shared by `AboxGraph`'s indexing and lift logic. */
+class AboxQuadValues {
+  /**
+   * Decode a quad object value to a comparable primitive. Literals decode via the
+   * XSD datatype; NamedNode/BlankNode objects compare by IRI string.
+   */
+  static decode(quad: QuadInterface): unknown {
+    if (quad.object.termType === 'Literal') {
+      return Terms.decodeLiteral(quad.object);
+    }
+
+    return quad.object.value;
+  }
+
+  static isLiteralObject(termType: AboxPredicateObjectType['objectTermType']): boolean {
+    return termType === 'Literal';
+  }
 }
 
 /**
- * Decode a quad object value to a comparable primitive. Literals decode via the
- * XSD datatype; NamedNode/BlankNode objects compare by IRI string.
+ * `domain()`/`range()` accessor pair returned by `AboxGraph.predicate` — a real
+ * class instance instead of an object literal of per-call closures, so each
+ * accessor is an ordinary method rather than a dispatch-map function value.
  */
-function quadObjectValue(quad: QuadInterface): unknown {
-  if (quad.object.termType === 'Literal') {
-    return Terms.decodeLiteral(quad.object);
+class PredicateRoleCursors {
+  readonly #domainClasses: string[];
+  readonly #owner: AboxGraph;
+  readonly #rangeClasses: string[];
+  readonly #schemaOf: (classIri: string) => unknown;
+
+  constructor(
+    owner: AboxGraph,
+    schemaOf: (classIri: string) => unknown,
+    domainClasses: string[],
+    rangeClasses: string[]
+  ) {
+    this.#owner = owner;
+    this.#schemaOf = schemaOf;
+    this.#domainClasses = domainClasses;
+    this.#rangeClasses = rangeClasses;
   }
 
-  return quad.object.value;
+  domain(): SchemaCursorInterface {
+    return new SchemaCursor(this.#domainClasses, this.#owner, this.#schemaOf);
+  }
+
+  range(): SchemaCursorInterface {
+    return new SchemaCursor(this.#rangeClasses, this.#owner, this.#schemaOf);
+  }
 }
 
 /**
@@ -100,8 +135,8 @@ export class AboxGraph implements AboxGraphInterface {
   private readonly instancesByType = new Map<string, string[]>();
 
   private readonly liftCache = new Map<string, unknown>();
-  private readonly liftSubject: AboxLiftSubjectFnType;
-  private readonly predicateResolver: PredicateResolverFnType;
+  private readonly liftSubject: AboxLiftSubjectFunctionType;
+  private readonly predicateResolver: PredicateResolverFunctionType;
   /** class IRI → Set of predicate IRIs whose rdfs:domain includes that class */
   private readonly predicatesOfClass = new Map<string, Set<string>>();
   /** predicate IRI → class IRIs that are its rdfs:range */
@@ -128,8 +163,8 @@ export class AboxGraph implements AboxGraphInterface {
     aboxQuads: readonly QuadInterface[],
     tboxQuads: readonly QuadInterface[],
     identities: readonly AboxIdentityDescriptorType[],
-    liftSubject: AboxLiftSubjectFnType,
-    predicateResolver: PredicateResolverFnType,
+    liftSubject: AboxLiftSubjectFunctionType,
+    predicateResolver: PredicateResolverFunctionType,
     schemaOf: (classIri: string) => unknown
   ) {
     this.liftSubject = liftSubject;
@@ -553,7 +588,7 @@ export class AboxGraph implements AboxGraphInterface {
    * every NamedNode/BlankNode it transitively references so nested objects
    * reconstruct), and lifts via `fromQuads`-equivalent registry lifting.
    */
-  private makeLift(): AboxLiftFnType {
+  private makeLift(): AboxLiftFunctionType {
     return (iri: string): unknown => {
       const cached = this.liftCache.get(iri);
 
@@ -621,7 +656,7 @@ export class AboxGraph implements AboxGraphInterface {
         continue;
       }
 
-      if (isLiteralObject(entry.objectTermType) && rangePrimitive !== undefined) {
+      if (AboxQuadValues.isLiteralObject(entry.objectTermType) && rangePrimitive !== undefined) {
         const owner = this.entityByIdentity.get(rangePrimitive)?.get(entry.object);
 
         results.push(owner ?? entry.object);
@@ -644,14 +679,12 @@ export class AboxGraph implements AboxGraphInterface {
     range(): SchemaCursorInterface } {
     const predicateIri = this.resolvePredicate(name);
 
-    return {
-      'domain': (): SchemaCursorInterface => {
-        return new SchemaCursor([...(this.domainsOfPredicate.get(predicateIri) ?? [])], this, this.schemaOf);
-      },
-      'range': (): SchemaCursorInterface => {
-        return new SchemaCursor([...(this.rangeOfPredicate.get(predicateIri) ?? [])], this, this.schemaOf);
-      }
-    };
+    return new PredicateRoleCursors(
+      this,
+      this.schemaOf,
+      [...(this.domainsOfPredicate.get(predicateIri) ?? [])],
+      [...(this.rangeOfPredicate.get(predicateIri) ?? [])]
+    );
   }
 
   /**
@@ -744,7 +777,7 @@ export class AboxGraph implements AboxGraphInterface {
       if (quad.subject.value !== subjectIri || quad.predicate.value !== predicateIri) {
         continue;
       }
-      values.push(quadObjectValue(quad));
+      values.push(AboxQuadValues.decode(quad));
     }
 
     return values;

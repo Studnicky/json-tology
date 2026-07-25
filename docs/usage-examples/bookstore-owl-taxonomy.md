@@ -16,7 +16,7 @@ Beyond the structural entities, the bookstore registry carries seven additional 
 |---|---|---|
 | `EBookSchema`         | `Compose.subClassOf(Book)`                                                                   | `subClassOf` → Book |
 | `PrintBookSchema`     | `Compose.subClassOf(Book)` + `Compose.disjointWith(EBook)`                                    | `subClassOf` → Book, `disjointWith` ↔ EBook |
-| `RareBookSchema`      | `Compose.subClassOf(PrintBook)` + `Compose.someValuesFrom` + `Compose.maxCardinality`         | `subClassOf` → PrintBook, two `restriction` edges |
+| `RareBookSchema`      | `Compose.subClassOf(PrintBook)` + `Compose.someValuesFrom` + `Compose.maximumCardinality`         | `subClassOf` → PrintBook, two `restriction` edges |
 | `SignedFirstEditionSchema` | `Compose.subClassOf(RareBook)` + registered `signedFirstEditionIsSoloAuthored` invariant | `subClassOf` → RareBook (the cardinality axiom lives off-graph as an invariant) |
 | `InPrintBookSchema`   | `Compose.subClassOf(Book)` + `Compose.hasValue(printStatus, 'inPrint')`                       | `subClassOf` → Book, `restriction` on `printStatus` |
 | `OutOfPrintBookSchema`| `Compose.complementOf(InPrintBook)` with body `allOf` bounding to Book                        | `subClassOf` → Book, `complementOf` → InPrintBook |
@@ -65,7 +65,7 @@ Each `entities/*.ts` file is the single source of truth for one schema.
 
 **Use this when:**
 - You want to express "at least one value of property P is of class C" - that's `Compose.someValuesFrom`.
-- You want to cap how many values a property can have - that's `Compose.maxCardinality`.
+- You want to cap how many values a property can have - that's `Compose.maximumCardinality`.
 
 **Don't use this when:**
 - You only want to enforce array length at validation time - JSON Schema's native `minItems` / `maxItems` already cover that. Restrictions are for TBox semantic content that reasoners read.

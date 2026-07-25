@@ -71,21 +71,21 @@ type ChainRecursionCap = 10;
  * pair — or the tail — fails.
  */
 export type ValidateChainType<
-  TStages extends readonly AnyTransformStageType[],
+  TStages extends AnyTransformStageType[],
   TCanonical,
   TIndex extends unknown[] = []
 > = TIndex['length'] extends ChainRecursionCap
   ? TStages
-  : TStages extends readonly [infer THead, ...infer TRest]
-    ? TRest extends readonly AnyTransformStageType[]
+  : TStages extends [infer THead, ...infer TRest]
+    ? TRest extends AnyTransformStageType[]
       ? THead extends { 'decode': (input: never) => infer TOutHead }
-        ? TRest extends readonly []
+        ? TRest extends []
           ? TOutHead extends TCanonical
             ? [THead]
             : [ChainSchemaMismatchType<TCanonical, TOutHead>]
-          : TRest extends readonly [
+          : TRest extends [
             { 'decode': (input: infer TInNext) => unknown },
-            ...readonly unknown[]
+            ...unknown[]
           ]
             ? TOutHead extends TInNext
               ? [
@@ -107,7 +107,7 @@ export type ValidateChainType<
  * stage. Recorded on the transformed schema's brand so `encode`/`dump` can
  * recover the wire form.
  */
-export type ChainWireType<TStages extends readonly AnyTransformStageType[]>
-  = TStages extends readonly [infer THead, ...readonly unknown[]]
+export type ChainWireType<TStages extends AnyTransformStageType[]>
+  = TStages extends [infer THead, ...unknown[]]
     ? THead extends { 'decode': (input: infer TIn) => unknown } ? TIn : unknown
     : unknown;

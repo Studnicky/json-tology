@@ -12,6 +12,11 @@
  */
 
 import type { QuadInterface } from '../interfaces/QuadInterface.js';
+import type { InferType } from './Schema.js';
+import type {
+  GENERATE_FROM_TBOX_OPTIONS_SCHEMA, GENERATE_REGISTRY_DIRECTORY_ENTITY_FILE_SCHEMA,
+  GENERATE_REGISTRY_DIRECTORY_OPTIONS_SCHEMA, WRITTEN_ENTITY_FILE_SCHEMA
+} from '../constants/SCHEMAS.js';
 
 /**
  * Options accepted by {@link generateFromTbox} (browser-safe).
@@ -19,7 +24,7 @@ import type { QuadInterface } from '../interfaces/QuadInterface.js';
  * Does not include an `output` path — file writing is handled by
  * `writeFromTbox` in `json-tology/owl-gen-node`.
  */
-export type GenerateFromTboxOptionsType = {
+export type GenerateFromTboxOptionsType = InferType<typeof GENERATE_FROM_TBOX_OPTIONS_SCHEMA> & {
   /**
    * Override the base IRI. When omitted the generator derives it from
    * the first schema `$id` in the import result.
@@ -56,7 +61,7 @@ export type GenerateFromTboxOptionsType = {
  * Does not include an `outDir` path — file writing is handled by
  * `writeRegistryDirectory` in `json-tology/owl-gen-node`.
  */
-export type GenerateRegistryDirectoryOptionsType = {
+export type GenerateRegistryDirectoryOptionsType = InferType<typeof GENERATE_REGISTRY_DIRECTORY_OPTIONS_SCHEMA> & {
   /**
    * Override the base IRI. When omitted the generator derives it from
    * the first schema `$id` in the import result.
@@ -94,19 +99,8 @@ export type GenerateRegistryDirectoryOptionsType = {
  * The Node-only writer (`writeRegistryDirectory`) resolves these to absolute
  * paths before writing and returns {@link WrittenEntityFileType} instead.
  */
-export type GenerateRegistryDirectoryEntityFileType = {
-  /** Full IRI of the OWL class. */
-  'iri': string;
-  /** PascalCase class name without `Schema` suffix. */
-  'name': string;
-  /**
-   * Relative path inside the output directory, e.g. `entities/Person.ts`.
-   * Resolve against an `outDir` to get the absolute write location.
-   */
-  'path': string;
-  /** Generated TypeScript source for this entity file. */
-  'source': string;
-};
+export type GenerateRegistryDirectoryEntityFileType
+  = InferType<typeof GENERATE_REGISTRY_DIRECTORY_ENTITY_FILE_SCHEMA>;
 
 /**
  * Data returned by {@link generateRegistryDirectory} (browser-safe).
@@ -125,11 +119,4 @@ export type GenerateRegistryDirectoryResultType = {
  * Mirrors the pre-refactor `GenerateRegistryDirectoryEntityFileType` shape for
  * consumers that previously depended on written absolute paths.
  */
-export type WrittenEntityFileType = {
-  /** Full IRI of the OWL class. */
-  'iri': string;
-  /** PascalCase class name without `Schema` suffix. */
-  'name': string;
-  /** Absolute file path as written to disk. */
-  'path': string;
-};
+export type WrittenEntityFileType = InferType<typeof WRITTEN_ENTITY_FILE_SCHEMA>;

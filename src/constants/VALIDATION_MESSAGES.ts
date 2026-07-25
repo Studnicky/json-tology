@@ -208,7 +208,7 @@ export const VALIDATION_MESSAGES = {
    * Single type: `"must be string"`. Multiple: `"must be one of: string, number"`.
    */
   'type': (types: string[]): string => {
-    return types.length === 1 ? `must be ${types[0]}` : `must be one of: ${types.join(', ')}`;
+    return types.length === 1 ? `must be ${types.at(0)}` : `must be one of: ${types.join(', ')}`;
   },
 
   /** `unevaluatedItems: false` — array element was not covered by any schema. */

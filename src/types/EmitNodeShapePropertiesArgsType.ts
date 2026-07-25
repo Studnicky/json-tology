@@ -1,6 +1,6 @@
-import type { ShaclEmitBaseArgsType } from './ShaclEmitBaseArgsType.js';
+import type { ShaclEmitBaseArgumentsType } from './ShaclEmitBaseArgumentsType.js';
 
 /** Arguments for emitNodeShapeProperties. */
-export type EmitNodeShapePropertiesArgsType = ShaclEmitBaseArgsType & {
+export type EmitNodeShapePropertiesArgumentListType = ShaclEmitBaseArgumentsType & {
   'propertyIndex': Map<string, string[]>;
 };

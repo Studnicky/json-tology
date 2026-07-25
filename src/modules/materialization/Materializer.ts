@@ -14,7 +14,9 @@ import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapT
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { AboxProjectorInterface } from '../../interfaces/AboxProjectorInterface.js';
-import type { ComputedFnType } from '../../types/ComputedFnType.js';
+import type { ComputedFunctionType } from '../../types/ComputedFunctionType.js';
+import type { MaterializerExecuteOptionsType } from '../../types/MaterializerExecuteOptionsType.js';
+import type { PartialInferSchemaType } from '../../types/PartialInferSchemaType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import {
@@ -23,7 +25,7 @@ import {
 import { Frozen } from '../data/Frozen.js';
 import { DataType } from '../data/DataType.js';
 import { EffectiveProperties } from '../graph/EffectiveProperties.js';
-import { RefResolution } from '../graph/RefResolution.js';
+import { ReferenceResolution } from '../graph/ReferenceResolution.js';
 import { GraphEngineDefaults } from '../graph/GraphEngineDefaults.js';
 import { Terms } from '../quads/Terms.js';
 import { OWL } from '../../constants/IRI.js';
@@ -52,7 +54,7 @@ import { LogScope } from '../data/LogScope.js';
  * @remarks
  * The Materializer is bound to a {@link SchemaRegistryInterface} at construction time.
  * Execution overrides (`cachedOverridesNoDefaults`, `cachedOverridesWithDefaults`) and
- * the `lookupGraphFn` are pre-allocated in the constructor to avoid per-call allocations
+ * the `lookupGraphFunction` are pre-allocated in the constructor to avoid per-call allocations
  * on the hot materialization path.
  *
  * @example
@@ -118,12 +120,12 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
   // Bound once in the constructor; passed as `lookupGraph` to avoid a trivial
   // per-call arrow allocation in projectAboxFromExecution.
-  private readonly lookupGraphFn: (schemaId: string) => SchemaGraphInterface | undefined;
+  private readonly lookupGraphFunction: (schemaId: string) => SchemaGraphInterface | undefined;
 
-  // Pre-bound in the constructor alongside lookupGraphFn; reused across run()
+  // Pre-bound in the constructor alongside lookupGraphFunction; reused across run()
   // calls to avoid a fresh closure allocation on every synthesizeDefaults/
   // allowAdditionalProperties execution path.
-  private readonly lookupSchemaFn: (sid: string) => Record<string, unknown> | undefined;
+  private readonly lookupSchemaFunction: (sid: string) => Record<string, unknown> | undefined;
 
   /**
    * Create a Materializer bound to a schema registry.
@@ -158,13 +160,13 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       'removeAdditionalProperties': false,
       'synthesizeDefaults': true
     };
-    this.lookupGraphFn = (schemaId: string): SchemaGraphInterface | undefined => {
+    this.lookupGraphFunction = (schemaId: string): SchemaGraphInterface | undefined => {
       const result = registry.graph(schemaId);
 
       return result;
     };
-    this.lookupSchemaFn = (sid: string): Record<string, unknown> | undefined => {
-      const schemaGraph = this.lookupGraphFn(sid);
+    this.lookupSchemaFunction = (sid: string): Record<string, unknown> | undefined => {
+      const schemaGraph = this.lookupGraphFunction(sid);
 
       if (schemaGraph === undefined || !DataType.isRecord(schemaGraph.rootSchema)) {
         return undefined;
@@ -199,11 +201,11 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
   private applyComputedField(
     name: string,
-    fn: ComputedFnType,
+    computeFunction: ComputedFunctionType,
     value: Record<string, unknown>
   ): void {
     try {
-      value[name] = fn(value);
+      value[name] = computeFunction(value);
     } catch (error) {
       const causeError = BaseError.toCause(error);
 
@@ -227,9 +229,9 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
     for (const [
       name,
-      fn
+      computeFunction
     ] of Object.entries(computedMap)) {
-      this.applyComputedField(name, fn, value);
+      this.applyComputedField(name, computeFunction, value);
     }
   }
 
@@ -254,10 +256,10 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       this.effectivePropertiesCache,
       graph,
       node,
-      (refId: string): SchemaGraphInterface | undefined => {
-        const refGraph = this.registry.graph(refId);
+      (referenceId: string): SchemaGraphInterface | undefined => {
+        const referenceGraph = this.registry.graph(referenceId);
 
-        return refGraph;
+        return referenceGraph;
       }
     );
 
@@ -282,10 +284,9 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
    */
   public execute(
     schema: Record<string, unknown> & { '$id': string },
-    data?: unknown,
-    options?: { 'baseIri'?: string;
-      'synthesizeDefaults'?: boolean }
+    options?: MaterializerExecuteOptionsType
   ): MaterializationResultType {
+    const data = options?.data;
     const baseIri = options?.baseIri;
     const synthesize = options?.synthesizeDefaults === true;
     const runResult = baseIri === undefined
@@ -373,7 +374,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
    */
   public materialize<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
-    partial?: Partial<InferSchemaType<TSchema>>,
+    partial?: PartialInferSchemaType<TSchema>,
   ): InferSchemaType<TSchema>;
   public materialize(
     schema: Record<string, unknown> & { '$id': string; },
@@ -481,7 +482,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       entryNode,
       'graphIri': options?.graphIri,
       'iriFor': options?.iriFor,
-      'lookupGraph': this.lookupGraphFn,
+      'lookupGraph': this.lookupGraphFunction,
       'predicateResolver': options?.predicateResolver
     });
 
@@ -511,9 +512,9 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     }
 
     try {
-      const resolved = RefResolution.resolve(semantics.ref, graph, {
+      const resolved = ReferenceResolution.resolve(semantics.ref, graph, {
         'logger': this.logger,
-        'lookupGraph': this.lookupGraphFn
+        'lookupGraph': this.lookupGraphFunction
       });
 
       return [
@@ -552,12 +553,12 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
       const entryNode = graph.rootNode;
 
-      const opts = synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults;
+      const validateOptions = synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults;
       const validator = this.registry.validator(id);
       const seedData = synthesizeDefaults && data === undefined
-        ? GraphEngineDefaults.synthesizeZeroValueForLookups(entryNode, graph, this.lookupSchemaFn, this.lookupGraphFn)
+        ? GraphEngineDefaults.synthesizeZeroValueForLookups(entryNode, graph, this.lookupSchemaFunction, this.lookupGraphFunction)
         : data;
-      const compiledResult = validator.validate(seedData, opts);
+      const compiledResult = validator.validate(seedData, validateOptions);
 
       const materialized = synthesizeDefaults
         ? compiledResult.value

@@ -52,91 +52,99 @@ export type {
   OwlCodegenOptionsType, OwlRegistryDirOptionsType
 } from '../types/OwlCodegen.js';
 
-/**
- * Generate TypeScript source from an OWL 2 TBox.
- *
- * Browser-safe: always returns the generated source string. No disk I/O.
- * For file writing, use `writeFromTbox` from `json-tology/owl-gen-node`.
- *
- * @param options - Input source and codegen knobs.
- * @returns The generated TypeScript source string.
- *
- * @example
- * const source = generateFromTbox({ input: myJsonLd, name: 'acl' });
- * fs.writeFileSync('src/acl-registry.ts', source);
- */
-export function generateFromTbox(options: GenerateFromTboxOptionsType): string {
-  const {
-    baseIri,
-    header,
-    input,
-    name,
-    sourceLabel
-  } = options;
+class OwlGen {
+  /**
+   * Generate TypeScript source from an OWL 2 TBox.
+   *
+   * Browser-safe: always returns the generated source string. No disk I/O.
+   * For file writing, use `writeFromTbox` from `json-tology/owl-gen-node`.
+   *
+   * @param options - Input source and codegen knobs.
+   * @returns The generated TypeScript source string.
+   *
+   * @example
+   * const source = generateFromTbox({ input: myJsonLd, name: 'acl' });
+   * fs.writeFileSync('src/acl-registry.ts', source);
+   */
+  static generateFromTbox(options: GenerateFromTboxOptionsType): string {
+    const {
+      baseIri,
+      header,
+      input,
+      name,
+      sourceLabel
+    } = options;
 
-  const result = JsonTology.fromTbox(input);
+    const result = JsonTology.fromTbox(input);
 
-  const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
+    const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
 
-  const codegenOptions: OwlCodegenOptionsType = {
-    ...(!(baseIri === undefined) && { 'baseIri': baseIri }),
-    ...(!(header === undefined) && { 'header': header }),
-    ...(!(name === undefined) && { 'registryConstName': name }),
-    'sourceLabel': sourceLabel ?? defaultSourceLabel
-  };
+    const codegenOptions: OwlCodegenOptionsType = {
+      ...(!(baseIri === undefined) && { 'baseIri': baseIri }),
+      ...(!(header === undefined) && { 'header': header }),
+      ...(!(name === undefined) && { 'registryConstName': name }),
+      'sourceLabel': sourceLabel ?? defaultSourceLabel
+    };
 
-  return OwlCodegen.toTypeScript(result, codegenOptions);
+    return OwlCodegen.toTypeScript(result, codegenOptions);
+  }
+
+  /**
+   * Generate a full registry directory source from an OWL 2 TBox.
+   *
+   * Browser-safe: returns generated files as data — relative paths and source
+   * strings — without writing to disk. For file writing, use
+   * `writeRegistryDirectory` from `json-tology/owl-gen-node`.
+   *
+   * The returned `entityFiles` array contains one entry per OWL class with:
+   *   - `iri` — full class IRI
+   *   - `name` — PascalCase class name
+   *   - `path` — relative path, e.g. `entities/Person.ts`
+   *   - `source` — TypeScript source string
+   *
+   * @param options - Input source and codegen knobs (no `outDir`).
+   * @returns Generated entity files (relative paths + source) and `indexSource`.
+   *
+   * @example
+   * const result = generateRegistryDirectory({ input: myJsonLd, name: 'acl' });
+   * for (const f of result.entityFiles) {
+   *   fs.writeFileSync(join(outDir, f.path), f.source, 'utf8');
+   * }
+   * fs.writeFileSync(join(outDir, 'index.ts'), result.indexSource, 'utf8');
+   */
+  static generateRegistryDirectory(options: GenerateRegistryDirectoryOptionsType): GenerateRegistryDirectoryResultType {
+    const {
+      baseIri,
+      header,
+      input,
+      name,
+      sourceLabel
+    } = options;
+
+    const result = JsonTology.fromTbox(input);
+
+    const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
+
+    const codegenOptions: OwlRegistryDirOptionsType = {
+      ...(!(baseIri === undefined) && { 'baseIri': baseIri }),
+      ...(!(header === undefined) && { 'header': header }),
+      ...(!(name === undefined) && { 'registryConstName': name }),
+      'sourceLabel': sourceLabel ?? defaultSourceLabel
+    };
+
+    return OwlCodegen.toRegistryFiles(result, codegenOptions);
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Registry-directory mode
+// Public API — flat named exports for `json-tology/owl-gen` consumers.
+// Aliasing a static method reference (not a function/arrow expression) keeps
+// the documented `import { generateFromTbox } from 'json-tology/owl-gen'`
+// surface stable while the implementation lives on a class.
 // ---------------------------------------------------------------------------
 
-/**
- * Generate a full registry directory source from an OWL 2 TBox.
- *
- * Browser-safe: returns generated files as data — relative paths and source
- * strings — without writing to disk. For file writing, use
- * `writeRegistryDirectory` from `json-tology/owl-gen-node`.
- *
- * The returned `entityFiles` array contains one entry per OWL class with:
- *   - `iri` — full class IRI
- *   - `name` — PascalCase class name
- *   - `path` — relative path, e.g. `entities/Person.ts`
- *   - `source` — TypeScript source string
- *
- * @param options - Input source and codegen knobs (no `outDir`).
- * @returns Generated entity files (relative paths + source) and `indexSource`.
- *
- * @example
- * const result = generateRegistryDirectory({ input: myJsonLd, name: 'acl' });
- * for (const f of result.entityFiles) {
- *   fs.writeFileSync(join(outDir, f.path), f.source, 'utf8');
- * }
- * fs.writeFileSync(join(outDir, 'index.ts'), result.indexSource, 'utf8');
- */
-export function generateRegistryDirectory(options: GenerateRegistryDirectoryOptionsType): GenerateRegistryDirectoryResultType {
-  const {
-    baseIri,
-    header,
-    input,
-    name,
-    sourceLabel
-  } = options;
-
-  const result = JsonTology.fromTbox(input);
-
-  const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
-
-  const codegenOptions: OwlRegistryDirOptionsType = {
-    ...(!(baseIri === undefined) && { 'baseIri': baseIri }),
-    ...(!(header === undefined) && { 'header': header }),
-    ...(!(name === undefined) && { 'registryConstName': name }),
-    'sourceLabel': sourceLabel ?? defaultSourceLabel
-  };
-
-  return OwlCodegen.toRegistryFiles(result, codegenOptions);
-}
+export const generateFromTbox = OwlGen.generateFromTbox;
+export const generateRegistryDirectory = OwlGen.generateRegistryDirectory;
 
 export type {
   GenerateFromTboxOptionsType,

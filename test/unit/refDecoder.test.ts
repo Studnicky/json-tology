@@ -1,13 +1,13 @@
 /**
- * Direct unit tests for RefDecoder.
+ * Direct unit tests for ReferenceDecoder.
  *
- * RefDecoder.run() walks a SchemaGraph alongside a value and applies
+ * ReferenceDecoder.run() walks a SchemaGraph alongside a value and applies
  * registered Transform decoders at every $ref boundary. We drive it through
  * real SchemaGraph + Transform instances — no mocking.
  *
  * For cross-schema decoder behaviour we exercise via JsonTology.instantiate()
  * (the observable integration point). For local-fragment and null/undefined
- * edge-cases we drive RefDecoder.run() directly with a minimal registry stub.
+ * edge-cases we drive ReferenceDecoder.run() directly with a minimal registry stub.
  */
 
 import assert from 'node:assert/strict';
@@ -20,15 +20,15 @@ import {
 import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { RefDecoder } from '../../src/modules/graph/RefDecoder.js';
-import type { RefDecoderRegistryType } from '../../src/types/RefDecoderRegistryType.js';
+import { ReferenceDecoder } from '../../src/modules/graph/ReferenceDecoder.js';
+import type { ReferenceDecoderRegistryType } from '../../src/types/ReferenceDecoderRegistryType.js';
 
 // ---------------------------------------------------------------------------
-// Minimal registry stubs — used when we drive RefDecoder.run directly
+// Minimal registry stubs — used when we drive ReferenceDecoder.run directly
 // ---------------------------------------------------------------------------
 
 /** Registry stub that knows about no schemas — simulates an isolated graph walk. */
-const emptyRegistry: RefDecoderRegistryType = {
+const emptyRegistry: ReferenceDecoderRegistryType = {
   'getGraph': (_schema: Record<string, unknown>) => {
     return _schema.$id === '__never__' ? undefined : undefined;
   },
@@ -121,11 +121,11 @@ const UnregisteredRefSchema = {
 // Tests
 // ---------------------------------------------------------------------------
 
-void describe('RefDecoder.run()', { 'concurrency': true }, () => {
+void describe('ReferenceDecoder.run()', { 'concurrency': true }, () => {
   void it('returns null unchanged — no graph walk needed for null root', () => {
     const graph = new SchemaGraph(EventSchema);
 
-    const result = RefDecoder.run(graph, null, emptyRegistry);
+    const result = ReferenceDecoder.run(graph, null, emptyRegistry);
 
     assert.equal(result, null);
   });
@@ -133,7 +133,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
   void it('returns undefined unchanged', () => {
     const graph = new SchemaGraph(EventSchema);
 
-    const result = RefDecoder.run(graph, undefined, emptyRegistry);
+    const result = ReferenceDecoder.run(graph, undefined, emptyRegistry);
 
     assert.equal(result, undefined);
   });
@@ -177,7 +177,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
       'label': 'hello'
     };
 
-    const result = RefDecoder.run(graph, value, emptyRegistry) as typeof value;
+    const result = ReferenceDecoder.run(graph, value, emptyRegistry) as typeof value;
 
     assert.equal(result.count, 7);
     assert.equal(result.label, 'hello');
@@ -197,7 +197,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
 
     // Must not throw (stack overflow / infinite recursion).
     assert.doesNotThrow(() => {
-      RefDecoder.run(graph, value, emptyRegistry);
+      ReferenceDecoder.run(graph, value, emptyRegistry);
     });
   });
 
@@ -235,7 +235,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
 
     // emptyRegistry cannot resolve cross-schema, but this $ref is local.
     // Color has no decoder, so value passes through unchanged.
-    const result = RefDecoder.run(graph, value, emptyRegistry) as { 'color': string };
+    const result = ReferenceDecoder.run(graph, value, emptyRegistry) as { 'color': string };
 
     assert.equal(result.color, 'red', 'local pointer $ref with no decoder should pass through');
   });
@@ -245,7 +245,7 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
     const value = { 'x': 42 };
 
     assert.doesNotThrow(() => {
-      const result = RefDecoder.run(graph, value, emptyRegistry) as { 'x': number };
+      const result = ReferenceDecoder.run(graph, value, emptyRegistry) as { 'x': number };
 
       assert.equal(result.x, 42, 'unregistered $ref should not mutate value');
     });

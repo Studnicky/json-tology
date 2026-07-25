@@ -10,6 +10,11 @@
  * @group OWL Codegen
  */
 
+import type { InferType } from './Schema.js';
+import type {
+  OWL_CODEGEN_OPTIONS_SCHEMA, OWL_REGISTRY_DIR_OPTIONS_SCHEMA, REGISTRY_FILE_ENTRY_SCHEMA
+} from '../constants/SCHEMAS.js';
+
 /**
  * Named return type for {@link buildDepsMap}.
  *
@@ -95,21 +100,12 @@ export type OwlCodegenOptionsType = {
    * auto-generated banner.
    */
   'sourceLabel'?: string | undefined;
-};
+} & InferType<typeof OWL_CODEGEN_OPTIONS_SCHEMA>;
 
 /**
  * Describes one entity file produced by {@link OwlCodegen.toRegistryFiles}.
  */
-export type RegistryFileEntryType = {
-  /** Full IRI of the OWL class this file represents. */
-  'iri': string;
-  /** PascalCase identifier (without `Schema` suffix), e.g. `Person`. */
-  'name': string;
-  /** Relative path inside the output directory, e.g. `entities/Person.ts`. */
-  'path': string;
-  /** The TypeScript source content of this entity file. */
-  'source': string;
-};
+export type RegistryFileEntryType = InferType<typeof REGISTRY_FILE_ENTRY_SCHEMA>;
 
 /**
  * Result returned by {@link OwlCodegen.toRegistryFiles}.
@@ -149,4 +145,4 @@ export type OwlRegistryDirOptionsType = {
    * auto-generated banner.
    */
   'sourceLabel'?: string | undefined;
-};
+} & InferType<typeof OWL_REGISTRY_DIR_OPTIONS_SCHEMA>;

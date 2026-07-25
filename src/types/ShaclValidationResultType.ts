@@ -1,3 +1,30 @@
+import type { InferType } from './Schema.js';
+
+export const SHACL_VALIDATION_RESULT_SCHEMA = {
+  'properties': {
+    'focusNode': { 'type': 'string' },
+    'resultMessage': { 'type': 'string' },
+    'resultPath': { 'type': 'string' },
+    'resultSeverity': {
+      'enum': [
+        'Info',
+        'Violation',
+        'Warning'
+      ]
+    },
+    'sourceConstraintComponent': { 'type': 'string' },
+    'sourceShape': { 'type': 'string' },
+    'value': { 'type': 'string' }
+  },
+  'required': [
+    'focusNode',
+    'resultMessage',
+    'resultSeverity',
+    'sourceConstraintComponent'
+  ],
+  'type': 'object'
+} as const;
+
 /**
  * ShaclValidationResultType — a single SHACL validation result entry.
  *
@@ -10,36 +37,4 @@
  * @see {@link https://www.w3.org/TR/shacl/#results-validation-result SHACL ValidationResult}
  * @group Interfaces
  */
-import type { ShaclSeverityType } from '../types/ShaclSeverityType.js';
-
-export type ShaclValidationResultType = {
-  /**
-   * IRI or blank-node identifier of the focus node that failed validation.
-   */
-  'focusNode': string;
-  /**
-   * Human-readable description of the constraint failure.
-   */
-  'resultMessage': string;
-  /**
-   * IRI of the property path that was evaluated (absent for node-level constraints).
-   */
-  'resultPath'?: string;
-  /**
-   * Severity of this result.
-   */
-  'resultSeverity': ShaclSeverityType;
-  /**
-   * Full IRI of the SHACL constraint component that produced this result.
-   * Example: `http://www.w3.org/ns/shacl#MinCountConstraintComponent`
-   */
-  'sourceConstraintComponent': string;
-  /**
-   * IRI or blank-node identifier of the shape that produced this result (when available).
-   */
-  'sourceShape'?: string;
-  /**
-   * Lexical value of the offending value node (when applicable).
-   */
-  'value'?: string;
-};
+export type ShaclValidationResultType = InferType<typeof SHACL_VALIDATION_RESULT_SCHEMA>;

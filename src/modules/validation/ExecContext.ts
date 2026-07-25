@@ -1,4 +1,6 @@
-import type { ExecContextType } from '../../types/ExecContextType.js';
+import type {
+  ExecContextOverridesType, ExecContextType
+} from '../../types/ExecContextType.js';
 
 /**
  * ExecContext — constructs validation execution contexts.
@@ -21,7 +23,7 @@ export class ExecContext {
    * @param partial - Fields that deviate from the defaults.
    * @returns A fully-populated execution context.
    */
-  public static build(partial: Partial<ExecContextType>): ExecContextType {
+  public static build(partial: ExecContextOverridesType): ExecContextType {
     return {
       'applyDefaults': partial.applyDefaults ?? false,
       'coerce': partial.coerce ?? false,

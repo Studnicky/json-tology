@@ -27,7 +27,7 @@ import {
 import { MaterializationError } from '../../src/errors/MaterializationError.js';
 import { DataType } from '../../src/modules/data/DataType.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
-import type { SkolemizeFnType } from '../../src/types/SkolemizeFnType.js';
+import type { SkolemizeFunctionType } from '../../src/types/SkolemizeFunctionType.js';
 
 type TripleTermQuad = QuadInterface & { 'subject': QuadInterface };
 
@@ -349,7 +349,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
     const NESTED_IRI = 'https://test.example/instances/nested-article';
 
     // iriFor branches on depth: root instance gets ROOT_IRI, nested target gets NESTED_IRI.
-    const depthGatedIriFor: SkolemizeFnType = (ctx) => {
+    const depthGatedIriFor: SkolemizeFunctionType = (ctx) => {
       if (ctx.depth === 0) {
         return ROOT_IRI;
       }
@@ -720,7 +720,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
     void it('passes depth ≥ 1 to iriFor for a nested object target (regression: was hardcoded 0)', () => {
       const jt = freshJt();
       const capturedDepths: number[] = [];
-      const iriFor: SkolemizeFnType = (ctx) => {
+      const iriFor: SkolemizeFunctionType = (ctx) => {
         capturedDepths.push(ctx.depth);
 
         return;
@@ -776,7 +776,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
       // Returns ROOT_IRI only at depth 0 (the root instance); returns undefined
       // for anything deeper, letting the default content-hash minter take over.
-      const iriFor: SkolemizeFnType = (ctx) => {
+      const iriFor: SkolemizeFunctionType = (ctx) => {
         return ctx.depth === 0 ? ROOT_IRI : undefined;
       };
 

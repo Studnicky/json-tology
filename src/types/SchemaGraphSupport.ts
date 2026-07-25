@@ -9,10 +9,7 @@
  * @group Graph
  */
 
-import type {
-  SchemaGraphNodeType,
-  SchemaGraphSemanticsType
-} from './SchemaGraph.js';
+import type { SchemaGraphNodeType } from './SchemaGraph.js';
 import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptorType.js';
 import type { AnnotatedEdgeDescriptorType } from '../types/AnnotatedEdgeDescriptorType.js';
 import type { JtConfigType } from './JtConfig.js';
@@ -263,10 +260,9 @@ export type OptionalNumberType = number | undefined;
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type AdditionalNodesResultType = Pick<
-  SchemaGraphSemanticsType,
-  'additionalItemsNode' | 'additionalPropertiesNode'
->;
+export type AdditionalNodesResultType
+  = { 'additionalItemsNode': boolean | SchemaGraphNodeType | undefined }
+  & { 'additionalPropertiesNode': boolean | SchemaGraphNodeType | undefined };
 
 /**
  * Named return type for {@link extractDiscriminatorFields}.
@@ -286,10 +282,9 @@ export type AdditionalNodesResultType = Pick<
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type DiscriminatorFieldsType = Pick<
-  SchemaGraphSemanticsType,
-  'discriminatorMapping' | 'discriminatorPropertyName'
->;
+export type DiscriminatorFieldsType
+  = { 'discriminatorMapping': Record<string, string> | undefined }
+  & { 'discriminatorPropertyName': string | undefined };
 
 /**
  * Named return type for {@link extractRdfsDomainRange}.
@@ -309,7 +304,9 @@ export type DiscriminatorFieldsType = Pick<
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type DomainRangeFieldsType = Pick<SchemaGraphSemanticsType, 'rdfsDomain' | 'rdfsRange'>;
+export type DomainRangeFieldsType
+  = { 'rdfsDomain': string | undefined }
+  & { 'rdfsRange': string | undefined };
 
 /**
  * Named return type for {@link extractScalarFields}.
@@ -331,38 +328,40 @@ export type DomainRangeFieldsType = Pick<SchemaGraphSemanticsType, 'rdfsDomain' 
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type ScalarFieldsType = Pick<
-  SchemaGraphSemanticsType,
-  | 'comment'
-  | 'contentEncoding'
-  | 'contentMediaType'
-  | 'description'
-  | 'disjointWith'
-  | 'dynamicRef'
-  | 'equivalentTo'
-  | 'exclusiveMaximum'
-  | 'exclusiveMinimum'
-  | 'format'
-  | 'inverseOf'
-  | 'maxContains'
-  | 'maximum'
-  | 'maxItems'
-  | 'maxLength'
-  | 'maxProperties'
-  | 'minContains'
-  | 'minimum'
-  | 'minItems'
-  | 'minLength'
-  | 'minProperties'
-  | 'multipleOf'
-  | 'pattern'
-  | 'recursiveRef'
-  | 'schemaAnchor'
-  | 'schemaDialect'
-  | 'schemaId'
-  | 'schemaVocabulary'
-  | 'title'
->;
+export type ScalarFieldsType
+  = {
+    'comment': string | undefined;
+    'contentEncoding': string | undefined;
+    'contentMediaType': string | undefined;
+    'description': string | undefined;
+    'disjointWith': string | undefined;
+    'dynamicRef': string | undefined;
+    'equivalentTo': string | undefined;
+    'exclusiveMaximum': number | undefined;
+    'exclusiveMinimum': number | undefined;
+    'format': string | undefined;
+    'inverseOf': string | undefined;
+    'maxContains': number | undefined;
+    'maximum': number | undefined;
+    'maxItems': number | undefined;
+  }
+  & {
+    'maxLength': number | undefined;
+    'maxProperties': number | undefined;
+    'minContains': number | undefined;
+    'minimum': number | undefined;
+    'minItems': number | undefined;
+    'minLength': number | undefined;
+    'minProperties': number | undefined;
+    'multipleOf': number | undefined;
+    'pattern': string | undefined;
+    'recursiveRef': string | undefined;
+    'schemaAnchor': string | undefined;
+    'schemaDialect': string | undefined;
+    'schemaId': string | undefined;
+    'schemaVocabulary': unknown;
+    'title': string | undefined;
+  };
 
 /**
  * Named return type for {@link buildSemanticsGraphPart}.
@@ -384,29 +383,31 @@ export type ScalarFieldsType = Pick<
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type SemanticsGraphPartType = Pick<
-  SchemaGraphSemanticsType,
-  | 'allOf'
-  | 'anyOf'
-  | 'complementNode'
-  | 'containsNode'
-  | 'definitions'
-  | 'dependentSchemaEntries'
-  | 'elseNode'
-  | 'ifNode'
-  | 'itemsNode'
-  | 'oneOf'
-  | 'patternPropertyEntries'
-  | 'prefixItems'
-  | 'properties'
-  | 'propertyNamesNode'
-  | 'ref'
-  | 'refTargetNode'
-  | 'required'
-  | 'thenNode'
-  | 'unevaluatedItemsNode'
-  | 'unevaluatedPropertiesNode'
->;
+export type SemanticsGraphPartType
+  = {
+    'allOf': SchemaGraphNodeType[];
+    'anyOf': SchemaGraphNodeType[];
+    'complementNode': SchemaGraphNodeType | undefined;
+    'containsNode': SchemaGraphNodeType | undefined;
+    'definitions': Array<[string, SchemaGraphNodeType]>;
+    'dependentSchemaEntries': Array<[string, SchemaGraphNodeType]>;
+    'elseNode': SchemaGraphNodeType | undefined;
+    'ifNode': SchemaGraphNodeType | undefined;
+    'itemsNode': SchemaGraphNodeType | undefined;
+    'oneOf': SchemaGraphNodeType[];
+  }
+  & {
+    'patternPropertyEntries': Array<[string, SchemaGraphNodeType]>;
+    'prefixItems': SchemaGraphNodeType[];
+    'properties': ReadonlyMap<string, SchemaGraphNodeType>;
+    'propertyNamesNode': SchemaGraphNodeType | undefined;
+    'ref': string | undefined;
+    'refTargetNode': SchemaGraphNodeType | undefined;
+    'required': string[];
+    'thenNode': SchemaGraphNodeType | undefined;
+    'unevaluatedItemsNode': SchemaGraphNodeType | undefined;
+    'unevaluatedPropertiesNode': SchemaGraphNodeType | undefined;
+  };
 
 /**
  * Named return type for {@link extractBooleanFlags}.
@@ -428,26 +429,28 @@ export type SemanticsGraphPartType = Pick<
  * @see {@link SchemaGraphSupport}
  * @group Graph
  */
-export type BooleanFlagsType = Pick<
-  SchemaGraphSemanticsType,
-  | 'asymmetric'
-  | 'computed'
-  | 'deprecated'
-  | 'functional'
-  | 'hasConst'
-  | 'hasDefault'
-  | 'inverseFunctional'
-  | 'iriRef'
-  | 'irreflexive'
-  | 'jtFrozen'
-  | 'readOnly'
-  | 'recursiveAnchor'
-  | 'reflexive'
-  | 'symmetric'
-  | 'transitive'
-  | 'uniqueItems'
-  | 'writeOnly'
->;
+export type BooleanFlagsType
+  = {
+    'asymmetric': boolean;
+    'computed': boolean;
+    'deprecated': boolean;
+    'functional': boolean;
+    'hasConst': boolean;
+    'hasDefault': boolean;
+    'inverseFunctional': boolean;
+    'iriRef': boolean;
+  }
+  & {
+    'irreflexive': boolean;
+    'jtFrozen': boolean;
+    'readOnly': boolean;
+    'recursiveAnchor': boolean;
+    'reflexive': boolean;
+    'symmetric': boolean;
+    'transitive': boolean;
+    'uniqueItems': boolean;
+    'writeOnly': boolean;
+  };
 
 /**
  * A single property entry: a tuple of property name and its resolved graph node.

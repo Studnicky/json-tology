@@ -61,7 +61,7 @@ export interface SchemaGraphInterface {
   relationsForSubject(subjectIri: string): readonly SchemaGraphRelationType[];
   resolveFragment(fragment: string): SchemaGraphNodeType;
   resolvePointer(pointer: string): SchemaGraphNodeType;
-  resolveRefId(ref: string): string;
+  resolveReferenceId(reference: string): string;
   readonly 'rootNode': SchemaGraphNodeType;
   readonly 'rootSchema': JsonSchemaType;
   semantics(node: SchemaGraphNodeType): SchemaGraphSemanticsType;

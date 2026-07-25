@@ -1,4 +1,4 @@
-import type { ComputedFnType } from '../types/ComputedFnType.js';
+import type { ComputedFunctionType } from '../types/ComputedFunctionType.js';
 import type { SchemaGraphInterface } from './SchemaGraphInterface.js';
 
 /**
@@ -9,8 +9,8 @@ import type { SchemaGraphInterface } from './SchemaGraphInterface.js';
  * computed property values.
  */
 export interface ComputedStoreInterface {
-  add(schemaId: string, name: string, fn: ComputedFnType): void;
-  getMap(schemaId: string): Record<string, ComputedFnType>;
+  add(schemaId: string, name: string, fn: ComputedFunctionType): void;
+  getMap(schemaId: string): Record<string, ComputedFunctionType>;
   has(schemaId: string): boolean;
   remove(schemaId: string, name: string): void;
   validateAgainstGraph(graph: SchemaGraphInterface): void;

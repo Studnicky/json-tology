@@ -1,10 +1,6 @@
-import type { AnnotationEmitModeType } from '../types/AnnotationEmitModeType.js';
-import type { CurieInterface } from './CurieInterface.js';
 import type { QuadInterface } from './QuadInterface.js';
 import type { SchemaGraphInterface } from './SchemaGraphInterface.js';
-import type { SchemaGraphNodeType } from '../types/SchemaGraph.js';
-import type { SkolemizeFnType } from '../types/SkolemizeFnType.js';
-import type { PredicateResolverFnType } from '../types/PredicateResolverFnType.js';
+import type { AboxProjectionOptionsType } from '../types/AboxProjectionOptionsType.js';
 
 /**
  * Behavioral contract for ABox projection — projecting validated instance data
@@ -25,12 +21,6 @@ export interface AboxProjectorInterface {
     graph: SchemaGraphInterface,
     data: unknown,
     baseIri: string,
-    options?: { 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
-      'curie'?: CurieInterface | undefined;
-      'entryNode'?: SchemaGraphNodeType | undefined;
-      'graphIri'?: string | undefined;
-      'iriFor'?: SkolemizeFnType | undefined;
-      'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-      'predicateResolver'?: PredicateResolverFnType | undefined }
+    options?: AboxProjectionOptionsType
   ): QuadInterface[];
 }

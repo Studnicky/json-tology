@@ -75,88 +75,13 @@ import { Lists } from '../quads/Lists.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { Terms } from '../quads/Terms.js';
 import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
+import { IRI_LIKE_RE } from '../../constants/GRAPH_REGEXES.js';
 
 // OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
 
 // ---------------------------------------------------------------------------
 // Build SchemaGraphRelationType[] from indexed quads
 // ---------------------------------------------------------------------------
-
-function objectIriValue(quad: QuadInterface, curie: CurieInterface): string {
-  if (quad.object.termType === 'NamedNode') {
-    return curie.compact(quad.object.value);
-  }
-  if (quad.object.termType === 'BlankNode') {
-    return quad.object.value;
-  }
-  if (quad.object.termType === 'Literal') {
-    return quad.object.value;
-  }
-
-  // Variable or embedded Quad (rdf/js RDF*) — neither has an IRI form,
-  // so return the empty string and let downstream dispatch ignore it.
-  return '';
-}
-
-/**
- * Build the optional language / datatype / termType fields that ride along
- * on a relation, preserving the source literal's tags when the target is a
- * Literal. NamedNode and BlankNode targets carry only `termType`; the
- * language/datatype tags are emitted strictly for Literal terms.
- */
-function literalTagsForQuad(quad: QuadInterface): LiteralTagsType {
-  switch (quad.object.termType) {
-    case 'BlankNode':
-      return { 'termType': 'BlankNode' };
-    case 'Literal':
-      return {
-        'datatype': quad.object.datatype.value,
-        'language': quad.object.language,
-        'termType': 'Literal'
-      };
-    case 'NamedNode':
-      return { 'termType': 'NamedNode' };
-    case 'Quad':
-    case 'Variable':
-      return {};
-    default:
-      return {};
-  }
-}
-
-/**
- * Resolve or synthesise a node for `subject`. Subjects without a recognised
- * OWL type (typically blank nodes carrying restriction / list / facet shapes)
- * get a synthetic stub so their outgoing relations can be returned by
- * `relationsForSubject` without scanning the full relation list.
- */
-function nodeOrStub(
-  subject: string,
-  nodeMap: Map<string, SchemaGraphNodeType>,
-  stubMap: Map<string, SchemaGraphNodeType>
-): SchemaGraphNodeType {
-  const existing = nodeMap.get(subject);
-
-  if (existing !== undefined) {
-    return existing;
-  }
-
-  const cachedStub = stubMap.get(subject);
-
-  if (cachedStub !== undefined) {
-    return cachedStub;
-  }
-
-  const stub: SchemaGraphNodeType = {
-    'id': subject,
-    'pointer': '',
-    'schema': { '$id': subject }
-  };
-
-  stubMap.set(subject, stub);
-
-  return stub;
-}
 
 // ---------------------------------------------------------------------------
 // QuadGraphBuilder — cohesive graph-construction helpers used by the
@@ -165,6 +90,32 @@ function nodeOrStub(
 // ---------------------------------------------------------------------------
 
 class QuadGraphBuilder {
+  /**
+   * Build the optional language / datatype / termType fields that ride along
+   * on a relation, preserving the source literal's tags when the target is a
+   * Literal. NamedNode and BlankNode targets carry only `termType`; the
+   * language/datatype tags are emitted strictly for Literal terms.
+   */
+  public static literalTagsForQuad(quad: QuadInterface): LiteralTagsType {
+    switch (quad.object.termType) {
+      case 'BlankNode':
+        return { 'termType': 'BlankNode' };
+      case 'Literal':
+        return {
+          'datatype': quad.object.datatype.value,
+          'language': quad.object.language,
+          'termType': 'Literal'
+        };
+      case 'NamedNode':
+        return { 'termType': 'NamedNode' };
+      case 'Quad':
+      case 'Variable':
+        return {};
+      default:
+        return {};
+    }
+  }
+
   public static nodeMap(
     subjectIndex: SubjectIndexType,
     predicateIndex: SubjectPredicateQuadsIndexType,
@@ -206,6 +157,55 @@ class QuadGraphBuilder {
     return nodeMap;
   }
 
+  /**
+   * Resolve or synthesise a node for `subject`. Subjects without a recognised
+   * OWL type (typically blank nodes carrying restriction / list / facet shapes)
+   * get a synthetic stub so their outgoing relations can be returned by
+   * `relationsForSubject` without scanning the full relation list.
+   */
+  public static nodeOrStub(
+    subject: string,
+    nodeMap: Map<string, SchemaGraphNodeType>,
+    stubMap: Map<string, SchemaGraphNodeType>
+  ): SchemaGraphNodeType {
+    const existing = nodeMap.get(subject);
+
+    if (existing !== undefined) {
+      return existing;
+    }
+
+    const cachedStub = stubMap.get(subject);
+
+    if (cachedStub !== undefined) {
+      return cachedStub;
+    }
+
+    const stub: SchemaGraphNodeType = {
+      'id': subject,
+      'pointer': '',
+      'schema': { '$id': subject }
+    };
+
+    stubMap.set(subject, stub);
+
+    return stub;
+  }
+
+  public static objectIriValue(quad: QuadInterface, curie: CurieInterface): string {
+    if (quad.object.termType === 'NamedNode') {
+      return curie.compact(quad.object.value);
+    }
+    if (quad.object.termType === 'BlankNode') {
+      return quad.object.value;
+    }
+    if (quad.object.termType === 'Literal') {
+      return quad.object.value;
+    }
+
+    // Variable or embedded Quad (rdf/js RDF*) — neither has an IRI form,
+    // so return the empty string and let downstream dispatch ignore it.
+    return '';
+  }
   public static predicateIndex(subjectIndex: SubjectIndexType): SubjectPredicateQuadsIndexType {
     const index: SubjectPredicateQuadsIndexType = new Map();
 
@@ -231,20 +231,27 @@ class QuadGraphBuilder {
     return index;
   }
 
-  public static relations(opts: BuildRelationsOptionsType): SchemaGraphRelationType[] {
+  /** Probe-term `.equals` stub for `Lists.collect` — never invoked on the probe itself. */
+  public static probeNeverEquals(): boolean {
+    const result = false;
+
+    return result;
+  }
+
+  public static relations(argumentList: BuildRelationsOptionsType): SchemaGraphRelationType[] {
     const {
       curie,
       nodeMap,
       predicateIndex,
       stubMap
-    } = opts;
+    } = argumentList;
     const relations: SchemaGraphRelationType[] = [];
 
     for (const [
       subject,
       predicateMap
     ] of predicateIndex) {
-      const sourceNode = nodeOrStub(subject, nodeMap, stubMap);
+      const sourceNode = QuadGraphBuilder.nodeOrStub(subject, nodeMap, stubMap);
       const isNamedSubject = nodeMap.has(subject);
 
       for (const [
@@ -321,9 +328,9 @@ class QuadGraphBuilder {
 
         // All other predicates — emit a relation per quad with literal-tag preservation.
         for (const quad of quads) {
-          const targetValue = objectIriValue(quad, curie);
+          const targetValue = QuadGraphBuilder.objectIriValue(quad, curie);
           const targetNode = nodeMap.get(targetValue);
-          const tags = literalTagsForQuad(quad);
+          const tags = QuadGraphBuilder.literalTagsForQuad(quad);
 
           relations.push({
             ...tags,
@@ -339,12 +346,12 @@ class QuadGraphBuilder {
   }
 
   // OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
-  private static restrictionBnode(opts: ResolveRestrictionOptionsType): OptionalRestrictionType {
+  private static restrictionBnode(argumentList: ResolveRestrictionOptionsType): OptionalRestrictionType {
     const {
       bnodeId,
       bnodePredicateMap,
       curie
-    } = opts;
+    } = argumentList;
 
     if (bnodePredicateMap === undefined) {
       return undefined;
@@ -454,7 +461,7 @@ class QuadGraphBuilder {
  * Instantiate via SchemaGraph.fromQuads(quads, options) — do not construct directly.
  */
 export class QuadBackedSchemaGraph implements SchemaGraphInterface {
-  private readonly _rootSchema: Record<string, unknown>;
+  readonly #rootSchema: Record<string, unknown>;
   private readonly nodeList: SchemaGraphNodeType[];
   private readonly nodeMap: Map<string, SchemaGraphNodeType>;
   /** Quads supplied to the constructor — retained so `collectList` can walk
@@ -470,10 +477,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     options?: { 'baseIri'?: string;
       'prefixes'?: PrefixMapType }
   ) {
-    const mergedPrefixes: PrefixMapType = {
-      ...STANDARD_PREFIXES,
-      ...options?.prefixes
-    };
+    const mergedPrefixes: PrefixMapType = Object.assign({}, STANDARD_PREFIXES, options?.prefixes);
     const curie = new Curie(mergedPrefixes);
     const subjectIndex = QuadFactory.indexBySubject(quads);
     const predicateIndex = QuadGraphBuilder.predicateIndex(subjectIndex);
@@ -491,7 +495,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     });
 
     // Root schema stub — carries the base IRI so callers can inspect it.
-    this._rootSchema = { '$id': options?.baseIri ?? '' };
+    this.#rootSchema = { '$id': options?.baseIri ?? '' };
   }
 
   public allRelations(): SchemaGraphRelationType[] {
@@ -534,23 +538,15 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     // appear in the wild depending on the producer, so the relation target
     // string we received is the authoritative match).
     const looksLikeIri = !head.startsWith('_:')
-      && /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|#|\/)/u.test(head);
+      && IRI_LIKE_RE.test(head);
     const headTerm = looksLikeIri
       ? {
-        'equals': () => {
-          const result = false;
-
-          return result;
-        },
+        'equals': QuadGraphBuilder.probeNeverEquals,
         'termType': 'NamedNode' as const,
         'value': head
       }
       : {
-        'equals': () => {
-          const result = false;
-
-          return result;
-        },
+        'equals': QuadGraphBuilder.probeNeverEquals,
         'termType': 'BlankNode' as const,
         'value': head
       };
@@ -630,7 +626,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
           'pointer': node.pointer
         };
       }),
-      'rootSchema': this._rootSchema
+      'rootSchema': this.#rootSchema
     };
   }
 
@@ -734,14 +730,14 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return node;
   }
 
-  public resolveRefId(ref: string): string {
-    if (!ref.startsWith('#')) {
-      return ref;
+  public resolveReferenceId(reference: string): string {
+    if (!reference.startsWith('#')) {
+      return reference;
     }
-    const fragment = ref.slice(1);
+    const fragment = reference.slice(1);
     const node = this.nodeMap.get(fragment);
 
-    return node?.id ?? ref;
+    return node?.id ?? reference;
   }
 
   public get rootNode(): SchemaGraphNodeType {
@@ -749,14 +745,14 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     const first = this.nodeList.at(0);
 
     return first ?? {
-      'id': String(this._rootSchema.$id ?? ''),
+      'id': String(this.#rootSchema.$id ?? ''),
       'pointer': '',
-      'schema': this._rootSchema
+      'schema': this.#rootSchema
     };
   }
 
   public get rootSchema(): RootSchemaRecordType {
-    return this._rootSchema;
+    return this.#rootSchema;
   }
 
   public semantics(_node: SchemaGraphNodeType): SchemaGraphSemanticsType {

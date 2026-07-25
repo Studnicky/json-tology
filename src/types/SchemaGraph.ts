@@ -1,7 +1,29 @@
-import type { JsonSchemaType } from './Schema.js';
+import type {
+  InferType, JsonSchemaType
+} from './Schema.js';
 import type { AnnotatedEdgeDescriptorType } from './AnnotatedEdgeDescriptorType.js';
 import type { JtConfigType } from './JtConfig.js';
 import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptorType.js';
+
+export const LIST_ITEM_SCHEMA = {
+  'properties': {
+    'datatype': { 'type': 'string' },
+    'language': { 'type': 'string' },
+    'target': { 'type': 'string' },
+    'termType': {
+      'enum': [
+        'BlankNode',
+        'Literal',
+        'NamedNode'
+      ]
+    }
+  },
+  'required': [
+    'target',
+    'termType'
+  ],
+  'type': 'object'
+} as const;
 
 /**
  * Item produced by `SchemaGraphInterface.collectList` when walking an
@@ -12,16 +34,7 @@ import type { RawRestrictionDescriptorType } from './RawRestrictionDescriptorTyp
  * named nodes (IRI references), and literals (with language tags / datatype
  * IRIs) without having to walk raw quads themselves.
  */
-export type ListItemType = {
-  /** XSD datatype IRI for Literal items (omitted for NamedNode / BlankNode). */
-  'datatype'?: string;
-  /** BCP47 language tag for Literal items (omitted for NamedNode / BlankNode). */
-  'language'?: string;
-  /** Target value: IRI for NamedNode, bnode id for BlankNode, lexical string for Literal. */
-  'target': string;
-  /** rdf/js term-type discriminator for the list item. */
-  'termType': 'BlankNode' | 'Literal' | 'NamedNode';
-};
+export type ListItemType = InferType<typeof LIST_ITEM_SCHEMA>;
 
 export type RelationPredicateType
   = | 'dash:readOnly'
@@ -98,10 +111,10 @@ export type RelationStructureType
     'edgeTarget': string;
     'kind': 'annotatedEdge';
   }
-  | { 'elseRef'?: string
-    'ifRef': string;
+  | { 'elseReference'?: string
+    'ifReference': string;
     'kind': 'conditional';
-    'thenRef'?: string; }
+    'thenReference'?: string; }
   | { 'kind': 'list';
     'members': string[] };
 
@@ -127,10 +140,19 @@ export type RelationStructureType
  * @see {@link NormIRType}
  * @group SchemaGraph
  */
-export type NormIRNodeType = {
-  'id': string;
-  'pointer': string;
-};
+export const NORM_IR_NODE_SCHEMA = {
+  'properties': {
+    'id': { 'type': 'string' },
+    'pointer': { 'type': 'string' }
+  },
+  'required': [
+    'id',
+    'pointer'
+  ],
+  'type': 'object'
+} as const;
+
+export type NormIRNodeType = InferType<typeof NORM_IR_NODE_SCHEMA>;
 
 /**
  * Normalized intermediate representation of a fully traversed schema document.
@@ -193,9 +215,7 @@ export type NormIRType = {
  * @see {@link SchemaGraphSemanticsType}
  * @group SchemaGraph
  */
-export type SchemaGraphNodeType = {
-  'id': string;
-  'pointer': string;
+export type SchemaGraphNodeType = InferType<typeof NORM_IR_NODE_SCHEMA> & {
   'schema': JsonSchemaType;
 };
 
@@ -399,8 +419,18 @@ export type SchemaGraphRelationType = {
  * @see {@link SchemaGraphNodeType}
  * @group SchemaGraph
  */
-export type StructureWarningType = {
-  'message': string;
-  'path': string;
-  'rule': string;
-};
+export const STRUCTURE_WARNING_SCHEMA = {
+  'properties': {
+    'message': { 'type': 'string' },
+    'path': { 'type': 'string' },
+    'rule': { 'type': 'string' }
+  },
+  'required': [
+    'message',
+    'path',
+    'rule'
+  ],
+  'type': 'object'
+} as const;
+
+export type StructureWarningType = InferType<typeof STRUCTURE_WARNING_SCHEMA>;

@@ -2,6 +2,7 @@
  * Schema visualization data structures.
  */
 
+import type { InferType } from './Schema.js';
 import type { QuadInterface } from '../interfaces/QuadInterface.js';
 
 /**
@@ -29,25 +30,28 @@ export type VizNodeType = {
   'schemaTypes': string[];
 };
 
+export const VIZ_EDGE_SCHEMA = {
+  'properties': {
+    'label': { 'type': 'string' },
+    'source': { 'type': 'string' },
+    'target': { 'type': 'string' }
+  },
+  'required': [
+    'label',
+    'source',
+    'target'
+  ],
+  'type': 'object'
+} as const;
+
 /**
  * Edge representing a relationship between schemas.
+ *
+ * `label` — property or relationship name.
+ * `source` — source schema ID.
+ * `target` — target schema ID.
  */
-export type VizEdgeType = {
-  /**
-   * Property or relationship name.
-   */
-  'label': string;
-
-  /**
-   * Source schema ID.
-   */
-  'source': string;
-
-  /**
-   * Target schema ID.
-   */
-  'target': string;
-};
+export type VizEdgeType = InferType<typeof VIZ_EDGE_SCHEMA>;
 
 /**
  * Schema data for visualization rendering.

@@ -26,18 +26,41 @@ import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
  * ```
  */
 export class Scalars {
+  private static pushNumberBoundErrors(
+    path: string,
+    value: number,
+    minimum: number | undefined,
+    maximum: number | undefined,
+    exclusiveMinimum: number | undefined,
+    exclusiveMaximum: number | undefined,
+    errors: ValidationErrorType[]
+  ): void {
+    if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
+      errors.push(BaseError.validationError(path, 'minimum', VALIDATION_MESSAGES.minimum(minimum)));
+    }
+    if (maximum !== undefined && !Predicates.satisfiesMaximum(value, maximum)) {
+      errors.push(BaseError.validationError(path, 'maximum', VALIDATION_MESSAGES.maximum(maximum)));
+    }
+    if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(value, exclusiveMinimum)) {
+      errors.push(BaseError.validationError(path, 'exclusiveMinimum', VALIDATION_MESSAGES.exclusiveMinimum(exclusiveMinimum)));
+    }
+    if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(value, exclusiveMaximum)) {
+      errors.push(BaseError.validationError(path, 'exclusiveMaximum', VALIDATION_MESSAGES.exclusiveMaximum(exclusiveMaximum)));
+    }
+  }
+
   static validateConst(
     path: string,
     value: unknown,
     hasConst: boolean,
-    constVal: unknown,
+    constValue: unknown,
     errors: ValidationErrorType[]
   ): boolean {
-    if (!hasConst || Predicates.satisfiesConst(value, constVal)) {
+    if (!hasConst || Predicates.satisfiesConst(value, constValue)) {
       return true;
     }
 
-    errors.push(BaseError.validationError(path, 'const', VALIDATION_MESSAGES.const(constVal)));
+    errors.push(BaseError.validationError(path, 'const', VALIDATION_MESSAGES.const(constValue)));
 
     return false;
   }
@@ -151,7 +174,7 @@ export class Scalars {
   ): boolean {
     const pre = errors.length;
 
-    pushNumberBoundErrors(path, value, minimum, maximum, exclusiveMinimum, exclusiveMaximum, errors);
+    Scalars.pushNumberBoundErrors(path, value, minimum, maximum, exclusiveMinimum, exclusiveMaximum, errors);
 
     if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
       errors.push(BaseError.validationError(path, 'multipleOf', VALIDATION_MESSAGES.multipleOf(multipleOf)));
@@ -171,10 +194,10 @@ export class Scalars {
   ): boolean {
     const pre = errors.length;
 
-    if (minLength !== undefined && !Predicates.satisfiesMinLength(value, minLength)) {
+    if (minLength !== undefined && !Predicates.satisfiesMinimumLength(value, minLength)) {
       errors.push(BaseError.validationError(path, 'minLength', VALIDATION_MESSAGES.minLength(minLength)));
     }
-    if (maxLength !== undefined && !Predicates.satisfiesMaxLength(value, maxLength)) {
+    if (maxLength !== undefined && !Predicates.satisfiesMaximumLength(value, maxLength)) {
       errors.push(BaseError.validationError(path, 'maxLength', VALIDATION_MESSAGES.maxLength(maxLength)));
     }
     if (patternRegex !== undefined && !Predicates.satisfiesPattern(value, patternRegex)) {
@@ -215,28 +238,5 @@ export class Scalars {
     ));
 
     return false;
-  }
-}
-
-function pushNumberBoundErrors(
-  path: string,
-  value: number,
-  minimum: number | undefined,
-  maximum: number | undefined,
-  exclusiveMinimum: number | undefined,
-  exclusiveMaximum: number | undefined,
-  errors: ValidationErrorType[]
-): void {
-  if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
-    errors.push(BaseError.validationError(path, 'minimum', VALIDATION_MESSAGES.minimum(minimum)));
-  }
-  if (maximum !== undefined && !Predicates.satisfiesMaximum(value, maximum)) {
-    errors.push(BaseError.validationError(path, 'maximum', VALIDATION_MESSAGES.maximum(maximum)));
-  }
-  if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(value, exclusiveMinimum)) {
-    errors.push(BaseError.validationError(path, 'exclusiveMinimum', VALIDATION_MESSAGES.exclusiveMinimum(exclusiveMinimum)));
-  }
-  if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(value, exclusiveMaximum)) {
-    errors.push(BaseError.validationError(path, 'exclusiveMaximum', VALIDATION_MESSAGES.exclusiveMaximum(exclusiveMaximum)));
   }
 }

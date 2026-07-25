@@ -19,19 +19,48 @@
  * @group QuadFactory
  */
 
-export type DatasetTermType = {
-  'termType': string;
-  'value': string;
-};
+import type { InferType } from './Schema.js';
+
+const DatasetTermSchema = {
+  'properties': {
+    'termType': { 'type': 'string' },
+    'value': { 'type': 'string' }
+  },
+  'required': [
+    'termType',
+    'value'
+  ],
+  'type': 'object'
+} as const;
+
+export type DatasetTermType = InferType<typeof DatasetTermSchema>;
 
 export type DatasetLiteralTermType = DatasetTermType & {
   'datatype'?: DatasetTermType;
   'language'?: string;
 };
 
+const _JsonLdDatasetQuadSchema = {
+  '$defs': { 'DatasetTerm': DatasetTermSchema },
+  'properties': {
+    'graph': { '$ref': '#/$defs/DatasetTerm' },
+    'object': { '$ref': '#/$defs/DatasetTerm' },
+    'predicate': { '$ref': '#/$defs/DatasetTerm' },
+    'subject': { '$ref': '#/$defs/DatasetTerm' }
+  },
+  'required': [
+    'graph',
+    'object',
+    'predicate',
+    'subject'
+  ],
+  'type': 'object'
+} as const;
+
+type JsonLdDatasetQuadSchemaType = InferType<typeof _JsonLdDatasetQuadSchema>;
+
 export type JsonLdDatasetQuadType = {
-  'graph': DatasetTermType;
   'object': DatasetLiteralTermType;
-  'predicate': DatasetTermType;
-  'subject': DatasetTermType;
+} & {
+  [K in keyof JsonLdDatasetQuadSchemaType as K extends 'object' ? never : K]: JsonLdDatasetQuadSchemaType[K];
 };

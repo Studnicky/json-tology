@@ -17,8 +17,8 @@ import {
 import {
   JsonTology, Skolemize
 } from '../../src/index.js';
-// SkolemizeFnType is the function-shape contract for IRI minting; consumed via the public iriFor option but the type alias itself is internal.
-import type { SkolemizeFnType } from '../../src/types/SkolemizeFnType.js';
+// SkolemizeFunctionType is the function-shape contract for IRI minting; consumed via the public iriFor option but the type alias itself is internal.
+import type { SkolemizeFunctionType } from '../../src/types/SkolemizeFunctionType.js';
 
 const UserSchema = {
   '$id': 'https://example.com/User',
@@ -57,7 +57,7 @@ const TeamSchema = {
   'type': 'object'
 } as const;
 
-const noopSkolemize: SkolemizeFnType = () => {
+const noopSkolemize: SkolemizeFunctionType = () => {
   return;
 };
 
@@ -166,7 +166,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
       'schemas': [TeamSchema]
     });
     let fallbackCalls = 0;
-    const fallback: SkolemizeFnType = () => {
+    const fallback: SkolemizeFunctionType = () => {
       fallbackCalls++;
 
       return;
@@ -203,7 +203,7 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
     const recorded: Array<{ 'depth': number;
       'path': string;
       'value': unknown }> = [];
-    const recorder: SkolemizeFnType = (ctx) => {
+    const recorder: SkolemizeFunctionType = (ctx) => {
       recorded.push({ ...ctx });
 
       return;
@@ -243,7 +243,7 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
       'name': 'Platform'
     };
     let calls = 0;
-    const counter: SkolemizeFnType = () => {
+    const counter: SkolemizeFunctionType = () => {
       calls++;
 
       return;

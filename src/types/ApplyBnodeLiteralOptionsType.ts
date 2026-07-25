@@ -6,7 +6,6 @@
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
 import type { AxiomContextType } from './AxiomContextType.js';
 
-export type ApplyBnodeLiteralOptionsType = {
-  'axiomCtx': AxiomContextType;
-  'graph': SchemaGraphInterface;
-};
+export type ApplyBnodeLiteralOptionsType
+  = { 'axiomCtx': AxiomContextType }
+    & { 'graph': SchemaGraphInterface };

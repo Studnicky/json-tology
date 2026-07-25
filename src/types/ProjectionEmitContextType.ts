@@ -7,7 +7,7 @@
 
 import type { CurieInterface } from '../interfaces/CurieInterface.js';
 import type { IdentifierIssuerInterface } from '../interfaces/IdentifierIssuerInterface.js';
-import type { PredicateResolverFnType } from '../types/PredicateResolverFnType.js';
+import type { PredicateResolverFunctionType } from '../types/PredicateResolverFunctionType.js';
 import type { QuadInterface } from '../interfaces/QuadInterface.js';
 import type { RelationIndexType } from './RelationIndexType.js';
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
@@ -17,6 +17,6 @@ export type ProjectionEmitContextType = {
   'graph': SchemaGraphInterface;
   'index': Map<string, RelationIndexType>;
   'issuer': IdentifierIssuerInterface | undefined;
-  'predicateResolver': PredicateResolverFnType | undefined;
+  'predicateResolver': PredicateResolverFunctionType | undefined;
   'quads': QuadInterface[];
 };

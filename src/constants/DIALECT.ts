@@ -1,4 +1,4 @@
-import type { GraphEngineOptionsType } from '../types/GraphEngine.js';
+import type { DefaultGraphEngineOptionsType } from '../types/DefaultGraphEngineOptionsType.js';
 
 /**
  * Short name of the supported JSON Schema draft version.
@@ -272,11 +272,11 @@ export const SUPPORTED_VOCABULARIES = new Set([
  *
  * @category Dialect
  * @since 0.1.0
- * @see GraphEngineOptionsType
+ * @see DefaultGraphEngineOptionsType
  * @defaultValue `{...}`
  * @group Constants
  */
-export const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsType, 'formatRegistry' | 'keywords' | 'logger' | 'lookupGraph' | 'lookupSchema'>> = {
+export const DEFAULT_OPTIONS: DefaultGraphEngineOptionsType = {
   'allowAdditionalProperties': false,
   'applyDefaults': false,
   'castTypes': false,

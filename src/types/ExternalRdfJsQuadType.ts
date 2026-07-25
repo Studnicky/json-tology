@@ -6,13 +6,44 @@
  * helper are declared here.
  */
 
-export type ExternalRdfJsQuadType = {
-  'object': {
-    'datatype'?: { 'value': string };
-    'language'?: string;
-    'termType': string;
-    'value': string
-  };
-  'predicate': { 'value': string };
-  'subject': { 'value': string }
-};
+import type { InferType } from './Schema.js';
+
+export const ExternalRdfJsQuadSchema = {
+  'properties': {
+    'object': {
+      'properties': {
+        'datatype': {
+          'properties': { 'value': { 'type': 'string' } },
+          'required': ['value'],
+          'type': 'object'
+        },
+        'language': { 'type': 'string' },
+        'termType': { 'type': 'string' },
+        'value': { 'type': 'string' }
+      },
+      'required': [
+        'termType',
+        'value'
+      ],
+      'type': 'object'
+    },
+    'predicate': {
+      'properties': { 'value': { 'type': 'string' } },
+      'required': ['value'],
+      'type': 'object'
+    },
+    'subject': {
+      'properties': { 'value': { 'type': 'string' } },
+      'required': ['value'],
+      'type': 'object'
+    }
+  },
+  'required': [
+    'object',
+    'predicate',
+    'subject'
+  ],
+  'type': 'object'
+} as const;
+
+export type ExternalRdfJsQuadType = InferType<typeof ExternalRdfJsQuadSchema>;

@@ -11,9 +11,7 @@ import type { LoaderType } from '../../types/Loader.js';
 import type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptionsType.js';
 import { SchemaLoadError } from '../../errors/SchemaLoadError.js';
 import { SCHEMA_LOAD_ERROR_CODE } from '../../constants/ERROR_CODES.js';
-
-/** Lowest HTTP status treated as a transient (retryable) server-side failure. */
-const HTTP_SERVER_ERROR_MIN = 500;
+import { HTTP_SERVER_ERROR_MINIMUM } from '../../constants/NUMERIC.js';
 
 /**
  * Namespace of universal schema-loading helpers.
@@ -45,7 +43,7 @@ export const Loaders = {
    * @param options.maxSize - Maximum number of entries to keep (default: 1024).
    */
   cached(loader: LoaderType, options?: { 'maxSize'?: number }): LoaderType {
-    const maxSize = options?.maxSize ?? 1024;
+    const maximumSize = options?.maxSize ?? 1024;
     // Simple LRU via insertion-order Map: delete + re-insert on hit.
     const cache = new Map<string, JsonSchemaType | null>();
 
@@ -62,7 +60,7 @@ export const Loaders = {
 
       const result = await loader(iri);
 
-      if (cache.size >= maxSize) {
+      if (cache.size >= maximumSize) {
         // Evict oldest (first) entry
         const oldest = cache.keys().next().value;
 
@@ -123,7 +121,7 @@ export const Loaders = {
       // 4xx responses collapse to null per the LoaderType contract: null signals
       // "IRI unknown to this loader" so the next layer (GraphError REF_UNRESOLVED)
       // carries the full IRI with no status noise.
-      if (response.status >= HTTP_SERVER_ERROR_MIN) {
+      if (response.status >= HTTP_SERVER_ERROR_MINIMUM) {
         throw new SchemaLoadError(`HTTP ${response.status} loading ${url}`, {
           'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
           'file': url,

@@ -5,13 +5,15 @@ import type { MaterializerOptionsType } from './Materializer.js';
 import type { SnapshotType } from './Snapshot.js';
 import type { VocabularyPluginInterface } from '../interfaces/VocabularyPluginInterface.js';
 import type { BuiltinFormatNameType } from '../types/Format.js';
-import type { ComputedFnType } from '../types/ComputedFnType.js';
+import type { ComputedFunctionType } from '../types/ComputedFunctionType.js';
 import type { PredicateForType } from '../types/PredicateForType.js';
-import type { SkolemizeFnType } from '../types/SkolemizeFnType.js';
+import type { SkolemizeFunctionType } from '../types/SkolemizeFunctionType.js';
 
-export type JsonTologyOptionsType<TSchemas extends readonly unknown[] = readonly unknown[]> = {
+type UnknownArrayType = readonly unknown[];
+
+export type JsonTologyOptionsType<TSchemas extends UnknownArrayType = UnknownArrayType> = {
   'baseIri': string;
-  'computeds'?: Record<string, Record<string, ComputedFnType>>;
+  'computeds'?: Record<string, Record<string, ComputedFunctionType>>;
   /**
    * Default for the `deskolemize` flag on {@link fromQuads}. When true,
    * IRIs matching the well-known genid pattern are treated as blank
@@ -80,10 +82,10 @@ export type JsonTologyOptionsType<TSchemas extends readonly unknown[] = readonly
   /**
    * Default IRI minting strategy for {@link toQuads}. A string is treated
    * as a root-only IRI override (depth 0); nested objects fall through to
-   * the default hash minter. A function is the full {@link SkolemizeFnType}
+   * the default hash minter. A function is the full {@link SkolemizeFunctionType}
    * shape. Per-call options on `toQuads` override this default.
    */
-  'iriFor'?: SkolemizeFnType | string;
+  'iriFor'?: SkolemizeFunctionType | string;
   'keywords'?: KeywordDefinitionType[];
   'logger'?: LoggerInterface;
   'materializer'?: MaterializerOptionsType;

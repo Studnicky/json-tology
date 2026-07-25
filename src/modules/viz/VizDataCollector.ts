@@ -31,6 +31,65 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface
  * @group Classes
  */
 export class VizDataCollector {
+  private static collectEdges(
+    graph: SchemaGraphInterface,
+    schemaId: string,
+    registeredIds: Set<string>
+  ): VizEdgeType[] {
+    const result: VizEdgeType[] = [];
+
+    for (const rel of graph.allRelations()) {
+      if (rel.predicate !== RDFS.range) {
+        continue;
+      }
+      if (rel.metadata?.fromRef !== true) {
+        continue;
+      }
+      if (typeof rel.target !== 'string') {
+        continue;
+      }
+      if (!registeredIds.has(rel.target)) {
+        continue;
+      }
+
+      result.push({
+        'label': VizDataCollector.resolveEdgeLabel(rel.source.pointer),
+        'source': schemaId,
+        'target': rel.target
+      });
+    }
+
+    return result;
+  }
+
+  private static collectSchemaData(graph: SchemaGraphInterface, schemaId: string): VizSchemaDataType {
+    const emitter = new TypeStringEmitter(graph);
+    const schemaSerializer = new GraphSchemaSerializer();
+    const owlSerializer = new GraphOntologySerializer();
+    const shaclSerializer = new GraphShaclSerializer();
+
+    return {
+      'id': schemaId,
+      'jsonSchema': schemaSerializer.serialize(graph),
+      'owl': owlSerializer.serializeQuads([graph]),
+      'shacl': shaclSerializer.serializeQuads([graph]),
+      'typescript': emitter.emit()
+    };
+  }
+
+  private static labelFromId(schemaId: string): string {
+    try {
+      const url = new URL(schemaId);
+      const segments = url.pathname.split('/').filter(Boolean);
+
+      return segments.at(-1) ?? schemaId;
+    } catch {
+      const segments = schemaId.split('/').filter(Boolean);
+
+      return segments.at(-1) ?? schemaId;
+    }
+  }
+
   /**
    * Derive a human-readable edge label from a `$ref` relation's source pointer.
    * Array-container keywords (`items`, `prefixItems`, `additionalItems`) are
@@ -68,7 +127,7 @@ export class VizDataCollector {
       const rootNode = graph.rootNode;
       const sem = graph.semantics(rootNode);
       const schemaId = sem.schemaId ?? '';
-      const label = curie === undefined ? labelFromId(schemaId) : curie.compact(schemaId);
+      const label = curie === undefined ? VizDataCollector.labelFromId(schemaId) : curie.compact(schemaId);
 
       nodes.push({
         'id': schemaId,
@@ -77,11 +136,11 @@ export class VizDataCollector {
         'schemaTypes': sem.schemaTypes
       });
 
-      for (const edge of collectEdges(graph, schemaId, registeredIds)) {
+      for (const edge of VizDataCollector.collectEdges(graph, schemaId, registeredIds)) {
         edges.push(edge);
       }
 
-      schemas.push(collectSchemaData(graph, schemaId));
+      schemas.push(VizDataCollector.collectSchemaData(graph, schemaId));
     }
 
     return {
@@ -89,64 +148,5 @@ export class VizDataCollector {
       nodes,
       schemas
     };
-  }
-}
-
-function collectEdges(
-  graph: SchemaGraphInterface,
-  schemaId: string,
-  registeredIds: Set<string>
-): VizEdgeType[] {
-  const result: VizEdgeType[] = [];
-
-  for (const rel of graph.allRelations()) {
-    if (rel.predicate !== RDFS.range) {
-      continue;
-    }
-    if (rel.metadata?.fromRef !== true) {
-      continue;
-    }
-    if (typeof rel.target !== 'string') {
-      continue;
-    }
-    if (!registeredIds.has(rel.target)) {
-      continue;
-    }
-
-    result.push({
-      'label': VizDataCollector.resolveEdgeLabel(rel.source.pointer),
-      'source': schemaId,
-      'target': rel.target
-    });
-  }
-
-  return result;
-}
-
-function collectSchemaData(graph: SchemaGraphInterface, schemaId: string): VizSchemaDataType {
-  const emitter = new TypeStringEmitter(graph);
-  const schemaSerializer = new GraphSchemaSerializer();
-  const owlSerializer = new GraphOntologySerializer();
-  const shaclSerializer = new GraphShaclSerializer();
-
-  return {
-    'id': schemaId,
-    'jsonSchema': schemaSerializer.serialize(graph),
-    'owl': owlSerializer.serializeQuads([graph]),
-    'shacl': shaclSerializer.serializeQuads([graph]),
-    'typescript': emitter.emit()
-  };
-}
-
-function labelFromId(schemaId: string): string {
-  try {
-    const url = new URL(schemaId);
-    const segments = url.pathname.split('/').filter(Boolean);
-
-    return segments.at(-1) ?? schemaId;
-  } catch {
-    const segments = schemaId.split('/').filter(Boolean);
-
-    return segments.at(-1) ?? schemaId;
   }
 }

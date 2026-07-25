@@ -6,8 +6,7 @@
 import type { SchemaGraphRelationType } from './SchemaGraph.js';
 import type { AxiomContextType } from './AxiomContextType.js';
 
-export type ApplyRelationOptionsType = {
-  'axiomCtx': AxiomContextType;
-  'relation': SchemaGraphRelationType;
-  'subjectIri': string;
-};
+export type ApplyRelationOptionsType
+  = { 'axiomCtx': AxiomContextType }
+    & { 'relation': SchemaGraphRelationType }
+    & { 'subjectIri': string };

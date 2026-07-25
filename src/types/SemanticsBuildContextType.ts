@@ -22,7 +22,7 @@ export type SemanticsBuildContextType = {
   /** Resolved `$ref` string or undefined. */
   'ref': string | undefined;
   /** Callback to resolve a local fragment reference. */
-  'resolveLocalRef': (ref: string) => SchemaGraphNodeType;
+  'resolveLocalRef': (reference: string) => SchemaGraphNodeType;
   /** The raw schema record from `node.schema`. */
   'schema': Record<string, unknown>;
 };

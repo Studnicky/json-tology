@@ -12,37 +12,29 @@ import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntryTyp
 
 import { DataType } from '../data/DataType.js';
 import { StructuralHash } from '../data/StructuralHash.js';
-
-/**
- * Suffixes appended to the structural hash to express nominal identity.
- *
- * A transform-bearing schema has different nominal identity from a structurally
- * identical plain schema — their hashes must not collide in the duplicate-
- * detection cache. Anonymous inline sub-shapes always use the PLAIN suffix,
- * which aligns them with plain (non-transform) top-level schemas only.
- */
-const TRANSFORM_SUFFIX = ':t';
-const PLAIN_SUFFIX = ':p';
-
-/**
- * Compute a nominal-aware hash for a top-level registry entry.
- *
- * The hash is `StructuralHash.of(entry.schema) + suffix` where suffix is `:t`
- * for transform-bearing schemas and `:p` for plain ones.  This ensures that
- * a decoder-carrying primitive (e.g. `IriString` with a URL decoder) cannot
- * collide in the duplicate-detection cache with a plain `{ type: 'string' }`
- * schema that happens to share the same JSON body.
- */
-function nominalAwareHash(entry: SchemaRegistryEntryType): string {
-  const base = StructuralHash.of(entry.schema);
-
-  return entry.hasTransform ? base + TRANSFORM_SUFFIX : base + PLAIN_SUFFIX;
-}
+import {
+  PLAIN_SUFFIX, TRANSFORM_SUFFIX
+} from '../../constants/STRUCTURAL_HASH.js';
 
 export class SchemaEntryStore implements SchemaEntryStoreInterface {
+  /**
+   * Compute a nominal-aware hash for a top-level registry entry.
+   *
+   * The hash is `StructuralHash.of(entry.schema) + suffix` where suffix is `:t`
+   * for transform-bearing schemas and `:p` for plain ones.  This ensures that
+   * a decoder-carrying primitive (e.g. `IriString` with a URL decoder) cannot
+   * collide in the duplicate-detection cache with a plain `{ type: 'string' }`
+   * schema that happens to share the same JSON body.
+   */
+  private static nominalAwareHash(entry: SchemaRegistryEntryType): string {
+    const base = StructuralHash.of(entry.schema);
+
+    return entry.hasTransform ? base + TRANSFORM_SUFFIX : base + PLAIN_SUFFIX;
+  }
   private readonly byId = new Map<string, SchemaRegistryEntryType>();
   private readonly hashes = new Map<string, string>();
   private rev = 0;
+
   /** Cached top-level hash → schemaId map for findDuplicates(). Invalidated on mutation. */
   private topLevelHashCache: Map<string, string> | undefined = undefined;
 
@@ -105,7 +97,7 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
         schemaId,
         entry
       ] of this.byId) {
-        const hash = nominalAwareHash(entry);
+        const hash = SchemaEntryStore.nominalAwareHash(entry);
         const existing = hashToIds.get(hash);
 
         if (existing === undefined) {
@@ -200,20 +192,20 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
     topLevelHashes: Map<string, string>,
     results: DuplicateReportEntryType[]
   ): void {
-    const compositionArr = schema[compositionKey];
+    const compositionArray = schema[compositionKey];
 
-    if (!Array.isArray(compositionArr)) {
+    if (!Array.isArray(compositionArray)) {
       return;
     }
 
     for (const [
-      idx,
+      index,
       subSchema
-    ] of compositionArr.entries()) {
+    ] of compositionArray.entries()) {
       if (!DataType.isRecord(subSchema)) {
         continue;
       }
-      this.walkForDuplicates(schemaId, subSchema, `${pointer}/${compositionKey}/${idx}`, topLevelHashes, results);
+      this.walkForDuplicates(schemaId, subSchema, `${pointer}/${compositionKey}/${index}`, topLevelHashes, results);
     }
   }
 

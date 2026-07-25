@@ -3,10 +3,10 @@ import type { SchemaGraphRelationType } from './SchemaGraph.js';
 import type { QuadObjectType } from './Quad.js';
 
 /** Arguments for emitQualifiedCardinalityRestriction. */
-export type EmitQualifiedCardinalityRestrictionArgsType = {
+export type EmitQualifiedCardinalityRestrictionArgumentListType = {
   'cardinalityPredicate': string;
   'containsIriObject': QuadObjectType;
-  'ctx': ProjectionEmitContextType;
+  'context': ProjectionEmitContextType;
   'onProp': string;
   'rels': SchemaGraphRelationType[];
   'subject': string;

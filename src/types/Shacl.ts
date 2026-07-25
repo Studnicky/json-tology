@@ -23,12 +23,11 @@ export type TypeIndexType = Map<string, Set<string>>;
 export type DatatypeIndexType = Map<string, PredicateValuesIndexType>;
 
 /** A parsed property shape. */
-export type PropertyShapeIndexType = {
-  'bnodeId': string;
-  'constraints': PredicateValuesIndexType;
-  'isDeactivated': boolean;
-  'path': string;
-};
+export type PropertyShapeIndexType
+  = { 'bnodeId': string;
+    'isDeactivated': boolean;
+    'path': string }
+  & { 'constraints': PredicateValuesIndexType };
 
 /** A parsed node shape. */
 export type NodeShapeIndexType = {
@@ -55,7 +54,7 @@ export type ValidationContextType = {
 };
 
 /** Arguments shared across all constraint evaluators. */
-export type EvalArgsType = {
+export type EvalArgumentsType = {
   'constraints': PredicateValuesIndexType;
   'dataIndex': SubjectPredicateIndexType;
   'datatypeBySubjectPredicate': DatatypeIndexType;

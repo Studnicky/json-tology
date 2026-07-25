@@ -11,6 +11,9 @@ import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import { DataType } from '../data/DataType.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
+  ALLOF_PATH_ONLY_RE, ALLOF_PATH_PREFIX_RE
+} from '../../constants/GRAPH_REGEXES.js';
+import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { RESTRICTION_PREDICATE_MAP } from '../../constants/ONTOLOGY_PREDICATES.js';
@@ -21,7 +24,7 @@ import type {
   TypeRelationsContextType
 } from '../../types/RelationsContext.js';
 
-class NodeRef {
+class NodeReference {
   static resolve(
     graph: GraphAccessorInterface,
     node: SchemaGraphNodeType
@@ -29,7 +32,7 @@ class NodeRef {
     const nodeSem = graph.semantics(node);
 
     if (typeof nodeSem.ref === 'string') {
-      return graph.resolveRefId(nodeSem.ref);
+      return graph.resolveReferenceId(nodeSem.ref);
     }
 
     const xsd = XsdTypes.resolve(nodeSem);
@@ -42,402 +45,404 @@ class NodeRef {
   }
 }
 
-function pushConditionalRelations(ctx: RelationsPushContextType): void {
-  const {
-    graph, node, relations, sem
-  } = ctx;
+class RelationPush {
+  static pushAnnotatedEdgeRelations(context: RelationsPushContextType): void {
+    const {
+      graph, node, relations, sem
+    } = context;
+    const descriptor = sem.annotatedEdge;
 
-  if (sem.ifNode === undefined) {
-    return;
-  }
-
-  const ifRef = NodeRef.resolve(graph, sem.ifNode);
-  const conditionalStructure: { 'elseRef'?: string
-    'ifRef': string;
-    'kind': 'conditional';
-    'thenRef'?: string; } = {
-    ifRef,
-    'kind': 'conditional'
-  };
-
-  if (sem.thenNode !== undefined) {
-    conditionalStructure.thenRef = NodeRef.resolve(graph, sem.thenNode);
-  }
-  if (sem.elseNode !== undefined) {
-    conditionalStructure.elseRef = NodeRef.resolve(graph, sem.elseNode);
-  }
-
-  relations.push({
-    'metadata': { 'conditional': true },
-    'predicate': OWL.unionOf,
-    'source': node,
-    'structure': conditionalStructure,
-    'target': node.id
-  });
-}
-
-function pushContainsRelations(ctx: RelationsPushContextType): void {
-  const {
-    graph, node, relations, sem
-  } = ctx;
-
-  if (sem.containsNode === undefined) {
-    return;
-  }
-
-  const containsRef = NodeRef.resolve(graph, sem.containsNode);
-
-  relations.push({
-    'predicate': OWL.someValuesFrom,
-    'source': node,
-    'structure': {
-      'constraint': OWL.someValuesFrom,
-      'kind': 'restriction',
-      'onProperty': RDFS.member,
-      'value': containsRef
-    },
-    'target': containsRef
-  });
-
-  if (sem.minContains !== undefined) {
-    relations.push({
-      'metadata': { 'onClass': containsRef },
-      'predicate': OWL.minQualifiedCardinality,
-      'source': node,
-      'target': String(sem.minContains)
-    });
-  }
-  if (sem.maxContains !== undefined) {
-    relations.push({
-      'metadata': { 'onClass': containsRef },
-      'predicate': OWL.maxQualifiedCardinality,
-      'source': node,
-      'target': String(sem.maxContains)
-    });
-  }
-}
-
-function pushDependentRequiredRelations(
-  node: SchemaGraphNodeType,
-  sem: SchemaGraphSemanticsType,
-  relations: SchemaGraphRelationType[]
-): void {
-  for (const [
-    trigger,
-    required
-  ] of Object.entries(sem.dependentRequired)) {
-    if (required.length === 0) {
-      continue;
+    if (descriptor === undefined) {
+      return;
     }
+
+    const edgeTarget = graph.resolveReferenceId(descriptor.targetRef);
+    const edgeAnnotations: Array<{
+      readonly 'propertyName': string;
+      readonly 'propertySchema': JsonSchemaType;
+      readonly 'rangeRef': string;
+    }> = [];
+
+    for (const [
+      propName,
+      propSchema
+    ] of Object.entries(descriptor.annotations)) {
+      // The descriptor extraction already validated a string `$ref`; narrow again
+      // for the type system before reading it and carrying the full sub-schema.
+      if (!DataType.isRecord(propSchema) || typeof propSchema.$ref !== 'string') {
+        continue;
+      }
+
+      edgeAnnotations.push({
+        'propertyName': propName,
+        'propertySchema': propSchema,
+        'rangeRef': graph.resolveReferenceId(propSchema.$ref)
+      });
+    }
+
     relations.push({
-      'metadata': {
-        required,
-        trigger
-      },
-      'predicate': JT.dependentRequired,
+      'predicate': JT.annotatedEdge,
       'source': node,
-      'target': node.id
+      'structure': {
+        edgeAnnotations,
+        'edgePredicate': graph.resolveReferenceId(descriptor.predicate),
+        edgeTarget,
+        'kind': 'annotatedEdge'
+      },
+      'target': edgeTarget
     });
   }
-}
 
-function pushDependentSchemaRelations(ctx: RelationsPushContextType): void {
-  const {
-    graph, node, relations, sem
-  } = ctx;
+  static pushConditionalRelations(context: RelationsPushContextType): void {
+    const {
+      graph, node, relations, sem
+    } = context;
 
-  for (const [
-    propName,
-    schemaNode
-  ] of sem.dependentSchemaEntries) {
-    const schemaRef = NodeRef.resolve(graph, schemaNode);
+    if (sem.ifNode === undefined) {
+      return;
+    }
+
+    const ifReference = NodeReference.resolve(graph, sem.ifNode);
+    const conditionalStructure: { 'elseReference'?: string
+      'ifReference': string;
+      'kind': 'conditional';
+      'thenReference'?: string; } = {
+      'ifReference': ifReference,
+      'kind': 'conditional'
+    };
+
+    if (sem.thenNode !== undefined) {
+      conditionalStructure.thenReference = NodeReference.resolve(graph, sem.thenNode);
+    }
+    if (sem.elseNode !== undefined) {
+      conditionalStructure.elseReference = NodeReference.resolve(graph, sem.elseNode);
+    }
 
     relations.push({
-      'metadata': {
-        'dependentSchema': true,
-        'propertyName': propName
-      },
+      'metadata': { 'conditional': true },
       'predicate': OWL.unionOf,
       'source': node,
-      'structure': {
-        'ifRef': SchemaIri.propertyIri(node.id, propName),
-        'kind': 'conditional',
-        'thenRef': schemaRef
-      },
-      'target': schemaRef
-    });
-  }
-}
-
-function pushFormatPatternRelations(
-  node: SchemaGraphNodeType,
-  sem: SchemaGraphSemanticsType,
-  relations: SchemaGraphRelationType[]
-): void {
-  if (sem.format === undefined) {
-    return;
-  }
-
-  const xsd = XsdTypes.resolve(sem);
-
-  if (xsd !== null && xsd !== XSD.string) {
-    return;
-  }
-
-  const pattern = FORMAT_PATTERNS[sem.format];
-
-  if (pattern !== undefined) {
-    relations.push({
-      'metadata': { 'fromFormat': true },
-      'predicate': SH.pattern,
-      'source': node,
-      'target': pattern
-    });
-  }
-}
-
-function pushFormatAnnotationRelation(
-  node: SchemaGraphNodeType,
-  sem: SchemaGraphSemanticsType,
-  relations: SchemaGraphRelationType[]
-): void {
-  if (sem.format === undefined) {
-    return;
-  }
-
-  relations.push({
-    'predicate': JT.format,
-    'source': node,
-    'target': sem.format
-  });
-}
-
-function pushUserRestrictionRelations(
-  node: SchemaGraphNodeType,
-  sem: SchemaGraphSemanticsType,
-  relations: SchemaGraphRelationType[]
-): void {
-  if (sem.restrictions.length === 0) {
-    return;
-  }
-
-  for (const desc of sem.restrictions) {
-    const predicate = RESTRICTION_PREDICATE_MAP[desc.kind];
-
-    if (predicate === undefined) {
-      // Unreachable: RESTRICTION_PREDICATE_MAP keys exactly match the closed
-      // RestrictionKindType union ('allValuesFrom' | 'cardinality' | 'hasValue' |
-      // 'maxCardinality' | 'minCardinality' | 'someValuesFrom'). The map type is
-      // Partial<Record<string, string>> for index-signature compatibility, but all
-      // six members are always present. A miss here indicates a future RestrictionKindType
-      // member was added without a corresponding map entry — throw to surface it
-      // immediately rather than silently dropping a restriction relation.
-      throw new GraphError(
-        `restriction kind "${desc.kind}" has no entry in RESTRICTION_PREDICATE_MAP`,
-        { 'code': GRAPH_ERROR_CODE.VOCABULARY_UNSUPPORTED }
-      );
-    }
-
-    relations.push({
-      'predicate': RDFS.subClassOf,
-      'source': node,
-      'structure': {
-        'constraint': predicate,
-        'kind': 'restriction',
-        'onProperty': desc.onProperty,
-        'value': desc.value
-      },
+      'structure': conditionalStructure,
       'target': node.id
     });
   }
-}
 
-function pushPatternPropertyRelations(ctx: RelationsPushContextType): void {
-  const {
-    graph, node, relations, sem
-  } = ctx;
+  static pushContainsRelations(context: RelationsPushContextType): void {
+    const {
+      graph, node, relations, sem
+    } = context;
 
-  for (const [
-    pattern,
-    schemaNode
-  ] of sem.patternPropertyEntries) {
-    const schemaRef = NodeRef.resolve(graph, schemaNode);
+    if (sem.containsNode === undefined) {
+      return;
+    }
+
+    const containsReference = NodeReference.resolve(graph, sem.containsNode);
 
     relations.push({
-      'metadata': {
-        pattern,
-        'patternProperty': true
+      'predicate': OWL.someValuesFrom,
+      'source': node,
+      'structure': {
+        'constraint': OWL.someValuesFrom,
+        'kind': 'restriction',
+        'onProperty': RDFS.member,
+        'value': containsReference
       },
-      'predicate': SH.pattern,
-      'source': node,
-      'target': schemaRef
+      'target': containsReference
     });
+
+    if (sem.minContains !== undefined) {
+      relations.push({
+        'metadata': { 'onClass': containsReference },
+        'predicate': OWL.minQualifiedCardinality,
+        'source': node,
+        'target': String(sem.minContains)
+      });
+    }
+    if (sem.maxContains !== undefined) {
+      relations.push({
+        'metadata': { 'onClass': containsReference },
+        'predicate': OWL.maxQualifiedCardinality,
+        'source': node,
+        'target': String(sem.maxContains)
+      });
+    }
   }
-}
 
-function pushPrefixItemRelations(ctx: RelationsPushContextType): void {
-  const {
-    graph, node, relations, sem
-  } = ctx;
+  static pushDependentRequiredRelations(
+    node: SchemaGraphNodeType,
+    sem: SchemaGraphSemanticsType,
+    relations: SchemaGraphRelationType[]
+  ): void {
+    for (const [
+      trigger,
+      required
+    ] of Object.entries(sem.dependentRequired)) {
+      if (required.length === 0) {
+        continue;
+      }
+      relations.push({
+        'metadata': {
+          required,
+          trigger
+        },
+        'predicate': JT.dependentRequired,
+        'source': node,
+        'target': node.id
+      });
+    }
+  }
 
-  for (const [
-    index,
-    itemNode
-  ] of sem.prefixItems.entries()) {
-    const itemRef = NodeRef.resolve(graph, itemNode);
+  static pushDependentSchemaRelations(context: RelationsPushContextType): void {
+    const {
+      graph, node, relations, sem
+    } = context;
+
+    for (const [
+      propName,
+      schemaNode
+    ] of sem.dependentSchemaEntries) {
+      const schemaReference = NodeReference.resolve(graph, schemaNode);
+
+      relations.push({
+        'metadata': {
+          'dependentSchema': true,
+          'propertyName': propName
+        },
+        'predicate': OWL.unionOf,
+        'source': node,
+        'structure': {
+          'ifReference': SchemaIri.propertyIri(node.id, propName),
+          'kind': 'conditional',
+          'thenReference': schemaReference
+        },
+        'target': schemaReference
+      });
+    }
+  }
+
+  static pushFormatAnnotationRelation(
+    node: SchemaGraphNodeType,
+    sem: SchemaGraphSemanticsType,
+    relations: SchemaGraphRelationType[]
+  ): void {
+    if (sem.format === undefined) {
+      return;
+    }
 
     relations.push({
-      'metadata': {
-        'memberProperty': `rdf:_${index + 1}`,
-        'position': index
-      },
-      'predicate': RDFS.member,
+      'predicate': JT.format,
       'source': node,
-      'target': itemRef
-    });
-  }
-}
-
-function pushPropertyCardinalityRelations(ctx: CardinalityContextType): void {
-  const {
-    graph, node, nodeMap, relations, sem
-  } = ctx;
-
-  if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
-    return;
-  }
-
-  if (!sem.schemaTypes.includes('array')) {
-    relations.push({
-      'predicate': SH.maxCount,
-      'source': node,
-      'target': '1'
+      'target': sem.format
     });
   }
 
-  const parentPtr = SchemaGraphSupport.parentPropertiesPointer(node.pointer);
+  static pushFormatPatternRelations(
+    node: SchemaGraphNodeType,
+    sem: SchemaGraphSemanticsType,
+    relations: SchemaGraphRelationType[]
+  ): void {
+    if (sem.format === undefined) {
+      return;
+    }
 
-  if (parentPtr !== undefined) {
-    const parentNode = nodeMap.get(parentPtr);
+    const xsd = XsdTypes.resolve(sem);
 
-    if (parentNode !== undefined) {
-      const parentSem = graph.semantics(parentNode);
-      const propName = SchemaGraphSupport.propertyNameFromPointer(node.pointer);
+    if (xsd !== null && xsd !== XSD.string) {
+      return;
+    }
 
-      if (propName !== undefined && parentSem.required.includes(propName)) {
-        relations.push({
-          'predicate': SH.minCount,
-          'source': node,
-          'target': '1'
-        });
+    const pattern = FORMAT_PATTERNS[sem.format];
+
+    if (pattern !== undefined) {
+      relations.push({
+        'metadata': { 'fromFormat': true },
+        'predicate': SH.pattern,
+        'source': node,
+        'target': pattern
+      });
+    }
+  }
+
+  static pushPatternPropertyRelations(context: RelationsPushContextType): void {
+    const {
+      graph, node, relations, sem
+    } = context;
+
+    for (const [
+      pattern,
+      schemaNode
+    ] of sem.patternPropertyEntries) {
+      const schemaReference = NodeReference.resolve(graph, schemaNode);
+
+      relations.push({
+        'metadata': {
+          pattern,
+          'patternProperty': true
+        },
+        'predicate': SH.pattern,
+        'source': node,
+        'target': schemaReference
+      });
+    }
+  }
+
+  static pushPrefixItemRelations(context: RelationsPushContextType): void {
+    const {
+      graph, node, relations, sem
+    } = context;
+
+    for (const [
+      index,
+      itemNode
+    ] of sem.prefixItems.entries()) {
+      const itemReference = NodeReference.resolve(graph, itemNode);
+
+      relations.push({
+        'metadata': {
+          'memberProperty': `rdf:_${index + 1}`,
+          'position': index
+        },
+        'predicate': RDFS.member,
+        'source': node,
+        'target': itemReference
+      });
+    }
+  }
+
+  static pushPropertyCardinalityRelations(context: CardinalityContextType): void {
+    const {
+      graph, node, nodeMap, relations, sem
+    } = context;
+
+    if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
+      return;
+    }
+
+    if (!sem.schemaTypes.includes('array')) {
+      relations.push({
+        'predicate': SH.maxCount,
+        'source': node,
+        'target': '1'
+      });
+    }
+
+    const parentPointer = SchemaGraphSupport.parentPropertiesPointer(node.pointer);
+
+    if (parentPointer !== undefined) {
+      const parentNode = nodeMap.get(parentPointer);
+
+      if (parentNode !== undefined) {
+        const parentSem = graph.semantics(parentNode);
+        const propName = SchemaGraphSupport.propertyNameFromPointer(node.pointer);
+
+        if (propName !== undefined && parentSem.required.includes(propName)) {
+          relations.push({
+            'predicate': SH.minCount,
+            'source': node,
+            'target': '1'
+          });
+        }
       }
     }
   }
-}
 
-function pushPropertyTypeRelations(ctx: TypeRelationsContextType): void {
-  const {
-    node, nonNullTypes, relations, sem
-  } = ctx;
+  static pushPropertyTypeRelations(context: TypeRelationsContextType): void {
+    const {
+      node, nonNullTypes, relations, sem
+    } = context;
 
-  if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
-    return;
-  }
-
-  const primaryType = nonNullTypes.length > 0 ? nonNullTypes[0] : null;
-  const isObjectProperty = primaryType === 'array'
-    || primaryType === 'object'
-    || typeof sem.ref === 'string'
-    || primaryType === null;
-
-  relations.push({
-    'predicate': RDF.type,
-    'source': node,
-    'target': isObjectProperty ? OWL.ObjectProperty : OWL.DatatypeProperty
-  });
-}
-
-function pushUnionTypeRelations(ctx: TypeRelationsContextType): void {
-  const {
-    node, nonNullTypes, relations, sem
-  } = ctx;
-
-  if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
-    return;
-  }
-
-  if (nonNullTypes.length <= 1) {
-    return;
-  }
-
-  const resolved: string[] = [];
-
-  for (const typeName of nonNullTypes) {
-    const xsd = XsdTypes.resolveSingle(typeName, sem.format === undefined ? undefined : { 'format': sem.format });
-
-    if (xsd !== null) {
-      resolved.push(xsd);
+    if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
+      return;
     }
-  }
 
-  if (resolved.length > 1) {
+    const primaryType = nonNullTypes.length > 0 ? nonNullTypes[0] : null;
+    const isObjectProperty = primaryType === 'array'
+      || primaryType === 'object'
+      || typeof sem.ref === 'string'
+      || primaryType === null;
+
     relations.push({
-      'predicate': OWL.unionOf,
+      'predicate': RDF.type,
       'source': node,
-      'structure': {
-        'kind': 'list',
-        'members': resolved
-      },
-      'target': node.id
+      'target': isObjectProperty ? OWL.ObjectProperty : OWL.DatatypeProperty
     });
   }
-}
 
-function pushAnnotatedEdgeRelations(ctx: RelationsPushContextType): void {
-  const {
-    graph, node, relations, sem
-  } = ctx;
-  const descriptor = sem.annotatedEdge;
+  static pushUnionTypeRelations(context: TypeRelationsContextType): void {
+    const {
+      node, nonNullTypes, relations, sem
+    } = context;
 
-  if (descriptor === undefined) {
-    return;
-  }
-
-  const edgeTarget = graph.resolveRefId(descriptor.targetRef);
-  const edgeAnnotations: Array<{
-    readonly 'propertyName': string;
-    readonly 'propertySchema': JsonSchemaType;
-    readonly 'rangeRef': string;
-  }> = [];
-
-  for (const [
-    propName,
-    propSchema
-  ] of Object.entries(descriptor.annotations)) {
-    // The descriptor extraction already validated a string `$ref`; narrow again
-    // for the type system before reading it and carrying the full sub-schema.
-    if (!DataType.isRecord(propSchema) || typeof propSchema.$ref !== 'string') {
-      continue;
+    if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
+      return;
     }
 
-    edgeAnnotations.push({
-      'propertyName': propName,
-      'propertySchema': propSchema,
-      'rangeRef': graph.resolveRefId(propSchema.$ref)
-    });
+    if (nonNullTypes.length <= 1) {
+      return;
+    }
+
+    const resolved: string[] = [];
+
+    for (const typeName of nonNullTypes) {
+      const xsd = XsdTypes.resolveSingle(typeName, sem.format === undefined ? undefined : { 'format': sem.format });
+
+      if (xsd !== null) {
+        resolved.push(xsd);
+      }
+    }
+
+    if (resolved.length > 1) {
+      relations.push({
+        'predicate': OWL.unionOf,
+        'source': node,
+        'structure': {
+          'kind': 'list',
+          'members': resolved
+        },
+        'target': node.id
+      });
+    }
   }
 
-  relations.push({
-    'predicate': JT.annotatedEdge,
-    'source': node,
-    'structure': {
-      edgeAnnotations,
-      'edgePredicate': graph.resolveRefId(descriptor.predicate),
-      edgeTarget,
-      'kind': 'annotatedEdge'
-    },
-    'target': edgeTarget
-  });
+  static pushUserRestrictionRelations(
+    node: SchemaGraphNodeType,
+    sem: SchemaGraphSemanticsType,
+    relations: SchemaGraphRelationType[]
+  ): void {
+    if (sem.restrictions.length === 0) {
+      return;
+    }
+
+    for (const desc of sem.restrictions) {
+      const predicate = RESTRICTION_PREDICATE_MAP[desc.kind];
+
+      if (predicate === undefined) {
+        // Unreachable: RESTRICTION_PREDICATE_MAP keys exactly match the closed
+        // RestrictionKindType union ('allValuesFrom' | 'cardinality' | 'hasValue' |
+        // 'maxCardinality' | 'minCardinality' | 'someValuesFrom'). The map type is
+        // Partial<Record<string, string>> for index-signature compatibility, but all
+        // six members are always present. A miss here indicates a future RestrictionKindType
+        // member was added without a corresponding map entry — throw to surface it
+        // immediately rather than silently dropping a restriction relation.
+        throw new GraphError(
+          `restriction kind "${desc.kind}" has no entry in RESTRICTION_PREDICATE_MAP`,
+          { 'code': GRAPH_ERROR_CODE.VOCABULARY_UNSUPPORTED }
+        );
+      }
+
+      relations.push({
+        'predicate': RDFS.subClassOf,
+        'source': node,
+        'structure': {
+          'constraint': predicate,
+          'kind': 'restriction',
+          'onProperty': desc.onProperty,
+          'value': desc.value
+        },
+        'target': node.id
+      });
+    }
+  }
 }
 
 export const SchemaGraphRelations = {
@@ -475,13 +480,13 @@ export const SchemaGraphRelations = {
       // class IRI (e.g. `urn:bookstore:Book`) rather than the internal
       // fragment (`urn:bookstore:Book#/allOf/1`). The domainOf() edge records
       // the DIRECT parent; this climb resolves composition to the canonical class.
-      const directPtr = rawDomainNode.pointer;
-      const domainPtr = /^(?:\/allOf\/\d+)+$/u.test(directPtr)
-        ? directPtr.replace(/^(?:\/allOf\/\d+)+/u, '')
-        : directPtr;
-      const domainNode = domainPtr === directPtr
+      const directPointer = rawDomainNode.pointer;
+      const domainPointer = ALLOF_PATH_ONLY_RE.test(directPointer)
+        ? directPointer.replace(ALLOF_PATH_PREFIX_RE, '')
+        : directPointer;
+      const domainNode = domainPointer === directPointer
         ? rawDomainNode
-        : nodeMap.get(domainPtr === '' ? '' : domainPtr);
+        : nodeMap.get(domainPointer === '' ? '' : domainPointer);
 
       if (domainNode === undefined) {
         // The allOf-climb produced a pointer that is not present in the nodeMap.
@@ -489,7 +494,7 @@ export const SchemaGraphRelations = {
         // in the graph's nodeMap — a miss here indicates a graph construction defect
         // (nodeMap was built without registering the ancestor node).
         throw new GraphError(
-          `domain ancestor pointer "${domainPtr}" not found in nodeMap for node "${node.id}"`,
+          `domain ancestor pointer "${domainPointer}" not found in nodeMap for node "${node.id}"`,
           { 'code': GRAPH_ERROR_CODE.POINTER_NOT_FOUND }
         );
       }
@@ -535,7 +540,7 @@ export const SchemaGraphRelations = {
       relations.push({
         'predicate': OWL.equivalentClass,
         'source': node,
-        'target': graph.resolveRefId(sem.ref)
+        'target': graph.resolveReferenceId(sem.ref)
       });
     }
     if (sem.inverseOf !== undefined) {
@@ -653,7 +658,7 @@ export const SchemaGraphRelations = {
         relations.push({
           'predicate': RDFS.subClassOf,
           'source': node,
-          'target': graph.resolveRefId(parentSem.ref)
+          'target': graph.resolveReferenceId(parentSem.ref)
         });
       }
     }
@@ -662,7 +667,7 @@ export const SchemaGraphRelations = {
       const branchSem = graph.semantics(branch);
       const branchTarget = branchSem.ref === undefined
         ? branch
-        : graph.resolveRefId(branchSem.ref);
+        : graph.resolveReferenceId(branchSem.ref);
 
       relations.push({
         'predicate': OWL.equivalentClass,
@@ -675,7 +680,7 @@ export const SchemaGraphRelations = {
       const branchSem = graph.semantics(branch);
       const branchTarget = branchSem.ref === undefined
         ? branch
-        : graph.resolveRefId(branchSem.ref);
+        : graph.resolveReferenceId(branchSem.ref);
 
       relations.push({
         'predicate': OWL.disjointUnionOf,
@@ -688,7 +693,7 @@ export const SchemaGraphRelations = {
       const complementSem = graph.semantics(sem.complementNode);
       const complementTarget = complementSem.ref === undefined
         ? sem.complementNode
-        : graph.resolveRefId(complementSem.ref);
+        : graph.resolveReferenceId(complementSem.ref);
 
       relations.push({
         'predicate': OWL.complementOf,
@@ -827,7 +832,7 @@ export const SchemaGraphRelations = {
         'metadata': { 'fromRef': true },
         'predicate': RDFS.range,
         'source': node,
-        'target': graph.resolveRefId(sem.ref)
+        'target': graph.resolveReferenceId(sem.ref)
       });
     }
 
@@ -835,20 +840,20 @@ export const SchemaGraphRelations = {
       return schemaType !== 'null';
     });
 
-    const ctx: RelationsPushContextType = {
+    const context: RelationsPushContextType = {
       graph,
       node,
       relations,
       sem
     };
-    const typeCtx: TypeRelationsContextType = {
+    const typeContext: TypeRelationsContextType = {
       graph,
       node,
       nonNullTypes,
       relations,
       sem
     };
-    const cardCtx: CardinalityContextType = {
+    const cardinalityContext: CardinalityContextType = {
       graph,
       node,
       nodeMap,
@@ -856,19 +861,19 @@ export const SchemaGraphRelations = {
       sem
     };
 
-    pushPropertyTypeRelations(typeCtx);
-    pushPropertyCardinalityRelations(cardCtx);
-    pushConditionalRelations(ctx);
-    pushDependentSchemaRelations(ctx);
-    pushContainsRelations(ctx);
-    pushPrefixItemRelations(ctx);
-    pushPatternPropertyRelations(ctx);
-    pushUnionTypeRelations(typeCtx);
-    pushDependentRequiredRelations(node, sem, relations);
-    pushFormatPatternRelations(node, sem, relations);
-    pushFormatAnnotationRelation(node, sem, relations);
-    pushUserRestrictionRelations(node, sem, relations);
-    pushAnnotatedEdgeRelations(ctx);
+    RelationPush.pushPropertyTypeRelations(typeContext);
+    RelationPush.pushPropertyCardinalityRelations(cardinalityContext);
+    RelationPush.pushConditionalRelations(context);
+    RelationPush.pushDependentSchemaRelations(context);
+    RelationPush.pushContainsRelations(context);
+    RelationPush.pushPrefixItemRelations(context);
+    RelationPush.pushPatternPropertyRelations(context);
+    RelationPush.pushUnionTypeRelations(typeContext);
+    RelationPush.pushDependentRequiredRelations(node, sem, relations);
+    RelationPush.pushFormatPatternRelations(node, sem, relations);
+    RelationPush.pushFormatAnnotationRelation(node, sem, relations);
+    RelationPush.pushUserRestrictionRelations(node, sem, relations);
+    RelationPush.pushAnnotatedEdgeRelations(context);
 
     return relations;
   }

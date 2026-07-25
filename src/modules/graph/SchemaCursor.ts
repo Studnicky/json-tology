@@ -85,8 +85,8 @@ export class SchemaCursor implements SchemaCursorInterface {
     return [...result];
   }
 
-  public subClassOf(opts?: { 'transitive'?: boolean }): SchemaCursorInterface {
-    const transitive = opts?.transitive === true;
+  public subClassOf(options?: { 'transitive'?: boolean }): SchemaCursorInterface {
+    const transitive = options?.transitive === true;
 
     if (!transitive) {
       const next = new Set<string>();

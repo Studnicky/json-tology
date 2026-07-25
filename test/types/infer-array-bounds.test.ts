@@ -17,7 +17,7 @@
  */
 
 import type {
-  MaxItemsBrandType, MinItemsBrandType
+  MaximumItemsBrandType, MinimumItemsBrandType
 } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
@@ -48,7 +48,7 @@ type ExactThree = InferType<typeof _ExactThreeSchema>;
 // Exactly three strings, carrying both item-count brands.
 assert<AssertEqualType<
   ExactThree,
-  [string, string, string] & MaxItemsBrandType<3> & MinItemsBrandType<3>
+  [string, string, string] & MaximumItemsBrandType<3> & MinimumItemsBrandType<3>
 >>();
 
 // @ts-expect-error — length 2 is rejected, must be exactly 3
@@ -86,7 +86,7 @@ type AtLeastTwo = InferType<typeof _AtLeastTwoSchema>;
 // At least two numbers (non-empty prefix + variadic tail), carrying the minItems brand.
 assert<AssertEqualType<
   AtLeastTwo,
-  [number, number, ...number[]] & MinItemsBrandType<2>
+  [number, number, ...number[]] & MinimumItemsBrandType<2>
 >>();
 
 // @ts-expect-error — length 1 is rejected, requires at least 2
@@ -121,7 +121,7 @@ assert<AssertEqualType<
     | [boolean, boolean, boolean]
     | [boolean, boolean]
     | [boolean]
-  ) & MaxItemsBrandType<3>
+  ) & MaximumItemsBrandType<3>
 >>();
 
 // @ts-expect-error — length 4 is rejected, must be at most 3
@@ -155,7 +155,7 @@ assert<AssertEqualType<
   (
     | [string, string, string, string]
     | [string, string]
-  ) & MaxItemsBrandType<4> & MinItemsBrandType<2>
+  ) & MaximumItemsBrandType<4> & MinimumItemsBrandType<2>
 >>();
 
 // @ts-expect-error — length 1 is below minItems
@@ -193,7 +193,7 @@ type BeyondCap = InferType<typeof _BeyondCapSchema>;
 // Above the cap, narrowing falls through to number[] + both brands.
 assert<AssertEqualType<
   BeyondCap,
-  MaxItemsBrandType<20> & MinItemsBrandType<20> & number[]
+  MaximumItemsBrandType<20> & MinimumItemsBrandType<20> & number[]
 >>();
 
 // ---------------------------------------------------------------------------
@@ -242,7 +242,7 @@ type RawExact = InferType<typeof _RawExactSchema>;
 // Exactly two unknown elements, carrying both item-count brands.
 assert<AssertEqualType<
   RawExact,
-  [unknown, unknown] & MaxItemsBrandType<2> & MinItemsBrandType<2>
+  [unknown, unknown] & MaximumItemsBrandType<2> & MinimumItemsBrandType<2>
 >>();
 
 // @ts-expect-error — length 1 is rejected, must be exactly 2

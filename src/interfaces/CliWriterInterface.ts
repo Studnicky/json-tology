@@ -5,7 +5,7 @@
  * testing without touching process globals.
  */
 export interface CliWriterInterface {
-  err(message: string): void;
+  error(message: string): void;
   exit(code: number): never;
   out(message: string): void;
 }

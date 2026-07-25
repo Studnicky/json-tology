@@ -14,7 +14,7 @@
  * `$ref` is `'bk:BookGenreLabel'`, but `TRefs` only has an entry keyed
  * `'https://bookstore.example/ontology#BookGenreLabel'`, so the assignment
  * `const genre: BookGenre = raw;` fails to typecheck right here in this
- * single compiled example — `raw.label` types as `RefNotFoundType<'bk:BookGenreLabel'>`,
+ * single compiled example — `raw.label` types as `ReferenceNotFoundType<'bk:BookGenreLabel'>`,
  * not `string`. Across a real package boundary this gets worse, not better:
  * the producer's compiled `.d.ts` may not preserve `TRefs` at all, so a
  * real cross-package `instantiate` call can type its fields as `unknown`
@@ -44,7 +44,7 @@ type BookGenre = InferType<typeof BookGenreSchema, BookGenreRefs>;
 const raw = genreEntities.instantiate(BookGenreSchema.$id, { 'label': 'Fantasy' });
 
 // Recommended idiom: read the validated value into the locally re-derived
-// type. `raw`'s inferred type carries RefNotFoundType for `label` (see
+// type. `raw`'s inferred type carries ReferenceNotFoundType for `label` (see
 // above), so the bridge is a double cast through `unknown` — it documents
 // that instantiate's own return type cannot be trusted for this field, not
 // that the runtime value itself is untrusted; the value was already

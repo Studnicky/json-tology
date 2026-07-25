@@ -14,6 +14,7 @@ import type {
   SchemaGraphNodeType,
   SchemaGraphRelationType
 } from './SchemaGraph.js';
+import type { IdentityType } from './IdentityType.js';
 import type { QuadInterface } from '../interfaces/QuadInterface.js';
 
 /**
@@ -82,7 +83,11 @@ export type NodeMapType = Map<string, SchemaGraphNodeType>;
  * @see {@link QuadBackedSchemaGraph}
  * @group Graph
  */
-export type LiteralTagsType = Partial<Pick<ListItemType, 'datatype' | 'language' | 'termType'>>;
+export type LiteralTagsType = IdentityType<{
+  'datatype'?: string;
+  'language'?: string;
+  'termType'?: 'BlankNode' | 'Literal' | 'NamedNode';
+}>;
 
 /**
  * Named return type for the optional result of {@link resolveRestrictionBnode}.

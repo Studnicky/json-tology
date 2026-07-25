@@ -3,7 +3,9 @@ import type { ParseOutputType } from './Transform.js';
 import type { DefaultCreatorInterface } from '../interfaces/DefaultCreatorInterface.js';
 import type { InvariantType } from './Invariant.js';
 import type { SchemaRegistryInterface } from '../interfaces/SchemaRegistryInterface.js';
-import type { GraphEngineOptionsType } from './GraphEngine.js';
+import type { FormatRegistryInterface } from '../interfaces/FormatRegistryInterface.js';
+import type { KeywordDefinitionType } from './GraphEngine.js';
+import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 import type { VocabularyPluginInterface } from '../interfaces/VocabularyPluginInterface.js';
 
 /** Build a cross-schema references map: `{ [$id]: SchemaType }` for $ref resolution.
@@ -107,7 +109,7 @@ type HasDuplicateIdsType<T extends readonly unknown[]>
 
 /** Homomorphic projection: brand positions whose `$id` is a duplicate. */
 type BrandedDuplicatesType<T extends readonly unknown[]>
-  = { readonly [I in keyof T]: T[I] extends { readonly '$id': infer Id extends string }
+  = { [I in keyof T]: T[I] extends { readonly '$id': infer Id extends string }
     ? Id extends DuplicateIdsType<T> ? DuplicateSchemaIdType<Id> : T[I]
     : T[I]
   };
@@ -126,7 +128,12 @@ export type UniqueSchemaIdsType<T extends readonly unknown[]>
     'true': BrandedDuplicatesType<T>;
   }[`${HasDuplicateIdsType<T>}`];
 
-export type RegistryOptionsType = Pick<GraphEngineOptionsType, 'formatRegistry' | 'keywords' | 'logger' | 'maxSchemaDepth'> & {
+export type RegistryOptionsType = {
+  'formatRegistry'?: FormatRegistryInterface;
+  'keywords'?: KeywordDefinitionType[];
+  'logger'?: LoggerInterface;
+  'maxSchemaDepth'?: number;
+} & {
   /**
    * Factory that builds the default-instance creator for `create()`. Injected
    * by the facade so the registry depends on {@link DefaultCreatorInterface}

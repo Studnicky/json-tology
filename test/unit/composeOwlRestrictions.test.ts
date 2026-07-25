@@ -5,7 +5,7 @@ import {
 import {
   Compose, JsonTology
 } from '../../src/index.js';
-import { isRestrictionRef } from '../../src/types/Restriction.js';
+import { RestrictionGuards } from '../../src/types/Restriction.js';
 
 const PERSON_IRI = 'urn:example:Person';
 const PARENT_IRI = 'urn:example:Person#parent';
@@ -110,7 +110,7 @@ void describe('Compose OWL restrictions', () => {
     void it('someValuesFrom returns a phantom-tagged restriction', () => {
       const restriction = Compose.someValuesFrom(PARENT_IRI, PERSON_IRI);
 
-      assert.equal(isRestrictionRef(restriction), true);
+      assert.equal(RestrictionGuards.isRestrictionReference(restriction), true);
       assert.equal(restriction['~jt:restriction'].kind, 'someValuesFrom');
       assert.equal(restriction['~jt:restriction'].onProperty, PARENT_IRI);
       assert.equal(restriction['~jt:restriction'].value, PERSON_IRI);
@@ -131,8 +131,8 @@ void describe('Compose OWL restrictions', () => {
     void it('cardinality / minCardinality / maxCardinality carry numeric values', () => {
       assert.equal(Compose.cardinality(PARENT_IRI, 2)['~jt:restriction'].kind, 'cardinality');
       assert.equal(Compose.cardinality(PARENT_IRI, 2)['~jt:restriction'].value, 2);
-      assert.equal(Compose.minCardinality(PARENT_IRI, 1)['~jt:restriction'].kind, 'minCardinality');
-      assert.equal(Compose.maxCardinality(PARENT_IRI, 5)['~jt:restriction'].kind, 'maxCardinality');
+      assert.equal(Compose.minimumCardinality(PARENT_IRI, 1)['~jt:restriction'].kind, 'minCardinality');
+      assert.equal(Compose.maximumCardinality(PARENT_IRI, 5)['~jt:restriction'].kind, 'maxCardinality');
     });
   });
 
@@ -176,14 +176,14 @@ void describe('Compose OWL restrictions', () => {
 
     void it('appends to existing jt:restrictions when chained', () => {
       const first = Compose.subClassOf(
-        Compose.minCardinality(PARENT_IRI, 1),
+        Compose.minimumCardinality(PARENT_IRI, 1),
         {
           '$id': 'urn:example:Chain',
           'type': 'object'
         } as const
       );
       const second = Compose.subClassOf(
-        Compose.maxCardinality(PARENT_IRI, 5),
+        Compose.maximumCardinality(PARENT_IRI, 5),
         first as Record<string, unknown> & { readonly '$id': string }
       );
       const restrictions = (second as Record<string, unknown>)['jt:restrictions'];
@@ -223,9 +223,9 @@ void describe('Compose OWL restrictions', () => {
 
     void it('emits owl:minCardinality and owl:maxCardinality', () => {
       const schema = Compose.subClassOf(
-        Compose.minCardinality(PARENT_IRI, 1),
+        Compose.minimumCardinality(PARENT_IRI, 1),
         Compose.subClassOf(
-          Compose.maxCardinality(PARENT_IRI, 5),
+          Compose.maximumCardinality(PARENT_IRI, 5),
           {
             '$id': 'urn:example:PersonRanged',
             'type': 'object'

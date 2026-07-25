@@ -10,6 +10,8 @@
  * to branded types — this is intentional.
  */
 
+import type { IdentityType } from './IdentityType.js';
+
 declare const CONTAINS: unique symbol;
 declare const CONTENT_ENCODING: unique symbol;
 declare const CONTENT_MEDIA_TYPE: unique symbol;
@@ -17,15 +19,15 @@ declare const DIALECT: unique symbol;
 declare const EXCLUSIVE_MAXIMUM: unique symbol;
 declare const EXCLUSIVE_MINIMUM: unique symbol;
 declare const FORMAT: unique symbol;
-declare const MAX_CONTAINS: unique symbol;
-declare const MAX_ITEMS: unique symbol;
-declare const MAX_LENGTH: unique symbol;
-declare const MAX_PROPERTIES: unique symbol;
+declare const MAXIMUM_CONTAINS: unique symbol;
+declare const MAXIMUM_ITEMS: unique symbol;
+declare const MAXIMUM_LENGTH: unique symbol;
+declare const MAXIMUM_PROPERTIES: unique symbol;
 declare const MAXIMUM: unique symbol;
-declare const MIN_CONTAINS: unique symbol;
-declare const MIN_ITEMS: unique symbol;
-declare const MIN_LENGTH: unique symbol;
-declare const MIN_PROPERTIES: unique symbol;
+declare const MINIMUM_CONTAINS: unique symbol;
+declare const MINIMUM_ITEMS: unique symbol;
+declare const MINIMUM_LENGTH: unique symbol;
+declare const MINIMUM_PROPERTIES: unique symbol;
 declare const MINIMUM: unique symbol;
 declare const MULTIPLE_OF: unique symbol;
 declare const PATTERN: unique symbol;
@@ -57,7 +59,7 @@ declare const UNIQUE_ARRAY: unique symbol;
  *
  * @typeParam T - The inferred type of the `contains` sub-schema.
  */
-export type ContainsBrandType<T> = { [CONTAINS]: T };
+export type ContainsBrandType<T> = IdentityType<{ [CONTAINS]: T }>;
 
 /**
  * Phantom brand for the `contentEncoding` keyword.
@@ -80,7 +82,7 @@ export type ContainsBrandType<T> = { [CONTAINS]: T };
  *
  * @typeParam T - The `contentEncoding` string literal (e.g. `'base64'`).
  */
-export type ContentEncodingBrandType<T extends string> = { [CONTENT_ENCODING]: T };
+export type ContentEncodingBrandType<T extends string> = IdentityType<{ [CONTENT_ENCODING]: T }>;
 
 /**
  * Phantom brand for the `contentMediaType` keyword.
@@ -104,7 +106,7 @@ export type ContentEncodingBrandType<T extends string> = { [CONTENT_ENCODING]: T
  *
  * @typeParam T - The `contentMediaType` string literal (e.g. `'application/json'`).
  */
-export type ContentMediaTypeBrandType<T extends string> = { [CONTENT_MEDIA_TYPE]: T };
+export type ContentMediaTypeBrandType<T extends string> = IdentityType<{ [CONTENT_MEDIA_TYPE]: T }>;
 
 /**
  * Phantom brand for the `$schema` dialect keyword.
@@ -127,7 +129,7 @@ export type ContentMediaTypeBrandType<T extends string> = { [CONTENT_MEDIA_TYPE]
  *
  * @typeParam T - The dialect URI string literal.
  */
-export type DialectBrandType<T extends string> = { [DIALECT]: T };
+export type DialectBrandType<T extends string> = IdentityType<{ [DIALECT]: T }>;
 
 /**
  * Phantom brand for the `exclusiveMaximum` keyword.
@@ -150,7 +152,7 @@ export type DialectBrandType<T extends string> = { [DIALECT]: T };
  *
  * @typeParam TN - The numeric literal for the exclusive upper bound.
  */
-export type ExclusiveMaximumBrandType<TN extends number> = { [EXCLUSIVE_MAXIMUM]: TN };
+export type ExclusiveMaximumBrandType<TN extends number> = IdentityType<{ [EXCLUSIVE_MAXIMUM]: TN }>;
 
 /**
  * Phantom brand for the `exclusiveMinimum` keyword.
@@ -173,7 +175,7 @@ export type ExclusiveMaximumBrandType<TN extends number> = { [EXCLUSIVE_MAXIMUM]
  *
  * @typeParam TN - The numeric literal for the exclusive lower bound.
  */
-export type ExclusiveMinimumBrandType<TN extends number> = { [EXCLUSIVE_MINIMUM]: TN };
+export type ExclusiveMinimumBrandType<TN extends number> = IdentityType<{ [EXCLUSIVE_MINIMUM]: TN }>;
 
 /**
  * Phantom brand for the `format` keyword.
@@ -200,7 +202,7 @@ export type ExclusiveMinimumBrandType<TN extends number> = { [EXCLUSIVE_MINIMUM]
  *
  * @typeParam TF - The format string literal (e.g. `'email'`, `'uuid'`).
  */
-export type FormatBrandType<TF extends string> = { [FORMAT]: TF };
+export type FormatBrandType<TF extends string> = IdentityType<{ [FORMAT]: TF }>;
 
 /**
  * Phantom brand for the `maxContains` keyword.
@@ -215,18 +217,18 @@ export type FormatBrandType<TF extends string> = { [FORMAT]: TF };
  *
  * @example
  * ```ts
- * type T = MaxContainsBrandType<5>;
+ * type T = MaximumContainsBrandType<5>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.23.0
- * @see {@link MinContainsBrandType}
+ * @see {@link MinimumContainsBrandType}
  * @see {@link ContainsBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the maximum contains count.
  */
-export type MaxContainsBrandType<TN extends number> = { [MAX_CONTAINS]: TN };
+export type MaximumContainsBrandType<TN extends number> = IdentityType<{ [MAXIMUM_CONTAINS]: TN }>;
 
 /**
  * Phantom brand for the `maxItems` keyword.
@@ -239,17 +241,17 @@ export type MaxContainsBrandType<TN extends number> = { [MAX_CONTAINS]: TN };
  *
  * @example
  * ```ts
- * type T = MaxItemsBrandType<10>;
+ * type T = MaximumItemsBrandType<10>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MinItemsBrandType}
+ * @see {@link MinimumItemsBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the maximum item count.
  */
-export type MaxItemsBrandType<TN extends number> = { [MAX_ITEMS]: TN };
+export type MaximumItemsBrandType<TN extends number> = IdentityType<{ [MAXIMUM_ITEMS]: TN }>;
 
 /**
  * Phantom brand for the `maxLength` keyword.
@@ -262,17 +264,17 @@ export type MaxItemsBrandType<TN extends number> = { [MAX_ITEMS]: TN };
  *
  * @example
  * ```ts
- * type T = MaxLengthBrandType<255>;
+ * type T = MaximumLengthBrandType<255>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MinLengthBrandType}
+ * @see {@link MinimumLengthBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the maximum string length.
  */
-export type MaxLengthBrandType<TN extends number> = { [MAX_LENGTH]: TN };
+export type MaximumLengthBrandType<TN extends number> = IdentityType<{ [MAXIMUM_LENGTH]: TN }>;
 
 /**
  * Phantom brand for the `maxProperties` keyword.
@@ -285,17 +287,17 @@ export type MaxLengthBrandType<TN extends number> = { [MAX_LENGTH]: TN };
  *
  * @example
  * ```ts
- * type T = MaxPropertiesBrandType<20>;
+ * type T = MaximumPropertiesBrandType<20>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MinPropertiesBrandType}
+ * @see {@link MinimumPropertiesBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the maximum property count.
  */
-export type MaxPropertiesBrandType<TN extends number> = { [MAX_PROPERTIES]: TN };
+export type MaximumPropertiesBrandType<TN extends number> = IdentityType<{ [MAXIMUM_PROPERTIES]: TN }>;
 
 /**
  * Phantom brand for the `maximum` keyword.
@@ -318,7 +320,7 @@ export type MaxPropertiesBrandType<TN extends number> = { [MAX_PROPERTIES]: TN }
  *
  * @typeParam TN - The numeric literal for the inclusive upper bound.
  */
-export type MaximumBrandType<TN extends number> = { [MAXIMUM]: TN };
+export type MaximumBrandType<TN extends number> = IdentityType<{ [MAXIMUM]: TN }>;
 
 /**
  * Phantom brand for the `minContains` keyword.
@@ -333,18 +335,18 @@ export type MaximumBrandType<TN extends number> = { [MAXIMUM]: TN };
  *
  * @example
  * ```ts
- * type T = MinContainsBrandType<2>;
+ * type T = MinimumContainsBrandType<2>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.23.0
- * @see {@link MaxContainsBrandType}
+ * @see {@link MaximumContainsBrandType}
  * @see {@link ContainsBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the minimum contains count.
  */
-export type MinContainsBrandType<TN extends number> = { [MIN_CONTAINS]: TN };
+export type MinimumContainsBrandType<TN extends number> = IdentityType<{ [MINIMUM_CONTAINS]: TN }>;
 
 /**
  * Phantom brand for the `minItems` keyword.
@@ -357,17 +359,17 @@ export type MinContainsBrandType<TN extends number> = { [MIN_CONTAINS]: TN };
  *
  * @example
  * ```ts
- * type T = MinItemsBrandType<1>;
+ * type T = MinimumItemsBrandType<1>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MaxItemsBrandType}
+ * @see {@link MaximumItemsBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the minimum item count.
  */
-export type MinItemsBrandType<TN extends number> = { [MIN_ITEMS]: TN };
+export type MinimumItemsBrandType<TN extends number> = IdentityType<{ [MINIMUM_ITEMS]: TN }>;
 
 /**
  * Phantom brand for the `minLength` keyword.
@@ -380,17 +382,17 @@ export type MinItemsBrandType<TN extends number> = { [MIN_ITEMS]: TN };
  *
  * @example
  * ```ts
- * type T = MinLengthBrandType<1>;
+ * type T = MinimumLengthBrandType<1>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MaxLengthBrandType}
+ * @see {@link MaximumLengthBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the minimum string length.
  */
-export type MinLengthBrandType<TN extends number> = { [MIN_LENGTH]: TN };
+export type MinimumLengthBrandType<TN extends number> = IdentityType<{ [MINIMUM_LENGTH]: TN }>;
 
 /**
  * Phantom brand for the `minProperties` keyword.
@@ -403,17 +405,17 @@ export type MinLengthBrandType<TN extends number> = { [MIN_LENGTH]: TN };
  *
  * @example
  * ```ts
- * type T = MinPropertiesBrandType<1>;
+ * type T = MinimumPropertiesBrandType<1>;
  * ```
  *
  * @category Constraint Brands
  * @since 0.18.0
- * @see {@link MaxPropertiesBrandType}
+ * @see {@link MaximumPropertiesBrandType}
  * @group Constraint Brands
  *
  * @typeParam TN - The numeric literal for the minimum property count.
  */
-export type MinPropertiesBrandType<TN extends number> = { [MIN_PROPERTIES]: TN };
+export type MinimumPropertiesBrandType<TN extends number> = IdentityType<{ [MINIMUM_PROPERTIES]: TN }>;
 
 /**
  * Phantom brand for the `minimum` keyword.
@@ -436,7 +438,7 @@ export type MinPropertiesBrandType<TN extends number> = { [MIN_PROPERTIES]: TN }
  *
  * @typeParam TN - The numeric literal for the inclusive lower bound.
  */
-export type MinimumBrandType<TN extends number> = { [MINIMUM]: TN };
+export type MinimumBrandType<TN extends number> = IdentityType<{ [MINIMUM]: TN }>;
 
 /**
  * Phantom brand for the `multipleOf` keyword.
@@ -459,7 +461,7 @@ export type MinimumBrandType<TN extends number> = { [MINIMUM]: TN };
  *
  * @typeParam TN - The numeric literal for the divisor.
  */
-export type MultipleOfBrandType<TN extends number> = { [MULTIPLE_OF]: TN };
+export type MultipleOfBrandType<TN extends number> = IdentityType<{ [MULTIPLE_OF]: TN }>;
 
 /**
  * Phantom brand for the `pattern` keyword.
@@ -482,7 +484,7 @@ export type MultipleOfBrandType<TN extends number> = { [MULTIPLE_OF]: TN };
  *
  * @typeParam TP - The regex pattern string literal.
  */
-export type PatternBrandType<TP extends string> = { [PATTERN]: TP };
+export type PatternBrandType<TP extends string> = IdentityType<{ [PATTERN]: TP }>;
 
 /**
  * Phantom brand for the `$id` keyword.
@@ -505,7 +507,7 @@ export type PatternBrandType<TP extends string> = { [PATTERN]: TP };
  *
  * @typeParam TId - The `$id` IRI string literal.
  */
-export type SchemaIdBrandType<TId extends string> = { [SCHEMA_ID]: TId };
+export type SchemaIdBrandType<TId extends string> = IdentityType<{ [SCHEMA_ID]: TId }>;
 
 /**
  * Phantom brand for the `uniqueItems: true` keyword.
@@ -528,7 +530,7 @@ export type SchemaIdBrandType<TId extends string> = { [SCHEMA_ID]: TId };
  * @see {@link UniqueArrayBrandType}
  * @group Constraint Brands
  */
-export type UniqueItemsBrandType = { [UNIQUE_ITEMS]: true };
+export type UniqueItemsBrandType = IdentityType<{ [UNIQUE_ITEMS]: true }>;
 
 /**
  * Generic uniqueness brand parameterised by element type. Lets downstream APIs

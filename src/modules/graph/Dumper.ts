@@ -1,4 +1,5 @@
 import type { DumpOptionsType } from '../../types/DumpOptionsType.js';
+import type { DumpFilterOptionsType } from '../../types/DumpFilterOptionsType.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
@@ -14,37 +15,6 @@ import {
 import { SchemaIri } from './SchemaIri.js';
 
 const graphTransformCache = new WeakMap<SchemaGraphInterface, boolean>();
-
-function graphHasTransforms(graph: SchemaGraphInterface): boolean {
-  const cached = graphTransformCache.get(graph);
-
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const result = graph.nodes().some((n: SchemaGraphNodeType): boolean => {
-    const s = n.schema;
-
-    return DataType.isRecord(s) && Transform.getDecoder(s) !== undefined;
-  });
-
-  graphTransformCache.set(graph, result);
-
-  return result;
-}
-
-function hasActiveFilterOptions(options: Omit<DumpOptionsType, 'mode'> | undefined): boolean {
-  if (options === undefined) {
-    return false;
-  }
-
-  return (
-    (options.exclude !== undefined && options.exclude.length > 0)
-    || options.excludeDefaults === true
-    || options.excludeUnset === true
-    || (options.include !== undefined && options.include.length > 0)
-  );
-}
 
 /**
  * Dumper — serialize a validated JS value back to its wire form.
@@ -87,10 +57,6 @@ export class Dumper {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Internal helpers
-  // ---------------------------------------------------------------------------
-
   private static applyJsonMode(value: unknown): unknown {
     if (value instanceof Date) {
       return value.toISOString();
@@ -116,7 +82,6 @@ export class Dumper {
 
     return value;
   }
-
   /**
    * Serialize `value` to wire (or JSON-safe) form according to the schema graph.
    *
@@ -157,7 +122,11 @@ export class Dumper {
     });
   }
 
-  private static dumpArray(opts: {
+  // ---------------------------------------------------------------------------
+  // Internal helpers
+  // ---------------------------------------------------------------------------
+
+  private static dumpArray(argumentList: {
     'graph': SchemaGraphInterface;
     'itemsNode': SchemaGraphNodeType;
     'options': DumpOptionsType | undefined;
@@ -166,7 +135,7 @@ export class Dumper {
   }): unknown[] {
     const {
       graph, itemsNode, options, registry, value
-    } = opts;
+    } = argumentList;
     const itemSchema = itemsNode.schema;
     const nodeSchema = DataType.isRecord(itemSchema) ? itemSchema : {};
 
@@ -194,7 +163,7 @@ export class Dumper {
     registry: SchemaRegistryInterface,
     schemaId: string,
     value: unknown,
-    options?: Omit<DumpOptionsType, 'mode'>
+    options?: DumpFilterOptionsType
   ): string {
     const entry = registry.graphEntry(schemaId);
 
@@ -205,7 +174,7 @@ export class Dumper {
       });
     }
 
-    if (!graphHasTransforms(entry.graph) && !hasActiveFilterOptions(options)) {
+    if (!Dumper.graphHasTransforms(entry.graph) && !Dumper.hasActiveFilterOptions(options)) {
       return JSON.stringify(value);
     }
 
@@ -222,7 +191,7 @@ export class Dumper {
     }));
   }
 
-  private static dumpNode(opts: {
+  private static dumpNode(argumentList: {
     'graph': SchemaGraphInterface;
     'node': SchemaGraphNodeType;
     'nodeSchema': Record<string, unknown>;
@@ -232,13 +201,13 @@ export class Dumper {
   }): unknown {
     const {
       graph, node, nodeSchema, options, registry, value
-    } = opts;
+    } = argumentList;
 
     // Resolve $ref — follow to the target schema and graph
     const semantics = graph.semantics(node);
 
     if (semantics.ref !== undefined) {
-      const resolved = Dumper.resolveRef(registry, graph, semantics.ref);
+      const resolved = Dumper.resolveReference(registry, graph, semantics.ref);
 
       return Dumper.dumpNode({
         'graph': resolved.graph,
@@ -278,7 +247,7 @@ export class Dumper {
     return projected;
   }
 
-  private static dumpObject(opts: {
+  private static dumpObject(argumentList: {
     'graph': SchemaGraphInterface;
     'node': SchemaGraphNodeType;
     'options': DumpOptionsType | undefined;
@@ -287,7 +256,7 @@ export class Dumper {
   }): Record<string, unknown> {
     const {
       graph, node, options, registry, value
-    } = opts;
+    } = argumentList;
     const semantics = graph.semantics(node);
     const include = options?.include;
     const exclude = options?.exclude;
@@ -337,6 +306,37 @@ export class Dumper {
     return out;
   }
 
+  private static graphHasTransforms(graph: SchemaGraphInterface): boolean {
+    const cached = graphTransformCache.get(graph);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const result = graph.nodes().some((n: SchemaGraphNodeType): boolean => {
+      const s = n.schema;
+
+      return DataType.isRecord(s) && Transform.getDecoder(s) !== undefined;
+    });
+
+    graphTransformCache.set(graph, result);
+
+    return result;
+  }
+
+  private static hasActiveFilterOptions(options: DumpFilterOptionsType | undefined): boolean {
+    if (options === undefined) {
+      return false;
+    }
+
+    return (
+      (options.exclude !== undefined && options.exclude.length > 0)
+      || options.excludeDefaults === true
+      || options.excludeUnset === true
+      || (options.include !== undefined && options.include.length > 0)
+    );
+  }
+
   private static isDefaultValue(
     graph: SchemaGraphInterface,
     semantics: ReturnType<SchemaGraphInterface['semantics']>,
@@ -371,16 +371,16 @@ export class Dumper {
     return exclude?.includes(key) === true;
   }
 
-  private static resolveRef(
+  private static resolveReference(
     registry: SchemaRegistryInterface,
     graph: SchemaGraphInterface,
-    ref: string
+    reference: string
   ): { 'graph': SchemaGraphInterface;
     'node': SchemaGraphNodeType;
     'registry': SchemaRegistryInterface;
     'schema': Record<string, unknown> } {
-    if (ref.startsWith('#')) {
-      const fragment = ref.slice(1);
+    if (reference.startsWith('#')) {
+      const fragment = reference.slice(1);
       const node = graph.resolveFragment(fragment);
       const schema = node.schema;
 
@@ -392,20 +392,20 @@ export class Dumper {
       };
     }
 
-    const parsed = SchemaIri.parseRef(ref);
+    const parsed = SchemaIri.parseReference(reference);
 
     // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be
     // a registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall
     // to fragment-stripped resolution when no such registration matches
     // exactly.
-    const literalLookedUp = parsed.fragment === '' ? undefined : registry.graphEntry(ref);
+    const literalLookedUp = parsed.fragment === '' ? undefined : registry.graphEntry(reference);
     const lookedUp = literalLookedUp ?? registry.graphEntry(parsed.id);
     const targetFragment = literalLookedUp === undefined ? parsed.fragment : '';
 
     if (lookedUp === undefined) {
-      throw new GraphError(`Unresolved schema reference: ${ref}`, {
+      throw new GraphError(`Unresolved schema reference: ${reference}`, {
         'code': GRAPH_ERROR_CODE.REF_UNRESOLVED,
-        'pointer': ref
+        'pointer': reference
       });
     }
 

@@ -11,5 +11,5 @@ export type AxiomContextType = {
   'invariants': Array<{ 'invariant': InvariantType;
     'schemaId': string }>;
   'resolveIri': (target: string | { 'id': string }) => string;
-  'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
+  'schemaDeltas': Map<string, JsonSchemaDocumentObjectType>;
 };

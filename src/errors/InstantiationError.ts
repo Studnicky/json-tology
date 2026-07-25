@@ -40,8 +40,8 @@ export class InstantiationError extends BaseError {
    */
   public constructor(errors: ValidationErrors | ValidationErrorType[], options: InstantiationErrorOptionsType) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
-    const message = options.message ?? validationErrors.items.map((err: ValidationErrorType): string => {
-      const result = `${err.path || 'root'}: ${err.message}`;
+    const message = options.message ?? validationErrors.items.map((error: ValidationErrorType): string => {
+      const result = `${error.path || 'root'}: ${error.message}`;
 
       return result;
     }).join('; ');

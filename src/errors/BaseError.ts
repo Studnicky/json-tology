@@ -12,7 +12,7 @@ import type { ValidationErrorType } from '../types/Validation.js';
 import { UNKNOWN_ERROR_CODE } from '../constants/ERROR_CODES.js';
 
 export class BaseError extends Error {
-  private static readonly EMPTY_PARAMS: Record<string, unknown> = Object.freeze({});
+  private static readonly EMPTY_PARAMETERS: Record<string, unknown> = Object.freeze({});
 
   private static errorToJson(error: Error): ErrorJsonType {
     if (error instanceof BaseError) {
@@ -63,12 +63,12 @@ export class BaseError extends Error {
     path: string,
     keyword: string,
     message: string,
-    params?: Record<string, unknown>
+    parameters?: Record<string, unknown>
   ): ValidationErrorType {
     return {
       keyword,
       message,
-      'params': params ?? BaseError.EMPTY_PARAMS,
+      'params': parameters ?? BaseError.EMPTY_PARAMETERS,
       path
     };
   }

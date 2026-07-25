@@ -33,8 +33,9 @@ import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import type { XsdJsonSchemaPrimitiveType } from '../../../types/XsdJsonSchemaPrimitiveType.js';
 import type { PropIndexEntryType } from '../../../types/PropIndexEntryType.js';
 import type { PropertyCollectionMapsType } from '../../../types/PropertyCollectionMapsType.js';
-import type { ApplyPropertyArgsType } from '../../../types/ApplyPropertyArgsType.js';
+import type { ApplyPropertyArgumentListType } from '../../../types/ApplyPropertyArgumentListType.js';
 import type { PropertyIndexValueType } from '../../../types/PropertyIndexValueType.js';
+import type { PropertyFragmentDeltaType } from '../../../types/PropertyFragmentDeltaType.js';
 import { RDF } from '../../../constants/IRI.js';
 import { XSD_TO_JSON_SCHEMA } from '../../../constants/XSD_REVERSE_MAPS.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
@@ -47,74 +48,8 @@ import {
   SUB_PROPERTY_PREDICATES
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
 
-// ---------------------------------------------------------------------------
-// Property IRI → local name extraction
-// ---------------------------------------------------------------------------
-
-/**
- * Derive the JSON Schema property key for a property IRI.
- *
- * The canonical form emitted by OwlProjection is `classId#localName`.
- * Delegates to `SchemaIri.propertyName` which handles bare fragments,
- * JSON-pointer `/properties/<name>` form, and plain path segments.
- */
-function localNameOf(propertyIri: string): string {
-  const result = SchemaIri.propertyName(propertyIri);
-
-  return result;
-}
-
 /** Compact form of the RDF List IRI. */
 const RDF_LIST_CURIE = 'rdf:List';
-
-// ---------------------------------------------------------------------------
-// Phase 1: collect property declarations from graph relations
-// ---------------------------------------------------------------------------
-
-/** Push `value` into `map[key]` deduplicating entries. */
-function pushUnique(map: Map<string, string[]>, key: string, value: string): void {
-  let list = map.get(key);
-
-  if (list === undefined) {
-    list = [];
-    map.set(key, list);
-  }
-
-  if (!list.includes(value)) {
-    list.push(value);
-  }
-}
-
-/** Record an object-property type declaration in the property index. */
-function indexPropertyType(
-  propertyIndex: Map<string, PropertyIndexValueType>,
-  subjectIri: string,
-  propType: 'datatype' | 'object'
-): void {
-  if (!propertyIndex.has(subjectIri)) {
-    propertyIndex.set(subjectIri, {
-      'domains': [],
-      'inverseOf': [],
-      'range': null,
-      'subPropertyOf': [],
-      'type': propType
-    });
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Phase 3a: resolve property value shape from range IRI
-// ---------------------------------------------------------------------------
-
-/** Build a JSON Schema shape from an XSD primitive descriptor. */
-function xsdPrimitiveShape(primitive: XsdJsonSchemaPrimitiveType): Record<string, unknown> {
-  return primitive.format === undefined
-    ? { 'type': primitive.type }
-    : {
-      'format': primitive.format,
-      'type': primitive.type
-    };
-}
 
 // ---------------------------------------------------------------------------
 // Main dispatcher
@@ -142,7 +77,7 @@ function xsdPrimitiveShape(primitive: XsdJsonSchemaPrimitiveType): Record<string
  * @example
  * ```ts
  * const fragment = Properties.dispatch(quads, ctx);
- * // fragment.schemaDeltas: Map<classIri, Partial<JsonSchemaDocumentObjectType>>
+ * // fragment.schemaDeltas: Map<classIri, JsonSchemaDocumentObjectType>
  * // fragment.characteristics: Array<{ characteristic, propertyIri }>
  * ```
  *
@@ -155,11 +90,11 @@ export class Properties {
   /**
    * Update `schemaDeltas` for each class in `domains` with the property shape.
    */
-  private static applyPropertyToDomains(args: ApplyPropertyArgsType): void {
+  private static applyPropertyToDomains(applyArguments: ApplyPropertyArgumentListType): void {
     const {
       domains, propertyIri, propShape, schemaDeltas
-    } = args;
-    const propLocalName = localNameOf(propertyIri);
+    } = applyArguments;
+    const propLocalName = Properties.localNameOf(propertyIri);
 
     if (propLocalName === '') {
       return;
@@ -197,9 +132,9 @@ export class Properties {
     targetIri: string
   ): void {
     if (OBJECT_PROPERTY_TYPES.has(targetIri)) {
-      indexPropertyType(propertyIndex, subjectIri, 'object');
+      Properties.indexPropertyType(propertyIndex, subjectIri, 'object');
     } else if (DATATYPE_PROPERTY_TYPES.has(targetIri)) {
-      indexPropertyType(propertyIndex, subjectIri, 'datatype');
+      Properties.indexPropertyType(propertyIndex, subjectIri, 'datatype');
     }
   }
 
@@ -209,9 +144,9 @@ export class Properties {
    */
   private static buildFragmentFromEntries(
     entries: Map<string, PropIndexEntryType>,
-    ctx: OwlImportContextType
-  ): Pick<OwlImportFragmentType, 'characteristics' | 'schemaDeltas'> {
-    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+    context: OwlImportContextType
+  ): PropertyFragmentDeltaType {
+    const schemaDeltas = new Map<string, JsonSchemaDocumentObjectType>();
     const characteristics: Array<{ 'characteristic': string;
       'propertyIri': string }> = [];
 
@@ -234,7 +169,7 @@ export class Properties {
         });
       }
 
-      const propShape = range === null ? null : Properties.resolvePropertyShape(range, propertyIri, ctx);
+      const propShape = range === null ? null : Properties.resolvePropertyShape(range, propertyIri, context);
 
       Properties.applyPropertyToDomains({
         domains,
@@ -257,7 +192,7 @@ export class Properties {
    */
   private static buildPropertyEntries(
     maps: PropertyCollectionMapsType,
-    ctx: OwlImportContextType
+    context: OwlImportContextType
   ): Map<string, PropIndexEntryType> {
     const {
       domainsByProperty, inverseOf, propertyIndex, rangeByProperty, subPropertyOf
@@ -265,7 +200,7 @@ export class Properties {
 
     const allPropertyIris = new Set<string>([
       ...propertyIndex.keys(),
-      ...ctx.allPropertyIris
+      ...context.allPropertyIris
     ]);
 
     for (const domainPropIri of domainsByProperty.keys()) {
@@ -298,18 +233,18 @@ export class Properties {
    * type declarations, domain, range, subPropertyOf, and inverseOf axioms into
    * separate maps for later merging.
    */
-  private static collectPropertyDeclarations(ctx: OwlImportContextType): PropertyCollectionMapsType {
+  private static collectPropertyDeclarations(context: OwlImportContextType): PropertyCollectionMapsType {
     const propertyIndex = new Map<string, PropertyIndexValueType>();
     const domainsByProperty = new Map<string, string[]>();
     const rangeByProperty = new Map<string, string>();
     const subPropertyOf = new Map<string, string[]>();
     const inverseOf = new Map<string, string[]>();
 
-    for (const relation of ctx.graph.allRelations()) {
+    for (const relation of context.graph.allRelations()) {
       const subjectIri = relation.source.id;
       const predicate = relation.predicate;
       const raw = typeof relation.target === 'string' ? relation.target : relation.target.id;
-      const targetIri = ctx.curie.expandIfNeeded(raw);
+      const targetIri = context.curie.expandIfNeeded(raw);
 
       if (predicate === RDF.type) {
         Properties.applyTypeRelation(propertyIndex, subjectIri, targetIri);
@@ -321,7 +256,7 @@ export class Properties {
       }
 
       if (DOMAIN_PREDICATES.has(predicate)) {
-        pushUnique(domainsByProperty, subjectIri, targetIri);
+        Properties.pushUnique(domainsByProperty, subjectIri, targetIri);
         continue;
       }
 
@@ -331,12 +266,12 @@ export class Properties {
       }
 
       if (SUB_PROPERTY_PREDICATES.has(predicate)) {
-        pushUnique(subPropertyOf, subjectIri, targetIri);
+        Properties.pushUnique(subPropertyOf, subjectIri, targetIri);
         continue;
       }
 
       if (INVERSE_OF_PREDICATES.has(predicate)) {
-        pushUnique(inverseOf, subjectIri, targetIri);
+        Properties.pushUnique(inverseOf, subjectIri, targetIri);
       }
     }
 
@@ -349,12 +284,12 @@ export class Properties {
     };
   }
 
-  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-    const maps = Properties.collectPropertyDeclarations(ctx);
-    const entries = Properties.buildPropertyEntries(maps, ctx);
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+    const maps = Properties.collectPropertyDeclarations(context);
+    const entries = Properties.buildPropertyEntries(maps, context);
     const {
       characteristics, schemaDeltas
-    } = Properties.buildFragmentFromEntries(entries, ctx);
+    } = Properties.buildFragmentFromEntries(entries, context);
 
     return {
       characteristics,
@@ -366,6 +301,50 @@ export class Properties {
     };
   }
 
+  /** Record an object-property type declaration in the property index. */
+  private static indexPropertyType(
+    propertyIndex: Map<string, PropertyIndexValueType>,
+    subjectIri: string,
+    propType: 'datatype' | 'object'
+  ): void {
+    if (!propertyIndex.has(subjectIri)) {
+      propertyIndex.set(subjectIri, {
+        'domains': [],
+        'inverseOf': [],
+        'range': null,
+        'subPropertyOf': [],
+        'type': propType
+      });
+    }
+  }
+
+  /**
+   * Derive the JSON Schema property key for a property IRI.
+   *
+   * The canonical form emitted by OwlProjection is `classId#localName`.
+   * Delegates to `SchemaIri.propertyName` which handles bare fragments,
+   * JSON-pointer `/properties/<name>` form, and plain path segments.
+   */
+  private static localNameOf(propertyIri: string): string {
+    const result = SchemaIri.propertyName(propertyIri);
+
+    return result;
+  }
+
+  /** Push `value` into `map[key]` deduplicating entries. */
+  private static pushUnique(map: Map<string, string[]>, key: string, value: string): void {
+    let list = map.get(key);
+
+    if (list === undefined) {
+      list = [];
+      map.set(key, list);
+    }
+
+    if (!list.includes(value)) {
+      list.push(value);
+    }
+  }
+
   /**
    * Derive the JSON Schema value shape for a property given its range IRI.
    * Returns null when no structural delta should be produced (e.g. rdf:List).
@@ -373,7 +352,7 @@ export class Properties {
   private static resolvePropertyShape(
     range: string,
     propertyIri: string,
-    ctx: OwlImportContextType
+    context: OwlImportContextType
   ): null | Record<string, unknown> {
     if (range === RDF_LIST_CURIE || range === RDF.List) {
       // rdf:List signals an array (no-maxCount path in OwlProjection); no
@@ -384,25 +363,35 @@ export class Properties {
     const xsdPrimitive = XSD_TO_JSON_SCHEMA.get(range) ?? null;
 
     if (xsdPrimitive !== null) {
-      return xsdPrimitiveShape(xsdPrimitive);
+      return Properties.xsdPrimitiveShape(xsdPrimitive);
     }
 
-    if (ctx.allClassIris.has(range) || ctx.allPropertyIris.has(range) || ctx.isDatatype(range)) {
+    if (context.allClassIris.has(range) || context.allPropertyIris.has(range) || context.isDatatype(range)) {
       return { '$ref': range };
     }
 
     // Unknown range: try expanding with curie and check again.
-    const expanded = ctx.curie.expand(range);
+    const expanded = context.curie.expand(range);
 
     if (expanded === range) {
       // Truly unknown — report and skip shape.
-      ctx.reportUnsupported(range, propertyIri);
+      context.reportUnsupported(range, propertyIri);
 
       return null;
     }
 
     const expandedPrimitive = XSD_TO_JSON_SCHEMA.get(expanded) ?? null;
 
-    return expandedPrimitive === null ? { '$ref': expanded } : xsdPrimitiveShape(expandedPrimitive);
+    return expandedPrimitive === null ? { '$ref': expanded } : Properties.xsdPrimitiveShape(expandedPrimitive);
+  }
+
+  /** Build a JSON Schema shape from an XSD primitive descriptor. */
+  private static xsdPrimitiveShape(primitive: XsdJsonSchemaPrimitiveType): Record<string, unknown> {
+    return primitive.format === undefined
+      ? { 'type': primitive.type }
+      : {
+        'format': primitive.format,
+        'type': primitive.type
+      };
   }
 }

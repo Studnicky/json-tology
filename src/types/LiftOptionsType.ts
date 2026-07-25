@@ -7,9 +7,10 @@
  */
 
 import type { CurieInterface } from '../interfaces/CurieInterface.js';
-import type { PredicateResolverFnType } from '../types/PredicateResolverFnType.js';
+import type { PredicateResolverFunctionType } from '../types/PredicateResolverFunctionType.js';
+import type { IdentityType } from './IdentityType.js';
 
-export type LiftOptionsType = {
+export type LiftOptionsType = IdentityType<{
   'curie'?: CurieInterface | undefined;
-  'predicateResolver'?: PredicateResolverFnType | undefined;
-};
+  'predicateResolver'?: PredicateResolverFunctionType | undefined;
+}>;

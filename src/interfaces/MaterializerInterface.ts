@@ -4,25 +4,26 @@ import type { InferSchemaType } from '../types/Infer.js';
 
 import type { JsonSchemaDocumentType } from '../types/Schema.js';
 import type { AboxOptionsType } from '../types/AboxOptionsType.js';
+import type { SchemaWithIdType } from '../types/SchemaWithIdType.js';
+import type { MaterializerExecuteOptionsType } from '../types/MaterializerExecuteOptionsType.js';
+import type { PartialInferSchemaType } from '../types/PartialInferSchemaType.js';
 
 export interface MaterializerInterface {
-  createDefault(schema: Record<string, unknown> & { '$id': string }): unknown;
+  createDefault(schema: SchemaWithIdType): unknown;
   execute(
-    schema: Record<string, unknown> & { '$id': string },
-    data?: unknown,
-    options?: { 'baseIri'?: string;
-      'synthesizeDefaults'?: boolean }
+    schema: SchemaWithIdType,
+    options?: MaterializerExecuteOptionsType
   ): MaterializationResultType;
   materialize<TSchema extends JsonSchemaDocumentType & { readonly '$id': string }>(
     schema: TSchema,
-    partial?: Partial<InferSchemaType<TSchema>>,
+    partial?: PartialInferSchemaType<TSchema>,
   ): InferSchemaType<TSchema>;
   materialize(
-    schema: Record<string, unknown> & { '$id': string },
+    schema: SchemaWithIdType,
     partial?: Record<string, unknown>
   ): unknown;
   projectAbox(
-    schema: Record<string, unknown> & { '$id': string },
+    schema: SchemaWithIdType,
     data: unknown,
     baseIri: string,
     options?: AboxOptionsType

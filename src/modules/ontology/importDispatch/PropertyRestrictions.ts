@@ -20,7 +20,7 @@
  *   - someValuesFrom and qualified cardinality on heterogeneous arrays
  *     → invariants (per-instance runtime check).
  *
- * The dispatcher reads `ctx.graph.allRelations()` and filters for
+ * The dispatcher reads `context.graph.allRelations()` and filters for
  * rdfs:subClassOf relations whose `structure.kind === 'restriction'`.
  * The parent class IRI is `relation.source.id`.
  */
@@ -50,13 +50,13 @@ import { SchemaIri } from '../../graph/SchemaIri.js';
  * Process OWL 2 property restriction axioms (existential/universal quantification,
  * value constraints, cardinality) and return a partial import fragment.
  *
- * Reads `ctx.graph.allRelations()` and filters for `rdfs:subClassOf` relations
+ * Reads `context.graph.allRelations()` and filters for `rdfs:subClassOf` relations
  * whose `structure.kind === 'restriction'`. Each restriction is converted into:
  *   - A `schemaDeltas` patch on the parent class IRI (structural constraints).
  *   - An `invariants` entry for `owl:someValuesFrom` (runtime checks).
  *
- * @param _quads - All quads from the input graph (unused; graph is traversed via ctx).
- * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
+ * @param _quads - All quads from the input graph (unused; graph is traversed via context).
+ * @param context - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragmentType with schemaDeltas and invariants populated.
  */
 export class PropertyRestrictions {
@@ -73,28 +73,30 @@ export class PropertyRestrictions {
   ): InvariantType {
     const name = `owl:someValuesFrom(${propName}, ${classIri})`;
 
+    const someValuesFromCheck = (instance: unknown): null | string => {
+      if (typeof instance !== 'object' || instance === null) {
+        return null;
+      }
+      const target = instance as Record<string, unknown>;
+      const array = target[propName];
+
+      if (!Array.isArray(array)) {
+        return null;
+      }
+      // someValuesFrom is satisfied when at least one element is non-null
+      // and structurally present. Full class-level validation would require
+      // a compiled validator — this invariant checks existence as a proxy.
+      const satisfied = array.some((element) => {
+        return element !== null && element !== undefined;
+      });
+
+      return satisfied
+        ? null
+        : `owl:someValuesFrom constraint: property "${propName}" must contain at least one value satisfying <${classIri}>`;
+    };
+
     return {
-      'fn': (instance: unknown): null | string => {
-        if (typeof instance !== 'object' || instance === null) {
-          return null;
-        }
-        const obj = instance as Record<string, unknown>;
-        const arr = obj[propName];
-
-        if (!Array.isArray(arr)) {
-          return null;
-        }
-        // someValuesFrom is satisfied when at least one element is non-null
-        // and structurally present. Full class-level validation would require
-        // a compiled validator — this invariant checks existence as a proxy.
-        const satisfied = arr.some((element) => {
-          return element !== null && element !== undefined;
-        });
-
-        return satisfied
-          ? null
-          : `owl:someValuesFrom constraint: property "${propName}" must contain at least one value satisfying <${classIri}>`;
-      },
+      'fn': someValuesFromCheck,
       name
     };
   }
@@ -131,14 +133,14 @@ export class PropertyRestrictions {
     }
   }
 
-  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+    const schemaDeltas = new Map<string, JsonSchemaDocumentObjectType>();
     const invariants: Array<{
       'invariant': InvariantType;
       'schemaId': string;
     }> = [];
 
-    const allRelations = ctx.graph.allRelations();
+    const allRelations = context.graph.allRelations();
 
     for (const relation of allRelations) {
       if (relation.predicate !== RDFS.subClassOf) {
@@ -164,14 +166,14 @@ export class PropertyRestrictions {
 
       // Skip empty property IRI
       if (propIri === '') {
-        ctx.reportUnsupported(constraint, classIri);
+        context.reportUnsupported(constraint, classIri);
         continue;
       }
 
       const propName = SchemaIri.propertyName(propIri);
 
       if (propName === '') {
-        ctx.reportUnsupported(constraint, classIri);
+        context.reportUnsupported(constraint, classIri);
         continue;
       }
 
@@ -185,7 +187,7 @@ export class PropertyRestrictions {
             'schemaId': classIri
           });
         } else {
-          ctx.reportUnsupported(constraint, classIri);
+          context.reportUnsupported(constraint, classIri);
         }
         continue;
       }
@@ -194,7 +196,7 @@ export class PropertyRestrictions {
       const patch = PropertyRestrictions.structuralPatch(constraint, value);
 
       if (patch === null) {
-        ctx.reportUnsupported(constraint, classIri);
+        context.reportUnsupported(constraint, classIri);
         continue;
       }
 
@@ -219,10 +221,10 @@ export class PropertyRestrictions {
    * delta. Returns the updated delta.
    */
   private static mergePropertyPatch(
-    delta: Partial<JsonSchemaDocumentObjectType>,
+    delta: JsonSchemaDocumentObjectType,
     propName: string,
     patch: MutablePropertySchemaType
-  ): Partial<JsonSchemaDocumentObjectType> {
+  ): JsonSchemaDocumentObjectType {
     const existing = delta.properties ?? {};
     const existingProp = existing[propName];
     const merged: JsonSchemaDocumentObjectType = typeof existingProp === 'object'

@@ -962,13 +962,13 @@ function expandCurie(value: string): string {
 
         const struct = conditional0.structure;
 
-        assert.ok(struct.ifRef !== '', `${label}: expected ifRef`);
-        assert.ok(struct.thenRef !== undefined && struct.thenRef !== '', `${label}: expected thenRef`);
+        assert.ok(struct.ifReference !== '', `${label}: expected ifReference`);
+        assert.ok(struct.thenReference !== undefined && struct.thenReference !== '', `${label}: expected thenReference`);
 
         if (expectElse) {
-          assert.ok(struct.elseRef !== undefined && struct.elseRef !== '', `${label}: expected elseRef`);
+          assert.ok(struct.elseReference !== undefined && struct.elseReference !== '', `${label}: expected elseReference`);
         } else {
-          assert.equal(struct.elseRef, undefined, `${label}: expected no elseRef`);
+          assert.equal(struct.elseReference, undefined, `${label}: expected no elseReference`);
         }
       }
     });

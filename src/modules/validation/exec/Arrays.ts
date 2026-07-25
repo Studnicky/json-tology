@@ -1,4 +1,4 @@
-import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
+import type { ValidateWithErrorsFunctionType } from '../../../types/Validation.js';
 import type { ExecContextType } from '../../../types/ExecContextType.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../../data/Predicates.js';
@@ -9,21 +9,21 @@ import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
  */
 class SingleItem {
   static validate(
-    validator: ValidateWithErrorsFnType,
-    arr: unknown[],
+    validator: ValidateWithErrorsFunctionType,
+    array: unknown[],
     index: number,
     path: string,
-    ctx: ExecContextType
+    context: ExecContextType
   ): 'early-exit' | 'invalid' | 'valid' {
     const childPath = `${path}/${index}`;
-    const result = validator(arr[index], childPath, ctx);
+    const result = validator(array[index], childPath, context);
 
-    if (result.value !== arr[index]) {
-      arr[index] = result.value;
+    if (result.value !== array[index]) {
+      array[index] = result.value;
     }
 
     if (!result.valid) {
-      return ctx.collectErrors ? 'invalid' : 'early-exit';
+      return context.collectErrors ? 'invalid' : 'early-exit';
     }
 
     return 'valid';
@@ -42,10 +42,10 @@ class ContainsError {
   ): string | undefined {
     // Effective minimum: if minContains is absent, the default is 1 (JSON Schema spec).
     // Use the same `contains(n)` path as the interpreter (GraphEngine) for parity.
-    const effectiveMin = minContains ?? 1;
+    const effectiveMinimum = minContains ?? 1;
 
-    if (count < effectiveMin) {
-      return VALIDATION_MESSAGES.contains(effectiveMin);
+    if (count < effectiveMinimum) {
+      return VALIDATION_MESSAGES.contains(effectiveMinimum);
     }
     if (maxContains !== undefined && count > maxContains) {
       return VALIDATION_MESSAGES.maxContains(maxContains);
@@ -73,13 +73,13 @@ class ContainsError {
  * @group Internal
  * @example
  * ```ts
- * const ok = Arrays.validateBounds('/items', arr, 1, 10, false, errors);
+ * const ok = Arrays.validateBounds('/items', array, 1, 10, false, errors);
  * ```
  */
 export class Arrays {
   static validateBounds(
     path: string,
-    arr: unknown[],
+    array: unknown[],
     minItems: number | undefined,
     maxItems: number | undefined,
     uniqueItems: boolean,
@@ -87,13 +87,13 @@ export class Arrays {
   ): boolean {
     const pre = errors.length;
 
-    if (minItems !== undefined && arr.length < minItems) {
+    if (minItems !== undefined && array.length < minItems) {
       errors.push(BaseError.validationError(path, 'minItems', VALIDATION_MESSAGES.minItems(minItems)));
     }
-    if (maxItems !== undefined && arr.length > maxItems) {
+    if (maxItems !== undefined && array.length > maxItems) {
       errors.push(BaseError.validationError(path, 'maxItems', VALIDATION_MESSAGES.maxItems(maxItems)));
     }
-    if (uniqueItems && !Predicates.satisfiesUniqueItems(arr)) {
+    if (uniqueItems && !Predicates.satisfiesUniqueItems(array)) {
       errors.push(BaseError.validationError(path, 'uniqueItems', VALIDATION_MESSAGES.uniqueItems));
     }
 
@@ -102,11 +102,11 @@ export class Arrays {
 
   static validateContains(
     path: string,
-    arr: unknown[],
-    containsValidator: undefined | ValidateWithErrorsFnType,
+    array: unknown[],
+    containsValidator: undefined | ValidateWithErrorsFunctionType,
     minContains: number | undefined,
     maxContains: number | undefined,
-    ctx: ExecContextType,
+    context: ExecContextType,
     errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
     if (containsValidator === undefined) {
@@ -115,11 +115,11 @@ export class Arrays {
 
     let count = 0;
 
-    // Hoist scratch ctx outside the loop — check-mode (collectErrors:false) means no errors
+    // Hoist scratch context outside the loop — check-mode (collectErrors:false) means no errors
     // are ever pushed, so the errors array is never mutated and can be shared across elements.
     // evaluatedItems/evaluatedProperties are reset to undefined since they are per-element.
-    const scratchCtx: ExecContextType = {
-      ...ctx,
+    const scratchContext: ExecContextType = {
+      ...context,
       'applyDefaults': false,
       'coerce': false,
       'collectErrors': false,
@@ -130,11 +130,11 @@ export class Arrays {
       'synthesizeDefaults': false
     };
 
-    for (const item of arr) {
+    for (const item of array) {
       // Reset per-element mutable scratch fields before each run.
-      scratchCtx.evaluatedItems = undefined;
-      scratchCtx.evaluatedProperties = undefined;
-      const result = containsValidator(item, path, scratchCtx);
+      scratchContext.evaluatedItems = undefined;
+      scratchContext.evaluatedProperties = undefined;
+      const result = containsValidator(item, path, scratchContext);
 
       if (result.valid) {
         count++;
@@ -153,10 +153,10 @@ export class Arrays {
 
   static validateItems(
     path: string,
-    arr: unknown[],
-    itemValidator: undefined | ValidateWithErrorsFnType,
-    prefixValidators: undefined | ValidateWithErrorsFnType[],
-    ctx: ExecContextType
+    array: unknown[],
+    itemValidator: undefined | ValidateWithErrorsFunctionType,
+    prefixValidators: undefined | ValidateWithErrorsFunctionType[],
+    context: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (itemValidator === undefined) {
@@ -168,9 +168,10 @@ export class Arrays {
 
     const startIndex = prefixValidators === undefined ? 0 : prefixValidators.length;
     let valid = true;
+    const arrayLength = array.length;
 
-    for (let i = startIndex; i < arr.length; i++) {
-      const outcome = SingleItem.validate(itemValidator, arr, i, path, ctx);
+    for (let i = startIndex; i < arrayLength; i++) {
+      const outcome = SingleItem.validate(itemValidator, array, i, path, context);
 
       if (outcome === 'early-exit') {
         return {
@@ -191,9 +192,9 @@ export class Arrays {
 
   static validatePrefixItems(
     path: string,
-    arr: unknown[],
-    prefixValidators: undefined | ValidateWithErrorsFnType[],
-    ctx: ExecContextType
+    array: unknown[],
+    prefixValidators: undefined | ValidateWithErrorsFunctionType[],
+    context: ExecContextType
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (prefixValidators === undefined) {
@@ -205,14 +206,14 @@ export class Arrays {
 
     let valid = true;
 
-    for (let i = 0; i < prefixValidators.length && i < arr.length; i++) {
+    for (let i = 0; i < prefixValidators.length && i < array.length; i++) {
       const validator = prefixValidators[i];
 
       if (validator === undefined) {
         continue;
       }
 
-      const outcome = SingleItem.validate(validator, arr, i, path, ctx);
+      const outcome = SingleItem.validate(validator, array, i, path, context);
 
       if (outcome === 'early-exit') {
         return {
