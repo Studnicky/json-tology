@@ -1,21 +1,21 @@
-import type {
-  MaterializationResultType, MaterializerOptionsType, MaterializerRunOptionsType
-} from '../../types/Materializer.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
+import type { MaterializationResultInterface } from '../../interfaces/MaterializationResultInterface.js';
+import type { MaterializerOptionsInterface } from '../../interfaces/MaterializerOptionsInterface.js';
+import type { MaterializerRunOptionsInterface } from '../../interfaces/MaterializerRunOptionsInterface.js';
 import type { MaterializerInterface } from '../../interfaces/MaterializerInterface.js';
 import type { DefaultCreatorInterface } from '../../interfaces/DefaultCreatorInterface.js';
-import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import type { InferSchemaType } from '../../types/Infer.js';
-import type { AboxOptionsType } from '../../types/AboxOptionsType.js';
+import type { AboxOptionsInterface } from '../../interfaces/AboxOptionsInterface.js';
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
-import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
-import type { ValidationErrorType } from '../../types/Validation.js';
+import type { EffectivePropertyMapInterface } from '../../interfaces/EffectivePropertyMapInterface.js';
+import type { ValidationErrorEntity } from '../../entities/ValidationErrorEntity.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { AboxProjectorInterface } from '../../interfaces/AboxProjectorInterface.js';
-import type { ComputedFunctionType } from '../../types/ComputedFunctionType.js';
-import type { MaterializerExecuteOptionsType } from '../../types/MaterializerExecuteOptionsType.js';
+import type { ComputedFunctionInterface } from '../../interfaces/ComputedFunctionInterface.js';
+import type { MaterializerExecuteOptionsEntity } from '../../entities/MaterializerExecuteOptionsEntity.js';
 import type { PartialInferSchemaType } from '../../types/PartialInferSchemaType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
@@ -112,8 +112,8 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
   // within its home graph, so keying by node is safe. The cache is automatically
   // invalidated when nodes are GC'd.
   private readonly effectivePropertiesCache = new WeakMap<
-    SchemaGraphNodeType,
-    EffectivePropertyMapType
+    SchemaGraphNodeInterface,
+    EffectivePropertyMapInterface
   >();
 
   private readonly logger: LoggerInterface;
@@ -135,7 +135,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
    */
   public constructor(
     private readonly registry: SchemaRegistryInterface,
-    options: MaterializerOptionsType = {}
+    options: MaterializerOptionsInterface = {}
   ) {
     const allowAdditionalProperties = options.passAdditionalProperties === true;
     const castTypes = registry.castTypes;
@@ -201,7 +201,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
   private applyComputedField(
     name: string,
-    computeFunction: ComputedFunctionType,
+    computeFunction: ComputedFunctionInterface,
     value: Record<string, unknown>
   ): void {
     try {
@@ -250,8 +250,8 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
    */
   private collectEffectiveProperties(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType
-  ): EffectivePropertyMapType {
+    node: SchemaGraphNodeInterface
+  ): EffectivePropertyMapInterface {
     const result = EffectiveProperties.collectMemo(
       this.effectivePropertiesCache,
       graph,
@@ -284,8 +284,8 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
    */
   public execute(
     schema: Record<string, unknown> & { '$id': string },
-    options?: MaterializerExecuteOptionsType
-  ): MaterializationResultType {
+    options?: MaterializerExecuteOptionsEntity.Type
+  ): MaterializationResultInterface {
     const data = options?.data;
     const baseIri = options?.baseIri;
     const synthesize = options?.synthesizeDefaults === true;
@@ -301,7 +301,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
   private fillImplicitProperties(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     value: unknown,
     visited = new WeakSet()
   ): void {
@@ -337,7 +337,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
   private fillImplicitProperty(
     propertyGraph: SchemaGraphInterface,
-    propertyTargetNode: SchemaGraphNodeType,
+    propertyTargetNode: SchemaGraphNodeInterface,
     propertyValue: unknown,
     visited: WeakSet<WeakKey>
   ): void {
@@ -358,7 +358,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     this.fillImplicitProperties(propertyGraph, propertyTargetNode, propertyValue, visited);
   }
 
-  private formatErrors(errors: ValidationErrorType[]): string[] {
+  private formatErrors(errors: ValidationErrorEntity.Type[]): string[] {
     const result = BaseError.formatErrors(errors);
 
     return result;
@@ -405,7 +405,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
   }
   private materializeResult(
     graph: SchemaGraphInterface,
-    entryNode: SchemaGraphNodeType,
+    entryNode: SchemaGraphNodeInterface,
     value: unknown
   ): unknown {
     this.fillImplicitProperties(graph, entryNode, value);
@@ -435,7 +435,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
     baseIri: string,
-    options?: AboxOptionsType
+    options?: AboxOptionsInterface
   ): QuadInterface[] {
     const result = options === undefined
       ? this.run(schema, data, {
@@ -460,10 +460,10 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
 
   private projectAboxFromExecution(
     graph: SchemaGraphInterface,
-    entryNode: SchemaGraphNodeType,
+    entryNode: SchemaGraphNodeInterface,
     materialized: unknown,
     baseIri: string,
-    options?: AboxOptionsType
+    options?: AboxOptionsInterface
   ): QuadInterface[] {
     if (this.aboxProjector === undefined) {
       throw new MaterializationError(
@@ -500,8 +500,8 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
    */
   private resolveTargetGraphAndNode(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType
-  ): [SchemaGraphInterface, SchemaGraphNodeType] {
+    node: SchemaGraphNodeInterface
+  ): [SchemaGraphInterface, SchemaGraphNodeInterface] {
     const semantics = graph.semantics(node);
 
     if (semantics.ref === undefined) {
@@ -530,8 +530,8 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
   private run(
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
-    options: MaterializerRunOptionsType = {}
-  ): MaterializationResultType {
+    options: MaterializerRunOptionsInterface = {}
+  ): MaterializationResultInterface {
     const {
       aboxOptions, baseIri, synthesizeDefaults = false
     } = options;

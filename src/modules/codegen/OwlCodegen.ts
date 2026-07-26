@@ -23,36 +23,35 @@
  *                         re-exports types and schema constants
  */
 
-import type { OwlImportResultType } from '../../types/OwlImport.js';
-import type {
-  OwlCodegenOptionsType, OwlRegistryDirOptionsType, RegistryFileEntryType, RegistryFilesResultType
-} from '../../types/OwlCodegen.js';
+import type { OwlImportResultInterface } from '../../interfaces/OwlImportResultInterface.js';
+import type { OwlCodegenOptionsInterface } from '../../interfaces/OwlCodegenOptionsInterface.js';
+import type { OwlRegistryDirOptionsInterface } from '../../interfaces/OwlRegistryDirOptionsInterface.js';
+import type { RegistryFileEntryEntity } from '../../entities/RegistryFileEntryEntity.js';
+import type { RegistryFilesResultEntity } from '../../entities/RegistryFilesResultEntity.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import {
   NON_WORD_RUN, WHITESPACE_RUN
 } from '../../constants/PATH.js';
 import type { JsonSchemaDocumentObjectType } from '../../types/Schema.js';
-import type {
-  BuildDepsMapType,
-  BuildInDegreeMapType
-} from '../../types/OwlCodegen.js';
-import type { BuildEntityFileOptionsType } from '../../types/BuildEntityFileOptionsType.js';
-import type { BuildIndexSourceOptionsType } from '../../types/BuildIndexSourceOptionsType.js';
-import type { BuildNameMapResultType } from '../../types/BuildNameMapResultType.js';
-import type { EmitBannerOptionsType } from '../../types/EmitBannerOptionsType.js';
-import type { EmitRegistryOptionsType } from '../../types/EmitRegistryOptionsType.js';
-import type { EmitSchemaConstantsOptionsType } from '../../types/EmitSchemaConstantsOptionsType.js';
-import type { KahnStepOptionsType } from '../../types/KahnStepOptionsType.js';
-import type { RegistryDirContextType } from '../../types/RegistryDirContextType.js';
-import type { SerializeContextType } from '../../types/SerializeContextType.js';
-import type { SingleFileBodyOptionsType } from '../../types/SingleFileBodyOptionsType.js';
+import type { BuildDepsMapInterface } from '../../interfaces/BuildDepsMapInterface.js';
+import type { BuildInDegreeMapInterface } from '../../interfaces/BuildInDegreeMapInterface.js';
+import type { BuildEntityFileOptionsEntity } from '../../entities/BuildEntityFileOptionsEntity.js';
+import type { BuildIndexSourceOptionsEntity } from '../../entities/BuildIndexSourceOptionsEntity.js';
+import type { BuildNameMapResultEntity } from '../../entities/BuildNameMapResultEntity.js';
+import type { EmitBannerOptionsEntity } from '../../entities/EmitBannerOptionsEntity.js';
+import type { EmitRegistryOptionsEntity } from '../../entities/EmitRegistryOptionsEntity.js';
+import type { EmitSchemaConstantsOptionsEntity } from '../../entities/EmitSchemaConstantsOptionsEntity.js';
+import type { KahnStepOptionsInterface } from '../../interfaces/KahnStepOptionsInterface.js';
+import type { SerializeContextEntity } from '../../entities/SerializeContextEntity.js';
+import type { RegistryDirContextEntity } from '../../entities/RegistryDirContextEntity.js';
+import type { SingleFileBodyOptionsEntity } from '../../entities/SingleFileBodyOptionsEntity.js';
 
 /**
  * OwlCodegen — code generator for OWL 2 TBox import results.
  */
 export class OwlCodegen {
   /** Reduce the in-degree of dependents and enqueue newly-zero entries. */
-  private static advanceKahnStep(options: KahnStepOptionsType): void {
+  private static advanceKahnStep(options: KahnStepOptionsInterface): void {
     const {
       current,
       deps,
@@ -85,7 +84,7 @@ export class OwlCodegen {
     iris: readonly string[],
     schemaByIri: Map<string, JsonSchemaDocumentObjectType>,
     irisSet: Set<string>
-  ): BuildDepsMapType {
+  ): BuildDepsMapInterface {
     const deps = new Map<string, Set<string>>();
 
     for (const iri of iris) {
@@ -108,9 +107,9 @@ export class OwlCodegen {
     return deps;
   }
 
-  /** Build all per-entity RegistryFileEntryType objects in dependency order. */
-  static buildEntityFiles(context: RegistryDirContextType): RegistryFileEntryType[] {
-    const entityFiles: RegistryFileEntryType[] = [];
+  /** Build all per-entity RegistryFileEntryEntity.Type objects in dependency order. */
+  static buildEntityFiles(context: RegistryDirContextEntity.Type): RegistryFileEntryEntity.Type[] {
+    const entityFiles: RegistryFileEntryEntity.Type[] = [];
     const schemasByIri = new Map<string, JsonSchemaDocumentObjectType>();
 
     for (const schemaEntry of context.schemas) {
@@ -120,7 +119,7 @@ export class OwlCodegen {
     }
 
     for (const iri of context.sortedIris) {
-      const name = context.nameMap.get(iri);
+      const name = context.nameMap[iri];
 
       if (name === undefined || name === '') {
         continue;
@@ -151,7 +150,7 @@ export class OwlCodegen {
   }
 
   /** Build a single entity file source for registry-directory mode. */
-  static buildEntityFileSource(options: BuildEntityFileOptionsType): string {
+  static buildEntityFileSource(options: BuildEntityFileOptionsEntity.Type): string {
     const {
       iri,
       name,
@@ -191,8 +190,8 @@ export class OwlCodegen {
   }
 
   /** Build the initial in-degree map (number of deps each IRI has). */
-  static buildInDegreeMap(iris: readonly string[], deps: BuildDepsMapType): BuildInDegreeMapType {
-    const fwdInDegree: BuildInDegreeMapType = new Map<string, number>();
+  static buildInDegreeMap(iris: readonly string[], deps: BuildDepsMapInterface): BuildInDegreeMapInterface {
+    const fwdInDegree: BuildInDegreeMapInterface = new Map<string, number>();
 
     for (const iri of iris) {
       fwdInDegree.set(iri, deps.get(iri)?.size ?? 0);
@@ -203,9 +202,9 @@ export class OwlCodegen {
 
   /** Build the index.ts source string for registry-directory mode. */
   static buildIndexSource(
-    context: RegistryDirContextType,
-    options: BuildIndexSourceOptionsType,
-    result: OwlImportResultType
+    context: RegistryDirContextEntity.Type,
+    options: BuildIndexSourceOptionsEntity.Type,
+    result: OwlImportResultInterface
   ): string {
     const indexLines: string[] = [];
 
@@ -264,11 +263,11 @@ export class OwlCodegen {
    * Returns `{ nameMap, collisions }` where `collisions` is the set of base
    * names that collided (used for banner warnings).
    */
-  static buildNameMap(iris: readonly string[]): BuildNameMapResultType {
+  static buildNameMap(iris: readonly string[]): BuildNameMapResultEntity.Type {
     // base name → first IRI that claimed it
     const nameMap = new Map<string, string>();
     const iriToName = new Map<string, string>();
-    const collisions = new Set<string>();
+    const collisionSet = new Set<string>();
     const counters = new Map<string, number>();
 
     for (const iri of iris) {
@@ -280,7 +279,7 @@ export class OwlCodegen {
         iriToName.set(iri, base);
         counters.set(base, 1);
       } else {
-        collisions.add(base);
+        collisionSet.add(base);
         const n = (counters.get(base) ?? 1) + 1;
 
         counters.set(base, n);
@@ -291,7 +290,8 @@ export class OwlCodegen {
     }
 
     // Build a clean iri→name map from iriToName
-    const result = new Map<string, string>(iriToName);
+    const result: Record<string, string> = Object.fromEntries(iriToName);
+    const collisions = [...collisionSet];
 
     return {
       collisions,
@@ -302,8 +302,8 @@ export class OwlCodegen {
   /** Emit the body of a single-file output: constants, registry, types, post-processing, footer. */
   static buildSingleFileBody(
     lines: string[],
-    options: SingleFileBodyOptionsType,
-    result: OwlImportResultType
+    options: SingleFileBodyOptionsEntity.Type,
+    result: OwlImportResultInterface
   ): void {
     const schemasConst = `${options.registryConstName}Schemas`;
     const schemaNames = OwlCodegen.extractSchemaNames(options.sortedIris, options.nameMap);
@@ -375,7 +375,7 @@ export class OwlCodegen {
   }
 
   /** Emit the auto-generated banner lines into an array. */
-  private static emitBanner(lines: string[], options: EmitBannerOptionsType): void {
+  private static emitBanner(lines: string[], options: EmitBannerOptionsEntity.Type): void {
     const {
       collisions,
       header,
@@ -391,7 +391,7 @@ export class OwlCodegen {
       lines.push(`// Source:    ${sourceLabel}`);
     }
 
-    if (collisions.size > 0) {
+    if (collisions.length > 0) {
       lines.push('//');
       lines.push('// WARNING: IRI name collisions detected. Suffixed names used:');
 
@@ -439,7 +439,7 @@ export class OwlCodegen {
   /** Emit owl:sameAs and addCharacteristic post-processing calls. */
   private static emitPostProcessing(
     lines: string[],
-    result: OwlImportResultType,
+    result: OwlImportResultInterface,
     registryConstName: string
   ): void {
     if (result.sameAs.length > 0) {
@@ -472,7 +472,7 @@ export class OwlCodegen {
   }
 
   /** Emit the registry array and JsonTology.create() call. */
-  private static emitRegistryConstruction(lines: string[], options: EmitRegistryOptionsType): void {
+  private static emitRegistryConstruction(lines: string[], options: EmitRegistryOptionsEntity.Type): void {
     const {
       effectiveBaseIri,
       registryConstName,
@@ -514,7 +514,7 @@ export class OwlCodegen {
   }
 
   /** Emit per-class schema constants in dependency order. */
-  private static emitSchemaConstants(lines: string[], options: EmitSchemaConstantsOptionsType): void {
+  private static emitSchemaConstants(lines: string[], options: EmitSchemaConstantsOptionsEntity.Type): void {
     const {
       nameMap,
       schemas,
@@ -529,7 +529,7 @@ export class OwlCodegen {
     }
 
     for (const iri of sortedIris) {
-      const name = nameMap.get(iri);
+      const name = nameMap[iri];
 
       if (name === undefined || name === '') {
         continue;
@@ -552,7 +552,7 @@ export class OwlCodegen {
   private static emitTypeAliases(
     lines: string[],
     sortedIris: string[],
-    nameMap: Map<string, string>,
+    nameMap: Record<string, string>,
     schemasConst: string
   ): void {
     const names = OwlCodegen.extractSchemaNames(sortedIris, nameMap);
@@ -578,11 +578,11 @@ export class OwlCodegen {
   }
 
   /** Extract the list of named schema identifiers from the name map. */
-  static extractSchemaNames(sortedIris: string[], nameMap: Map<string, string>): string[] {
+  static extractSchemaNames(sortedIris: string[], nameMap: Record<string, string>): string[] {
     const result: string[] = [];
 
     for (const iri of sortedIris) {
-      const name = nameMap.get(iri);
+      const name = nameMap[iri];
 
       if (name !== undefined && name !== '') {
         result.push(name);
@@ -608,7 +608,7 @@ export class OwlCodegen {
   }
 
   /** Run Kahn's algorithm on the forward dependency graph and return sorted IRIs. */
-  private static kahnSort(iris: readonly string[], deps: BuildDepsMapType): string[] {
+  private static kahnSort(iris: readonly string[], deps: BuildDepsMapInterface): string[] {
     const fwdInDegree = OwlCodegen.buildInDegreeMap(iris, deps);
     const queue = OwlCodegen.buildInitialQueue(iris, fwdInDegree);
     const sorted: string[] = [];
@@ -692,7 +692,7 @@ export class OwlCodegen {
   }
 
   /** Serialize an array to a stable TS `as const` literal string. */
-  static serializeArrayLiteral(array: unknown[], context: SerializeContextType): string {
+  static serializeArrayLiteral(array: unknown[], context: SerializeContextEntity.Type): string {
     if (array.length === 0) {
       return '[]';
     }
@@ -710,7 +710,7 @@ export class OwlCodegen {
 
 
   /** Serialize an object to a stable TS `as const` literal string. */
-  static serializeObjectLiteral(rec: Record<string, unknown>, context: SerializeContextType): string {
+  static serializeObjectLiteral(rec: Record<string, unknown>, context: SerializeContextEntity.Type): string {
     const keys = Object.keys(rec).sort();
 
     if (keys.length === 0) {
@@ -736,7 +736,7 @@ export class OwlCodegen {
   static serializeSchemaLiteral(value: unknown, indent: number): string {
     const pad = ' '.repeat(indent);
     const innerPad = ' '.repeat(indent + 2);
-    const context: SerializeContextType = {
+    const context: SerializeContextEntity.Type = {
       indent,
       innerPad,
       pad
@@ -789,7 +789,7 @@ export class OwlCodegen {
 
   /**
    * Generate registry-directory-mode TypeScript sources from an
-   * {@link OwlImportResultType}.
+   * {@link OwlImportResultInterface}.
    *
    * @remarks
    * Returns an in-memory description of one `entities/<Name>.ts` file per OWL
@@ -816,9 +816,9 @@ export class OwlCodegen {
    * @group OWL Codegen
    */
   public static toRegistryFiles(
-    result: OwlImportResultType,
-    options: OwlRegistryDirOptionsType
-  ): RegistryFilesResultType {
+    result: OwlImportResultInterface,
+    options: OwlRegistryDirOptionsInterface
+  ): RegistryFilesResultEntity.Type {
     const {
       baseIri = '',
       header = [],
@@ -839,7 +839,7 @@ export class OwlCodegen {
     } = OwlCodegen.buildNameMap(sortedIris);
     const effectiveBaseIri = baseIri === '' ? OwlCodegen.deriveBaseIri(iris[0] ?? '') : baseIri;
     const schemasConst = `${registryConstName}Schemas`;
-    const context: RegistryDirContextType = {
+    const context: RegistryDirContextEntity.Type = {
       nameMap,
       'refsName': `${schemasConst}Refs`,
       schemas,
@@ -861,7 +861,7 @@ export class OwlCodegen {
   }
 
   /**
-   * Generate a TypeScript source string from an {@link OwlImportResultType}.
+   * Generate a TypeScript source string from an {@link OwlImportResultInterface}.
    *
    * @remarks
    * The returned string is ready to write to a `.ts` file. It contains an
@@ -885,8 +885,8 @@ export class OwlCodegen {
    * @group OWL Codegen
    */
   public static toTypeScript(
-    result: OwlImportResultType,
-    options: OwlCodegenOptionsType
+    result: OwlImportResultInterface,
+    options: OwlCodegenOptionsInterface
   ): string {
     const {
       baseIri = '',

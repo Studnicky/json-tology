@@ -9,25 +9,25 @@
  * it maps validated instance data to quads, not schema structure.
  */
 
-import type { AnnotationEmitModeType } from '../../types/AnnotationEmitModeType.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
+import type { AnnotationEmitModeEntity } from '../../entities/AnnotationEmitModeEntity.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
-import type { SkolemizeFunctionType } from '../../types/SkolemizeFunctionType.js';
-import type { ProjectInstanceArgumentListType } from '../../types/ProjectInstanceArgumentListType.js';
-import type { ProjectPropertyArgumentListType } from '../../types/ProjectPropertyArgumentListType.js';
-import type { ReferenceTargetType } from '../../types/ReferenceTargetType.js';
-import type { LookupGraphFunctionType } from '../../types/LookupGraphFunctionType.js';
-import type { ProjectInstancePropertyArgumentListType } from '../../types/ProjectInstancePropertyArgumentListType.js';
-import type { ProjectAnnotatedEdgeArgumentListType } from '../../types/ProjectAnnotatedEdgeArgumentListType.js';
-import type { ResolveEdgeTargetIriArgumentsType } from '../../types/ResolveEdgeTargetIriArgumentsType.js';
-import type { EmitAnnotationQuadsArgumentListType } from '../../types/EmitAnnotationQuadsArgumentListType.js';
-import type { EmitFlatAnnotationQuadsArgumentListType } from '../../types/EmitFlatAnnotationQuadsArgsType.js';
-import type { ProjectScalarValueArgumentListType } from '../../types/ProjectScalarValueArgumentListType.js';
-import type { ProjectAboxArgumentListType } from '../../types/ProjectAboxArgumentListType.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
+import type { SkolemizeFunctionInterface } from '../../interfaces/SkolemizeFunctionInterface.js';
+import type { ProjectInstanceArgumentListInterface } from '../../interfaces/ProjectInstanceArgumentListInterface.js';
+import type { ProjectPropertyArgumentListInterface } from '../../interfaces/ProjectPropertyArgumentListInterface.js';
+import type { ReferenceTargetInterface } from '../../interfaces/ReferenceTargetInterface.js';
+import type { LookupGraphFunctionInterface } from '../../interfaces/LookupGraphFunctionInterface.js';
+import type { ProjectInstancePropertyArgumentListInterface } from '../../interfaces/ProjectInstancePropertyArgumentListInterface.js';
+import type { ProjectAnnotatedEdgeArgumentListInterface } from '../../interfaces/ProjectAnnotatedEdgeArgumentListInterface.js';
+import type { ResolveEdgeTargetIriArgumentsInterface } from '../../interfaces/ResolveEdgeTargetIriArgumentsInterface.js';
+import type { EmitAnnotationQuadsArgumentListInterface } from '../../interfaces/EmitAnnotationQuadsArgumentListInterface.js';
+import type { EmitFlatAnnotationQuadsArgumentListInterface } from '../../interfaces/EmitFlatAnnotationQuadsArgumentListInterface.js';
+import type { ProjectScalarValueArgumentListInterface } from '../../interfaces/ProjectScalarValueArgumentListInterface.js';
+import type { ProjectAboxArgumentListInterface } from '../../interfaces/ProjectAboxArgumentListInterface.js';
 import { EffectiveProperties } from '../graph/EffectiveProperties.js';
 import { Terms } from '../quads/Terms.js';
 import { Curie } from '../quads/Curie.js';
@@ -65,10 +65,10 @@ class InstanceIri {
 
 class IriMinter {
   private readonly baseIri: string;
-  private readonly iriFor: SkolemizeFunctionType | undefined;
+  private readonly iriFor: SkolemizeFunctionInterface | undefined;
   private readonly memo: WeakMap<object, string>;
 
-  public constructor(baseIri: string, iriFor: SkolemizeFunctionType | undefined) {
+  public constructor(baseIri: string, iriFor: SkolemizeFunctionInterface | undefined) {
     this.baseIri = baseIri;
     this.iriFor = iriFor;
     this.memo = new WeakMap();
@@ -134,28 +134,26 @@ export class Projection {
    * Per-node cache for collectProjectionProperties. The collected property map is
    * node-identity-stable for a given (node, resolveGraph) pair, so memoizing it
    * avoids re-walking allOf/then/else chains on every projected instance. The
-   * inner Map is keyed by the lookupGraph closure (or a sentinel for the
+   * inner Map is keyed by the lookupGraph closure itself (or `undefined` for the
    * no-lookupGraph case) because cross-graph resolution depends on which registry
    * the closure consults — caching across distinct closures would be unsafe.
    */
   private static readonly collectProjectionPropertiesCache = new WeakMap<
-    SchemaGraphNodeType,
-    Map<LookupGraphFunctionType | typeof Projection.NO_LOOKUP_GRAPH, Map<string, ReferenceTargetType>>
+    SchemaGraphNodeInterface,
+    Map<LookupGraphFunctionInterface | undefined, Map<string, ReferenceTargetInterface>>
   >();
-
-  private static readonly NO_LOOKUP_GRAPH = Symbol('no-lookup-graph');
 
   public static abox(
     graph: SchemaGraphInterface,
     data: unknown,
     baseIri: string,
-    options?: { 'annotationEmitMode'?: AnnotationEmitModeType | undefined;
+    options?: { 'annotationEmitMode'?: AnnotationEmitModeEntity.Type | undefined;
       'curie'?: CurieInterface | undefined;
-      'entryNode'?: SchemaGraphNodeType | undefined;
+      'entryNode'?: SchemaGraphNodeInterface | undefined;
       'graphIri'?: string | undefined;
-      'iriFor'?: SkolemizeFunctionType | undefined;
+      'iriFor'?: SkolemizeFunctionInterface | undefined;
       'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
-      'predicateResolver'?: PredicateResolverFunctionType | undefined }
+      'predicateResolver'?: PredicateResolverInterface | undefined }
   ): QuadInterface[] {
     const result = Projection.projectAbox({
       'annotationEmitMode': options?.annotationEmitMode,
@@ -219,10 +217,10 @@ export class Projection {
    */
   private static collectProjectionProperties(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
-    lookupGraph?: LookupGraphFunctionType
-  ): Map<string, ReferenceTargetType> {
-    const cacheKey = lookupGraph ?? Projection.NO_LOOKUP_GRAPH;
+    node: SchemaGraphNodeInterface,
+    lookupGraph?: LookupGraphFunctionInterface
+  ): Map<string, ReferenceTargetInterface> {
+    const cacheKey = lookupGraph;
     let byLookup = Projection.collectProjectionPropertiesCache.get(node);
 
     if (byLookup === undefined) {
@@ -269,7 +267,7 @@ export class Projection {
   }
 
   /** Emit one annotation quad per annotation on the edge. */
-  private static emitAnnotationQuads(argumentList: EmitAnnotationQuadsArgumentListType): void {
+  private static emitAnnotationQuads(argumentList: EmitAnnotationQuadsArgumentListInterface): void {
     const {
       annotationValues, classId, edge, predicateResolver, quadOptions, quads, tripleTerm
     } = argumentList;
@@ -292,7 +290,7 @@ export class Projection {
   }
 
   /** Emit flat `<instanceIri> <annotationPredicate> <value>` triples (no triple-term). */
-  private static emitFlatAnnotationQuads(argumentList: EmitFlatAnnotationQuadsArgumentListType): void {
+  private static emitFlatAnnotationQuads(argumentList: EmitFlatAnnotationQuadsArgumentListInterface): void {
     const {
       annotationValues, classId, edge, instanceIri, predicateResolver, quadOptions, quads
     } = argumentList;
@@ -346,7 +344,7 @@ export class Projection {
    * nullable union sentinel) so it can be ignored when looking for the single
    * meaningful `$ref` member of an `anyOf`/`oneOf` wrapper.
    */
-  private static isNullTypeNode(graph: SchemaGraphInterface, node: SchemaGraphNodeType): boolean {
+  private static isNullTypeNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface): boolean {
     const sem = graph.semantics(node);
 
     return sem.ref === undefined
@@ -385,7 +383,7 @@ export class Projection {
   // Annotated edge (RDF 1.2 triple-term) projection
   // ---------------------------------------------------------------------------
 
-  private static projectAbox(argumentList: ProjectAboxArgumentListType): QuadInterface[] {
+  private static projectAbox(argumentList: ProjectAboxArgumentListInterface): QuadInterface[] {
     const {
       annotationEmitMode, baseIri, curie, data, entryNode, graph, graphIri, iriFor, lookupGraph, predicateResolver
     } = argumentList;
@@ -452,7 +450,7 @@ export class Projection {
    * Raises a MaterializationError when no `graphIri` was supplied (the default
    * graph is not a valid home for an annotated edge).
    */
-  private static projectAnnotatedEdge(argumentList: ProjectAnnotatedEdgeArgumentListType): void {
+  private static projectAnnotatedEdge(argumentList: ProjectAnnotatedEdgeArgumentListInterface): void {
     const {
       annotationEmitMode = 'star-only', curie, depth, edge, graphTerm, instanceIri, minter, path, predicateResolver, quadOptions, quads, sourceId, value
     } = argumentList;
@@ -523,7 +521,7 @@ export class Projection {
     }
   }
 
-  private static projectInstance(argumentList: ProjectInstanceArgumentListType): string {
+  private static projectInstance(argumentList: ProjectInstanceArgumentListInterface): string {
     const {
       data, depth, graph, lookupGraph, minter, node, path, quadOptions, quads, visited
     } = argumentList;
@@ -576,7 +574,7 @@ export class Projection {
     }
   }
 
-  private static projectInstanceProperty(argumentList: ProjectInstancePropertyArgumentListType): void {
+  private static projectInstanceProperty(argumentList: ProjectInstancePropertyArgumentListInterface): void {
     const {
       baseArgumentList, instIri, nodeId, propertyEntry, propertyName
     } = argumentList;
@@ -642,7 +640,7 @@ export class Projection {
     });
   }
 
-  private static projectNumberValue(value: number, context: ProjectScalarValueArgumentListType): void {
+  private static projectNumberValue(value: number, context: ProjectScalarValueArgumentListInterface): void {
     const {
       instanceIri, path, propertyIri, propertyNode, propertySemantics, quadOptions, quads
     } = context;
@@ -669,7 +667,7 @@ export class Projection {
     quads.push(QuadFactory.quad(instanceIri, propertyIri, QuadFactory.literal(value, datatype), quadOptions));
   }
 
-  private static projectObjectValue(argumentList: ProjectPropertyArgumentListType, path: string, value: Record<string, unknown>): void {
+  private static projectObjectValue(argumentList: ProjectPropertyArgumentListInterface, path: string, value: Record<string, unknown>): void {
     const {
       annotationEmitMode, curie, depth, graph, graphTerm, instanceIri, lookupGraph, minter,
       predicateResolver, propertyIri, propertyNode, propertySemantics, quadOptions, quads, visited
@@ -720,7 +718,7 @@ export class Projection {
     quads.push(QuadFactory.quad(instanceIri, propertyIri, QuadFactory.iri(nestedIri), quadOptions));
   }
 
-  private static projectPropertyValue(argumentList: ProjectPropertyArgumentListType): void {
+  private static projectPropertyValue(argumentList: ProjectPropertyArgumentListInterface): void {
     const {
       path, value
     } = argumentList;
@@ -741,7 +739,7 @@ export class Projection {
     Projection.projectSingleValue(argumentList, path, value);
   }
 
-  private static projectSingleValue(argumentList: ProjectPropertyArgumentListType, path: string, value: unknown): void {
+  private static projectSingleValue(argumentList: ProjectPropertyArgumentListInterface, path: string, value: unknown): void {
     const {
       instanceIri, propertyIri, propertyNode, propertySemantics, quadOptions, quads
     } = argumentList;
@@ -750,7 +748,7 @@ export class Projection {
       return;
     }
 
-    const scalarContext: ProjectScalarValueArgumentListType = {
+    const scalarContext: ProjectScalarValueArgumentListInterface = {
       instanceIri,
       path,
       propertyIri,
@@ -784,7 +782,7 @@ export class Projection {
     }
   }
 
-  private static projectStringValue(value: string, context: ProjectScalarValueArgumentListType): void {
+  private static projectStringValue(value: string, context: ProjectScalarValueArgumentListInterface): void {
     const {
       instanceIri, path, propertyIri, propertyNode, propertySemantics, quadOptions, quads
     } = context;
@@ -838,7 +836,7 @@ export class Projection {
    * enclosing object literal (breaks V8 hidden classes) — a plain static
    * method on the class body has no such ancestor.
    */
-  private static resolveEdgeTargetIri(argumentList: ResolveEdgeTargetIriArgumentsType): string {
+  private static resolveEdgeTargetIri(argumentList: ResolveEdgeTargetIriArgumentsInterface): string {
     const {
       depth, edge, minter, path, target
     } = argumentList;
@@ -862,9 +860,9 @@ export class Projection {
 
   private static resolveNode(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     lookupGraph?: ((schemaId: string) => SchemaGraphInterface | undefined)
-  ): ReferenceTargetType {
+  ): ReferenceTargetInterface {
     const nodeSemantics = graph.semantics(node);
 
     if (nodeSemantics.ref === undefined) {
@@ -902,9 +900,9 @@ export class Projection {
    */
   private static unwrapSingleReference(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     lookupGraph?: ((schemaId: string) => SchemaGraphInterface | undefined)
-  ): ReferenceTargetType {
+  ): ReferenceTargetInterface {
     const semantics = graph.semantics(node);
 
     // A direct `$ref` is already resolved by resolveNode; only union/allOf
@@ -920,7 +918,7 @@ export class Projection {
     const union = semantics.anyOf.length > 0 ? semantics.anyOf : oneOfOrUndefined;
 
     if (union !== undefined) {
-      const meaningful = union.filter((member: SchemaGraphNodeType): boolean => {
+      const meaningful = union.filter((member: SchemaGraphNodeInterface): boolean => {
         return !Projection.isNullTypeNode(graph, member);
       });
 

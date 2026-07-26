@@ -1,5 +1,5 @@
-import type { ValidateWithErrorsFunctionType } from '../../../types/Validation.js';
-import type { ExecContextType } from '../../../types/ExecContextType.js';
+import type { ValidateWithErrorsFunctionInterface } from '../../../interfaces/ValidateWithErrorsFunctionInterface.js';
+import type { ExecContextInterface } from '../../../interfaces/ExecContextInterface.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
@@ -9,11 +9,11 @@ import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
  */
 class SingleItem {
   static validate(
-    validator: ValidateWithErrorsFunctionType,
+    validator: ValidateWithErrorsFunctionInterface,
     array: unknown[],
     index: number,
     path: string,
-    context: ExecContextType
+    context: ExecContextInterface
   ): 'early-exit' | 'invalid' | 'valid' {
     const childPath = `${path}/${index}`;
     const result = validator(array[index], childPath, context);
@@ -37,18 +37,18 @@ class SingleItem {
 class ContainsError {
   static resolve(
     count: number,
-    minContains: number | undefined,
-    maxContains: number | undefined
+    minimumContains: number | undefined,
+    maximumContains: number | undefined
   ): string | undefined {
-    // Effective minimum: if minContains is absent, the default is 1 (JSON Schema spec).
+    // Effective minimum: if minimumContains is absent, the default is 1 (JSON Schema spec).
     // Use the same `contains(n)` path as the interpreter (GraphEngine) for parity.
-    const effectiveMinimum = minContains ?? 1;
+    const effectiveMinimum = minimumContains ?? 1;
 
     if (count < effectiveMinimum) {
       return VALIDATION_MESSAGES.contains(effectiveMinimum);
     }
-    if (maxContains !== undefined && count > maxContains) {
-      return VALIDATION_MESSAGES.maxContains(maxContains);
+    if (maximumContains !== undefined && count > maximumContains) {
+      return VALIDATION_MESSAGES.maxContains(maximumContains);
     }
 
     return undefined;
@@ -80,18 +80,18 @@ export class Arrays {
   static validateBounds(
     path: string,
     array: unknown[],
-    minItems: number | undefined,
-    maxItems: number | undefined,
+    minimumItems: number | undefined,
+    maximumItems: number | undefined,
     uniqueItems: boolean,
     errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
     const pre = errors.length;
 
-    if (minItems !== undefined && array.length < minItems) {
-      errors.push(BaseError.validationError(path, 'minItems', VALIDATION_MESSAGES.minItems(minItems)));
+    if (minimumItems !== undefined && array.length < minimumItems) {
+      errors.push(BaseError.validationError(path, 'minItems', VALIDATION_MESSAGES.minItems(minimumItems)));
     }
-    if (maxItems !== undefined && array.length > maxItems) {
-      errors.push(BaseError.validationError(path, 'maxItems', VALIDATION_MESSAGES.maxItems(maxItems)));
+    if (maximumItems !== undefined && array.length > maximumItems) {
+      errors.push(BaseError.validationError(path, 'maxItems', VALIDATION_MESSAGES.maxItems(maximumItems)));
     }
     if (uniqueItems && !Predicates.satisfiesUniqueItems(array)) {
       errors.push(BaseError.validationError(path, 'uniqueItems', VALIDATION_MESSAGES.uniqueItems));
@@ -103,10 +103,10 @@ export class Arrays {
   static validateContains(
     path: string,
     array: unknown[],
-    containsValidator: undefined | ValidateWithErrorsFunctionType,
-    minContains: number | undefined,
-    maxContains: number | undefined,
-    context: ExecContextType,
+    containsValidator: undefined | ValidateWithErrorsFunctionInterface,
+    minimumContains: number | undefined,
+    maximumContains: number | undefined,
+    context: ExecContextInterface,
     errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
     if (containsValidator === undefined) {
@@ -118,7 +118,7 @@ export class Arrays {
     // Hoist scratch context outside the loop — check-mode (collectErrors:false) means no errors
     // are ever pushed, so the errors array is never mutated and can be shared across elements.
     // evaluatedItems/evaluatedProperties are reset to undefined since they are per-element.
-    const scratchContext: ExecContextType = {
+    const scratchContext: ExecContextInterface = {
       ...context,
       'applyDefaults': false,
       'coerce': false,
@@ -142,7 +142,7 @@ export class Arrays {
     }
 
     const pre = errors.length;
-    const containsError = ContainsError.resolve(count, minContains, maxContains);
+    const containsError = ContainsError.resolve(count, minimumContains, maximumContains);
 
     if (containsError !== undefined) {
       errors.push(BaseError.validationError(path, 'contains', containsError));
@@ -154,9 +154,9 @@ export class Arrays {
   static validateItems(
     path: string,
     array: unknown[],
-    itemValidator: undefined | ValidateWithErrorsFunctionType,
-    prefixValidators: undefined | ValidateWithErrorsFunctionType[],
-    context: ExecContextType
+    itemValidator: undefined | ValidateWithErrorsFunctionInterface,
+    prefixValidators: undefined | ValidateWithErrorsFunctionInterface[],
+    context: ExecContextInterface
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (itemValidator === undefined) {
@@ -193,8 +193,8 @@ export class Arrays {
   static validatePrefixItems(
     path: string,
     array: unknown[],
-    prefixValidators: undefined | ValidateWithErrorsFunctionType[],
-    context: ExecContextType
+    prefixValidators: undefined | ValidateWithErrorsFunctionInterface[],
+    context: ExecContextInterface
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (prefixValidators === undefined) {

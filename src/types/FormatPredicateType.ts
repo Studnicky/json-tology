@@ -17,4 +17,8 @@
  * @since 0.1.0
  * @group Validation
  */
+// eslint rule conflict, no available fix: `@studnicky/type-alias-invariants` requires this
+// callable contract be declared as an `interface`, but an `interface` with only a call
+// signature then trips `@typescript-eslint/prefer-function-type`, which requires a `type`
+// function signature instead. No declaration form satisfies both rules simultaneously.
 export type FormatPredicateType = (value: unknown) => boolean;

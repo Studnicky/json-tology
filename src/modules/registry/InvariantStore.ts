@@ -1,5 +1,5 @@
 import type { InvariantType } from '../../types/Invariant.js';
-import type { ValidationErrorType } from '../../types/Validation.js';
+import type { ValidationErrorEntity } from '../../entities/ValidationErrorEntity.js';
 
 import { INSTANTIATION_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { BaseError } from '../../errors/BaseError.js';
@@ -52,14 +52,14 @@ export class InvariantStore {
     }
   }
 
-  public runAll(schemaId: string, value: unknown): readonly ValidationErrorType[] {
+  public runAll(schemaId: string, value: unknown): readonly ValidationErrorEntity.Type[] {
     const invariants = this.store.get(schemaId);
 
     if (invariants === undefined || invariants.length === 0) {
       return [];
     }
 
-    const errors: ValidationErrorType[] = [];
+    const errors: ValidationErrorEntity.Type[] = [];
 
     for (const invariant of invariants) {
       const result = this.runInvariant(invariant, value);

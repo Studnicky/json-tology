@@ -21,7 +21,7 @@ import type {
   ChainMismatchType,
   ChainSchemaMismatchType
 } from '../../src/types/TypeErrors.js';
-import type { TransformStageType } from '../../src/types/TransformStage.js';
+import type { TransformStageInterface } from '../../src/interfaces/TransformStageInterface.js';
 
 // ---------------------------------------------------------------------------
 // Bidirectional equality helper
@@ -43,7 +43,7 @@ const StringSchema = {
   'type': 'string'
 } as const;
 
-const stringToNumber: TransformStageType<string, number> = {
+const stringToNumber: TransformStageInterface<string, number> = {
   'decode': (raw: string) => {
     return raw.length;
   },
@@ -52,7 +52,7 @@ const stringToNumber: TransformStageType<string, number> = {
   }
 };
 
-const numberToDate: TransformStageType<number, Date> = {
+const numberToDate: TransformStageInterface<number, Date> = {
   'decode': (timestamp: number) => {
     return new Date(timestamp);
   },
@@ -61,12 +61,12 @@ const numberToDate: TransformStageType<number, Date> = {
   }
 };
 
-const numberToString: TransformStageType<number, string> = {
+const numberToString: TransformStageInterface<number, string> = {
   'decode': String,
   'encode': Number
 };
 
-const stringToString: TransformStageType<string, string> = {
+const stringToString: TransformStageInterface<string, string> = {
   'decode': (raw: string) => {
     return raw.trim();
   },

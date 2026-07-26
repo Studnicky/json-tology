@@ -1,5 +1,5 @@
 /**
- * Compile-time shape assertions for PredicateResolverFunctionType.
+ * Compile-time shape assertions for PredicateResolverInterface.
  *
  * Verifies that the resolver function type:
  *   1. Accepts a context object with readonly classId, propertyName, and a
@@ -14,7 +14,7 @@ import {
 } from 'node:test';
 
 import type { JsonSchemaType } from '../../src/types/Schema.js';
-import type { PredicateResolverFunctionType } from '../../src/types/PredicateResolverFunctionType.js';
+import type { PredicateResolverInterface } from '../../src/interfaces/PredicateResolverInterface.js';
 
 // ---------------------------------------------------------------------------
 // Bidirectional equality helper
@@ -31,13 +31,13 @@ function assert<T extends true>(): void {
 // Return type is string
 // ---------------------------------------------------------------------------
 
-assert<AssertEqualType<ReturnType<PredicateResolverFunctionType>, string>>();
+assert<AssertEqualType<ReturnType<PredicateResolverInterface>, string>>();
 
 // ---------------------------------------------------------------------------
 // Parameter is the expected context shape
 // ---------------------------------------------------------------------------
 
-type ContextType = Parameters<PredicateResolverFunctionType>[0];
+type ContextType = Parameters<PredicateResolverInterface>[0];
 
 assert<AssertEqualType<ContextType['classId'], string>>();
 assert<AssertEqualType<ContextType['propertyName'], string>>();
@@ -47,14 +47,14 @@ assert<AssertEqualType<ContextType['propertySchema'], JsonSchemaType>>();
 // A conforming implementation type-checks and is assignable
 // ---------------------------------------------------------------------------
 
-const _impl: PredicateResolverFunctionType = (context) => {
+const _impl: PredicateResolverInterface = (context) => {
   return `${context.classId}#${context.propertyName}`;
 };
 
 void _impl;
 
 // node:test wrapper so the file is a valid test module
-void describe('PredicateResolverFunctionType — compile-time shape', () => {
+void describe('PredicateResolverInterface — compile-time shape', () => {
   void it('asserts at compile time', () => {
     void 0;
   });

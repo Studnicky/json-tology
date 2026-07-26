@@ -14,23 +14,24 @@ The `ValidationErrors` collection is also carried on `InstantiationError.errors`
 
 | Member | Type | Purpose |
 |--------|------|---------|
-| `items` | `readonly ValidationErrorType[]` | Raw error list with JSON Pointer paths |
+| `items` | `readonly ValidationErrorEntity.Type[]` | Raw error list with JSON Pointer paths |
 | `length` | `number` | Number of errors |
 | `ok` | `boolean` | `true` when `length === 0` |
-| `aggregate()` | `AggregateViewType` | `{ count, paths, keywords }` rollup for logs and metrics |
-| `report(overrides?)` | `ProblemDetailsType` | RFC 7807 Problem Details payload |
-| `[Symbol.iterator]()` | `Iterator<ValidationErrorType>` | Enables `for...of` |
+| `aggregate()` | `AggregateViewEntity.Type` | `{ count, paths, keywords }` rollup for logs and metrics |
+| `report(overrides?)` | `ProblemDetailsEntity.Type` | RFC 7807 Problem Details payload |
+| `[Symbol.iterator]()` | `Iterator<ValidationErrorEntity.Type>` | Enables `for...of` |
 
-Each `ValidationErrorType` carries:
+Each `ValidationErrorEntity.Type` carries:
 
-<!-- inline-ts-ok: shape declaration mirroring the canonical type alias in src/types/Errors; documenting it here keeps the reference table self-contained. -->
+<!-- inline-ts-ok: shape declaration mirroring the canonical entity in src/entities/ValidationErrorEntity.ts; documenting it here keeps the reference table self-contained. -->
 ```ts
-type ValidationErrorType = {
+// ValidationErrorEntity.Type
+{
   path:    string;                 // JSON Pointer path
   keyword: string;                 // e.g. 'required', 'type', 'jt:invariant'
   message: string;                 // human-readable
   params:  Record<string, unknown> // keyword-specific params
-};
+}
 ```
 
 ## Examples
@@ -154,5 +155,5 @@ except ValidationError as e:
 
 ## See also
 
-- [Invariants](/registry/invariants) - cross-field rules that produce `ValidationErrorType` items with `keyword: 'jt:invariant'`
+- [Invariants](/registry/invariants) - cross-field rules that produce `ValidationErrorEntity.Type` items with `keyword: 'jt:invariant'`
 - [Bookstore domain](/bookstore-domain) - schema definitions used in examples

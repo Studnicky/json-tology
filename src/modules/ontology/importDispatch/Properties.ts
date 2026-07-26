@@ -26,16 +26,16 @@
  */
 
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../../types/OwlImport.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-import type { XsdJsonSchemaPrimitiveType } from '../../../types/XsdJsonSchemaPrimitiveType.js';
-import type { PropIndexEntryType } from '../../../types/PropIndexEntryType.js';
-import type { PropertyCollectionMapsType } from '../../../types/PropertyCollectionMapsType.js';
-import type { ApplyPropertyArgumentListType } from '../../../types/ApplyPropertyArgumentListType.js';
-import type { PropertyIndexValueType } from '../../../types/PropertyIndexValueType.js';
-import type { PropertyFragmentDeltaType } from '../../../types/PropertyFragmentDeltaType.js';
+import type { XsdJsonSchemaPrimitiveEntity } from '../../../entities/XsdJsonSchemaPrimitiveEntity.js';
+import type { PropIndexEntryEntity } from '../../../entities/PropIndexEntryEntity.js';
+import type { PropertyCollectionMapsInterface } from '../../../interfaces/PropertyCollectionMapsInterface.js';
+import type { ApplyPropertyArgumentListInterface } from '../../../interfaces/ApplyPropertyArgumentListInterface.js';
+import type { PropertyIndexValueEntity } from '../../../entities/PropertyIndexValueEntity.js';
+import type { PropertyFragmentDeltaInterface } from '../../../interfaces/PropertyFragmentDeltaInterface.js';
+import type { PropertyCharacteristicEntity } from '../../../entities/PropertyCharacteristicEntity.js';
 import { RDF } from '../../../constants/IRI.js';
 import { XSD_TO_JSON_SCHEMA } from '../../../constants/XSD_REVERSE_MAPS.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
@@ -61,12 +61,12 @@ const RDF_LIST_CURIE = 'rdf:List';
  *
  * @param _quads - All quads from the input graph (unused; graph drives traversal via ctx).
  * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragmentType with schemaDeltas and characteristics populated.
+ * @returns OwlImportFragmentInterface with schemaDeltas and characteristics populated.
  *
  * @remarks
  * Performs a three-phase operation: (1) single-pass collection of property
  * declarations from `ctx.graph.allRelations()`; (2) merging of per-predicate
- * maps into unified `PropIndexEntryType` records; (3) derivation of schema deltas
+ * maps into unified `PropIndexEntryEntity.Type` records; (3) derivation of schema deltas
  * and OWL characteristics from the merged entries.
  *
  * Properties that appear via `rdfs:domain` without an explicit `rdf:type`
@@ -83,14 +83,14 @@ const RDF_LIST_CURIE = 'rdf:List';
  *
  * @category OWL Import
  * @since 0.18.0
- * @see {@link OwlImportFragmentType}
+ * @see {@link OwlImportFragmentInterface}
  * @group Dispatchers
  */
 export class Properties {
   /**
    * Update `schemaDeltas` for each class in `domains` with the property shape.
    */
-  private static applyPropertyToDomains(applyArguments: ApplyPropertyArgumentListType): void {
+  private static applyPropertyToDomains(applyArguments: ApplyPropertyArgumentListInterface): void {
     const {
       domains, propertyIri, propShape, schemaDeltas
     } = applyArguments;
@@ -127,7 +127,7 @@ export class Properties {
 
   /** Handle an rdf:type relation — record object or datatype property declarations. */
   private static applyTypeRelation(
-    propertyIndex: Map<string, PropertyIndexValueType>,
+    propertyIndex: Map<string, PropertyIndexValueEntity.Type>,
     subjectIri: string,
     targetIri: string
   ): void {
@@ -143,12 +143,11 @@ export class Properties {
    * `characteristics` arrays that make up the returned fragment.
    */
   private static buildFragmentFromEntries(
-    entries: Map<string, PropIndexEntryType>,
-    context: OwlImportContextType
-  ): PropertyFragmentDeltaType {
+    entries: Map<string, PropIndexEntryEntity.Type>,
+    context: OwlImportContextInterface
+  ): PropertyFragmentDeltaInterface {
     const schemaDeltas = new Map<string, JsonSchemaDocumentObjectType>();
-    const characteristics: Array<{ 'characteristic': string;
-      'propertyIri': string }> = [];
+    const characteristics: PropertyCharacteristicEntity.Type[] = [];
 
     for (const entry of entries.values()) {
       const {
@@ -186,14 +185,14 @@ export class Properties {
   }
 
   /**
-   * Merge the per-predicate collection maps into a unified `PropIndexEntryType` map,
+   * Merge the per-predicate collection maps into a unified `PropIndexEntryEntity.Type` map,
    * including properties that appear via `rdfs:domain` without an explicit
    * `rdf:type` declaration.
    */
   private static buildPropertyEntries(
-    maps: PropertyCollectionMapsType,
-    context: OwlImportContextType
-  ): Map<string, PropIndexEntryType> {
+    maps: PropertyCollectionMapsInterface,
+    context: OwlImportContextInterface
+  ): Map<string, PropIndexEntryEntity.Type> {
     const {
       domainsByProperty, inverseOf, propertyIndex, rangeByProperty, subPropertyOf
     } = maps;
@@ -209,7 +208,7 @@ export class Properties {
       allPropertyIris.add(domainPropIri);
     }
 
-    const entries = new Map<string, PropIndexEntryType>();
+    const entries = new Map<string, PropIndexEntryEntity.Type>();
 
     for (const propIri of allPropertyIris) {
       const existing = propertyIndex.get(propIri);
@@ -233,8 +232,8 @@ export class Properties {
    * type declarations, domain, range, subPropertyOf, and inverseOf axioms into
    * separate maps for later merging.
    */
-  private static collectPropertyDeclarations(context: OwlImportContextType): PropertyCollectionMapsType {
-    const propertyIndex = new Map<string, PropertyIndexValueType>();
+  private static collectPropertyDeclarations(context: OwlImportContextInterface): PropertyCollectionMapsInterface {
+    const propertyIndex = new Map<string, PropertyIndexValueEntity.Type>();
     const domainsByProperty = new Map<string, string[]>();
     const rangeByProperty = new Map<string, string>();
     const subPropertyOf = new Map<string, string[]>();
@@ -284,7 +283,7 @@ export class Properties {
     };
   }
 
-  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
     const maps = Properties.collectPropertyDeclarations(context);
     const entries = Properties.buildPropertyEntries(maps, context);
     const {
@@ -303,7 +302,7 @@ export class Properties {
 
   /** Record an object-property type declaration in the property index. */
   private static indexPropertyType(
-    propertyIndex: Map<string, PropertyIndexValueType>,
+    propertyIndex: Map<string, PropertyIndexValueEntity.Type>,
     subjectIri: string,
     propType: 'datatype' | 'object'
   ): void {
@@ -352,7 +351,7 @@ export class Properties {
   private static resolvePropertyShape(
     range: string,
     propertyIri: string,
-    context: OwlImportContextType
+    context: OwlImportContextInterface
   ): null | Record<string, unknown> {
     if (range === RDF_LIST_CURIE || range === RDF.List) {
       // rdf:List signals an array (no-maxCount path in OwlProjection); no
@@ -386,7 +385,7 @@ export class Properties {
   }
 
   /** Build a JSON Schema shape from an XSD primitive descriptor. */
-  private static xsdPrimitiveShape(primitive: XsdJsonSchemaPrimitiveType): Record<string, unknown> {
+  private static xsdPrimitiveShape(primitive: XsdJsonSchemaPrimitiveEntity.Type): Record<string, unknown> {
     return primitive.format === undefined
       ? { 'type': primitive.type }
       : {

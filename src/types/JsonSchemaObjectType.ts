@@ -22,6 +22,36 @@
  * nested-schema position from the OWL-extended {@link JsonSchemaDocumentType}
  * to {@link JsonSchemaDefinitionType} via an intersection override, so no OWL
  * vocabulary leaks back in through a nested `items`/`properties`/`allOf`/etc.
+ *
+ * ## `@studnicky/type-alias-invariants` exceptions in this file
+ *
+ * Every alias below is a documented exception to the alias-purity rule
+ * (`aliasMustBeInterface` / `derivedFromSchema`), not an oversight. None has a
+ * clean interface or schema-derived-entity remedy:
+ *
+ * - {@link NestedSchemaKeysType}, {@link OwlOnlyKeysType}, {@link ExcludedKeysType} —
+ *   bare string-literal-key unions consumed only by the `K extends
+ *   ExcludedKeysType ? never : K` mapped-type filter below. They are
+ *   compile-time-only key selectors: nothing ever instantiates one as a
+ *   runtime value, so there is no data for a schema to describe, and they
+ *   carry no behavior for an interface to contract.
+ * - {@link ReadonlyDefinitionArrayType}, {@link ReadonlyDefinitionRecordType} —
+ *   plain `readonly T[]` / `Readonly<Record<string, T>>` aliases. Converting
+ *   them to index-signature interfaces would be structurally lossy for public
+ *   API consumers (no array/object methods on the resulting type) for a
+ *   lint-only win, and the underlying classification cascades from
+ *   {@link JsonSchemaDefinitionType}'s own reference back into this file's
+ *   mapped type (see below) — there is no independent fix here.
+ * - {@link JsonSchemaObjectType} itself — the second intersection member is,
+ *   by design (see above), a mapped type (`[K in keyof T as ...]: ...`).
+ *   `@studnicky/type-alias-invariants` treats any mapped type as behavioral
+ *   contract evidence, which conflicts directly with `whole-canonical-types`
+ *   forbidding the `Omit`-based alternative. This type is a schema-of-schemas
+ *   meta-type describing JSON Schema's own keyword vocabulary; authoring it
+ *   as an `interface` would misrepresent structural/data-only JSON as a
+ *   behavioral contract, and no JSON Schema can describe JSON Schema itself
+ *   without infinite regress. Kept as `type`, documented here as a structural
+ *   exception rather than forced into either remedy.
  */
 
 import type { JsonSchemaDefinitionType } from '../types/JsonSchemaDefinitionType.js';

@@ -21,23 +21,20 @@
  *   `owl:oneOf` member lists) are walked via `ctx.graph.collectList(head)`.
  * - Blank-node class expressions are resolved recursively by treating their
  *   bnode id as a subject and re-entering the same per-subject helpers.
- * - Literal list items carry their typed JS value via `ListItemType.datatype`,
+ * - Literal list items carry their typed JS value via `ListItemEntity.Type.datatype`,
  *   so `Terms.decodeLiteral` semantics survive through `Terms.literal` reconstruction.
  */
 
+import type { ListItemEntity } from '../../../entities/ListItemEntity.js';
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../../types/OwlImport.js';
-import type {
-  ListItemType,
-  SchemaGraphRelationType
-} from '../../../types/SchemaGraph.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
-import type { ResolveItemOptionsType } from '../../../types/ResolveItemOptionsType.js';
-import type { ResolveBnodeOptionsType } from '../../../types/ResolveBnodeOptionsType.js';
-import type { ResolveListOptionsType } from '../../../types/ResolveListOptionsType.js';
-import type { ClassExprContextType } from '../../../types/ClassExprContextType.js';
+import type { ResolveItemOptionsInterface } from '../../../interfaces/ResolveItemOptionsInterface.js';
+import type { ResolveBnodeOptionsInterface } from '../../../interfaces/ResolveBnodeOptionsInterface.js';
+import type { ResolveListOptionsInterface } from '../../../interfaces/ResolveListOptionsInterface.js';
+import type { ClassExprContextInterface } from '../../../interfaces/ClassExprContextInterface.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
 import { Terms } from '../../quads/Terms.js';
@@ -76,7 +73,7 @@ const MAXIMUM_BNODE_DEPTH = 20;
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting).
- * @returns OwlImportFragmentType with schemaDeltas for class expression subjects.
+ * @returns OwlImportFragmentInterface with schemaDeltas for class expression subjects.
  *
  * @remarks
  * Processes OWL 2 §8 / §9.1 class expressions: intersection, union, disjoint
@@ -92,14 +89,14 @@ const MAXIMUM_BNODE_DEPTH = 20;
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContextType
+ * @see OwlImportContextInterface
  * @group importDispatch
  */
 export class ClassExpressions {
   /**
    * Apply `owl:disjointUnionOf` relations for a single class subject.
    */
-  private static applyDisjointUnionOf(subjectId: string, context: ClassExprContextType): boolean {
+  private static applyDisjointUnionOf(subjectId: string, context: ClassExprContextInterface): boolean {
     const disjointUnion = ImportRelation.byPredicate(context.graph, subjectId, DISJOINT_UNION_OF_IRIS);
 
     for (const duq of disjointUnion) {
@@ -128,7 +125,7 @@ export class ClassExpressions {
    */
   private static applyIntersectionOf(
     subjectId: string,
-    context: ClassExprContextType
+    context: ClassExprContextInterface
   ): void {
     const intersection = ImportRelation.byPredicate(context.graph, subjectId, INTERSECTION_OF_IRIS);
 
@@ -155,7 +152,7 @@ export class ClassExpressions {
    * Apply `owl:oneOf` (enum) relations for a single class subject.
    * Only call when no unionOf / disjointUnionOf already covers the subject.
    */
-  private static applyOneOf(subjectId: string, context: ClassExprContextType): void {
+  private static applyOneOf(subjectId: string, context: ClassExprContextInterface): void {
     const oneOf = ImportRelation.byPredicate(context.graph, subjectId, ONE_OF_IRIS);
 
     for (const oq of oneOf) {
@@ -175,7 +172,7 @@ export class ClassExpressions {
   /**
    * Apply `owl:unionOf` relations for a single class subject (with discriminator detection).
    */
-  private static applyUnionOf(subjectId: string, context: ClassExprContextType): boolean {
+  private static applyUnionOf(subjectId: string, context: ClassExprContextInterface): boolean {
     const union = ImportRelation.byPredicate(context.graph, subjectId, UNION_OF_IRIS);
 
     for (const uq of union) {
@@ -217,7 +214,7 @@ export class ClassExpressions {
    * Returns the property local name if a discriminator is found, or undefined.
    */
   private static detectDiscriminatorProperty(
-    memberItems: readonly ListItemType[],
+    memberItems: readonly ListItemEntity.Type[],
     graph: SchemaGraphInterface
   ): string | undefined {
     if (memberItems.length < 2) {
@@ -264,10 +261,10 @@ export class ClassExpressions {
 
   public static dispatch(
     _quads: QuadInterface[],
-    context: OwlImportContextType
-  ): OwlImportFragmentType {
+    context: OwlImportContextInterface
+  ): OwlImportFragmentInterface {
     const schemaDeltas = new Map<string, JsonSchemaDocumentObjectType>();
-    const expressionContext: ClassExprContextType = {
+    const expressionContext: ClassExprContextInterface = {
       'allClassIris': context.allClassIris,
       'graph': context.graph,
       'reportUnsupported': context.reportUnsupported,
@@ -303,8 +300,8 @@ export class ClassExpressions {
     };
   }
 
-  /** Return an empty OwlImportFragmentType with all buckets initialised. */
-  private static emptyFragment(): OwlImportFragmentType {
+  /** Return an empty OwlImportFragmentInterface with all buckets initialised. */
+  private static emptyFragment(): OwlImportFragmentInterface {
     return {
       'characteristics': [],
       'differentFrom': [],
@@ -422,7 +419,7 @@ export class ClassExpressions {
   /** Return true when the blank node is an owl:Restriction or has onProperty. */
   private static isBnodeRestriction(bnodeId: string, graph: SchemaGraphInterface): boolean {
     const typeRelations = ImportRelation.byPredicate(graph, bnodeId, RDF_TYPE_PREDICATES);
-    const isRestrictionType = typeRelations.some((rel: SchemaGraphRelationType): boolean => {
+    const isRestrictionType = typeRelations.some((rel: SchemaGraphRelationInterface): boolean => {
       return rel.termType === 'NamedNode' && RESTRICTION_IRIS.has(ImportRelation.targetValue(rel));
     });
 
@@ -437,7 +434,7 @@ export class ClassExpressions {
    * Resolve a blank-node class expression to a JSON Schema fragment by
    * inspecting its outgoing relations.
    */
-  private static resolveBlankNodeExpression(options: ResolveBnodeOptionsType): JsonSchemaDocumentObjectType | undefined {
+  private static resolveBlankNodeExpression(options: ResolveBnodeOptionsInterface): JsonSchemaDocumentObjectType | undefined {
     const {
       allClassIris, bnodeId, depth, graph
     } = options;
@@ -496,7 +493,7 @@ export class ClassExpressions {
    * - BlankNode that cannot be resolved → undefined (skipped)
    * - Literal at the member level → undefined (not a class expression)
    */
-  private static resolveClassExpressionMember(options: ResolveItemOptionsType): JsonSchemaDocumentObjectType | undefined {
+  private static resolveClassExpressionMember(options: ResolveItemOptionsInterface): JsonSchemaDocumentObjectType | undefined {
     const {
       allClassIris, depth, graph, item
     } = options;
@@ -522,7 +519,7 @@ export class ClassExpressions {
   }
 
   /** Resolve an owl:intersectionOf bnode into `{ allOf: members }`. */
-  private static resolveIntersectionBnode(options: ResolveListOptionsType): JsonSchemaDocumentObjectType | undefined {
+  private static resolveIntersectionBnode(options: ResolveListOptionsInterface): JsonSchemaDocumentObjectType | undefined {
     const members = ClassExpressions.resolveListMembers(options);
 
     return members.length === 0 ? undefined : { 'allOf': members };
@@ -533,7 +530,7 @@ export class ClassExpressions {
    * Schema fragment. Filters out undefined results (blank nodes we cannot
    * resolve).
    */
-  private static resolveListMembers(options: ResolveListOptionsType): JsonSchemaDocumentObjectType[] {
+  private static resolveListMembers(options: ResolveListOptionsInterface): JsonSchemaDocumentObjectType[] {
     const {
       allClassIris, depth, graph, listHead
     } = options;
@@ -557,7 +554,7 @@ export class ClassExpressions {
   }
 
   /** Resolve an owl:unionOf bnode into `{ oneOf: members }`. */
-  private static resolveUnionBnode(options: ResolveListOptionsType): JsonSchemaDocumentObjectType | undefined {
+  private static resolveUnionBnode(options: ResolveListOptionsInterface): JsonSchemaDocumentObjectType | undefined {
     const members = ClassExpressions.resolveListMembers(options);
 
     return members.length === 0 ? undefined : { 'oneOf': members };

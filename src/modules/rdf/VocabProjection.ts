@@ -12,9 +12,9 @@
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
-import type { RelationIndexType } from '../../types/RelationIndexType.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
-import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { JT } from '../../constants/IRI.js';
 import { PropertyProjection } from './PropertyProjection.js';
@@ -71,7 +71,7 @@ export abstract class VocabProjection {
   ): QuadObjectType;
 
   emitConditionals(
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
@@ -125,12 +125,12 @@ export abstract class VocabProjection {
 
   emitDependentRequired(
     subject: string,
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     options?: { 'graph'?: SchemaGraphInterface | undefined;
       'issuer'?: IdentifierIssuerInterface | undefined;
-      'predicateResolver'?: PredicateResolverFunctionType | undefined }
+      'predicateResolver'?: PredicateResolverInterface | undefined }
   ): QuadObjectType[] {
     const {
       graph, issuer, predicateResolver
@@ -174,7 +174,7 @@ export abstract class VocabProjection {
 
   emitDependentSchemas(
     subject: string,
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
@@ -237,7 +237,7 @@ export abstract class VocabProjection {
     subject: string,
     propertyName: string,
     graph: SchemaGraphInterface | undefined,
-    predicateResolver: PredicateResolverFunctionType | undefined
+    predicateResolver: PredicateResolverInterface | undefined
   ): string {
     const result = PropertyProjection.resolvePredicateForClass(graph, subject, propertyName, predicateResolver);
 

@@ -46,8 +46,8 @@ export const VALIDATION_MESSAGES = {
   },
 
   /** `contains` (min) — fewer than minContains items matched the contains schema. */
-  'contains': (minContains: number): string => {
-    const result = `must contain at least ${minContains} matching items`;
+  'contains': (minimumContains: number): string => {
+    const result = `must contain at least ${minimumContains} matching items`;
 
     return result;
   },
@@ -114,8 +114,8 @@ export const VALIDATION_MESSAGES = {
   },
 
   /** `maxContains` — more than maxContains items matched the contains schema. */
-  'maxContains': (maxContains: number): string => {
-    const result = `must contain at most ${maxContains} matching items`;
+  'maxContains': (maximumContains: number): string => {
+    const result = `must contain at most ${maximumContains} matching items`;
 
     return result;
   },

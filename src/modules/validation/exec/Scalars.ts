@@ -1,4 +1,4 @@
-import type { ValidationErrorType } from '../../../types/Validation.js';
+import type { ValidationErrorEntity } from '../../../entities/ValidationErrorEntity.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { FormatRegistry } from '../../format/FormatRegistry.js';
 import { Predicates } from '../../data/Predicates.js';
@@ -33,7 +33,7 @@ export class Scalars {
     maximum: number | undefined,
     exclusiveMinimum: number | undefined,
     exclusiveMaximum: number | undefined,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): void {
     if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
       errors.push(BaseError.validationError(path, 'minimum', VALIDATION_MESSAGES.minimum(minimum)));
@@ -54,7 +54,7 @@ export class Scalars {
     value: unknown,
     hasConst: boolean,
     constValue: unknown,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): boolean {
     if (!hasConst || Predicates.satisfiesConst(value, constValue)) {
       return true;
@@ -69,7 +69,7 @@ export class Scalars {
     path: string,
     value: string,
     contentEncoding: string | undefined,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): boolean {
     if (contentEncoding === undefined) {
       return true;
@@ -89,7 +89,7 @@ export class Scalars {
     value: string,
     contentMediaType: string | undefined,
     contentEncoding: string | undefined,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): boolean {
     if (contentMediaType === undefined) {
       return true;
@@ -109,7 +109,7 @@ export class Scalars {
     value: unknown,
     enumValues: undefined | unknown[],
     enumSet: Set<boolean | null | number | string> | undefined,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): boolean {
     if (enumValues === undefined) {
       return true;
@@ -133,7 +133,7 @@ export class Scalars {
     value: unknown,
     format: string | undefined,
     formatValidator: ((v: unknown) => boolean) | undefined,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): boolean {
     if (formatValidator === undefined) {
       return true;
@@ -170,7 +170,7 @@ export class Scalars {
     exclusiveMinimum: number | undefined,
     exclusiveMaximum: number | undefined,
     multipleOf: number | undefined,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): boolean {
     const pre = errors.length;
 
@@ -186,19 +186,19 @@ export class Scalars {
   static validateString(
     path: string,
     value: string,
-    minLength: number | undefined,
-    maxLength: number | undefined,
+    minimumLength: number | undefined,
+    maximumLength: number | undefined,
     patternRegex: RegExp | undefined,
     pattern: string | undefined,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): boolean {
     const pre = errors.length;
 
-    if (minLength !== undefined && !Predicates.satisfiesMinimumLength(value, minLength)) {
-      errors.push(BaseError.validationError(path, 'minLength', VALIDATION_MESSAGES.minLength(minLength)));
+    if (minimumLength !== undefined && !Predicates.satisfiesMinimumLength(value, minimumLength)) {
+      errors.push(BaseError.validationError(path, 'minLength', VALIDATION_MESSAGES.minLength(minimumLength)));
     }
-    if (maxLength !== undefined && !Predicates.satisfiesMaximumLength(value, maxLength)) {
-      errors.push(BaseError.validationError(path, 'maxLength', VALIDATION_MESSAGES.maxLength(maxLength)));
+    if (maximumLength !== undefined && !Predicates.satisfiesMaximumLength(value, maximumLength)) {
+      errors.push(BaseError.validationError(path, 'maxLength', VALIDATION_MESSAGES.maxLength(maximumLength)));
     }
     if (patternRegex !== undefined && !Predicates.satisfiesPattern(value, patternRegex)) {
       errors.push(BaseError.validationError(path, 'pattern', VALIDATION_MESSAGES.pattern(pattern ?? '')));
@@ -211,7 +211,7 @@ export class Scalars {
     path: string,
     types: string[],
     value: unknown,
-    errors: ValidationErrorType[],
+    errors: ValidationErrorEntity.Type[],
     typePredicate?: (v: unknown) => boolean
   ): boolean {
     if (types.length === 0) {

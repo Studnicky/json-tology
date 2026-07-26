@@ -1,6 +1,6 @@
 import type { QuadInterface } from './QuadInterface.js';
 import type { SchemaGraphInterface } from './SchemaGraphInterface.js';
-import type { AboxProjectionOptionsType } from '../types/AboxProjectionOptionsType.js';
+import type { AboxProjectionOptionsInterface } from './AboxProjectionOptionsInterface.js';
 
 /**
  * Behavioral contract for ABox projection — projecting validated instance data
@@ -10,7 +10,7 @@ import type { AboxProjectionOptionsType } from '../types/AboxProjectionOptionsTy
  * This contract exists to invert the materialization → rdf layering. The
  * `materialization` layer must not import `rdf/` directly; instead the facade
  * ({@link JsonTology}) injects the concrete `Projection` (which satisfies this
- * contract) into the {@link Materializer} via `MaterializerOptionsType`. The
+ * contract) into the {@link Materializer} via `MaterializerOptionsInterface`. The
  * `abox` signature is identical to `Projection.abox`.
  *
  * @category RDF
@@ -21,6 +21,6 @@ export interface AboxProjectorInterface {
     graph: SchemaGraphInterface,
     data: unknown,
     baseIri: string,
-    options?: AboxProjectionOptionsType
+    options?: AboxProjectionOptionsInterface
   ): QuadInterface[];
 }

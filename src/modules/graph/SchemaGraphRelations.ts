@@ -1,7 +1,6 @@
-import type {
-  SchemaGraphNodeType, SchemaGraphRelationType,
-  SchemaGraphSemanticsType
-} from '../../types/SchemaGraph.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraphRelationInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { SchemaIri } from './SchemaIri.js';
@@ -18,16 +17,14 @@ import {
 } from '../../constants/IRI.js';
 import { RESTRICTION_PREDICATE_MAP } from '../../constants/ONTOLOGY_PREDICATES.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
-import type {
-  CardinalityContextType,
-  RelationsPushContextType,
-  TypeRelationsContextType
-} from '../../types/RelationsContext.js';
+import type { CardinalityContextInterface } from '../../interfaces/CardinalityContextInterface.js';
+import type { RelationsPushContextInterface } from '../../interfaces/RelationsPushContextInterface.js';
+import type { TypeRelationsContextInterface } from '../../interfaces/TypeRelationsContextInterface.js';
 
 class NodeReference {
   static resolve(
     graph: GraphAccessorInterface,
-    node: SchemaGraphNodeType
+    node: SchemaGraphNodeInterface
   ): string {
     const nodeSem = graph.semantics(node);
 
@@ -46,7 +43,7 @@ class NodeReference {
 }
 
 class RelationPush {
-  static pushAnnotatedEdgeRelations(context: RelationsPushContextType): void {
+  static pushAnnotatedEdgeRelations(context: RelationsPushContextInterface): void {
     const {
       graph, node, relations, sem
     } = context;
@@ -93,7 +90,7 @@ class RelationPush {
     });
   }
 
-  static pushConditionalRelations(context: RelationsPushContextType): void {
+  static pushConditionalRelations(context: RelationsPushContextInterface): void {
     const {
       graph, node, relations, sem
     } = context;
@@ -127,7 +124,7 @@ class RelationPush {
     });
   }
 
-  static pushContainsRelations(context: RelationsPushContextType): void {
+  static pushContainsRelations(context: RelationsPushContextInterface): void {
     const {
       graph, node, relations, sem
     } = context;
@@ -169,9 +166,9 @@ class RelationPush {
   }
 
   static pushDependentRequiredRelations(
-    node: SchemaGraphNodeType,
-    sem: SchemaGraphSemanticsType,
-    relations: SchemaGraphRelationType[]
+    node: SchemaGraphNodeInterface,
+    sem: SchemaGraphSemanticsInterface,
+    relations: SchemaGraphRelationInterface[]
   ): void {
     for (const [
       trigger,
@@ -192,7 +189,7 @@ class RelationPush {
     }
   }
 
-  static pushDependentSchemaRelations(context: RelationsPushContextType): void {
+  static pushDependentSchemaRelations(context: RelationsPushContextInterface): void {
     const {
       graph, node, relations, sem
     } = context;
@@ -221,9 +218,9 @@ class RelationPush {
   }
 
   static pushFormatAnnotationRelation(
-    node: SchemaGraphNodeType,
-    sem: SchemaGraphSemanticsType,
-    relations: SchemaGraphRelationType[]
+    node: SchemaGraphNodeInterface,
+    sem: SchemaGraphSemanticsInterface,
+    relations: SchemaGraphRelationInterface[]
   ): void {
     if (sem.format === undefined) {
       return;
@@ -237,9 +234,9 @@ class RelationPush {
   }
 
   static pushFormatPatternRelations(
-    node: SchemaGraphNodeType,
-    sem: SchemaGraphSemanticsType,
-    relations: SchemaGraphRelationType[]
+    node: SchemaGraphNodeInterface,
+    sem: SchemaGraphSemanticsInterface,
+    relations: SchemaGraphRelationInterface[]
   ): void {
     if (sem.format === undefined) {
       return;
@@ -263,7 +260,7 @@ class RelationPush {
     }
   }
 
-  static pushPatternPropertyRelations(context: RelationsPushContextType): void {
+  static pushPatternPropertyRelations(context: RelationsPushContextInterface): void {
     const {
       graph, node, relations, sem
     } = context;
@@ -286,7 +283,7 @@ class RelationPush {
     }
   }
 
-  static pushPrefixItemRelations(context: RelationsPushContextType): void {
+  static pushPrefixItemRelations(context: RelationsPushContextInterface): void {
     const {
       graph, node, relations, sem
     } = context;
@@ -309,7 +306,7 @@ class RelationPush {
     }
   }
 
-  static pushPropertyCardinalityRelations(context: CardinalityContextType): void {
+  static pushPropertyCardinalityRelations(context: CardinalityContextInterface): void {
     const {
       graph, node, nodeMap, relations, sem
     } = context;
@@ -346,7 +343,7 @@ class RelationPush {
     }
   }
 
-  static pushPropertyTypeRelations(context: TypeRelationsContextType): void {
+  static pushPropertyTypeRelations(context: TypeRelationsContextInterface): void {
     const {
       node, nonNullTypes, relations, sem
     } = context;
@@ -368,7 +365,7 @@ class RelationPush {
     });
   }
 
-  static pushUnionTypeRelations(context: TypeRelationsContextType): void {
+  static pushUnionTypeRelations(context: TypeRelationsContextInterface): void {
     const {
       node, nonNullTypes, relations, sem
     } = context;
@@ -405,9 +402,9 @@ class RelationPush {
   }
 
   static pushUserRestrictionRelations(
-    node: SchemaGraphNodeType,
-    sem: SchemaGraphSemanticsType,
-    relations: SchemaGraphRelationType[]
+    node: SchemaGraphNodeInterface,
+    sem: SchemaGraphSemanticsInterface,
+    relations: SchemaGraphRelationInterface[]
   ): void {
     if (sem.restrictions.length === 0) {
       return;
@@ -418,10 +415,10 @@ class RelationPush {
 
       if (predicate === undefined) {
         // Unreachable: RESTRICTION_PREDICATE_MAP keys exactly match the closed
-        // RestrictionKindType union ('allValuesFrom' | 'cardinality' | 'hasValue' |
+        // RestrictionKindEntity.Type union ('allValuesFrom' | 'cardinality' | 'hasValue' |
         // 'maxCardinality' | 'minCardinality' | 'someValuesFrom'). The map type is
         // Partial<Record<string, string>> for index-signature compatibility, but all
-        // six members are always present. A miss here indicates a future RestrictionKindType
+        // six members are always present. A miss here indicates a future RestrictionKindEntity.Type
         // member was added without a corresponding map entry — throw to surface it
         // immediately rather than silently dropping a restriction relation.
         throw new GraphError(
@@ -448,11 +445,11 @@ class RelationPush {
 export const SchemaGraphRelations = {
   extractRelations(
     graph: GraphAccessorInterface,
-    node: SchemaGraphNodeType,
-    nodeMap: Map<string, SchemaGraphNodeType>
-  ): SchemaGraphRelationType[] {
+    node: SchemaGraphNodeInterface,
+    nodeMap: Map<string, SchemaGraphNodeInterface>
+  ): SchemaGraphRelationInterface[] {
     const sem = graph.semantics(node);
-    const relations: SchemaGraphRelationType[] = [];
+    const relations: SchemaGraphRelationInterface[] = [];
 
     if (sem.schemaId !== undefined) {
       relations.push({
@@ -840,20 +837,20 @@ export const SchemaGraphRelations = {
       return schemaType !== 'null';
     });
 
-    const context: RelationsPushContextType = {
+    const context: RelationsPushContextInterface = {
       graph,
       node,
       relations,
       sem
     };
-    const typeContext: TypeRelationsContextType = {
+    const typeContext: TypeRelationsContextInterface = {
       graph,
       node,
       nonNullTypes,
       relations,
       sem
     };
-    const cardinalityContext: CardinalityContextType = {
+    const cardinalityContext: CardinalityContextInterface = {
       graph,
       node,
       nodeMap,

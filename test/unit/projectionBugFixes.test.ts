@@ -16,6 +16,7 @@
  *     with code INVALID_PREDICATE_IRI must be thrown.
  */
 
+import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraphRelationInterface.js';
 import assert from 'node:assert/strict';
 import {
   describe, it
@@ -30,7 +31,6 @@ import {
 } from '../../src/constants/IRI.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphInterface.js';
-import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -249,7 +249,7 @@ void describe('Fix 3 — OwlProjection: missing onProperty throws INVALID_PREDIC
     // Build the injected relation with OWL.Restriction predicate, OWL.Class type,
     // and metadata that is missing both propertyName and onProperty.
     const rootNode = realGraph.rootNode;
-    const injectedRelation: SchemaGraphRelationType = {
+    const injectedRelation: SchemaGraphRelationInterface = {
       'metadata': {
         // no onProperty, no propertyName — triggers the throw in emitClassRestrictionRelations
         'minCardinality': 1
@@ -260,7 +260,7 @@ void describe('Fix 3 — OwlProjection: missing onProperty throws INVALID_PREDIC
     };
 
     const wrappedGraph: SchemaGraphInterface = {
-      allRelations(): SchemaGraphRelationType[] {
+      allRelations(): SchemaGraphRelationInterface[] {
         return [
           ...realGraph.allRelations(),
           injectedRelation

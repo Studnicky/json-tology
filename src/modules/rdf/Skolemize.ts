@@ -1,7 +1,7 @@
 /**
  * Skolemize — strategies for minting IRIs for ABox subjects.
  *
- * Each static method returns a {@link SkolemizeFunctionType} suitable for the
+ * Each static method returns a {@link SkolemizeFunctionInterface} suitable for the
  * `iriFor` option on `toQuads`. Strategies can be composed via
  * `Skolemize.compose(...)` — the first non-undefined return wins. When a
  * strategy returns `undefined`, the projection's built-in default IRI minter
@@ -13,7 +13,7 @@
  * RDF 1.1 §3.5 (Replacing Blank Nodes with IRIs).
  */
 
-import type { SkolemizeFunctionType } from '../../types/SkolemizeFunctionType.js';
+import type { SkolemizeFunctionInterface } from '../../interfaces/SkolemizeFunctionInterface.js';
 import { Hash } from '../hash/Hash.js';
 import { WELL_KNOWN_GENID_PATTERN } from '../../constants/GRAPH_REGEXES.js';
 import {
@@ -58,7 +58,7 @@ for (let byteValue = 0; byteValue < UUID_BYTE_MAXIMUM_PLUS_ONE; byteValue += 1) 
  * IRI minting strategies for RDF blank-node Skolemization.
  *
  * @remarks
- * Each static method returns a `SkolemizeFunctionType` suitable for the `iriFor`
+ * Each static method returns a `SkolemizeFunctionInterface` suitable for the `iriFor`
  * option on `toQuads`. Strategies compose via `Skolemize.compose(...)` —
  * the first non-`undefined` return wins. When a strategy returns `undefined`,
  * the projection's built-in default IRI minter takes over, emitting
@@ -78,7 +78,7 @@ for (let byteValue = 0; byteValue < UUID_BYTE_MAXIMUM_PLUS_ONE; byteValue += 1) 
  *
  * @category RDF
  * @since 0.1.0
- * @see {@link SkolemizeFunctionType}
+ * @see {@link SkolemizeFunctionInterface}
  * @group Skolemize
  */
 export class Skolemize {
@@ -93,8 +93,8 @@ export class Skolemize {
    * Compose multiple strategies. The first strategy returning a defined
    * IRI wins; later strategies are not consulted.
    */
-  public static compose(...strategies: readonly SkolemizeFunctionType[]): SkolemizeFunctionType {
-    return (context: Parameters<SkolemizeFunctionType>[0]): string | undefined => {
+  public static compose(...strategies: readonly SkolemizeFunctionInterface[]): SkolemizeFunctionInterface {
+    return (context: Parameters<SkolemizeFunctionInterface>[0]): string | undefined => {
       let resolved: string | undefined;
 
       for (const strategy of strategies) {
@@ -121,12 +121,12 @@ export class Skolemize {
   public static fromProperty(
     name: string,
     options?: { 'baseIri'?: string;
-      'fallback'?: SkolemizeFunctionType }
-  ): SkolemizeFunctionType {
+      'fallback'?: SkolemizeFunctionInterface }
+  ): SkolemizeFunctionInterface {
     const fallback = options?.fallback
       ?? Skolemize.hash(options?.baseIri === undefined ? undefined : { 'baseIri': options.baseIri });
 
-    return (context: Parameters<SkolemizeFunctionType>[0]): string | undefined => {
+    return (context: Parameters<SkolemizeFunctionInterface>[0]): string | undefined => {
       const { value } = context;
 
       if (value !== null && typeof value === 'object' && name in value) {
@@ -151,10 +151,10 @@ export class Skolemize {
    * baseIri is configured at any layer (registry or strategy), letting
    * the caller's default kick in.
    */
-  public static hash(options?: { 'baseIri'?: string }): SkolemizeFunctionType {
+  public static hash(options?: { 'baseIri'?: string }): SkolemizeFunctionInterface {
     const base = options?.baseIri;
 
-    return (context: Parameters<SkolemizeFunctionType>[0]): string | undefined => {
+    return (context: Parameters<SkolemizeFunctionInterface>[0]): string | undefined => {
       let result: string | undefined;
 
       if (base !== undefined) {
@@ -249,8 +249,8 @@ export class Skolemize {
    * Mint a URN UUID v4 IRI. Non-deterministic — useful when fresh
    * identity on every emission is desired.
    */
-  public static uuid(): SkolemizeFunctionType {
-    return (_context: Parameters<SkolemizeFunctionType>[0]): string => {
+  public static uuid(): SkolemizeFunctionInterface {
+    return (_context: Parameters<SkolemizeFunctionInterface>[0]): string => {
       const result = `urn:uuid:${Skolemize.randomUuidV4()}`;
 
       return result;
@@ -264,10 +264,10 @@ export class Skolemize {
    * IRIs of this shape are reversible by `fromQuads({ deskolemize: true })`,
    * which treats them as blank nodes when reconstructing typed objects.
    */
-  public static wellKnownGenid(baseIri: string): SkolemizeFunctionType {
+  public static wellKnownGenid(baseIri: string): SkolemizeFunctionInterface {
     const root = Skolemize.stripTrailingSlash(baseIri);
 
-    return (context: Parameters<SkolemizeFunctionType>[0]): string => {
+    return (context: Parameters<SkolemizeFunctionInterface>[0]): string => {
       const contentHash = Hash.value(context.value);
 
       return `${root}/.well-known/genid/${contentHash}`;

@@ -26,16 +26,13 @@
  */
 
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType,
-  OwlImportFragmentType
-} from '../../../types/OwlImport.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type {
   JsonSchemaDocumentObjectType, JsonSchemaDocumentType
 } from '../../../types/Schema.js';
-import type { RestrictionStructureType } from '../../../types/RestrictionStructureType.js';
-import type { MutablePropertySchemaType } from '../../../types/MutablePropertySchemaType.js';
+import type { MutablePropertySchemaEntity } from '../../../entities/MutablePropertySchemaEntity.js';
 import {
   OWL,
   RDFS
@@ -57,7 +54,7 @@ import { SchemaIri } from '../../graph/SchemaIri.js';
  *
  * @param _quads - All quads from the input graph (unused; graph is traversed via context).
  * @param context - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragmentType with schemaDeltas and invariants populated.
+ * @returns OwlImportFragmentInterface with schemaDeltas and invariants populated.
  */
 export class PropertyRestrictions {
   /**
@@ -108,7 +105,7 @@ export class PropertyRestrictions {
   private static cardinalityPatch(
     value: unknown,
     kind: 'both' | 'max' | 'min'
-  ): MutablePropertySchemaType | null {
+  ): MutablePropertySchemaEntity.Type | null {
     const n = Number(value);
 
     if (!Number.isFinite(n)) {
@@ -133,7 +130,7 @@ export class PropertyRestrictions {
     }
   }
 
-  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
     const schemaDeltas = new Map<string, JsonSchemaDocumentObjectType>();
     const invariants: Array<{
       'invariant': InvariantType;
@@ -153,7 +150,7 @@ export class PropertyRestrictions {
         continue;
       }
 
-      const restriction: RestrictionStructureType = structure;
+      const restriction = structure;
       const classIri = relation.source.id;
       const propIri = restriction.onProperty;
       const constraint = restriction.constraint;
@@ -223,7 +220,7 @@ export class PropertyRestrictions {
   private static mergePropertyPatch(
     delta: JsonSchemaDocumentObjectType,
     propName: string,
-    patch: MutablePropertySchemaType
+    patch: MutablePropertySchemaEntity.Type
   ): JsonSchemaDocumentObjectType {
     const existing = delta.properties ?? {};
     const existingProp = existing[propName];
@@ -261,7 +258,7 @@ export class PropertyRestrictions {
   private static structuralPatch(
     constraint: string,
     value: unknown
-  ): MutablePropertySchemaType | null {
+  ): MutablePropertySchemaEntity.Type | null {
     switch (constraint) {
       case OWL.allValuesFrom:
         return typeof value === 'string' && value !== ''

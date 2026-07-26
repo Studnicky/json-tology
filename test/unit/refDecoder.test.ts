@@ -21,14 +21,14 @@ import { Brand } from '../../src/modules/data/Brand.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { ReferenceDecoder } from '../../src/modules/graph/ReferenceDecoder.js';
-import type { ReferenceDecoderRegistryType } from '../../src/types/ReferenceDecoderRegistryType.js';
+import type { ReferenceDecoderRegistryInterface } from '../../src/interfaces/ReferenceDecoderRegistryInterface.js';
 
 // ---------------------------------------------------------------------------
 // Minimal registry stubs — used when we drive ReferenceDecoder.run directly
 // ---------------------------------------------------------------------------
 
 /** Registry stub that knows about no schemas — simulates an isolated graph walk. */
-const emptyRegistry: ReferenceDecoderRegistryType = {
+const emptyRegistry: ReferenceDecoderRegistryInterface = {
   'getGraph': (_schema: Record<string, unknown>) => {
     return _schema.$id === '__never__' ? undefined : undefined;
   },

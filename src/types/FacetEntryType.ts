@@ -8,6 +8,13 @@ import type { FacetDescriptorType } from '../types/FacetDescriptorType.js';
  * should use the derived maps ({@link SHACL_TO_XSD_FACET}, {@link XSD_FACET_DATATYPE},
  * {@link FACET_MAP}) rather than iterating the raw entries.
  *
+ * No-fix exception: `@studnicky/type-alias-invariants` flags this alias because its
+ * `jsonSchemaDescriptor` member is `FacetDescriptorType`, which uses `keyof
+ * JsonSchemaDocumentObjectType` — a TypeScript-only key-introspection that has no JSON
+ * Schema representation. That non-JSON shape is intrinsic to `FacetDescriptorType`
+ * itself (`src/types/FacetDescriptorType.ts`, independently flagged), not something
+ * this file can fix without redesigning that type.
+ *
  * @internal
  */
 export type FacetEntryType = {

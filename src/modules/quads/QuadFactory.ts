@@ -18,13 +18,11 @@ import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
-import type {
-  QuadFactoryIriOptionsType,
-  QuadFactoryLiteralOptionsType,
-  QuadFactoryQuadOptionsType
-} from '../../types/QuadFactoryOpts.js';
+import type { QuadFactoryIriOptionsInterface } from '../../interfaces/QuadFactoryIriOptionsInterface.js';
+import type { QuadFactoryLiteralOptionsInterface } from '../../interfaces/QuadFactoryLiteralOptionsInterface.js';
+import type { QuadOptionsInterface } from '../../interfaces/QuadOptionsInterface.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
-import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
+import type { JsonLdDatasetQuadEntity } from '../../entities/JsonLdDatasetQuadEntity.js';
 
 import { Lists } from './Lists.js';
 import { Terms } from './Terms.js';
@@ -80,7 +78,7 @@ export class QuadFactory {
     tripleTerm: Quad,
     annotationPredicate: string,
     annotationValue: QuadObjectType,
-    options?: QuadFactoryQuadOptionsType
+    options?: QuadOptionsInterface
   ): QuadInterface {
     const {
       curie, graph
@@ -120,7 +118,7 @@ export class QuadFactory {
   /**
    * Construct a `QuadInterface` from a jsonld dataset quad object.
    */
-  static fromDatasetQuad(datasetQuad: JsonLdDatasetQuadType): QuadInterface {
+  static fromDatasetQuad(datasetQuad: JsonLdDatasetQuadEntity.Type): QuadInterface {
     const subject = datasetQuad.subject.termType === 'BlankNode'
       ? Terms.blank(datasetQuad.subject.value)
       : Terms.iri(datasetQuad.subject.value);
@@ -184,7 +182,7 @@ export class QuadFactory {
    * Build an IRI term. When `options.curie` is provided, compact CURIEs
    * (`prefix:local`) are expanded against the shared `Curie` instance.
    */
-  static iri(value: string, options?: QuadFactoryIriOptionsType): QuadObjectType {
+  static iri(value: string, options?: QuadFactoryIriOptionsInterface): QuadObjectType {
     const curie = options?.curie;
     const expandedValue = curie === undefined ? value : curie.expandIfNeeded(value);
 
@@ -195,7 +193,7 @@ export class QuadFactory {
    * Build a typed literal term. `datatype` is expanded from compact CURIE
    * form when `options.curie` is provided.
    */
-  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptionsType): QuadObjectType {
+  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptionsInterface): QuadObjectType {
     const curie = options?.curie;
     const language = options?.language;
 
@@ -242,7 +240,7 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptionsType
+    options?: QuadOptionsInterface
   ): QuadInterface {
     const {
       curie, graph
@@ -306,7 +304,7 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptionsType
+    options?: QuadOptionsInterface
   ): Quad {
     const { curie } = options ?? {};
     const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;

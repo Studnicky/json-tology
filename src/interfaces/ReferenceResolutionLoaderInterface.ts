@@ -6,10 +6,10 @@
  * $ref. Throws `GraphError('REF_UNRESOLVED')` when the loader returns null.
  *
  * @internal — not part of the public package surface; consumers use
- * `LoaderType` from `json-tology/types` and `JsonTology.prefetch` instead.
+ * `LoaderInterface` from `json-tology/interfaces` and `JsonTology.prefetch` instead.
  */
 
-import type { LoaderType } from '../types/Loader.js';
+import type { LoaderInterface } from './LoaderInterface.js';
 
 export interface ReferenceResolutionLoaderInterface {
   /**
@@ -20,7 +20,7 @@ export interface ReferenceResolutionLoaderInterface {
    * @param rootIds - IRIs to seed the registry from.
    * @param loader - Async loader called for each unregistered IRI.
    */
-  loadRootIds(rootIds: readonly string[], loader: LoaderType): Promise<void>;
+  loadRootIds(rootIds: readonly string[], loader: LoaderInterface): Promise<void>;
 
   /**
    * Eagerly resolves all transitive `$ref` IRIs reachable from the schemas
@@ -28,5 +28,5 @@ export interface ReferenceResolutionLoaderInterface {
    *
    * @param loader - Async loader called for each unregistered IRI.
    */
-  resolveAll(loader: LoaderType): Promise<void>;
+  resolveAll(loader: LoaderInterface): Promise<void>;
 }

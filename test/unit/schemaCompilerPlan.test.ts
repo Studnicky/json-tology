@@ -1,7 +1,7 @@
 /**
  * Direct unit tests for SchemaCompilerPlan.buildNodePlan.
  *
- * SchemaCompilerPlan.buildNodePlan produces a CompiledNodeValidationPlanType by reading
+ * SchemaCompilerPlan.buildNodePlan produces a CompiledNodeValidationPlanInterface by reading
  * graph semantics for a given node. Tests drive it with real SchemaGraph
  * instances and a minimal-but-functional SchemaCompilerValidatePlanContext.
  *
@@ -16,14 +16,14 @@ import {
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaCompilerPlan } from '../../src/modules/validation/SchemaCompilerPlan.js';
 import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistryInterface.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContextType.js';
-import type { ValidateWithErrorsFunctionType } from '../../src/types/Validation.js';
+import type { SchemaCompilerValidatePlanContextInterface } from '../../src/interfaces/SchemaCompilerValidatePlanContextInterface.js';
+import type { ValidateWithErrorsFunctionInterface } from '../../src/interfaces/ValidateWithErrorsFunctionInterface.js';
 
 // ---------------------------------------------------------------------------
 // Stub context
 // ---------------------------------------------------------------------------
 
-const passValidator: ValidateWithErrorsFunctionType = (value) => {
+const passValidator: ValidateWithErrorsFunctionInterface = (value) => {
   return {
     'valid': true,
     'value': value
@@ -42,7 +42,7 @@ const stubFormatRegistry: FormatRegistryInterface = {
   }
 };
 
-function makeContext(): SchemaCompilerValidatePlanContextType {
+function makeContext(): SchemaCompilerValidatePlanContextInterface {
   return {
     'activeCustomKeywords': [],
     'appliesFormatAssertions': (_) => {

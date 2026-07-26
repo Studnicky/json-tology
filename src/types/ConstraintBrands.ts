@@ -32,8 +32,8 @@ declare const MINIMUM: unique symbol;
 declare const MULTIPLE_OF: unique symbol;
 declare const PATTERN: unique symbol;
 declare const SCHEMA_ID: unique symbol;
-declare const UNIQUE_ITEMS: unique symbol;
-declare const UNIQUE_ARRAY: unique symbol;
+export declare const UNIQUE_ITEMS: unique symbol;
+export declare const UNIQUE_ARRAY: unique symbol;
 
 /**
  * Phantom brand for the `contains` keyword.
@@ -509,56 +509,13 @@ export type PatternBrandType<TP extends string> = IdentityType<{ [PATTERN]: TP }
  */
 export type SchemaIdBrandType<TId extends string> = IdentityType<{ [SCHEMA_ID]: TId }>;
 
-/**
- * Phantom brand for the `uniqueItems: true` keyword.
- *
- * Marks an array as having been validated for element distinctness.
- * Plain arrays are not assignable to this brand without passing through
- * the validation API.
- *
- * @remarks
- * Attach via `InferSchemaType` when `arrayBrands` is enabled.
- * See {@link UniqueArrayBrandType} for the parameterised variant.
- *
- * @example
- * ```ts
- * type T = UniqueItemsBrandType;
- * ```
- *
- * @category Constraint Brands
- * @since 0.18.0
- * @see {@link UniqueArrayBrandType}
- * @group Constraint Brands
- */
-export type UniqueItemsBrandType = IdentityType<{ [UNIQUE_ITEMS]: true }>;
-
-/**
- * Generic uniqueness brand parameterised by element type. Lets downstream APIs
- * assume distinctness post-validation. Produced by `JsonTology.instantiate`
- * and `JsonTology.materialize` when the source schema declares
- * `uniqueItems: true`. Plain arrays cannot satisfy this brand without going
- * through the validation API.
- *
- * @remarks
- * Extends {@link UniqueItemsBrandType} and adds the element-type
- * parameter so APIs that require `ReadonlyArray<T>` can additionally require
- * that the array was validated for uniqueness.
- *
- * @example
- * ```ts
- * type T = UniqueArrayBrandType<string>;
- * ```
- *
- * @category Constraint Brands
- * @since 0.18.0
- * @see {@link UniqueItemsBrandType}
- * @group Constraint Brands
- *
- * @typeParam T - The element type of the unique array.
- */
-export type UniqueArrayBrandType<T> = UniqueItemsBrandType & {
-  [UNIQUE_ARRAY]: T;
-};
+// UniqueItemsBrandType/UniqueArrayBrandType moved to
+// src/interfaces/UniqueItemsBrandInterface.ts and UniqueArrayBrandInterface.ts
+// as real interfaces (the only two brands in this file that need this: the
+// exemption for a symbol-keyed brand member reaches the member itself, but
+// these two declare no other members, so the classifier has no schema-derived
+// composition to fall back to). UNIQUE_ITEMS/UNIQUE_ARRAY are exported above
+// so those files can reference the same `unique symbol` declarations.
 
 /**
  * Per-format named brand aliases.
@@ -582,6 +539,15 @@ export type UniqueArrayBrandType<T> = UniqueItemsBrandType & {
  *
  * Ordering note: `FormatBrandType<F> & string` (not `string & ...`) so
  * IDE hovers display the named brand first instead of `string`.
+ *
+ * Each of these (and the number-format aliases further below) intersects a
+ * phantom brand with a JSON primitive (`string`/`number`) — the standard
+ * TypeScript "branded primitive" idiom (`type UserId = string & { __brand:
+ * 'UserId' }`). This has no available fix under the current lint rule set:
+ * it isn't schema-derived data (it's a compile-time-only marker, never a
+ * real constructed value), and it can't become an `interface` (a TS
+ * interface cannot extend a primitive type). Reported upstream; see
+ * noocodec-substrate/docs/eslint/known-issues/.
  */
 
 /**

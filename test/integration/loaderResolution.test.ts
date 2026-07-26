@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import type { LoaderType } from '../../src/types/Loader.js';
+import type { LoaderInterface } from '../../src/interfaces/LoaderInterface.js';
 import {
   GraphError, JsonTology, Loaders
 } from '../../src/index.js';
@@ -137,7 +137,7 @@ void describe('JsonTology.prefetch', () => {
       'type': 'object'
     } as const;
 
-    const trackingLoader: LoaderType = async (iri: string) => {
+    const trackingLoader: LoaderInterface = async (iri: string) => {
       callCount++;
 
       return (schemaMap as Record<string, Record<string, unknown>>)[iri] ?? null;
@@ -154,7 +154,7 @@ void describe('JsonTology.prefetch', () => {
   void it('edge: schema with no unregistered refs resolves without loader calls', async () => {
     let callCount = 0;
 
-    const loader: LoaderType = async (_: string) => {
+    const loader: LoaderInterface = async (_: string) => {
       callCount++;
 
       return null;

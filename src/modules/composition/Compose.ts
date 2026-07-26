@@ -26,9 +26,10 @@ import type {
   ValidateIntersectionIdType,
   ValidateSubClassOfBodyType
 } from '../../types/Compose.js';
-import type {
-  RestrictionDescriptorType, RestrictionKindType, RestrictionReferenceType, TypedRestrictionReferenceType
-} from '../../types/Restriction.js';
+import type { RestrictionKindEntity } from '../../entities/RestrictionKindEntity.js';
+import type { RestrictionDescriptorEntity } from '../../entities/RestrictionDescriptorEntity.js';
+import type { RestrictionReferenceEntity } from '../../entities/RestrictionReferenceEntity.js';
+import type { TypedRestrictionReferenceInterface } from '../../interfaces/TypedRestrictionReferenceInterface.js';
 import type { ValidateSchemaType } from '../../types/SchemaValidation.js';
 import { RestrictionGuards } from '../../types/Restriction.js';
 import { RESTRICTION_TAG } from '../../constants/RESTRICTION.js';
@@ -75,7 +76,7 @@ export class Compose {
   public static allValuesFrom<TProp extends string, TRange extends string>(
     propIri: TProp,
     rangeClassIri: TRange
-  ): TypedRestrictionReferenceType<'allValuesFrom', TProp, TRange> {
+  ): TypedRestrictionReferenceInterface<'allValuesFrom', TProp, TRange> {
     const result = Compose.makeRestriction('allValuesFrom', propIri, rangeClassIri);
 
     return result;
@@ -167,7 +168,7 @@ export class Compose {
   public static cardinality<TProp extends string, TN extends number>(
     propIri: TProp,
     n: TN
-  ): TypedRestrictionReferenceType<'cardinality', TProp, TN> {
+  ): TypedRestrictionReferenceInterface<'cardinality', TProp, TN> {
     const result = Compose.makeRestriction('cardinality', propIri, n);
 
     return result;
@@ -487,7 +488,7 @@ export class Compose {
   public static hasValue<TProp extends string, TValue extends boolean | number | string>(
     propIri: TProp,
     value: TValue
-  ): TypedRestrictionReferenceType<'hasValue', TProp, TValue> {
+  ): TypedRestrictionReferenceInterface<'hasValue', TProp, TValue> {
     const result = Compose.makeRestriction('hasValue', propIri, value);
 
     return result;
@@ -526,14 +527,14 @@ export class Compose {
    * `maxCardinality`, `minCardinality`, `someValuesFrom`).
    */
   private static makeRestriction<
-    TKind extends RestrictionKindType,
+    TKind extends RestrictionKindEntity.Type,
     TProp extends string,
     TValue extends boolean | number | string
   >(
     kind: TKind,
     onProperty: TProp,
     value: TValue
-  ): TypedRestrictionReferenceType<TKind, TProp, TValue> {
+  ): TypedRestrictionReferenceInterface<TKind, TProp, TValue> {
     const restriction: Record<string, unknown> = {};
 
     restriction[RESTRICTION_TAG] = {
@@ -542,7 +543,7 @@ export class Compose {
       value
     };
 
-    return Brand.cast<TypedRestrictionReferenceType<TKind, TProp, TValue>>(restriction);
+    return Brand.cast<TypedRestrictionReferenceInterface<TKind, TProp, TValue>>(restriction);
   }
 
   /**
@@ -551,7 +552,7 @@ export class Compose {
   public static maximumCardinality<TProp extends string, TN extends number>(
     propIri: TProp,
     n: TN
-  ): TypedRestrictionReferenceType<'maxCardinality', TProp, TN> {
+  ): TypedRestrictionReferenceInterface<'maxCardinality', TProp, TN> {
     const result = Compose.makeRestriction('maxCardinality', propIri, n);
 
     return result;
@@ -579,7 +580,7 @@ export class Compose {
   public static minimumCardinality<TProp extends string, TN extends number>(
     propIri: TProp,
     n: TN
-  ): TypedRestrictionReferenceType<'minCardinality', TProp, TN> {
+  ): TypedRestrictionReferenceInterface<'minCardinality', TProp, TN> {
     const result = Compose.makeRestriction('minCardinality', propIri, n);
 
     return result;
@@ -767,7 +768,7 @@ export class Compose {
   public static someValuesFrom<TProp extends string, TRange extends string>(
     propIri: TProp,
     rangeClassIri: TRange
-  ): TypedRestrictionReferenceType<'someValuesFrom', TProp, TRange> {
+  ): TypedRestrictionReferenceInterface<'someValuesFrom', TProp, TRange> {
     const result = Compose.makeRestriction('someValuesFrom', propIri, rangeClassIri);
 
     return result;
@@ -801,12 +802,12 @@ export class Compose {
    * );
    */
   public static subClassOf<
-    TKind extends RestrictionKindType,
+    TKind extends RestrictionKindEntity.Type,
     TProp extends string,
     TValue extends boolean | number | string,
     const TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
-    parent: TypedRestrictionReferenceType<TKind, TProp, TValue>,
+    parent: TypedRestrictionReferenceInterface<TKind, TProp, TValue>,
     body: ValidateSchemaType<TBody>
   ): TBody extends { readonly 'jt:restrictions': infer TExisting extends readonly unknown[] }
     ? Omit<TBody, 'jt:restrictions'> & {
@@ -834,14 +835,14 @@ export class Compose {
   public static subClassOf<
     TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
-    parent: ReadonlyArray<{ readonly '$id': string }> | RestrictionReferenceType | { readonly '$id': string },
+    parent: ReadonlyArray<{ readonly '$id': string }> | RestrictionReferenceEntity.Type | { readonly '$id': string },
     body: TBody
   ): SubClassOfSchemaType<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody> | TBody {
     if (RestrictionGuards.isRestrictionReference(parent)) {
       const bodyCopy: Record<string, unknown> = { ...(body as Record<string, unknown>) };
       const existing = bodyCopy[RESTRICTIONS_KEY];
-      const list: RestrictionDescriptorType[] = Array.isArray(existing)
-        ? [...(existing as RestrictionDescriptorType[])]
+      const list: RestrictionDescriptorEntity.Type[] = Array.isArray(existing)
+        ? [...(existing as RestrictionDescriptorEntity.Type[])]
         : [];
 
       list.push(parent[RESTRICTION_TAG]);

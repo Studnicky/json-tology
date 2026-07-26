@@ -1,6 +1,6 @@
 import type { AboxGraph } from './AboxGraph.js';
 import type { CursorInterface } from '../../interfaces/CursorInterface.js';
-import type { AboxLiftFunctionType } from '../../types/AboxGraph.js';
+import type { AboxLiftFunctionInterface } from '../../interfaces/AboxLiftFunctionInterface.js';
 
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
@@ -34,14 +34,14 @@ import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 export class Cursor implements CursorInterface {
   private readonly graph: AboxGraph;
   private readonly iriList: readonly string[];
-  private readonly lift: AboxLiftFunctionType;
+  private readonly lift: AboxLiftFunctionInterface;
 
   /**
    * @param iriList - The current resource IRI selection.
    * @param graph - The owning graph, providing the navigation index.
    * @param lift - Memoised IRI → typed-instance lift.
    */
-  public constructor(iriList: readonly string[], graph: AboxGraph, lift: AboxLiftFunctionType) {
+  public constructor(iriList: readonly string[], graph: AboxGraph, lift: AboxLiftFunctionInterface) {
     this.iriList = iriList;
     this.graph = graph;
     this.lift = lift;

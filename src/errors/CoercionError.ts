@@ -1,6 +1,6 @@
-import type { ErrorJsonType } from '../types/ErrorJsonType.js';
-import type { CoercionErrorOptionsType } from '../types/ErrorOptions.js';
-import type { ValidationErrorType } from '../types/Validation.js';
+import type { CoercionErrorOptionsInterface } from '../interfaces/CoercionErrorOptionsInterface.js';
+import type { ErrorJsonEntity } from '../entities/ErrorJsonEntity.js';
+import type { ValidationErrorEntity } from '../entities/ValidationErrorEntity.js';
 import { ValidationErrors } from './ValidationErrors.js';
 import { BaseError } from './BaseError.js';
 
@@ -18,7 +18,7 @@ import { BaseError } from './BaseError.js';
  *   registry.coerce(UserSchema, rawValue);
  * } catch (err) {
  *   if (err instanceof CoercionError) {
- *     console.error(err.errors.items); // ValidationErrorType[]
+ *     console.error(err.errors.items); // ValidationErrorEntity.Type[]
  *   }
  * }
  * ```
@@ -37,9 +37,9 @@ export class CoercionError extends BaseError {
    * @param errors - Validation errors as a collection or raw array
    * @param options - Options bag with required `code` and optional `cause`
    */
-  public constructor(errors: ValidationErrors | ValidationErrorType[], options: CoercionErrorOptionsType) {
+  public constructor(errors: ValidationErrorEntity.Type[] | ValidationErrors, options: CoercionErrorOptionsInterface) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
-    const message = validationErrors.items.map((error: ValidationErrorType): string => {
+    const message = validationErrors.items.map((error: ValidationErrorEntity.Type): string => {
       const result = `${error.path || 'root'}: ${error.message}`;
 
       return result;
@@ -55,10 +55,10 @@ export class CoercionError extends BaseError {
    *
    * @returns Flat array of error JSON objects including per-field validation details
    */
-  public override flatten(): ErrorJsonType[] {
+  public override flatten(): ErrorJsonEntity.Type[] {
     return [
       ...super.flatten(),
-      ...this.errors.items.map((item: ValidationErrorType): ErrorJsonType => {
+      ...this.errors.items.map((item: ValidationErrorEntity.Type): ErrorJsonEntity.Type => {
         return {
           'code': item.keyword,
           'message': `${item.path || 'root'}: ${item.message}`,
@@ -76,7 +76,7 @@ export class CoercionError extends BaseError {
   public override toJson() {
     return {
       ...super.toJson(),
-      'errors': this.errors.items.map((item: ValidationErrorType): ValidationErrorType => {
+      'errors': this.errors.items.map((item: ValidationErrorEntity.Type): ValidationErrorEntity.Type => {
         return { ...item };
       })
     };

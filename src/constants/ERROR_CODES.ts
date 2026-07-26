@@ -1,13 +1,11 @@
-import type {
-  CoercionErrorCodeType,
-  GraphErrorCodeType,
-  InstantiationErrorCodeType,
-  MaterializationErrorCodeType,
-  OwlImportErrorCodeType,
-  SchemaErrorCodeType,
-  SchemaLoadErrorCodeType,
-  TransformErrorCodeType
-} from '../types/ErrorCodes.js';
+import type { CoercionErrorCodeEntity } from '../entities/CoercionErrorCodeEntity.js';
+import type { GraphErrorCodeEntity } from '../entities/GraphErrorCodeEntity.js';
+import type { InstantiationErrorCodeEntity } from '../entities/InstantiationErrorCodeEntity.js';
+import type { MaterializationErrorCodeEntity } from '../entities/MaterializationErrorCodeEntity.js';
+import type { OwlImportErrorCodeEntity } from '../entities/OwlImportErrorCodeEntity.js';
+import type { SchemaErrorCodeEntity } from '../entities/SchemaErrorCodeEntity.js';
+import type { SchemaLoadErrorCodeEntity } from '../entities/SchemaLoadErrorCodeEntity.js';
+import type { TransformErrorCodeEntity } from '../entities/TransformErrorCodeEntity.js';
 
 /**
  * Error codes for coercion failures during value casting.
@@ -24,11 +22,11 @@ import type {
  *
  * @category Error Codes
  * @since 0.1.0
- * @see {@link CoercionErrorCodeType}
+ * @see {@link CoercionErrorCodeEntity}
  * @defaultValue `{ COERCION_FAILED: 'COERCION_FAILED' }`
  * @group Constants
  */
-export const COERCION_ERROR_CODE = { 'COERCION_FAILED': 'COERCION_FAILED' } as const satisfies Record<string, CoercionErrorCodeType>;
+export const COERCION_ERROR_CODE = { 'COERCION_FAILED': 'COERCION_FAILED' } as const satisfies Record<string, CoercionErrorCodeEntity.Type>;
 
 /**
  * Error codes for schema registration and structural validation failures.
@@ -45,7 +43,7 @@ export const COERCION_ERROR_CODE = { 'COERCION_FAILED': 'COERCION_FAILED' } as c
  *
  * @category Error Codes
  * @since 0.1.0
- * @see {@link SchemaErrorCodeType}
+ * @see {@link SchemaErrorCodeEntity}
  * @defaultValue `{ COMPUTED_FN_MISSING, COMPUTED_INPUT_FORBIDDEN, DIALECT_UNSUPPORTED, ... }`
  * @group Constants
  */
@@ -64,7 +62,7 @@ export const SCHEMA_ERROR_CODE = {
   'PROPERTY_CHARACTERISTIC_CONFLICT': 'PROPERTY_CHARACTERISTIC_CONFLICT',
   'STRUCTURE_INVALID': 'SCHEMA_STRUCTURE_INVALID',
   'VALIDATOR_MISSING': 'SCHEMA_VALIDATOR_MISSING'
-} as const satisfies Record<string, SchemaErrorCodeType>;
+} as const satisfies Record<string, SchemaErrorCodeEntity.Type>;
 
 /**
  * Error codes for graph traversal and pointer resolution failures.
@@ -81,7 +79,7 @@ export const SCHEMA_ERROR_CODE = {
  *
  * @category Error Codes
  * @since 0.1.0
- * @see {@link GraphErrorCodeType}
+ * @see {@link GraphErrorCodeEntity}
  * @defaultValue `{ ANCHOR_NOT_FOUND, ARTIFACT_INVALID, ARTIFACT_STALE, ... }`
  * @group Constants
  */
@@ -100,7 +98,7 @@ export const GRAPH_ERROR_CODE = {
   'REF_NOT_FOUND': 'REF_NOT_FOUND',
   'REF_UNRESOLVED': 'REF_UNRESOLVED',
   'VOCABULARY_UNSUPPORTED': 'VOCABULARY_UNSUPPORTED'
-} as const satisfies Record<string, GraphErrorCodeType>;
+} as const satisfies Record<string, GraphErrorCodeEntity.Type>;
 
 /**
  * Error codes for schema instantiation failures.
@@ -117,14 +115,14 @@ export const GRAPH_ERROR_CODE = {
  *
  * @category Error Codes
  * @since 0.1.0
- * @see {@link InstantiationErrorCodeType}
+ * @see {@link InstantiationErrorCodeEntity}
  * @defaultValue `{ EXTRA_FORBIDDEN: 'EXTRA_FORBIDDEN', INSTANTIATION_FAILED: 'INSTANTIATION_FAILED' }`
  * @group Constants
  */
 export const INSTANTIATION_ERROR_CODE = {
   'EXTRA_FORBIDDEN': 'EXTRA_FORBIDDEN',
   'INSTANTIATION_FAILED': 'INSTANTIATION_FAILED'
-} as const satisfies Record<string, InstantiationErrorCodeType>;
+} as const satisfies Record<string, InstantiationErrorCodeEntity.Type>;
 
 /**
  * Error codes for materialization and ABox projection failures.
@@ -142,7 +140,7 @@ export const INSTANTIATION_ERROR_CODE = {
  *
  * @category Error Codes
  * @since 0.1.0
- * @see {@link MaterializationErrorCodeType}
+ * @see {@link MaterializationErrorCodeEntity}
  * @defaultValue `{ CYCLIC_DATA: 'CYCLIC_DATA', MATERIALIZATION_FAILED: 'MATERIALIZATION_FAILED' }`
  * @group Constants
  */
@@ -152,7 +150,7 @@ export const MATERIALIZATION_ERROR_CODE = {
   'MATERIALIZATION_FAILED': 'MATERIALIZATION_FAILED',
   'MISSING_GRAPH_IRI': 'MISSING_GRAPH_IRI',
   'NON_FINITE_NUMBER': 'NON_FINITE_NUMBER'
-} as const satisfies Record<string, MaterializationErrorCodeType>;
+} as const satisfies Record<string, MaterializationErrorCodeEntity.Type>;
 
 /**
  * Error codes for OWL import failures.
@@ -169,14 +167,14 @@ export const MATERIALIZATION_ERROR_CODE = {
  *
  * @category Error Codes
  * @since 0.1.0
- * @see {@link OwlImportErrorCodeType}
+ * @see {@link OwlImportErrorCodeEntity}
  * @defaultValue `{ PARSE_FAILED: 'OWL_IMPORT_PARSE_FAILED', PEER_DEPENDENCY_MISSING: 'OWL_IMPORT_PEER_DEPENDENCY_MISSING' }`
  * @group Constants
  */
 export const OWL_IMPORT_ERROR_CODE = {
   'PARSE_FAILED': 'OWL_IMPORT_PARSE_FAILED',
   'PEER_DEPENDENCY_MISSING': 'OWL_IMPORT_PEER_DEPENDENCY_MISSING'
-} as const satisfies Record<string, OwlImportErrorCodeType>;
+} as const satisfies Record<string, OwlImportErrorCodeEntity.Type>;
 
 /**
  * Error codes for codec transform encode and decode failures.
@@ -193,14 +191,14 @@ export const OWL_IMPORT_ERROR_CODE = {
  *
  * @category Error Codes
  * @since 0.1.0
- * @see {@link TransformErrorCodeType}
+ * @see {@link TransformErrorCodeEntity}
  * @defaultValue `{ TRANSFORM_DECODE_FAILED: 'TRANSFORM_DECODE_FAILED', TRANSFORM_ENCODE_FAILED: 'TRANSFORM_ENCODE_FAILED' }`
  * @group Constants
  */
 export const TRANSFORM_ERROR_CODE = {
   'TRANSFORM_DECODE_FAILED': 'TRANSFORM_DECODE_FAILED',
   'TRANSFORM_ENCODE_FAILED': 'TRANSFORM_ENCODE_FAILED'
-} as const satisfies Record<string, TransformErrorCodeType>;
+} as const satisfies Record<string, TransformErrorCodeEntity.Type>;
 
 /**
  * Error codes for schema load failures.
@@ -218,11 +216,11 @@ export const TRANSFORM_ERROR_CODE = {
  *
  * @category Error Codes
  * @since 0.25.0
- * @see {@link SchemaLoadErrorCodeType}
+ * @see {@link SchemaLoadErrorCodeEntity}
  * @defaultValue `{ LOAD_FAILED: 'SCHEMA_LOAD_FAILED' }`
  * @group Constants
  */
-export const SCHEMA_LOAD_ERROR_CODE = { 'LOAD_FAILED': 'SCHEMA_LOAD_FAILED' } as const satisfies Record<string, SchemaLoadErrorCodeType>;
+export const SCHEMA_LOAD_ERROR_CODE = { 'LOAD_FAILED': 'SCHEMA_LOAD_FAILED' } as const satisfies Record<string, SchemaLoadErrorCodeEntity.Type>;
 
 /**
  * Sentinel code used when serializing a non-BaseError instance into the

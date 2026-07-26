@@ -9,6 +9,6 @@ import type { IdentityType } from './IdentityType.js';
  * @typeParam TFields - A `Record<propertyName, returnType>` map of registered
  *   computed fields accumulated by successive `addComputed` calls.
  */
-export type ComputedExtensionBrandType<TFields> = IdentityType<{
+export type ComputedExtensionBrandType<TFields> = [TFields] extends [unknown] ? IdentityType<{
   '~jt:computedFields': TFields;
-}>;
+}> : never;

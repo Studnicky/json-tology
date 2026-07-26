@@ -14,10 +14,9 @@
 
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { TokenParseResultType } from '../../types/TokenParseResultType.js';
-import type { NQuadLineResultType } from '../../types/NQuadLineResultType.js';
-import type { ParsedLiteralType } from '../../types/ParsedLiteralType.js';
-import type { ConversionContextType } from '../../types/ConversionContextType.js';
+import type { TokenParseResultEntity } from '../../entities/TokenParseResultEntity.js';
+import type { ParsedLiteralEntity } from '../../entities/ParsedLiteralEntity.js';
+import type { ConversionContextInterface } from '../../interfaces/ConversionContextInterface.js';
 import {
   RDF, XSD
 } from '../../constants/IRI.js';
@@ -107,7 +106,7 @@ export class JsonLdToQuads {
   private static convertIdObject(
     object: Record<string, unknown>,
     iriValue: string,
-    conversionContext: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): QuadObjectType {
     if (iriValue.startsWith('_:')) {
       return Terms.blank(iriValue.slice(2));
@@ -125,7 +124,7 @@ export class JsonLdToQuads {
 
   private static convertInlinedBnode(
     object: Record<string, unknown>,
-    conversionContext: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): string {
     const existingId = conversionContext.bnodeMap.get(object);
     const bnodeId = existingId ?? conversionContext.counter.getId();
@@ -144,7 +143,7 @@ export class JsonLdToQuads {
   private static convertObjectValue(
     object: Record<string, unknown>,
     originalValue: unknown,
-    conversionContext: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): null | QuadObjectType {
     if ('@list' in object && Array.isArray(object['@list'])) {
       return JsonLdToQuads.convertRdfList(object['@list'] as unknown[], conversionContext);
@@ -167,7 +166,7 @@ export class JsonLdToQuads {
 
   private static convertRdfList(
     rawList: unknown[],
-    conversionContext: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): QuadObjectType {
     const items: QuadObjectType[] = [];
 
@@ -190,7 +189,7 @@ export class JsonLdToQuads {
     return head;
   }
 
-  private static convertStringValue(value: string, conversionContext: ConversionContextType): QuadObjectType {
+  private static convertStringValue(value: string, conversionContext: ConversionContextInterface): QuadObjectType {
     if (JsonLdToQuads.isLiteralString(value, conversionContext.context)) {
       return Terms.literal(value);
     }
@@ -201,7 +200,7 @@ export class JsonLdToQuads {
   private static emitNodeQuads(
     subjectId: string,
     node: Record<string, unknown>,
-    conversionContext: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): void {
     const subjectTerm = subjectId.startsWith('_:')
       ? Terms.blank(subjectId.slice(2))
@@ -244,7 +243,7 @@ export class JsonLdToQuads {
   private static emitTypeQuads(
     subjectTerm: ReturnType<typeof Terms.blank> | ReturnType<typeof Terms.iri>,
     types: unknown[],
-    conversionContext: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): void {
     for (const typeValue of types) {
       if (typeof typeValue !== 'string') {
@@ -377,7 +376,7 @@ export class JsonLdToQuads {
 
   private static jsonLdValueToTerm(
     value: unknown,
-    conversionContext: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): null | QuadObjectType {
     if (typeof value === 'string') {
       return JsonLdToQuads.convertStringValue(value, conversionContext);
@@ -395,7 +394,7 @@ export class JsonLdToQuads {
   }
 
   /** Groups per-call mutable state to avoid passing 4-5 arguments through every recursive call. */
-  private static makeConversionContext(context: Record<string, string>): ConversionContextType {
+  private static makeConversionContext(context: Record<string, string>): ConversionContextInterface {
     return {
       'allQuads': [],
       'bnodeMap': new Map(),
@@ -404,7 +403,7 @@ export class JsonLdToQuads {
     };
   }
 
-  private static parseLiteralToken(token: string): ParsedLiteralType {
+  private static parseLiteralToken(token: string): ParsedLiteralEntity.Type {
     const closingQuote = token.lastIndexOf('"');
 
     if (closingQuote <= 0) {
@@ -442,7 +441,7 @@ export class JsonLdToQuads {
     };
   }
 
-  private static parseNQuadLine(body: string): NQuadLineResultType {
+  private static parseNQuadLine(body: string): QuadInterface | undefined {
     const tokens = JsonLdToQuads.tokenizeNQuadLine(body);
 
     if (tokens.length < NQUAD_MINIMUM_TOKENS) {
@@ -485,7 +484,7 @@ export class JsonLdToQuads {
     return Terms.iri(objectToken.slice(1, -1));
   }
 
-  private static tokenizeBnodeAt(line: string, pos: number): TokenParseResultType {
+  private static tokenizeBnodeAt(line: string, pos: number): TokenParseResultEntity.Type {
     const end = line.indexOf(' ', pos);
     const token = end === -1 ? line.slice(pos) : line.slice(pos, end);
 
@@ -495,7 +494,7 @@ export class JsonLdToQuads {
     ];
   }
 
-  private static tokenizeIriAt(line: string, pos: number): TokenParseResultType {
+  private static tokenizeIriAt(line: string, pos: number): TokenParseResultEntity.Type {
     const end = line.indexOf('>', pos);
 
     if (end === -1) {
@@ -511,7 +510,7 @@ export class JsonLdToQuads {
     ];
   }
 
-  private static tokenizeLiteralAt(line: string, pos: number): TokenParseResultType {
+  private static tokenizeLiteralAt(line: string, pos: number): TokenParseResultEntity.Type {
     const afterQuotes = JsonLdToQuads.advancePastLiteralQuotes(line, pos);
     const end = JsonLdToQuads.advancePastLiteralSuffix(line, afterQuotes);
 

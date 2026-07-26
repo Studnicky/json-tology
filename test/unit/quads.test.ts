@@ -17,8 +17,8 @@ import {
 import {
   JsonTology, Skolemize
 } from '../../src/index.js';
-// SkolemizeFunctionType is the function-shape contract for IRI minting; consumed via the public iriFor option but the type alias itself is internal.
-import type { SkolemizeFunctionType } from '../../src/types/SkolemizeFunctionType.js';
+// SkolemizeFunctionInterface is the function-shape contract for IRI minting; consumed via the public iriForFunction option but the type alias itself is internal.
+import type { SkolemizeFunctionInterface } from '../../src/interfaces/SkolemizeFunctionInterface.js';
 
 const UserSchema = {
   '$id': 'https://example.com/User',
@@ -57,7 +57,7 @@ const TeamSchema = {
   'type': 'object'
 } as const;
 
-const noopSkolemize: SkolemizeFunctionType = () => {
+const noopSkolemize: SkolemizeFunctionInterface = () => {
   return;
 };
 
@@ -153,7 +153,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
     const docQuads = jtDoc.toQuads(DocSchema, {
       'id': 'doc-42',
       'title': 'Hello'
-    }, { 'iriFor': Skolemize.fromProperty('id', { 'baseIri': 'https://example.com/docs' }) });
+    }, { 'iriForFunction': Skolemize.fromProperty('id', { 'baseIri': 'https://example.com/docs' }) });
     const docSubjects = new Set(docQuads.map((quad) => {
       return quad.subject.value;
     }));
@@ -166,7 +166,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
       'schemas': [TeamSchema]
     });
     let fallbackCalls = 0;
-    const fallback: SkolemizeFunctionType = () => {
+    const fallback: SkolemizeFunctionInterface = () => {
       fallbackCalls++;
 
       return;
@@ -176,7 +176,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
       'lead': { 'name': 'Dana' },
       'name': 'Platform'
     }, {
-      'iriFor': Skolemize.fromProperty('id', {
+      'iriForFunction': Skolemize.fromProperty('id', {
         'baseIri': 'https://example.com/by-id',
         fallback
       })
@@ -188,7 +188,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
       'lead': { 'name': 'Dana' },
       'members': [{ 'name': 'Eve' }],
       'name': 'Platform'
-    }, { 'iriFor': Skolemize.wellKnownGenid('https://example.com') });
+    }, { 'iriForFunction': Skolemize.wellKnownGenid('https://example.com') });
 
     for (const subject of new Set(wkQuads.map((quad) => {
       return quad.subject.value;
@@ -203,7 +203,7 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
     const recorded: Array<{ 'depth': number;
       'path': string;
       'value': unknown }> = [];
-    const recorder: SkolemizeFunctionType = (ctx) => {
+    const recorder: SkolemizeFunctionInterface = (ctx) => {
       recorded.push({ ...ctx });
 
       return;
@@ -217,7 +217,7 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
       'lead': { 'name': 'Dana' },
       'members': [{ 'name': 'Eve' }],
       'name': 'Platform'
-    }, { 'iriFor': recorder });
+    }, { 'iriForFunction': recorder });
 
     assert.equal(recorded.length, 3, 'recorder called once per object: root + lead + member');
     const root = recorded.find((entry) => {
@@ -243,13 +243,13 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
       'name': 'Platform'
     };
     let calls = 0;
-    const counter: SkolemizeFunctionType = () => {
+    const counter: SkolemizeFunctionInterface = () => {
       calls++;
 
       return;
     };
 
-    jt.toQuads(TeamSchema, data, { 'iriFor': counter });
+    jt.toQuads(TeamSchema, data, { 'iriForFunction': counter });
     assert.equal(calls, 4);
   });
 
@@ -324,7 +324,7 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
     const noopQuads = jtTeam.toQuads(TeamSchema, {
       'lead': { 'name': 'Dana' },
       'name': 'Platform'
-    }, { 'iriFor': noopSkolemize });
+    }, { 'iriForFunction': noopSkolemize });
     const instanceSubjects = new Set(noopQuads.filter((quad) => {
       return quad.subject.value.includes('/instances/');
     }).map((quad) => {
@@ -349,7 +349,7 @@ void describe('fromQuads — deskolemize round-trip — Good/Bad/Ugly', () => {
     };
 
     // Good: reproduces input when paired with wellKnownGenid
-    const quads = jt.toQuads(UserSchema, input, { 'iriFor': Skolemize.wellKnownGenid('https://example.com') });
+    const quads = jt.toQuads(UserSchema, input, { 'iriForFunction': Skolemize.wellKnownGenid('https://example.com') });
     const lifted = jt.fromQuads(UserSchema.$id, quads, { 'deskolemize': true });
 
     assert.ok(lifted.length > 0);
@@ -364,7 +364,7 @@ void describe('fromQuads — deskolemize round-trip — Good/Bad/Ugly', () => {
       'defaultDeskolemize': true,
       'schemas': [UserSchema]
     });
-    const quads2 = jt2.toQuads(UserSchema, input, { 'iriFor': Skolemize.wellKnownGenid('https://example.com') });
+    const quads2 = jt2.toQuads(UserSchema, input, { 'iriForFunction': Skolemize.wellKnownGenid('https://example.com') });
     const lifted2 = jt2.fromQuads(UserSchema.$id, quads2);
 
     assert.ok(lifted2.length > 0);
@@ -378,7 +378,7 @@ void describe('fromQuads — deskolemize round-trip — Good/Bad/Ugly', () => {
     const noopQuads = jtTeam.toQuads(TeamSchema, {
       'lead': { 'name': 'Dana' },
       'name': 'Platform'
-    }, { 'iriFor': noopSkolemize });
+    }, { 'iriForFunction': noopSkolemize });
     const instanceSubjects = new Set(noopQuads.filter((quad) => {
       return quad.subject.value.includes('/instances/');
     }).map((quad) => {

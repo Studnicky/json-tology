@@ -1,9 +1,8 @@
-import type { KeywordContextType } from '../../../types/GraphEngine.js';
-import type {
-  ValidateWithErrorsFunctionType, ValidateWithErrorsResultType
-} from '../../../types/Validation.js';
-import type { ExecContextType } from '../../../types/ExecContextType.js';
-import type { CustomKeywordEntryType } from '../../../types/CustomKeywordEntryType.js';
+import type { KeywordContextInterface } from '../../../interfaces/KeywordContextInterface.js';
+import type { ValidateWithErrorsFunctionInterface } from '../../../interfaces/ValidateWithErrorsFunctionInterface.js';
+import type { ValidateWithErrorsResultEntity } from '../../../entities/ValidateWithErrorsResultEntity.js';
+import type { ExecContextInterface } from '../../../interfaces/ExecContextInterface.js';
+import type { CustomKeywordEntryInterface } from '../../../interfaces/CustomKeywordEntryInterface.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { DataType } from '../../data/DataType.js';
 import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
@@ -36,11 +35,11 @@ export class Composition {
   private static applyAllOfMember(
     current: unknown,
     path: string,
-    validator: ValidateWithErrorsFunctionType,
-    context: ExecContextType
-  ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
+    validator: ValidateWithErrorsFunctionInterface,
+    context: ExecContextInterface
+  ): ValidateWithErrorsResultEntity.Type & { 'earlyExit': boolean } {
     // allOf members run with stripUnknown forced false — see comment in validateAllOf
-    const memberContext: ExecContextType = {
+    const memberContext: ExecContextInterface = {
       ...context,
       'stripUnknown': false
     };
@@ -78,9 +77,9 @@ export class Composition {
   private static applyDependentSchemaMember(
     current: unknown,
     path: string,
-    validator: ValidateWithErrorsFunctionType,
-    context: ExecContextType
-  ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
+    validator: ValidateWithErrorsFunctionInterface,
+    context: ExecContextInterface
+  ): ValidateWithErrorsResultEntity.Type & { 'earlyExit': boolean } {
     const result = validator(current, path, context);
 
     if (!result.valid && !context.collectErrors) {
@@ -101,10 +100,10 @@ export class Composition {
   private static applyElseBranch(
     workingValue: unknown,
     path: string,
-    elseValidator: ValidateWithErrorsFunctionType,
-    context: ExecContextType
-  ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
-    const branchContext: ExecContextType = { ...context };
+    elseValidator: ValidateWithErrorsFunctionInterface,
+    context: ExecContextInterface
+  ): ValidateWithErrorsResultEntity.Type & { 'earlyExit': boolean } {
+    const branchContext: ExecContextInterface = { ...context };
     const elseResult = elseValidator(workingValue, path, branchContext);
 
     // Propagate evaluated sets from the else branch back to the outer context.
@@ -140,10 +139,10 @@ export class Composition {
   private static applyThenBranch(
     workingValue: unknown,
     path: string,
-    thenValidator: ValidateWithErrorsFunctionType,
-    context: ExecContextType
-  ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
-    const branchContext: ExecContextType = { ...context };
+    thenValidator: ValidateWithErrorsFunctionInterface,
+    context: ExecContextInterface
+  ): ValidateWithErrorsResultEntity.Type & { 'earlyExit': boolean } {
+    const branchContext: ExecContextInterface = { ...context };
     const thenResult = thenValidator(workingValue, path, branchContext);
 
     // Propagate evaluated sets from the then branch back to the outer context.
@@ -178,8 +177,8 @@ export class Composition {
   static validateAllOf(
     workingValue: unknown,
     path: string,
-    allOfValidators: undefined | ValidateWithErrorsFunctionType[],
-    context: ExecContextType
+    allOfValidators: undefined | ValidateWithErrorsFunctionInterface[],
+    context: ExecContextInterface
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
@@ -199,7 +198,7 @@ export class Composition {
     // lives in branch N+1 would otherwise fail the required check.
     // exec/* is the compiled backend; visit/* (VisitComposition) is the interpreter fallback.
     if (context.applyDefaults) {
-      const preContext: ExecContextType = {
+      const preContext: ExecContextInterface = {
         ...context,
         'collectErrors': true,
         'errors': [],
@@ -252,8 +251,8 @@ export class Composition {
   static validateAnyOf(
     path: string,
     value: unknown,
-    anyOfValidators: undefined | ValidateWithErrorsFunctionType[],
-    context: ExecContextType
+    anyOfValidators: undefined | ValidateWithErrorsFunctionInterface[],
+    context: ExecContextInterface
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
@@ -268,12 +267,12 @@ export class Composition {
     const needsValueProducing = context.applyDefaults || context.coerce;
     let matched = false;
     let winnerValue: unknown = value;
-    let winnerBranchContext: ExecContextType | undefined;
+    let winnerBranchContext: ExecContextInterface | undefined;
 
     for (const validator of anyOfValidators) {
       if (needsValueProducing) {
         const candidate = GraphEngineSupport.cloneCandidate(value);
-        const branchContext: ExecContextType = {
+        const branchContext: ExecContextInterface = {
           ...context,
           'collectErrors': true,
           'errors': [],
@@ -303,7 +302,7 @@ export class Composition {
         }
       } else {
         // Check mode: run in isolated scratch context
-        const branchContext: ExecContextType = {
+        const branchContext: ExecContextInterface = {
           ...context,
           'applyDefaults': false,
           'coerce': false,
@@ -378,7 +377,7 @@ export class Composition {
   static validateCustomKeywords(
     path: string,
     value: unknown,
-    customKeywordEntries: CustomKeywordEntryType[] | undefined,
+    customKeywordEntries: CustomKeywordEntryInterface[] | undefined,
     errors: Array<ReturnType<typeof BaseError.validationError>>
   ): boolean {
     if (customKeywordEntries === undefined) {
@@ -393,7 +392,7 @@ export class Composition {
         continue;
       }
 
-      const context: KeywordContextType = {
+      const context: KeywordContextInterface = {
         'parentData': undefined,
         'parentKey': '',
         path,
@@ -415,8 +414,8 @@ export class Composition {
     workingValue: unknown,
     path: string,
     depSchemaValidators: Array<{ 'trigger': string;
-      'validator': ValidateWithErrorsFunctionType }> | undefined,
-    context: ExecContextType
+      'validator': ValidateWithErrorsFunctionInterface }> | undefined,
+    context: ExecContextInterface
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
@@ -464,10 +463,10 @@ export class Composition {
   static validateIfThenElse(
     workingValue: unknown,
     path: string,
-    ifValidator: undefined | ValidateWithErrorsFunctionType,
-    thenValidator: undefined | ValidateWithErrorsFunctionType,
-    elseValidator: undefined | ValidateWithErrorsFunctionType,
-    context: ExecContextType
+    ifValidator: undefined | ValidateWithErrorsFunctionInterface,
+    thenValidator: undefined | ValidateWithErrorsFunctionInterface,
+    elseValidator: undefined | ValidateWithErrorsFunctionInterface,
+    context: ExecContextInterface
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
@@ -480,7 +479,7 @@ export class Composition {
     }
 
     // Run if in isolated check-mode scratch context
-    const ifScratchContext: ExecContextType = {
+    const ifScratchContext: ExecContextInterface = {
       ...context,
       'applyDefaults': false,
       'coerce': false,
@@ -516,15 +515,15 @@ export class Composition {
   static validateNot(
     path: string,
     value: unknown,
-    complementValidator: undefined | ValidateWithErrorsFunctionType,
-    context: ExecContextType
+    complementValidator: undefined | ValidateWithErrorsFunctionInterface,
+    context: ExecContextInterface
   ): boolean {
     if (complementValidator === undefined) {
       return true;
     }
 
     // Run in isolated check-mode scratch context — not passes iff validator FAILS
-    const scratchContext: ExecContextType = {
+    const scratchContext: ExecContextInterface = {
       ...context,
       'applyDefaults': false,
       'coerce': false,
@@ -561,8 +560,8 @@ export class Composition {
   static validateOneOf(
     path: string,
     value: unknown,
-    oneOfValidators: undefined | ValidateWithErrorsFunctionType[],
-    context: ExecContextType
+    oneOfValidators: undefined | ValidateWithErrorsFunctionInterface[],
+    context: ExecContextInterface
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
@@ -577,10 +576,10 @@ export class Composition {
     const needsValueProducing = context.applyDefaults || context.coerce;
     let matchCount = 0;
     let winnerValue: unknown = value;
-    let winnerBranchContext: ExecContextType | undefined;
+    let winnerBranchContext: ExecContextInterface | undefined;
 
     for (const validator of oneOfValidators) {
-      const branchContext: ExecContextType = needsValueProducing
+      const branchContext: ExecContextInterface = needsValueProducing
         ? {
           ...context,
           'collectErrors': true,

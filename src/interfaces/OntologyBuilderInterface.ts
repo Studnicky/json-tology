@@ -1,4 +1,4 @@
-import type { JsonLdDocumentInputType } from '../types/JsonLdDocumentInputType.js';
+import type { JsonLdDocumentInputEntity } from '../entities/JsonLdDocumentInputEntity.js';
 import type { QuadInterface } from './QuadInterface.js';
 
 /**
@@ -8,9 +8,9 @@ import type { QuadInterface } from './QuadInterface.js';
  * rdf/js quad store. Every output derives from that store.
  */
 export interface OntologyBuilderInterface {
-  addFromJsonLd(doc: JsonLdDocumentInputType): Promise<this>;
+  addFromJsonLd(doc: JsonLdDocumentInputEntity.Type): Promise<this>;
   addFromQuads(quads: readonly QuadInterface[]): this;
-  addShaclFromJsonLd(doc: JsonLdDocumentInputType): Promise<this>;
+  addShaclFromJsonLd(doc: JsonLdDocumentInputEntity.Type): Promise<this>;
   addShaclFromQuads(quads: readonly QuadInterface[]): this;
   context(): Record<string, string>;
   jsonLd(): string;

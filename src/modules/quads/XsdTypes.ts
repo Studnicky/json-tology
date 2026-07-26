@@ -5,7 +5,7 @@
  * All return values are full IRIs (never compact CURIEs).
  */
 
-import type { SchemaGraphSemanticsType } from '../../types/SchemaGraph.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
 import {
   BASE_TYPE_MAP, NUMBER_FORMAT_MAP, STRING_FORMAT_MAP
 } from '../../constants/XSD_MAPS.js';
@@ -41,7 +41,7 @@ export const XsdTypes = {
    * @returns Full IRI for the XSD type, `owl:Nothing` full IRI for null-only types,
    *   or `null` for ambiguous/composite types.
    */
-  'resolve': (semantics: SchemaGraphSemanticsType): null | string => {
+  'resolve': (semantics: SchemaGraphSemanticsInterface): null | string => {
     const types = semantics.schemaTypes;
     const format = semantics.format;
 

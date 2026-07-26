@@ -15,13 +15,13 @@ import { JsonTology } from '../../src/index.js';
 import {
   bookstoreEntities, bookstoreSchemas
 } from '../../examples/docs/bookstore/index.js';
-import type { OwlImportResultType } from '../../src/types/OwlImport.js';
+import type { OwlImportResultInterface } from '../../src/interfaces/OwlImportResultInterface.js';
 
 // ---------------------------------------------------------------------------
 // Synthetic helpers
 // ---------------------------------------------------------------------------
 
-function emptyResult(): OwlImportResultType {
+function emptyResult(): OwlImportResultInterface {
   return {
     'characteristics': [],
     'differentFrom': [],
@@ -33,7 +33,7 @@ function emptyResult(): OwlImportResultType {
   };
 }
 
-function resultFromSchemas(schemas: Array<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultType {
+function resultFromSchemas(schemas: Array<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultInterface {
   return {
     'characteristics': [],
     'differentFrom': [],
@@ -272,7 +272,7 @@ void describe('OwlCodegen — Bad: empty input', () => {
 
 void describe('OwlCodegen — Ugly: sameAs + characteristics in result', () => {
   void it('emits sameAs calls when result contains sameAs pairs', () => {
-    const result: OwlImportResultType = {
+    const result: OwlImportResultInterface = {
       'characteristics': [],
       'differentFrom': [],
       'individuals': [],
@@ -293,7 +293,7 @@ void describe('OwlCodegen — Ugly: sameAs + characteristics in result', () => {
   });
 
   void it('emits addCharacteristic calls when result contains characteristics', () => {
-    const result: OwlImportResultType = {
+    const result: OwlImportResultInterface = {
       'characteristics': [{
         'characteristic': 'Functional',
         'propertyIri': 'urn:prop:id'

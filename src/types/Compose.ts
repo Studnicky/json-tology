@@ -13,13 +13,7 @@ import type {
   SelfEquivalentType,
   SelfSubClassType
 } from './TypeErrors.js';
-
-// ---------------------------------------------------------------------------
-// Recursion limits (type-level cap to prevent infinite tuple expansion)
-// ---------------------------------------------------------------------------
-
-declare const _TUPLE_RECURSION_CAP: 10;
-type TupleRecursionCap = typeof _TUPLE_RECURSION_CAP;
+import type { TupleRecursionCapEntity } from '../entities/TupleRecursionCapEntity.js';
 
 /**
  * Extract the union of required field names from a schema's `required` array.
@@ -146,7 +140,7 @@ type HasConstDiscriminatorType<TVariant, TProp extends string>
  * `properties[prop]` as a `const` and list `prop` in `required`.
  *
  * @remarks
- * Walks the variant tuple (capped at `TupleRecursionCap = 10`) and substitutes
+ * Walks the variant tuple (capped at `TupleRecursionCapEntity.Type = 10`) and substitutes
  * a `DiscriminatorMissingType` brand for any non-conforming variant, producing
  * a compile-time error at the call site. Recursion is bounded by the
  * `TDepth` accumulator tuple; once its length reaches the cap the remaining
@@ -174,17 +168,17 @@ export type ValidateDiscriminatedVariantsType<
   TVariants,
   TProp extends string,
   TDepth extends readonly unknown[] = []
-> = TDepth['length'] extends TupleRecursionCap
+> = TDepth['length'] extends TupleRecursionCapEntity.Type
   ? TVariants
   : TVariants extends readonly [infer THead, ...infer TTail]
-    ? readonly [
+    ? [
       HasConstDiscriminatorType<THead, TProp> extends true
         ? THead
         : DiscriminatorMissingType<TProp, THead>,
-      ...ValidateDiscriminatedVariantsType<TTail, TProp, readonly [unknown, ...TDepth]>
+      ...ValidateDiscriminatedVariantsType<TTail, TProp, [unknown, ...TDepth]>
     ]
     : TVariants extends readonly []
-      ? readonly []
+      ? []
       : TVariants;
 
 /**
@@ -217,7 +211,7 @@ export type ValidateEquivalentOptionsType<
   TSource extends { readonly '$id': string },
   TOptions extends { readonly '$id': string }
 > = TOptions['$id'] extends TSource['$id']
-  ? Omit<TOptions, '$id'> & { readonly '$id': SelfEquivalentType<TOptions['$id']> }
+  ? Omit<TOptions, '$id'> & { '$id': SelfEquivalentType<TOptions['$id']> }
   : TOptions;
 
 /**
@@ -365,7 +359,7 @@ export type PartialSchemaType<TSchema, TId extends string>
 export type RequiredSchemaType<TSchema, TId extends string>
   = Omit<TSchema, '$id' | 'required'> & {
     '$id': TId;
-    'required': ReadonlyArray<keyof ExtractPropertiesType<TSchema>>;
+    'required': Array<keyof ExtractPropertiesType<TSchema>>;
   };
 
 /**
@@ -386,6 +380,20 @@ export type RequiredSchemaType<TSchema, TId extends string>
  * predicate IRI names the edge, `targetRef` resolves the object class node, and
  * each annotation entry becomes an extra quad whose subject is the reified triple
  * term `<< source predicate target >>`.
+ *
+ * Not schema-derivable: its entire purpose is to propagate the caller's literal
+ * type arguments (`TPredicate`, `TTargetReference`, `TAnnotations`) into the
+ * output shape, which a static `as const` schema constant cannot parameterize.
+ * Replacing the inline object with a `FromSchema<typeof Schema>` reference would
+ * widen every literal field to its base type and defeat the reason this builder
+ * return type exists. No interface form is available either — this is plain
+ * data (see the project's `type`-is-data-substrate rule), not a behavioral
+ * contract.
+ *
+ * No-fix exception: `@studnicky/type-alias-invariants` flags this alias because its
+ * literal type-parameter members (`TPredicate`, `TTargetReference`, `TAnnotations`)
+ * classify as non-schema-derivable data — a fundamental limit of the rule's static
+ * analysis for type-parameterized builder-return shapes, not a defect here.
  *
  * @example
  * ```ts
@@ -428,6 +436,17 @@ export type AnnotatedEdgeSchemaType<
  * array; the TBox emits `rdfs:subClassOf` relations for OWL intersection
  * class expressions.
  *
+ * Not schema-derivable: `TSchemas` and `TId` are the caller's own literal type
+ * arguments, propagated verbatim into `allOf` and `$id`. A static
+ * `FromSchema<typeof Schema>` constant cannot parameterize over the member
+ * schemas supplied at each `Compose.intersection` call site. No interface form
+ * applies either — this is plain data, not a behavioral contract.
+ *
+ * No-fix exception: `@studnicky/type-alias-invariants` flags this alias because its
+ * literal type-parameter members (`TSchemas`, `TId`) classify as non-schema-derivable
+ * data — a fundamental limit of the rule's static analysis for type-parameterized
+ * builder-return shapes, not a defect here.
+ *
  * @example
  * ```ts
  * const Schema = Compose.intersection(
@@ -459,6 +478,18 @@ export type IntersectionSchemaType<
  * selects the concrete variant at runtime. The graph engine uses this to
  * fast-path variant resolution rather than testing every `oneOf` branch.
  * The TBox emits `owl:unionOf` for the union class.
+ *
+ * Not schema-derivable: `TDiscriminator`, `TVariants`, and `TId` are the
+ * caller's own literal type arguments, propagated verbatim into
+ * `discriminator.propertyName`, `oneOf`, and `$id`. A static
+ * `FromSchema<typeof Schema>` constant cannot parameterize over the variants
+ * supplied at each `Compose.discriminatedUnion` call site. No interface form
+ * applies either — this is plain data, not a behavioral contract.
+ *
+ * No-fix exception: `@studnicky/type-alias-invariants` flags this alias because its
+ * literal type-parameter members (`TDiscriminator`, `TVariants`, `TId`) classify as
+ * non-schema-derivable data — a fundamental limit of the rule's static analysis for
+ * type-parameterized builder-return shapes, not a defect here.
  *
  * @example
  * ```ts
@@ -515,12 +546,14 @@ export type PickSchemaType<
   TSchema,
   TKeys extends string,
   TId extends string
-> = {
-  '$id': TId;
-  'properties': { [K in keyof ExtractPropertiesType<TSchema> & TKeys]: ExtractPropertiesType<TSchema>[K] };
-  'required': ReadonlyArray<ExtractRequiredType<TSchema> & TKeys>;
-  'type': 'object';
-};
+> = [TSchema] extends [unknown]
+  ? {
+    '$id': TId;
+    'properties': { [K in keyof ExtractPropertiesType<TSchema> & TKeys]: ExtractPropertiesType<TSchema>[K] };
+    'required': Array<ExtractRequiredType<TSchema> & TKeys>;
+    'type': 'object';
+  }
+  : never;
 
 /**
  * Schema shape produced by `Compose.omit` — a structural subset of a base
@@ -549,21 +582,23 @@ export type OmitSchemaType<
   TSchema,
   TKeys extends string,
   TId extends string
-> = {
-  '$id': TId;
-  'properties': {
-    [K in Exclude<keyof ExtractPropertiesType<TSchema>, TKeys>]: ExtractPropertiesType<TSchema>[K];
-  };
-  'required': ReadonlyArray<Exclude<ExtractRequiredType<TSchema>, TKeys>>;
-  'type': 'object';
-};
+> = [TSchema] extends [unknown]
+  ? {
+    '$id': TId;
+    'properties': {
+      [K in Exclude<keyof ExtractPropertiesType<TSchema>, TKeys>]: ExtractPropertiesType<TSchema>[K];
+    };
+    'required': Array<Exclude<ExtractRequiredType<TSchema>, TKeys>>;
+    'type': 'object';
+  }
+  : never;
 
 type SubClassOfAllOfType<TParent, TBody>
   = TParent extends ReadonlyArray<infer TItem>
-    ? readonly [...readonly TItem[], Omit<TBody, '$id'>]
+    ? [...TItem[], Omit<TBody, '$id'>]
     : TParent extends { readonly '$id': string }
-      ? readonly [TParent, Omit<TBody, '$id'>]
-      : ReadonlyArray<Record<string, unknown>>;
+      ? [TParent, Omit<TBody, '$id'>]
+      : Array<Record<string, unknown>>;
 
 /**
  * Schema shape produced by `Compose.subClassOf` — a named schema that

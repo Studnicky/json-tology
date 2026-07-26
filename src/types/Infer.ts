@@ -62,9 +62,9 @@ import type {
   MinimumPropertiesBrandType,
   MultipleOfBrandType,
   PatternBrandType,
-  SchemaIdBrandType,
-  UniqueArrayBrandType
+  SchemaIdBrandType
 } from './ConstraintBrands.js';
+import type { UniqueArrayBrandInterface } from '../interfaces/UniqueArrayBrandInterface.js';
 import type {
   BuildAtLeastTupleType,
   BuildAtMostTupleType,
@@ -76,7 +76,7 @@ import type {
   AnchorNotFoundType,
   ReferenceNotFoundType
 } from './TypeErrors.js';
-import type { TransformBrandType } from '../types/TransformBrandType.js';
+import type { TransformBrandInterface } from '../interfaces/TransformBrandInterface.js';
 import type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
 
 // ---------------------------------------------------------------------------
@@ -88,6 +88,9 @@ declare const _DEEP_PROPERTY_DEPTH_CAP: 4;
 declare const _INTEGER_RANGE_CAP: 50;
 declare const _STRING_LENGTH_CAP: 8;
 
+// Each is `typeof` a numeric-literal constant — a recursion-depth bound, not
+// an object contract — so it has no interface form (same rationale as
+// TupleCapType in RestrictionInfer.ts).
 type SchemaPointerDepthCap = typeof _SCHEMA_POINTER_DEPTH_CAP;
 type DeepPropertyDepthCap = typeof _DEEP_PROPERTY_DEPTH_CAP;
 type IntegerRangeCap = typeof _INTEGER_RANGE_CAP;
@@ -379,7 +382,7 @@ type InferArrayBrandsType<T, TRoot, TReferences>
         ? MinimumItemsBrandType<N> : unknown)
       & (T extends { readonly 'uniqueItems': true }
         ? T extends { readonly 'items': infer I }
-          ? UniqueArrayBrandType<InferSchemaType<I, TRoot, TReferences>>
+          ? UniqueArrayBrandInterface<InferSchemaType<I, TRoot, TReferences>>
           : unknown
         : unknown)
     : unknown;
@@ -485,7 +488,7 @@ type UniqueTuplePairwiseType<TTuple, TPrevious extends readonly unknown[] = []>
  * Apply tuple distinctness narrowing when `uniqueItems: true`. Tuples whose
  * elements are all literals (length ≤ 8) collapse to `never` if any pair shares
  * a type. Tuples with more than 8 elements exceed the pairwise cap — pairwise
- * narrowing is skipped and a `UniqueArrayBrandType<unknown>` brand is
+ * narrowing is skipped and a `UniqueArrayBrandInterface<unknown>` brand is
  * applied instead so the compile-time constraint is preserved. Non-tuple arrays
  * pass through unchanged (the brand on `InferArrayBrandsType` already prevents
  * raw arrays from satisfying the type).
@@ -498,7 +501,7 @@ type ApplyUniqueItemsTupleNarrowingType<T, TArray>
         unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown,
         ...unknown[]
       ]
-        ? TArray & UniqueArrayBrandType<unknown>
+        ? TArray & UniqueArrayBrandInterface<unknown>
         // ≤ 8 elements — apply pairwise distinctness narrowing.
         : UniqueTuplePairwiseType<TArray>
       : TArray
@@ -593,8 +596,8 @@ type InferDependentRequiredType<T>
   = T extends { readonly 'dependentRequired': infer DR extends Record<string, readonly string[]> }
     ? IntersectMappedValuesType<{
       [K in keyof DR & string]:
-        Readonly<Partial<Record<K, never>>>
-        | Readonly<Record<DR[K][number] & string, unknown>>
+        Partial<Record<K, never>>
+        | Record<DR[K][number] & string, unknown>
     }>
     : unknown;
 
@@ -657,7 +660,7 @@ type InferObjectType<T, TRoot, TReferences>
 
 type InferAllOfType<T, TRoot, TReferences>
   = T extends { readonly 'allOf': readonly [infer A, ...infer Rest] }
-    ? InferAllOfType<{ readonly 'allOf': Rest }, TRoot, TReferences> & InferSchemaType<A, TRoot, TReferences>
+    ? InferAllOfType<{ 'allOf': Rest }, TRoot, TReferences> & InferSchemaType<A, TRoot, TReferences>
     : unknown;
 
 type InferAnyOfType<T, TRoot, TReferences>
@@ -1045,7 +1048,7 @@ type InferAnnotatedEdgeType<TEdge, TRoot, TReferences>
       'annotations': {
         [K in keyof TAnnotations]: InferSchemaType<TAnnotations[K], TRoot, TReferences>
       };
-      'target': InferReferenceType<{ readonly '$ref': TTargetReference }, TRoot, TReferences>;
+      'target': InferReferenceType<{ '$ref': TTargetReference }, TRoot, TReferences>;
     }
     : unknown;
 
@@ -1061,8 +1064,8 @@ type InferSchemaTypeCoreType<T, TRoot = T, TReferences = Record<never, never>>
     : T extends { readonly 'jt:annotatedEdge': infer TEdge }
       ? InferAnnotatedEdgeType<TEdge, TRoot, TReferences>
     // Phase 1: Transform brands do not change the wire-form schema type.
-      : T extends TransformBrandType<unknown>
-        ? InferSchemaType<Omit<T, keyof TransformBrandType<unknown>>, TRoot, TReferences>
+      : T extends TransformBrandInterface<unknown>
+        ? InferSchemaType<Omit<T, keyof TransformBrandInterface<unknown>>, TRoot, TReferences>
       // Phase 2: Const/Enum literals
         : T extends { readonly 'const': unknown } ? InferConstType<T>
           : T extends { readonly 'enum': readonly unknown[] } ? InferEnumType<T>
@@ -1115,7 +1118,9 @@ type InferSchemaTypeCoreType<T, TRoot = T, TReferences = Record<never, never>>
  * @typeParam TReferences - Map of external schema IRIs to their types.
  */
 export type InferSchemaType<T, TRoot = T, TReferences = JsonTologyReferencesInterface>
-  = ApplyNotExclusionType<T, InferSchemaTypeCoreType<T, TRoot, TReferences>>;
+  = [T] extends [unknown]
+    ? ApplyNotExclusionType<T, InferSchemaTypeCoreType<T, TRoot, TReferences>>
+    : never;
 
 /**
  * Partial form of {@link InferSchemaType} — every top-level property optional.
@@ -1880,6 +1885,9 @@ export type EnumValuesType<T>
  *
  * @typeParam T - Must be `never`; a non-never type causes a compile error.
  */
+// A bare type-parameter identity bounded to `never` — a compile-time
+// exhaustiveness assertion, not schema-derived data and not a contract, so
+// it has no available fix (same rationale as the recursion-cap types above).
 export type ExhaustiveType<T extends never> = T;
 
 // ---------------------------------------------------------------------------

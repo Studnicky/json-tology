@@ -2,60 +2,51 @@
  * SchemaCompilerPlan — plan-time graph helpers and node validation plan builder.
  *
  * Exports:
- *   SchemaCompilerPlan.buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
+ *   SchemaCompilerPlan.buildNodePlan — single keyword traversal → CompiledNodeValidationPlanInterface
  */
 
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
-import type {
-  SchemaGraphNodeType, SchemaGraphSemanticsType
-} from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
-import type { ValidateWithErrorsFunctionType } from '../../types/Validation.js';
-import type { ExecContextType } from '../../types/ExecContextType.js';
-import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntryType.js';
-import type { CustomKeywordEntryType } from '../../types/CustomKeywordEntryType.js';
-import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlanType.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContextType.js';
-import type {
-  BranchReferenceResultType,
-  ConditionalPropertyKeySetType,
-  CustomKeywordEntriesResultType,
-  DependentSchemaValidatorsResultType,
-  DepRequiredEntriesType,
-  EnumPrimitiveSetType,
-  InheritedPropertyKeySetType,
-  JtStrictPerFieldMapType,
-  OptionalValidateWithErrorsFunctionType,
-  PatternPropValidatorsResultType,
-  PropertyDefaultsMapType,
-  PropValidatorsMapType,
-  ValidateWithErrorsResultType
-} from '../../types/Validation.js';
-import type { AllowedKeysResultType } from '../../types/AllowedKeysResultType.js';
-import type { CompositionValidatorsResultType } from '../../types/CompositionValidatorsResultType.js';
-import type { ConditionalValidatorsResultType } from '../../types/ConditionalValidatorsResultType.js';
-import type { DependentSchemaValidatorEntryType } from '../../types/DependentSchemaValidatorEntryType.js';
-import type { PatternPropValidatorEntryType } from '../../types/PatternPropValidatorEntryType.js';
-import type { PlanArrayValidatorsType } from '../../types/PlanArrayValidatorsType.js';
-import type { LookupSchemaFunctionType } from '../../types/LookupSchemaFunctionType.js';
-import type { PlanCompileWithSemanticsType } from '../../types/PlanCompileWithSemanticsType.js';
-import type { CollectBranchOptionsType } from '../../types/CollectBranchOptionsType.js';
-import type { PlanAllowedKeysOptionsType } from '../../types/PlanAllowedKeysOptionsType.js';
-import type { PlanPreludeType } from '../../types/PlanPreludeType.js';
-import type { PropertyDefaultsOptionsType } from '../../types/PropertyDefaultsOptionsType.js';
-import type { PropertyValidatorsOptionsType } from '../../types/PropertyValidatorsOptionsType.js';
-import type { ReferenceValidatorOptionsType } from '../../types/ReferenceValidatorOptionsType.js';
-import type { ReferenceTargetType } from '../../types/ReferenceTargetType.js';
-import type { DynamicReferenceValidatorOptionsType } from '../../types/DynamicReferenceValidatorOptionsType.js';
-import type { ResolveScanReferenceOptionsType } from '../../types/ResolveScanReferenceOptionsType.js';
-import type { ScanConditionalOptionsType } from '../../types/ScanConditionalOptionsType.js';
-import type { WalkInheritedReferenceOptionsType } from '../../types/WalkInheritedReferenceOptionsType.js';
-import type { ConstraintValidatorsResultType } from '../../types/ConstraintValidatorsResultType.js';
-import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
-import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
-import type { ResolveDynamicReferenceTargetOptionsType } from '../../types/ResolveDynamicReferenceTargetOptionsType.js';
-import type { BuildNodePlanOptionsType } from '../../types/BuildNodePlanOptionsType.js';
+import type { KeywordDefinitionInterface } from '../../interfaces/KeywordDefinitionInterface.js';
+import type { ValidateWithErrorsFunctionInterface } from '../../interfaces/ValidateWithErrorsFunctionInterface.js';
+import type { ExecContextInterface } from '../../interfaces/ExecContextInterface.js';
+import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntryInterface.js';
+import type { CustomKeywordEntryInterface } from '../../interfaces/CustomKeywordEntryInterface.js';
+import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlanInterface.js';
+import type { SchemaCompilerValidatePlanContextInterface } from '../../interfaces/SchemaCompilerValidatePlanContextInterface.js';
+import type { ConditionalPropertyKeySetInterface } from '../../interfaces/ConditionalPropertyKeySetInterface.js';
+import type { InheritedPropertyKeySetInterface } from '../../interfaces/InheritedPropertyKeySetInterface.js';
+import type { JtStrictPerFieldMapInterface } from '../../interfaces/JtStrictPerFieldMapInterface.js';
+import type { EnumPrimitiveSetInterface } from '../../interfaces/EnumPrimitiveSetInterface.js';
+import type { PropertyDefaultsMapInterface } from '../../interfaces/PropertyDefaultsMapInterface.js';
+import type { PropValidatorsMapInterface } from '../../interfaces/PropValidatorsMapInterface.js';
+import type { ValidateWithErrorsResultEntity } from '../../entities/ValidateWithErrorsResultEntity.js';
+import type { AllowedKeysResultInterface } from '../../interfaces/AllowedKeysResultInterface.js';
+import type { CompositionValidatorsResultInterface } from '../../interfaces/CompositionValidatorsResultInterface.js';
+import type { ConditionalValidatorsResultInterface } from '../../interfaces/ConditionalValidatorsResultInterface.js';
+import type { DependentSchemaValidatorEntryInterface } from '../../interfaces/DependentSchemaValidatorEntryInterface.js';
+import type { PatternPropValidatorEntryInterface } from '../../interfaces/PatternPropValidatorEntryInterface.js';
+import type { PlanArrayValidatorsInterface } from '../../interfaces/PlanArrayValidatorsInterface.js';
+import type { LookupSchemaFunctionInterface } from '../../interfaces/LookupSchemaFunctionInterface.js';
+import type { PlanCompileWithSemanticsInterface } from '../../interfaces/PlanCompileWithSemanticsInterface.js';
+import type { CollectBranchOptionsInterface } from '../../interfaces/CollectBranchOptionsInterface.js';
+import type { PlanAllowedKeysOptionsInterface } from '../../interfaces/PlanAllowedKeysOptionsInterface.js';
+import type { PlanPreludeInterface } from '../../interfaces/PlanPreludeInterface.js';
+import type { PropertyDefaultsOptionsInterface } from '../../interfaces/PropertyDefaultsOptionsInterface.js';
+import type { PropertyValidatorsOptionsInterface } from '../../interfaces/PropertyValidatorsOptionsInterface.js';
+import type { ReferenceValidatorOptionsInterface } from '../../interfaces/ReferenceValidatorOptionsInterface.js';
+import type { ReferenceTargetInterface } from '../../interfaces/ReferenceTargetInterface.js';
+import type { DynamicReferenceValidatorOptionsInterface } from '../../interfaces/DynamicReferenceValidatorOptionsInterface.js';
+import type { ResolveScanReferenceOptionsInterface } from '../../interfaces/ResolveScanReferenceOptionsInterface.js';
+import type { ScanConditionalOptionsInterface } from '../../interfaces/ScanConditionalOptionsInterface.js';
+import type { WalkInheritedReferenceOptionsInterface } from '../../interfaces/WalkInheritedReferenceOptionsInterface.js';
+import type { ConstraintValidatorsResultInterface } from '../../interfaces/ConstraintValidatorsResultInterface.js';
+import type { ArrayValidationOptionsInterface } from '../../interfaces/ArrayValidationOptionsInterface.js';
+import type { ObjectValidationOptionsInterface } from '../../interfaces/ObjectValidationOptionsInterface.js';
+import type { ResolveDynamicReferenceTargetOptionsInterface } from '../../interfaces/ResolveDynamicReferenceTargetOptionsInterface.js';
+import type { BuildNodePlanOptionsInterface } from '../../interfaces/BuildNodePlanOptionsInterface.js';
 import { DataType } from '../data/DataType.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
@@ -210,15 +201,15 @@ class TypePredicate {
 
 /** Boolean-schema fast paths (A.1) — reused across all plans. */
 class BooleanSchemaValidator {
-  static booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFunctionType {
+  static booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFunctionInterface {
     return schema ? BooleanSchemaValidator.trueValidator : BooleanSchemaValidator.falseValidator;
   }
 
   static falseValidator(
     value: unknown,
     path: string,
-    context: ExecContextType
-  ): ValidateWithErrorsResultType {
+    context: ExecContextInterface
+  ): ValidateWithErrorsResultEntity.Type {
     if (context.collectErrors) {
       context.errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
     }
@@ -229,10 +220,26 @@ class BooleanSchemaValidator {
     };
   }
 
-  static trueValidator(value: unknown): ValidateWithErrorsResultType {
+  static trueValidator(value: unknown): ValidateWithErrorsResultEntity.Type {
     return {
       'valid': true,
       value
+    };
+  }
+}
+
+/** Rejects every unevaluated item/property — used when `unevaluatedItems`/`unevaluatedProperties` is the boolean schema `false`. */
+class UnevaluatedRejectValidator {
+  static forKeyword(keyword: 'unevaluatedItems' | 'unevaluatedProperties'): ValidateWithErrorsFunctionInterface {
+    return (value: unknown, path: string, context: ExecContextInterface): ValidateWithErrorsResultEntity.Type => {
+      if (context.collectErrors) {
+        context.errors.push(BaseError.validationError(path, keyword, VALIDATION_MESSAGES[keyword]));
+      }
+
+      return {
+        'valid': false,
+        value
+      };
     };
   }
 }
@@ -252,14 +259,14 @@ class InheritedProperties {
    * validator already accepts through the allOf member chain.
    */
   static collectAllOfPropertyKeys(
-    sem: SchemaGraphSemanticsType,
+    sem: SchemaGraphSemanticsInterface,
     graph: SchemaGraphInterface,
     lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
-  ): InheritedPropertyKeySetType {
+  ): InheritedPropertyKeySetInterface {
     const inherited = new Set<string>();
-    const visited = new Set<SchemaGraphNodeType>();
+    const visited = new Set<SchemaGraphNodeInterface>();
 
-    const walk = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeType): void => {
+    const walk = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeInterface): void => {
       if (visited.has(node)) {
         return;
       }
@@ -297,7 +304,7 @@ class InheritedProperties {
    * Resolve a `$ref` string to its target graph and node within the `walk` traversal,
    * then continue collecting property names.
    */
-  static walkReference(options: WalkInheritedReferenceOptionsType): void {
+  static walkReference(options: WalkInheritedReferenceOptionsInterface): void {
     const {
       currentGraph, lookupGraph, 'ref': reference, 'walkFn': walkFunction
     } = options;
@@ -341,7 +348,7 @@ class BranchReference {
     reference: string,
     currentGraph: SchemaGraphInterface,
     lookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined
-  ): BranchReferenceResultType {
+  ): ReferenceTargetInterface | undefined {
     if (reference.startsWith('#')) {
       return {
         'graph': currentGraph,
@@ -385,7 +392,7 @@ class ConditionalProperties {
    * Collect every property name reachable from a conditional branch node
    * (its own properties plus those behind `allOf`, `$ref`, and nested `then`/`else`).
    */
-  static collectBranchPropertyNames(options: CollectBranchOptionsType): void {
+  static collectBranchPropertyNames(options: CollectBranchOptionsInterface): void {
     const {
       branchNode, scanState, startGraph
     } = options;
@@ -393,7 +400,7 @@ class ConditionalProperties {
       collectVisited, lookupGraph, target
     } = scanState;
 
-    const collectFunction = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeType): void => {
+    const collectFunction = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeInterface): void => {
       if (collectVisited.has(node)) {
         return;
       }
@@ -441,13 +448,13 @@ class ConditionalProperties {
    * uses the own-only `allowedKeys` set per JSON Schema semantics.
    */
   static collectConditionalPropertyKeys(
-    sem: SchemaGraphSemanticsType,
+    sem: SchemaGraphSemanticsInterface,
     graph: SchemaGraphInterface,
     lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
-  ): ConditionalPropertyKeySetType {
+  ): ConditionalPropertyKeySetInterface {
     const conditional = new Set<string>();
-    const collectVisited = new Set<SchemaGraphNodeType>();
-    const scanVisited = new Set<SchemaGraphNodeType>();
+    const collectVisited = new Set<SchemaGraphNodeInterface>();
+    const scanVisited = new Set<SchemaGraphNodeInterface>();
 
     ConditionalProperties.scanForConditionalBranches({
       'currentGraph': graph,
@@ -466,7 +473,7 @@ class ConditionalProperties {
   /**
    * Resolve a `$ref` encountered during conditional-branch scanning.
    */
-  static resolveReference(options: ResolveScanReferenceOptionsType): void {
+  static resolveReference(options: ResolveScanReferenceOptionsInterface): void {
     const {
       currentGraph, 'ref': reference, scanState
     } = options;
@@ -525,7 +532,7 @@ class ConditionalProperties {
    * Scan a semantics node and its `allOf` members for `if`/`then`/`else` branches,
    * collecting all reachable property names into `target`.
    */
-  static scanForConditionalBranches(options: ScanConditionalOptionsType): void {
+  static scanForConditionalBranches(options: ScanConditionalOptionsInterface): void {
     const {
       currentGraph, scanSem, scanState
     } = options;
@@ -578,14 +585,14 @@ class ConditionalProperties {
 
 /** Wrapping of an inner validator to force `coerce: false` for strict-per-field properties. */
 class StrictValidator {
-  static wrap(inner: ValidateWithErrorsFunctionType): ValidateWithErrorsFunctionType {
+  static wrap(inner: ValidateWithErrorsFunctionInterface): ValidateWithErrorsFunctionInterface {
     return (
       value: unknown,
       path: string,
-      context: ExecContextType
-    ): ValidateWithErrorsResultType => {
+      context: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
       // Direct construction avoids the spread overhead on the hot validation path.
-      const strictContext: ExecContextType = {
+      const strictContext: ExecContextInterface = {
         ...context,
         'coerce': false
       };
@@ -610,9 +617,9 @@ class DynamicReferenceTarget {
   static resolve(
     dynamicReference: string,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryType[],
-    options?: ResolveDynamicReferenceTargetOptionsType
-  ): ReferenceTargetType | undefined {
+    dynamicScope: DynamicScopeEntryInterface[],
+    options?: ResolveDynamicReferenceTargetOptionsInterface
+  ): ReferenceTargetInterface | undefined {
     const {
       lookupGraph, lookupSchema
     } = options ?? {};
@@ -668,7 +675,7 @@ class DynamicReferenceTarget {
 
 /** Construction of the property-default map for a node's `properties` entries. */
 class PropertyDefaults {
-  static build(options: PropertyDefaultsOptionsType): PropertyDefaultsMapType {
+  static build(options: PropertyDefaultsOptionsInterface): PropertyDefaultsMapInterface {
     const {
       context, graph, lookupSchema, propertyEntries
     } = options;
@@ -709,14 +716,14 @@ class PropertyDefaults {
 /** Construction of the compiled custom-keyword entry list for a node's active keywords. */
 class CustomKeywordEntries {
   static build(
-    activeCustomKeywords: KeywordDefinitionType[],
-    sem: SchemaGraphSemanticsType
-  ): CustomKeywordEntriesResultType {
+    activeCustomKeywords: KeywordDefinitionInterface[],
+    sem: SchemaGraphSemanticsInterface
+  ): CustomKeywordEntryInterface[] | undefined {
     if (activeCustomKeywords.length === 0) {
       return undefined;
     }
 
-    const entries: CustomKeywordEntryType[] = [];
+    const entries: CustomKeywordEntryInterface[] = [];
 
     for (const kw of activeCustomKeywords) {
       if (kw.keyword in sem.extensions) {
@@ -738,9 +745,9 @@ class CustomKeywordEntries {
 /** Construction of the per-field `jtStrict` map for a node's `properties` entries. */
 class JtStrictPerField {
   static build(
-    propertyEntries: ReadonlyMap<string, SchemaGraphNodeType>,
+    propertyEntries: ReadonlyMap<string, SchemaGraphNodeInterface>,
     graph: SchemaGraphInterface
-  ): JtStrictPerFieldMapType {
+  ): JtStrictPerFieldMapInterface | undefined {
     const result = new Map<string, boolean>();
 
     for (const [
@@ -765,7 +772,7 @@ class JtStrictPerField {
 /** Construction of the enum fast-path `Set` when all values are primitives. */
 class EnumSet {
   /** Build the enum fast-path `Set` when all values are primitives. */
-  static build(enumValues: undefined | unknown[]): EnumPrimitiveSetType {
+  static build(enumValues: undefined | unknown[]): EnumPrimitiveSetInterface | undefined {
     if (enumValues === undefined) {
       return undefined;
     }
@@ -792,7 +799,7 @@ class EnumSet {
  */
 class PlanBuilders {
   /** Build the property-alias map and allowed-keys sets for the plan. */
-  static allowedKeys(options: PlanAllowedKeysOptionsType): AllowedKeysResultType {
+  static allowedKeys(options: PlanAllowedKeysOptionsInterface): AllowedKeysResultInterface {
     const {
       graph, lookupGraph, propertyEntries, sem
     } = options;
@@ -836,11 +843,11 @@ class PlanBuilders {
   }
 
   /** Build the array-related validators for a node plan. */
-  static arrayValidators(options: PlanCompileWithSemanticsType): PlanArrayValidatorsType {
+  static arrayValidators(options: PlanCompileWithSemanticsInterface): PlanArrayValidatorsInterface {
     const {
       context, formatRegistry, graph, lookupSchema, sem
     } = options;
-    let prefixValidators: undefined | ValidateWithErrorsFunctionType[];
+    let prefixValidators: undefined | ValidateWithErrorsFunctionInterface[];
 
     if (sem.prefixItems.length > 0) {
       prefixValidators = [];
@@ -879,7 +886,7 @@ class PlanBuilders {
    * A `dynamicRef === '#'` with no matching scope entry at runtime is a spec-legal
    * no-op (no dynamic anchor in scope), so that path may remain `{valid:true}`.
    */
-  static compileDynamicReferenceValidator(options: DynamicReferenceValidatorOptionsType): ValidateWithErrorsFunctionType {
+  static compileDynamicReferenceValidator(options: DynamicReferenceValidatorOptionsInterface): ValidateWithErrorsFunctionInterface {
     const {
       context, 'dynamicRef': dynamicReference, formatRegistry, graph, lookupGraph, lookupSchema
     } = options;
@@ -906,13 +913,13 @@ class PlanBuilders {
     const referenceKey = `${schemaId}::dynamic::${dynamicReference}`;
 
     // Per-node validator cache: resolved node → compiled validator.
-    const validatorCache = new WeakMap<SchemaGraphNodeType, ValidateWithErrorsFunctionType>();
+    const validatorCache = new WeakMap<SchemaGraphNodeInterface, ValidateWithErrorsFunctionInterface>();
 
     return (
       value: unknown,
       path: string,
-      execContext: ExecContextType
-    ): ValidateWithErrorsResultType => {
+      execContext: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
       if (execContext.refStack.has(referenceKey)) {
         return {
           'valid': true,
@@ -950,11 +957,11 @@ class PlanBuilders {
     };
   }
 
-  static compilePropertyValidators(options: PropertyValidatorsOptionsType): PropValidatorsMapType {
+  static compilePropertyValidators(options: PropertyValidatorsOptionsInterface): PropValidatorsMapInterface {
     const {
       configStrict, context, formatRegistry, graph, lookupSchema, propertyEntries
     } = options;
-    const propValidators = new Map<string, ValidateWithErrorsFunctionType>();
+    const propValidators = new Map<string, ValidateWithErrorsFunctionInterface>();
 
     for (const [
       key,
@@ -994,12 +1001,12 @@ class PlanBuilders {
    */
   static compileRdfsRangeValidator(
     rdfsRange: string | undefined,
-    context: SchemaCompilerValidatePlanContextType,
+    context: SchemaCompilerValidatePlanContextInterface,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
-    lookupSchema: LookupSchemaFunctionType | undefined,
+    lookupSchema: LookupSchemaFunctionInterface | undefined,
     lookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined
-  ): undefined | ValidateWithErrorsFunctionType {
+  ): undefined | ValidateWithErrorsFunctionInterface {
     if (rdfsRange === undefined) {
       return undefined;
     }
@@ -1027,8 +1034,8 @@ class PlanBuilders {
     return (
       value: unknown,
       path: string,
-      execContext: ExecContextType
-    ): ValidateWithErrorsResultType => {
+      execContext: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
       if (execContext.refStack.has(rangeReferenceKey)) {
         return {
           'valid': true,
@@ -1084,7 +1091,7 @@ class PlanBuilders {
     };
   }
 
-  static compileReferenceValidator(options: ReferenceValidatorOptionsType): OptionalValidateWithErrorsFunctionType {
+  static compileReferenceValidator(options: ReferenceValidatorOptionsInterface): undefined | ValidateWithErrorsFunctionInterface {
     const {
       context, formatRegistry, graph, lookupGraph, lookupSchema, 'ref': reference
     } = options;
@@ -1115,13 +1122,13 @@ class PlanBuilders {
 
     const referenceKey = `${GraphEngineSupport.schemaId(targetGraph.rootSchema) ?? '<anonymous>'}::${reference}`;
 
-    let cached: OptionalValidateWithErrorsFunctionType;
+    let cached: undefined | ValidateWithErrorsFunctionInterface;
 
     return (
       value: unknown,
       path: string,
-      execContext: ExecContextType
-    ): ValidateWithErrorsResultType => {
+      execContext: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
       if (execContext.refStack.has(referenceKey)) {
         return {
           'valid': true,
@@ -1142,35 +1149,36 @@ class PlanBuilders {
   }
 
   /**
-   * Compile a `unevaluatedProperties` or `unevaluatedItems` node to a validator or
-   * the sentinel `false` (meaning: reject all unevaluated items/properties).
+   * Compile a `unevaluatedProperties` or `unevaluatedItems` node to a validator that
+   * rejects every unevaluated entry when the node is the boolean schema `false`.
    *
    * Returns `undefined` when no unevaluated node is present.
    */
   static compileUnevaluatedNode(
-    node: SchemaGraphNodeType | undefined,
-    context: SchemaCompilerValidatePlanContextType,
+    node: SchemaGraphNodeInterface | undefined,
+    keyword: 'unevaluatedItems' | 'unevaluatedProperties',
+    context: SchemaCompilerValidatePlanContextInterface,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
-    lookupSchema: LookupSchemaFunctionType | undefined
-  ): false | undefined | ValidateWithErrorsFunctionType {
+    lookupSchema: LookupSchemaFunctionInterface | undefined
+  ): undefined | ValidateWithErrorsFunctionInterface {
     if (node === undefined) {
       return undefined;
     }
 
     if (typeof node.schema === 'boolean') {
-      return node.schema ? undefined : false;
+      return node.schema ? undefined : UnevaluatedRejectValidator.forKeyword(keyword);
     }
 
     return context.compileNodeValidateWithErrors(node, formatRegistry, graph, lookupSchema);
   }
 
   /** Compile `allOf` / `anyOf` / `oneOf` validators and checks from the semantics node. */
-  static compositionValidators(options: PlanCompileWithSemanticsType): CompositionValidatorsResultType {
+  static compositionValidators(options: PlanCompileWithSemanticsInterface): CompositionValidatorsResultInterface {
     const {
       context, formatRegistry, graph, lookupSchema, sem
     } = options;
-    let allOfValidators: undefined | ValidateWithErrorsFunctionType[];
+    let allOfValidators: undefined | ValidateWithErrorsFunctionInterface[];
 
     if (sem.allOf.length > 0) {
       allOfValidators = [];
@@ -1179,7 +1187,7 @@ class PlanBuilders {
       }
     }
 
-    let anyOfValidators: undefined | ValidateWithErrorsFunctionType[];
+    let anyOfValidators: undefined | ValidateWithErrorsFunctionInterface[];
 
     if (sem.anyOf.length > 0) {
       anyOfValidators = [];
@@ -1188,7 +1196,7 @@ class PlanBuilders {
       }
     }
 
-    let oneOfValidators: undefined | ValidateWithErrorsFunctionType[];
+    let oneOfValidators: undefined | ValidateWithErrorsFunctionInterface[];
 
     if (sem.oneOf.length > 0) {
       oneOfValidators = [];
@@ -1205,7 +1213,7 @@ class PlanBuilders {
   }
 
   /** Compile `if` / `then` / `else` validators from the semantics node. */
-  static conditionalValidators(options: PlanCompileWithSemanticsType): ConditionalValidatorsResultType {
+  static conditionalValidators(options: PlanCompileWithSemanticsInterface): ConditionalValidatorsResultInterface {
     const {
       context, formatRegistry, graph, lookupSchema, sem
     } = options;
@@ -1226,7 +1234,7 @@ class PlanBuilders {
     };
   }
 
-  static constraintValidators(options: PlanCompileWithSemanticsType): ConstraintValidatorsResultType {
+  static constraintValidators(options: PlanCompileWithSemanticsInterface): ConstraintValidatorsResultInterface {
     const {
       context, formatRegistry, graph, lookupSchema, sem
     } = options;
@@ -1251,7 +1259,7 @@ class PlanBuilders {
   }
 
   /** Compile `dependentSchemas` validators from the semantics node. */
-  static dependentSchemaValidators(options: PlanCompileWithSemanticsType): DependentSchemaValidatorsResultType {
+  static dependentSchemaValidators(options: PlanCompileWithSemanticsInterface): DependentSchemaValidatorEntryInterface[] | undefined {
     const {
       context, formatRegistry, graph, lookupSchema, sem
     } = options;
@@ -1260,7 +1268,7 @@ class PlanBuilders {
       return undefined;
     }
 
-    const depValidators: DependentSchemaValidatorEntryType[] = [];
+    const depValidators: DependentSchemaValidatorEntryInterface[] = [];
 
     for (const [
       trigger,
@@ -1276,8 +1284,8 @@ class PlanBuilders {
   }
 
   /** Collect `dependentRequired` entries with non-empty arrays from semantics. */
-  static depRequired(dependentRequired: Readonly<Record<string, unknown>>): DepRequiredEntriesType {
-    const entries: DepRequiredEntriesType = [];
+  static depRequired(dependentRequired: Readonly<Record<string, unknown>>): Array<[string, string[]]> {
+    const entries: Array<[string, string[]]> = [];
 
     for (const entry of Object.entries(dependentRequired)) {
       const key = entry[0];
@@ -1295,14 +1303,14 @@ class PlanBuilders {
   }
 
   /** Compile pattern-property validators from the semantics node. */
-  static patternPropValidators(options: PlanCompileWithSemanticsType): PatternPropValidatorsResultType {
+  static patternPropValidators(options: PlanCompileWithSemanticsInterface): PatternPropValidatorEntryInterface[] | undefined {
     const { sem } = options;
 
     if (sem.patternPropertyEntries.length === 0) {
       return undefined;
     }
 
-    const patternValidators: PatternPropValidatorEntryType[] = [];
+    const patternValidators: PatternPropValidatorEntryInterface[] = [];
 
     for (const [
       pat,
@@ -1322,9 +1330,9 @@ class PlanBuilders {
    */
   static patternValidatorEntry(
     pat: string,
-    patNode: SchemaGraphNodeType,
-    options: PlanCompileWithSemanticsType
-  ): PatternPropValidatorEntryType {
+    patNode: SchemaGraphNodeInterface,
+    options: PlanCompileWithSemanticsInterface
+  ): PatternPropValidatorEntryInterface {
     const {
       context, formatRegistry, graph, lookupSchema
     } = options;
@@ -1336,7 +1344,7 @@ class PlanBuilders {
   }
 
   /** Compute scalar validators that have no mutual dependencies. */
-  static prelude(options: PlanCompileWithSemanticsType): PlanPreludeType {
+  static prelude(options: PlanCompileWithSemanticsInterface): PlanPreludeInterface {
     const {
       context, formatRegistry, sem
     } = options;
@@ -1360,7 +1368,7 @@ class PlanBuilders {
 }
 
 // ---------------------------------------------------------------------------
-// buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
+// buildNodePlan — single keyword traversal → CompiledNodeValidationPlanInterface
 // ---------------------------------------------------------------------------
 
 
@@ -1372,7 +1380,7 @@ class PlanBuilders {
  * @param formatRegistry - Registry for format validators.
  * @param graph - The schema graph containing `graphNode`.
  * @param options - Optional cross-schema (`lookupSchema`) and cross-graph (`lookupGraph`) lookups.
- * @returns A `CompiledNodeValidationPlanType` ready for use by the execute layer.
+ * @returns A `CompiledNodeValidationPlanInterface` ready for use by the execute layer.
  *
  * @remarks
  * Performs a single traversal of the node's keywords, compiling each into
@@ -1387,24 +1395,24 @@ class PlanBuilders {
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link CompiledNodeValidationPlanType}
+ * @see {@link CompiledNodeValidationPlanInterface}
  * @group SchemaCompiler
  */
 export class SchemaCompilerPlan {
   static buildNodePlan(
-    context: SchemaCompilerValidatePlanContextType,
-    graphNode: SchemaGraphNodeType,
+    context: SchemaCompilerValidatePlanContextInterface,
+    graphNode: SchemaGraphNodeInterface,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
-    options?: BuildNodePlanOptionsType
-  ): CompiledNodeValidationPlanType {
+    options?: BuildNodePlanOptionsInterface
+  ): CompiledNodeValidationPlanInterface {
     const {
       lookupGraph, lookupSchema
     } = options ?? {};
     const sem = graph.semantics(graphNode);
     const propertyEntries = sem.properties;
 
-    const planSemanticsOptions: PlanCompileWithSemanticsType = {
+    const planSemanticsOptions: PlanCompileWithSemanticsInterface = {
       context,
       formatRegistry,
       graph,
@@ -1504,7 +1512,7 @@ export class SchemaCompilerPlan {
     const requiredArray = sem.required.length > 0 ? sem.required : undefined;
 
     // Precompute option bags once at compile time — avoids per-value object allocation.
-    const arrayOptions: ArrayValidationOptionsType = {
+    const arrayOptions: ArrayValidationOptionsInterface = {
       containsValidator,
       itemValidator,
       'maxContains': sem.maxContains,
@@ -1515,7 +1523,7 @@ export class SchemaCompilerPlan {
       'uniqueItems': sem.uniqueItems
     };
 
-    const objectOptions: ObjectValidationOptionsType = {
+    const objectOptions: ObjectValidationOptionsInterface = {
       additionalIsFalse,
       additionalValidator,
       allowedKeys,
@@ -1623,6 +1631,7 @@ export class SchemaCompilerPlan {
       'types': sem.schemaTypes,
       'unevaluatedItemsValidator': PlanBuilders.compileUnevaluatedNode(
         sem.unevaluatedItemsNode,
+        'unevaluatedItems',
         context,
         formatRegistry,
         graph,
@@ -1630,6 +1639,7 @@ export class SchemaCompilerPlan {
       ),
       'unevaluatedPropertiesValidator': PlanBuilders.compileUnevaluatedNode(
         sem.unevaluatedPropertiesNode,
+        'unevaluatedProperties',
         context,
         formatRegistry,
         graph,

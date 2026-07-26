@@ -2,7 +2,7 @@
  * Canonical `$ref` → `{ graph, node }` resolver.
  *
  * This is the single source of truth for resolving a JSON Schema `$ref` string
- * into a `ReferenceTargetType`. All resolution paths — validation, projection, and
+ * into a `ReferenceTargetInterface`. All resolution paths — validation, projection, and
  * materialization — delegate here.
  *
  * Resolution precedence:
@@ -25,8 +25,8 @@
  * of this module.
  */
 
-import type { ReferenceTargetType } from '../../types/ReferenceTargetType.js';
-import type { ReferenceResolutionOptionsType } from '../../types/ReferenceResolutionOptionsType.js';
+import type { ReferenceTargetInterface } from '../../interfaces/ReferenceTargetInterface.js';
+import type { ReferenceResolutionOptionsInterface } from '../../interfaces/ReferenceResolutionOptionsInterface.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
@@ -42,7 +42,7 @@ class Graph {
   /** Build a SchemaGraph from a raw schema, preferring the caller-supplied cache. */
   static build(
     schema: Record<string, unknown>,
-    options: ReferenceResolutionOptionsType
+    options: ReferenceResolutionOptionsInterface
   ): SchemaGraphInterface {
     if (options.graphFor !== undefined) {
       return options.graphFor(schema);
@@ -54,11 +54,11 @@ class Graph {
 
 /** InGraph — resolves an optional fragment within a graph. */
 class InGraph {
-  /** Resolve an optional fragment within a graph and return the `ReferenceTargetType`. */
+  /** Resolve an optional fragment within a graph and return the `ReferenceTargetInterface`. */
   static resolve(
     targetGraph: SchemaGraphInterface,
     fragment: string
-  ): ReferenceTargetType {
+  ): ReferenceTargetInterface {
     if (fragment === '' || fragment === '/') {
       return {
         'graph': targetGraph,
@@ -90,8 +90,8 @@ class LiteralReference {
   static resolve(
     reference: string,
     graph: SchemaGraphInterface,
-    options: ReferenceResolutionOptionsType
-  ): ReferenceTargetType | undefined {
+    options: ReferenceResolutionOptionsInterface
+  ): ReferenceTargetInterface | undefined {
     const literalGraph = options.lookupGraph?.(reference);
 
     if (literalGraph !== undefined) {
@@ -132,7 +132,7 @@ export class ReferenceResolution {
    * @param graph    - The graph that owns the node carrying this `$ref`; used for
    *                   fragment-only refs and embedded-$id fallback.
    * @param options  - Lookup callbacks, root-schema context, and an optional logger.
-   * @returns `ReferenceTargetType` — never `undefined`. Throws on miss.
+   * @returns `ReferenceTargetInterface` — never `undefined`. Throws on miss.
    * @throws `GraphError` with code `REF_NOT_FOUND` when the reference ID cannot be resolved.
    * @throws `GraphError` with code `ANCHOR_NOT_FOUND` (from `graph.resolveFragment`)
    *         when the fragment names a missing anchor.
@@ -140,8 +140,8 @@ export class ReferenceResolution {
   public static resolve(
     reference: string,
     graph: SchemaGraphInterface,
-    options: ReferenceResolutionOptionsType = {}
-  ): ReferenceTargetType {
+    options: ReferenceResolutionOptionsInterface = {}
+  ): ReferenceTargetInterface {
     const logger: LoggerInterface = options.logger ?? SILENT_LOGGER;
 
     logger.trace(LogScope.format('ReferenceResolution', 'resolve', `resolving $ref: ${reference}`));

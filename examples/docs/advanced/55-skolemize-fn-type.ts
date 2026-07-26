@@ -1,5 +1,5 @@
 /**
- * SkolemizeFunctionType — the function signature accepted by iriFor.
+ * SkolemizeFunctionInterface — the function signature accepted by iriForFunction.
  *
  * Custom strategies receive the JSON Pointer path, the current value,
  * and the depth (0 at the root, +1 per nested object). Returning
@@ -10,18 +10,18 @@
  * within one emission.
  */
 
-import type { SkolemizeFunctionType } from '../../../src/types/SkolemizeFunctionType.js';
+import type { SkolemizeFunctionInterface } from '../../../src/interfaces/SkolemizeFunctionInterface.js';
 
 // ctx.path is a JSON-Pointer-style path to the current value.
 // ctx.value is the object being projected.
 // ctx.depth is 0 at the root and +1 per nested object.
-const strategy: SkolemizeFunctionType = (ctx) => {
+const strategy: SkolemizeFunctionInterface = (ctx) => {
   return ctx.depth === 0
     ? 'https://shop.example.com/root'
     : undefined;
 };
 
-console.assert(typeof strategy === 'function', 'SkolemizeFunctionType is a function shape');
+console.assert(typeof strategy === 'function', 'SkolemizeFunctionInterface is a function shape');
 console.assert(
   strategy({
     'depth': 0,

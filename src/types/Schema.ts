@@ -2,10 +2,11 @@ import type { InferSchemaType } from './Infer.js';
 import type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
 import type {
   ApplyRestrictionsType,
-  ComplementOfBrandType,
-  DisjointWithBrandType,
   ExtractRestrictionsType
 } from './RestrictionInfer.js';
+import type { ComplementOfBrandInterface } from '../interfaces/ComplementOfBrandInterface.js';
+import type { DisjointWithBrandInterface } from '../interfaces/DisjointWithBrandInterface.js';
+import type { SchemaTypeNameOrArrayEntity } from '../entities/SchemaTypeNameOrArrayEntity.js';
 
 // ---------------------------------------------------------------------------
 // Axiom-aware wrappers around InferSchemaType.
@@ -19,16 +20,16 @@ import type {
 type ApplyDisjointBrandType<TSchema, TInferred>
   = TSchema extends { readonly 'disjointWith': infer TDisjoint }
     ? TDisjoint extends string
-      ? DisjointWithBrandType<TDisjoint> & TInferred
+      ? DisjointWithBrandInterface<TDisjoint> & TInferred
       : TDisjoint extends ReadonlyArray<infer TElem extends string>
-        ? DisjointWithBrandType<TElem> & TInferred
+        ? DisjointWithBrandInterface<TElem> & TInferred
         : TInferred
     : TInferred;
 
 type ApplyComplementBrandType<TSchema, TInferred>
   = TSchema extends { readonly 'not': { readonly '$ref': infer TReference } }
     ? TReference extends string
-      ? ComplementOfBrandType<TReference> & TInferred
+      ? ComplementOfBrandInterface<TReference> & TInferred
       : TInferred
     : TInferred;
 
@@ -45,14 +46,14 @@ type FindRestrictionsType<TSchema>
     ? ExtractRestrictionsType<TSchema>
     : TSchema extends { readonly 'allOf': infer TAllOf extends readonly unknown[] }
       ? FindRestrictionsInAllOfType<TAllOf>
-      : readonly [];
+      : [];
 
 type FindRestrictionsInAllOfType<TArray extends readonly unknown[]>
   = TArray extends readonly [infer Head, ...infer Tail]
     ? ExtractRestrictionsType<Head> extends readonly [unknown, ...unknown[]]
       ? ExtractRestrictionsType<Head>
       : FindRestrictionsInAllOfType<Tail>
-    : readonly [];
+    : [];
 
 type ApplyRestrictionsToInferredType<TSchema, TInferred>
   = FindRestrictionsType<TSchema> extends readonly [unknown, ...unknown[]]
@@ -90,13 +91,15 @@ type ApplyRestrictionsToInferredType<TSchema, TInferred>
  * @typeParam TReferences - Optional map of additional referenced schema literals for cross-schema inference.
  */
 export type InferType<TSchema, TReferences = JsonTologyReferencesInterface>
-  = ApplyComplementBrandType<TSchema,
-    ApplyDisjointBrandType<TSchema,
-      ApplyRestrictionsToInferredType<TSchema,
-        InferSchemaType<TSchema, TSchema, TReferences>
+  = [TSchema] extends [unknown]
+    ? ApplyComplementBrandType<TSchema,
+      ApplyDisjointBrandType<TSchema,
+        ApplyRestrictionsToInferredType<TSchema,
+          InferSchemaType<TSchema, TSchema, TReferences>
+        >
       >
     >
-  >;
+    : never;
 
 /**
  * Loose JSON Schema value — either a boolean shorthand or an object schema.
@@ -131,7 +134,7 @@ export type JsonSchemaType = boolean | Record<string, unknown>;
  *
  * @example
  * ```ts
- * const t: JsonSchemaTypeNameType = 'string';
+ * const t: JsonSchemaTypeNameEntity.Type = 'string';
  * ```
  *
  * @category Schema Utilities
@@ -139,14 +142,6 @@ export type JsonSchemaType = boolean | Record<string, unknown>;
  * @see {@link JsonSchemaDocumentObjectType}
  * @group Schema Utilities
  */
-export type JsonSchemaTypeNameType
-  = | 'array'
-  | 'boolean'
-  | 'integer'
-  | 'null'
-  | 'number'
-  | 'object'
-  | 'string';
 
 /**
  * Structural JSON Schema object — Draft-2020-12 core, validation,
@@ -224,10 +219,6 @@ type ReadonlyRestrictionsArrayType = ReadonlyArray<Record<string, unknown>>;
 /** Local (unexported) alias for a readonly array of required property names —
  * same indirection rationale as {@link ReadonlySchemaMapType}. */
 type ReadonlyRequiredArrayType = readonly string[];
-
-/** Local (unexported) alias for the `type` keyword's single-or-array-of-names form —
- * same indirection rationale as {@link ReadonlySchemaMapType}. */
-type SchemaTypeNameOrArrayType = JsonSchemaTypeNameType | readonly JsonSchemaTypeNameType[];
 
 export type JsonSchemaDocumentObjectType = {
   '$anchor'?: string;
@@ -340,7 +331,7 @@ export type JsonSchemaDocumentObjectType = {
   'transitive'?: boolean;
 
   // ── Validation: any instance ────────────────────────────────────
-  'type'?: SchemaTypeNameOrArrayType;
+  'type'?: SchemaTypeNameOrArrayEntity.Type;
   'unevaluatedItems'?: JsonSchemaDocumentType;
   'unevaluatedProperties'?: JsonSchemaDocumentType;
   'uniqueItems'?: boolean;

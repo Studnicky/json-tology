@@ -1,17 +1,15 @@
-import type {
-  SchemaGraphNodeType,
-  SchemaGraphSemanticsType
-} from '../../types/SchemaGraph.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
-import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntryType.js';
-import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContextType.js';
+import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntryInterface.js';
+import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContextInterface.js';
 import { MAXIMUM_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
 import { DataType } from '../data/DataType.js';
-import type { DefaultResolutionStateType } from '../../types/DefaultResolutionStateType.js';
-import type { ReferenceTargetType } from '../../types/ReferenceTargetType.js';
-import type { LookupSchemaFunctionType } from '../../types/LookupSchemaFunctionType.js';
-import type { ReferenceResolutionOptionsType } from '../../types/ReferenceResolutionOptionsType.js';
+import type { DefaultResolutionStateInterface } from '../../interfaces/DefaultResolutionStateInterface.js';
+import type { ReferenceTargetInterface } from '../../interfaces/ReferenceTargetInterface.js';
+import type { LookupSchemaFunctionInterface } from '../../interfaces/LookupSchemaFunctionInterface.js';
+import type { ReferenceResolutionOptionsInterface } from '../../interfaces/ReferenceResolutionOptionsInterface.js';
 import { ReferenceResolver } from './ReferenceResolver.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
@@ -25,8 +23,8 @@ import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 class ImplicitDefaultValue {
   /** Build an implicit default from a node's property tree, if any properties yield values. */
   static buildObject(
-    state: DefaultResolutionStateType,
-    node: SchemaGraphNodeType,
+    state: DefaultResolutionStateInterface,
+    node: SchemaGraphNodeInterface,
     depth: number
   ): Record<string, unknown> | undefined {
     const sem = state.graph.semantics(node);
@@ -49,8 +47,8 @@ class ImplicitDefaultValue {
   }
 
   static create(
-    state: DefaultResolutionStateType,
-    node: SchemaGraphNodeType,
+    state: DefaultResolutionStateInterface,
+    node: SchemaGraphNodeInterface,
     depth: number
   ): unknown {
     if (depth > MAXIMUM_DEFAULT_DEPTH) {
@@ -104,7 +102,7 @@ class ImplicitDefaultValue {
     return undefined;
   }
 
-  private static propertiesOf(sem: SchemaGraphSemanticsType): ReadonlyMap<string, SchemaGraphNodeType> {
+  private static propertiesOf(sem: SchemaGraphSemanticsInterface): ReadonlyMap<string, SchemaGraphNodeInterface> {
     const result = sem.properties;
 
     return result;
@@ -120,8 +118,8 @@ class ImplicitDefaultValue {
 class ZeroValueSynthesis {
   /** Merge allOf member zero-values into a single object, or return null when no object members. */
   static allOf(
-    state: DefaultResolutionStateType,
-    members: readonly SchemaGraphNodeType[],
+    state: DefaultResolutionStateInterface,
+    members: readonly SchemaGraphNodeInterface[],
     depth: number
   ): null | Record<string, unknown> {
     const merged: Record<string, unknown> = {};
@@ -146,8 +144,8 @@ class ZeroValueSynthesis {
   }
 
   static create(
-    state: DefaultResolutionStateType,
-    node: SchemaGraphNodeType,
+    state: DefaultResolutionStateInterface,
+    node: SchemaGraphNodeInterface,
     depth: number
   ): unknown {
     if (depth > MAXIMUM_DEFAULT_DEPTH) {
@@ -267,23 +265,23 @@ class ZeroValueSynthesis {
 }
 
 /**
- * DynamicReferenceResolverContext — a DefaultResolutionContextType backed by a real
+ * DynamicReferenceResolverContext — a DefaultResolutionContextInterface backed by a real
  * class instance rather than a per-call object literal of closures, so its
  * methods are ordinary class methods (not dispatch-map function values
  * reallocated on every `CompilerDefaultContext.build` call).
  */
-class DynamicReferenceResolverContext implements DefaultResolutionContextType {
-  readonly #referenceOptions: ReferenceResolutionOptionsType;
+class DynamicReferenceResolverContext implements DefaultResolutionContextInterface {
+  readonly #referenceOptions: ReferenceResolutionOptionsInterface;
 
-  constructor(referenceOptions: ReferenceResolutionOptionsType) {
+  constructor(referenceOptions: ReferenceResolutionOptionsInterface) {
     this.#referenceOptions = referenceOptions;
   }
 
   resolveDynamicReference(
     dynamicReference: string,
     currentGraph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryType[]
-  ): ReferenceTargetType {
+    dynamicScope: DynamicScopeEntryInterface[]
+  ): ReferenceTargetInterface {
     const resolved = ReferenceResolver.resolve(dynamicReference, currentGraph, this.#referenceOptions);
 
     if (resolved === undefined) {
@@ -318,7 +316,7 @@ class DynamicReferenceResolverContext implements DefaultResolutionContextType {
     return resolved;
   }
 
-  resolveReference(reference: string, currentGraph: SchemaGraphInterface): ReferenceTargetType {
+  resolveReference(reference: string, currentGraph: SchemaGraphInterface): ReferenceTargetInterface {
     const resolved = ReferenceResolver.resolve(reference, currentGraph, this.#referenceOptions);
 
     if (resolved === undefined) {
@@ -336,13 +334,13 @@ class DynamicReferenceResolverContext implements DefaultResolutionContextType {
   }
 }
 
-/** CompilerDefaultContext — builds a DefaultResolutionContextType from lookup callbacks. */
+/** CompilerDefaultContext — builds a DefaultResolutionContextInterface from lookup callbacks. */
 class CompilerDefaultContext {
   static build(
-    lookupSchema: LookupSchemaFunctionType | undefined,
+    lookupSchema: LookupSchemaFunctionInterface | undefined,
     lookupGraph?: (id: string) => SchemaGraphInterface | undefined
-  ): DefaultResolutionContextType {
-    const referenceOptions: ReferenceResolutionOptionsType = {
+  ): DefaultResolutionContextInterface {
+    const referenceOptions: ReferenceResolutionOptionsInterface = {
       ...(lookupSchema !== undefined && { 'lookupSchema': lookupSchema }),
       ...(lookupGraph !== undefined && { 'lookupGraph': lookupGraph })
     };
@@ -374,10 +372,10 @@ class CompilerDefaultContext {
  */
 export const GraphEngineDefaults = {
   createImplicitDefaultValue(
-    context: DefaultResolutionContextType,
-    node: SchemaGraphNodeType,
+    context: DefaultResolutionContextInterface,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryType[]
+    dynamicScope: DynamicScopeEntryInterface[]
   ): unknown {
     const result = ImplicitDefaultValue.create({
       context,
@@ -390,7 +388,7 @@ export const GraphEngineDefaults = {
   },
 
   createImplicitDefaultValueForLookups(
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
     lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
     lookupGraph: ((id: string) => SchemaGraphInterface | undefined) | undefined,
@@ -407,10 +405,10 @@ export const GraphEngineDefaults = {
   },
 
   createImplicitDefaultValueSeeded(
-    context: DefaultResolutionContextType,
-    node: SchemaGraphNodeType,
+    context: DefaultResolutionContextInterface,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryType[],
+    dynamicScope: DynamicScopeEntryInterface[],
     visited: Set<string>
   ): unknown {
     const result = ImplicitDefaultValue.create({
@@ -424,10 +422,10 @@ export const GraphEngineDefaults = {
   },
 
   synthesizeZeroValue(
-    context: DefaultResolutionContextType,
-    node: SchemaGraphNodeType,
+    context: DefaultResolutionContextInterface,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryType[]
+    dynamicScope: DynamicScopeEntryInterface[]
   ): unknown {
     const result = ZeroValueSynthesis.create({
       context,
@@ -440,7 +438,7 @@ export const GraphEngineDefaults = {
   },
 
   synthesizeZeroValueForLookups(
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
     lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,
     lookupGraph?: (id: string) => SchemaGraphInterface | undefined

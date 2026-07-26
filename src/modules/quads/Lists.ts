@@ -13,9 +13,8 @@ import type {
 } from '@rdfjs/types';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
-import type { ListBuildResultType } from '../../types/ListBuildResultType.js';
-import type { OptionalListObjectType } from '../../types/OptionalListObjectType.js';
-import type { CollectStepResultType } from '../../types/CollectStepResultType.js';
+import type { ListBuildResultInterface } from '../../interfaces/ListBuildResultInterface.js';
+import type { CollectStepResultInterface } from '../../interfaces/CollectStepResultInterface.js';
 import { RDF } from '../../constants/IRI.js';
 import { Terms } from './Terms.js';
 
@@ -64,7 +63,7 @@ export class Lists {
    * @see {@link Lists.narrowExternalQuads}
    * @group Lists
    */
-  static asQuadObject(rawObject: Quad['object']): OptionalListObjectType {
+  static asQuadObject(rawObject: Quad['object']): QuadObjectType | undefined {
     if (Lists.isValidQuadObjectTermType(rawObject.termType)) {
       return rawObject as QuadObjectType;
     }
@@ -98,7 +97,7 @@ export class Lists {
   static build(
     items: readonly QuadObjectType[],
     issuer?: IdentifierIssuerInterface
-  ): ListBuildResultType {
+  ): ListBuildResultInterface {
     if (items.length === 0) {
       return {
         'head': Terms.iri(RDF.nil),
@@ -192,7 +191,7 @@ export class Lists {
   private static collectStep(
     cursor: BlankNode | NamedNode,
     allQuads: readonly Quad[]
-  ): CollectStepResultType {
+  ): CollectStepResultInterface {
     const firstQuad = allQuads.find((quad: Quad): boolean => {
       const result = Lists.isFirstTriple(quad, cursor);
 
@@ -207,7 +206,7 @@ export class Lists {
       };
     }
 
-    const item: OptionalListObjectType = Lists.isValidQuadObjectTermType(firstQuad.object.termType)
+    const item: QuadObjectType | undefined = Lists.isValidQuadObjectTermType(firstQuad.object.termType)
       ? firstQuad.object as QuadObjectType
       : undefined;
 

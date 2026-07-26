@@ -1,4 +1,4 @@
-import type { ComputedFunctionType } from '../../types/ComputedFunctionType.js';
+import type { ComputedFunctionInterface } from '../../interfaces/ComputedFunctionInterface.js';
 import type { ComputedStoreInterface } from '../../interfaces/ComputedStoreInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { SchemaError } from '../../errors/SchemaError.js';
@@ -6,9 +6,9 @@ import { SCHEMA_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { DataType } from '../data/DataType.js';
 
 export class ComputedStore implements ComputedStoreInterface {
-  private readonly store = new Map<string, Map<string, ComputedFunctionType>>();
+  private readonly store = new Map<string, Map<string, ComputedFunctionInterface>>();
 
-  public add(schemaId: string, name: string, computeFunction: ComputedFunctionType): void {
+  public add(schemaId: string, name: string, computeFunction: ComputedFunctionInterface): void {
     let entry = this.store.get(schemaId);
 
     if (entry === undefined) {
@@ -18,7 +18,7 @@ export class ComputedStore implements ComputedStoreInterface {
     entry.set(name, computeFunction);
   }
 
-  public getMap(schemaId: string): Record<string, ComputedFunctionType> {
+  public getMap(schemaId: string): Record<string, ComputedFunctionInterface> {
     const entry = this.store.get(schemaId);
 
     if (entry === undefined) {

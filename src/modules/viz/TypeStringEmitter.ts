@@ -2,10 +2,9 @@
  * Generates TypeScript type definitions from schema graphs.
  */
 
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type {
-  SchemaGraphNodeType, SchemaGraphSemanticsType
-} from '../../types/SchemaGraph.js';
 import { VALID_IDENTIFIER } from '../../constants/PATH.js';
 
 /**
@@ -76,7 +75,7 @@ export class TypeStringEmitter {
     return JSON.stringify(key);
   }
 
-  private renderArray(sem: SchemaGraphSemanticsType, visited: Set<string>): string {
+  private renderArray(sem: SchemaGraphSemanticsInterface, visited: Set<string>): string {
     // Tuple from prefixItems
     if (sem.prefixItems.length > 0) {
       const members = sem.prefixItems.map((n) => {
@@ -112,7 +111,7 @@ export class TypeStringEmitter {
     return 'unknown';
   }
 
-  private renderNode(node: SchemaGraphNodeType, visited: Set<string>): string {
+  private renderNode(node: SchemaGraphNodeInterface, visited: Set<string>): string {
     const sem = this.graph.semantics(node);
 
     // $ref: render as named type to avoid infinite expansion
@@ -145,7 +144,7 @@ export class TypeStringEmitter {
     }
   }
 
-  private renderObject(sem: SchemaGraphSemanticsType, visited: Set<string>): string {
+  private renderObject(sem: SchemaGraphSemanticsInterface, visited: Set<string>): string {
     const {
       additionalPropertiesNode, properties, required
     } = sem;
@@ -202,7 +201,7 @@ export class TypeStringEmitter {
     }
   }
 
-  private renderSemantics(sem: SchemaGraphSemanticsType, visited: Set<string>): string {
+  private renderSemantics(sem: SchemaGraphSemanticsInterface, visited: Set<string>): string {
     // const
     if (sem.hasConst) {
       return this.renderLiteral(sem.constValue);
@@ -220,7 +219,7 @@ export class TypeStringEmitter {
     // anyOf / oneOf → union
     const anyOf = sem.anyOf;
     const oneOf = sem.oneOf;
-    let unionMembers: SchemaGraphNodeType[] | undefined;
+    let unionMembers: SchemaGraphNodeInterface[] | undefined;
 
     if (anyOf.length > 0) {
       unionMembers = anyOf;

@@ -7,8 +7,8 @@
  */
 
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
-import type { RelationIndexType } from '../../types/RelationIndexType.js';
-import type { QuadFactoryEmitOptionsType } from '../../types/QuadFactoryOpts.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
+import type { QuadFactoryEmitOptionsInterface } from '../../interfaces/QuadFactoryEmitOptionsInterface.js';
 import { XSD } from '../../constants/IRI.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
@@ -19,11 +19,11 @@ export const QuadEmit = {
    */
   emitConstraintLiteral(
     subject: string,
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     predicate: string,
     datatype: string,
     quads: QuadInterface[],
-    options?: QuadFactoryEmitOptionsType
+    options?: QuadFactoryEmitOptionsInterface
   ): void {
     const rels = entry.byPredicate.get(predicate) ?? [];
 
@@ -42,11 +42,11 @@ export const QuadEmit = {
    */
   emitLiterals(
     subject: string,
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     predicate: string,
     outputPredicate: string,
     quads: QuadInterface[],
-    options?: QuadFactoryEmitOptionsType
+    options?: QuadFactoryEmitOptionsInterface
   ): void {
     const rels = entry.byPredicate.get(predicate);
 

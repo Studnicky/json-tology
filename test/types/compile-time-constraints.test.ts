@@ -34,9 +34,9 @@ import type {
   MinimumLengthBrandType,
   MinimumPropertiesBrandType,
   MultipleOfBrandType,
-  SchemaIdBrandType,
-  UniqueItemsBrandType
+  SchemaIdBrandType
 } from '../../src/types/ConstraintBrands.js';
+import type { UniqueItemsBrandInterface } from '../../src/interfaces/UniqueItemsBrandInterface.js';
 import type {
   DeepPropertyPathsType,
   DefaultAlignedType,
@@ -756,7 +756,7 @@ void _UniqueArraySchema;
 
 type UniqueArray = InferType<typeof _UniqueArraySchema>;
 
-type HasUniqueItems = UniqueArray extends UniqueItemsBrandType ? true : false;
+type HasUniqueItems = UniqueArray extends UniqueItemsBrandInterface ? true : false;
 const _uaCheck: HasUniqueItems = true;
 
 void _uaCheck;

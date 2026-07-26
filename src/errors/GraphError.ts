@@ -4,7 +4,7 @@
  * Covers pointer resolution, anchor lookup, ref resolution, and dialect issues.
  */
 
-import type { GraphErrorOptionsType } from '../types/ErrorOptions.js';
+import type { GraphErrorOptionsInterface } from '../interfaces/GraphErrorOptionsInterface.js';
 import { BaseError } from './BaseError.js';
 
 export class GraphError extends BaseError {
@@ -17,7 +17,7 @@ export class GraphError extends BaseError {
    * @param options - Options bag containing `options.code` (graph-specific error code),
    *   optional `options.pointer`, and optional `options.cause` for error chaining
    */
-  public constructor(message: string, options: GraphErrorOptionsType) {
+  public constructor(message: string, options: GraphErrorOptionsInterface) {
     super(message, options);
     this.name = 'GraphError';
     this.pointer = options.pointer;

@@ -1,17 +1,16 @@
-import type {
-  ExecContextOverridesType, ExecContextType
-} from '../../types/ExecContextType.js';
+import type { ExecContextOverridesType } from '../../types/ExecContextOverridesType.js';
+import type { ExecContextInterface } from '../../interfaces/ExecContextInterface.js';
 
 /**
  * ExecContext — constructs validation execution contexts.
  *
  * `build` overlays the supplied partial onto the standard field defaults,
- * keeping the 14-field {@link ExecContextType} shape in a single place so call
+ * keeping the 14-field {@link ExecContextInterface} shape in a single place so call
  * sites only declare the fields that deviate from the defaults.
  */
 export class ExecContext {
   /**
-   * Construct an {@link ExecContextType}, filling every omitted field with its
+   * Construct an {@link ExecContextInterface}, filling every omitted field with its
    * standard default.
    *
    * Defaults: applyDefaults=false, collectErrors=true, depth=0, coerce=false,
@@ -23,7 +22,7 @@ export class ExecContext {
    * @param partial - Fields that deviate from the defaults.
    * @returns A fully-populated execution context.
    */
-  public static build(partial: ExecContextOverridesType): ExecContextType {
+  public static build(partial: ExecContextOverridesType): ExecContextInterface {
     return {
       'applyDefaults': partial.applyDefaults ?? false,
       'coerce': partial.coerce ?? false,

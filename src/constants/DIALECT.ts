@@ -1,4 +1,4 @@
-import type { DefaultGraphEngineOptionsType } from '../types/DefaultGraphEngineOptionsType.js';
+import type { DefaultGraphEngineOptionsEntity } from '../entities/DefaultGraphEngineOptionsEntity.js';
 
 /**
  * Short name of the supported JSON Schema draft version.
@@ -272,11 +272,11 @@ export const SUPPORTED_VOCABULARIES = new Set([
  *
  * @category Dialect
  * @since 0.1.0
- * @see DefaultGraphEngineOptionsType
+ * @see DefaultGraphEngineOptionsEntity
  * @defaultValue `{...}`
  * @group Constants
  */
-export const DEFAULT_OPTIONS: DefaultGraphEngineOptionsType = {
+export const DEFAULT_OPTIONS: DefaultGraphEngineOptionsEntity.Type = {
   'allowAdditionalProperties': false,
   'applyDefaults': false,
   'castTypes': false,

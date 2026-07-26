@@ -1,13 +1,11 @@
-import type {
-  GraphEngineOptionsType,
-  KeywordDefinitionType
-} from '../../types/GraphEngine.js';
+import type { GraphEngineOptionsInterface } from '../../interfaces/GraphEngineOptionsInterface.js';
+import type { KeywordDefinitionInterface } from '../../interfaces/KeywordDefinitionInterface.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineInterface.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { EffectiveOptionsType } from '../../types/EffectiveOptionsType.js';
-import type { GraphEngineRestOptionsType } from '../../types/GraphEngineRestOptionsType.js';
+import type { EffectiveOptionsInterface } from '../../interfaces/EffectiveOptionsInterface.js';
+import type { GraphEngineRestOptionsInterface } from '../../interfaces/GraphEngineRestOptionsInterface.js';
 
 import { DataType } from '../data/DataType.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
@@ -36,9 +34,9 @@ export class GraphEngine implements GraphEngineInterface {
   /**
    * Merge caller-supplied options over `DEFAULT_OPTIONS`, omitting `lookupGraph`/
    * `lookupSchema` entirely (rather than setting them to `undefined`) when absent,
-   * since `EffectiveOptionsType` is compiled under `exactOptionalPropertyTypes`.
+   * since `EffectiveOptionsInterface` is compiled under `exactOptionalPropertyTypes`.
    */
-  private static buildEffectiveOptions(rest: GraphEngineRestOptionsType): EffectiveOptionsType {
+  private static buildEffectiveOptions(rest: GraphEngineRestOptionsInterface): EffectiveOptionsInterface {
     return {
       'allowAdditionalProperties': rest.allowAdditionalProperties ?? DEFAULT_OPTIONS.allowAdditionalProperties,
       'applyDefaults': rest.applyDefaults ?? DEFAULT_OPTIONS.applyDefaults,
@@ -53,14 +51,14 @@ export class GraphEngine implements GraphEngineInterface {
       'synthesizeDefaults': rest.synthesizeDefaults ?? DEFAULT_OPTIONS.synthesizeDefaults
     };
   }
-  private readonly customKeywords: KeywordDefinitionType[];
+  private readonly customKeywords: KeywordDefinitionInterface[];
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
   private readonly logger: LoggerInterface;
 
-  private readonly options: EffectiveOptionsType;
+  private readonly options: EffectiveOptionsInterface;
 
-  public constructor(public readonly rootSchema: JsonSchemaDocumentType, options: GraphEngineOptionsType = {}) {
+  public constructor(public readonly rootSchema: JsonSchemaDocumentType, options: GraphEngineOptionsInterface = {}) {
     const {
       formatRegistry, keywords, logger, ...rest
     } = options;
@@ -101,7 +99,7 @@ export class GraphEngine implements GraphEngineInterface {
     return this.customKeywords.length > 0;
   }
 
-  public keywords(): KeywordDefinitionType[] {
+  public keywords(): KeywordDefinitionInterface[] {
     return this.customKeywords;
   }
 

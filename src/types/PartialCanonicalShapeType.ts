@@ -23,4 +23,4 @@ type OptionalPropertiesType<TShape> = { [Key in keyof TShape]?: TShape[Key] };
  * @typeParam TReferences - Cross-schema references map for `$ref` resolution.
  */
 export type PartialCanonicalShapeType<TSchema, TReferences = JsonTologyReferencesInterface>
-  = OptionalPropertiesType<CanonicalShapeType<TSchema, TReferences>>;
+  = [TSchema] extends [unknown] ? OptionalPropertiesType<CanonicalShapeType<TSchema, TReferences>> : never;

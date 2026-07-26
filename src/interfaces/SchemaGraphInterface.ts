@@ -1,24 +1,24 @@
-import type {
-  ListItemType,
-  NormIRType,
-  SchemaGraphNodeType, SchemaGraphRelationType,
-  SchemaGraphSemanticsType, StructureWarningType
-} from '../types/SchemaGraph.js';
+import type { StructureWarningEntity } from '../entities/StructureWarningEntity.js';
+import type { ListItemEntity } from '../entities/ListItemEntity.js';
+import type { NormIRInterface } from './NormIRInterface.js';
+import type { SchemaGraphSemanticsInterface } from './SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphRelationInterface } from './SchemaGraphRelationInterface.js';
+import type { SchemaGraphNodeInterface } from './SchemaGraphNodeInterface.js';
 import type { JsonSchemaType } from '../types/Schema.js';
 
 export interface SchemaGraphInterface {
-  allRelations(): SchemaGraphRelationType[];
-  child(node: SchemaGraphNodeType, key: string): SchemaGraphNodeType | undefined;
+  allRelations(): SchemaGraphRelationInterface[];
+  child(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined;
   /**
    * Walk the RDF list rooted at `head` (an IRI or blank-node id) and return
-   * each list item as a {@link ListItemType}. Returns an empty array for
+   * each list item as a {@link ListItemEntity.Type}. Returns an empty array for
    * `rdf:nil`, unresolved heads, or non-list inputs.
    *
    * Quad-backed graphs walk the underlying `rdf:first`/`rdf:rest` chain;
    * the forward-projection graph does not store RDF list quads and returns
    * an empty array.
    */
-  collectList(head: string): readonly ListItemType[];
+  collectList(head: string): readonly ListItemEntity.Type[];
   /**
    * Return the owning-domain node for a property node that was recorded
    * during graph construction. When a sub-schema appears under
@@ -27,13 +27,13 @@ export interface SchemaGraphInterface {
    *
    * This replaces pointer-arithmetic domain inference in relation extraction.
    */
-  domainOf(node: SchemaGraphNodeType): SchemaGraphNodeType | undefined;
+  domainOf(node: SchemaGraphNodeInterface): SchemaGraphNodeInterface | undefined;
   /**
    * Look up a sub-schema node by its embedded `$id`. Built during
    * `lower()` for any non-root schema object that carries its own `$id`.
    * Returns `undefined` when no embedded sub-schema with that id exists.
    */
-  embeddedNode(id: string): SchemaGraphNodeType | undefined;
+  embeddedNode(id: string): SchemaGraphNodeInterface | undefined;
   /**
    * Enumerate every embedded sub-schema `$id` recorded during `lower()` for
    * non-root schema objects that carry their own `$id`. This is the single
@@ -42,13 +42,13 @@ export interface SchemaGraphInterface {
    * Returns an empty iterator for graphs with no embedded sub-schemas.
    */
   embeddedSchemaIds(): IterableIterator<string>;
-  entries(node: SchemaGraphNodeType, key: string): Array<[string, SchemaGraphNodeType]>;
-  getNormIR(): NormIRType;
-  indexedChildren(node: SchemaGraphNodeType, key: string): SchemaGraphNodeType[];
-  keywordValue(node: SchemaGraphNodeType, key: string): unknown;
-  node(schema: Record<string, unknown>): SchemaGraphNodeType | undefined;
-  nodes(): SchemaGraphNodeType[];
-  relations(node: SchemaGraphNodeType): SchemaGraphRelationType[];
+  entries(node: SchemaGraphNodeInterface, key: string): Array<[string, SchemaGraphNodeInterface]>;
+  getNormIR(): NormIRInterface;
+  indexedChildren(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface[];
+  keywordValue(node: SchemaGraphNodeInterface, key: string): unknown;
+  node(schema: Record<string, unknown>): SchemaGraphNodeInterface | undefined;
+  nodes(): SchemaGraphNodeInterface[];
+  relations(node: SchemaGraphNodeInterface): SchemaGraphRelationInterface[];
   /**
    * Return every relation whose source IRI matches `subjectIri`. Use this
    * to walk all sibling predicates of a blank-node restriction / negative
@@ -58,12 +58,12 @@ export interface SchemaGraphInterface {
    * Implementations should build a subject index lazily on first call and
    * cache it for the lifetime of the graph.
    */
-  relationsForSubject(subjectIri: string): readonly SchemaGraphRelationType[];
-  resolveFragment(fragment: string): SchemaGraphNodeType;
-  resolvePointer(pointer: string): SchemaGraphNodeType;
+  relationsForSubject(subjectIri: string): readonly SchemaGraphRelationInterface[];
+  resolveFragment(fragment: string): SchemaGraphNodeInterface;
+  resolvePointer(pointer: string): SchemaGraphNodeInterface;
   resolveReferenceId(reference: string): string;
-  readonly 'rootNode': SchemaGraphNodeType;
+  readonly 'rootNode': SchemaGraphNodeInterface;
   readonly 'rootSchema': JsonSchemaType;
-  semantics(node: SchemaGraphNodeType): SchemaGraphSemanticsType;
-  validateStructure(): StructureWarningType[];
+  semantics(node: SchemaGraphNodeInterface): SchemaGraphSemanticsInterface;
+  validateStructure(): StructureWarningEntity.Type[];
 }

@@ -11,9 +11,9 @@
  * Both semantics are preserved here: the throw is caught and `undefined` is returned.
  */
 
-import type { ReferenceTargetType } from '../../types/ReferenceTargetType.js';
+import type { ReferenceTargetInterface } from '../../interfaces/ReferenceTargetInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { ReferenceResolutionOptionsType } from '../../types/ReferenceResolutionOptionsType.js';
+import type { ReferenceResolutionOptionsInterface } from '../../interfaces/ReferenceResolutionOptionsInterface.js';
 import { ReferenceResolution } from './ReferenceResolution.js';
 import { GraphError } from '../../errors/GraphError.js';
 
@@ -21,8 +21,8 @@ export class ReferenceResolver {
   static resolve(
     reference: string,
     graph: SchemaGraphInterface,
-    options: ReferenceResolutionOptionsType = {}
-  ): ReferenceTargetType | undefined {
+    options: ReferenceResolutionOptionsInterface = {}
+  ): ReferenceTargetInterface | undefined {
     try {
       return ReferenceResolution.resolve(reference, graph, options);
     } catch (error) {

@@ -26,18 +26,17 @@
  * - `owl:disjointUnionOf` lists are walked via `ctx.graph.collectList`.
  */
 
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type { LoggerInterface } from '../../../interfaces/LoggerInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../../types/OwlImport.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import type { InvariantType } from '../../../types/Invariant.js';
-import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
-import type { AxiomContextType } from '../../../types/AxiomContextType.js';
-import type { ApplyRelationOptionsType } from '../../../types/ApplyRelationOptionsType.js';
-import type { ApplyBnodeLiteralOptionsType } from '../../../types/ApplyBnodeLiteralOptionsType.js';
+import type { AxiomContextInterface } from '../../../interfaces/AxiomContextInterface.js';
+import type { ApplyRelationOptionsInterface } from '../../../interfaces/ApplyRelationOptionsInterface.js';
+import type { ApplyBnodeLiteralOptionsInterface } from '../../../interfaces/ApplyBnodeLiteralOptionsInterface.js';
 import {
   OWL, RDF, RDFS
 } from '../../../constants/IRI.js';
@@ -67,7 +66,7 @@ import { SILENT_LOGGER } from '../../../constants/LOGGER.js';
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragmentType with schemaDeltas and/or invariants populated.
+ * @returns OwlImportFragmentInterface with schemaDeltas and/or invariants populated.
  *
  * @remarks
  * Implements the OWL 2 §9.1 class expression axiom set. Each axiom arm is
@@ -83,7 +82,7 @@ import { SILENT_LOGGER } from '../../../constants/LOGGER.js';
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContextType
+ * @see OwlImportContextInterface
  * @group importDispatch
  */
 export class ClassAxioms {
@@ -91,8 +90,8 @@ export class ClassAxioms {
    * Pass 3: graph-native handling of BlankNode/Literal equivalentClass arms and
    * disjointUnionOf lists.
    */
-  private static applyBnodeLiteralAxioms(context: OwlImportContextType, axiomContext: AxiomContextType): void {
-    const bnodeOptions: ApplyBnodeLiteralOptionsType = {
+  private static applyBnodeLiteralAxioms(context: OwlImportContextInterface, axiomContext: AxiomContextInterface): void {
+    const bnodeOptions: ApplyBnodeLiteralOptionsInterface = {
       'axiomCtx': axiomContext,
       'graph': context.graph
     };
@@ -126,7 +125,7 @@ export class ClassAxioms {
   /**
    * Apply `owl:complementOf` NamedNode target → `not: { $ref }` + invariant.
    */
-  private static applyComplementOf(options: ApplyRelationOptionsType): void {
+  private static applyComplementOf(options: ApplyRelationOptionsInterface): void {
     const {
       'axiomCtx': axiomContext, relation, subjectIri
     } = options;
@@ -159,8 +158,8 @@ export class ClassAxioms {
    * Apply `owl:disjointUnionOf` RDF list → `oneOf: [{ $ref }]` on the subject.
    */
   private static applyDisjointUnionOf(
-    options: ApplyBnodeLiteralOptionsType,
-    relation: SchemaGraphRelationType,
+    options: ApplyBnodeLiteralOptionsInterface,
+    relation: SchemaGraphRelationInterface,
     subjectIri: string
   ): void {
     if (relation.termType !== 'BlankNode' && relation.termType !== 'NamedNode') {
@@ -192,7 +191,7 @@ export class ClassAxioms {
   /**
    * Apply `owl:disjointWith` NamedNode target → symmetric disjointWith annotation.
    */
-  private static applyDisjointWith(options: ApplyRelationOptionsType): void {
+  private static applyDisjointWith(options: ApplyRelationOptionsInterface): void {
     const {
       'axiomCtx': axiomContext, relation, subjectIri
     } = options;
@@ -226,8 +225,8 @@ export class ClassAxioms {
    * the graph and emits `anyOf` (multiple members) or `$ref` (single member).
    */
   private static applyEquivalentClassBlankNode(
-    options: ApplyBnodeLiteralOptionsType,
-    relation: SchemaGraphRelationType,
+    options: ApplyBnodeLiteralOptionsInterface,
+    relation: SchemaGraphRelationInterface,
     subjectIri: string
   ): void {
     const members = ClassAxioms.extractEquivalentMembersFromGraph(ImportRelation.targetValue(relation), options.graph);
@@ -265,9 +264,9 @@ export class ClassAxioms {
    */
   private static applyEquivalentClassLiteral(
     schemaDeltas: Map<string, JsonSchemaDocumentObjectType>,
-    relation: SchemaGraphRelationType,
+    relation: SchemaGraphRelationInterface,
     subjectIri: string,
-    reportUnsupported: OwlImportContextType['reportUnsupported'],
+    reportUnsupported: OwlImportContextInterface['reportUnsupported'],
     logger: LoggerInterface
   ): void {
     const members = ClassAxioms.parseUnionLiteralWrapper(ImportRelation.targetValue(relation), logger);
@@ -297,7 +296,7 @@ export class ClassAxioms {
   /**
    * Apply `owl:equivalentClass` NamedNode target → `$ref` on subject.
    */
-  private static applyEquivalentClassNamed(options: ApplyRelationOptionsType): void {
+  private static applyEquivalentClassNamed(options: ApplyRelationOptionsInterface): void {
     const {
       'axiomCtx': axiomContext, relation, subjectIri
     } = options;
@@ -318,7 +317,7 @@ export class ClassAxioms {
   /**
    * Pass 2: walk all relations on class subjects and apply named-node axiom arms.
    */
-  private static applyNamedNodeAxioms(context: OwlImportContextType, axiomContext: AxiomContextType): void {
+  private static applyNamedNodeAxioms(context: OwlImportContextInterface, axiomContext: AxiomContextInterface): void {
     for (const relation of context.graph.allRelations()) {
       const subjectIri = relation.source.id;
 
@@ -327,7 +326,7 @@ export class ClassAxioms {
       }
 
       const predicate = relation.predicate;
-      const relationOptions: ApplyRelationOptionsType = {
+      const relationOptions: ApplyRelationOptionsInterface = {
         'axiomCtx': axiomContext,
         relation,
         subjectIri
@@ -357,7 +356,7 @@ export class ClassAxioms {
   /**
    * Apply `rdfs:subClassOf` NamedNode target → `allOf: [{ $ref }]` on the subject.
    */
-  private static applySubClassOf(options: ApplyRelationOptionsType): void {
+  private static applySubClassOf(options: ApplyRelationOptionsInterface): void {
     const {
       'axiomCtx': axiomContext, relation, subjectIri
     } = options;
@@ -386,7 +385,7 @@ export class ClassAxioms {
     return result;
   }
 
-  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
     const schemaDeltas = new Map<string, JsonSchemaDocumentObjectType>();
     const invariants: Array<{ 'invariant': InvariantType;
       'schemaId': string; }> = [];
@@ -400,7 +399,7 @@ export class ClassAxioms {
       return context.curie.expandIfNeeded(raw);
     };
 
-    const axiomContext: AxiomContextType = {
+    const axiomContext: AxiomContextInterface = {
       'allClassIris': context.allClassIris,
       invariants,
       resolveIri,
@@ -426,7 +425,7 @@ export class ClassAxioms {
    * stub for every named owl:Class or rdfs:Class found in the graph.
    */
   private static emitClassStubs(
-    context: OwlImportContextType,
+    context: OwlImportContextInterface,
     schemaDeltas: Map<string, JsonSchemaDocumentObjectType>
   ): void {
     for (const relation of context.graph.allRelations()) {
@@ -460,7 +459,7 @@ export class ClassAxioms {
     bnodeId: string,
     graph: SchemaGraphInterface
   ): string[] {
-    const unionRelations = graph.relationsForSubject(bnodeId).filter((rel: SchemaGraphRelationType): boolean => {
+    const unionRelations = graph.relationsForSubject(bnodeId).filter((rel: SchemaGraphRelationInterface): boolean => {
       const result = UNION_OF_IRIS.has(rel.predicate);
 
       return result;

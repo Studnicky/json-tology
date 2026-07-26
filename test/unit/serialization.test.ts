@@ -1,15 +1,15 @@
 // Merged from: jsonLdFormatter.test.ts, projectionIndex.test.ts, serializerUtils.test.ts, tboxToshacl.test.ts, dump.test.ts
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
+import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraphRelationInterface.js';
 import assert from 'node:assert/strict';
 // QuadInterface is the canonical RDF triple shape; surfaced via toQuads but type-import is internal here.
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 // QuadObjectType is the project's narrow quad-object union (IRI | blank | literal),
 // matching what Terms.iri/Terms.literal return and what Terms.quad/listQuad accept.
 import type { QuadObjectType } from '../../src/types/Quad.js';
-// RelationStructureType/SchemaGraphRelationType are graph-internal shapes used by projection tests.
+// RelationStructureType/SchemaGraphRelationInterface are graph-internal shapes used by projection tests.
 import type { RelationStructureType } from '../../src/types/SchemaGraph.js';
-import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 // ProjectionIndex helpers are projection internals.
 import { ProjectionIndex } from '../../src/modules/rdf/ProjectionIndex.js';
 import {
@@ -359,7 +359,7 @@ import {
     target: string | { 'id': string;
       'pointer': string;
       'schema': Record<string, unknown> }
-  ): SchemaGraphRelationType {
+  ): SchemaGraphRelationInterface {
     return {
       'predicate': predicate,
       'source': {

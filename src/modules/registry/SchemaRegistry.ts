@@ -5,28 +5,27 @@
  * pointer-based sub-schema execution.
  */
 
-import type { CompiledValidatorType } from '../../types/Compiler.js';
+import type { StructureWarningEntity } from '../../entities/StructureWarningEntity.js';
+import type { CompiledValidatorInterface } from '../../interfaces/CompiledValidatorInterface.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
-import type {
-  GraphEngineOptionsType, KeywordDefinitionType
-} from '../../types/GraphEngine.js';
+import type { GraphEngineOptionsInterface } from '../../interfaces/GraphEngineOptionsInterface.js';
+import type { KeywordDefinitionInterface } from '../../interfaces/KeywordDefinitionInterface.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineInterface.js';
 import type { InvariantType } from '../../types/Invariant.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
-import type { RegistryOptionsType } from '../../types/Registry.js';
+import type { RegistryOptionsInterface } from '../../interfaces/RegistryOptionsInterface.js';
 import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerInterface.js';
-import type { DuplicateReportEntryType } from '../../types/DuplicateReportEntryType.js';
+import type { DuplicateReportEntryEntity } from '../../entities/DuplicateReportEntryEntity.js';
 import type { SchemaEntryStoreInterface } from '../../interfaces/SchemaEntryStoreInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { StructureWarningType } from '../../types/SchemaGraph.js';
 import type { SchemaReferenceWalkerInterface } from '../../interfaces/SchemaReferenceWalkerInterface.js';
-import type { SchemaRegistryEntryType } from '../../types/SchemaRegistryEntryType.js';
+import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntryInterface.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
-import type { ValidationErrorType } from '../../types/Validation.js';
+import type { ValidationErrorEntity } from '../../entities/ValidationErrorEntity.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPluginInterface.js';
-import type { SchemaRegistryForEachCallbackType } from '../../types/SchemaRegistryForEachCallbackType.js';
-import type { SetEntryType } from '../../types/SetEntryType.js';
+import type { SchemaRegistryForEachCallbackInterface } from '../../interfaces/SchemaRegistryForEachCallbackInterface.js';
+import type { SetEntryEntity } from '../../entities/SetEntryEntity.js';
 
 import { BaseError } from '../../errors/BaseError.js';
 import { CoercionError } from '../../errors/CoercionError.js';
@@ -119,7 +118,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Resolve registry option booleans to their effective values.
    * Centralises the defaults so the constructor complexity is reduced.
    */
-  private static resolveOptions(options: RegistryOptionsType | undefined): {
+  private static resolveOptions(options: RegistryOptionsInterface | undefined): {
     'castTypes': boolean;
     'enableDuplicateDetection': boolean;
     'enableInlineWarnings': boolean;
@@ -165,7 +164,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly formatRegistry: FormatRegistryInterface | undefined;
   private readonly instantiateOptions: Readonly<Record<string, boolean>>;
   private readonly invariants: InvariantStore;
-  private readonly keywords: KeywordDefinitionType[] | undefined;
+  private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
   private readonly lookupGraphFunction: (id: string) => SchemaGraphInterface | undefined;
   private readonly maximumSchemaDepth: number | undefined;
@@ -182,7 +181,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
   private readonly vocabularies: readonly VocabularyPluginInterface[];
 
-  public constructor(options?: RegistryOptionsType) {
+  public constructor(options?: RegistryOptionsInterface) {
     this.logger = options?.logger ?? SILENT_LOGGER;
     this.defaultCreatorFactory = options?.defaultCreatorFactory;
 
@@ -235,7 +234,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       resolveSchemaId
     };
 
-    const lookupCompiled = (schemaId: string): CompiledValidatorType | undefined => {
+    const lookupCompiled = (schemaId: string): CompiledValidatorInterface | undefined => {
       return this.store.has(schemaId)
         ? this.compiled(schemaId)
         : undefined;
@@ -251,7 +250,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Apply an OWL 2 property characteristic to an already-registered class schema.
    *
    * Called by the fromTbox() registration path for each entry in
-   * OwlImportResultType.characteristics. Parses the property IRI to locate the
+   * OwlImportResultInterface.characteristics. Parses the property IRI to locate the
    * owning class and property name, then re-registers the class schema with
    * the characteristic boolean flag added to the relevant property entry.
    *
@@ -479,7 +478,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Assert that all registered invariants pass for a validated value.
    * Throws `InstantiationError` when any invariant fails.
    */
-  private assertInvariantsPass(schemaId: string, result: { 'errors': ValidationErrorType[];
+  private assertInvariantsPass(schemaId: string, result: { 'errors': ValidationErrorEntity.Type[];
     'value': unknown }): void {
     const invariantErrors = this.invariants.runAll(schemaId, result.value);
 
@@ -506,7 +505,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return;
     }
 
-    const duplicateMessage = duplicates.map((dup: DuplicateReportEntryType): string => {
+    const duplicateMessage = duplicates.map((dup: DuplicateReportEntryEntity.Type): string => {
       const result = `"${dup.schemaId}#${dup.pointer}" duplicates "${dup.equivalentTo}"`;
 
       return result;
@@ -597,7 +596,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    *
    * Result is cached on the entry so we only walk once per entry.
    */
-  private assertRefsResolvable(entry: SchemaRegistryEntryType): void {
+  private assertRefsResolvable(entry: SchemaRegistryEntryInterface): void {
     if (entry.refsChecked === true) {
       return;
     }
@@ -685,7 +684,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return;
     }
 
-    const message = `Schema "${schemaId}" contains inline shapes: ${warnings.map((warning: StructureWarningType): string => {
+    const message = `Schema "${schemaId}" contains inline shapes: ${warnings.map((warning: StructureWarningEntity.Type): string => {
       const result = warning.message;
 
       return result;
@@ -796,7 +795,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * surface a DISJOINT_VIOLATION error so callers see a real failure rather
    * than an apparent OK.
    */
-  private checkDisjointWith(schemaId: string, data: unknown): ValidationErrorType[] {
+  private checkDisjointWith(schemaId: string, data: unknown): ValidationErrorEntity.Type[] {
     const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
@@ -809,7 +808,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       return [];
     }
 
-    const errors: ValidationErrorType[] = [];
+    const errors: ValidationErrorEntity.Type[] = [];
 
     for (const targetId of disjointTargets) {
       const disjointError = this.checkSingleDisjointTarget(schemaId, targetId, data);
@@ -824,10 +823,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
   /**
    * Check whether `data` also satisfies a single disjoint target schema.
-   * Returns a `ValidationErrorType` if the disjointness constraint is violated
+   * Returns a `ValidationErrorEntity.Type` if the disjointness constraint is violated
    * (or if the target is not registered), or `null` when the check passes.
    */
-  private checkSingleDisjointTarget(schemaId: string, targetId: string, data: unknown): null | ValidationErrorType {
+  private checkSingleDisjointTarget(schemaId: string, targetId: string, data: unknown): null | ValidationErrorEntity.Type {
     const resolved = this.resolve(targetId);
     const targetCompiled = this.compiled(resolved);
 
@@ -941,7 +940,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     );
   }
 
-  private compiled(schemaId: string): CompiledValidatorType | undefined {
+  private compiled(schemaId: string): CompiledValidatorInterface | undefined {
     const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
@@ -951,7 +950,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.compiledFromEntry(entry);
   }
 
-  private compiledFromEntry(entry: SchemaRegistryEntryType): CompiledValidatorType {
+  private compiledFromEntry(entry: SchemaRegistryEntryInterface): CompiledValidatorInterface {
     this.assertRefsResolvable(entry);
 
     if (entry.compiled === undefined) {
@@ -1095,7 +1094,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         return undefined;
       };
 
-      const engineOptions: GraphEngineOptionsType = {
+      const engineOptions: GraphEngineOptionsInterface = {
         'logger': this.logger,
         'lookupGraph': this.lookupGraphFunction,
         lookupSchema
@@ -1129,13 +1128,13 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
-  public findDuplicates(): readonly DuplicateReportEntryType[] {
+  public findDuplicates(): readonly DuplicateReportEntryEntity.Type[] {
     const result = this.store.findDuplicates();
 
     return result;
   }
 
-  public forEach(callback: SchemaRegistryForEachCallbackType): void {
+  public forEach(callback: SchemaRegistryForEachCallbackInterface): void {
     for (const [
       iri,
       entry
@@ -1174,7 +1173,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     };
   }
 
-  private graphOf(entry: SchemaRegistryEntryType): SchemaGraphInterface {
+  private graphOf(entry: SchemaRegistryEntryInterface): SchemaGraphInterface {
     entry.graph ??= new SchemaGraph(entry.schema, {
       'logger': this.logger,
       'vocabularies': this.vocabularies
@@ -1354,7 +1353,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       Frozen.deepFreeze(canonicalSchema);
     }
 
-    const entry: SchemaRegistryEntryType = {
+    const entry: SchemaRegistryEntryInterface = {
       'hasComputedFields': false,
       hash,
       'hasTransform': Transform.getDecoder(canonicalSchema) !== undefined,
@@ -1433,7 +1432,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     second?: string
   ): this {
     if (Array.isArray(first)) {
-      for (const entry of first as readonly SetEntryType[]) {
+      for (const entry of first as readonly SetEntryEntity.Type[]) {
         if (Array.isArray(entry)) {
           const [
             schema,
@@ -1590,7 +1589,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     });
 
     if (forbidden.length > 0) {
-      const errors = forbidden.map((name: string): ValidationErrorType => {
+      const errors = forbidden.map((name: string): ValidationErrorEntity.Type => {
         return {
           'keyword': 'COMPUTED_INPUT_FORBIDDEN',
           'message': `"${name}" is a computed field and must not be supplied in input`,
@@ -1603,7 +1602,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
-  public validator(schemaId: string): CompiledValidatorType {
+  public validator(schemaId: string): CompiledValidatorInterface {
     const compiled = this.compiled(this.resolve(schemaId));
 
     if (compiled === undefined) {

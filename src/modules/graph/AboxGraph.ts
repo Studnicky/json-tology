@@ -25,14 +25,12 @@ import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { AboxGraphInterface } from '../../interfaces/AboxGraphInterface.js';
 import type { CursorInterface } from '../../interfaces/CursorInterface.js';
 import type { SchemaCursorInterface } from '../../interfaces/SchemaCursorInterface.js';
-import type {
-  AboxIdentityDescriptorType,
-  AboxLiftFunctionType,
-  AboxPredicateObjectType,
-  AboxPredicateSubjectType
-} from '../../types/AboxGraph.js';
-import type { AboxLiftSubjectFunctionType } from '../../types/AboxLiftSubjectFunctionType.js';
-import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
+import type { AboxIdentityDescriptorEntity } from '../../entities/AboxIdentityDescriptorEntity.js';
+import type { AboxLiftFunctionInterface } from '../../interfaces/AboxLiftFunctionInterface.js';
+import type { AboxPredicateObjectEntity } from '../../entities/AboxPredicateObjectEntity.js';
+import type { AboxPredicateSubjectEntity } from '../../entities/AboxPredicateSubjectEntity.js';
+import type { AboxLiftSubjectFunctionInterface } from '../../interfaces/AboxLiftSubjectFunctionInterface.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 
 import {
   RDF, RDFS
@@ -56,7 +54,7 @@ class AboxQuadValues {
     return quad.object.value;
   }
 
-  static isLiteralObject(termType: AboxPredicateObjectType['objectTermType']): boolean {
+  static isLiteralObject(termType: AboxPredicateObjectEntity.Type['objectTermType']): boolean {
     return termType === 'Literal';
   }
 }
@@ -117,8 +115,8 @@ class PredicateRoleCursors {
  */
 export class AboxGraph implements AboxGraphInterface {
   private readonly allQuads: QuadInterface[];
-  private readonly byObject = new Map<string, AboxPredicateSubjectType[]>();
-  private readonly bySubject = new Map<string, AboxPredicateObjectType[]>();
+  private readonly byObject = new Map<string, AboxPredicateSubjectEntity.Type[]>();
+  private readonly bySubject = new Map<string, AboxPredicateObjectEntity.Type[]>();
   /** predicate IRI → class IRIs that are its rdfs:domain */
   private readonly domainsOfPredicate = new Map<string, Set<string>>();
   /**
@@ -128,15 +126,15 @@ export class AboxGraph implements AboxGraphInterface {
    */
   private readonly entityByIdentity = new Map<string, Map<string, string>>();
   /** owning class IRI → its inverse-functional identity descriptor */
-  private readonly identityOf = new Map<string, AboxIdentityDescriptorType>();
+  private readonly identityOf = new Map<string, AboxIdentityDescriptorEntity.Type>();
   /** identity predicate IRI → its range-primitive IRI (for FK resolution) */
   private readonly identityPredicateRange = new Map<string, string>();
   /** class IRI → instance subject IRIs */
   private readonly instancesByType = new Map<string, string[]>();
 
   private readonly liftCache = new Map<string, unknown>();
-  private readonly liftSubject: AboxLiftSubjectFunctionType;
-  private readonly predicateResolver: PredicateResolverFunctionType;
+  private readonly liftSubject: AboxLiftSubjectFunctionInterface;
+  private readonly predicateResolver: PredicateResolverInterface;
   /** class IRI → Set of predicate IRIs whose rdfs:domain includes that class */
   private readonly predicatesOfClass = new Map<string, Set<string>>();
   /** predicate IRI → class IRIs that are its rdfs:range */
@@ -162,9 +160,9 @@ export class AboxGraph implements AboxGraphInterface {
   public constructor(
     aboxQuads: readonly QuadInterface[],
     tboxQuads: readonly QuadInterface[],
-    identities: readonly AboxIdentityDescriptorType[],
-    liftSubject: AboxLiftSubjectFunctionType,
-    predicateResolver: PredicateResolverFunctionType,
+    identities: readonly AboxIdentityDescriptorEntity.Type[],
+    liftSubject: AboxLiftSubjectFunctionInterface,
+    predicateResolver: PredicateResolverInterface,
     schemaOf: (classIri: string) => unknown
   ) {
     this.liftSubject = liftSubject;
@@ -318,7 +316,7 @@ export class AboxGraph implements AboxGraphInterface {
    * (so subclass-typed instances inherit their parent's inverse-functional
    * identity, e.g. a `RareBook` is identified by `Book`'s `isbn`).
    */
-  private findIdentityDescriptor(types: readonly string[]): AboxIdentityDescriptorType | undefined {
+  private findIdentityDescriptor(types: readonly string[]): AboxIdentityDescriptorEntity.Type | undefined {
     for (const type of types) {
       const direct = this.identityOf.get(type);
 
@@ -484,7 +482,7 @@ export class AboxGraph implements AboxGraphInterface {
    * the same flat predicate (but are not themselves inverse-functional) never
    * masquerade as identity owners.
    */
-  private indexIdentities(identities: readonly AboxIdentityDescriptorType[]): void {
+  private indexIdentities(identities: readonly AboxIdentityDescriptorEntity.Type[]): void {
     for (const descriptor of identities) {
       this.identityOf.set(descriptor.owningClass, descriptor);
       this.identityPredicateRange.set(descriptor.predicate, descriptor.range);
@@ -588,7 +586,7 @@ export class AboxGraph implements AboxGraphInterface {
    * every NamedNode/BlankNode it transitively references so nested objects
    * reconstruct), and lifts via `fromQuads`-equivalent registry lifting.
    */
-  private makeLift(): AboxLiftFunctionType {
+  private makeLift(): AboxLiftFunctionInterface {
     return (iri: string): unknown => {
       const cached = this.liftCache.get(iri);
 

@@ -17,7 +17,7 @@ import {
 import assert from 'node:assert/strict';
 import { JsonTology } from '../../src/index.js';
 import { VALIDATION_MESSAGES } from '../../src/constants/VALIDATION_MESSAGES.js';
-import type { ValidationErrorType } from '../../src/types/Validation.js';
+import type { ValidationErrorEntity } from '../../src/entities/ValidationErrorEntity.js';
 
 type ErrorSummaryType = {
   'keyword': string;
@@ -62,11 +62,11 @@ function assertCompiledMessages(
       const {
         expectedKeyword, expectedMessage
       } = scenario;
-      const match = compiledErrors.find((err: ValidationErrorType): boolean => {
+      const match = compiledErrors.find((err: ValidationErrorEntity.Type): boolean => {
         return err.keyword === expectedKeyword && err.message === expectedMessage;
       });
 
-      const actualSummary = JSON.stringify(compiledErrors.map((err: ValidationErrorType): ErrorSummaryType => {
+      const actualSummary = JSON.stringify(compiledErrors.map((err: ValidationErrorEntity.Type): ErrorSummaryType => {
         return {
           'keyword': err.keyword,
           'message': err.message

@@ -19,9 +19,6 @@ import { MULTIPLE_OF_EPSILON_FACTOR } from '../../constants/NUMERIC.js';
 import {
   SUPPORTED_CONTENT_ENCODINGS, SUPPORTED_CONTENT_MEDIA_TYPES
 } from '../../constants/CONTENT_VALIDATION.js';
-import type {
-  CoerceToBooleanResultType, CoerceToNumberResultType
-} from '../../types/Validation.js';
 
 /**
  * Predicates — static predicate library for JSON Schema validation.
@@ -242,10 +239,9 @@ export class Predicates {
    *
    * @category Validation
    * @since 0.1.0
-   * @see {@link CoerceToBooleanResultType}
    * @group Coercion
    */
-  static coerceToBoolean(value: string): CoerceToBooleanResultType {
+  static coerceToBoolean(value: string): boolean | undefined {
     if (value === 'true' || value === '1') {
       return true;
     }
@@ -267,10 +263,9 @@ export class Predicates {
    *
    * @category Validation
    * @since 0.1.0
-   * @see {@link CoerceToNumberResultType}
    * @group Coercion
    */
-  static coerceToNumber(value: string): CoerceToNumberResultType {
+  static coerceToNumber(value: string): number | undefined {
     const coerced = Number(value);
 
     return Number.isFinite(coerced) ? coerced : undefined;
@@ -503,15 +498,15 @@ export class Predicates {
    */
   static satisfiesContains(
     matchCount: number,
-    minContains: number | undefined,
-    maxContains: number | undefined
+    minimumContains: number | undefined,
+    maximumContains: number | undefined
   ): boolean {
-    const minimum = minContains ?? (maxContains === undefined ? 1 : 0);
+    const minimum = minimumContains ?? (maximumContains === undefined ? 1 : 0);
 
     if (matchCount < minimum) {
       return false;
     }
-    if (maxContains !== undefined && matchCount > maxContains) {
+    if (maximumContains !== undefined && matchCount > maximumContains) {
       return false;
     }
 

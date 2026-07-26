@@ -16,9 +16,8 @@ import {
   describe, it
 } from 'node:test';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../src/types/OwlImport.js';
+import type { OwlImportContextInterface } from '../../src/interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../src/interfaces/OwlImportFragmentInterface.js';
 import { Individuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
@@ -79,14 +78,14 @@ function normalizePair(pair: readonly [string, string]): readonly [string, strin
 }
 
 // ---------------------------------------------------------------------------
-// OwlImportContextType factory backed by a real quad-derived SchemaGraph
+// OwlImportContextInterface factory backed by a real quad-derived SchemaGraph
 // ---------------------------------------------------------------------------
 
 function makeCtx(
   allClassIris: string[] = [],
   allPropertyIris: string[] = [],
   reportUnsupported: (axiomIri: string, subjectIri: null | string) => void = () => { /* no-op */ }
-): OwlImportContextType {
+): OwlImportContextInterface {
   return {
     'allClassIris': new Set(allClassIris),
     'allPropertyIris': new Set(allPropertyIris),
@@ -121,9 +120,9 @@ function runIndividuals(
   allClassIris: string[] = [],
   allPropertyIris: string[] = [],
   reportUnsupported: (axiomIri: string, subjectIri: null | string) => void = () => { /* no-op */ }
-): OwlImportFragmentType {
+): OwlImportFragmentInterface {
   const ctx = makeCtx(allClassIris, allPropertyIris, reportUnsupported);
-  const withGraph: OwlImportContextType = {
+  const withGraph: OwlImportContextInterface = {
     ...ctx,
     'graph': SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:test' })
   };
@@ -137,7 +136,7 @@ function runIndividuals(
 
 void describe('importIndividuals — empty input', () => {
   void it('returns a valid empty fragment for no quads', () => {
-    const result: OwlImportFragmentType = runIndividuals([]);
+    const result: OwlImportFragmentInterface = runIndividuals([]);
 
     assert.equal(result.individuals.length, 0);
     assert.equal(result.sameAs.length, 0);

@@ -1,8 +1,7 @@
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type {
-  SchemaGraphNodeType, SchemaGraphSemanticsType
-} from '../../types/SchemaGraph.js';
-import type { ReferenceDecoderRegistryType } from '../../types/ReferenceDecoderRegistryType.js';
+import type { ReferenceDecoderRegistryInterface } from '../../interfaces/ReferenceDecoderRegistryInterface.js';
 import type { ResolvedReferenceTargetType } from '../../types/ResolvedReferenceTargetType.js';
 
 import { BaseError } from '../../errors/BaseError.js';
@@ -24,17 +23,17 @@ import { SchemaIri } from './SchemaIri.js';
  */
 const referenceTargetCache = new WeakMap<
   SchemaGraphInterface,
-  WeakMap<SchemaGraphNodeType, null | ResolvedReferenceTargetType>
+  WeakMap<SchemaGraphNodeInterface, null | ResolvedReferenceTargetType>
 >();
 
 class GraphCache {
-  static get(graph: SchemaGraphInterface): WeakMap<SchemaGraphNodeType, null | ResolvedReferenceTargetType> {
+  static get(graph: SchemaGraphInterface): WeakMap<SchemaGraphNodeInterface, null | ResolvedReferenceTargetType> {
     const existing = referenceTargetCache.get(graph);
 
     if (existing !== undefined) {
       return existing;
     }
-    const cache = new WeakMap<SchemaGraphNodeType, null | ResolvedReferenceTargetType>();
+    const cache = new WeakMap<SchemaGraphNodeInterface, null | ResolvedReferenceTargetType>();
 
     referenceTargetCache.set(graph, cache);
 
@@ -105,7 +104,7 @@ export class ReferenceDecoder {
   public static run(
     graph: SchemaGraphInterface,
     value: unknown,
-    registry: ReferenceDecoderRegistryType,
+    registry: ReferenceDecoderRegistryInterface,
     logger: LoggerInterface = SILENT_LOGGER
   ): unknown {
     if (value === null || value === undefined) {
@@ -124,10 +123,10 @@ export class ReferenceDecoder {
 
   private static walk(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     value: unknown,
-    registry: ReferenceDecoderRegistryType,
-    visited: Set<SchemaGraphNodeType>
+    registry: ReferenceDecoderRegistryInterface,
+    visited: Set<SchemaGraphNodeInterface>
   ): unknown {
     if (value === null || value === undefined) {
       return value;
@@ -144,11 +143,11 @@ export class ReferenceDecoder {
   }
 
   private static walkAdditionalProperties(
-    semantics: SchemaGraphSemanticsType,
+    semantics: SchemaGraphSemanticsInterface,
     graph: SchemaGraphInterface,
     value: unknown,
-    registry: ReferenceDecoderRegistryType,
-    visited: Set<SchemaGraphNodeType>
+    registry: ReferenceDecoderRegistryInterface,
+    visited: Set<SchemaGraphNodeInterface>
   ): unknown {
     if (!DataType.isRecord(value)) {
       return value;
@@ -173,11 +172,11 @@ export class ReferenceDecoder {
   }
 
   private static walkComposition(
-    semantics: SchemaGraphSemanticsType,
+    semantics: SchemaGraphSemanticsInterface,
     graph: SchemaGraphInterface,
     value: unknown,
-    registry: ReferenceDecoderRegistryType,
-    visited: Set<SchemaGraphNodeType>
+    registry: ReferenceDecoderRegistryInterface,
+    visited: Set<SchemaGraphNodeInterface>
   ): unknown {
     let current = value;
 
@@ -210,10 +209,10 @@ export class ReferenceDecoder {
 
   private static walkInner(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     value: unknown,
-    registry: ReferenceDecoderRegistryType,
-    visited: Set<SchemaGraphNodeType>
+    registry: ReferenceDecoderRegistryInterface,
+    visited: Set<SchemaGraphNodeInterface>
   ): unknown {
     // Resolve semantics once per node descent — immutable after graph construction.
     const semantics = graph.semantics(node);
@@ -233,12 +232,12 @@ export class ReferenceDecoder {
   }
 
   private static walkItems(
-    semantics: SchemaGraphSemanticsType,
+    semantics: SchemaGraphSemanticsInterface,
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     value: unknown,
-    registry: ReferenceDecoderRegistryType,
-    visited: Set<SchemaGraphNodeType>
+    registry: ReferenceDecoderRegistryInterface,
+    visited: Set<SchemaGraphNodeInterface>
   ): unknown {
     if (!Array.isArray(value)) {
       return value;
@@ -289,11 +288,11 @@ export class ReferenceDecoder {
   }
 
   private static walkProperties(
-    semantics: SchemaGraphSemanticsType,
+    semantics: SchemaGraphSemanticsInterface,
     graph: SchemaGraphInterface,
     value: unknown,
-    registry: ReferenceDecoderRegistryType,
-    visited: Set<SchemaGraphNodeType>
+    registry: ReferenceDecoderRegistryInterface,
+    visited: Set<SchemaGraphNodeInterface>
   ): unknown {
     if (!DataType.isRecord(value)) {
       return value;
@@ -318,12 +317,12 @@ export class ReferenceDecoder {
 
   private static walkReference(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
-    semantics: SchemaGraphSemanticsType,
+    node: SchemaGraphNodeInterface,
+    semantics: SchemaGraphSemanticsInterface,
     referenceTarget: string,
     value: unknown,
-    registry: ReferenceDecoderRegistryType,
-    visited: Set<SchemaGraphNodeType>
+    registry: ReferenceDecoderRegistryInterface,
+    visited: Set<SchemaGraphNodeInterface>
   ): unknown {
     // Local fragment ref — keep walking on the same graph beneath the
     // resolved fragment node. No cross-schema decoder applies here, but

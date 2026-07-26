@@ -1,7 +1,7 @@
-import type { DumpOptionsType } from '../../types/DumpOptionsType.js';
-import type { DumpFilterOptionsType } from '../../types/DumpFilterOptionsType.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
+import type { DumpOptionsEntity } from '../../entities/DumpOptionsEntity.js';
+import type { DumpFilterOptionsEntity } from '../../entities/DumpFilterOptionsEntity.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import { DataType } from '../data/DataType.js';
 import { Transform } from '../transform/Transform.js';
@@ -25,7 +25,7 @@ const graphTransformCache = new WeakMap<SchemaGraphInterface, boolean>();
 export class Dumper {
   private static applyEncoder(
     nodeSchema: Record<string, unknown>,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     value: unknown
   ): unknown {
     const encoder = Transform.getDecoder(nodeSchema);
@@ -95,7 +95,7 @@ export class Dumper {
     registry: SchemaRegistryInterface,
     schemaId: string,
     value: unknown,
-    options?: DumpOptionsType
+    options?: DumpOptionsEntity.Type
   ): unknown {
     const entry = registry.graphEntry(schemaId);
 
@@ -128,8 +128,8 @@ export class Dumper {
 
   private static dumpArray(argumentList: {
     'graph': SchemaGraphInterface;
-    'itemsNode': SchemaGraphNodeType;
-    'options': DumpOptionsType | undefined;
+    'itemsNode': SchemaGraphNodeInterface;
+    'options': DumpOptionsEntity.Type | undefined;
     'registry': SchemaRegistryInterface;
     'value': unknown[];
   }): unknown[] {
@@ -163,7 +163,7 @@ export class Dumper {
     registry: SchemaRegistryInterface,
     schemaId: string,
     value: unknown,
-    options?: DumpFilterOptionsType
+    options?: DumpFilterOptionsEntity.Type
   ): string {
     const entry = registry.graphEntry(schemaId);
 
@@ -193,9 +193,9 @@ export class Dumper {
 
   private static dumpNode(argumentList: {
     'graph': SchemaGraphInterface;
-    'node': SchemaGraphNodeType;
+    'node': SchemaGraphNodeInterface;
     'nodeSchema': Record<string, unknown>;
-    'options': DumpOptionsType | undefined;
+    'options': DumpOptionsEntity.Type | undefined;
     'registry': SchemaRegistryInterface;
     'value': unknown;
   }): unknown {
@@ -249,8 +249,8 @@ export class Dumper {
 
   private static dumpObject(argumentList: {
     'graph': SchemaGraphInterface;
-    'node': SchemaGraphNodeType;
-    'options': DumpOptionsType | undefined;
+    'node': SchemaGraphNodeInterface;
+    'options': DumpOptionsEntity.Type | undefined;
     'registry': SchemaRegistryInterface;
     'value': Record<string, unknown>;
   }): Record<string, unknown> {
@@ -313,7 +313,7 @@ export class Dumper {
       return cached;
     }
 
-    const result = graph.nodes().some((n: SchemaGraphNodeType): boolean => {
+    const result = graph.nodes().some((n: SchemaGraphNodeInterface): boolean => {
       const s = n.schema;
 
       return DataType.isRecord(s) && Transform.getDecoder(s) !== undefined;
@@ -324,7 +324,7 @@ export class Dumper {
     return result;
   }
 
-  private static hasActiveFilterOptions(options: DumpFilterOptionsType | undefined): boolean {
+  private static hasActiveFilterOptions(options: DumpFilterOptionsEntity.Type | undefined): boolean {
     if (options === undefined) {
       return false;
     }
@@ -376,7 +376,7 @@ export class Dumper {
     graph: SchemaGraphInterface,
     reference: string
   ): { 'graph': SchemaGraphInterface;
-    'node': SchemaGraphNodeType;
+    'node': SchemaGraphNodeInterface;
     'registry': SchemaRegistryInterface;
     'schema': Record<string, unknown> } {
     if (reference.startsWith('#')) {

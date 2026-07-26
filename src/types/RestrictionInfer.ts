@@ -41,60 +41,13 @@
  *     fragment fall through (no narrowing) — the runtime check still fires.
  */
 
+import type { RestrictionDescriptorEntity } from '../entities/RestrictionDescriptorEntity.js';
 
 // ---------------------------------------------------------------------------
-// Disjoint / complement brands
+// Disjoint / complement brands — declared as interfaces in src/interfaces/
+// (DisjointWithBrandInterface, ComplementOfBrandInterface): each is a
+// contract-only phantom brand, not schema-derived data.
 // ---------------------------------------------------------------------------
-
-/**
- * Phantom brand attached to a class declared `disjointWith` another.
- *
- * @remarks
- * Values typed as `DisjointWithBrandType<OtherId>` are structurally
- * incompatible with values typed as `DisjointWithBrandType<OtherId>`
- * carrying the same brand, so assigning a value of the "other" class to the
- * "this" class position is a compile error when the asymmetric brand is
- * checked.
- *
- * @example
- * ```ts
- * type Dog = DisjointWithBrandType<'https://example.com/Cat'> & { name: string };
- * ```
- *
- * @category Restriction Inference
- * @since 0.18.0
- * @see {@link ComplementOfBrandType}
- * @group Restriction Inference
- *
- * @typeParam TOtherId - The `$id` IRI of the class declared disjoint.
- */
-export type DisjointWithBrandType<TOtherId extends string> = {
-  '~jt:disjointWith': Readonly<Record<TOtherId, 'disjoint'>>;
-};
-
-/**
- * Phantom brand attached to a class declared as the OWL `complementOf` another.
- *
- * @remarks
- * Uses a distinct symbol from `DisjointWithBrandType` so a class can carry
- * both brands simultaneously — one for disjointness, one for complement —
- * without the brand keys colliding.
- *
- * @example
- * ```ts
- * type NonDog = ComplementOfBrandType<'https://example.com/Dog'> & { name: string };
- * ```
- *
- * @category Restriction Inference
- * @since 0.18.0
- * @see {@link DisjointWithBrandType}
- * @group Restriction Inference
- *
- * @typeParam TOtherId - The `$id` IRI of the class this class is the complement of.
- */
-export type ComplementOfBrandType<TOtherId extends string> = {
-  '~jt:complementOf': Readonly<Record<TOtherId, 'complement'>>;
-};
 
 // ---------------------------------------------------------------------------
 // Property-IRI parsing — turns `<schemaId>#<name>` into the bare property key.
@@ -132,6 +85,10 @@ declare const _TUPLE_CAP: 16;
  * @since 0.18.0
  * @see {@link BuildExactTupleType}
  * @group Restriction Inference
+ *
+ * @remarks
+ * Kept as a `type`: this is a numeric literal type (`typeof _TUPLE_CAP`), not
+ * an object contract, so it has no interface form to declare it as.
  */
 export type TupleCapType = typeof _TUPLE_CAP;
 
@@ -269,16 +226,26 @@ export type BuildBoundedTupleType<
         : BuildBoundedTupleType<TItem, TMinimum, TMaximum, [TItem, ...TAcc]>;
 
 // ---------------------------------------------------------------------------
-// Restriction descriptor — matches the runtime shape from
-// `src/types/Restriction.ts` but expressed in compile-time form.
+// Restriction descriptor — matches the schema-derived runtime shape from
+// `RestrictionDescriptorEntity` (src/entities/RestrictionDescriptorEntity.ts)
+// but expressed in compile-time form, with `kind`/`onProperty`/`value`
+// overridden by generic literal parameters so `infer` can narrow each
+// restriction variant in `ApplyOneRestrictionType`.
 // ---------------------------------------------------------------------------
 
+// Kept as a `type`: this is a compile-time-only generic computation (an `Omit` +
+// intersection over `RestrictionDescriptorEntity.Type`'s shape, re-parameterized
+// so `infer` can narrow each restriction variant in `ApplyOneRestrictionType`
+// below). It has no runtime value and no interface form to declare it as — an
+// `interface` cannot express the `Omit<...> & {...}` computation, and there is
+// no schema to derive it from beyond the entity it already narrows.
 type RestrictionShapeType<
   TKind extends string,
   TProperty extends string,
   TValue
 >
-  = { readonly 'kind': TKind }
+  = Omit<RestrictionDescriptorEntity.Type, 'kind' | 'onProperty' | 'value'>
+  & { readonly 'kind': TKind }
   & { readonly 'onProperty': TProperty }
   & { readonly 'value': TValue };
 

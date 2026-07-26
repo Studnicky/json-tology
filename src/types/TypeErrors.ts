@@ -311,7 +311,7 @@ export type HasReferencesType<TReferences>
 declare const TYPE_ERROR_TAG: unique symbol;
 
 type TypeErrorBrandType<TName extends string> = IdentityType<{
-  readonly [TYPE_ERROR_TAG]: TName;
+  [TYPE_ERROR_TAG]: TName;
 }>;
 
 /**
@@ -335,9 +335,9 @@ type TypeErrorBrandType<TName extends string> = IdentityType<{
  *
  * @typeParam TId - The `$id` IRI that collides with the parent's identifier.
  */
-export type SelfSubClassType<TId extends string> = never & TypeErrorBrandType<'SelfSubClass'> & {
-  readonly 'collidingId': TId;
-};
+export type SelfSubClassType<TId extends string> = IdentityType<{
+  'collidingId': TId;
+}> & never & TypeErrorBrandType<'SelfSubClass'>;
 
 /**
  * Compose.discriminatedUnion variant is missing a const discriminator on `prop`.
@@ -364,10 +364,10 @@ export type SelfSubClassType<TId extends string> = never & TypeErrorBrandType<'S
 export type DiscriminatorMissingType<
   TProp extends string,
   TVariant
-> = never & TypeErrorBrandType<'DiscriminatorMissing'> & {
-  readonly 'discriminator': TProp;
-  readonly 'variant': TVariant;
-};
+> = IdentityType<{
+  'discriminator': TProp;
+  'variant': TVariant;
+}> & never & TypeErrorBrandType<'DiscriminatorMissing'>;
 
 /**
  * Compose.equivalent options.$id collides with source.$id.
@@ -390,9 +390,9 @@ export type DiscriminatorMissingType<
  *
  * @typeParam TId - The `$id` IRI that collides with the source schema's identifier.
  */
-export type SelfEquivalentType<TId extends string> = never & TypeErrorBrandType<'SelfEquivalent'> & {
-  readonly 'collidingId': TId;
-};
+export type SelfEquivalentType<TId extends string> = IdentityType<{
+  'collidingId': TId;
+}> & never & TypeErrorBrandType<'SelfEquivalent'>;
 
 /**
  * Compose.intersection newId collides with one of the input schemas' $ids.
@@ -415,9 +415,9 @@ export type SelfEquivalentType<TId extends string> = never & TypeErrorBrandType<
  *
  * @typeParam TId - The `$id` IRI that collides with one of the input schemas.
  */
-export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorBrandType<'IntersectionIdCollision'> & {
-  readonly 'collidingId': TId;
-};
+export type IntersectionIdCollisionType<TId extends string> = IdentityType<{
+  'collidingId': TId;
+}> & never & TypeErrorBrandType<'IntersectionIdCollision'>;
 
 // ---------------------------------------------------------------------------
 // OWL 2 property-characteristic conflict brands (Cluster F)
@@ -565,5 +565,5 @@ export type ValidatePropertyCharacteristicsType<T>
   = T extends { readonly 'properties': infer TProps }
     ? [PropertyCharacteristicErrorsType<TProps>] extends [never]
       ? T
-      : T & { readonly 'schemaErrors': PropertyCharacteristicErrorsType<TProps> }
+      : IdentityType<{ 'schemaErrors': PropertyCharacteristicErrorsType<TProps> }> & T
     : T;

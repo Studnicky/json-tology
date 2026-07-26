@@ -5,7 +5,7 @@
  */
 
 import type { ChangesetInterface } from '../../interfaces/ChangesetInterface.js';
-import type { DiffOpType } from '../../types/Diff.js';
+import type { DiffOpEntity } from '../../entities/DiffOpEntity.js';
 import { Operations } from './Operations.js';
 
 
@@ -17,18 +17,18 @@ import { Operations } from './Operations.js';
  * const changes = Value.diff(a, b);
  * changes.length      // number of operations
  * changes.isEmpty     // true when a and b are structurally equal
- * changes.operations  // ReadonlyArray<DiffOpType>
+ * changes.operations  // ReadonlyArray<DiffOpEntity.Type>
  * const b = changes.apply(a)     // produce b from a without mutating a
  */
 export class Changeset implements ChangesetInterface {
-  public readonly operations: readonly DiffOpType[];
+  public readonly operations: readonly DiffOpEntity.Type[];
 
   /**
    * Create a Changeset from an ordered list of diff operations.
    *
    * @param operations - Ordered diff operations (set or delete)
    */
-  public constructor(operations: readonly DiffOpType[]) {
+  public constructor(operations: readonly DiffOpEntity.Type[]) {
     this.operations = operations;
   }
 

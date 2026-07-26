@@ -86,7 +86,7 @@ All error classes and ValidationErrors are defined in `src/errors/`. Import each
 - `OwlImportError` — OWL import fatal conditions; code: `OWL_IMPORT_NOT_IMPLEMENTED`
 - `ValidationErrors` — collection class for accumulated validation errors (not a thrown error subclass)
 
-Loader failures use `SchemaLoadErrorType` in `src/types/Loader.ts` — a discriminated-union type, not an error class.
+- `SchemaLoadError` — schema loader fetch/parse failures; carries `file`, `reason`, optional `status`; code: `SCHEMA_LOAD_FAILED`; `toLoadError()` projects to `SchemaLoadErrorEntity.Type` in `src/entities/SchemaLoadErrorEntity.ts`
 
 **Shared utilities in `src/modules/data/DataTypes.ts`**
 Type guards (`isRecord`, `isPlainObject`), `deepEqual`, and XSD type maps/resolvers live here. Do not duplicate these — import from DataTypes. Graph-identity helpers live on `SchemaIri` (`propertyIri`, `parseRef`, `splitSubject`); deep freezing on `Frozen.deepFreeze`; CURIE expansion/compaction on `Curie`.

@@ -6,7 +6,7 @@
  */
 
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphInterface.js';
-import type { ReferenceDecoderRegistryType } from '../types/ReferenceDecoderRegistryType.js';
+import type { ReferenceDecoderRegistryInterface } from './ReferenceDecoderRegistryInterface.js';
 import type { LoggerInterface } from '../interfaces/LoggerInterface.js';
 
 export interface ReferenceDecoderInterface {
@@ -24,7 +24,7 @@ export interface ReferenceDecoderInterface {
   run(
     graph: SchemaGraphInterface,
     value: unknown,
-    registry: ReferenceDecoderRegistryType,
+    registry: ReferenceDecoderRegistryInterface,
     logger?: LoggerInterface
   ): unknown;
 }

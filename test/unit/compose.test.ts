@@ -2,8 +2,8 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
-// ValidationErrorType is the per-error structural type used in composition tests; not re-exported publicly.
-import type { ValidationErrorType } from '../../src/types/Validation.js';
+// ValidationErrorEntity.Type is the per-error structural type used in composition tests; not re-exported publicly.
+import type { ValidationErrorEntity } from '../../src/entities/ValidationErrorEntity.js';
 import {
   describe, it
 } from 'node:test';
@@ -779,7 +779,7 @@ import {
       {
         'check': (errs) => {
         // Recipe: group by path (replaces removed format())
-          const grouped: Record<string, ValidationErrorType[]> = {};
+          const grouped: Record<string, ValidationErrorEntity.Type[]> = {};
 
           for (const err of errs) {
             (grouped[err.path || '_root'] ??= []).push(err);
@@ -820,7 +820,7 @@ import {
       {
         'check': (errs) => {
         // Recipe: group by path (replaces removed format())
-          const grouped: Record<string, ValidationErrorType[]> = {};
+          const grouped: Record<string, ValidationErrorEntity.Type[]> = {};
 
           for (const err of errs) {
             (grouped[err.path || '_root'] ??= []).push(err);
@@ -846,8 +846,8 @@ import {
       {
         'check': (errs) => {
         // Recipe: field vs form errors (replaces removed flatten())
-          const fieldErrors: ValidationErrorType[] = [];
-          const formErrors: ValidationErrorType[] = [];
+          const fieldErrors: ValidationErrorEntity.Type[] = [];
+          const formErrors: ValidationErrorEntity.Type[] = [];
 
           for (const err of errs) {
             if (err.path) {

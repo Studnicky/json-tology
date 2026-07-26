@@ -2,12 +2,12 @@
  * ReferenceResolutionLoader — transitive $ref resolution walker.
  *
  * Extracted from JsonTology.resolveAllRefs. Takes a SchemaRegistryInterface
- * and a LoaderType; has no dependency on JsonTology itself.
+ * and a LoaderInterface; has no dependency on JsonTology itself.
  */
 
 import type { ReferenceResolutionLoaderInterface } from '../../interfaces/ReferenceResolutionLoaderInterface.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
-import type { LoaderType } from '../../types/Loader.js';
+import type { LoaderInterface } from '../../interfaces/LoaderInterface.js';
 
 import { GraphError } from '../../errors/GraphError.js';
 import { SchemaLoadError } from '../../errors/SchemaLoadError.js';
@@ -29,7 +29,7 @@ export class ReferenceResolutionLoader implements ReferenceResolutionLoaderInter
    * @param rootIds - IRIs to seed into the registry.
    * @param loader - Async loader invoked for each unregistered IRI.
    */
-  public async loadRootIds(rootIds: readonly string[], loader: LoaderType): Promise<void> {
+  public async loadRootIds(rootIds: readonly string[], loader: LoaderInterface): Promise<void> {
     for (const iri of rootIds) {
       if (this.registry.has(iri)) {
         continue;
@@ -76,7 +76,7 @@ export class ReferenceResolutionLoader implements ReferenceResolutionLoaderInter
    *
    * @param loader - Async loader invoked for each unregistered cross-schema IRI.
    */
-  public async resolveAll(loader: LoaderType): Promise<void> {
+  public async resolveAll(loader: LoaderInterface): Promise<void> {
     const visited = new Set<string>();
 
     const resolveSchema = async (schema: Record<string, unknown>): Promise<void> => {

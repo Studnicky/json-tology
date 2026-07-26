@@ -7,11 +7,11 @@
  * here so the two projection modules share one byte-identical implementation.
  */
 
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
-import type { RelationIndexType } from '../../types/RelationIndexType.js';
-import type { OptionalAnnotatedEdgeType } from '../../types/OptionalAnnotatedEdgeType.js';
-import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
+import type { AnnotatedEdgeStructureInterface } from '../../interfaces/AnnotatedEdgeStructureInterface.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { DataType } from '../data/DataType.js';
 import { GraphError } from '../../errors/GraphError.js';
@@ -28,8 +28,8 @@ export class PropertyProjection {
    */
   static findAnnotatedEdge(
     graph: SchemaGraphInterface,
-    propertyNode: SchemaGraphNodeType
-  ): OptionalAnnotatedEdgeType {
+    propertyNode: SchemaGraphNodeInterface
+  ): AnnotatedEdgeStructureInterface | undefined {
     for (const relation of graph.relations(propertyNode)) {
       if (relation.structure?.kind === 'annotatedEdge') {
         return relation.structure;
@@ -73,8 +73,8 @@ export class PropertyProjection {
   static resolveCanonicalIri(argumentList: {
     readonly 'fallback': (propSubject: string) => string;
     readonly 'graph': SchemaGraphInterface;
-    readonly 'predicateResolver': PredicateResolverFunctionType | undefined;
-    readonly 'propEntry': RelationIndexType;
+    readonly 'predicateResolver': PredicateResolverInterface | undefined;
+    readonly 'propEntry': RelationIndexInterface;
     readonly 'propSubject': string;
   }): string {
     const {
@@ -118,7 +118,7 @@ export class PropertyProjection {
     graph: SchemaGraphInterface | undefined,
     classId: string,
     propertyName: string,
-    predicateResolver: PredicateResolverFunctionType | undefined
+    predicateResolver: PredicateResolverInterface | undefined
   ): string {
     if (predicateResolver === undefined || graph === undefined) {
       return SchemaIri.propertyIri(classId, propertyName);
@@ -153,7 +153,7 @@ export class PropertyProjection {
   static resolveRestriction(
     onProperty: string,
     graph: SchemaGraphInterface,
-    predicateResolver: PredicateResolverFunctionType | undefined
+    predicateResolver: PredicateResolverInterface | undefined
   ): string {
     if (predicateResolver === undefined) {
       return onProperty;

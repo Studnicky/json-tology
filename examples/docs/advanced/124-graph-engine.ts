@@ -8,10 +8,10 @@
  *   - `registry.validator(id).validate(value)` — returns `{ valid, errors, value }`
  *   - `registry.validator(id).check(value)` — fast boolean shortcut
  *   - `registry.validator(id).validate(value, { collectErrors: true })` — full error collection
- *   - custom keyword registration via `RegistryOptionsType.keywords`
+ *   - custom keyword registration via `RegistryOptionsInterface.keywords`
  */
 
-import type { KeywordContextType } from '../../../src/types/GraphEngine.js';
+import type { KeywordContextInterface } from '../../../src/interfaces/KeywordContextInterface.js';
 import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 
 // ── Schema under test ────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ const customRegistry = new SchemaRegistry({
   'keywords': [{
     'keyword': 'x-example-tag',
     'type': 'string',
-    'validate': (_schema: unknown, _data: unknown, _ctx: KeywordContextType): boolean => {
+    'validate': (_schema: unknown, _data: unknown, _ctx: KeywordContextInterface): boolean => {
       return true;
     }
   }]

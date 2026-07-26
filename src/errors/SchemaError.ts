@@ -2,7 +2,7 @@
  * SchemaError — thrown for schema registration and structure issues
  */
 
-import type { SchemaErrorOptionsType } from '../types/ErrorOptions.js';
+import type { SchemaErrorOptionsInterface } from '../interfaces/SchemaErrorOptionsInterface.js';
 import { BaseError } from './BaseError.js';
 
 export class SchemaError extends BaseError {
@@ -15,7 +15,7 @@ export class SchemaError extends BaseError {
    * @param options - Options bag containing `options.code` (schema-specific error code),
    *   optional `options.schemaId`, and optional `options.cause` for error chaining
    */
-  public constructor(message: string, options: SchemaErrorOptionsType) {
+  public constructor(message: string, options: SchemaErrorOptionsInterface) {
     super(message, options);
     this.name = 'SchemaError';
     this.schemaId = options.schemaId;

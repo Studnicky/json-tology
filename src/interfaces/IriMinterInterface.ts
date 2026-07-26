@@ -13,7 +13,7 @@
  *
  * @category Projection
  * @since 0.10.0
- * @see {@link ProjectInstanceArgumentListType}
+ * @see {@link ProjectInstanceArgumentListInterface}
  * @group ABox
  */
 export interface IriMinterInterface {

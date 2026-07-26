@@ -7,7 +7,7 @@
 
 import type { CursorInterface } from './CursorInterface.js';
 import type { SchemaCursorInterface } from './SchemaCursorInterface.js';
-import type { PredicateAccessorType } from '../types/PredicateAccessorType.js';
+import type { PredicateAccessorInterface } from './PredicateAccessorInterface.js';
 
 export interface AboxGraphInterface {
   /**
@@ -32,7 +32,7 @@ export interface AboxGraphInterface {
    *
    * @param name - Authored property name (e.g. `'customerId'`) or full predicate IRI.
    */
-  predicate(name: string): PredicateAccessorType;
+  predicate(name: string): PredicateAccessorInterface;
 
   /**
    * Return a cursor seeded with the single resource identified by `iri`.

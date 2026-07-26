@@ -32,9 +32,9 @@ import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { VizDataCollector } from './modules/viz/VizDataCollector.js';
 import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphInterface.js';
-import type { BuildOptionsType } from './types/BuildOptionsType.js';
-import type { VizOptionsType } from './types/VizOptionsType.js';
-import type { BuildOutputOptionsType } from './types/BuildOutputOptionsType.js';
+import type { BuildOptionsEntity } from './entities/BuildOptionsEntity.js';
+import type { VizOptionsEntity } from './entities/VizOptionsEntity.js';
+import type { BuildOutputOptionsInterface } from './interfaces/BuildOutputOptionsInterface.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
@@ -317,7 +317,7 @@ class Build {
     writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
   }
 
-  private static ontologyOutput(options: BuildOutputOptionsType): void {
+  private static ontologyOutput(options: BuildOutputOptionsInterface): void {
     const {
       baseIri, graphs, output, outputFile
     } = options;
@@ -346,7 +346,7 @@ class Build {
     return result;
   }
 
-  static async run(options: BuildOptionsType): Promise<void> {
+  static async run(options: BuildOptionsEntity.Type): Promise<void> {
     const {
       'baseIri': configuredBaseIri, format, output, outputFile, 'schema': schemaGlob
     } = options;
@@ -359,7 +359,7 @@ class Build {
     const graphs = registry.listGraphs();
     const baseIri = BaseIri.resolve(graphs, configuredBaseIri);
 
-    const buildOptions: BuildOutputOptionsType = {
+    const buildOptions: BuildOutputOptionsInterface = {
       baseIri,
       'graphs': [...graphs],
       output,
@@ -375,7 +375,7 @@ class Build {
     }
   }
 
-  private static shaclOutput(options: BuildOutputOptionsType): void {
+  private static shaclOutput(options: BuildOutputOptionsInterface): void {
     const {
       baseIri, graphs, output, outputFile
     } = options;
@@ -397,7 +397,7 @@ class Build {
 // ---------------------------------------------------------------------------
 
 class Viz {
-  static async run(options: VizOptionsType): Promise<void> {
+  static async run(options: VizOptionsEntity.Type): Promise<void> {
     const {
       noOpen, output, 'schema': schemaGlob
     } = options;

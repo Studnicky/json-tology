@@ -1,4 +1,4 @@
-import type { ValidationErrorType } from '../../../src/types/index.js';
+import type { ValidationErrorEntity } from '../../../src/types/index.js';
 import {
   bookstoreEntities, ReviewSchema
 } from '../bookstore/index.js';
@@ -9,7 +9,7 @@ const errs = bookstoreEntities.validate(ReviewSchema.$id, {
 });
 
 if (!errs.ok) {
-  const grouped: Partial<Record<string, ValidationErrorType[]>> = {};
+  const grouped: Partial<Record<string, ValidationErrorEntity.Type[]>> = {};
 
   for (const err of errs) {
     (grouped[err.path || '_root'] ??= []).push(err);

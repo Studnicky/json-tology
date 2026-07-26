@@ -23,13 +23,11 @@ import { join } from 'node:path';
 import {
   generateFromTbox, generateRegistryDirectory
 } from '../owl-gen/index.js';
-import type {
-  GenerateFromTboxOptionsType,
-  GenerateRegistryDirectoryOptionsType,
-  WrittenEntityFileType
-} from '../types/OwlGen.js';
+import type { GenerateFromTboxOptionsInterface } from '../interfaces/GenerateFromTboxOptionsInterface.js';
+import type { GenerateRegistryDirectoryOptionsInterface } from '../interfaces/GenerateRegistryDirectoryOptionsInterface.js';
+import type { WrittenEntityFileEntity } from '../entities/WrittenEntityFileEntity.js';
 
-export type { WrittenEntityFileType } from '../types/OwlGen.js';
+export type { WrittenEntityFileEntity } from '../entities/WrittenEntityFileEntity.js';
 
 class OwlGenNode {
   /**
@@ -37,7 +35,7 @@ class OwlGenNode {
    *
    * @param options - Browser-safe codegen options plus the `output` file path.
    */
-  static writeFromTbox(options: GenerateFromTboxOptionsType & { readonly 'output': string }): void {
+  static writeFromTbox(options: GenerateFromTboxOptionsInterface & { readonly 'output': string }): void {
     const {
       output,
       ...rest
@@ -54,7 +52,7 @@ class OwlGenNode {
    * @param options - Browser-safe codegen options plus the `outDir` directory.
    * @returns The written entity files (absolute paths) and the `index.ts` path.
    */
-  static writeRegistryDirectory(options: GenerateRegistryDirectoryOptionsType & { readonly 'outDir': string }): { readonly 'entityFiles': readonly WrittenEntityFileType[];
+  static writeRegistryDirectory(options: GenerateRegistryDirectoryOptionsInterface & { readonly 'outDir': string }): { readonly 'entityFiles': readonly WrittenEntityFileEntity.Type[];
     readonly 'indexFile': string } {
     const {
       outDir,
@@ -65,7 +63,7 @@ class OwlGenNode {
 
     mkdirSync(join(outDir, 'entities'), { 'recursive': true });
 
-    const entityFiles: WrittenEntityFileType[] = [];
+    const entityFiles: WrittenEntityFileEntity.Type[] = [];
 
     for (const entityFile of result.entityFiles) {
       const absPath = join(outDir, entityFile.path);

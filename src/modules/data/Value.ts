@@ -9,7 +9,7 @@
  * For hash operations use Hash.value().
  */
 
-import type { DiffOpType } from '../../types/Diff.js';
+import type { DiffOpEntity } from '../../entities/DiffOpEntity.js';
 import type { ValueInterface } from '../../interfaces/ValueInterface.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import { DataType } from './DataType.js';
@@ -28,14 +28,14 @@ export class Value implements ValueInterface {
    * @returns Changeset containing the operations needed to transform before into after
    */
   public static diff(before: unknown, after: unknown): Changeset {
-    const operations: DiffOpType[] = [];
+    const operations: DiffOpEntity.Type[] = [];
 
     Value.diffAt('', before, after, operations);
 
     return new Changeset(operations);
   }
 
-  private static diffAt(path: string, before: unknown, after: unknown, ops: DiffOpType[]): void {
+  private static diffAt(path: string, before: unknown, after: unknown, ops: DiffOpEntity.Type[]): void {
     if (DataType.isRecord(before) && DataType.isRecord(after)) {
       const beforeObject = before;
       const afterObject = after;

@@ -1,8 +1,8 @@
 /**
- * Registry-level defaults vs per-call overrides for iriFor / graphIri.
+ * Registry-level defaults vs per-call overrides for iriFor / iriForFunction / graphIri.
  *
- * JsonTology.create accepts the same iriFor / defaultGraphIri options
- * as the toQuads call site. Per-call overrides win when both are set.
+ * JsonTology.create accepts the same iriFor / iriForFunction / defaultGraphIri
+ * options as the toQuads call site. Per-call overrides win when both are set.
  *
  * The bookstoreEntities registry is created without those defaults, so
  * here we exercise the override path explicitly. The shape of the
@@ -10,19 +10,19 @@
  */
 
 import { Skolemize } from '../../../src/index.js';
-import type { JsonTologyOptionsType } from '../../../src/types/JsonTologyOptionsType.js';
+import type { JsonTologyOptionsInterface } from '../../../src/interfaces/JsonTologyOptionsInterface.js';
 import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
 // Type-level proof: the same options shape applies at create() time.
 const registryDefaults: Pick<
-  JsonTologyOptionsType,
-  'defaultDeskolemize' | 'defaultGraphIri' | 'iriFor'
+  JsonTologyOptionsInterface,
+  'defaultDeskolemize' | 'defaultGraphIri' | 'iriForFunction'
 > = {
   'defaultDeskolemize': true,
   'defaultGraphIri': 'https://shop.example.com/graphs/main',
-  'iriFor': Skolemize.wellKnownGenid('https://shop.example.com')
+  'iriForFunction': Skolemize.wellKnownGenid('https://shop.example.com')
 };
 
 void registryDefaults;

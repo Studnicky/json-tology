@@ -2,7 +2,7 @@
  * Renders visualization payloads to HTML documents.
  */
 
-import type { VizPayloadType } from '../../types/Viz.js';
+import type { VizPayloadInterface } from '../../interfaces/VizPayloadInterface.js';
 import {
   CSS_COLOR_DARK, CSS_COLOR_LIGHT, CSS_COLOR_MID,
   CSS_FONT_WEIGHT_MEDIUM, CSS_FONT_WEIGHT_SEMIBOLD,
@@ -20,7 +20,7 @@ export class HtmlRenderer {
    * @param payload - The visualization data to render
    * @returns HTML document string
    */
-  public render(payload: VizPayloadType): string {
+  public render(payload: VizPayloadInterface): string {
     const {
       edges, nodes, schemas
     } = payload;

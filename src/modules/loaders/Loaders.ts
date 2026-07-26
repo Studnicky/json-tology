@@ -1,14 +1,14 @@
 /**
  * Loaders — universal, pluggable schema-fetch helpers.
  *
- * Every helper returns a {@link LoaderType} function that can be composed and
+ * Every helper returns a {@link LoaderInterface} function that can be composed and
  * passed to {@link JsonTology.prefetch}. No Node-only built-ins are used; all
  * helpers work in Node ≥ 18, Bun, Deno, and browsers.
  */
 
 import type { JsonSchemaType } from '../../types/Schema.js';
-import type { LoaderType } from '../../types/Loader.js';
-import type { FetchLoaderOptionsType } from '../../types/FetchLoaderOptionsType.js';
+import type { LoaderInterface } from '../../interfaces/LoaderInterface.js';
+import type { FetchLoaderOptionsInterface } from '../../interfaces/FetchLoaderOptionsInterface.js';
 import { SchemaLoadError } from '../../errors/SchemaLoadError.js';
 import { SCHEMA_LOAD_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { HTTP_SERVER_ERROR_MINIMUM } from '../../constants/NUMERIC.js';
@@ -42,7 +42,7 @@ export const Loaders = {
    * @param loader - The loader to wrap.
    * @param options.maxSize - Maximum number of entries to keep (default: 1024).
    */
-  cached(loader: LoaderType, options?: { 'maxSize'?: number }): LoaderType {
+  cached(loader: LoaderInterface, options?: { 'maxSize'?: number }): LoaderInterface {
     const maximumSize = options?.maxSize ?? 1024;
     // Simple LRU via insertion-order Map: delete + re-insert on hit.
     const cache = new Map<string, JsonSchemaType | null>();
@@ -80,7 +80,7 @@ export const Loaders = {
    *
    * @param loaders - One or more loaders to try in order.
    */
-  compose(...loaders: LoaderType[]): LoaderType {
+  compose(...loaders: LoaderInterface[]): LoaderInterface {
     return async (iri: string): Promise<JsonSchemaType | null> => {
       for (const loader of loaders) {
         const result = await loader(iri);
@@ -103,7 +103,7 @@ export const Loaders = {
    *
    * @param options - Optional base URL and RequestInit overrides.
    */
-  fetch(options?: FetchLoaderOptionsType): LoaderType {
+  fetch(options?: FetchLoaderOptionsInterface): LoaderInterface {
     const base = options?.base;
     const init = options?.init;
 
@@ -118,7 +118,7 @@ export const Loaders = {
       // 5xx responses indicate a transient server-side failure — throw a
       // SchemaLoadError so callers can distinguish infrastructure failures
       // (retryable) from unknown-IRI signals (not retryable).
-      // 4xx responses collapse to null per the LoaderType contract: null signals
+      // 4xx responses collapse to null per the LoaderInterface contract: null signals
       // "IRI unknown to this loader" so the next layer (GraphError REF_UNRESOLVED)
       // carries the full IRI with no status noise.
       if (response.status >= HTTP_SERVER_ERROR_MINIMUM) {
@@ -142,7 +142,7 @@ export const Loaders = {
    *
    * @param map - A `Map` or plain object keyed by IRI.
    */
-  memory(map: Map<string, JsonSchemaType> | Record<string, JsonSchemaType>): LoaderType {
+  memory(map: Map<string, JsonSchemaType> | Record<string, JsonSchemaType>): LoaderInterface {
     const lookup: ReadonlyMap<string, JsonSchemaType> = map instanceof Map
       ? map
       : new Map(Object.entries(map));

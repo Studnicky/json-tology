@@ -9,10 +9,10 @@ import { DataType } from '../data/DataType.js';
 import { SchemaIri } from './SchemaIri.js';
 
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
-import type { RootDialectPlanType } from '../../types/RootDialectPlanType.js';
+import type { RootDialectPlanEntity } from '../../entities/RootDialectPlanEntity.js';
 
 export const GraphEngineSupport = {
-  buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanType {
+  buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanEntity.Type {
     if (!DataType.isRecord(rootSchema)) {
       return {
         'contentAssertions': true,

@@ -260,7 +260,7 @@ function structurallyEqual(
 // ---------------------------------------------------------------------------
 
 void describe('OWL round-trip', () => {
-  void it('fromTbox([]) returns a well-formed OwlImportResultType', () => {
+  void it('fromTbox([]) returns a well-formed OwlImportResultInterface', () => {
     const result = JsonTology.fromTbox([]);
 
     assert.ok(Array.isArray(result.schemas), 'schemas must be an array');

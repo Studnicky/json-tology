@@ -18,7 +18,7 @@
  * Shapes and property shapes with sh:deactivated true are skipped.
  *
  * Architectural boundary: this engine indexes RDF quads (subject -> predicate ->
- * object-value-strings via SubjectPredicateIndexType, plus rdf:type and datatype
+ * object-value-strings via SubjectPredicateIndexInterface, plus rdf:type and datatype
  * indexes). That is intentionally a distinct model from the canonical
  * SchemaGraph, which is a node/relation graph over a JSON Schema document. SHACL
  * conformance is defined over RDF triples, so it cannot be evaluated against the
@@ -33,19 +33,17 @@
  * @since 0.20.0
  */
 
+import type { EvalArgumentsInterface } from '../../interfaces/EvalArgumentsInterface.js';
+import type { ValidationContextInterface } from '../../interfaces/ValidationContextInterface.js';
+import type { NodeShapeIndexInterface } from '../../interfaces/NodeShapeIndexInterface.js';
+import type { PropertyShapeIndexInterface } from '../../interfaces/PropertyShapeIndexInterface.js';
+import type { DatatypeIndexInterface } from '../../interfaces/DatatypeIndexInterface.js';
+import type { TypeIndexInterface } from '../../interfaces/TypeIndexInterface.js';
+import type { SubjectPredicateIndexInterface } from '../../interfaces/SubjectPredicateIndexInterface.js';
+import type { PredicateValuesIndexInterface } from '../../interfaces/PredicateValuesIndexInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
-import type { ShaclValidationReportType } from '../../types/ShaclValidationReportType.js';
-import type { ShaclValidationResultType } from '../../types/ShaclValidationResultType.js';
-import type {
-  DatatypeIndexType,
-  EvalArgumentsType,
-  NodeShapeIndexType,
-  PredicateValuesIndexType,
-  PropertyShapeIndexType,
-  SubjectPredicateIndexType,
-  TypeIndexType,
-  ValidationContextType
-} from '../../types/Shacl.js';
+import type { ShaclValidationReportEntity } from '../../entities/ShaclValidationReportEntity.js';
+import type { ShaclValidationResultEntity } from '../../entities/ShaclValidationResultEntity.js';
 import {
   RDF, SH, XSD
 } from '../../constants/IRI.js';
@@ -60,8 +58,8 @@ class Indexes {
    * Build subject → predicate → datatype-IRI[] index from literal quads.
    * Non-literal objects produce no entry.
    */
-  static datatype(quads: readonly QuadInterface[]): DatatypeIndexType {
-    const index: DatatypeIndexType = new Map();
+  static datatype(quads: readonly QuadInterface[]): DatatypeIndexInterface {
+    const index: DatatypeIndexInterface = new Map();
 
     for (const quad of quads) {
       if (quad.object.termType !== 'Literal') {
@@ -95,8 +93,8 @@ class Indexes {
    * Build a subject → predicate → object-values index from a quad array.
    * Object values are the `.value` strings of the object terms.
    */
-  static subject(quads: readonly QuadInterface[]): SubjectPredicateIndexType {
-    const index: SubjectPredicateIndexType = new Map();
+  static subject(quads: readonly QuadInterface[]): SubjectPredicateIndexInterface {
+    const index: SubjectPredicateIndexInterface = new Map();
 
     for (const quad of quads) {
       const subjectId = quad.subject.value;
@@ -122,8 +120,8 @@ class Indexes {
   }
 
   /** Build a subject → rdf:type set index. */
-  static type(quads: readonly QuadInterface[]): TypeIndexType {
-    const index: TypeIndexType = new Map();
+  static type(quads: readonly QuadInterface[]): TypeIndexInterface {
+    const index: TypeIndexInterface = new Map();
 
     for (const quad of quads) {
       if (quad.predicate.value !== RDF.type) {
@@ -161,7 +159,7 @@ class RdfList {
    */
   static collectValues(
     headId: string,
-    shapeIndex: SubjectPredicateIndexType
+    shapeIndex: SubjectPredicateIndexInterface
   ): string[] {
     const values: string[] = [];
     let current = headId;
@@ -209,9 +207,9 @@ class RdfList {
 /** Extraction of a subject's constraint index from the shape quad index. */
 class Constraints {
   /**
-   * Extract the `PredicateValuesIndexType` for a subject from the shape quad index.
+   * Extract the `PredicateValuesIndexInterface` for a subject from the shape quad index.
    */
-  static extract(id: string, shapeIndex: SubjectPredicateIndexType): PredicateValuesIndexType {
+  static extract(id: string, shapeIndex: SubjectPredicateIndexInterface): PredicateValuesIndexInterface {
     const node = shapeIndex.get(id);
 
     return node ?? new Map<string, string[]>();
@@ -225,7 +223,7 @@ class ShapeView {
    * anonymous blank-node shape used as an `sh:and`/`sh:or`/`sh:not`/`sh:node`
    * member. Returns `undefined` when the subject carries no shape content.
    */
-  static build(shapeId: string, shapeIndex: SubjectPredicateIndexType): NodeShapeIndexType | undefined {
+  static build(shapeId: string, shapeIndex: SubjectPredicateIndexInterface): NodeShapeIndexInterface | undefined {
     const pmap = shapeIndex.get(shapeId);
 
     if (pmap === undefined) {
@@ -233,7 +231,7 @@ class ShapeView {
     }
 
     const propertyBnodeIds = pmap.get(SH.property) ?? [];
-    const propertyShapes: PropertyShapeIndexType[] = [];
+    const propertyShapes: PropertyShapeIndexInterface[] = [];
 
     for (const bnodeId of propertyBnodeIds) {
       const psNode = shapeIndex.get(bnodeId);
@@ -273,7 +271,7 @@ class ShapeView {
   /**
    * Determine whether a blank node is marked sh:deactivated true.
    */
-  private static isDeactivated(bnodeId: string, shapeIndex: SubjectPredicateIndexType): boolean {
+  private static isDeactivated(bnodeId: string, shapeIndex: SubjectPredicateIndexInterface): boolean {
     const node = shapeIndex.get(bnodeId);
 
     if (node === undefined) {
@@ -290,8 +288,8 @@ class NodeShapes {
    * Parse all named (non-blank-node) NodeShape IRIs. These are the top-level
    * shapes whose focus nodes are selected by implicit class target (rdf:type).
    */
-  static build(shapeIndex: SubjectPredicateIndexType): NodeShapeIndexType[] {
-    const shapes: NodeShapeIndexType[] = [];
+  static build(shapeIndex: SubjectPredicateIndexInterface): NodeShapeIndexInterface[] {
+    const shapes: NodeShapeIndexInterface[] = [];
 
     for (const [
       subject,
@@ -323,18 +321,18 @@ class ShapeResolver {
    * blank-node member shapes.
    */
   static make(
-    namedShapes: NodeShapeIndexType[],
-    shapeIndex: SubjectPredicateIndexType
-  ): (shapeId: string) => NodeShapeIndexType | undefined {
-    const byIri = new Map<string, NodeShapeIndexType>();
+    namedShapes: NodeShapeIndexInterface[],
+    shapeIndex: SubjectPredicateIndexInterface
+  ): (shapeId: string) => NodeShapeIndexInterface | undefined {
+    const byIri = new Map<string, NodeShapeIndexInterface>();
 
     for (const shape of namedShapes) {
       byIri.set(shape.shapeIri, shape);
     }
 
-    const cache = new Map<string, NodeShapeIndexType | undefined>();
+    const cache = new Map<string, NodeShapeIndexInterface | undefined>();
 
-    return (shapeId: string): NodeShapeIndexType | undefined => {
+    return (shapeId: string): NodeShapeIndexInterface | undefined => {
       const named = byIri.get(shapeId);
 
       if (named !== undefined) {
@@ -368,7 +366,7 @@ class FocusNodes {
    */
   static select(
     shapeIri: string,
-    dataTypeIndex: TypeIndexType
+    dataTypeIndex: TypeIndexInterface
   ): string[] {
     const nodes: string[] = [];
 
@@ -408,10 +406,10 @@ class EvaluationArgumentsBuilder {
     focusNode: string,
     path: string,
     shapeId: string,
-    constraints: PredicateValuesIndexType,
+    constraints: PredicateValuesIndexInterface,
     values: string[],
-    context: ValidationContextType
-  ): EvalArgumentsType {
+    context: ValidationContextInterface
+  ): EvalArgumentsInterface {
     return {
       constraints,
       'dataIndex': context.dataIndex,
@@ -438,10 +436,10 @@ class Shape {
   /** Evaluate sh:and — the focus node must conform to every member shape. */
   private static evalAnd(
     focusNode: string,
-    shapeConstraints: PredicateValuesIndexType,
-    context: ValidationContextType,
+    shapeConstraints: PredicateValuesIndexInterface,
+    context: ValidationContextInterface,
     shapeIri: string
-  ): ShaclValidationResultType[] {
+  ): ShaclValidationResultEntity.Type[] {
     const andArray = shapeConstraints.get(SH.and);
 
     if (andArray === undefined || andArray.length === 0) {
@@ -455,7 +453,7 @@ class Shape {
     }
 
     const memberIris = RdfList.collectValues(andListHead, context.shapeIndex);
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const memberIri of memberIris) {
       if (Shape.validate(focusNode, memberIri, context).length > 0) {
@@ -474,14 +472,14 @@ class Shape {
   }
 
   /** Evaluate sh:class constraint — value nodes must have the required rdf:type. */
-  private static evalClass(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evalClass(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const classArray = argumentList.constraints.get(SH.class);
 
     if (classArray === undefined || classArray.length === 0) {
       return [];
     }
 
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const value of argumentList.values) {
       for (const requiredClass of classArray) {
@@ -512,9 +510,9 @@ class Shape {
    */
   private static evalClosed(
     focusNode: string,
-    shape: NodeShapeIndexType,
-    dataIndex: SubjectPredicateIndexType
-  ): ShaclValidationResultType[] {
+    shape: NodeShapeIndexInterface,
+    dataIndex: SubjectPredicateIndexInterface
+  ): ShaclValidationResultEntity.Type[] {
     const closedArray = shape.constraints.get(SH.closed);
 
     if (closedArray?.includes('true') !== true) {
@@ -533,7 +531,7 @@ class Shape {
       return [];
     }
 
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const [predicate] of focusPredicates) {
       if (predicate === RDF.type) {
@@ -556,7 +554,7 @@ class Shape {
   }
 
   /** Evaluate sh:datatype constraint against each value node. */
-  private static evalDatatype(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evalDatatype(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const datatypeConstraintArray = argumentList.constraints.get(SH.datatype);
 
     if (datatypeConstraintArray === undefined || datatypeConstraintArray.length === 0) {
@@ -564,7 +562,7 @@ class Shape {
     }
 
     const expectedDatatype = datatypeConstraintArray[0];
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
     const actualDatatypes = argumentList.datatypeBySubjectPredicate.get(argumentList.focusNode)?.get(argumentList.path) ?? [];
     const valuesLength = argumentList.values.length;
 
@@ -587,14 +585,14 @@ class Shape {
   }
 
   /** Evaluate sh:hasValue constraint. */
-  private static evalHasValue(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evalHasValue(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const hasValueArray = argumentList.constraints.get(SH.hasValue);
 
     if (hasValueArray === undefined || hasValueArray.length === 0) {
       return [];
     }
 
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
     const valueSet = new Set(argumentList.values);
 
     for (const required of hasValueArray) {
@@ -614,7 +612,7 @@ class Shape {
   }
 
   /** Evaluate sh:in constraint against a list head bnode. */
-  private static evalIn(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evalIn(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const inArray = argumentList.constraints.get(SH.in);
 
     if (inArray === undefined || inArray.length === 0) {
@@ -632,7 +630,7 @@ class Shape {
       return [];
     }
 
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
     const allowedSet = new Set(allowed);
 
     for (const value of argumentList.values) {
@@ -653,16 +651,16 @@ class Shape {
 
   /** Evaluate sh:node — each value node must conform to the referenced shape. */
   private static evalNode(
-    argumentList: EvalArgumentsType,
-    context: ValidationContextType
-  ): ShaclValidationResultType[] {
+    argumentList: EvalArgumentsInterface,
+    context: ValidationContextInterface
+  ): ShaclValidationResultEntity.Type[] {
     const nodeArray = argumentList.constraints.get(SH.node);
 
     if (nodeArray === undefined || nodeArray.length === 0) {
       return [];
     }
 
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const value of argumentList.values) {
       for (const nodeShapeIri of nodeArray) {
@@ -694,9 +692,9 @@ class Shape {
    */
   private static evalNodeLevelConstraints(
     focusNode: string,
-    shape: NodeShapeIndexType,
-    context: ValidationContextType
-  ): ShaclValidationResultType[] {
+    shape: NodeShapeIndexInterface,
+    context: ValidationContextInterface
+  ): ShaclValidationResultEntity.Type[] {
     const argumentList = EvaluationArgumentsBuilder.build(focusNode, '', shape.shapeIri, shape.constraints, [focusNode], context);
 
     return [
@@ -710,17 +708,17 @@ class Shape {
   /** Evaluate sh:not — the focus node must NOT conform to the referenced shape. */
   private static evalNot(
     focusNode: string,
-    shapeConstraints: PredicateValuesIndexType,
-    context: ValidationContextType,
+    shapeConstraints: PredicateValuesIndexInterface,
+    context: ValidationContextInterface,
     shapeIri: string
-  ): ShaclValidationResultType[] {
+  ): ShaclValidationResultEntity.Type[] {
     const notArray = shapeConstraints.get(SH.not);
 
     if (notArray === undefined || notArray.length === 0) {
       return [];
     }
 
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const notReference of notArray) {
       if (Shape.validate(focusNode, notReference, context).length === 0) {
@@ -741,10 +739,10 @@ class Shape {
   /** Evaluate sh:or — the focus node must conform to at least one member shape. */
   private static evalOr(
     focusNode: string,
-    shapeConstraints: PredicateValuesIndexType,
-    context: ValidationContextType,
+    shapeConstraints: PredicateValuesIndexInterface,
+    context: ValidationContextInterface,
     shapeIri: string
-  ): ShaclValidationResultType[] {
+  ): ShaclValidationResultEntity.Type[] {
     const orArray = shapeConstraints.get(SH.or);
 
     if (orArray === undefined || orArray.length === 0) {
@@ -780,14 +778,14 @@ class Shape {
   }
 
   /** Evaluate sh:pattern constraint against each value node. */
-  private static evalPattern(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evalPattern(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const patternArray = argumentList.constraints.get(SH.pattern);
 
     if (patternArray === undefined || patternArray.length === 0) {
       return [];
     }
 
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const value of argumentList.values) {
       for (const pattern of patternArray) {
@@ -823,9 +821,9 @@ class Shape {
 
   /** Evaluate qualified value shape cardinality constraints. */
   private static evalQualifiedValueShape(
-    argumentList: EvalArgumentsType,
-    context: ValidationContextType
-  ): ShaclValidationResultType[] {
+    argumentList: EvalArgumentsInterface,
+    context: ValidationContextInterface
+  ): ShaclValidationResultEntity.Type[] {
     const qualifiedValueShapeArray = argumentList.constraints.get(SH.qualifiedValueShape);
 
     if (qualifiedValueShapeArray === undefined || qualifiedValueShapeArray.length === 0) {
@@ -849,7 +847,7 @@ class Shape {
     const expectedDt = datatypeOnly ? innerShape.constraints.get(SH.datatype)?.at(0) : undefined;
     const actualDts = argumentList.datatypeBySubjectPredicate.get(argumentList.focusNode)?.get(argumentList.path) ?? [];
     const actualDtSet = new Set(actualDts);
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
     let qualifiedCount = 0;
 
     for (const value of argumentList.values) {
@@ -908,7 +906,7 @@ class Shape {
   }
 
   /** Evaluate sh:maxCount constraint. */
-  private static evaluateMaximumCount(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evaluateMaximumCount(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const maximumCountArray = argumentList.constraints.get(SH.maxCount);
 
     if (maximumCountArray === undefined || maximumCountArray.length === 0) {
@@ -938,7 +936,7 @@ class Shape {
   }
 
   /** Evaluate sh:maxExclusive constraint. */
-  private static evaluateMaximumExclusive(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evaluateMaximumExclusive(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const maximumArray = argumentList.constraints.get(SH.maxExclusive);
 
     if (maximumArray === undefined || maximumArray.length === 0) {
@@ -952,7 +950,7 @@ class Shape {
     }
 
     const maximum = Numeric.parse(maximumExclusiveValue);
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const value of argumentList.values) {
       const parsedNumber = Numeric.parse(value);
@@ -973,7 +971,7 @@ class Shape {
   }
 
   /** Evaluate sh:maxInclusive constraint. */
-  private static evaluateMaximumInclusive(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evaluateMaximumInclusive(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const maximumArray = argumentList.constraints.get(SH.maxInclusive);
 
     if (maximumArray === undefined || maximumArray.length === 0) {
@@ -987,7 +985,7 @@ class Shape {
     }
 
     const maximum = Numeric.parse(maximumInclusiveValue);
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const value of argumentList.values) {
       const parsedNumber = Numeric.parse(value);
@@ -1008,7 +1006,7 @@ class Shape {
   }
 
   /** Evaluate sh:maxLength constraint. */
-  private static evaluateMaximumLength(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evaluateMaximumLength(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const maximumLengthArray = argumentList.constraints.get(SH.maxLength);
 
     if (maximumLengthArray === undefined || maximumLengthArray.length === 0) {
@@ -1022,7 +1020,7 @@ class Shape {
     }
 
     const maximum = Numeric.parse(maximumLengthValue);
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const value of argumentList.values) {
       if (value.length > maximum) {
@@ -1041,7 +1039,7 @@ class Shape {
   }
 
   /** Evaluate sh:minCount constraint. */
-  private static evaluateMinimumCount(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evaluateMinimumCount(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const minimumCountArray = argumentList.constraints.get(SH.minCount);
 
     if (minimumCountArray === undefined || minimumCountArray.length === 0) {
@@ -1071,7 +1069,7 @@ class Shape {
   }
 
   /** Evaluate sh:minExclusive constraint. */
-  private static evaluateMinimumExclusive(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evaluateMinimumExclusive(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const minimumArray = argumentList.constraints.get(SH.minExclusive);
 
     if (minimumArray === undefined || minimumArray.length === 0) {
@@ -1085,7 +1083,7 @@ class Shape {
     }
 
     const minimum = Numeric.parse(minimumExclusiveValue);
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const value of argumentList.values) {
       const parsedNumber = Numeric.parse(value);
@@ -1106,7 +1104,7 @@ class Shape {
   }
 
   /** Evaluate sh:minInclusive constraint. */
-  private static evaluateMinimumInclusive(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evaluateMinimumInclusive(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const minimumArray = argumentList.constraints.get(SH.minInclusive);
 
     if (minimumArray === undefined || minimumArray.length === 0) {
@@ -1120,7 +1118,7 @@ class Shape {
     }
 
     const minimum = Numeric.parse(minimumInclusiveValue);
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const value of argumentList.values) {
       const parsedNumber = Numeric.parse(value);
@@ -1141,7 +1139,7 @@ class Shape {
   }
 
   /** Evaluate sh:minLength constraint. */
-  private static evaluateMinimumLength(argumentList: EvalArgumentsType): ShaclValidationResultType[] {
+  private static evaluateMinimumLength(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
     const minimumLengthArray = argumentList.constraints.get(SH.minLength);
 
     if (minimumLengthArray === undefined || minimumLengthArray.length === 0) {
@@ -1155,7 +1153,7 @@ class Shape {
     }
 
     const minimum = Numeric.parse(minimumLengthValue);
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const value of argumentList.values) {
       if (value.length < minimum) {
@@ -1191,8 +1189,8 @@ class Shape {
   static validate(
     focusNode: string,
     shapeId: string,
-    context: ValidationContextType
-  ): ShaclValidationResultType[] {
+    context: ValidationContextInterface
+  ): ShaclValidationResultEntity.Type[] {
     const visitKey = `${focusNode} ${shapeId}`;
 
     if (context.visited.has(visitKey)) {
@@ -1209,7 +1207,7 @@ class Shape {
       }
 
       const focusPredicates = context.dataIndex.get(focusNode);
-      const results: ShaclValidationResultType[] = [];
+      const results: ShaclValidationResultEntity.Type[] = [];
 
       results.push(...Shape.evalNodeLevelConstraints(focusNode, shape, context));
 
@@ -1261,7 +1259,7 @@ class Shape {
     message: string,
     value: string | undefined,
     sourceShape: string | undefined
-  ): ShaclValidationResultType {
+  ): ShaclValidationResultEntity.Type {
     return {
       'focusNode': focusNode,
       'resultMessage': message,
@@ -1303,14 +1301,14 @@ export const ShaclValidator = {
   validate(
     shapes: readonly QuadInterface[],
     data: readonly QuadInterface[]
-  ): ShaclValidationReportType {
+  ): ShaclValidationReportEntity.Type {
     const shapeIndex = Indexes.subject(shapes);
     const dataIndex = Indexes.subject(data);
     const dataTypeIndex = Indexes.type(data);
     const datatypeBySubjectPredicate = Indexes.datatype(data);
 
     const allNodeShapes = NodeShapes.build(shapeIndex);
-    const context: ValidationContextType = {
+    const context: ValidationContextInterface = {
       dataIndex,
       datatypeBySubjectPredicate,
       dataTypeIndex,
@@ -1318,7 +1316,7 @@ export const ShaclValidator = {
       shapeIndex,
       'visited': new Set<string>()
     };
-    const results: ShaclValidationResultType[] = [];
+    const results: ShaclValidationResultEntity.Type[] = [];
 
     for (const shape of allNodeShapes) {
       if (shape.isDeactivated) {

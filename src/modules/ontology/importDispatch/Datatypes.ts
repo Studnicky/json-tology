@@ -21,20 +21,18 @@
  * preserved on relations and list items.
  */
 
+import type { ListItemEntity } from '../../../entities/ListItemEntity.js';
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../../types/OwlImport.js';
-import type {
-  ListItemType,
-  SchemaGraphRelationType
-} from '../../../types/SchemaGraph.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
-import type { ExtractFacetOptionsType } from '../../../types/ExtractFacetOptionsType.js';
-import type { ApplyRestrictionsOptionsType } from '../../../types/ApplyRestrictionsOptionsType.js';
+import type { ExtractFacetOptionsInterface } from '../../../interfaces/ExtractFacetOptionsInterface.js';
+import type { ApplyRestrictionsOptionsInterface } from '../../../interfaces/ApplyRestrictionsOptionsInterface.js';
+import type { ApplyFacetRelationOptionsInterface } from '../../../interfaces/ApplyFacetRelationOptionsInterface.js';
 import { Terms } from '../../quads/Terms.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-import { FACET_MAP } from '../../../constants/XSD_FACETS.js';
+import { XSD_FACETS } from '../../../constants/XSD_FACETS.js';
 import { XSD_TO_SCHEMA_TYPE } from '../../../constants/XSD_REVERSE_MAPS.js';
 import {
   EQUIVALENT_CLASS_PREDICATES,
@@ -80,13 +78,13 @@ import { ImportRelation } from './ImportRelation.js';
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragmentType with schemaDeltas populated.
+ * @returns OwlImportFragmentInterface with schemaDeltas populated.
  *
  * @remarks
  * Implements OWL 2 §9.4 Datatype Definitions and §4.7 Facet Restrictions.
  * Each datatype IRI found via `rdf:type rdfs:Datatype` is processed
  * independently. XSD facets are mapped to JSON Schema keywords via the
- * `FACET_MAP` constant; unsupported predicates are passed to
+ * `XSD_FACETS.FACET_MAP` constant; unsupported predicates are passed to
  * `ctx.reportUnsupported`. The `jt:multipleOf` and `jt:format` extension
  * predicates are also honoured.
  *
@@ -98,7 +96,7 @@ import { ImportRelation } from './ImportRelation.js';
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContextType
+ * @see OwlImportContextInterface
  * @group importDispatch
  */
 export class Datatypes {
@@ -154,15 +152,12 @@ export class Datatypes {
   /**
    * Apply a single facet relation to the delta record.
    */
-  private static applyFacetRelation(options: { 'bnodeId': string
-    'delta': Record<string, unknown>;
-    'fr': SchemaGraphRelationType;
-    'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void; }): void {
+  private static applyFacetRelation(options: ApplyFacetRelationOptionsInterface): void {
     const {
       bnodeId, delta, fr, reportUnsupported
     } = options;
     const facetPred = fr.predicate;
-    const descriptor = FACET_MAP.get(facetPred);
+    const descriptor = XSD_FACETS.FACET_MAP.get(facetPred);
 
     if (descriptor === undefined) {
       reportUnsupported(facetPred, bnodeId);
@@ -192,7 +187,7 @@ export class Datatypes {
   }
 
   /** Apply a `fractionDigits` facet: multipleOf = 10^-n. */
-  private static applyFractionDigits(fr: SchemaGraphRelationType, delta: Record<string, unknown>): void {
+  private static applyFractionDigits(fr: SchemaGraphRelationInterface, delta: Record<string, unknown>): void {
     const number = Datatypes.literalNumber(fr);
 
     if (number !== null && number >= 0) {
@@ -201,7 +196,7 @@ export class Datatypes {
   }
 
   /** Apply a `length` facet: minLength = maxLength = n. */
-  private static applyLengthFacet(fr: SchemaGraphRelationType, delta: Record<string, unknown>): void {
+  private static applyLengthFacet(fr: SchemaGraphRelationInterface, delta: Record<string, unknown>): void {
     const number = Datatypes.literalNumber(fr);
 
     if (number !== null) {
@@ -212,7 +207,7 @@ export class Datatypes {
 
   /** Apply a `numeric` facet: delta[key] = n. */
   private static applyNumericFacet(
-    fr: SchemaGraphRelationType,
+    fr: SchemaGraphRelationInterface,
     delta: Record<string, unknown>,
     key: string
   ): void {
@@ -275,7 +270,7 @@ export class Datatypes {
 
   /** Apply a `string` facet: delta[key] = str. */
   private static applyStringFacet(
-    fr: SchemaGraphRelationType,
+    fr: SchemaGraphRelationInterface,
     delta: Record<string, unknown>,
     key: string
   ): void {
@@ -289,7 +284,7 @@ export class Datatypes {
   /**
    * Apply `owl:withRestrictions` facet list to the delta.
    */
-  private static applyWithRestrictions(options: ApplyRestrictionsOptionsType): void {
+  private static applyWithRestrictions(options: ApplyRestrictionsOptionsInterface): void {
     const {
       delta, graph, reportUnsupported, schemaType, subjectIri
     } = options;
@@ -314,8 +309,8 @@ export class Datatypes {
     }
   }
 
-  /** Decode a Literal ListItemType back to its typed JS value. */
-  private static decodeListItemLiteral(item: ListItemType): unknown {
+  /** Decode a Literal ListItemEntity.Type back to its typed JS value. */
+  private static decodeListItemLiteral(item: ListItemEntity.Type): unknown {
     const literalTerm = Terms.literal(item.target, {
       'datatype': Terms.iri(item.datatype ?? ''),
       'language': item.language ?? ''
@@ -324,7 +319,7 @@ export class Datatypes {
     return Terms.decodeLiteral(literalTerm);
   }
 
-  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
     const graph = context.graph;
     const datatypeIris = new Set<string>();
 
@@ -361,8 +356,8 @@ export class Datatypes {
     };
   }
 
-  /** Return an empty OwlImportFragmentType with all buckets initialised. */
-  private static emptyFragment(): OwlImportFragmentType {
+  /** Return an empty OwlImportFragmentInterface with all buckets initialised. */
+  private static emptyFragment(): OwlImportFragmentInterface {
     return {
       'characteristics': [],
       'differentFrom': [],
@@ -402,7 +397,7 @@ export class Datatypes {
    *
    * Multiple predicates on one blank node are all applied.
    */
-  private static extractFacetFromBnode(options: ExtractFacetOptionsType): JsonSchemaDocumentObjectType {
+  private static extractFacetFromBnode(options: ExtractFacetOptionsInterface): JsonSchemaDocumentObjectType {
     const {
       bnodeId, graph, reportUnsupported
     } = options;
@@ -471,7 +466,7 @@ export class Datatypes {
    * Extract a number from a Literal-typed relation target.
    * Returns null when the target is not a Literal or not numeric.
    */
-  private static literalNumber(relation: SchemaGraphRelationType): null | number {
+  private static literalNumber(relation: SchemaGraphRelationInterface): null | number {
     if (relation.termType !== 'Literal') {
       return null;
     }

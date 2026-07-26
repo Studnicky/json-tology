@@ -6,9 +6,9 @@
  * Subject IRI classification helpers live in `src/modules/graph/SchemaIri.ts`.
  */
 
-import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
+import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraphRelationInterface.js';
 import type { RelationStructureType } from '../../types/SchemaGraph.js';
-import type { RelationIndexType } from '../../types/RelationIndexType.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
 
 import {
   OWL, RDF
@@ -19,8 +19,8 @@ import {
 // ---------------------------------------------------------------------------
 
 export const ProjectionIndex = {
-  build(allRelations: SchemaGraphRelationType[]): Map<string, RelationIndexType> {
-    const index = new Map<string, RelationIndexType>();
+  build(allRelations: SchemaGraphRelationInterface[]): Map<string, RelationIndexInterface> {
+    const index = new Map<string, RelationIndexInterface>();
 
     for (const relation of allRelations) {
       const sourceId = relation.source.id;
@@ -64,8 +64,8 @@ export const ProjectionIndex = {
    * its `structure.constraint` value. This excludes user-declared restrictions,
    * which use `rdfs:subClassOf` as the predicate, and any other restriction kinds.
    */
-  filterContainsRestrictions(relations: readonly SchemaGraphRelationType[]): SchemaGraphRelationType[] {
-    const result = relations.filter((rel: SchemaGraphRelationType): boolean => {
+  filterContainsRestrictions(relations: readonly SchemaGraphRelationInterface[]): SchemaGraphRelationInterface[] {
+    const result = relations.filter((rel: SchemaGraphRelationInterface): boolean => {
       return rel.predicate === OWL.someValuesFrom
       && ProjectionIndex.isRestrictionStructure(rel.structure)
       && rel.structure.constraint === OWL.someValuesFrom;
@@ -86,7 +86,7 @@ export const ProjectionIndex = {
     return structure?.kind === 'restriction';
   },
 
-  relationTargetId(relation: SchemaGraphRelationType): string {
+  relationTargetId(relation: SchemaGraphRelationInterface): string {
     return typeof relation.target === 'string' ? relation.target : relation.target.id;
   }
 } as const;

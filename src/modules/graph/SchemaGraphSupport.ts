@@ -1,7 +1,6 @@
-import type {
-  SchemaGraphNodeType,
-  SchemaGraphSemanticsType, StructureWarningType
-} from '../../types/SchemaGraph.js';
+import type { StructureWarningEntity } from '../../entities/StructureWarningEntity.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { RDFS } from '../../constants/IRI.js';
@@ -21,28 +20,15 @@ import { DataType } from '../data/DataType.js';
 import { SchemaIri } from './SchemaIri.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessorInterface.js';
-import type { JtConfigType } from '../../types/JtConfig.js';
+import type { JtConfigEntity } from '../../entities/JtConfigEntity.js';
 import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
-import type { RawRestrictionDescriptorType } from '../../types/RawRestrictionDescriptorType.js';
-import type {
-  AdditionalNodesResultType,
-  AdditionalSchemaNodeType,
-  BooleanFlagsType,
-  ExtractedAnnotatedEdgeType,
-  ExtractedJtConfigType,
-  ExtractedRestrictionsType,
-  NormalizedAliasesType,
-  NormalizedDependentRequiredType,
-  NormalizedDynamicAnchorType,
-  NormalizedLanguageTagType,
-  OptionalNumberType,
-  OptionalStringType,
-  PropertyEntryType,
-  PropertyMapType,
-  ScalarFieldsType,
-  SchemaExtensionsType
-} from '../../types/SchemaGraphSupport.js';
-import type { SemanticsBuildContextType } from '../../types/SemanticsBuildContextType.js';
+import type { RawRestrictionDescriptorEntity } from '../../entities/RawRestrictionDescriptorEntity.js';
+import type { AnnotatedEdgeDescriptorEntity } from '../../entities/AnnotatedEdgeDescriptorEntity.js';
+import type { AdditionalNodesResultInterface } from '../../interfaces/AdditionalNodesResultInterface.js';
+import type { BooleanFlagsEntity } from '../../entities/BooleanFlagsEntity.js';
+import type { PropertyMapInterface } from '../../interfaces/PropertyMapInterface.js';
+import type { ScalarFieldsInterface } from '../../interfaces/ScalarFieldsInterface.js';
+import type { SemanticsBuildContextInterface } from '../../interfaces/SemanticsBuildContextInterface.js';
 
 /** Scalar type-guard and safe-coercion helpers shared across schema-field extraction. */
 class SchemaScalarCoercion {
@@ -52,12 +38,12 @@ class SchemaScalarCoercion {
   }
 
   /** Coerce a schema property to number or undefined. */
-  static numberOrUndefined(value: unknown): OptionalNumberType {
+  static numberOrUndefined(value: unknown): number | undefined {
     return typeof value === 'number' ? value : undefined;
   }
 
   /** Coerce a schema property to string or undefined. */
-  static stringOrUndefined(value: unknown): OptionalStringType {
+  static stringOrUndefined(value: unknown): string | undefined {
     return typeof value === 'string' ? value : undefined;
   }
 }
@@ -105,7 +91,7 @@ class SchemaPointerSupport {
 
 /** Schema-field normalization helpers. */
 class SchemaFieldNormalizer {
-  static aliases(schema: Record<string, unknown>): NormalizedAliasesType {
+  static aliases(schema: Record<string, unknown>): string[] {
     const raw = schema['jt:alias'];
 
     if (typeof raw === 'string') {
@@ -122,12 +108,12 @@ class SchemaFieldNormalizer {
     return [];
   }
 
-  static dependentRequired(schema: Record<string, unknown>): NormalizedDependentRequiredType {
+  static dependentRequired(schema: Record<string, unknown>): Record<string, string[]> {
     if (!DataType.isRecord(schema.dependentRequired)) {
       return {};
     }
 
-    const result: NormalizedDependentRequiredType = {};
+    const result: Record<string, string[]> = {};
 
     for (const [
       key,
@@ -148,7 +134,7 @@ class SchemaFieldNormalizer {
     return result;
   }
 
-  static dynamicAnchor(schema: Record<string, unknown>): NormalizedDynamicAnchorType {
+  static dynamicAnchor(schema: Record<string, unknown>): string | undefined {
     if (typeof schema.$dynamicAnchor === 'string') {
       return schema.$dynamicAnchor;
     }
@@ -165,7 +151,7 @@ class SchemaFieldNormalizer {
    * matches the BCP-47 shape, `undefined` when absent, and throws a GraphError for
    * a malformed tag (e.g. `"\n"`, `"INVALID!!!"`).
    */
-  static languageTag(rawLang: unknown): NormalizedLanguageTagType {
+  static languageTag(rawLang: unknown): string | undefined {
     if (typeof rawLang !== 'string') {
       return undefined;
     }
@@ -201,7 +187,7 @@ class SchemaFieldNormalizer {
 
 /** Schema-field extraction helpers. */
 class SchemaFieldExtractor {
-  static annotatedEdgeDescriptor(schema: Record<string, unknown>): ExtractedAnnotatedEdgeType {
+  static annotatedEdgeDescriptor(schema: Record<string, unknown>): AnnotatedEdgeDescriptorEntity.Type | undefined {
     const raw = schema['jt:annotatedEdge'];
 
     if (!DataType.isRecord(raw)) {
@@ -241,8 +227,8 @@ class SchemaFieldExtractor {
   /** Extract all boolean flag fields from the schema. */
   static booleanFlags(
     schema: Record<string, unknown>,
-    jtConfig: ExtractedJtConfigType
-  ): BooleanFlagsType {
+    jtConfig: JtConfigEntity.Type | undefined
+  ): BooleanFlagsEntity.Type {
     const {
       'jt:computed': jtComputed,
       'jt:frozen': jtFrozen,
@@ -271,14 +257,14 @@ class SchemaFieldExtractor {
     };
   }
 
-  static jtConfig(schema: Record<string, unknown>): ExtractedJtConfigType {
+  static jtConfig(schema: Record<string, unknown>): JtConfigEntity.Type | undefined {
     const raw = schema['jt:config'];
 
     if (!DataType.isRecord(raw)) {
       return undefined;
     }
 
-    const config: JtConfigType = {};
+    const config: JtConfigEntity.Type = {};
 
     if (typeof raw.strict === 'boolean') {
       config.strict = raw.strict;
@@ -293,7 +279,7 @@ class SchemaFieldExtractor {
     return Object.keys(config).length > 0 ? config : undefined;
   }
 
-  static restrictions(schema: Record<string, unknown>): ExtractedRestrictionsType {
+  static restrictions(schema: Record<string, unknown>): RawRestrictionDescriptorEntity.Type[] {
     const raw = schema[RESTRICTIONS_KEY];
 
     if (!Array.isArray(raw)) {
@@ -307,11 +293,11 @@ class SchemaFieldExtractor {
       const rec = entry as Record<string, unknown>;
 
       return typeof rec.kind === 'string' && typeof rec.onProperty === 'string' && 'value' in rec;
-    }) as RawRestrictionDescriptorType[];
+    }) as RawRestrictionDescriptorEntity.Type[];
   }
 
   /** Extract all scalar (string, number, vocabulary) fields from the schema. */
-  static scalarFields(schema: Record<string, unknown>): ScalarFieldsType {
+  static scalarFields(schema: Record<string, unknown>): ScalarFieldsInterface {
     return {
       'comment': SchemaScalarCoercion.stringOrUndefined(schema.$comment),
       'contentEncoding': SchemaScalarCoercion.stringOrUndefined(schema.contentEncoding),
@@ -348,8 +334,8 @@ class SchemaFieldExtractor {
 
 /** Property-map and extension-collection helpers for semantics extraction. */
 class SchemaPropertyExtraction {
-  static collectExtensions(schema: Record<string, unknown>): SchemaExtensionsType {
-    const extensions: SchemaExtensionsType = {};
+  static collectExtensions(schema: Record<string, unknown>): Record<string, unknown> {
+    const extensions: Record<string, unknown> = {};
 
     for (const key of Object.keys(schema)) {
       if (!KNOWN_SCHEMA_KEYWORDS.has(key)) {
@@ -370,7 +356,7 @@ class SchemaPropertyExtraction {
     return result;
   }
 
-  static propertiesMap(entries: PropertyEntryType[]): PropertyMapType {
+  static propertiesMap(entries: Array<[string, SchemaGraphNodeInterface]>): PropertyMapInterface {
     return entries.length === 0 ? EMPTY_PROPERTY_MAP : new Map(entries);
   }
 }
@@ -378,10 +364,10 @@ class SchemaPropertyExtraction {
 /** additionalItems/additionalProperties node resolution. */
 class AdditionalSchemaNode {
   static resolve(
-    node: SchemaGraphNodeType,
-    child: (node: SchemaGraphNodeType, key: string) => SchemaGraphNodeType | undefined,
+    node: SchemaGraphNodeInterface,
+    child: (node: SchemaGraphNodeInterface, key: string) => SchemaGraphNodeInterface | undefined,
     key: 'additionalItems' | 'additionalProperties'
-  ): AdditionalSchemaNodeType {
+  ): boolean | SchemaGraphNodeInterface | undefined {
     if (!DataType.isRecord(node.schema) || !(key in node.schema)) {
       return undefined;
     }
@@ -397,15 +383,15 @@ class AdditionalSchemaNode {
 
   static resolveAll(
     graph: GraphAccessorInterface,
-    node: SchemaGraphNodeType
-  ): AdditionalNodesResultType {
+    node: SchemaGraphNodeInterface
+  ): AdditionalNodesResultInterface {
     return {
-      'additionalItemsNode': AdditionalSchemaNode.resolve(node, (parent: SchemaGraphNodeType, key: string): SchemaGraphNodeType | undefined => {
+      'additionalItemsNode': AdditionalSchemaNode.resolve(node, (parent: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined => {
         const result = graph.child(parent, key);
 
         return result;
       }, 'additionalItems'),
-      'additionalPropertiesNode': AdditionalSchemaNode.resolve(node, (parent: SchemaGraphNodeType, key: string): SchemaGraphNodeType | undefined => {
+      'additionalPropertiesNode': AdditionalSchemaNode.resolve(node, (parent: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined => {
         const result = graph.child(parent, key);
 
         return result;
@@ -422,9 +408,9 @@ class AdditionalSchemaNode {
 // validateGraphStructure helpers
 // ---------------------------------------------------------------------------
 
-/** Build the full SchemaGraphSemanticsType from a validated schema record. */
+/** Build the full SchemaGraphSemanticsInterface from a validated schema record. */
 class Semantics {
-  static build(context: SemanticsBuildContextType): SchemaGraphSemanticsType {
+  static build(context: SemanticsBuildContextInterface): SchemaGraphSemanticsInterface {
     const {
       graph,
       node,
@@ -556,7 +542,7 @@ class NodeStructureCheck {
   static inlineArrayItems(
     schema: Record<string, unknown>,
     pointer: string,
-    warnings: StructureWarningType[]
+    warnings: StructureWarningEntity.Type[]
   ): void {
     if (schema.type !== 'array' || !DataType.isRecord(schema.items)) {
       return;
@@ -583,7 +569,7 @@ class NodeStructureCheck {
   static inlineObject(
     schema: Record<string, unknown>,
     pointer: string,
-    warnings: StructureWarningType[]
+    warnings: StructureWarningEntity.Type[]
   ): void {
     const rawType = schema.type;
     const hasObjectType = rawType === 'object'
@@ -602,7 +588,7 @@ class NodeStructureCheck {
   static inlinePrimitive(
     schema: Record<string, unknown>,
     pointer: string,
-    warnings: StructureWarningType[]
+    warnings: StructureWarningEntity.Type[]
   ): void {
     const rawType = schema.type;
     const isPrimitive = typeof rawType === 'string' && PRIMITIVE_TYPES.has(rawType);
@@ -624,8 +610,8 @@ class NodeStructureCheck {
 
   /** Validate a single node and append any warnings. */
   static node(
-    node: SchemaGraphNodeType,
-    warnings: StructureWarningType[]
+    node: SchemaGraphNodeInterface,
+    warnings: StructureWarningEntity.Type[]
   ): void {
     if (node.pointer === '' || !DataType.isRecord(node.schema)) {
       return;
@@ -653,7 +639,7 @@ class NodeStructureCheck {
  * @remarks
  * Provides pure functions for normalizing schema keywords, extracting
  * semantics from schema nodes, and validating graph structure. All functions
- * operate on `SchemaGraphNodeType` objects and the plain schema records
+ * operate on `SchemaGraphNodeInterface` objects and the plain schema records
  * they carry.
  *
  * @example
@@ -664,7 +650,7 @@ class NodeStructureCheck {
  * @defaultValue Exported as a frozen `as const` object.
  * @category Graph
  * @since 0.1.0
- * @see {@link SchemaGraphNodeType}
+ * @see {@link SchemaGraphNodeInterface}
  * @group Graph
  */
 export const SchemaGraphSupport = {
@@ -676,9 +662,9 @@ export const SchemaGraphSupport = {
 
   extractSemantics(
     graph: GraphAccessorInterface,
-    node: SchemaGraphNodeType,
-    resolveLocalReference: (reference: string) => SchemaGraphNodeType
-  ): SchemaGraphSemanticsType {
+    node: SchemaGraphNodeInterface,
+    resolveLocalReference: (reference: string) => SchemaGraphNodeInterface
+  ): SchemaGraphSemanticsInterface {
     if (!DataType.isRecord(node.schema)) {
       return EMPTY_SEMANTICS;
     }
@@ -716,7 +702,7 @@ export const SchemaGraphSupport = {
     return SchemaPointerSupport.pointerId(rootSchema, pointer);
   },
 
-  parentPropertiesPointer(pointer: string): OptionalStringType {
+  parentPropertiesPointer(pointer: string): string | undefined {
     const result = SchemaIri.splitAtProperties(pointer);
 
     if (result === undefined) {
@@ -726,7 +712,7 @@ export const SchemaGraphSupport = {
     return result.parent || '';
   },
 
-  propertyNameFromPointer(pointer: string): OptionalStringType {
+  propertyNameFromPointer(pointer: string): string | undefined {
     const parts = pointer.split('/');
 
     if (parts.length < MINIMUM_PROPERTY_POINTER_PARTS || parts.at(-2) !== 'properties') {
@@ -775,8 +761,8 @@ export const SchemaGraphSupport = {
     return current;
   },
 
-  validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeType>): StructureWarningType[] {
-    const warnings: StructureWarningType[] = [];
+  validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeInterface>): StructureWarningEntity.Type[] {
+    const warnings: StructureWarningEntity.Type[] = [];
 
     for (const node of nodeMap.values()) {
       NodeStructureCheck.node(node, warnings);

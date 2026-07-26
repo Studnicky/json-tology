@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { JsonTology } from '../../src/index.js';
 import { OwlCodegen } from '../../src/modules/codegen/OwlCodegen.js';
 import { bookstoreEntities } from '../../examples/docs/bookstore/index.js';
-import type { OwlImportResultType } from '../../src/types/OwlImport.js';
+import type { OwlImportResultInterface } from '../../src/interfaces/OwlImportResultInterface.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,8 +47,8 @@ function cleanTmpDir(): void {
   }
 }
 
-/** Wrap an array of schemas as a minimal OwlImportResultType for codegen. */
-function resultFromSchemas(schemas: Array<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultType {
+/** Wrap an array of schemas as a minimal OwlImportResultInterface for codegen. */
+function resultFromSchemas(schemas: Array<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultInterface {
   return {
     'characteristics': [],
     'differentFrom': [],

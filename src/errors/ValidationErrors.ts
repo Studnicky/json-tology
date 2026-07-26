@@ -2,24 +2,22 @@
  * ValidationErrors — collection class with rich query methods
  */
 
-import type {
-  AggregateViewType,
-  ProblemDetailsOverridesType,
-  ProblemDetailsType,
-  ValidationErrorType
-} from '../types/Validation.js';
+import type { AggregateViewEntity } from '../entities/AggregateViewEntity.js';
+import type { ProblemDetailsOverridesEntity } from '../entities/ProblemDetailsOverridesEntity.js';
+import type { ProblemDetailsEntity } from '../entities/ProblemDetailsEntity.js';
+import type { ValidationErrorEntity } from '../entities/ValidationErrorEntity.js';
 
 import { Path } from '../modules/data/Path.js';
 import { JT_VALIDATION_PROBLEM_TYPE } from '../constants/IRI.js';
 
 /**
- * An ordered collection of ValidationErrorType items.
+ * An ordered collection of ValidationErrorEntity.Type items.
  *
  * Returned by `JsonTology.validate()` and carried on `CoercionError`.
  * Iterable so it works in for-of loops.
  *
  * Three views over the same error data:
- * - `items` — raw `ValidationErrorType[]` with JSON Pointer paths
+ * - `items` — raw `ValidationErrorEntity.Type[]` with JSON Pointer paths
  * - `aggregate()` — `{ count, paths, keywords }` compact rollup for logging and metrics (paths in access form)
  * - `report()` — RFC 7807 Problem Details payload for HTTP error response bodies
  *
@@ -38,12 +36,12 @@ import { JT_VALIDATION_PROBLEM_TYPE } from '../constants/IRI.js';
  * @example
  * const errs = jt.validate(UserSchema.$id, data);
  * errs.length;                     // number of errors
- * errs.items;                      // ValidationErrorType[] — raw items
+ * errs.items;                      // ValidationErrorEntity.Type[] — raw items
  * errs.aggregate();                // { count: 2, paths: ['name'], keywords: ['type'] }
  * errs.report();                   // RFC 7807 Problem Details payload
- * for (const err of errs) { ... } // iterate ValidationErrorType items
+ * for (const err of errs) { ... } // iterate ValidationErrorEntity.Type items
  */
-export class ValidationErrors implements Iterable<ValidationErrorType> {
+export class ValidationErrors implements Iterable<ValidationErrorEntity.Type> {
   /**
    * Map external validator errors to a ValidationErrors instance.
    */
@@ -82,14 +80,14 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
   }
 
   /** The raw list of validation errors (JSON Pointer paths). */
-  public readonly items: readonly ValidationErrorType[];
+  public readonly items: readonly ValidationErrorEntity.Type[];
 
   /**
    * Create a ValidationErrors collection from an array of validation error items.
    *
    * @param items - Ordered list of validation errors
    */
-  public constructor(items: readonly ValidationErrorType[]) {
+  public constructor(items: readonly ValidationErrorEntity.Type[]) {
     this.items = items;
   }
 
@@ -103,7 +101,7 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
    * Paths are returned in access form (`items[0].quantity`) not JSON Pointer (`/items/0/quantity`).
    * Use `errs.items.map(e => e.path)` for JSON Pointer paths.
    */
-  public aggregate(): AggregateViewType {
+  public aggregate(): AggregateViewEntity.Type {
     const pathSet = new Set<string>();
     const keywordSet = new Set<string>();
 
@@ -138,13 +136,13 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
    *
    * @param overrides - Explicit field overrides merged over the default payload
    */
-  public report(overrides?: ProblemDetailsOverridesType): ProblemDetailsType {
+  public report(overrides?: ProblemDetailsOverridesEntity.Type): ProblemDetailsEntity.Type {
     const count = this.items.length;
     const detail = count === 1
       ? '1 validation error'
       : `${count} validation errors`;
 
-    const defaultPayload: ProblemDetailsType = {
+    const defaultPayload: ProblemDetailsEntity.Type = {
       'detail': detail,
       'errors': this.items.map((item) => {
         return {
@@ -168,9 +166,9 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
   /**
    * Return an iterator over the validation error items.
    *
-   * @returns Iterator yielding each ValidationErrorType in order
+   * @returns Iterator yielding each ValidationErrorEntity.Type in order
    */
-  public [Symbol.iterator](): Iterator<ValidationErrorType> {
+  public [Symbol.iterator](): Iterator<ValidationErrorEntity.Type> {
     const result = this.items[Symbol.iterator]();
 
     return result;

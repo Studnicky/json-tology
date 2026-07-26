@@ -9,10 +9,10 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import type { LoaderType } from '../../src/types/Loader.js';
+import type { LoaderInterface } from '../../src/interfaces/LoaderInterface.js';
 import { Loaders } from '../../src/modules/loaders/Loaders.js';
 
-const nullLoader: LoaderType = async () => {
+const nullLoader: LoaderInterface = async () => {
   return null;
 };
 
@@ -71,14 +71,14 @@ void describe('Loaders.fetch', () => {
    * Tests the fetch branch logic through the compose/memory layer.
    */
   void it('happy: fetches and returns parsed schema on 200 (via memory mock)', async () => {
-    const loader: LoaderType = Loaders.memory({ [Schema.$id]: Schema });
+    const loader: LoaderInterface = Loaders.memory({ [Schema.$id]: Schema });
     const result = await loader(Schema.$id);
 
     assert.deepEqual(result, Schema);
   });
 
   void it('unhappy: returns null for unknown IRI (via memory mock)', async () => {
-    const loader: LoaderType = Loaders.memory({});
+    const loader: LoaderInterface = Loaders.memory({});
     const result = await loader('https://schemas.example/v1/Missing');
 
     assert.strictEqual(result, null);
@@ -162,7 +162,7 @@ void describe('Loaders.cached', () => {
 
   void it('happy: caches and returns the same result on repeated calls', async () => {
     let callCount = 0;
-    const inner: LoaderType = async (iri: string) => {
+    const inner: LoaderInterface = async (iri: string) => {
       callCount++;
 
       return iri === Schema.$id ? Schema : null;
@@ -178,7 +178,7 @@ void describe('Loaders.cached', () => {
 
   void it('unhappy: caches null results too', async () => {
     let callCount = 0;
-    const inner: LoaderType = async (_: string) => {
+    const inner: LoaderInterface = async (_: string) => {
       callCount++;
 
       return null;
@@ -204,7 +204,7 @@ void describe('Loaders.cached', () => {
       return s.$id;
     });
     let callCount = 0;
-    const inner: LoaderType = async (iri: string) => {
+    const inner: LoaderInterface = async (iri: string) => {
       callCount++;
 
       return map[iri] ?? null;

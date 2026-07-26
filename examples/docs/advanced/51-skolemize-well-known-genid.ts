@@ -16,7 +16,7 @@ import {
 
 const customer = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
 
-const quads = bookstoreEntities.toQuads(CustomerSchema, customer, { 'iriFor': Skolemize.wellKnownGenid('https://shop.example.com') });
+const quads = bookstoreEntities.toQuads(CustomerSchema, customer, { 'iriForFunction': Skolemize.wellKnownGenid('https://shop.example.com') });
 
 // Round-trip back to blank-node semantics — use the string key form for full type inference
 const restoredList = bookstoreEntities.fromQuads(CustomerSchema.$id, quads, { 'deskolemize': true });

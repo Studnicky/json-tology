@@ -23,11 +23,10 @@
  *   (`relation.termType === 'Literal'`, `relation.datatype`, `relation.language`).
  */
 
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../../types/OwlImport.js';
-import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
 import { Terms } from '../../quads/Terms.js';
 import type { InvariantType } from '../../../types/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
@@ -72,10 +71,10 @@ import {
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `context.graph`.
  * @param context - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragmentType with individuals, sameAs, differentFrom, invariants, and schemaDeltas populated.
+ * @returns OwlImportFragmentInterface with individuals, sameAs, differentFrom, invariants, and schemaDeltas populated.
  */
 export class Individuals {
-  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
     const sameAs: Array<[string, string]> = [];
     const differentFrom: Array<[string, string]> = [];
     const invariants: Array<{
@@ -409,7 +408,7 @@ export class Individuals {
    * decodes via the canonical `Terms.decodeLiteral` helper, returning a number /
    * boolean / Date / string per the XSD datatype.
    */
-  public static literalTarget(relation: SchemaGraphRelationType): unknown {
+  public static literalTarget(relation: SchemaGraphRelationInterface): unknown {
     if (relation.termType === 'Literal') {
       const rawValue = typeof relation.target === 'string' ? relation.target : relation.target.id;
       const literalTerm = Terms.literal(rawValue, {
@@ -480,7 +479,7 @@ export class Individuals {
   /**
    * Returns true when the relation's predicate matches any IRI in the set.
    */
-  public static predicateIn(relation: SchemaGraphRelationType, set: ReadonlySet<string>): boolean {
+  public static predicateIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<string>): boolean {
     const result = set.has(relation.predicate);
 
     return result;
@@ -490,7 +489,7 @@ export class Individuals {
    * Returns true when the relation's target is a NamedNode IRI in the set.
    * Accepts both string and node-shape targets.
    */
-  public static targetIriIn(relation: SchemaGraphRelationType, set: ReadonlySet<string>): boolean {
+  public static targetIriIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<string>): boolean {
     if (relation.termType !== 'NamedNode') {
       return false;
     }

@@ -1,6 +1,6 @@
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { PredicateForType } from '../../types/PredicateForType.js';
-import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import { DataType } from '../data/DataType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
@@ -154,7 +154,7 @@ class PredicateResolutionStep {
  *
  * @category Graph
  * @since 0.1.0
- * @see {@link PredicateResolverFunctionType}
+ * @see {@link PredicateResolverInterface}
  * @group Graph
  */
 export const PredicateResolver = {
@@ -167,7 +167,7 @@ export const PredicateResolver = {
     'baseIri': string;
     'enableCanonicalPredicates': boolean | undefined;
     'predicateFor': PredicateForType | undefined;
-  }): PredicateResolverFunctionType {
+  }): PredicateResolverInterface {
     return (context: { readonly 'classId': string;
       readonly 'propertyName': string;
       readonly 'propertySchema': JsonSchemaType }): string => {

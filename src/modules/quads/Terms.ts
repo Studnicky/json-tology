@@ -43,10 +43,10 @@ import { DECIMAL_RADIX } from '../../constants/FORMAT_VALIDATION.js';
 import {
   XSD, XSD_COMPACT_PREFIX
 } from '../../constants/IRI.js';
-import { XSD_IRI_PREFIX } from '../../constants/STANDARD_PREFIXES.js';
+import { XSD_IRI_PREFIX } from '../../constants/XSD_IRI_PREFIX.js';
 import {
   DECIMAL_XSD_TYPE_NAMES, INTEGER_XSD_TYPE_NAMES
-} from '../../constants/XSD_MAPS.js';
+} from '../../constants/XSD_TYPE_NAME_SETS.js';
 
 /**
  * Term-construction and literal-decoding support for the {@link Terms} factory.
@@ -346,4 +346,4 @@ export const Terms = {
   }
 } as const;
 
-// INTEGER_XSD_TYPE_NAMES and DECIMAL_XSD_TYPE_NAMES imported from XSD_MAPS
+// INTEGER_XSD_TYPE_NAMES and DECIMAL_XSD_TYPE_NAMES imported from XSD_TYPE_NAME_SETS

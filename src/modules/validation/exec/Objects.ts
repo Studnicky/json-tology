@@ -1,5 +1,5 @@
-import type { ValidateWithErrorsFunctionType } from '../../../types/Validation.js';
-import type { ExecContextType } from '../../../types/ExecContextType.js';
+import type { ValidateWithErrorsFunctionInterface } from '../../../interfaces/ValidateWithErrorsFunctionInterface.js';
+import type { ExecContextInterface } from '../../../interfaces/ExecContextInterface.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { DataType } from '../../data/DataType.js';
 import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
@@ -45,7 +45,7 @@ export class Objects {
     path: string,
     value: unknown,
     depRequiredEntries: Array<[string, string[]]>,
-    context: ExecContextType
+    context: ExecContextInterface
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (depRequiredEntries.length === 0 || !DataType.isRecord(value)) {
@@ -90,12 +90,12 @@ export class Objects {
   /** Validate one property declared in `properties`. Returns whether it is valid. */
   private static validateKnownProperty(
     childPath: string,
-    context: ExecContextType,
+    context: ExecContextInterface,
     key: string,
     object: Record<string, unknown>,
     propertyDefaults: Map<string, { 'defaultValue': unknown;
       'hasDefault': boolean }>,
-    propValidator: ValidateWithErrorsFunctionType
+    propValidator: ValidateWithErrorsFunctionInterface
   ): boolean {
     let propValue = object[key];
 
@@ -123,16 +123,16 @@ export class Objects {
   static validateProperties(
     path: string,
     object: Record<string, unknown>,
-    propValidators: Map<string, ValidateWithErrorsFunctionType>,
+    propValidators: Map<string, ValidateWithErrorsFunctionInterface>,
     patternPropValidators: Array<{ 'regex': RegExp;
-      'validator': ValidateWithErrorsFunctionType }> | undefined,
+      'validator': ValidateWithErrorsFunctionInterface }> | undefined,
     additionalIsFalse: boolean,
-    additionalValidator: undefined | ValidateWithErrorsFunctionType,
+    additionalValidator: undefined | ValidateWithErrorsFunctionInterface,
     allowedKeys: Set<string> | undefined,
     stripUnknown: boolean,
     propertyDefaults: Map<string, { 'defaultValue': unknown;
       'hasDefault': boolean }>,
-    context: ExecContextType,
+    context: ExecContextInterface,
     allowedKeysForStrip?: Set<string>
   ): { 'count': number;
     'earlyExit': boolean;
@@ -183,23 +183,23 @@ export class Objects {
   static validatePropertyCount(
     path: string,
     object: Record<string, unknown>,
-    minProperties: number | undefined,
-    maxProperties: number | undefined,
+    minimumProperties: number | undefined,
+    maximumProperties: number | undefined,
     errors: Array<ReturnType<typeof BaseError.validationError>>,
     precomputedCount?: number
   ): boolean {
-    if (minProperties === undefined && maxProperties === undefined) {
+    if (minimumProperties === undefined && maximumProperties === undefined) {
       return true;
     }
 
     const count = precomputedCount ?? Object.keys(object).length;
     const pre = errors.length;
 
-    if (minProperties !== undefined && count < minProperties) {
-      errors.push(BaseError.validationError(path, 'minProperties', VALIDATION_MESSAGES.minProperties(minProperties)));
+    if (minimumProperties !== undefined && count < minimumProperties) {
+      errors.push(BaseError.validationError(path, 'minProperties', VALIDATION_MESSAGES.minProperties(minimumProperties)));
     }
-    if (maxProperties !== undefined && count > maxProperties) {
-      errors.push(BaseError.validationError(path, 'maxProperties', VALIDATION_MESSAGES.maxProperties(maxProperties)));
+    if (maximumProperties !== undefined && count > maximumProperties) {
+      errors.push(BaseError.validationError(path, 'maxProperties', VALIDATION_MESSAGES.maxProperties(maximumProperties)));
     }
 
     return errors.length === pre;
@@ -208,8 +208,8 @@ export class Objects {
   static validatePropertyNames(
     path: string,
     value: unknown,
-    propertyNamesValidator: undefined | ValidateWithErrorsFunctionType,
-    context: ExecContextType
+    propertyNamesValidator: undefined | ValidateWithErrorsFunctionInterface,
+    context: ExecContextInterface
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     if (propertyNamesValidator === undefined || !DataType.isRecord(value)) {
@@ -266,15 +266,15 @@ export class Objects {
   /** Validate one property not declared in `properties` (patternProperties/additionalProperties/strip). Returns whether it is valid. */
   private static validateUnknownProperty(
     additionalIsFalse: boolean,
-    additionalValidator: undefined | ValidateWithErrorsFunctionType,
+    additionalValidator: undefined | ValidateWithErrorsFunctionInterface,
     allowedKeys: Set<string> | undefined,
     allowedKeysForStrip: Set<string> | undefined,
     pathPrefix: string,
     key: string,
-    context: ExecContextType,
+    context: ExecContextInterface,
     object: Record<string, unknown>,
     patternPropValidators: Array<{ 'regex': RegExp;
-      'validator': ValidateWithErrorsFunctionType }> | undefined,
+      'validator': ValidateWithErrorsFunctionInterface }> | undefined,
     stripUnknown: boolean
   ): boolean {
     let matchedPattern = false;

@@ -27,8 +27,8 @@ import { GraphError } from '../../src/errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../src/constants/ERROR_CODES.js';
 import { JsonTology } from '../../src/index.js';
 import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistryInterface.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContextType.js';
-import type { ValidateWithErrorsFunctionType } from '../../src/types/Validation.js';
+import type { SchemaCompilerValidatePlanContextInterface } from '../../src/interfaces/SchemaCompilerValidatePlanContextInterface.js';
+import type { ValidateWithErrorsFunctionInterface } from '../../src/interfaces/ValidateWithErrorsFunctionInterface.js';
 import type { GraphEngineInterface } from '../../src/interfaces/GraphEngineInterface.js';
 
 // ---------------------------------------------------------------------------
@@ -47,14 +47,14 @@ const stubFormatRegistry: FormatRegistryInterface = {
   }
 };
 
-const passValidator: ValidateWithErrorsFunctionType = (value) => {
+const passValidator: ValidateWithErrorsFunctionInterface = (value) => {
   return {
     'valid': true,
     'value': value
   };
 };
 
-function makeStubContext(): SchemaCompilerValidatePlanContextType {
+function makeStubContext(): SchemaCompilerValidatePlanContextInterface {
   return {
     'activeCustomKeywords': [],
     'appliesFormatAssertions': () => {

@@ -3,7 +3,7 @@ import type { GraphSerializerInterface } from '../../interfaces/GraphSerializerI
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPluginInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
-import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import { Curie } from '../quads/Curie.js';
 import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
@@ -90,12 +90,12 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
     'prefix': string }> | undefined;
   protected readonly curie: CurieInterface;
 
-  protected readonly predicateResolver: PredicateResolverFunctionType | undefined;
+  protected readonly predicateResolver: PredicateResolverInterface | undefined;
 
   protected readonly vocabularies: readonly VocabularyPluginInterface[];
 
   public constructor(options?: { 'curie'?: CurieInterface;
-    'predicateResolver'?: PredicateResolverFunctionType | undefined;
+    'predicateResolver'?: PredicateResolverInterface | undefined;
     'vocabularies'?: readonly VocabularyPluginInterface[] }) {
     const defaultPrefixes: Record<string, string> = Object.fromEntries(Object.entries(STANDARD_PREFIXES));
 

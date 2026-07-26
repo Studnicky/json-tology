@@ -65,7 +65,7 @@ Options marked <Badge type="info" text="Compile-time" /> affect type inference o
 | `maxSchemaDepth` | `number` | _(no limit)_ | Maximum schema-graph traversal depth. Protects against pathological schemas. |
 | `logger` | `LoggerInterface` | `SILENT_LOGGER` | Logger for warnings (`enableInlineWarnings`, `enableDuplicateDetection`). Must be set for warnings to surface. |
 | `invariants` | `Record<string, InvariantInterface[]>` | `{}` | Cross-field invariant functions, keyed by schema `$id`. |
-| `computeds` | `Record<string, Record<string, ComputedFunctionType>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |
+| `computeds` | `Record<string, Record<string, ComputedFunctionInterface>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |
 
 ### Type inference options
 
@@ -83,7 +83,8 @@ These options control how `toQuads` mints subject IRIs and how `fromQuads` rever
 
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
-| `iriFor` | `SkolemizeFnType \| string` | _(content-hash)_ | Default IRI minting strategy for `toQuads`. A regular string becomes a root-only override; the string `'blank-node'` is a runtime-recognised constant that emits anonymous subjects (not a discriminated type member); a function matching `SkolemizeFnType` is the full custom minting shape. Per-call options override this. |
+| `iriFor` | `string` | _(content-hash)_ | Default root-only IRI override for `toQuads`. The string `'blank-node'` is a runtime-recognised constant that emits anonymous subjects (not a discriminated type member). Per-call options override this. |
+| `iriForFunction` | `SkolemizeFunctionInterface` | _(none)_ | Default custom IRI minting strategy for `toQuads`. Takes precedence over `iriFor` when both are set. Per-call options override this. |
 | `defaultGraphIri` | `string` | _(none)_ | Default `graph` field for every quad emitted by `toQuads`. Per-call `graphIri` overrides. |
 | `defaultDeskolemize` | `boolean` | `false` | Treat `*/.well-known/genid/*` IRIs as blank nodes during `fromQuads`. Reverses `Skolemize.wellKnownGenid`. |
 

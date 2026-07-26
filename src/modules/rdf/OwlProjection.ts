@@ -10,36 +10,32 @@
  * The output quads can be passed directly to JsonLdFormatter.fromQuads().
  */
 
+import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
-import type { ProjectionEmitContextType } from '../../types/ProjectionEmitContextType.js';
-import type { EmitQualifiedCardinalityRestrictionArgumentListType } from '../../types/EmitQualifiedCardinalityRestrictionArgsType.js';
-import type { EmitRestrictionArgumentListType } from '../../types/EmitRestrictionArgsType.js';
-import type { OptionalQuadObjectType } from '../../types/OptionalQuadObjectType.js';
-import type { TypedLiteralObjectType } from '../../types/TypedLiteralObjectType.js';
-import type { EmitPatternPropertyEntryArgumentListType } from '../../types/EmitPatternPropertyEntryArgsType.js';
+import type { ProjectionEmitContextInterface } from '../../interfaces/ProjectionEmitContextInterface.js';
+import type { EmitQualifiedCardinalityRestrictionArgumentListInterface } from '../../interfaces/EmitQualifiedCardinalityRestrictionArgumentListInterface.js';
+import type { EmitRestrictionArgumentListInterface } from '../../interfaces/EmitRestrictionArgumentListInterface.js';
+import type { TypedLiteralObjectEntity } from '../../entities/TypedLiteralObjectEntity.js';
+import type { EmitPatternPropertyEntryArgumentListInterface } from '../../interfaces/EmitPatternPropertyEntryArgumentListInterface.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import {
   OWL_CARDINALITY_PREDICATE_IRIS, OWL_PROPERTY_CHARACTERISTICS
 } from '../../constants/ONTOLOGY_PREDICATES.js';
-import {
-  SHACL_TO_XSD_FACET,
-  XSD_FACET_DATATYPE
-} from '../../constants/XSD_FACETS.js';
+import { XSD_FACETS } from '../../constants/XSD_FACETS.js';
 import { XsdTypes } from '../quads/XsdTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { QuadEmit } from './QuadEmit.js';
 
 import { ProjectionIndex } from './ProjectionIndex.js';
-import type { RelationIndexType } from '../../types/RelationIndexType.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
 import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
 import { VocabProjection } from './VocabProjection.js';
 import { PropertyProjection } from './PropertyProjection.js';
@@ -70,7 +66,7 @@ class RestrictionEmit {
     });
   }
 
-  static emitRestriction(argumentList: EmitRestrictionArgumentListType): string {
+  static emitRestriction(argumentList: EmitRestrictionArgumentListInterface): string {
     const {
       constraint, constraintValue, curie, issuer, onProperty, quads
     } = argumentList;
@@ -281,7 +277,7 @@ export class OwlProjection {
     return SchemaIri.propertyIri(parentId, split.property);
   }
 
-  private static cardinalityConstraintValue(value: unknown, curie: CurieInterface | undefined): OptionalQuadObjectType {
+  private static cardinalityConstraintValue(value: unknown, curie: CurieInterface | undefined): QuadObjectType | undefined {
     const n = PropertyProjection.finiteNumber(value);
 
     if (n === undefined) {
@@ -300,8 +296,8 @@ export class OwlProjection {
   // the class-scoped form produced by canonicalPropertyIri().
   private static emitArrayItemQuads(
     subject: string,
-    _entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    _entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, graph, index, issuer, predicateResolver, quads
@@ -360,8 +356,8 @@ export class OwlProjection {
 
   private static emitClassEnumerations(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, issuer, quads
@@ -392,8 +388,8 @@ export class OwlProjection {
 
   private static emitClassEquivalencesAndDisjoint(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, issuer, quads
@@ -405,7 +401,7 @@ export class OwlProjection {
 
       quads.push(QuadFactory.quad(subject, OWL.equivalentClass, QuadFactory.bnode(eqBnode), { curie }));
       quads.push(QuadFactory.quad(eqBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
-      const equivIris = equivRels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.iri> => {
+      const equivIris = equivRels.map((rel: SchemaGraphRelationInterface): ReturnType<typeof QuadFactory.iri> => {
         const result = QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
 
         return result;
@@ -441,7 +437,7 @@ export class OwlProjection {
     const disjointUnionRels = entry.byPredicate.get(OWL.disjointUnionOf) ?? [];
 
     if (disjointUnionRels.length > 0) {
-      const disjointUnionIris = disjointUnionRels.map((rel: SchemaGraphRelationType): QuadObjectType => {
+      const disjointUnionIris = disjointUnionRels.map((rel: SchemaGraphRelationInterface): QuadObjectType => {
         const result = QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
 
         return result;
@@ -458,8 +454,8 @@ export class OwlProjection {
 
   private static emitClassQuads(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, graph, issuer, predicateResolver, quads
@@ -509,8 +505,8 @@ export class OwlProjection {
 
   private static emitClassRestrictionRelations(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, graph, issuer, predicateResolver, quads
@@ -555,8 +551,8 @@ export class OwlProjection {
 
   private static emitClassSubClassRelations(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, graph, issuer, predicateResolver, quads
@@ -598,8 +594,8 @@ export class OwlProjection {
 
   private static emitContainsQuads(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, graph, issuer, predicateResolver, quads
@@ -653,14 +649,14 @@ export class OwlProjection {
   // ---------------------------------------------------------------------------
   // Primitive schema detection and emission
   //
-  // SHACL_TO_XSD_FACET and XSD_FACET_DATATYPE are imported from the canonical
-  // bidirectional facet table in src/constants/XSD_FACETS.ts.
+  // XSD_FACETS.SHACL_TO_XSD_FACET and XSD_FACETS.XSD_FACET_DATATYPE come from
+  // the canonical bidirectional facet table in src/constants/XSD_FACETS.ts.
   // ---------------------------------------------------------------------------
 
   private static emitDatatypeEnumeration(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, issuer, quads
@@ -678,8 +674,8 @@ export class OwlProjection {
 
   private static emitDatatypeFacetBnodes(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, issuer, quads
@@ -689,7 +685,7 @@ export class OwlProjection {
     for (const [
       shaclPred,
       xsdFacet
-    ] of SHACL_TO_XSD_FACET) {
+    ] of XSD_FACETS.SHACL_TO_XSD_FACET) {
       for (const rel of entry.byPredicate.get(shaclPred) ?? []) {
         if (shaclPred === SH.pattern && rel.metadata?.fromFormat === true) {
           continue;
@@ -697,7 +693,7 @@ export class OwlProjection {
 
         const bnode = QuadFactory.nextBnode(issuer);
         const rawValue = ProjectionIndex.relationTargetId(rel);
-        const facetDatatype = XSD_FACET_DATATYPE.get(xsdFacet) ?? XSD.string;
+        const facetDatatype = XSD_FACETS.XSD_FACET_DATATYPE.get(xsdFacet) ?? XSD.string;
         const isNumeric = facetDatatype === XSD.decimal || facetDatatype === XSD.integer;
         const litValue: number | string = isNumeric ? Number(rawValue) : rawValue;
 
@@ -718,8 +714,8 @@ export class OwlProjection {
 
   private static emitDatatypeMetadata(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, quads
@@ -761,8 +757,8 @@ export class OwlProjection {
 
   private static emitDatatypeQuads(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, quads
@@ -792,7 +788,7 @@ export class OwlProjection {
   // ---------------------------------------------------------------------------
 
   /** Emit OWL quads for a single pattern-property entry. */
-  private static emitPatternPropertyEntry(argumentList: EmitPatternPropertyEntryArgumentListType): void {
+  private static emitPatternPropertyEntry(argumentList: EmitPatternPropertyEntryArgumentListInterface): void {
     const {
       context, pattern, patternEntry, subject
     } = argumentList;
@@ -852,8 +848,8 @@ export class OwlProjection {
   // available so sh:path / owl:onProperty use the flat canonical IRI.
   private static emitPatternPropertyQuads(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const { index } = context;
     const patternRels = entry.byPredicate.get(SH.pattern) ?? [];
@@ -882,8 +878,8 @@ export class OwlProjection {
 
   private static emitPrefixItemQuads(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, issuer, quads
@@ -910,8 +906,8 @@ export class OwlProjection {
 
   private static emitPropertyAnnotations(
     canonicalId: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, quads
@@ -940,8 +936,8 @@ export class OwlProjection {
 
   private static emitPropertyCharacteristics(
     canonicalId: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, quads
@@ -962,8 +958,8 @@ export class OwlProjection {
 
   private static emitPropertyQuads(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, graph, predicateResolver, quads
@@ -999,8 +995,8 @@ export class OwlProjection {
 
   private static emitPropertyRangeAndUnion(
     canonicalId: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, issuer, quads
@@ -1029,7 +1025,7 @@ export class OwlProjection {
       }
     }
 
-    const unionOfListRels = entry.all.filter((relation: SchemaGraphRelationType): boolean => {
+    const unionOfListRels = entry.all.filter((relation: SchemaGraphRelationInterface): boolean => {
       return relation.predicate === OWL.unionOf && relation.structure?.kind === 'list';
     });
 
@@ -1065,7 +1061,7 @@ export class OwlProjection {
    * Emit an optional qualified-cardinality restriction for a contains property.
    * Emits a subClassOf restriction bnode and attaches the onDataRange triple.
    */
-  private static emitQualifiedCardinalityRestriction(argumentList: EmitQualifiedCardinalityRestrictionArgumentListType): void {
+  private static emitQualifiedCardinalityRestriction(argumentList: EmitQualifiedCardinalityRestrictionArgumentListInterface): void {
     const {
       cardinalityPredicate, containsIriObject, context, onProp, rels, subject
     } = argumentList;
@@ -1098,10 +1094,10 @@ export class OwlProjection {
 
   /** Map a `oneOf` relation list to typed-literal objects for `rdf:JSON`. */
   private static enumLiteralsFromOneOf(
-    rels: SchemaGraphRelationType[],
+    rels: SchemaGraphRelationInterface[],
     curie: CurieInterface | undefined
   ): Array<ReturnType<typeof QuadFactory.literal>> {
-    const result = rels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.literal> => {
+    const result = rels.map((rel: SchemaGraphRelationInterface): ReturnType<typeof QuadFactory.literal> => {
       const literal = QuadFactory.literal(OwlProjection.typedLiteralObject(ProjectionIndex.relationTargetId(rel)), RDF.JSON, { curie });
 
       return literal;
@@ -1112,14 +1108,14 @@ export class OwlProjection {
 
   public static graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined;
     'issuer'?: IdentifierIssuerInterface | undefined;
-    'predicateResolver'?: PredicateResolverFunctionType | undefined }): QuadInterface[] {
+    'predicateResolver'?: PredicateResolverInterface | undefined }): QuadInterface[] {
     const { curie } = options ?? {};
     const { predicateResolver } = options ?? {};
     const issuer = options?.issuer ?? new IdentifierIssuer();
     const quads: QuadInterface[] = [];
     const allRelations = graph.allRelations();
     const index = ProjectionIndex.build(allRelations);
-    const context: ProjectionEmitContextType = {
+    const context: ProjectionEmitContextInterface = {
       curie,
       graph,
       index,
@@ -1152,7 +1148,7 @@ export class OwlProjection {
     return quads;
   }
 
-  private static hasValueConstraintValue(value: unknown, curie: CurieInterface | undefined): OptionalQuadObjectType {
+  private static hasValueConstraintValue(value: unknown, curie: CurieInterface | undefined): QuadObjectType | undefined {
     if (typeof value === 'boolean') {
       return QuadFactory.literal(value, XSD.boolean, { curie });
     }
@@ -1168,15 +1164,15 @@ export class OwlProjection {
     return undefined;
   }
 
-  private static isPrimitiveEntry(entry: RelationIndexType): boolean {
+  private static isPrimitiveEntry(entry: RelationIndexInterface): boolean {
     return entry.byPredicate.has(SH.datatype) && !entry.byPredicate.has(OWL.Restriction);
   }
 
   /** Resolve the item type IRI for an array property, checking direct range first then /items entry. */
   private static resolveItemTypeId(
     propSubject: string,
-    propEntry: RelationIndexType,
-    index: Map<string, RelationIndexType>
+    propEntry: RelationIndexInterface,
+    index: Map<string, RelationIndexInterface>
   ): null | string {
     const propRangeRels = propEntry.byPredicate.get(RDFS.range) ?? [];
 
@@ -1221,7 +1217,7 @@ export class OwlProjection {
     constraint: string,
     value: unknown,
     curie: CurieInterface | undefined
-  ): OptionalQuadObjectType {
+  ): QuadObjectType | undefined {
     if (OWL_CARDINALITY_PREDICATE_IRIS.has(constraint)) {
       return OwlProjection.cardinalityConstraintValue(value, curie);
     }
@@ -1237,7 +1233,7 @@ export class OwlProjection {
     return QuadFactory.iri(value, { curie });
   }
 
-  private static typedLiteralObject(value: unknown): TypedLiteralObjectType {
+  private static typedLiteralObject(value: unknown): TypedLiteralObjectEntity.Type {
     const jsType = typeof value;
 
     if (jsType === 'string' || jsType === 'boolean') {

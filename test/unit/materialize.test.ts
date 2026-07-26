@@ -1383,7 +1383,7 @@ import {
 
         const customIri = 'https://custom.io/instance/42';
         const quads = tology.toQuads(BaseSchema, { 'name': 'test' }, {
-          'iriFor': () => {
+          'iriForFunction': () => {
             return customIri;
           }
         });
@@ -1430,7 +1430,7 @@ import {
         assert.throws(
           () => {
             tology.toQuads(BaseSchema, { 'name': 'test' }, {
-              'iriFor': () => {
+              'iriForFunction': () => {
                 throw new Error('skolemizer refused to mint IRI');
               }
             });

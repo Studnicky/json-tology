@@ -1,4 +1,4 @@
-import type { SchemaWithIdType } from '../types/SchemaWithIdType.js';
+import type { SchemaWithIdEntity } from '../entities/SchemaWithIdEntity.js';
 
 /**
  * Contract for synthesizing a default instance from a registered schema.
@@ -9,5 +9,5 @@ import type { SchemaWithIdType } from '../types/SchemaWithIdType.js';
  * as the concrete creator.
  */
 export interface DefaultCreatorInterface {
-  createDefault(schema: SchemaWithIdType): unknown;
+  createDefault(schema: SchemaWithIdEntity.Type): unknown;
 }

@@ -1,6 +1,6 @@
-import type { ValidationErrorType } from '../../types/Validation.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { ValidationErrorEntity } from '../../entities/ValidationErrorEntity.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
-import type { SchemaGraphSemanticsType } from '../../types/SchemaGraph.js';
 import { Predicates } from '../data/Predicates.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
@@ -62,7 +62,7 @@ class NumberConstraintErrors {
     format: string | undefined,
     formatRegistry: FormatRegistryInterface,
     formatAssertions: boolean,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): void {
     if (format === undefined) {
       return;
@@ -78,7 +78,7 @@ class NumberConstraintErrors {
     path: string,
     value: number,
     multipleOf: number | undefined,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): void {
     if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
       errors.push(BaseError.validationError(path, 'multipleOf', VALIDATION_MESSAGES.multipleOf(multipleOf), { multipleOf }));
@@ -88,8 +88,8 @@ class NumberConstraintErrors {
   static pushRange(
     path: string,
     value: number,
-    sem: SchemaGraphSemanticsType,
-    errors: ValidationErrorType[]
+    sem: SchemaGraphSemanticsInterface,
+    errors: ValidationErrorEntity.Type[]
   ): void {
     const {
       exclusiveMaximum, exclusiveMinimum, maximum, minimum, multipleOf
@@ -118,7 +118,7 @@ class StringConstraintErrors {
     value: string,
     contentEncoding: string | undefined,
     contentAssertions: boolean,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): void {
     if (contentEncoding === undefined || !contentAssertions) {
       return;
@@ -135,7 +135,7 @@ class StringConstraintErrors {
     contentMediaType: string | undefined,
     contentEncoding: string | undefined,
     contentAssertions: boolean,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): void {
     if (contentMediaType === undefined || !contentAssertions) {
       return;
@@ -152,7 +152,7 @@ class StringConstraintErrors {
     format: string | undefined,
     formatRegistry: FormatRegistryInterface,
     formatAssertions: boolean,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): void {
     if (format === undefined) {
       return;
@@ -167,8 +167,8 @@ class StringConstraintErrors {
   static pushLength(
     path: string,
     value: string,
-    sem: SchemaGraphSemanticsType,
-    errors: ValidationErrorType[]
+    sem: SchemaGraphSemanticsInterface,
+    errors: ValidationErrorEntity.Type[]
   ): void {
     const minimum = sem.minLength;
     const maximum = sem.maxLength;
@@ -186,7 +186,7 @@ class StringConstraintErrors {
     value: string,
     pattern: string | undefined,
     regexFor: (pattern: string) => RegExp,
-    errors: ValidationErrorType[]
+    errors: ValidationErrorEntity.Type[]
   ): void {
     if (pattern !== undefined && !Predicates.satisfiesPattern(value, regexFor(pattern))) {
       errors.push(BaseError.validationError(path, 'pattern', VALIDATION_MESSAGES.pattern(pattern), { pattern }));
@@ -218,11 +218,11 @@ export const GraphEngineScalars = {
   validateNumberConstraints(
     path: string,
     value: number,
-    sem: SchemaGraphSemanticsType,
+    sem: SchemaGraphSemanticsInterface,
     formatRegistry: FormatRegistryInterface,
     formatAssertions: boolean
-  ): ValidationErrorType[] {
-    const errors: ValidationErrorType[] = [];
+  ): ValidationErrorEntity.Type[] {
+    const errors: ValidationErrorEntity.Type[] = [];
 
     NumberConstraintErrors.pushRange(path, value, sem, errors);
     NumberConstraintErrors.pushFormat(path, value, sem.format, formatRegistry, formatAssertions, errors);
@@ -233,13 +233,13 @@ export const GraphEngineScalars = {
   validateStringConstraints(
     path: string,
     value: string,
-    sem: SchemaGraphSemanticsType,
+    sem: SchemaGraphSemanticsInterface,
     regexFor: (pattern: string) => RegExp,
     formatRegistry: FormatRegistryInterface,
     formatAssertions: boolean,
     contentAssertions: boolean
-  ): ValidationErrorType[] {
-    const errors: ValidationErrorType[] = [];
+  ): ValidationErrorEntity.Type[] {
+    const errors: ValidationErrorEntity.Type[] = [];
 
     StringConstraintErrors.pushLength(path, value, sem, errors);
     StringConstraintErrors.pushPattern(path, value, sem.pattern, regexFor, errors);

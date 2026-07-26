@@ -14,9 +14,8 @@
  *
  * @example
  * ```ts
- * export type TransformFnsType<TIn, TWire> = IdentityType<{
- *   decode: (wire: TWire) => TIn;
- *   encode: (value: TIn) => TWire;
+ * export type ComputedExtensionBrandType<TFields> = IdentityType<{
+ *   '~jt:computedFields': TFields;
  * }>;
  * ```
  *

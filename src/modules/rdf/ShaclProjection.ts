@@ -9,34 +9,34 @@
  * The output quads can be passed directly to JsonLdFormatter.fromQuads().
  */
 
+import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { PredicateResolverFunctionType } from '../../types/PredicateResolverFunctionType.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { SchemaGraphRelationType } from '../../types/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
-import type { ProjectionEmitContextType } from '../../types/ProjectionEmitContextType.js';
-import type { EmitNodeShapeArgumentListType } from '../../types/EmitNodeShapeArgsType.js';
-import type { EmitPropertyShapeArgumentListType } from '../../types/EmitPropertyShapeArgsType.js';
-import type { EmitNodeShapePropertiesArgumentListType } from '../../types/EmitNodeShapePropertiesArgsType.js';
-import type { EmitNodeShapeCompositionArgumentListType } from '../../types/EmitNodeShapeCompositionArgsType.js';
-import type { EmitPropertyShapeConstraintsArgumentListType } from '../../types/EmitPropertyShapeConstraintsArgsType.js';
-import type { EmitCountConstraintArgumentListType } from '../../types/EmitCountConstraintArgumentListType.js';
-import type { EmitRangeConstraintArgumentListType } from '../../types/EmitRangeConstraintArgsType.js';
-import type { EmitContainsQualifiedCardinalityArgumentListType } from '../../types/EmitContainsQualifiedCardinalityArgumentListType.js';
+import type { ProjectionEmitContextInterface } from '../../interfaces/ProjectionEmitContextInterface.js';
+import type { EmitNodeShapeArgumentListInterface } from '../../interfaces/EmitNodeShapeArgumentListInterface.js';
+import type { EmitPropertyShapeArgumentListInterface } from '../../interfaces/EmitPropertyShapeArgumentListInterface.js';
+import type { EmitNodeShapePropertiesArgumentListInterface } from '../../interfaces/EmitNodeShapePropertiesArgumentListInterface.js';
+import type { EmitNodeShapeCompositionArgumentListInterface } from '../../interfaces/EmitNodeShapeCompositionArgumentListInterface.js';
+import type { EmitPropertyShapeConstraintsArgumentListInterface } from '../../interfaces/EmitPropertyShapeConstraintsArgumentListInterface.js';
+import type { EmitCountConstraintArgumentListInterface } from '../../interfaces/EmitCountConstraintArgumentListInterface.js';
+import type { EmitRangeConstraintArgumentListInterface } from '../../interfaces/EmitRangeConstraintArgumentListInterface.js';
+import type { EmitContainsQualifiedCardinalityArgumentListInterface } from '../../interfaces/EmitContainsQualifiedCardinalityArgumentListInterface.js';
 import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { OWL_CARDINALITY_PREDICATE_IRIS } from '../../constants/ONTOLOGY_PREDICATES.js';
-import { XSD_IRI_PREFIX } from '../../constants/STANDARD_PREFIXES.js';
+import { XSD_IRI_PREFIX } from '../../constants/XSD_IRI_PREFIX.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { QuadEmit } from './QuadEmit.js';
 import { PropertyProjection } from './PropertyProjection.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
-import type { RelationIndexType } from '../../types/RelationIndexType.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
 import { VocabProjection } from './VocabProjection.js';
 
 // ---------------------------------------------------------------------------
@@ -46,8 +46,8 @@ import { VocabProjection } from './VocabProjection.js';
 class PropertyShapeEmit {
   static emitContainsPropertyShape(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, issuer, quads
@@ -95,7 +95,7 @@ class PropertyShapeEmit {
     quads.push(QuadFactory.quad(subject, SH.property, QuadFactory.bnode(psBnode), { curie }));
   }
 
-  static emitContainsQualifiedCardinality(argumentList: EmitContainsQualifiedCardinalityArgumentListType): void {
+  static emitContainsQualifiedCardinality(argumentList: EmitContainsQualifiedCardinalityArgumentListInterface): void {
     const {
       curie, entry, psBnode, quads
     } = argumentList;
@@ -128,7 +128,7 @@ class PropertyShapeEmit {
   }
 
   /** Emit a numeric count constraint (minCount or maxCount) if the relation list is non-empty. */
-  static emitCountConstraint(argumentList: EmitCountConstraintArgumentListType): void {
+  static emitCountConstraint(argumentList: EmitCountConstraintArgumentListInterface): void {
     const {
       bnodeId, options, predicate, quads, rels
     } = argumentList;
@@ -165,7 +165,7 @@ class PropertyShapeEmit {
     return psBnode;
   }
 
-  static emitPropertyShape(argumentList: EmitPropertyShapeArgumentListType): void {
+  static emitPropertyShape(argumentList: EmitPropertyShapeArgumentListInterface): void {
     const {
       bnodeId, classId, context, entry, overridePathClassId, subject
     } = argumentList;
@@ -229,7 +229,7 @@ class PropertyShapeEmit {
     QuadEmit.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, options);
   }
 
-  static emitPropertyShapeTypeConstraints(argumentList: EmitPropertyShapeConstraintsArgumentListType): void {
+  static emitPropertyShapeTypeConstraints(argumentList: EmitPropertyShapeConstraintsArgumentListInterface): void {
     const {
       bnodeId, entry, options, quads
     } = argumentList;
@@ -270,7 +270,7 @@ class PropertyShapeEmit {
     });
   }
 
-  static emitPropertyShapeValueConstraints(argumentList: EmitPropertyShapeConstraintsArgumentListType): void {
+  static emitPropertyShapeValueConstraints(argumentList: EmitPropertyShapeConstraintsArgumentListInterface): void {
     const {
       bnodeId, entry, options, quads
     } = argumentList;
@@ -314,7 +314,7 @@ class PropertyShapeEmit {
   }
 
   /** Emit the sh:class or sh:node range constraint based on cardinality and datatype presence. */
-  static emitRangeConstraint(argumentList: EmitRangeConstraintArgumentListType): void {
+  static emitRangeConstraint(argumentList: EmitRangeConstraintArgumentListInterface): void {
     const {
       bnodeId, datatypeRels, options, quads, rangeRels
     } = argumentList;
@@ -336,13 +336,13 @@ class PropertyShapeEmit {
 
 class ShaclVocabProjection extends VocabProjection {
   private readonly graph: SchemaGraphInterface;
-  private readonly index: Map<string, RelationIndexType>;
-  private readonly predicateResolver: PredicateResolverFunctionType | undefined;
+  private readonly index: Map<string, RelationIndexInterface>;
+  private readonly predicateResolver: PredicateResolverInterface | undefined;
 
   constructor(
-    index: Map<string, RelationIndexType>,
+    index: Map<string, RelationIndexInterface>,
     graph: SchemaGraphInterface,
-    predicateResolver: PredicateResolverFunctionType | undefined
+    predicateResolver: PredicateResolverInterface | undefined
   ) {
     super();
     this.graph = graph;
@@ -459,7 +459,7 @@ class ShaclVocabProjection extends VocabProjection {
       }
 
       const psBnode = QuadFactory.nextBnode(issuer);
-      const depContext: ProjectionEmitContextType = {
+      const depContext: ProjectionEmitContextInterface = {
         curie,
         'graph': this.graph,
         'index': this.index,
@@ -568,8 +568,8 @@ class ShaclVocabProjection extends VocabProjection {
  */
 export class ShaclProjection {
   /** Build the property-parent index: maps each parent subject IRI to its property subject IRIs. */
-  private static buildPropertyIndex(index: Map<string, RelationIndexType>): Map<string, string[]> {
-    const propertyIndex = new Map<string, string[]>();
+  private static buildPropertyIndex(index: Map<string, RelationIndexInterface>): Record<string, string[]> {
+    const propertyIndex: Record<string, string[]> = {};
 
     for (const [subject] of index) {
       if (subject.startsWith('_:') || !SchemaIri.isPropertySubject(subject)) {
@@ -587,16 +587,16 @@ export class ShaclProjection {
       }
 
       const parentId = SchemaIri.structuralParent(subject);
-      const list = propertyIndex.get(parentId) ?? [];
+      const list = propertyIndex[parentId] ?? [];
 
       list.push(subject);
-      propertyIndex.set(parentId, list);
+      propertyIndex[parentId] = list;
     }
 
     return propertyIndex;
   }
 
-  private static emitNodeShape(argumentList: EmitNodeShapeArgumentListType): void {
+  private static emitNodeShape(argumentList: EmitNodeShapeArgumentListInterface): void {
     const {
       context, entry, propertyIndex, shaclVocab, subject
     } = argumentList;
@@ -621,7 +621,7 @@ export class ShaclProjection {
     ShaclProjection.emitNodeShapeEquivalences(subject, entry, context);
   }
 
-  private static emitNodeShapeComposition(argumentList: EmitNodeShapeCompositionArgumentListType): void {
+  private static emitNodeShapeComposition(argumentList: EmitNodeShapeCompositionArgumentListInterface): void {
     const {
       context, entry, shaclVocab, subject
     } = argumentList;
@@ -680,8 +680,8 @@ export class ShaclProjection {
 
   private static emitNodeShapeEquivalences(
     subject: string,
-    entry: RelationIndexType,
-    context: ProjectionEmitContextType
+    entry: RelationIndexInterface,
+    context: ProjectionEmitContextInterface
   ): void {
     const {
       curie, index, issuer, quads
@@ -689,7 +689,7 @@ export class ShaclProjection {
     const equivRels = entry.byPredicate.get(OWL.equivalentClass) ?? [];
 
     if (equivRels.length > 0) {
-      const orItems = equivRels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.iri> => {
+      const orItems = equivRels.map((rel: SchemaGraphRelationInterface): ReturnType<typeof QuadFactory.iri> => {
         const result = ShaclProjection.relationToEquivIri(rel, index, curie);
 
         return result;
@@ -726,7 +726,7 @@ export class ShaclProjection {
     const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
 
     if (oneOfRels.length > 0) {
-      const values = oneOfRels.map((rel: SchemaGraphRelationType): ReturnType<typeof QuadFactory.literal> => {
+      const values = oneOfRels.map((rel: SchemaGraphRelationInterface): ReturnType<typeof QuadFactory.literal> => {
         const result = ShaclProjection.relationToOneOfLiteral(rel, curie);
 
         return result;
@@ -736,7 +736,7 @@ export class ShaclProjection {
     }
   }
 
-  private static emitNodeShapeMetadata(subject: string, entry: RelationIndexType, context: ProjectionEmitContextType): void {
+  private static emitNodeShapeMetadata(subject: string, entry: RelationIndexInterface, context: ProjectionEmitContextInterface): void {
     const {
       curie, quads
     } = context;
@@ -756,14 +756,14 @@ export class ShaclProjection {
     QuadEmit.emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, { curie });
   }
 
-  private static emitNodeShapeProperties(argumentList: EmitNodeShapePropertiesArgumentListType): void {
+  private static emitNodeShapeProperties(argumentList: EmitNodeShapePropertiesArgumentListInterface): void {
     const {
       context, entry, propertyIndex, subject
     } = argumentList;
     const {
       curie, index, issuer, quads
     } = context;
-    const propSubjects = propertyIndex.get(subject) ?? [];
+    const propSubjects = propertyIndex[subject] ?? [];
 
     for (const propSubject of propSubjects) {
       if (SchemaIri.fragmentContains(propSubject, '/dependentSchemas/')) {
@@ -814,7 +814,7 @@ export class ShaclProjection {
     curie: CurieInterface | undefined,
     issuer: IdentifierIssuerInterface | undefined,
     graph: SchemaGraphInterface,
-    predicateResolver: PredicateResolverFunctionType | undefined
+    predicateResolver: PredicateResolverInterface | undefined
   ): string | undefined {
     // owl:someValuesFrom restrictions are handled in emitContainsPropertyShape — skip here.
     if (constraint === OWL.someValuesFrom) {
@@ -900,7 +900,7 @@ export class ShaclProjection {
 
   public static graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined;
     'issuer'?: IdentifierIssuerInterface | undefined;
-    'predicateResolver'?: PredicateResolverFunctionType | undefined }): QuadInterface[] {
+    'predicateResolver'?: PredicateResolverInterface | undefined }): QuadInterface[] {
     const { curie } = options ?? {};
     const { predicateResolver } = options ?? {};
     const issuer = options?.issuer ?? new IdentifierIssuer();
@@ -910,7 +910,7 @@ export class ShaclProjection {
     const propertyIndex = ShaclProjection.buildPropertyIndex(index);
 
     const shaclVocab = new ShaclVocabProjection(index, graph, predicateResolver);
-    const context: ProjectionEmitContextType = {
+    const context: ProjectionEmitContextInterface = {
       curie,
       graph,
       index,
@@ -943,7 +943,7 @@ export class ShaclProjection {
     return quads;
   }
 
-  private static hasSerializablePredicate(entry: RelationIndexType): boolean {
+  private static hasSerializablePredicate(entry: RelationIndexInterface): boolean {
     return entry.byPredicate.has(RDFS.subClassOf)
       || entry.byPredicate.has(OWL.equivalentClass)
       || entry.byPredicate.has(OWL.complementOf)
@@ -954,7 +954,7 @@ export class ShaclProjection {
       || entry.byPredicate.has(JT.dependentRequired);
   }
 
-  private static hasSerializableStructure(entry: RelationIndexType): boolean {
+  private static hasSerializableStructure(entry: RelationIndexInterface): boolean {
     for (const rel of entry.all) {
       if (rel.structure?.kind === 'conditional') {
         return true;
@@ -989,8 +989,8 @@ export class ShaclProjection {
 
   private static isSerializationCandidate(
     subject: string,
-    entry: RelationIndexType,
-    propertyIndex: Map<string, string[]>
+    entry: RelationIndexInterface,
+    propertyIndex: Record<string, string[]>
   ): boolean {
     if (SchemaIri.isPropertySubject(subject)) {
       return false;
@@ -1006,7 +1006,7 @@ export class ShaclProjection {
       return true;
     }
 
-    const props = propertyIndex.get(subject);
+    const props = propertyIndex[subject];
 
     if (props !== undefined && props.length > 0) {
       return true;
@@ -1020,8 +1020,8 @@ export class ShaclProjection {
   }
 
   private static relationToEquivIri(
-    rel: SchemaGraphRelationType,
-    index: Map<string, RelationIndexType>,
+    rel: SchemaGraphRelationInterface,
+    index: Map<string, RelationIndexInterface>,
     curie: CurieInterface | undefined
   ): ReturnType<typeof QuadFactory.iri> {
     const targetId = ShaclProjection.resolveTargetReference(ProjectionIndex.relationTargetId(rel), index);
@@ -1030,7 +1030,7 @@ export class ShaclProjection {
   }
 
   private static relationToOneOfLiteral(
-    rel: SchemaGraphRelationType,
+    rel: SchemaGraphRelationInterface,
     curie: CurieInterface | undefined
   ): ReturnType<typeof QuadFactory.literal> {
     const result = QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
@@ -1038,7 +1038,7 @@ export class ShaclProjection {
     return result;
   }
 
-  private static resolveTargetReference(targetNodeId: string, index: Map<string, RelationIndexType>): string {
+  private static resolveTargetReference(targetNodeId: string, index: Map<string, RelationIndexInterface>): string {
     const targetEntry = index.get(targetNodeId);
 
     if (targetEntry === undefined) {

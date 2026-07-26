@@ -24,7 +24,7 @@ import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
-import type { OwlImportContextType } from '../../src/types/OwlImport.js';
+import type { OwlImportContextInterface } from '../../src/interfaces/OwlImportContextInterface.js';
 
 // ---------------------------------------------------------------------------
 // OWL full IRI constants (JsonLdToQuads expands to full IRIs)
@@ -45,7 +45,7 @@ const XSD_STRING = 'http://www.w3.org/2001/XMLSchema#string';
 
 const curie = new Curie(STANDARD_PREFIXES);
 
-function makeCtx(classIris: string[] = [], quads: QuadInterface[] = []): OwlImportContextType & {
+function makeCtx(classIris: string[] = [], quads: QuadInterface[] = []): OwlImportContextInterface & {
   'unsupportedLog': Array<{ 'axiomIri': string;
     'subjectIri': null | string }>;
 } {

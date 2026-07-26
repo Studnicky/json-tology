@@ -16,28 +16,26 @@
  * be passed directly without a conversion bridge.
  */
 
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
-import type { SubjectGroupType } from '../../types/SubjectGroupType.js';
-import type { LiftOptionsType } from '../../types/LiftOptionsType.js';
-import type { ReferenceTargetType } from '../../types/ReferenceTargetType.js';
-import type { TripleTermIndexType } from '../../types/TripleTermIndexType.js';
-import type { PredicateIndexType } from '../../types/PredicateIndexType.js';
-import type { LiftedObjectType } from '../../types/LiftedObjectType.js';
-import type { SubjectKindType } from '../../types/SubjectKindType.js';
-import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
-import type { ResolvedTypeNodeType } from '../../types/ResolvedTypeNodeType.js';
-import type { OptionalLiftedObjectType } from '../../types/OptionalLiftedObjectType.js';
-import type { FindPropertyQuadsArgumentListType } from '../../types/FindPropertyQuadsArgsType.js';
-import type { LiftContextType } from '../../types/LiftContextType.js';
-import type { LiftSubjectArgumentListType } from '../../types/LiftSubjectArgumentListType.js';
-import type { LiftSingleValueArgumentListType } from '../../types/LiftSingleValueArgumentListType.js';
-import type { LiftAnnotatedEdgeArgumentListType } from '../../types/LiftAnnotatedEdgeArgumentListType.js';
-import type { LiftPropertyValueArgumentListType } from '../../types/LiftPropertyValueArgumentListType.js';
-import type { LiftMatchingQuadsArgumentListType } from '../../types/LiftMatchingQuadsArgumentListType.js';
-import type { LiftImplArgumentListType } from '../../types/LiftImplArgumentListType.js';
+import type { SubjectGroupInterface } from '../../interfaces/SubjectGroupInterface.js';
+import type { LiftOptionsInterface } from '../../interfaces/LiftOptionsInterface.js';
+import type { ReferenceTargetInterface } from '../../interfaces/ReferenceTargetInterface.js';
+import type { TripleTermIndexInterface } from '../../interfaces/TripleTermIndexInterface.js';
+import type { PredicateIndexInterface } from '../../interfaces/PredicateIndexInterface.js';
+import type { LiftedObjectEntity } from '../../entities/LiftedObjectEntity.js';
+import type { SubjectKindEntity } from '../../entities/SubjectKindEntity.js';
+import type { EffectivePropertyMapInterface } from '../../interfaces/EffectivePropertyMapInterface.js';
+import type { FindPropertyQuadsArgumentListInterface } from '../../interfaces/FindPropertyQuadsArgumentListInterface.js';
+import type { LiftContextInterface } from '../../interfaces/LiftContextInterface.js';
+import type { LiftSubjectArgumentListInterface } from '../../interfaces/LiftSubjectArgumentListInterface.js';
+import type { LiftSingleValueArgumentListInterface } from '../../interfaces/LiftSingleValueArgumentListInterface.js';
+import type { LiftAnnotatedEdgeArgumentListInterface } from '../../interfaces/LiftAnnotatedEdgeArgumentListInterface.js';
+import type { LiftPropertyValueArgumentListInterface } from '../../interfaces/LiftPropertyValueArgumentListInterface.js';
+import type { LiftMatchingQuadsArgumentListInterface } from '../../interfaces/LiftMatchingQuadsArgumentListInterface.js';
+import type { LiftImplArgumentListInterface } from '../../interfaces/LiftImplArgumentListInterface.js';
 import { EffectiveProperties } from '../graph/EffectiveProperties.js';
 
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
@@ -86,16 +84,16 @@ export class Lift {
   // (especially for the same target class inside a large quad stream) skip
   // the recursive graph walk on all but the first call.
   //
-  // The WeakMap key is the SchemaGraphNodeType (object reference), so
+  // The WeakMap key is the SchemaGraphNodeInterface (object reference), so
   // the cache is automatically GC'd when the node is no longer reachable.
   // ---------------------------------------------------------------------------
   private static readonly effectivePropertiesCache = new WeakMap<
-    SchemaGraphNodeType,
-    EffectivePropertyMapType
+    SchemaGraphNodeInterface,
+    EffectivePropertyMapInterface
   >();
 
-  private static buildPredicateIndex(subjectQuads: QuadInterface[]): PredicateIndexType {
-    const index: PredicateIndexType = new Map();
+  private static buildPredicateIndex(subjectQuads: QuadInterface[]): PredicateIndexInterface {
+    const index: PredicateIndexInterface = new Map();
 
     for (const quad of subjectQuads) {
       const predicateValue = quad.predicate.value;
@@ -122,9 +120,9 @@ export class Lift {
    */
   private static collectEffectiveLiftProperties(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     registry: SchemaRegistryInterface
-  ): EffectivePropertyMapType {
+  ): EffectivePropertyMapInterface {
     const result = EffectiveProperties.collectMemo(
       Lift.effectivePropertiesCache,
       graph,
@@ -147,7 +145,7 @@ export class Lift {
    * Pass 2: fragment match — any predicate whose fragment equals `propName`
    *         (legacy `classId#propName` safety net; no-ops for flat IRIs).
    */
-  private static findPropertyQuads(findPropertyQuadsArgumentList: FindPropertyQuadsArgumentListType): QuadInterface[] {
+  private static findPropertyQuads(findPropertyQuadsArgumentList: FindPropertyQuadsArgumentListInterface): QuadInterface[] {
     const {
       index, predicateIri, propName, subjectQuads
     } = findPropertyQuadsArgumentList;
@@ -192,8 +190,8 @@ export class Lift {
     });
   }
 
-  private static groupBySubject(quads: QuadInterface[]): SubjectGroupType {
-    const groups: SubjectGroupType = new Map();
+  private static groupBySubject(quads: QuadInterface[]): SubjectGroupInterface {
+    const groups: SubjectGroupInterface = new Map();
 
     for (const quad of quads) {
       // Triple-term-subject quads (annotation quads) are grouped separately by
@@ -245,8 +243,8 @@ export class Lift {
    * quoted inner triple. Quads with non-Quad subjects are ignored here — they are
    * handled by the ordinary subject grouping.
    */
-  private static indexTripleTermQuads(quads: QuadInterface[]): TripleTermIndexType {
-    const index: TripleTermIndexType = new Map();
+  private static indexTripleTermQuads(quads: QuadInterface[]): TripleTermIndexInterface {
+    const index: TripleTermIndexInterface = new Map();
 
     for (const quad of quads) {
       const subject = quad.subject;
@@ -272,7 +270,7 @@ export class Lift {
     schemaId: string,
     quads: QuadInterface[],
     registry: SchemaRegistryInterface,
-    options?: LiftOptionsType
+    options?: LiftOptionsInterface
   ): unknown[] {
     const result = Lift.liftInstancesImpl(schemaId, quads, {
       'curie': options?.curie,
@@ -294,7 +292,7 @@ export class Lift {
    */
   private static isStructurallyCompatibleWithProps(
     candidateId: string,
-    targetProps: Map<string, ReferenceTargetType>,
+    targetProps: Map<string, ReferenceTargetInterface>,
     registry: SchemaRegistryInterface
   ): boolean {
     const candidateGraph = registry.graph(candidateId);
@@ -325,7 +323,7 @@ export class Lift {
    * quads (triple-term subjects) are grouped in `tripleTermIndex` by the quoted
    * inner triple. Returns undefined when no base triple is present.
    */
-  private static liftAnnotatedEdge(argumentList: LiftAnnotatedEdgeArgumentListType): OptionalLiftedObjectType {
+  private static liftAnnotatedEdge(argumentList: LiftAnnotatedEdgeArgumentListInterface): LiftedObjectEntity.Type | undefined {
     const {
       classId, curie, edge, predicateResolver, subjectIri, subjectQuads, tripleTermIndex
     } = argumentList;
@@ -418,7 +416,7 @@ export class Lift {
   private static liftInstancesImpl(
     schemaId: string,
     quads: QuadInterface[],
-    argumentList: LiftImplArgumentListType
+    argumentList: LiftImplArgumentListInterface
   ): unknown[] {
     const {
       curie, predicateResolver, registry
@@ -446,7 +444,7 @@ export class Lift {
       return results;
     }
 
-    const context: LiftContextType = {
+    const context: LiftContextInterface = {
       'allGroups': groups,
       curie,
       predicateResolver,
@@ -490,7 +488,7 @@ export class Lift {
     return results;
   }
 
-  private static liftMatchingQuads(matchingQuadsArgumentList: LiftMatchingQuadsArgumentListType): unknown {
+  private static liftMatchingQuads(matchingQuadsArgumentList: LiftMatchingQuadsArgumentListInterface): unknown {
     const {
       context, isArray, matching, nestedNode, propGraph, resolvedNode
     } = matchingQuadsArgumentList;
@@ -528,7 +526,7 @@ export class Lift {
       });
   }
 
-  private static liftPropertyValue(propertyValueArgumentList: LiftPropertyValueArgumentListType): unknown {
+  private static liftPropertyValue(propertyValueArgumentList: LiftPropertyValueArgumentListInterface): unknown {
     const {
       classId, context, index, propEntry, propName, subjectIri, subjectQuads
     } = propertyValueArgumentList;
@@ -586,7 +584,7 @@ export class Lift {
     });
   }
 
-  private static liftSingleValue(argumentList: LiftSingleValueArgumentListType): unknown {
+  private static liftSingleValue(argumentList: LiftSingleValueArgumentListInterface): unknown {
     const {
       context, object, parentGraph, targetNode
     } = argumentList;
@@ -634,11 +632,11 @@ export class Lift {
     return object.value;
   }
 
-  private static liftSubject(argumentList: LiftSubjectArgumentListType): LiftedObjectType {
+  private static liftSubject(argumentList: LiftSubjectArgumentListInterface): LiftedObjectEntity.Type {
     const {
       classId, context, graph, node, subjectQuads
     } = argumentList;
-    const object: LiftedObjectType = {};
+    const object: LiftedObjectEntity.Type = {};
     const firstSubjectQuad = subjectQuads[0];
     const subjectIri = firstSubjectQuad === undefined ? classId : firstSubjectQuad.subject.value;
     const effectiveProperties = Lift.collectEffectiveLiftProperties(graph, node, context.registry);
@@ -690,8 +688,8 @@ export class Lift {
    */
   private static resolveLocalReference(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType
-  ): SchemaGraphNodeType {
+    node: SchemaGraphNodeInterface
+  ): SchemaGraphNodeInterface {
     const sem = graph.semantics(node);
 
     if (sem.ref === undefined) {
@@ -729,7 +727,7 @@ export class Lift {
   private static resolveNodeForType(
     typeIri: string,
     registry: SchemaRegistryInterface
-  ): ResolvedTypeNodeType {
+  ): ReferenceTargetInterface | undefined {
     const directGraph = registry.graph(typeIri);
 
     if (directGraph) {
@@ -774,7 +772,7 @@ export class Lift {
     return result;
   }
 
-  private static typeOf(quads: QuadInterface[]): SubjectKindType {
+  private static typeOf(quads: QuadInterface[]): SubjectKindEntity.Type | undefined {
     for (const quad of quads) {
       const predicateValue = quad.predicate.value;
 

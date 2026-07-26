@@ -37,20 +37,15 @@
  */
 
 import { JsonTology } from '../JsonTology.js';
-import type {
-  GenerateFromTboxOptionsType,
-  GenerateRegistryDirectoryOptionsType,
-  GenerateRegistryDirectoryResultType
-} from '../types/OwlGen.js';
-import type {
-  OwlCodegenOptionsType,
-  OwlRegistryDirOptionsType
-} from '../types/OwlCodegen.js';
+import type { GenerateFromTboxOptionsInterface } from '../interfaces/GenerateFromTboxOptionsInterface.js';
+import type { GenerateRegistryDirectoryOptionsInterface } from '../interfaces/GenerateRegistryDirectoryOptionsInterface.js';
+import type { GenerateRegistryDirectoryResultEntity } from '../entities/GenerateRegistryDirectoryResultEntity.js';
+import type { OwlCodegenOptionsInterface } from '../interfaces/OwlCodegenOptionsInterface.js';
+import type { OwlRegistryDirOptionsInterface } from '../interfaces/OwlRegistryDirOptionsInterface.js';
 import { OwlCodegen } from '../modules/codegen/OwlCodegen.js';
 
-export type {
-  OwlCodegenOptionsType, OwlRegistryDirOptionsType
-} from '../types/OwlCodegen.js';
+export type { GenerateRegistryDirectoryEntityFileEntity } from '../entities/GenerateRegistryDirectoryEntityFileEntity.js';
+export type { GenerateRegistryDirectoryResultEntity } from '../entities/GenerateRegistryDirectoryResultEntity.js';
 
 class OwlGen {
   /**
@@ -66,7 +61,7 @@ class OwlGen {
    * const source = generateFromTbox({ input: myJsonLd, name: 'acl' });
    * fs.writeFileSync('src/acl-registry.ts', source);
    */
-  static generateFromTbox(options: GenerateFromTboxOptionsType): string {
+  static generateFromTbox(options: GenerateFromTboxOptionsInterface): string {
     const {
       baseIri,
       header,
@@ -79,7 +74,7 @@ class OwlGen {
 
     const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
 
-    const codegenOptions: OwlCodegenOptionsType = {
+    const codegenOptions: OwlCodegenOptionsInterface = {
       ...(!(baseIri === undefined) && { 'baseIri': baseIri }),
       ...(!(header === undefined) && { 'header': header }),
       ...(!(name === undefined) && { 'registryConstName': name }),
@@ -112,7 +107,7 @@ class OwlGen {
    * }
    * fs.writeFileSync(join(outDir, 'index.ts'), result.indexSource, 'utf8');
    */
-  static generateRegistryDirectory(options: GenerateRegistryDirectoryOptionsType): GenerateRegistryDirectoryResultType {
+  static generateRegistryDirectory(options: GenerateRegistryDirectoryOptionsInterface): GenerateRegistryDirectoryResultEntity.Type {
     const {
       baseIri,
       header,
@@ -125,7 +120,7 @@ class OwlGen {
 
     const defaultSourceLabel = typeof input === 'string' ? input.slice(0, 80) : '(object/quads)';
 
-    const codegenOptions: OwlRegistryDirOptionsType = {
+    const codegenOptions: OwlRegistryDirOptionsInterface = {
       ...(!(baseIri === undefined) && { 'baseIri': baseIri }),
       ...(!(header === undefined) && { 'header': header }),
       ...(!(name === undefined) && { 'registryConstName': name }),
@@ -146,10 +141,8 @@ class OwlGen {
 export const generateFromTbox = OwlGen.generateFromTbox;
 export const generateRegistryDirectory = OwlGen.generateRegistryDirectory;
 
-export type {
-  GenerateFromTboxOptionsType,
-  GenerateRegistryDirectoryEntityFileType,
-  GenerateRegistryDirectoryOptionsType,
-  GenerateRegistryDirectoryResultType,
-  WrittenEntityFileType
-} from '../types/OwlGen.js';
+export type { WrittenEntityFileEntity } from '../entities/WrittenEntityFileEntity.js';
+export type { GenerateFromTboxOptionsInterface } from '../interfaces/GenerateFromTboxOptionsInterface.js';
+export type { GenerateRegistryDirectoryOptionsInterface } from '../interfaces/GenerateRegistryDirectoryOptionsInterface.js';
+export type { OwlCodegenOptionsInterface } from '../interfaces/OwlCodegenOptionsInterface.js';
+export type { OwlRegistryDirOptionsInterface } from '../interfaces/OwlRegistryDirOptionsInterface.js';

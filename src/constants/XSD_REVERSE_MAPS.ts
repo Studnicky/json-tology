@@ -14,15 +14,17 @@
  *   - src/modules/ontology/OwlImporter.ts                 — SUPPORTED_DATATYPES
  */
 
-import type { XsdJsonSchemaPrimitiveType } from '../types/XsdJsonSchemaPrimitiveType.js';
+import type { XsdJsonSchemaPrimitiveEntity } from '../entities/XsdJsonSchemaPrimitiveEntity.js';
 import {
   OWL, XSD
 } from './IRI.js';
 import { STANDARD_PREFIXES } from './STANDARD_PREFIXES.js';
-import type { XsdEntryType } from '../types/XsdEntryType.js';
+import type { XsdEntryEntity } from '../entities/XsdEntryEntity.js';
 
-const RDF_NS = STANDARD_PREFIXES.rdf;
-const XSD_NS = STANDARD_PREFIXES.xsd;
+const {
+  'rdf': RDF_NS,
+  'xsd': XSD_NS
+} = STANDARD_PREFIXES;
 
 // ---------------------------------------------------------------------------
 // Canonical entry table — one row per logical XSD type
@@ -35,7 +37,7 @@ const XSD_NS = STANDARD_PREFIXES.xsd;
 //   supported — whether this type appears in the OWL-import supported set
 // ---------------------------------------------------------------------------
 
-const ENTRIES: readonly XsdEntryType[] = [
+const ENTRIES: readonly XsdEntryEntity.Type[] = [
   // --- string-family with format ---
   {
     'full': XSD.anyURI,
@@ -268,7 +270,7 @@ const ENTRIES: readonly XsdEntryType[] = [
  *
  * @remarks
  * Both the prefixed (`xsd:string`) and full-IRI forms map to the same
- * `XsdJsonSchemaPrimitiveType` so callers never need to normalise before lookup.
+ * `XsdJsonSchemaPrimitiveEntity.Type` so callers never need to normalise before lookup.
  *
  * @example
  * ```ts
@@ -281,17 +283,17 @@ const ENTRIES: readonly XsdEntryType[] = [
  * @group XsdReverseMaps
  * @defaultValue Derived from all `ENTRIES` (prefixed + full IRI forms)
  */
-export const XSD_TO_JSON_SCHEMA: ReadonlyMap<string, XsdJsonSchemaPrimitiveType>
-  = new Map(ENTRIES.flatMap((entry: XsdEntryType): Array<[string, XsdJsonSchemaPrimitiveType]> => {
+export const XSD_TO_JSON_SCHEMA: ReadonlyMap<string, XsdJsonSchemaPrimitiveEntity.Type>
+  = new Map(ENTRIES.flatMap((entry: XsdEntryEntity.Type): Array<[string, XsdJsonSchemaPrimitiveEntity.Type]> => {
     return [
       [
         entry.prefixed,
         entry.primitive
-      ] as [string, XsdJsonSchemaPrimitiveType],
+      ] as [string, XsdJsonSchemaPrimitiveEntity.Type],
       [
         entry.full,
         entry.primitive
-      ] as [string, XsdJsonSchemaPrimitiveType]
+      ] as [string, XsdJsonSchemaPrimitiveEntity.Type]
     ];
   }));
 
@@ -316,7 +318,7 @@ export const XSD_TO_JSON_SCHEMA: ReadonlyMap<string, XsdJsonSchemaPrimitiveType>
  * @group XsdReverseMaps
  * @defaultValue Derived from all `ENTRIES` (prefixed + full IRI forms)
  */
-export const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'boolean' | 'integer' | 'number' | 'string'> = new Map(ENTRIES.flatMap((entry: XsdEntryType): Array<[string, 'boolean' | 'integer' | 'number' | 'string']> => {
+export const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'boolean' | 'integer' | 'number' | 'string'> = new Map(ENTRIES.flatMap((entry: XsdEntryEntity.Type): Array<[string, 'boolean' | 'integer' | 'number' | 'string']> => {
   return [
     [
       entry.prefixed,
@@ -360,12 +362,12 @@ export const SUPPORTED_XSD_DATATYPES: ReadonlySet<string> = new Set([
   'owl:Nothing',
   // XSD types marked supported in ENTRIES (both prefixed and full forms)
   ...ENTRIES
-    .filter((entry: XsdEntryType): boolean => {
+    .filter((entry: XsdEntryEntity.Type): boolean => {
       const result = entry.supported;
 
       return result;
     })
-    .flatMap((entry: XsdEntryType): string[] => {
+    .flatMap((entry: XsdEntryEntity.Type): string[] => {
       return [
         entry.prefixed,
         entry.full

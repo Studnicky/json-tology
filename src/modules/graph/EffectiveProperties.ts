@@ -1,6 +1,6 @@
-import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
+import type { EffectivePropertyMapInterface } from '../../interfaces/EffectivePropertyMapInterface.js';
 
 /**
  * Collect the effective property set for a schema graph node.
@@ -39,7 +39,7 @@ import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapT
  *
  * @category Graph
  * @since 0.22.0
- * @see {@link EffectivePropertyMapType}
+ * @see {@link EffectivePropertyMapInterface}
  * @group Graph
  */
 export class EffectiveProperties {
@@ -57,11 +57,11 @@ export class EffectiveProperties {
    */
   public static collect(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     resolveGraph?: (referenceId: string) => SchemaGraphInterface | undefined
-  ): EffectivePropertyMapType {
-    const collected: EffectivePropertyMapType = new Map();
-    const visited = new Set<SchemaGraphNodeType>();
+  ): EffectivePropertyMapInterface {
+    const collected: EffectivePropertyMapInterface = new Map();
+    const visited = new Set<SchemaGraphNodeInterface>();
 
     EffectiveProperties.walk(graph, node, resolveGraph, collected, visited);
 
@@ -81,11 +81,11 @@ export class EffectiveProperties {
    * @returns Memoized effective property map.
    */
   public static collectMemo(
-    cache: WeakMap<SchemaGraphNodeType, EffectivePropertyMapType>,
+    cache: WeakMap<SchemaGraphNodeInterface, EffectivePropertyMapInterface>,
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     resolveGraph?: (referenceId: string) => SchemaGraphInterface | undefined
-  ): EffectivePropertyMapType {
+  ): EffectivePropertyMapInterface {
     const cached = cache.get(node);
 
     if (cached !== undefined) {
@@ -104,10 +104,10 @@ export class EffectiveProperties {
    */
   private static walk(
     currentGraph: SchemaGraphInterface,
-    current: SchemaGraphNodeType,
+    current: SchemaGraphNodeInterface,
     resolveGraph: ((referenceId: string) => SchemaGraphInterface | undefined) | undefined,
-    collected: EffectivePropertyMapType,
-    visited: Set<SchemaGraphNodeType>
+    collected: EffectivePropertyMapInterface,
+    visited: Set<SchemaGraphNodeInterface>
   ): void {
     if (visited.has(current)) {
       return;

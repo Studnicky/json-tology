@@ -22,10 +22,8 @@ import {
 } from 'node:test';
 import { PropertyRestrictions } from '../../src/modules/ontology/importDispatch/PropertyRestrictions.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
-import type {
-  OwlImportContextType,
-  OwlImportFragmentType
-} from '../../src/types/OwlImport.js';
+import type { OwlImportContextInterface } from '../../src/interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../src/interfaces/OwlImportFragmentInterface.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Curie } from '../../src/modules/quads/Curie.js';
@@ -42,9 +40,9 @@ const PROP_IRI = `${CLASS_IRI}#items`;
 const RANGE_IRI = 'urn:example:Item';
 
 /**
- * Build a minimal OwlImportContextType from a SchemaGraph backed by the given quads.
+ * Build a minimal OwlImportContextInterface from a SchemaGraph backed by the given quads.
  */
-function makeCtx(quads: QuadInterface[]): OwlImportContextType {
+function makeCtx(quads: QuadInterface[]): OwlImportContextInterface {
   const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:example' });
   const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{
@@ -87,7 +85,7 @@ function makeCtx(quads: QuadInterface[]): OwlImportContextType {
  * Build quads + context for a schema that carries jt:restrictions via Compose.
  */
 function quadsForSchema(schema: Record<string, unknown>): {
-  'ctx': OwlImportContextType;
+  'ctx': OwlImportContextInterface;
   'quads': QuadInterface[];
 } {
   const graph = new SchemaGraph(schema);
@@ -102,7 +100,7 @@ function quadsForSchema(schema: Record<string, unknown>): {
 /**
  * Run importPropertyRestrictions against a schema and return the fragment.
  */
-function importFromSchema(schema: Record<string, unknown>): OwlImportFragmentType {
+function importFromSchema(schema: Record<string, unknown>): OwlImportFragmentInterface {
   const {
     ctx,
     quads
@@ -115,7 +113,7 @@ function importFromSchema(schema: Record<string, unknown>): OwlImportFragmentTyp
  * Get the properties delta for a class IRI from the fragment.
  */
 function getProps(
-  fragment: OwlImportFragmentType,
+  fragment: OwlImportFragmentInterface,
   classIri: string
 ): Record<string, unknown> {
   const delta = fragment.schemaDeltas.get(classIri);

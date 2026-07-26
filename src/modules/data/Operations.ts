@@ -6,7 +6,7 @@
  * by call sites; `Value` no longer wraps them.
  */
 
-import type { DiffOpType } from '../../types/Diff.js';
+import type { DiffOpEntity } from '../../entities/DiffOpEntity.js';
 import { DataType } from './DataType.js';
 
 export class Operations {
@@ -27,7 +27,7 @@ export class Operations {
    * @param operation - The diff operation containing `op`, `path`, and optionally `value`.
    * @returns The patched value.
    */
-  static patch(root: unknown, operation: DiffOpType): unknown {
+  static patch(root: unknown, operation: DiffOpEntity.Type): unknown {
     const path = operation.path === '/' ? '' : operation.path;
     const segments = path.split('/').filter(Boolean);
 

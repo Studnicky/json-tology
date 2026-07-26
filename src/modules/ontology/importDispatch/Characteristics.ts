@@ -20,11 +20,9 @@
  */
 
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType,
-  OwlImportFragmentType
-} from '../../../types/OwlImport.js';
-import type { RecordCharacteristicOptionsType } from '../../../types/RecordCharacteristicOptionsType.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
+import type { RecordCharacteristicOptionsInterface } from '../../../interfaces/RecordCharacteristicOptionsInterface.js';
 import {
   OWL, RDF
 } from '../../../constants/IRI.js';
@@ -110,7 +108,7 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
  *
  * @param _quads - All quads from the input graph (unused; graph is traversed via ctx).
  * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragmentType with characteristics populated.
+ * @returns OwlImportFragmentInterface with characteristics populated.
  *
  * @remarks
  * Implements OWL 2 §9.2.1–9.2.8. The seven characteristic class IRIs are
@@ -127,11 +125,11 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContextType
+ * @see OwlImportContextInterface
  * @group importDispatch
  */
 export class Characteristics {
-  public static dispatch(_quads: QuadInterface[], context: OwlImportContextType): OwlImportFragmentType {
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
     const fragment = Characteristics.emptyFragment();
     const seen = new Set<string>();
 
@@ -163,8 +161,8 @@ export class Characteristics {
     return fragment;
   }
 
-  /** Return an empty OwlImportFragmentType with all buckets initialised. */
-  private static emptyFragment(): OwlImportFragmentType {
+  /** Return an empty OwlImportFragmentInterface with all buckets initialised. */
+  private static emptyFragment(): OwlImportFragmentInterface {
     return {
       'characteristics': [],
       'differentFrom': [],
@@ -180,7 +178,7 @@ export class Characteristics {
    * Skips when the source IRI is not a known property subject (even after
    * curie compaction), reporting it as unsupported.
    */
-  private static recordCharacteristic(options: RecordCharacteristicOptionsType): void {
+  private static recordCharacteristic(options: RecordCharacteristicOptionsInterface): void {
     const {
       characteristicName,
       characteristicTarget,

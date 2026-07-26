@@ -6,15 +6,15 @@
  * and flatten() for structured consumption.
  */
 
-import type { ErrorJsonType } from '../types/ErrorJsonType.js';
-import type { BaseErrorOptionsType } from '../types/ErrorOptions.js';
-import type { ValidationErrorType } from '../types/Validation.js';
+import type { BaseErrorOptionsInterface } from '../interfaces/BaseErrorOptionsInterface.js';
+import type { ErrorJsonEntity } from '../entities/ErrorJsonEntity.js';
+import type { ValidationErrorEntity } from '../entities/ValidationErrorEntity.js';
 import { UNKNOWN_ERROR_CODE } from '../constants/ERROR_CODES.js';
 
 export class BaseError extends Error {
   private static readonly EMPTY_PARAMETERS: Record<string, unknown> = Object.freeze({});
 
-  private static errorToJson(error: Error): ErrorJsonType {
+  private static errorToJson(error: Error): ErrorJsonEntity.Type {
     if (error instanceof BaseError) {
       return {
         'code': error.code,
@@ -33,7 +33,7 @@ export class BaseError extends Error {
   /**
    * Format an array of validation errors into path-prefixed strings.
    */
-  static formatErrors(errors: readonly ValidationErrorType[]): string[] {
+  static formatErrors(errors: readonly ValidationErrorEntity.Type[]): string[] {
     const formatted = errors.map((error) => {
       const pathString = BaseError.formatPath(error);
 
@@ -46,7 +46,7 @@ export class BaseError extends Error {
   /**
    * Format a validation error as "path: message", using "root" when the path is empty.
    */
-  static formatPath(error: ValidationErrorType): string {
+  static formatPath(error: ValidationErrorEntity.Type): string {
     const result = `${error.path === '' ? 'root' : error.path}: ${error.message}`;
 
     return result;
@@ -64,7 +64,7 @@ export class BaseError extends Error {
     keyword: string,
     message: string,
     parameters?: Record<string, unknown>
-  ): ValidationErrorType {
+  ): ValidationErrorEntity.Type {
     return {
       keyword,
       message,
@@ -97,7 +97,7 @@ export class BaseError extends Error {
    * @param options - Options bag containing `options.code` (machine-readable error code),
    *   optional `options.retryable` flag, and optional `options.cause` for error chaining
    */
-  public constructor(message: string, options: BaseErrorOptionsType) {
+  public constructor(message: string, options: BaseErrorOptionsInterface) {
     super(message, options);
     this.code = options.code;
     this.retryable = options.retryable ?? false;
@@ -109,8 +109,8 @@ export class BaseError extends Error {
    * Walk the cause chain and return a flat array of error JSON objects,
    * root-first.
    */
-  public flatten(): ErrorJsonType[] {
-    const chain: ErrorJsonType[] = [BaseError.errorToJson(this)];
+  public flatten(): ErrorJsonEntity.Type[] {
+    const chain: ErrorJsonEntity.Type[] = [BaseError.errorToJson(this)];
     let cursor: Error | undefined = this.cause instanceof Error ? this.cause : undefined;
 
     while (cursor !== undefined) {
@@ -124,8 +124,8 @@ export class BaseError extends Error {
   /**
    * Serialize to a plain JSON-safe object, including the cause chain.
    */
-  public toJson(): ErrorJsonType {
-    const json: ErrorJsonType = {
+  public toJson(): ErrorJsonEntity.Type {
+    const json: ErrorJsonEntity.Type = {
       'code': this.code,
       'message': this.message,
       'retryable': this.retryable
