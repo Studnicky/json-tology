@@ -27,3 +27,11 @@ shape:
 - Fixed pre-existing drift in `publish.yml`: it had its own redundant
   `publish-gpr`/`release` jobs duplicating the already-standalone
   `publish-gpr.yml`/`release.yml` workflows — removed the duplicates.
+- Changelog entries are generated via `@changesets/changelog-github`, linking
+  each entry back to its PR/commit and crediting the contributor, matching
+  the sibling repo's changelog format.
+- Replaced the abandoned `license-checker` (unpatched since 2019, pinned to
+  a vulnerable transitive `glob`/`minimatch`/`brace-expansion` chain — three
+  high-severity advisories) with its actively maintained fork,
+  `license-checker-rseidelsohn`. Same CLI flags, same `--summary`/`--failOn`
+  behavior; `npm audit` now reports zero vulnerabilities.

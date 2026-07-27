@@ -30,7 +30,7 @@ jobs:
       - name: Check dependency licenses
         id: license-check
         run: |
-          npx license-checker \
+          npx license-checker-rseidelsohn \
             --failOn "GPL-2.0;GPL-3.0;AGPL-3.0;LGPL-2.1;LGPL-3.0;UNLICENSED" \
             --summary 2>&1 | tee license-report.txt
 

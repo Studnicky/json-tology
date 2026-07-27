@@ -25,6 +25,8 @@ jobs:
 
       - name: Consume changesets
         run: npx changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Stamp version SVGs
         run: npm run stamp-version
