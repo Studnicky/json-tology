@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.27.1
+
+### Patch Changes
+
+- [#200](https://github.com/Studnicky/json-tology/pull/200) [`7b45995`](https://github.com/Studnicky/json-tology/commit/7b45995978917e1c6d249ea6a0fa5044db720ab1) Thanks [@Studnicky](https://github.com/Studnicky)! - Adopted Changesets (`@changesets/cli`) in place of the hand-maintained
+  `CHANGELOG.md` `[Unreleased]` section — contributors now run
+  `npx changeset add` to describe a change, and version/changelog generation
+  happens automatically via `changeset version` (wired into a new
+  `release-version.yml` workflow that runs on `release/**` branch pushes).
+
+  Also ported several CI concepts from a sibling repo's more advanced pipeline,
+  adapted to this project's single-package, npm+GitHub-Packages-dual-publish
+  shape:
+
+  - A `detect-changes.yml` reusable workflow classifies PR/push diffs
+    (`src`/`docs`/`bench`/`deps`/`ci_config`) so `license-check.yml` and
+    `security.yml` can skip on doc-only diffs.
+  - Every GitHub Action reference across all workflows is now pinned to a
+    resolved commit SHA (with a version comment) instead of a floating major
+    tag.
+  - A `.github/actions/node-setup` composite action collapses the repeated
+    checkout + `setup-node` + `npm ci` sequence duplicated across ~10
+    workflow files.
+  - Added a `codeql.yml` SAST workflow (JavaScript/TypeScript), using a
+    `gh-api-probe` composite action to skip cleanly on repos without GitHub
+    Advanced Security enabled, instead of hard-failing.
+  - Fixed pre-existing drift in `publish.yml`: it had its own redundant
+    `publish-gpr`/`release` jobs duplicating the already-standalone
+    `publish-gpr.yml`/`release.yml` workflows — removed the duplicates.
+  - Changelog entries are generated via `@changesets/changelog-github`, linking
+    each entry back to its PR/commit and crediting the contributor, matching
+    the sibling repo's changelog format.
+  - Replaced the abandoned `license-checker` (unpatched since 2019, pinned to
+    a vulnerable transitive `glob`/`minimatch`/`brace-expansion` chain — three
+    high-severity advisories) with its actively maintained fork,
+    `license-checker-rseidelsohn`. Same CLI flags, same `--summary`/`--failOn`
+    behavior; `npm audit` now reports zero vulnerabilities.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
@@ -29,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `src/<name>/index.js`; the package `exports` map subpaths (`json-tology/value`,
     `json-tology/schema`, etc.) are unaffected.
   - `JsonSchemaObjectType` is now composed via `Omit<JsonSchemaDocumentObjectType,
-    Keys> & { retyped fields }` instead of duplicating the nested-schema field list,
+Keys> & { retyped fields }` instead of duplicating the nested-schema field list,
     satisfying `no-prefer-existing-type` while preserving full type accuracy.
   - `QuadInterface` re-declared as `interface QuadInterface extends Quad {}` instead
     of a type re-export, satisfying `no-export-alias`.
@@ -68,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Transform.create`'s `decode` accepts a partial return.** `decode` is now typed
   `(raw: TWire) => Partial<CanonicalShapeType<TSchema, TReferences>>` instead of the
   full canonical shape, matching runtime behavior: `instantiate(..., { enableDefaults:
-  true })` already runs `decode` before filling schema defaults and validating, so a
+true })` already runs `decode` before filling schema defaults and validating, so a
   normalize `decode` that only transforms a few wire fields no longer needs to
   duplicate every schema `default` or use a type assertion. `encode`'s parameter type
   is unchanged (it consumes the full, validated canonical value).
@@ -254,9 +292,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
- →
-  `'a' | 'b' | 'c'`, `^prefix` → `` `prefix${string}` ``. Complex or unanchored
-  patterns stay `string`, so the change is invisible to existing schemas.
+→
+`'a' | 'b' | 'c'`, `^prefix` → `` `prefix${string}` ``. Complex or unanchored
+patterns stay `string`, so the change is invisible to existing schemas.
+
 - **`propertyNames: { pattern }` key narrowing.** Object key types narrow to the
   corresponding template-literal type, matching the existing `patternProperties`
   behaviour. Non-anchored patterns keep the open key type.
@@ -523,7 +562,7 @@ change is a minor bump.
 - **`JsonTology.validateWithShacl(shapes, data)` — native SHACL validation
   engine.** Accepts the `OntologyBuilder` produced by `toShacl()` or raw SHACL
   shape quads and returns a `ShaclValidationReportInterface` (`{ conforms,
-  results }`). Each `ShaclValidationResultInterface` entry carries `focusNode`,
+results }`). Each `ShaclValidationResultInterface` entry carries `focusNode`,
   `resultPath`, `resultSeverity`, `sourceConstraintComponent`, `value`, and
   `resultMessage`. Covers `sh:minCount`/`maxCount`, `sh:datatype`, `sh:class`,
   `sh:node`, `sh:pattern`, `sh:minLength`/`maxLength`,
@@ -578,7 +617,7 @@ change is a minor bump.
   The single generic carries the registered schemas' raw shapes; output types are
   computed lazily per call as `ParseOutputType<TRefs[K], TRefs>` — identical
   precision to the former eager `TMap`, but O(1) to construct, so `declaration:
-  true` (`.d.ts` emit) no longer trips TS2589 on deep registries. Consumers who
+true` (`.d.ts` emit) no longer trips TS2589 on deep registries. Consumers who
   wrote `JsonTology<SomeMap>` explicitly drop to the single type parameter.
 - **An unresolved cross-schema `$ref` is a compile error, not a silent `unknown`.**
   A standalone `InferType<typeof Schema>` whose `$ref` targets a sibling that is
@@ -589,7 +628,7 @@ change is a minor bump.
   `is` / `materialize` / `validate` / `dump` / `dumpJson` / `fromQuads` /
   `subschemaAt` carry precise two-overload surfaces (registered `$id` or schema
   object), both threading `TRefs`; the loose `(schema: Record<string, unknown> &
-  {$id}) → unknown | boolean` overloads are removed. `materialize` gains a
+{$id}) → unknown | boolean` overloads are removed. `materialize` gains a
   string-`$id` form mirroring `instantiate`.
 - **Wire-direction methods return the brand-free InputType.** `dump` and `encode`
   return `LooseInputType<…>` (the wire shape), never `unknown`. `Transform.create`'s
@@ -929,7 +968,7 @@ surface identical to 0.15.0.
   folds the prior `retryable` positional into `options.retryable` (default
   `false`). `SchemaError(code, message, options?: SchemaErrorOptionsType)`
   folds `schemaId` into the bag. `GraphError(code, message, options?:
-  GraphErrorOptionsType)` folds `pointer` into the bag. `MaterializationError`,
+GraphErrorOptionsType)` folds `pointer` into the bag. `MaterializationError`,
   `InstantiationError`, `CoercionError`, and `OwlImportError` route their
   `cause` chains through the new `BaseError` shape. The `instanceof`
   semantics, `code` values, and `toJson()` / `flatten()` output are
@@ -973,13 +1012,13 @@ surface identical to 0.15.0.
     given subject, including blank-node subjects (restriction bnodes,
     negative-property-assertion bnodes, list-head bnodes). The quad-backed
     implementation builds a subject index lazily on first call.
-  `SchemaGraphRelationInterface` adds three optional fields populated by the
-  quad-backed graph: `termType: 'NamedNode' | 'BlankNode' | 'Literal'`,
-  `datatype` (XSD datatype IRI for Literal targets), and `language` (BCP47
-  language tag for langString literals). The forward-projection graph leaves
-  these fields undefined (its relation targets are always graph nodes or
-  IRIs); `SchemaGraph.collectList` returns `[]` because the projection graph
-  does not retain `rdf:List` chains.
+    `SchemaGraphRelationInterface` adds three optional fields populated by the
+    quad-backed graph: `termType: 'NamedNode' | 'BlankNode' | 'Literal'`,
+    `datatype` (XSD datatype IRI for Literal targets), and `language` (BCP47
+    language tag for langString literals). The forward-projection graph leaves
+    these fields undefined (its relation targets are always graph nodes or
+    IRIs); `SchemaGraph.collectList` returns `[]` because the projection graph
+    does not retain `rdf:List` chains.
 
 ### Changed
 
@@ -1524,6 +1563,7 @@ OWL 2 TBox importer: `fromTbox` / `JsonTology.fromTbox`.
 - **`OwlImportResult`** interface: shape returned by both `fromTbox` variants. Fields: `schemas`, `invariants`, `characteristics`, `sameAs`, `individuals`, `unsupported`.
 
 - **Eight axiom dispatchers** under `src/modules/ontology/importDispatch/`:
+
   - `ClassAxioms`: `owl:Class`, `rdfs:subClassOf`, `owl:equivalentClass`, `owl:disjointWith`, `owl:complementOf`, `owl:disjointUnionOf`
   - `ClassExpressions`: `owl:intersectionOf`, `owl:unionOf`, anonymous class expression nodes
   - `PropertyRestrictions`: `owl:Restriction` with `owl:someValuesFrom`, `owl:allValuesFrom`, `owl:minCardinality`, `owl:maxCardinality`
@@ -1542,6 +1582,7 @@ OWL 2 TBox importer: `fromTbox` / `JsonTology.fromTbox`.
 - **Tests**:
   - `test/integration/owlRoundTrip.test.ts` (renamed from `owlRoundTripScaffold.test.ts`): full bookstore round-trip with `structurallyEqual` helper; replaces the Phase 0 `it.skip`.
   - `test/e2e/realWorldOntologyImport.test.ts`: in-line FOAF and DCAT-AP fixtures, validates imported schemas and runs `validate()` against hand-crafted instances.
+
 ## [0.9.2] - 2026-05-18
 
 OG card and README header visual fix.
@@ -1593,11 +1634,11 @@ Docs and release-pipeline polish.
   - Dropped `SoloAuthoredBookSchema` and `AnthologyBookSchema` as registered schemas. Single-authorship is a cross-field rule on `Book.authors`, not a distinct OWL class. The new `signedFirstEditionIsSoloAuthored` invariant on `SignedFirstEditionSchema` enforces it through `ValidationErrors` with `keyword: 'jt:invariant'`.
   - Added `PrintStatusSchema` primitive (`'inPrint' | 'outOfPrint' | 'limitedRun'`). `Book.printStatus` is required. `InPrintBookSchema` / `OutOfPrintBookSchema` discriminate on publisher state (`printStatus`) rather than inventory state (`inStock`), so a book can be in stock and out of print at the same time.
   - `SignedFirstEditionSchema` simplifies to single-parent `subClassOf(RareBook)` plus the registered invariant.
-  - Concrete instances live in `examples/docs/bookstore/aboxFixtures.ts`: customer Bastian Balthazar Bux orders a rare 1979 Thienemann first edition of Michael Ende's *Die unendliche Geschichte* (ISBN 9783522128001). Two `owl:sameAs` pairs (customer-migration + cross-catalog book) thread through the docs.
+  - Concrete instances live in `examples/docs/bookstore/aboxFixtures.ts`: customer Bastian Balthazar Bux orders a rare 1979 Thienemann first edition of Michael Ende's _Die unendliche Geschichte_ (ISBN 9783522128001). Two `owl:sameAs` pairs (customer-migration + cross-catalog book) thread through the docs.
   - Every example file imports `bookstoreEntities` directly; no mini-registries; derived schemas (`Compose.pick`/`omit`/`extend`/`partial`/`required`/`intersection`/`discriminatedUnion`/`equivalent`) register via `bookstoreEntities.set()`. Every fixture name is a real author (Michael Ende, Cornelia Funke, Walter Moers, Hermann Hesse, Patrick Süskind) or a Neverending Story character (Bastian Balthazar Bux, Carl Conrad Coreander). All ISBNs are real. Pronouns referring to fixture personas are gender-neutral.
   - New example directories: `examples/docs/types/`, `examples/docs/schemas/`, `examples/docs/usage-examples/`, `examples/docs/getting-started/`, `examples/docs/picking-a-method/`, `examples/docs/argument-conventions/`. Existing scopes filled in for composition, computed, invariants, transforms, value, serialization, validation, materialization, registry.
   - New tests: `test/smoke/bookstoreFixtures.test.ts` validates every fixture against its schema and proves the invariant fires; `test/types/bookstore-axioms.test.ts` pins every OWL axiom at compile time via `AssertEqualType`.
-- Phase 3 docs conversion completed: every inline `\`\`\`ts` block across `docs/**/*.md` is now either a VitePress `<<<` include against a runnable file in `examples/docs/`, an explicitly-marked exemption (`<!-- inline-ts-ok: <reason> -->` for `.d.ts` module augmentation, pseudocode signatures, type-shape illustrations that can't be runnable code), or lives in a historical/meta file (`docs/migration-*.md`, `docs/example-suite-plan.md`, `docs/resume-handoff.md`). The ratchet at `scripts/check-docs-includes.mjs` now enforces a ceiling of **zero** inline blocks under the new exemption rules. Total: 480 runnable example files under `examples/docs/`.
+- Phase 3 docs conversion completed: every inline `\`\`\`ts`block across`docs/**/_.md`is now either a VitePress`<<<`include against a runnable file in`examples/docs/`, an explicitly-marked exemption (`<!-- inline-ts-ok: <reason> -->`for`.d.ts` module augmentation, pseudocode signatures, type-shape illustrations that can't be runnable code), or lives in a historical/meta file (`docs/migration-_.md`, `docs/example-suite-plan.md`, `docs/resume-handoff.md`). The ratchet at `scripts/check-docs-includes.mjs` now enforces a ceiling of **zero\*\* inline blocks under the new exemption rules. Total: 480 runnable example files under `examples/docs/`.
 - Smoke suite `test/smoke/docExamples.test.ts` rewritten to register per-section describes from a synchronous scan, so all 480 example files are now individually verified to import without throwing. Tests run before: 1704 → after: 2002.
 - Bookstore registry exports `bookstoreSchemas` (the readonly schema array used to construct `bookstoreEntities`). An example that needs a relaxation (e.g. `enableTypeCast: true` to demonstrate coercion) seeds a separate registry from `bookstoreSchemas` rather than mutating the canonical one.
 - Documented the example-suite contract as invariant #13 in `ARCHITECTURE.md`.
@@ -1748,6 +1789,7 @@ Docs and release-pipeline polish.
 ### Changed
 
 - `JsonTology.create()` is now overloaded: `create({ loader })` → `Promise<JsonTology>`, `create({})` → `JsonTology` (existing sync form unchanged). TypeScript infers the return type from whether `loader` is present.
+
 ## [0.4.3] - 2026-05-13
 
 ### Added
@@ -1790,7 +1832,7 @@ Docs and release-pipeline polish.
 
 ### Changed
 
-- Docs: new "Validation modes" page introducing the `Compile-time` / `Runtime` / `Compile-time + Runtime` badge system; every keyword, brand, and feature in the reference docs is now tagged with its enforcement layer. New / expanded pages cover the 0.4.0 surface: 25 named format brands, uniqueItems tuple distinctness, multipleOf bounded narrowing, full OWL 2 property characteristics, generalised if/then/else inference, patternProperties template-literal expansion, Compose argument validation, schema-validator brands, OWL class-axiom compile-time enforcement, runtime cross-schema $ref strict resolution, GraphEngine self-ref / embedded-$id resolution, and the static-facade parametrization. New migration page covers the 0.4.0 breaking changes (subjectIRI / maxDepth / maxDataDepth / CoercionErrorCodeType removed; make*Schema → BaseTypes.response()/.result()/.page(); Node >= 24).
+- Docs: new "Validation modes" page introducing the `Compile-time` / `Runtime` / `Compile-time + Runtime` badge system; every keyword, brand, and feature in the reference docs is now tagged with its enforcement layer. New / expanded pages cover the 0.4.0 surface: 25 named format brands, uniqueItems tuple distinctness, multipleOf bounded narrowing, full OWL 2 property characteristics, generalised if/then/else inference, patternProperties template-literal expansion, Compose argument validation, schema-validator brands, OWL class-axiom compile-time enforcement, runtime cross-schema $ref strict resolution, GraphEngine self-ref / embedded-$id resolution, and the static-facade parametrization. New migration page covers the 0.4.0 breaking changes (subjectIRI / maxDepth / maxDataDepth / CoercionErrorCodeType removed; make\*Schema → BaseTypes.response()/.result()/.page(); Node >= 24).
 - Second consolidation pass on the test suite: ~120 additional `it` blocks collapsed into scenario-driven GBU tables across `validation`, `coverageGaps`, `compilerConformance`, `registry`, `hash`, `lift`, `dataTypes`, and `computed`. Total assertion coverage preserved; suite organisation tightened.
 - Test-tier corrections: `logger` tests moved smoke → unit; `baseTypes` cross-module registry scenarios moved smoke → integration; `quads` moved integration → unit; `maxSchemaDepth` scenarios moved integration → unit. `beforeEach`/`afterEach` shared-state hooks in `cliWriter` and `logger` tests replaced with per-`it` inline `try`/`finally` fixtures.
 - Test suites consolidated into scenario-driven Good/Bad/Ugly tables: total `it` block count reduced ~70% while assertion coverage is preserved. Targets the dataTypes / instantiate / validation / graph / skolemize / sameAs / operations / serialization / quads suites. `compilerConformance` counter moved into a `describe` closure to remove the only test-order dependence in the suite.
@@ -1846,12 +1888,14 @@ Docs and release-pipeline polish.
 - **Compile-time `patternProperties` template-literal expansion** (designs/0002 Cluster G / Finding 19). `PatternToKeyType` in `src/types/Infer.ts` recognises three additional anchored regex shapes:
   - `^(a|b|c)$` → literal union `'a' | 'b' | 'c'` (each branch must be a metacharacter-free literal; otherwise the alternation falls back to `string`).
   - `^[class]+suffix$` / `^[class]*suffix$` → `` `${string}suffix` `` (the character class portion narrows to `string` since TypeScript cannot bind char ranges; the literal suffix survives).
-  - `^.{N}$` for `N ≤ 8` → length-`N` character template literal `\`${string}${string}…\``; for `N` above the cap it falls back to `string`.
-  Existing `^prefix`, `suffix$`, and `^exact$` handlers are unchanged. Patterns no handler recognises continue to fall through to `string` (no regression). New `test/types/pattern-properties.test.ts` covers each new shape and the fall-through cases.
+  - `^.{N}$` for `N ≤ 8` → length-`N` character template literal `\`${string}${string}…\``; for `N`above the cap it falls back to`string`.
+Existing `^prefix`, `suffix$`, and `^exact$`handlers are unchanged. Patterns no handler recognises continue to fall through to`string`(no regression). New`test/types/pattern-properties.test.ts` covers each new shape and the fall-through cases.
 - **Opt-in `tightStringLengths` narrowing for `minLength` / `maxLength`** (designs/0002 Cluster G / Finding 20). When a project augments `JsonTologyTypeConfigInterface` with `'tightStringLengths': true`, `InferType` narrows strings whose `minLength`/`maxLength` bounds are within `StringLengthCap = 8` to a union of fixed-length character template literals. `minLength === maxLength === N` produces a length-`N` template; `minLength < maxLength` produces a union of templates over the bounded range. Bounds above the cap (or with the flag disabled) fall back to plain `string`. The flag is default-off so existing schemas pay no compile cost; opt in via:
   ```ts
-  declare module 'json-tology/types' {
-    interface JsonTologyTypeConfigInterface { 'tightStringLengths': true }
+  declare module "json-tology/types" {
+    interface JsonTologyTypeConfigInterface {
+      tightStringLengths: true;
+    }
   }
   ```
   New `test/types/string-length.test.ts` exercises the enabled path; the disabled-default behaviour is covered by the existing `inference.test.ts`.
@@ -2015,7 +2059,6 @@ Docs and release-pipeline polish.
 - `Compose.extend()` merges `jt:config` keys - child wins per key; `pick()`/`omit()` carry `jt:config` unchanged
 - `jtConfig`, `jtFrozen`, `jtStrict` fields on `SchemaGraphSemanticsInterface` for serializer and visualization use
 
-
 - Docs rewrite: per-operator pages under `docs/validation/`, `docs/composition/`, `docs/transforms/`, `docs/value/`, `docs/errors/`, `docs/serialization/`, `docs/registry/`, `docs/advanced/`; bookstore eCommerce running domain (`docs/bookstore-domain.md`, `docs/_examples/bookstore.md`); per-operator section template (Declaration / Use this when / Don't use this when / Examples / Bad examples / Comparison / Related / See also); Zod/TypeBox/AJV/Pydantic comparison tabs on every operator; runnable examples under `examples/docs/` with smoke test in `test/smoke/docExamples.test.ts`; new sidebar in `docs/.vitepress/config.ts` with per-operator entries
 - `dump(schemaId, value, options?)` on `JsonTology` - Pydantic-equivalent serializer that walks the canonical graph, applies `Transform` encoders, and supports `exclude`, `include`, `excludeUnset`, `excludeDefaults`, and `mode` ('wire' | 'json') options
 - `dumpJson(schemaId, value, options?)` on `JsonTology` - convenience wrapper around `dump()` with `mode: 'json'` that returns a `JSON.stringify`-ready string
@@ -2036,6 +2079,7 @@ Docs and release-pipeline polish.
 ## [0.2.0] - 2026-05-03
 
 ### Added
+
 - `jt:strict` keyword for per-field strict type enforcement - prevents coercion (string→number, truthy→boolean, etc.) on individual properties; `jt:strict: false` opts a field out when `jt:config.strict` is `true`
 - `jt:frozen` keyword on object schemas - `coerce()` and `materialize()` return deeply-frozen values (all nested objects and arrays frozen); mutation throws in strict-mode ESM modules
 - `jt:config` keyword for schema-level defaults - `strict` (default strict for all fields), `frozen` (shorthand for jt:frozen), and `extra` (`'ignore'` | `'allow'` | `'forbid'`) for unknown property handling
@@ -2043,7 +2087,6 @@ Docs and release-pipeline polish.
 - `JtConfigType` and `JtExtraType` exported from `json-tology/types`
 - `Compose.extend()` merges `jt:config` keys - child wins per key; `pick()`/`omit()` carry `jt:config` unchanged
 - `jtConfig`, `jtFrozen`, `jtStrict` fields on `SchemaGraphSemanticsInterface` for serializer and visualization use
-
 
 - Vocabulary plugin system (`VocabularyPluginInterface`) for extensible custom RDF vocabularies
 - `vocabularies` option on `JsonTology.create()`, `SchemaRegistry`, and serializer constructors
@@ -2075,6 +2118,7 @@ Docs and release-pipeline polish.
 ## [0.1.0] - 2026-03-10
 
 ### Added
+
 - `jt:strict` keyword for per-field strict type enforcement - prevents coercion (string→number, truthy→boolean, etc.) on individual properties; `jt:strict: false` opts a field out when `jt:config.strict` is `true`
 - `jt:frozen` keyword on object schemas - `coerce()` and `materialize()` return deeply-frozen values (all nested objects and arrays frozen); mutation throws in strict-mode ESM modules
 - `jt:config` keyword for schema-level defaults - `strict` (default strict for all fields), `frozen` (shorthand for jt:frozen), and `extra` (`'ignore'` | `'allow'` | `'forbid'`) for unknown property handling
@@ -2082,7 +2126,6 @@ Docs and release-pipeline polish.
 - `JtConfigType` and `JtExtraType` exported from `json-tology/types`
 - `Compose.extend()` merges `jt:config` keys - child wins per key; `pick()`/`omit()` carry `jt:config` unchanged
 - `jtConfig`, `jtFrozen`, `jtStrict` fields on `SchemaGraphSemanticsInterface` for serializer and visualization use
-
 
 - JIT schema compiler (`Compiler`) generating inlined per-schema check/errors/normalize/normalizeAndCheck functions
 - `Value.parse` single-pass normalize+validate pipeline via `normalizeAndCheck`
