@@ -23,66 +23,76 @@ import { join } from 'node:path';
 import {
   generateFromTbox, generateRegistryDirectory
 } from '../owl-gen/index.js';
-import type {
-  GenerateFromTboxOptionsType,
-  GenerateRegistryDirectoryOptionsType,
-  WrittenEntityFileType
-} from '../types/OwlGen.js';
+import type { GenerateFromTboxOptionsInterface } from '../interfaces/GenerateFromTboxOptionsInterface.js';
+import type { GenerateRegistryDirectoryOptionsInterface } from '../interfaces/GenerateRegistryDirectoryOptionsInterface.js';
+import type { WrittenEntityFileEntity } from '../entities/WrittenEntityFileEntity.js';
 
-export type { WrittenEntityFileType } from '../types/OwlGen.js';
+export type { WrittenEntityFileEntity } from '../entities/WrittenEntityFileEntity.js';
 
-/**
- * Generate TypeScript source from an OWL 2 TBox and write it to `output`.
- *
- * @param options - Browser-safe codegen options plus the `output` file path.
- */
-export function writeFromTbox(options: GenerateFromTboxOptionsType & { readonly 'output': string }): void {
-  const {
-    output,
-    ...rest
-  } = options;
+class OwlGenNode {
+  /**
+   * Generate TypeScript source from an OWL 2 TBox and write it to `output`.
+   *
+   * @param options - Browser-safe codegen options plus the `output` file path.
+   */
+  static writeFromTbox(options: GenerateFromTboxOptionsInterface & { readonly 'output': string }): void {
+    const {
+      output,
+      ...rest
+    } = options;
 
-  writeFileSync(output, generateFromTbox(rest), 'utf8');
-}
-
-/**
- * Generate a full registry directory from an OWL 2 TBox and write it to `outDir`.
- *
- * Writes `<outDir>/entities/<Name>.ts` per OWL class plus `<outDir>/index.ts`.
- *
- * @param options - Browser-safe codegen options plus the `outDir` directory.
- * @returns The written entity files (absolute paths) and the `index.ts` path.
- */
-export function writeRegistryDirectory(options: GenerateRegistryDirectoryOptionsType & { readonly 'outDir': string }): { readonly 'entityFiles': readonly WrittenEntityFileType[];
-  readonly 'indexFile': string } {
-  const {
-    outDir,
-    ...rest
-  } = options;
-
-  const result = generateRegistryDirectory(rest);
-
-  mkdirSync(join(outDir, 'entities'), { 'recursive': true });
-
-  const entityFiles: WrittenEntityFileType[] = [];
-
-  for (const entityFile of result.entityFiles) {
-    const absPath = join(outDir, entityFile.path);
-
-    writeFileSync(absPath, entityFile.source, 'utf8');
-    entityFiles.push({
-      'iri': entityFile.iri,
-      'name': entityFile.name,
-      'path': absPath
-    });
+    writeFileSync(output, generateFromTbox(rest), 'utf8');
   }
 
-  const indexFile = join(outDir, 'index.ts');
+  /**
+   * Generate a full registry directory from an OWL 2 TBox and write it to `outDir`.
+   *
+   * Writes `<outDir>/entities/<Name>.ts` per OWL class plus `<outDir>/index.ts`.
+   *
+   * @param options - Browser-safe codegen options plus the `outDir` directory.
+   * @returns The written entity files (absolute paths) and the `index.ts` path.
+   */
+  static writeRegistryDirectory(options: GenerateRegistryDirectoryOptionsInterface & { readonly 'outDir': string }): { readonly 'entityFiles': readonly WrittenEntityFileEntity.Type[];
+    readonly 'indexFile': string } {
+    const {
+      outDir,
+      ...rest
+    } = options;
 
-  writeFileSync(indexFile, result.indexSource, 'utf8');
+    const result = generateRegistryDirectory(rest);
 
-  return {
-    entityFiles,
-    indexFile
-  };
+    mkdirSync(join(outDir, 'entities'), { 'recursive': true });
+
+    const entityFiles: WrittenEntityFileEntity.Type[] = [];
+
+    for (const entityFile of result.entityFiles) {
+      const absPath = join(outDir, entityFile.path);
+
+      writeFileSync(absPath, entityFile.source, 'utf8');
+      entityFiles.push({
+        'iri': entityFile.iri,
+        'name': entityFile.name,
+        'path': absPath
+      });
+    }
+
+    const indexFile = join(outDir, 'index.ts');
+
+    writeFileSync(indexFile, result.indexSource, 'utf8');
+
+    return {
+      entityFiles,
+      indexFile
+    };
+  }
 }
+
+// ---------------------------------------------------------------------------
+// Public API — flat named exports for `json-tology/owl-gen-node` consumers.
+// Aliasing a static method reference (not a function/arrow expression) keeps
+// the documented `import { writeFromTbox } from 'json-tology/owl-gen-node'`
+// surface stable while the implementation lives on a class.
+// ---------------------------------------------------------------------------
+
+export const writeFromTbox = OwlGenNode.writeFromTbox;
+export const writeRegistryDirectory = OwlGenNode.writeRegistryDirectory;

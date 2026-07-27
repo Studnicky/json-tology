@@ -1,4 +1,4 @@
-import type { CompiledValidatorType } from '../types/Compiler.js';
+import type { CompiledValidatorInterface } from './CompiledValidatorInterface.js';
 import type { ComputedStoreInterface } from './ComputedStoreInterface.js';
 import type { CurieInterface } from './CurieInterface.js';
 import type { DifferentFromStoreInterface } from './DifferentFromStoreInterface.js';
@@ -7,7 +7,13 @@ import type { InvariantType } from '../types/Invariant.js';
 import type { SameAsStoreInterface } from './SameAsStoreInterface.js';
 import type { SchemaGraphInterface } from './SchemaGraphInterface.js';
 import type { ValidationErrors } from '../errors/ValidationErrors.js';
-import type { DuplicateReportEntryType } from '../types/DuplicateReportEntryType.js';
+import type { DuplicateReportEntryEntity } from '../entities/DuplicateReportEntryEntity.js';
+import type { SchemaWithIdEntity } from '../entities/SchemaWithIdEntity.js';
+import type { CloneOptionsEntity } from '../entities/CloneOptionsEntity.js';
+import type { InstantiateCallOptionsEntity } from '../entities/InstantiateCallOptionsEntity.js';
+import type { GraphEntryInterface } from './GraphEntryInterface.js';
+import type { CastTypesFlagEntity } from '../entities/CastTypesFlagEntity.js';
+import type { NumberValueEntity } from '../entities/NumberValueEntity.js';
 
 export interface SchemaRegistryInterface extends Iterable<[string, Record<string, unknown>]> {
   /**
@@ -27,40 +33,34 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
    * differentFrom pair is in the same transitive sameAs component.
    */
   assertIdentityConsistency(): void;
-  cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown;
-  readonly 'castTypes': boolean;
-  clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
+  cast(schemaOrId: SchemaWithIdEntity.Type | string, data: unknown, options?: CloneOptionsEntity.Type): unknown;
+  readonly 'castTypes': CastTypesFlagEntity.Type;
+  clean(schemaOrId: SchemaWithIdEntity.Type | string, data: unknown): unknown;
   clear(): void;
   /**
    * Collect all non-fragment cross-schema `$ref` IRIs reachable from the given schema
    * (including its transitive dependencies already in the registry). Only returns IRIs
    * that are not already registered.
    */
-  collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string>;
+  collectUnresolvedReferenceIris(schema: Record<string, unknown>): ReadonlySet<string>;
   readonly 'computedStore': ComputedStoreInterface;
-  convert(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown;
+  convert(schemaOrId: SchemaWithIdEntity.Type | string, data: unknown, options?: CloneOptionsEntity.Type): unknown;
   create(schemaId: string): unknown;
   readonly 'curie': CurieInterface | undefined;
   delete(schemaId: string): boolean;
   readonly 'differentFromStore': DifferentFromStoreInterface;
   engine(schema: Record<string, unknown>): GraphEngineInterface;
   entries(): IterableIterator<[string, Record<string, unknown>]>;
-  findDuplicates(): readonly DuplicateReportEntryType[];
+  findDuplicates(): readonly DuplicateReportEntryEntity.Type[];
   forEach(
     callback: (schema: Record<string, unknown>, schemaId: string, registry: SchemaRegistryInterface) => void
   ): void;
   get(schemaId: string): Record<string, unknown> | undefined;
   graph(schemaId: string): SchemaGraphInterface | undefined;
-  graphEntry(schemaId: string): undefined | {
-    'graph': SchemaGraphInterface;
-    'schema': Record<string, unknown>;
-  };
+  graphEntry(schemaId: string): GraphEntryInterface | undefined;
   has(schemaId: string): boolean;
-  instantiate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown, callOptions?: {
-    'clone'?: boolean;
-    'enableDefaults'?: boolean;
-  }): unknown;
-  is(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): boolean;
+  instantiate(schema: SchemaWithIdEntity.Type | string, data: unknown, callOptions?: InstantiateCallOptionsEntity.Type): unknown;
+  is(schema: SchemaWithIdEntity.Type | string, data: unknown): boolean;
   keys(): IterableIterator<string>;
   list(): ReadonlyArray<Record<string, unknown>>;
   listGraphs(): readonly SchemaGraphInterface[];
@@ -72,7 +72,7 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
    * builders, compiled validator graphs) by snapshotting the revision and
    * rebuilding when it advances.
    */
-  readonly 'revision': number;
+  readonly 'revision': NumberValueEntity.Type;
   readonly 'sameAsStore': SameAsStoreInterface;
   /**
    * Add or replace a schema in the registry. The schema is always the first
@@ -87,9 +87,9 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
   set(
     entries: ReadonlyArray<readonly [Record<string, unknown>, string] | Record<string, unknown>>
   ): SchemaRegistryInterface;
-  readonly 'size': number;
-  subschemaAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string): Record<string, unknown> & { '$id': string };
-  validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): ValidationErrors;
-  validator(schemaId: string): CompiledValidatorType;
+  readonly 'size': NumberValueEntity.Type;
+  subschemaAt(schema: SchemaWithIdEntity.Type | string, pointer: string): SchemaWithIdEntity.Type;
+  validate(schema: SchemaWithIdEntity.Type | string, data: unknown): ValidationErrors;
+  validator(schemaId: string): CompiledValidatorInterface;
   values(): IterableIterator<Record<string, unknown>>;
 }

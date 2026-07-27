@@ -9,7 +9,7 @@ import {
 import { SchemaLoadError } from '../../src/errors/SchemaLoadError.js';
 import { SCHEMA_LOAD_ERROR_CODE } from '../../src/constants/ERROR_CODES.js';
 import { Loaders } from '../../src/modules/loaders/Loaders.js';
-import type { SchemaLoadErrorType } from '../../src/types/Loader.js';
+import type { SchemaLoadErrorEntity } from '../../src/entities/SchemaLoadErrorEntity.js';
 
 // Test 1: Loaders.fetch with 503 throws SchemaLoadError with correct fields
 void describe('Loaders.fetch — HTTP status surfacing', { 'concurrency': false }, () => {
@@ -99,7 +99,7 @@ void describe('SchemaLoadError — serialization', { 'concurrency': true }, () =
     assert.strictEqual('status' in json, false);
   });
 
-  void it('toLoadError returns a valid SchemaLoadErrorType', () => {
+  void it('toLoadError returns a valid SchemaLoadErrorEntity descriptor', () => {
     const err = new SchemaLoadError('HTTP 503 loading https://example.com/Schema', {
       'code': SCHEMA_LOAD_ERROR_CODE.LOAD_FAILED,
       'file': 'https://example.com/Schema',
@@ -108,7 +108,7 @@ void describe('SchemaLoadError — serialization', { 'concurrency': true }, () =
       'status': 503
     });
 
-    const loadError: SchemaLoadErrorType = err.toLoadError();
+    const loadError: SchemaLoadErrorEntity.Type = err.toLoadError();
 
     assert.strictEqual(loadError.file, 'https://example.com/Schema');
     assert.strictEqual(loadError.message, 'HTTP 503 loading https://example.com/Schema');
@@ -130,19 +130,19 @@ void describe('SchemaLoadError — serialization', { 'concurrency': true }, () =
   });
 });
 
-// Test 3: RefResolutionLoader non-string $id → SchemaLoadError
-void describe('RefResolutionLoader — non-string $id → SchemaLoadError', { 'concurrency': true }, () => {
+// Test 3: ReferenceResolutionLoader non-string $id → SchemaLoadError
+void describe('ReferenceResolutionLoader — non-string $id → SchemaLoadError', { 'concurrency': true }, () => {
   void it('loadRootIds throws SchemaLoadError with reason missing-id when loader returns schema with non-string $id', async () => {
-    // Import RefResolutionLoader and SchemaRegistry here
-    const { RefResolutionLoader } = await import('../../src/modules/registry/RefResolutionLoader.js');
+    // Import ReferenceResolutionLoader and SchemaRegistry here
+    const { ReferenceResolutionLoader } = await import('../../src/modules/registry/ReferenceResolutionLoader.js');
     const { SchemaRegistry } = await import('../../src/modules/registry/SchemaRegistry.js');
 
     const registry = new SchemaRegistry();
-    const refLoader = new RefResolutionLoader(registry);
+    const referenceLoader = new ReferenceResolutionLoader(registry);
 
     await assert.rejects(
       () => {
-        return refLoader.loadRootIds(['https://ex/NullId'], async (_iri) => {
+        return referenceLoader.loadRootIds(['https://ex/NullId'], async (_iri) => {
           return {
             '$id': 123 as unknown as string,
             'type': 'string'

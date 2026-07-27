@@ -11,7 +11,7 @@
 import type { ContainsBrandType } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 import type { InferSchemaType } from '../../src/types/Infer.js';
-import type { RefNotFoundType } from '../../src/types/TypeErrors.js';
+import type { ReferenceNotFoundType } from '../../src/types/TypeErrors.js';
 
 
 // ---------------------------------------------------------------------------
@@ -490,7 +490,7 @@ assert<AssertAssignable<NoAnchorResult, { readonly 'child'?: unknown }>>();
 //
 // Most unresolvable schemas produce `unknown`. Exception: a bare absolute-IRI
 // $ref (no fragment) with no matching schema always yields
-// RefNotFoundType<TRef> — a compile-error brand — so cross-schema refs
+// ReferenceNotFoundType<TRef> — a compile-error brand — so cross-schema refs
 // are never silently inferred as unknown.
 
 // Missing `type` — produces unknown
@@ -522,7 +522,7 @@ const _ExternalRefSchema = {
 void _ExternalRefSchema;
 
 type ExternalRefResult = InferType<typeof _ExternalRefSchema>;
-assert<AssertAssignable<ExternalRefResult, { readonly 'ext'?: RefNotFoundType<'https://example.com/Other'> }>>();
+assert<AssertAssignable<ExternalRefResult, { readonly 'ext'?: ReferenceNotFoundType<'https://example.com/Other'> }>>();
 
 // Boolean schema (true/false) — produces unknown
 type BoolSchemaResult = InferSchemaType<true>;
@@ -750,10 +750,10 @@ assert<AssertAssignable<DeepRef, { readonly 'wrapper': { readonly 'inner': { rea
 // 18. External fragment refs fall back to unknown without references
 // ---------------------------------------------------------------------------
 //
-// Note: bare absolute-IRI refs (no fragment) yield RefNotFoundType<T>
+// Note: bare absolute-IRI refs (no fragment) yield ReferenceNotFoundType<T>
 // instead of unknown — see section 12. Fragment refs (schema#anchor,
 // schema#/pointer) still fall back to unknown when no references map is
-// provided because the base-URI resolver (ResolveRefBaseSchemaType) guards on
+// provided because the base-URI resolver (ResolveReferenceBaseSchemaType) guards on
 // HasReferencesType — the strictness change applies only to the bare-IRI arm.
 
 /**
@@ -883,10 +883,10 @@ assert<AssertAssignable<InternalFragmentResult, {
 }>>();
 
 // ---------------------------------------------------------------------------
-// 19. SplitFragmentRefType base-URI guard
+// 19. SplitFragmentReferenceType base-URI guard
 // ---------------------------------------------------------------------------
 
-import type { SplitFragmentRefType } from '../../src/types/Infer.js';
+import type { SplitFragmentReferenceType } from '../../src/types/Infer.js';
 
 const _LocalSchemaWithId = {
   '$defs': { 'Bar': { 'type': 'string' } },
@@ -896,17 +896,17 @@ const _LocalSchemaWithId = {
 
 void _LocalSchemaWithId;
 
-// Unreachable base → RefNotFoundType (uniform; no silent unknown). The
+// Unreachable base → ReferenceNotFoundType (uniform; no silent unknown). The
 // base 'https://other.com/X' is not the root $id, is not embedded under $defs
 // by $id, and no references map is present.
-type CrossSchemaRef = SplitFragmentRefType<'https://other.com/X#/$defs/Bar', typeof _LocalSchemaWithId>;
-assert<AssertEqual<CrossSchemaRef, RefNotFoundType<'https://other.com/X'>>>();
+type CrossSchemaRef = SplitFragmentReferenceType<'https://other.com/X#/$defs/Bar', typeof _LocalSchemaWithId>;
+assert<AssertEqual<CrossSchemaRef, ReferenceNotFoundType<'https://other.com/X'>>>();
 
 // Same-schema ref resolves correctly (base URI matches $id)
-type SameSchemaRef = SplitFragmentRefType<'https://local.com/Foo#/$defs/Bar', typeof _LocalSchemaWithId>;
+type SameSchemaRef = SplitFragmentReferenceType<'https://local.com/Foo#/$defs/Bar', typeof _LocalSchemaWithId>;
 assert<AssertEqual<SameSchemaRef, { readonly 'type': 'string' }>>();
 
-// Schema without $id, unreachable base → RefNotFoundType (uniform).
+// Schema without $id, unreachable base → ReferenceNotFoundType (uniform).
 const _SchemaWithoutId = {
   '$defs': { 'X': { 'type': 'number' } },
   'type': 'object'
@@ -914,8 +914,8 @@ const _SchemaWithoutId = {
 
 void _SchemaWithoutId;
 
-type NoIdRef = SplitFragmentRefType<'https://any.com#/$defs/X', typeof _SchemaWithoutId>;
-assert<AssertEqual<NoIdRef, RefNotFoundType<'https://any.com'>>>();
+type NoIdRef = SplitFragmentReferenceType<'https://any.com#/$defs/X', typeof _SchemaWithoutId>;
+assert<AssertEqual<NoIdRef, ReferenceNotFoundType<'https://any.com'>>>();
 
 // ---------------------------------------------------------------------------
 // Suppress unused variable warnings

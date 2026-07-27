@@ -30,7 +30,7 @@ Invariants are cross-field validation rules that run after structural validation
 
 | Method | Invariant behaviour |
 |--------|---------------------|
-| `validate()` | Returns invariant failures as `ValidationErrorType` items in the `ValidationErrors` collection with `keyword: 'jt:invariant'` |
+| `validate()` | Returns invariant failures as `ValidationErrorEntity.Type` items in the `ValidationErrors` collection with `keyword: 'jt:invariant'` |
 | `instantiate()` | Throws `InstantiationError` when any invariant fails (the error carries `ValidationErrors` on `.errors`) |
 | `is()` | Returns `false` when any invariant fails |
 | `aggregate()` / `report()` | Both `ValidationErrors` views include invariant errors alongside structural errors |

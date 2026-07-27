@@ -5,7 +5,7 @@
  */
 
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
-import type { CurieSplitType } from '../../types/CurieSplitType.js';
+import type { CurieSplitEntity } from '../../entities/CurieSplitEntity.js';
 
 export class Curie implements CurieInterface {
   /**
@@ -56,7 +56,7 @@ export class Curie implements CurieInterface {
    * @param value - A CURIE or IRI string
    * @returns The split result, or null when no colon is present
    */
-  private static splitCurie(value: string): CurieSplitType | null {
+  private static splitCurie(value: string): CurieSplitEntity.Type | null {
     const colonIndex = value.indexOf(':');
 
     if (colonIndex === -1) {

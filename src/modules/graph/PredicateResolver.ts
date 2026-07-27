@@ -1,53 +1,53 @@
 import type { JsonSchemaType } from '../../types/Schema.js';
-import type { PredicateForType } from '../../types/PredicateForType.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { PredicateForInterface } from '../../interfaces/PredicateForInterface.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import { DataType } from '../data/DataType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { SchemaIri } from './SchemaIri.js';
-
-/** Highest ASCII control character codepoint (inclusive). */
-const CONTROL_CHAR_MAX = 0x20;
-/** DEL codepoint. */
-const DEL_CODEPOINT = 0x7F;
-/** Highest C1 control character codepoint (inclusive). */
-const C1_CONTROL_MAX = 0x9F;
-/** Radix used when formatting a codepoint as hex in error messages. */
-const HEX_RADIX = 16;
+import {
+  C1_CONTROL_MAXIMUM, CONTROL_CHAR_MAXIMUM, DEL_CODEPOINT, HEX_RADIX
+} from '../../constants/NUMERIC.js';
 
 /**
- * Validate that a predicate IRI contains at most one '#' fragment delimiter.
- * Per RFC 3987, a URI may carry at most one fragment component; a second '#'
- * produces an invalid IRI that strict triplestores reject.
+ * PredicateIriAssertions — control-character and fragment-count validation
+ * shared by every explicit-IRI resolution step.
  */
-function assertSingleFragment(iri: string): void {
-  // A second '#' exists iff the first and last '#' differ in position. This
-  // holds for 0 or 1 '#' (positions equal, including both -1) and fails only
-  // when two or more are present.
-  if (iri.indexOf('#') !== iri.lastIndexOf('#')) {
-    throw new GraphError(
-      `Predicate IRI has more than one '#' fragment (invalid per RFC 3987): ${JSON.stringify(iri)}`,
-      { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
-    );
-  }
-}
+class PredicateIriAssertions {
+  /**
+   * Validate a predicate IRI for control characters or spaces.
+   * Uses a codepoint scan instead of a regex to avoid RegExp injection risks.
+   */
+  static assertSafe(iri: string): void {
+    for (const char of iri) {
+      const code = char.codePointAt(0);
 
-/**
- * Validate a predicate IRI for control characters or spaces.
- * Uses a codepoint scan instead of a regex to avoid RegExp injection risks.
- */
-function assertPredicateIriSafe(iri: string): void {
-  for (const char of iri) {
-    const code = char.codePointAt(0);
+      if (code === undefined) {
+        continue;
+      }
 
-    if (code === undefined) {
-      continue;
+      if (code <= CONTROL_CHAR_MAXIMUM || (code >= DEL_CODEPOINT && code <= C1_CONTROL_MAXIMUM)) {
+        throw new GraphError(
+          `Predicate IRI contains a control character or space (codepoint 0x${code.toString(HEX_RADIX)}): ${JSON.stringify(iri)}`,
+          { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
+        );
+      }
     }
+  }
 
-    if (code <= CONTROL_CHAR_MAX || (code >= DEL_CODEPOINT && code <= C1_CONTROL_MAX)) {
+  /**
+   * Validate that a predicate IRI contains at most one '#' fragment delimiter.
+   * Per RFC 3987, a URI may carry at most one fragment component; a second '#'
+   * produces an invalid IRI that strict triplestores reject.
+   */
+  static assertSingleFragment(iri: string): void {
+    // A second '#' exists iff the first and last '#' differ in position. This
+    // holds for 0 or 1 '#' (positions equal, including both -1) and fails only
+    // when two or more are present.
+    if (iri.indexOf('#') !== iri.lastIndexOf('#')) {
       throw new GraphError(
-        `Predicate IRI contains a control character or space (codepoint 0x${code.toString(HEX_RADIX)}): ${JSON.stringify(iri)}`,
+        `Predicate IRI has more than one '#' fragment (invalid per RFC 3987): ${JSON.stringify(iri)}`,
         { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
       );
     }
@@ -85,7 +85,7 @@ class PredicateResolutionStep {
     const explicitPredicate = propertySchema['x-jt-predicate'];
 
     if (typeof explicitPredicate === 'string' && explicitPredicate !== '') {
-      assertPredicateIriSafe(explicitPredicate);
+      PredicateIriAssertions.assertSafe(explicitPredicate);
 
       return explicitPredicate;
     }
@@ -95,7 +95,7 @@ class PredicateResolutionStep {
     const propertyId = propertySchema.$id;
 
     if (typeof propertyId === 'string' && propertyId.indexOf('://') > 0) {
-      assertPredicateIriSafe(propertyId);
+      PredicateIriAssertions.assertSafe(propertyId);
 
       return propertyId;
     }
@@ -109,7 +109,7 @@ class PredicateResolutionStep {
    * Wraps callback errors as `GraphError` with code `INVALID_PREDICATE_IRI`.
    */
   static viaCallback(
-    predicateFor: PredicateForType | undefined,
+    predicateFor: PredicateForInterface | undefined,
     classId: string,
     propertyName: string
   ): string | undefined {
@@ -154,7 +154,7 @@ class PredicateResolutionStep {
  *
  * @category Graph
  * @since 0.1.0
- * @see {@link PredicateResolverFnType}
+ * @see {@link PredicateResolverInterface}
  * @group Graph
  */
 export const PredicateResolver = {
@@ -166,13 +166,13 @@ export const PredicateResolver = {
   forConfig(config: {
     'baseIri': string;
     'enableCanonicalPredicates': boolean | undefined;
-    'predicateFor': PredicateForType | undefined;
-  }): PredicateResolverFnType {
-    return (ctx: { readonly 'classId': string;
+    'predicateFor': PredicateForInterface | undefined;
+  }): PredicateResolverInterface {
+    return (context: { readonly 'classId': string;
       readonly 'propertyName': string;
       readonly 'propertySchema': JsonSchemaType }): string => {
       const result = PredicateResolver.resolve({
-        ...ctx,
+        ...context,
         ...config
       });
 
@@ -192,11 +192,11 @@ export const PredicateResolver = {
    * All explicit predicates from steps 1 and 2 are validated for control
    * characters and spaces (throws `GraphError` with code `INVALID_PREDICATE_IRI`).
    */
-  resolve(args: {
+  resolve(argumentList: {
     'baseIri': string;
     'classId': string;
     'enableCanonicalPredicates': boolean | undefined;
-    'predicateFor': PredicateForType | undefined;
+    'predicateFor': PredicateForInterface | undefined;
     'propertyName': string;
     'propertySchema': JsonSchemaType;
   }): string {
@@ -207,13 +207,13 @@ export const PredicateResolver = {
       predicateFor,
       propertyName,
       propertySchema
-    } = args;
+    } = argumentList;
 
     // 1 + 2. Explicit annotation or absolute $id on the property schema.
     const schemaIri = PredicateResolutionStep.schemaAnnotation(propertySchema);
 
     if (schemaIri !== undefined) {
-      assertSingleFragment(schemaIri);
+      PredicateIriAssertions.assertSingleFragment(schemaIri);
 
       return schemaIri;
     }
@@ -222,7 +222,7 @@ export const PredicateResolver = {
     const callbackIri = PredicateResolutionStep.viaCallback(predicateFor, classId, propertyName);
 
     if (callbackIri !== undefined) {
-      assertSingleFragment(callbackIri);
+      PredicateIriAssertions.assertSingleFragment(callbackIri);
 
       return callbackIri;
     }
@@ -231,7 +231,7 @@ export const PredicateResolver = {
     if (enableCanonicalPredicates !== false) {
       const canonicalIri = PredicateResolutionStep.canonicalFlat(baseIri, propertyName);
 
-      assertSingleFragment(canonicalIri);
+      PredicateIriAssertions.assertSingleFragment(canonicalIri);
 
       return canonicalIri;
     }
@@ -239,7 +239,7 @@ export const PredicateResolver = {
     // 5. Class-scoped (DTO opt-out, enableCanonicalPredicates: false)
     const classScoped = SchemaIri.propertyIri(classId, propertyName);
 
-    assertSingleFragment(classScoped);
+    PredicateIriAssertions.assertSingleFragment(classScoped);
 
     return classScoped;
   }

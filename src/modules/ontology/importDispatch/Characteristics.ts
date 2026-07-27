@@ -20,14 +20,13 @@
  */
 
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType,
-  OwlImportFragmentType
-} from '../../../types/OwlImport.js';
-import type { RecordCharacteristicOptionsType } from '../../../types/RecordCharacteristicOptionsType.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
+import type { RecordCharacteristicOptionsInterface } from '../../../interfaces/RecordCharacteristicOptionsInterface.js';
 import {
   OWL, RDF
 } from '../../../constants/IRI.js';
+import { ImportRelation } from './ImportRelation.js';
 
 // ---------------------------------------------------------------------------
 // OWL 2 IRI prefix for characteristic class URIs.
@@ -95,68 +94,6 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
   ]
 ]);
 
-// ---------------------------------------------------------------------------
-// Empty fragment factory
-// ---------------------------------------------------------------------------
-
-function emptyFragment(): OwlImportFragmentType {
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    'schemaDeltas': new Map()
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Characteristic record accumulator
-// ---------------------------------------------------------------------------
-
-/**
- * Attempt to record a characteristic for the relation's source property.
- * Skips when the source IRI is not a known property subject (even after
- * curie compaction), reporting it as unsupported.
- */
-function recordCharacteristic(options: RecordCharacteristicOptionsType): void {
-  const {
-    characteristicName,
-    characteristicTarget,
-    ctx,
-    fragment,
-    propertyIri,
-    seen
-  } = options;
-
-  if (!ctx.allPropertyIris.has(propertyIri)) {
-    const compacted = ctx.curie.compact(propertyIri);
-
-    if (!ctx.allPropertyIris.has(compacted)) {
-      ctx.reportUnsupported(characteristicTarget, propertyIri);
-
-      return;
-    }
-  }
-
-  const key = `${propertyIri}::${characteristicName}`;
-
-  if (seen.has(key)) {
-    return;
-  }
-  seen.add(key);
-
-  const mutableCharacteristics = fragment.characteristics as Array<{
-    'characteristic': string;
-    'propertyIri': string;
-  }>;
-
-  mutableCharacteristics.push({
-    'characteristic': characteristicName,
-    'propertyIri': propertyIri
-  });
-}
-
 /**
  * Process OWL 2 property characteristic axioms (functional, transitive, symmetric,
  * etc.) and return a partial import fragment.
@@ -172,7 +109,7 @@ function recordCharacteristic(options: RecordCharacteristicOptionsType): void {
  *
  * @param _quads - All quads from the input graph (unused; graph is traversed via ctx).
  * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragmentType with characteristics populated.
+ * @returns OwlImportFragmentInterface with characteristics populated.
  *
  * @remarks
  * Implements OWL 2 §9.2.1–9.2.8. The seven characteristic class IRIs are
@@ -189,15 +126,15 @@ function recordCharacteristic(options: RecordCharacteristicOptionsType): void {
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContextType
+ * @see OwlImportContextInterface
  * @group importDispatch
  */
 export class Characteristics {
-  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-    const fragment = emptyFragment();
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
+    const fragment = ImportRelation.emptyFragment();
     const seen = new Set<string>();
 
-    for (const relation of ctx.graph.allRelations()) {
+    for (const relation of context.graph.allRelations()) {
       if (relation.predicate !== RDF.type) {
         continue;
       }
@@ -212,10 +149,10 @@ export class Characteristics {
         continue;
       }
 
-      recordCharacteristic({
+      Characteristics.recordCharacteristic({
         characteristicName,
         'characteristicTarget': relation.target,
-        ctx,
+        'ctx': context,
         fragment,
         'propertyIri': relation.source.id,
         seen
@@ -223,5 +160,48 @@ export class Characteristics {
     }
 
     return fragment;
+  }
+
+  /**
+   * Attempt to record a characteristic for the relation's source property.
+   * Skips when the source IRI is not a known property subject (even after
+   * curie compaction), reporting it as unsupported.
+   */
+  private static recordCharacteristic(options: RecordCharacteristicOptionsInterface): void {
+    const {
+      characteristicName,
+      characteristicTarget,
+      'ctx': context,
+      fragment,
+      propertyIri,
+      seen
+    } = options;
+
+    if (!context.allPropertyIris.has(propertyIri)) {
+      const compacted = context.curie.compact(propertyIri);
+
+      if (!context.allPropertyIris.has(compacted)) {
+        context.reportUnsupported(characteristicTarget, propertyIri);
+
+        return;
+      }
+    }
+
+    const key = `${propertyIri}::${characteristicName}`;
+
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+
+    const mutableCharacteristics = fragment.characteristics as Array<{
+      'characteristic': string;
+      'propertyIri': string;
+    }>;
+
+    mutableCharacteristics.push({
+      'characteristic': characteristicName,
+      'propertyIri': propertyIri
+    });
   }
 }

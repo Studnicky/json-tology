@@ -82,3 +82,31 @@ export const IPV6_MIXED = /^(?:[\da-f]{1,4}:){6}(?:\d{1,3}\.){3}\d{1,3}$/iu;
  * @defaultValue `/^::(?:[\da-f]{1,4}:){0,5}(?:\d{1,3}\.){3}\d{1,3}$/iu`
  */
 export const IPV6_MIXED_COMPRESSED = /^::(?:[\da-f]{1,4}:){0,5}(?:\d{1,3}\.){3}\d{1,3}$/iu;
+
+/**
+ * IPV6_DOUBLE_COLON_MARKER — matches a leading or trailing `::`-elision marker.
+ *
+ * @remarks
+ * Used to strip the single `::` group-elision marker from an IPv6 address
+ * before counting its remaining explicit groups.
+ *
+ * @category Constants
+ * @since 0.1.0
+ * @group FormatRegexes
+ * @defaultValue `/^:|:$/gu`
+ */
+export const IPV6_DOUBLE_COLON_MARKER = /^:|:$/gu;
+
+/**
+ * DIGITS_ONLY — matches a string composed entirely of one or more ASCII digits.
+ *
+ * @remarks
+ * Used by the `ipv4` format validator to reject non-numeric octets before
+ * range-checking them.
+ *
+ * @category Constants
+ * @since 0.1.0
+ * @group FormatRegexes
+ * @defaultValue `/^\d+$/u`
+ */
+export const DIGITS_ONLY = /^\d+$/u;

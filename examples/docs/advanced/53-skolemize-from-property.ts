@@ -15,7 +15,7 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': Skolemize.fromProperty('customerId', { 'baseIri': 'https://shop.example.com/customers/by-id' }) });
+const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriForFunction': Skolemize.fromProperty('customerId', { 'baseIri': 'https://shop.example.com/customers/by-id' }) });
 
 const rootIri = quads[0]?.subject.value ?? '';
 

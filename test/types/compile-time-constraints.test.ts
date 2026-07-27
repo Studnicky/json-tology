@@ -26,17 +26,17 @@ import type {
   ContentMediaTypeBrandType,
   DialectBrandType,
   FormatBrandType,
-  MaxItemsBrandType,
-  MaxLengthBrandType,
-  MaxPropertiesBrandType,
+  MaximumItemsBrandType,
+  MaximumLengthBrandType,
+  MaximumPropertiesBrandType,
   MinimumBrandType,
-  MinItemsBrandType,
-  MinLengthBrandType,
-  MinPropertiesBrandType,
+  MinimumItemsBrandType,
+  MinimumLengthBrandType,
+  MinimumPropertiesBrandType,
   MultipleOfBrandType,
-  SchemaIdBrandType,
-  UniqueItemsBrandType
+  SchemaIdBrandType
 } from '../../src/types/ConstraintBrands.js';
+import type { UniqueItemsBrandInterface } from '../../src/interfaces/UniqueItemsBrandInterface.js';
 import type {
   DeepPropertyPathsType,
   DefaultAlignedType,
@@ -463,7 +463,7 @@ type FixedArray = InferType<typeof _FixedArraySchema>;
 // type level rather than by a literal assignment.
 assert<AssertEqualType<
   FixedArray,
-  [string, string, string] & MaxItemsBrandType<3> & MinItemsBrandType<3>
+  [string, string, string] & MaximumItemsBrandType<3> & MinimumItemsBrandType<3>
 >>();
 
 const _MinArraySchema = {
@@ -479,7 +479,7 @@ type MinArray = InferType<typeof _MinArraySchema>;
 // Min-length tuple: at least 2 numbers, then rest — carries the minItems brand.
 assert<AssertEqualType<
   MinArray,
-  [number, number, ...number[]] & MinItemsBrandType<2>
+  [number, number, ...number[]] & MinimumItemsBrandType<2>
 >>();
 
 // ---------------------------------------------------------------------------
@@ -688,8 +688,8 @@ const _csBad: ConstrainedString = 'hello' as string;
 void _csBad;
 
 // Branded type carries all three brands
-type HasMinLength = ConstrainedString extends MinLengthBrandType<5> ? true : false;
-type HasMaxLength = ConstrainedString extends MaxLengthBrandType<100> ? true : false;
+type HasMinLength = ConstrainedString extends MinimumLengthBrandType<5> ? true : false;
+type HasMaxLength = ConstrainedString extends MaximumLengthBrandType<100> ? true : false;
 const _csMinCheck: HasMinLength = true;
 const _csMaxCheck: HasMaxLength = true;
 
@@ -756,7 +756,7 @@ void _UniqueArraySchema;
 
 type UniqueArray = InferType<typeof _UniqueArraySchema>;
 
-type HasUniqueItems = UniqueArray extends UniqueItemsBrandType ? true : false;
+type HasUniqueItems = UniqueArray extends UniqueItemsBrandInterface ? true : false;
 const _uaCheck: HasUniqueItems = true;
 
 void _uaCheck;
@@ -920,7 +920,7 @@ void _AllOfBrandSchema;
 type AllOfBranded = InferType<typeof _AllOfBrandSchema>;
 
 type AllOfHasFormat = AllOfBranded extends FormatBrandType<'email'> ? true : false;
-type AllOfHasMinLen = AllOfBranded extends MinLengthBrandType<5> ? true : false;
+type AllOfHasMinLen = AllOfBranded extends MinimumLengthBrandType<5> ? true : false;
 const _allOfFormatCheck: AllOfHasFormat = true;
 const _allOfMinLenCheck: AllOfHasMinLen = true;
 
@@ -990,8 +990,8 @@ void _BoundedObjSchema;
 type BoundedObj = InferType<typeof _BoundedObjSchema>;
 
 // Branded type carries both object brands
-type HasMinProps = BoundedObj extends MinPropertiesBrandType<1> ? true : false;
-type HasMaxProps = BoundedObj extends MaxPropertiesBrandType<5> ? true : false;
+type HasMinProps = BoundedObj extends MinimumPropertiesBrandType<1> ? true : false;
+type HasMaxProps = BoundedObj extends MaximumPropertiesBrandType<5> ? true : false;
 const _minPropCheck: HasMinProps = true;
 const _maxPropCheck: HasMaxProps = true;
 
@@ -1109,7 +1109,7 @@ void _BrandedPatternSchema;
 
 type BrandedPattern = InferType<typeof _BrandedPatternSchema>;
 
-type PatternHasMinProps = BrandedPattern extends MinPropertiesBrandType<1> ? true : false;
+type PatternHasMinProps = BrandedPattern extends MinimumPropertiesBrandType<1> ? true : false;
 const _patternMinCheck: PatternHasMinProps = true;
 
 void _patternMinCheck;
@@ -1123,7 +1123,7 @@ void _BareObjBrandSchema;
 
 type BareObjBranded = InferType<typeof _BareObjBrandSchema>;
 
-type BareHasMinProps = BareObjBranded extends MinPropertiesBrandType<3> ? true : false;
+type BareHasMinProps = BareObjBranded extends MinimumPropertiesBrandType<3> ? true : false;
 const _bareMinCheck: BareHasMinProps = true;
 
 void _bareMinCheck;
@@ -1504,7 +1504,7 @@ const _nfBad: NoFive = 5;
 void _nfBad;
 
 // ---------------------------------------------------------------------------
-// 40. Array brands — minItems produces MinItemsBrandType
+// 40. Array brands — minItems produces MinimumItemsBrandType
 // ---------------------------------------------------------------------------
 
 const _MinItemsArraySchema = {
@@ -1517,14 +1517,14 @@ void _MinItemsArraySchema;
 
 type MinItemsArr = InferType<typeof _MinItemsArraySchema>;
 
-// interop: MinItemsBrandType carries a phantom brand key; null cannot
+// interop: MinimumItemsBrandType carries a phantom brand key; null cannot
 // be assigned to the branded type without the unknown intermediate.
-const _mia: MinItemsBrandType<2> = null as unknown as MinItemsArr;
+const _mia: MinimumItemsBrandType<2> = null as unknown as MinItemsArr;
 
 void _mia;
 
 // ---------------------------------------------------------------------------
-// 41. Array brands — maxItems produces MaxItemsBrandType, different values incompatible
+// 41. Array brands — maxItems produces MaximumItemsBrandType, different values incompatible
 // ---------------------------------------------------------------------------
 
 const _MaxItemsArraySchema = {
@@ -1537,9 +1537,9 @@ void _MaxItemsArraySchema;
 
 type MaxItemsArr = InferType<typeof _MaxItemsArraySchema>;
 
-// interop: MaxItemsBrandType carries a phantom brand key; null cannot
+// interop: MaximumItemsBrandType carries a phantom brand key; null cannot
 // be assigned to the branded type without the unknown intermediate.
-const _mxa: MaxItemsBrandType<5> = null as unknown as MaxItemsArr;
+const _mxa: MaximumItemsBrandType<5> = null as unknown as MaxItemsArr;
 
 void _mxa;
 
@@ -1555,7 +1555,7 @@ type OtherMaxArr = InferType<typeof _OtherMaxItemsSchema>;
 
 // interop: phantom brand key; unknown intermediate required for the negative brand test.
 // @ts-expect-error — maxItems: 5 vs maxItems: 10 are incompatible brands
-const _mxBad: MaxItemsBrandType<5> = null as unknown as OtherMaxArr;
+const _mxBad: MaximumItemsBrandType<5> = null as unknown as OtherMaxArr;
 
 void _mxBad;
 

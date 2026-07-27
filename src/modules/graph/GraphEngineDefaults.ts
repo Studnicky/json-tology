@@ -1,25 +1,71 @@
-import type {
-  SchemaGraphNodeType,
-  SchemaGraphSemanticsType
-} from '../../types/SchemaGraph.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
-import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntryType.js';
-import type { DefaultResolutionContextType } from '../../types/DefaultResolutionContextType.js';
-import { MAX_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
+import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntryInterface.js';
+import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContextInterface.js';
+import { MAXIMUM_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
 import { DataType } from '../data/DataType.js';
-import type { DefaultResolutionStateType } from '../../types/DefaultResolutionStateType.js';
-import type { RefTargetType } from '../../types/RefTargetType.js';
-import type { LookupSchemaFnType } from '../../types/LookupSchemaFnType.js';
-import type { RefResolutionOptionsType } from '../../types/RefResolutionOptionsType.js';
-import { RefResolver } from './RefResolver.js';
+import type { DefaultResolutionStateInterface } from '../../interfaces/DefaultResolutionStateInterface.js';
+import type { ReferenceTargetInterface } from '../../interfaces/ReferenceTargetInterface.js';
+import type { LookupSchemaFunctionInterface } from '../../interfaces/LookupSchemaFunctionInterface.js';
+import type { ReferenceResolutionOptionsInterface } from '../../interfaces/ReferenceResolutionOptionsInterface.js';
+import { ReferenceResolver } from './ReferenceResolver.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 
-function propertiesFromSemantics(sem: SchemaGraphSemanticsType): ReadonlyMap<string, SchemaGraphNodeType> {
-  const result = sem.properties;
+/**
+ * ReferenceRecursion — shared `$ref`/`$dynamicRef` resolution step used by both
+ * {@link ImplicitDefaultValue} and {@link ZeroValueSynthesis}. Both classes recurse
+ * into a resolved reference target the same way; only the recursive `create`
+ * they call back into differs.
+ */
+class ReferenceRecursion {
+  /**
+   * If `sem` declares `$ref` or `$dynamicRef`, resolve it and recurse via `continuation`.
+   * Returns `handled: false` when neither is present, signalling the caller to fall
+   * through to its own type-specific resolution.
+   */
+  static resolve(
+    sem: SchemaGraphSemanticsInterface,
+    state: DefaultResolutionStateInterface,
+    depth: number,
+    continuation: (state: DefaultResolutionStateInterface, node: SchemaGraphNodeInterface, depth: number) => unknown
+  ): { 'handled': boolean;
+    'value': unknown } {
+    if (typeof sem.ref === 'string') {
+      const {
+        'graph': rGraph, 'node': rNode
+      } = state.context.resolveReference(sem.ref, state.graph);
 
-  return result;
+      return {
+        'handled': true,
+        'value': continuation({
+          ...state,
+          'graph': rGraph
+        }, rNode, depth + 1)
+      };
+    }
+
+    if (typeof sem.dynamicRef === 'string') {
+      const {
+        'graph': rGraph, 'node': rNode
+      } = state.context.resolveDynamicReference(sem.dynamicRef, state.graph, state.dynamicScope);
+
+      return {
+        'handled': true,
+        'value': continuation({
+          ...state,
+          'graph': rGraph
+        }, rNode, depth + 1)
+      };
+    }
+
+    return {
+      'handled': false,
+      'value': undefined
+    };
+  }
 }
 
 /**
@@ -31,8 +77,8 @@ function propertiesFromSemantics(sem: SchemaGraphSemanticsType): ReadonlyMap<str
 class ImplicitDefaultValue {
   /** Build an implicit default from a node's property tree, if any properties yield values. */
   static buildObject(
-    state: DefaultResolutionStateType,
-    node: SchemaGraphNodeType,
+    state: DefaultResolutionStateInterface,
+    node: SchemaGraphNodeInterface,
     depth: number
   ): Record<string, unknown> | undefined {
     const sem = state.graph.semantics(node);
@@ -42,7 +88,7 @@ class ImplicitDefaultValue {
     for (const [
       key,
       childNode
-    ] of propertiesFromSemantics(sem)) {
+    ] of ImplicitDefaultValue.propertiesOf(sem)) {
       const childValue = ImplicitDefaultValue.create(state, childNode, depth + 1);
 
       if (childValue !== undefined) {
@@ -55,11 +101,11 @@ class ImplicitDefaultValue {
   }
 
   static create(
-    state: DefaultResolutionStateType,
-    node: SchemaGraphNodeType,
+    state: DefaultResolutionStateInterface,
+    node: SchemaGraphNodeInterface,
     depth: number
   ): unknown {
-    if (depth > MAX_DEFAULT_DEPTH) {
+    if (depth > MAXIMUM_DEFAULT_DEPTH) {
       return undefined;
     }
 
@@ -74,31 +120,15 @@ class ImplicitDefaultValue {
 
     const sem = state.graph.semantics(node);
     const defaultValue = sem.hasDefault ? sem.defaultValue : undefined;
-    const ref = sem.ref;
-    const dynamicRef = sem.dynamicRef;
 
     if (defaultValue !== undefined) {
       return GraphEngineSupport.cloneDefault(defaultValue);
     }
-    if (typeof ref === 'string') {
-      const {
-        'graph': rGraph, 'node': rNode
-      } = state.context.resolveRef(ref, state.graph);
 
-      return ImplicitDefaultValue.create({
-        ...state,
-        'graph': rGraph
-      }, rNode, depth + 1);
-    }
-    if (typeof dynamicRef === 'string') {
-      const {
-        'graph': rGraph, 'node': rNode
-      } = state.context.resolveDynamicRef(dynamicRef, state.graph, state.dynamicScope);
+    const referenceResult = ReferenceRecursion.resolve(sem, state, depth, ImplicitDefaultValue.create);
 
-      return ImplicitDefaultValue.create({
-        ...state,
-        'graph': rGraph
-      }, rNode, depth + 1);
+    if (referenceResult.handled) {
+      return referenceResult.value;
     }
 
     const hasProperties = sem.properties.size > 0;
@@ -109,222 +139,236 @@ class ImplicitDefaultValue {
 
     return undefined;
   }
+
+  private static propertiesOf(sem: SchemaGraphSemanticsInterface): ReadonlyMap<string, SchemaGraphNodeInterface> {
+    const result = sem.properties;
+
+    return result;
+  }
 }
 
-/** Resolve zero-value for primitive schema types. Returns a sentinel undefined when type is unknown. */
-function synthesizePrimitiveZeroValue(types: readonly string[]): unknown {
-  if (types.includes('string')) {
-    return '';
+/**
+ * ZeroValueSynthesis — builds a type-appropriate zero value from schema type
+ * metadata when no explicit default/const/enum is present. The primitive,
+ * allOf-merge, and top-level resolution steps are mutually recursive, so they
+ * live as static methods on a single class.
+ */
+class ZeroValueSynthesis {
+  /** Merge allOf member zero-values into a single object, or return null when no object members. */
+  static allOf(
+    state: DefaultResolutionStateInterface,
+    members: readonly SchemaGraphNodeInterface[],
+    depth: number
+  ): null | Record<string, unknown> {
+    const merged: Record<string, unknown> = {};
+    let hasObjectMember = false;
+
+    for (const memberNode of members) {
+      const memberValue = ZeroValueSynthesis.create(state, memberNode, depth + 1);
+
+      if (memberValue !== null && memberValue !== undefined && DataType.isRecord(memberValue)) {
+        hasObjectMember = true;
+
+        for (const [
+          key,
+          memberFieldValue
+        ] of Object.entries(memberValue)) {
+          merged[key] = memberFieldValue;
+        }
+      }
+    }
+
+    return hasObjectMember ? merged : null;
   }
-  if (types.includes('number') || types.includes('integer')) {
-    return 0;
-  }
-  if (types.includes('boolean')) {
-    return false;
-  }
-  if (types.includes('null')) {
+
+  static create(
+    state: DefaultResolutionStateInterface,
+    node: SchemaGraphNodeInterface,
+    depth: number
+  ): unknown {
+    if (depth > MAXIMUM_DEFAULT_DEPTH) {
+      return undefined;
+    }
+
+    if (typeof node.schema === 'boolean') {
+      return null;
+    }
+
+    if (state.visited.has(node.id)) {
+      return undefined;
+    }
+    state.visited.add(node.id);
+
+    const sem = state.graph.semantics(node);
+
+    if (sem.hasDefault) {
+      return GraphEngineSupport.cloneDefault(sem.defaultValue);
+    }
+    if (sem.hasConst) {
+      return sem.constValue;
+    }
+    if (sem.enumValues !== undefined && sem.enumValues.length > 0) {
+      return sem.enumValues[0];
+    }
+
+    const referenceResult = ReferenceRecursion.resolve(sem, state, depth, ZeroValueSynthesis.create);
+
+    if (referenceResult.handled) {
+      return referenceResult.value;
+    }
+
+    const types = sem.schemaTypes;
+    const primitiveValue = ZeroValueSynthesis.primitive(types);
+
+    if (primitiveValue !== undefined) {
+      return primitiveValue;
+    }
+
+    if (sem.properties.size > 0) {
+      return {};
+    }
+
+    // allOf-composed schema: no own type/properties but has allOf members.
+    // Synthesize each member and merge — later members override earlier on key
+    // conflict (in practice keys are disjoint). Handles Compose.subClassOf and
+    // Compose.extend wire shapes whose top-level carries only { $id, allOf }.
+    if (sem.allOf.length > 0) {
+      return ZeroValueSynthesis.allOf(state, sem.allOf, depth);
+    }
+
+    // anyOf/oneOf: synthesize from the first member that yields a non-null value.
+    // The same logic as allOf synthesis but we stop at the first viable member
+    // because union members are alternatives, not additive constraints.
+    if (sem.anyOf.length > 0) {
+      for (const memberNode of sem.anyOf) {
+        const memberValue = ZeroValueSynthesis.create(state, memberNode, depth + 1);
+
+        if (memberValue !== null && memberValue !== undefined) {
+          return memberValue;
+        }
+      }
+    }
+
+    if (sem.oneOf.length > 0) {
+      for (const memberNode of sem.oneOf) {
+        const memberValue = ZeroValueSynthesis.create(state, memberNode, depth + 1);
+
+        if (memberValue !== null && memberValue !== undefined) {
+          return memberValue;
+        }
+      }
+    }
+
     return null;
   }
-  if (types.includes('array')) {
-    return [];
-  }
-  if (types.includes('object')) {
-    return {};
-  }
 
-  return undefined;
-}
-
-/** Merge allOf member zero-values into a single object, or return null when no object members. */
-function synthesizeAllOfZeroValue(
-  state: DefaultResolutionStateType,
-  allOf: readonly SchemaGraphNodeType[],
-  depth: number
-): null | Record<string, unknown> {
-  const merged: Record<string, unknown> = {};
-  let hasObjectMember = false;
-
-  for (const memberNode of allOf) {
-    const memberValue = synthesizeZeroValueInternal(state, memberNode, depth + 1);
-
-    if (memberValue !== null && memberValue !== undefined && DataType.isRecord(memberValue)) {
-      hasObjectMember = true;
-
-      for (const [
-        key,
-        val
-      ] of Object.entries(memberValue)) {
-        merged[key] = val;
-      }
+  /** Resolve zero-value for primitive schema types. Returns a sentinel undefined when type is unknown. */
+  static primitive(types: readonly string[]): unknown {
+    if (types.includes('string')) {
+      return '';
     }
-  }
+    if (types.includes('number') || types.includes('integer')) {
+      return 0;
+    }
+    if (types.includes('boolean')) {
+      return false;
+    }
+    if (types.includes('null')) {
+      return null;
+    }
+    if (types.includes('array')) {
+      return [];
+    }
+    if (types.includes('object')) {
+      return {};
+    }
 
-  return hasObjectMember ? merged : null;
-}
-
-function synthesizeZeroValueInternal(
-  state: DefaultResolutionStateType,
-  node: SchemaGraphNodeType,
-  depth: number
-): unknown {
-  if (depth > MAX_DEFAULT_DEPTH) {
     return undefined;
   }
-
-  if (typeof node.schema === 'boolean') {
-    return null;
-  }
-
-  if (state.visited.has(node.id)) {
-    return undefined;
-  }
-  state.visited.add(node.id);
-
-  const sem = state.graph.semantics(node);
-
-  if (sem.hasDefault) {
-    return GraphEngineSupport.cloneDefault(sem.defaultValue);
-  }
-  if (sem.hasConst) {
-    return sem.constValue;
-  }
-  if (sem.enumValues !== undefined && sem.enumValues.length > 0) {
-    return sem.enumValues[0];
-  }
-
-  if (typeof sem.ref === 'string') {
-    const {
-      'graph': rGraph, 'node': rNode
-    } = state.context.resolveRef(sem.ref, state.graph);
-
-    return synthesizeZeroValueInternal({
-      ...state,
-      'graph': rGraph
-    }, rNode, depth + 1);
-  }
-  if (typeof sem.dynamicRef === 'string') {
-    const {
-      'graph': rGraph, 'node': rNode
-    } = state.context.resolveDynamicRef(sem.dynamicRef, state.graph, state.dynamicScope);
-
-    return synthesizeZeroValueInternal({
-      ...state,
-      'graph': rGraph
-    }, rNode, depth + 1);
-  }
-
-  const types = sem.schemaTypes;
-  const primitiveValue = synthesizePrimitiveZeroValue(types);
-
-  if (primitiveValue !== undefined) {
-    return primitiveValue;
-  }
-
-  if (sem.properties.size > 0) {
-    return {};
-  }
-
-  // allOf-composed schema: no own type/properties but has allOf members.
-  // Synthesize each member and merge — later members override earlier on key
-  // conflict (in practice keys are disjoint). Handles Compose.subClassOf and
-  // Compose.extend wire shapes whose top-level carries only { $id, allOf }.
-  if (sem.allOf.length > 0) {
-    return synthesizeAllOfZeroValue(state, sem.allOf, depth);
-  }
-
-  // anyOf/oneOf: synthesize from the first member that yields a non-null value.
-  // The same logic as allOf synthesis but we stop at the first viable member
-  // because union members are alternatives, not additive constraints.
-  if (sem.anyOf.length > 0) {
-    for (const memberNode of sem.anyOf) {
-      const memberValue = synthesizeZeroValueInternal(state, memberNode, depth + 1);
-
-      if (memberValue !== null && memberValue !== undefined) {
-        return memberValue;
-      }
-    }
-  }
-
-  if (sem.oneOf.length > 0) {
-    for (const memberNode of sem.oneOf) {
-      const memberValue = synthesizeZeroValueInternal(state, memberNode, depth + 1);
-
-      if (memberValue !== null && memberValue !== undefined) {
-        return memberValue;
-      }
-    }
-  }
-
-  return null;
 }
 
-/** CompilerDefaultContext — builds a DefaultResolutionContextType from lookup callbacks. */
+/**
+ * DynamicReferenceResolverContext — a DefaultResolutionContextInterface backed by a real
+ * class instance rather than a per-call object literal of closures, so its
+ * methods are ordinary class methods (not dispatch-map function values
+ * reallocated on every `CompilerDefaultContext.build` call).
+ */
+class DynamicReferenceResolverContext implements DefaultResolutionContextInterface {
+  readonly #referenceOptions: ReferenceResolutionOptionsInterface;
+
+  constructor(referenceOptions: ReferenceResolutionOptionsInterface) {
+    this.#referenceOptions = referenceOptions;
+  }
+
+  resolveDynamicReference(
+    dynamicReference: string,
+    currentGraph: SchemaGraphInterface,
+    dynamicScope: DynamicScopeEntryInterface[]
+  ): ReferenceTargetInterface {
+    const resolved = ReferenceResolver.resolve(dynamicReference, currentGraph, this.#referenceOptions);
+
+    if (resolved === undefined) {
+      // observability: throw is surfaced to caller (SchemaCompiler.compile → GraphEngineDefaults)
+      throw new GraphError(
+        `Cannot resolve $dynamicRef '${dynamicReference}' — schema not found`,
+        {
+          'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
+          'pointer': dynamicReference
+        }
+      );
+    }
+
+    // Mirror the dynamic scope walk from resolveDynamicRefTarget in SchemaCompilerPlan.
+    const fragment = GraphEngineSupport.extractNamedFragment(dynamicReference);
+    const resolvedSem = resolved.graph.semantics(resolved.node);
+    const resolvedAnchor = resolvedSem.dynamicAnchor;
+
+    if (fragment === undefined || resolvedAnchor !== fragment) {
+      return resolved;
+    }
+
+    for (const entry of dynamicScope) {
+      if (entry.anchor === fragment) {
+        return {
+          'graph': entry.graph,
+          'node': entry.node
+        };
+      }
+    }
+
+    return resolved;
+  }
+
+  resolveReference(reference: string, currentGraph: SchemaGraphInterface): ReferenceTargetInterface {
+    const resolved = ReferenceResolver.resolve(reference, currentGraph, this.#referenceOptions);
+
+    if (resolved === undefined) {
+      // observability: throw is surfaced to caller (SchemaCompiler.compile → GraphEngineDefaults)
+      throw new GraphError(
+        `Cannot resolve $ref '${reference}' — schema not found`,
+        {
+          'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
+          'pointer': reference
+        }
+      );
+    }
+
+    return resolved;
+  }
+}
+
+/** CompilerDefaultContext — builds a DefaultResolutionContextInterface from lookup callbacks. */
 class CompilerDefaultContext {
   static build(
-    lookupSchema: LookupSchemaFnType | undefined,
+    lookupSchema: LookupSchemaFunctionInterface | undefined,
     lookupGraph?: (id: string) => SchemaGraphInterface | undefined
-  ): DefaultResolutionContextType {
-    const refOptions: RefResolutionOptionsType = {
+  ): DefaultResolutionContextInterface {
+    const referenceOptions: ReferenceResolutionOptionsInterface = {
       ...(lookupSchema !== undefined && { 'lookupSchema': lookupSchema }),
       ...(lookupGraph !== undefined && { 'lookupGraph': lookupGraph })
     };
 
-    return {
-      resolveDynamicRef(
-        dynamicRef: string,
-        currentGraph: SchemaGraphInterface,
-        dynamicScope
-      ): RefTargetType {
-        const resolved = RefResolver.resolve(dynamicRef, currentGraph, refOptions);
-
-        if (resolved === undefined) {
-          // observability: throw is surfaced to caller (SchemaCompiler.compile → GraphEngineDefaults)
-          throw new GraphError(
-            `Cannot resolve $dynamicRef '${dynamicRef}' — schema not found`,
-            {
-              'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
-              'pointer': dynamicRef
-            }
-          );
-        }
-
-        // Mirror the dynamic scope walk from resolveDynamicRefTarget in SchemaCompilerPlan.
-        const fragment = GraphEngineSupport.extractNamedFragment(dynamicRef);
-        const resolvedSem = resolved.graph.semantics(resolved.node);
-        const resolvedAnchor = resolvedSem.dynamicAnchor;
-
-        if (fragment === undefined || resolvedAnchor !== fragment) {
-          return resolved;
-        }
-
-        for (const entry of dynamicScope) {
-          if (entry.anchor === fragment) {
-            return {
-              'graph': entry.graph,
-              'node': entry.node
-            };
-          }
-        }
-
-        return resolved;
-      },
-      resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetType {
-        const resolved = RefResolver.resolve(ref, currentGraph, refOptions);
-
-        if (resolved === undefined) {
-          // observability: throw is surfaced to caller (SchemaCompiler.compile → GraphEngineDefaults)
-          throw new GraphError(
-            `Cannot resolve $ref '${ref}' — schema not found`,
-            {
-              'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
-              'pointer': ref
-            }
-          );
-        }
-
-        return resolved;
-      }
-    };
+    return new DynamicReferenceResolverContext(referenceOptions);
   }
 }
 
@@ -351,10 +395,10 @@ class CompilerDefaultContext {
  */
 export const GraphEngineDefaults = {
   createImplicitDefaultValue(
-    context: DefaultResolutionContextType,
-    node: SchemaGraphNodeType,
+    context: DefaultResolutionContextInterface,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryType[]
+    dynamicScope: DynamicScopeEntryInterface[]
   ): unknown {
     const result = ImplicitDefaultValue.create({
       context,
@@ -367,7 +411,7 @@ export const GraphEngineDefaults = {
   },
 
   createImplicitDefaultValueForLookups(
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
     lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
     lookupGraph: ((id: string) => SchemaGraphInterface | undefined) | undefined,
@@ -384,10 +428,10 @@ export const GraphEngineDefaults = {
   },
 
   createImplicitDefaultValueSeeded(
-    context: DefaultResolutionContextType,
-    node: SchemaGraphNodeType,
+    context: DefaultResolutionContextInterface,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryType[],
+    dynamicScope: DynamicScopeEntryInterface[],
     visited: Set<string>
   ): unknown {
     const result = ImplicitDefaultValue.create({
@@ -401,12 +445,12 @@ export const GraphEngineDefaults = {
   },
 
   synthesizeZeroValue(
-    context: DefaultResolutionContextType,
-    node: SchemaGraphNodeType,
+    context: DefaultResolutionContextInterface,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryType[]
+    dynamicScope: DynamicScopeEntryInterface[]
   ): unknown {
-    const result = synthesizeZeroValueInternal({
+    const result = ZeroValueSynthesis.create({
       context,
       dynamicScope,
       graph,
@@ -417,14 +461,14 @@ export const GraphEngineDefaults = {
   },
 
   synthesizeZeroValueForLookups(
-    node: SchemaGraphNodeType,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
     lookup: ((id: string) => Record<string, unknown> | undefined) | undefined,
     lookupGraph?: (id: string) => SchemaGraphInterface | undefined
   ): unknown {
     const context = CompilerDefaultContext.build(lookup, lookupGraph);
 
-    return synthesizeZeroValueInternal({
+    return ZeroValueSynthesis.create({
       context,
       'dynamicScope': [],
       graph,

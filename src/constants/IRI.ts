@@ -7,14 +7,16 @@
  */
 import { STANDARD_PREFIXES } from './STANDARD_PREFIXES.js';
 
-const OWL_NS = STANDARD_PREFIXES.owl;
-const RDF_NS = STANDARD_PREFIXES.rdf;
-const RDFS_NS = STANDARD_PREFIXES.rdfs;
-const SH_NS = STANDARD_PREFIXES.sh;
-const XSD_NS = STANDARD_PREFIXES.xsd;
-const DASH_NS = STANDARD_PREFIXES.dash;
-const DCT_NS = STANDARD_PREFIXES.dct;
-const JT_NS = STANDARD_PREFIXES.jt;
+const {
+  'dash': DASH_NS,
+  'dct': DCT_NS,
+  'jt': JT_NS,
+  'owl': OWL_NS,
+  'rdf': RDF_NS,
+  'rdfs': RDFS_NS,
+  'sh': SH_NS,
+  'xsd': XSD_NS
+} = STANDARD_PREFIXES;
 
 /**
  * Full-IRI constants for the OWL 2 vocabulary.

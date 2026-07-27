@@ -289,9 +289,9 @@ void describe('ShaclProjection.graph() — user restriction regression', { 'conc
     // silently dropped from the sh:and walk; post-fix they become sh:PropertyShape
     // constraints with sh:minCount / sh:maxCount.
     const schema = Compose.subClassOf(
-      Compose.minCardinality('urn:example:Book#authors', 1),
+      Compose.minimumCardinality('urn:example:Book#authors', 1),
       Compose.subClassOf(
-        Compose.maxCardinality('urn:example:Book#authors', 5),
+        Compose.maximumCardinality('urn:example:Book#authors', 5),
         {
           '$id': 'urn:example:Book',
           'properties': { 'authors': { 'type': 'string' } },

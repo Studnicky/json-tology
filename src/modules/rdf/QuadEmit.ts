@@ -7,8 +7,8 @@
  */
 
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
-import type { RelationIndexType } from '../../types/RelationIndexType.js';
-import type { QuadFactoryEmitOptsType } from '../../types/QuadFactoryOpts.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
+import type { QuadFactoryEmitOptionsInterface } from '../../interfaces/QuadFactoryEmitOptionsInterface.js';
 import { XSD } from '../../constants/IRI.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
@@ -19,21 +19,21 @@ export const QuadEmit = {
    */
   emitConstraintLiteral(
     subject: string,
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     predicate: string,
     datatype: string,
     quads: QuadInterface[],
-    options?: QuadFactoryEmitOptsType
+    options?: QuadFactoryEmitOptionsInterface
   ): void {
     const rels = entry.byPredicate.get(predicate) ?? [];
 
-    const firstRel = rels[0];
+    const firstRel = rels.at(0);
 
     if (firstRel !== undefined) {
       const curie = options?.curie;
-      const numLit = QuadFactory.literal(Number(ProjectionIndex.relationTargetId(firstRel)), datatype, { curie });
+      const numberLiteral = QuadFactory.literal(Number(ProjectionIndex.relationTargetId(firstRel)), datatype, { curie });
 
-      quads.push(QuadFactory.quad(subject, predicate, numLit, { curie }));
+      quads.push(QuadFactory.quad(subject, predicate, numberLiteral, { curie }));
     }
   },
 
@@ -42,11 +42,11 @@ export const QuadEmit = {
    */
   emitLiterals(
     subject: string,
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     predicate: string,
     outputPredicate: string,
     quads: QuadInterface[],
-    options?: QuadFactoryEmitOptsType
+    options?: QuadFactoryEmitOptionsInterface
   ): void {
     const rels = entry.byPredicate.get(predicate);
 
@@ -54,9 +54,9 @@ export const QuadEmit = {
       const curie = options?.curie;
 
       for (const rel of rels) {
-        const litVal = QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
+        const literalValue = QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
 
-        quads.push(QuadFactory.quad(subject, outputPredicate, litVal, { curie }));
+        quads.push(QuadFactory.quad(subject, outputPredicate, literalValue, { curie }));
       }
     }
   }

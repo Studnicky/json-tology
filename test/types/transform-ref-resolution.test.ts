@@ -3,7 +3,7 @@
  * in its decode/encode canonical types through the global references registry —
  * the same auto-magic default as `CanonicalShapeType` / `InferType`. A transform
  * authored against registered schemas types decode's output and encode's input
- * as the resolved canonical shape, NOT `RefNotFoundType`.
+ * as the resolved canonical shape, NOT `ReferenceNotFoundType`.
  *
  * Validates by compiling under `npm run type-check:tests:all`.
  */

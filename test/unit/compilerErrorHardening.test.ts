@@ -8,7 +8,7 @@
  *   Fix 2 — SchemaCompilerDefaults.resolveRef: unresolvable $ref during default
  *            synthesis → GraphError(REF_NOT_FOUND) instead of falling back to rootNode.
  *   Fix 3 — SchemaCompilerDefaults.resolveDynamicRef: now performs real resolution
- *            using RefResolver + scope walk; unresolvable static target →
+ *            using ReferenceResolver + scope walk; unresolvable static target →
  *            GraphError(REF_NOT_FOUND) instead of returning rootNode.
  *   Fix 4 — compileDynamicRefValidator: unresolvable static $dynamicRef target →
  *            GraphError(REF_NOT_FOUND) at compile time; $dynamicRef '#' with no
@@ -27,8 +27,8 @@ import { GraphError } from '../../src/errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../src/constants/ERROR_CODES.js';
 import { JsonTology } from '../../src/index.js';
 import type { FormatRegistryInterface } from '../../src/interfaces/FormatRegistryInterface.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../src/types/SchemaCompilerValidatePlanContextType.js';
-import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
+import type { SchemaCompilerValidatePlanContextInterface } from '../../src/interfaces/SchemaCompilerValidatePlanContextInterface.js';
+import type { ValidateWithErrorsFunctionInterface } from '../../src/interfaces/ValidateWithErrorsFunctionInterface.js';
 import type { GraphEngineInterface } from '../../src/interfaces/GraphEngineInterface.js';
 
 // ---------------------------------------------------------------------------
@@ -47,14 +47,14 @@ const stubFormatRegistry: FormatRegistryInterface = {
   }
 };
 
-const passValidator: ValidateWithErrorsFnType = (value) => {
+const passValidator: ValidateWithErrorsFunctionInterface = (value) => {
   return {
     'valid': true,
     'value': value
   };
 };
 
-function makeStubContext(): SchemaCompilerValidatePlanContextType {
+function makeStubContext(): SchemaCompilerValidatePlanContextInterface {
   return {
     'activeCustomKeywords': [],
     'appliesFormatAssertions': () => {

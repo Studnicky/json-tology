@@ -4,9 +4,9 @@
 
 | Surface | Returns | Best for |
 |---------|---------|----------|
-| `.items` | `readonly ValidationErrorType[]` | Raw access - path, keyword, message, params |
+| `.items` | `readonly ValidationErrorEntity.Type[]` | Raw access - path, keyword, message, params |
 | [`aggregate()`](#validationerrors-aggregate) | `{ count, paths, keywords }` | Structured logs, metric labels |
-| [`report()`](#validationerrors-report) | `ProblemDetailsType` | HTTP 422 response bodies (RFC 7807) |
+| [`report()`](#validationerrors-report) | `ProblemDetailsEntity.Type` | HTTP 422 response bodies (RFC 7807) |
 
 All examples use the [bookstore domain](/bookstore-domain).
 
@@ -159,7 +159,7 @@ keywords = sorted(set(e['type'] for e in errors))
 
 ## `ValidationErrors.report` {#validationerrors-report}
 
-**Declaration.** Returns a `ProblemDetailsType` object conforming to RFC 7807 Problem Details. Default values: `type: 'https://json-tology.dev/problems/validation'`, `title: 'Validation failed'`, `status: 422`. Accepts partial overrides for `instance`, `status`, `title`, and `type`. The `errors` array in the payload mirrors `errs.items` with `path`, `keyword`, `message`, and `params` on each entry. `path` values in the payload are JSON Pointer format.
+**Declaration.** Returns a `ProblemDetailsEntity.Type` object conforming to RFC 7807 Problem Details. Default values: `type: 'https://json-tology.dev/problems/validation'`, `title: 'Validation failed'`, `status: 422`. Accepts partial overrides for `instance`, `status`, `title`, and `type`. The `errors` array in the payload mirrors `errs.items` with `path`, `keyword`, `message`, and `params` on each entry. `path` values in the payload are JSON Pointer format.
 
 **Use this when** returning HTTP `422 Unprocessable Entity` responses from an API. Set `Content-Type: application/problem+json`. Pass `instance: req.url` to include the request path in the problem details.
 
@@ -167,9 +167,9 @@ keywords = sorted(set(e['type'] for e in errors))
 
 ### Return type
 
-<!-- inline-ts-ok: ProblemDetailsType shape annotated as TS comments; type definition lives in src/types and the doc only illustrates the wire shape. -->
+<!-- inline-ts-ok: ProblemDetailsEntity.Type shape annotated as TS comments; type definition lives in src/entities and the doc only illustrates the wire shape. -->
 ```ts
-// ProblemDetailsType
+// ProblemDetailsEntity.Type
 {
   type:     string;    // problem type URI
   title:    string;    // human-readable title
@@ -207,7 +207,7 @@ keywords = sorted(set(e['type'] for e in errors))
 
 ```ts [json-tology]
 errs.report({ instance: '/reviews' })
-// ProblemDetailsType  - RFC 7807 compliant, ready to send as 422 body
+// ProblemDetailsEntity.Type  - RFC 7807 compliant, ready to send as 422 body
 ```
 
 ```ts [Zod]

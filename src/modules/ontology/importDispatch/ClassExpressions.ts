@@ -21,23 +21,20 @@
  *   `owl:oneOf` member lists) are walked via `ctx.graph.collectList(head)`.
  * - Blank-node class expressions are resolved recursively by treating their
  *   bnode id as a subject and re-entering the same per-subject helpers.
- * - Literal list items carry their typed JS value via `ListItemType.datatype`,
+ * - Literal list items carry their typed JS value via `ListItemEntity.Type.datatype`,
  *   so `Terms.decodeLiteral` semantics survive through `Terms.literal` reconstruction.
  */
 
+import type { ListItemEntity } from '../../../entities/ListItemEntity.js';
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../../types/OwlImport.js';
-import type {
-  ListItemType,
-  SchemaGraphRelationType
-} from '../../../types/SchemaGraph.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
-import type { ResolveItemOptionsType } from '../../../types/ResolveItemOptionsType.js';
-import type { ResolveBnodeOptionsType } from '../../../types/ResolveBnodeOptionsType.js';
-import type { ResolveListOptionsType } from '../../../types/ResolveListOptionsType.js';
-import type { ClassExprContextType } from '../../../types/ClassExprContextType.js';
+import type { ResolveItemOptionsInterface } from '../../../interfaces/ResolveItemOptionsInterface.js';
+import type { ResolveBnodeOptionsInterface } from '../../../interfaces/ResolveBnodeOptionsInterface.js';
+import type { ResolveListOptionsInterface } from '../../../interfaces/ResolveListOptionsInterface.js';
+import type { ClassExprContextInterface } from '../../../interfaces/ClassExprContextInterface.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
 import { Terms } from '../../quads/Terms.js';
@@ -54,44 +51,11 @@ import {
 import { ImportRelation } from './ImportRelation.js';
 
 /** Maximum recursion depth for blank-node class expression resolution. */
-const MAX_BNODE_DEPTH = 20;
-
-// ---------------------------------------------------------------------------
-// Blank-node restriction detection
-// ---------------------------------------------------------------------------
-
-/** Return true when the blank node is an owl:Restriction or has onProperty. */
-function isBnodeRestriction(bnodeId: string, graph: SchemaGraphInterface): boolean {
-  const typeRelations = ImportRelation.byPredicate(graph, bnodeId, RDF_TYPE_PREDICATES);
-  const isRestrictionType = typeRelations.some((rel: SchemaGraphRelationType): boolean => {
-    return rel.termType === 'NamedNode' && RESTRICTION_IRIS.has(ImportRelation.targetValue(rel));
-  });
-
-  if (isRestrictionType) {
-    return true;
-  }
-
-  return ImportRelation.byPredicate(graph, bnodeId, ON_PROPERTY_IRIS).length > 0;
-}
+const MAXIMUM_BNODE_DEPTH = 20;
 
 // ---------------------------------------------------------------------------
 // Blank-node class expression resolution
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Empty fragment helper
-// ---------------------------------------------------------------------------
-
-function emptyFragment(): OwlImportFragmentType {
-  return {
-    'characteristics': [],
-    'differentFrom': [],
-    'individuals': [],
-    'invariants': [],
-    'sameAs': [],
-    'schemaDeltas': new Map()
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Public dispatcher
@@ -109,12 +73,12 @@ function emptyFragment(): OwlImportFragmentType {
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting).
- * @returns OwlImportFragmentType with schemaDeltas for class expression subjects.
+ * @returns OwlImportFragmentInterface with schemaDeltas for class expression subjects.
  *
  * @remarks
  * Processes OWL 2 §8 / §9.1 class expressions: intersection, union, disjoint
  * union, and enumeration. Blank-node members are resolved recursively up to
- * `MAX_BNODE_DEPTH` levels. Discriminated unions detected via `owl:hasValue`
+ * `MAXIMUM_BNODE_DEPTH` levels. Discriminated unions detected via `owl:hasValue`
  * are reported as unsupported and emitted as plain `oneOf` arrays.
  *
  * @example
@@ -125,82 +89,56 @@ function emptyFragment(): OwlImportFragmentType {
  *
  * @category OWL Import
  * @since 0.1.0
- * @see OwlImportContextType
+ * @see OwlImportContextInterface
  * @group importDispatch
  */
 export class ClassExpressions {
   /**
-   * Apply `owl:disjointUnionOf` relations for a single class subject.
+   * Resolve list members for every relation on `subjectId` matching
+   * `predicates`, merging `buildPatch(members)` into schemaDeltas for each
+   * non-empty member list. Shared by the disjointUnionOf and intersectionOf
+   * arms, which differ only in predicate set and patch shape.
+   *
+   * Returns whether any relation matched `predicates` at all (used by callers
+   * that branch on presence, independent of whether members resolved).
    */
-  private static applyDisjointUnionOf(subjectId: string, ctx: ClassExprContextType): boolean {
-    const disjointUnion = ImportRelation.byPredicate(ctx.graph, subjectId, DISJOINT_UNION_OF_IRIS);
-
-    for (const duq of disjointUnion) {
-      const members = ClassExpressions.resolveListMembers({
-        'allClassIris': ctx.allClassIris,
-        'depth': 0,
-        'graph': ctx.graph,
-        'listHead': ImportRelation.targetValue(duq)
-      });
-
-      if (members.length > 0) {
-        const existing = ctx.schemaDeltas.get(subjectId) ?? {};
-
-        ctx.schemaDeltas.set(subjectId, {
-          ...existing,
-          'oneOf': members
-        });
-      }
-    }
-
-    return disjointUnion.length > 0;
-  }
-
-  /**
-   * Apply `owl:intersectionOf` relations for a single class subject.
-   */
-  private static applyIntersectionOf(
+  private static applyMemberListPatch(
     subjectId: string,
-    ctx: ClassExprContextType
-  ): void {
-    const intersection = ImportRelation.byPredicate(ctx.graph, subjectId, INTERSECTION_OF_IRIS);
+    context: ClassExprContextInterface,
+    predicates: ReadonlySet<string>,
+    buildPatch: (members: JsonSchemaDocumentObjectType[]) => JsonSchemaDocumentObjectType
+  ): boolean {
+    const relations = ImportRelation.byPredicate(context.graph, subjectId, predicates);
 
-    for (const iq of intersection) {
+    for (const rel of relations) {
       const members = ClassExpressions.resolveListMembers({
-        'allClassIris': ctx.allClassIris,
+        'allClassIris': context.allClassIris,
         'depth': 0,
-        'graph': ctx.graph,
-        'listHead': ImportRelation.targetValue(iq)
+        'graph': context.graph,
+        'listHead': ImportRelation.targetValue(rel)
       });
 
       if (members.length > 0) {
-        const existing = ctx.schemaDeltas.get(subjectId) ?? {};
-
-        ctx.schemaDeltas.set(subjectId, {
-          ...existing,
-          'allOf': members
-        });
+        ImportRelation.mergeSchemaDelta(context.schemaDeltas, subjectId, buildPatch(members));
       }
     }
+
+    return relations.length > 0;
   }
+
 
   /**
    * Apply `owl:oneOf` (enum) relations for a single class subject.
    * Only call when no unionOf / disjointUnionOf already covers the subject.
    */
-  private static applyOneOf(subjectId: string, ctx: ClassExprContextType): void {
-    const oneOf = ImportRelation.byPredicate(ctx.graph, subjectId, ONE_OF_IRIS);
+  private static applyOneOf(subjectId: string, context: ClassExprContextInterface): void {
+    const oneOf = ImportRelation.byPredicate(context.graph, subjectId, ONE_OF_IRIS);
 
     for (const oq of oneOf) {
-      const enumValues = ClassExpressions.extractEnumValues(ImportRelation.targetValue(oq), ctx.graph);
+      const enumValues = ClassExpressions.extractEnumValues(ImportRelation.targetValue(oq), context.graph);
 
       if (enumValues.length > 0) {
-        const existing = ctx.schemaDeltas.get(subjectId) ?? {};
-
-        ctx.schemaDeltas.set(subjectId, {
-          ...existing,
-          'enum': enumValues
-        });
+        ImportRelation.mergeSchemaDelta(context.schemaDeltas, subjectId, { 'enum': enumValues });
       }
     }
   }
@@ -208,80 +146,120 @@ export class ClassExpressions {
   /**
    * Apply `owl:unionOf` relations for a single class subject (with discriminator detection).
    */
-  private static applyUnionOf(subjectId: string, ctx: ClassExprContextType): boolean {
-    const union = ImportRelation.byPredicate(ctx.graph, subjectId, UNION_OF_IRIS);
+  private static applyUnionOf(subjectId: string, context: ClassExprContextInterface): boolean {
+    const union = ImportRelation.byPredicate(context.graph, subjectId, UNION_OF_IRIS);
 
     for (const uq of union) {
       const listHead = ImportRelation.targetValue(uq);
-      const listItems = ctx.graph.collectList(listHead);
-      const discriminatorProp = detectDiscriminatorProperty(listItems, ctx.graph);
+      const listItems = context.graph.collectList(listHead);
+      const discriminatorProp = ClassExpressions.detectDiscriminatorProperty(listItems, context.graph);
 
       if (discriminatorProp !== undefined) {
-        ctx.reportUnsupported(
+        context.reportUnsupported(
           `discriminator:${discriminatorProp}`,
           subjectId
         );
       }
 
       const members = ClassExpressions.resolveListMembers({
-        'allClassIris': ctx.allClassIris,
+        'allClassIris': context.allClassIris,
         'depth': 0,
-        'graph': ctx.graph,
+        'graph': context.graph,
         listHead
       });
 
       if (members.length > 0) {
-        const existing = ctx.schemaDeltas.get(subjectId) ?? {};
-
-        ctx.schemaDeltas.set(subjectId, {
-          ...existing,
-          'oneOf': members
-        });
+        ImportRelation.mergeSchemaDelta(context.schemaDeltas, subjectId, { 'oneOf': members });
       }
     }
 
     return union.length > 0;
   }
 
+  /**
+   * Detect whether all union members share a common `owl:hasValue` on the same
+   * `owl:onProperty`, with pairwise-distinct values.
+   *
+   * Returns the property local name if a discriminator is found, or undefined.
+   */
+  private static detectDiscriminatorProperty(
+    memberItems: readonly ListItemEntity.Type[],
+    graph: SchemaGraphInterface
+  ): string | undefined {
+    if (memberItems.length < 2) {
+      return undefined;
+    }
+
+    const memberDiscriminators: Array<{ 'property': string;
+      'value': string }> = [];
+
+    for (const item of memberItems) {
+      if (item.termType !== 'BlankNode') {
+        return undefined;
+      }
+      const disc = ClassExpressions.extractHasValueDiscriminator(item.target, graph);
+
+      if (disc === undefined) {
+        return undefined;
+      }
+      memberDiscriminators.push(disc);
+    }
+
+    const firstProp = memberDiscriminators[0]?.property;
+    const allSameProperty = memberDiscriminators.every((disc): boolean => {
+      return disc.property === firstProp;
+    });
+
+    if (!allSameProperty) {
+      return undefined;
+    }
+
+    const values = memberDiscriminators.map((disc): string => {
+      const result = disc.value;
+
+      return result;
+    });
+    const valueSet = new Set(values);
+
+    if (valueSet.size !== values.length) {
+      return undefined;
+    }
+
+    return firstProp;
+  }
+
   public static dispatch(
     _quads: QuadInterface[],
-    ctx: OwlImportContextType
-  ): OwlImportFragmentType {
-    const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-    const exprCtx: ClassExprContextType = {
-      'allClassIris': ctx.allClassIris,
-      'graph': ctx.graph,
-      'reportUnsupported': ctx.reportUnsupported,
+    context: OwlImportContextInterface
+  ): OwlImportFragmentInterface {
+    const schemaDeltas = new Map<string, JsonSchemaDocumentObjectType>();
+    const expressionContext: ClassExprContextInterface = {
+      'allClassIris': context.allClassIris,
+      'graph': context.graph,
+      'reportUnsupported': context.reportUnsupported,
       schemaDeltas
     };
 
-    for (const subjectId of ctx.allClassIris) {
+    for (const subjectId of context.allClassIris) {
       if (subjectId.startsWith('_:')) {
         continue;
       }
 
-      ClassExpressions.applyIntersectionOf(subjectId, exprCtx);
+      ClassExpressions.applyMemberListPatch(subjectId, expressionContext, INTERSECTION_OF_IRIS, (members: JsonSchemaDocumentObjectType[]): JsonSchemaDocumentObjectType => {
+        return { 'allOf': members };
+      });
 
-      const hasUnion = ClassExpressions.applyUnionOf(subjectId, exprCtx);
-      const hasDisjointUnion = ClassExpressions.applyDisjointUnionOf(subjectId, exprCtx);
+      const hasUnion = ClassExpressions.applyUnionOf(subjectId, expressionContext);
+      const hasDisjointUnion = ClassExpressions.applyMemberListPatch(subjectId, expressionContext, DISJOINT_UNION_OF_IRIS, (members: JsonSchemaDocumentObjectType[]): JsonSchemaDocumentObjectType => {
+        return { 'oneOf': members };
+      });
 
       if (!hasUnion && !hasDisjointUnion) {
-        ClassExpressions.applyOneOf(subjectId, exprCtx);
+        ClassExpressions.applyOneOf(subjectId, expressionContext);
       }
     }
 
-    if (schemaDeltas.size === 0) {
-      return emptyFragment();
-    }
-
-    return {
-      'characteristics': [],
-      'differentFrom': [],
-      'individuals': [],
-      'invariants': [],
-      'sameAs': [],
-      schemaDeltas
-    };
+    return ImportRelation.buildFragment(schemaDeltas);
   }
 
   /**
@@ -388,11 +366,25 @@ export class ClassExpressions {
     };
   }
 
+  /** Return true when the blank node is an owl:Restriction or has onProperty. */
+  private static isBnodeRestriction(bnodeId: string, graph: SchemaGraphInterface): boolean {
+    const typeRelations = ImportRelation.byPredicate(graph, bnodeId, RDF_TYPE_PREDICATES);
+    const isRestrictionType = typeRelations.some((rel: SchemaGraphRelationInterface): boolean => {
+      return rel.termType === 'NamedNode' && RESTRICTION_IRIS.has(ImportRelation.targetValue(rel));
+    });
+
+    if (isRestrictionType) {
+      return true;
+    }
+
+    return ImportRelation.byPredicate(graph, bnodeId, ON_PROPERTY_IRIS).length > 0;
+  }
+
   /**
    * Resolve a blank-node class expression to a JSON Schema fragment by
    * inspecting its outgoing relations.
    */
-  private static resolveBlankNodeExpression(options: ResolveBnodeOptionsType): JsonSchemaDocumentObjectType | undefined {
+  private static resolveBlankNodeExpression(options: ResolveBnodeOptionsInterface): JsonSchemaDocumentObjectType | undefined {
     const {
       allClassIris, bnodeId, depth, graph
     } = options;
@@ -432,7 +424,7 @@ export class ClassExpressions {
     }
 
     // owl:Restriction blank node — skip (PropertyRestrictions handles this).
-    if (isBnodeRestriction(bnodeId, graph)) {
+    if (ClassExpressions.isBnodeRestriction(bnodeId, graph)) {
       return undefined;
     }
 
@@ -451,12 +443,12 @@ export class ClassExpressions {
    * - BlankNode that cannot be resolved → undefined (skipped)
    * - Literal at the member level → undefined (not a class expression)
    */
-  private static resolveClassExpressionMember(options: ResolveItemOptionsType): JsonSchemaDocumentObjectType | undefined {
+  private static resolveClassExpressionMember(options: ResolveItemOptionsInterface): JsonSchemaDocumentObjectType | undefined {
     const {
       allClassIris, depth, graph, item
     } = options;
 
-    if (depth > MAX_BNODE_DEPTH) {
+    if (depth > MAXIMUM_BNODE_DEPTH) {
       return undefined;
     }
 
@@ -477,7 +469,7 @@ export class ClassExpressions {
   }
 
   /** Resolve an owl:intersectionOf bnode into `{ allOf: members }`. */
-  private static resolveIntersectionBnode(options: ResolveListOptionsType): JsonSchemaDocumentObjectType | undefined {
+  private static resolveIntersectionBnode(options: ResolveListOptionsInterface): JsonSchemaDocumentObjectType | undefined {
     const members = ClassExpressions.resolveListMembers(options);
 
     return members.length === 0 ? undefined : { 'allOf': members };
@@ -488,7 +480,7 @@ export class ClassExpressions {
    * Schema fragment. Filters out undefined results (blank nodes we cannot
    * resolve).
    */
-  private static resolveListMembers(options: ResolveListOptionsType): JsonSchemaDocumentObjectType[] {
+  private static resolveListMembers(options: ResolveListOptionsInterface): JsonSchemaDocumentObjectType[] {
     const {
       allClassIris, depth, graph, listHead
     } = options;
@@ -512,65 +504,9 @@ export class ClassExpressions {
   }
 
   /** Resolve an owl:unionOf bnode into `{ oneOf: members }`. */
-  private static resolveUnionBnode(options: ResolveListOptionsType): JsonSchemaDocumentObjectType | undefined {
+  private static resolveUnionBnode(options: ResolveListOptionsInterface): JsonSchemaDocumentObjectType | undefined {
     const members = ClassExpressions.resolveListMembers(options);
 
     return members.length === 0 ? undefined : { 'oneOf': members };
   }
-}
-
-// ---------------------------------------------------------------------------
-// Discriminator detection for unionOf
-// ---------------------------------------------------------------------------
-
-/**
- * Detect whether all union members share a common `owl:hasValue` on the same
- * `owl:onProperty`, with pairwise-distinct values.
- *
- * Returns the property local name if a discriminator is found, or undefined.
- */
-function detectDiscriminatorProperty(
-  memberItems: readonly ListItemType[],
-  graph: SchemaGraphInterface
-): string | undefined {
-  if (memberItems.length < 2) {
-    return undefined;
-  }
-
-  const memberDiscriminators: Array<{ 'property': string;
-    'value': string }> = [];
-
-  for (const item of memberItems) {
-    if (item.termType !== 'BlankNode') {
-      return undefined;
-    }
-    const disc = ClassExpressions.extractHasValueDiscriminator(item.target, graph);
-
-    if (disc === undefined) {
-      return undefined;
-    }
-    memberDiscriminators.push(disc);
-  }
-
-  const firstProp = memberDiscriminators[0]?.property;
-  const allSameProperty = memberDiscriminators.every((disc): boolean => {
-    return disc.property === firstProp;
-  });
-
-  if (!allSameProperty) {
-    return undefined;
-  }
-
-  const values = memberDiscriminators.map((disc): string => {
-    const result = disc.value;
-
-    return result;
-  });
-  const valueSet = new Set(values);
-
-  if (valueSet.size !== values.length) {
-    return undefined;
-  }
-
-  return firstProp;
 }

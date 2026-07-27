@@ -26,10 +26,12 @@ import type {
  * `Term = NamedNode | BlankNode | Literal | DefaultGraph` (the project does
  * not use `Variable`).
  */
+/** Deliberate lint exception: a union of external rdfjs interface types cannot be expressed as a TS `interface` (interfaces are object shapes only). Kept as a type alias by design. */
 export type TermType = BlankNode | DefaultGraph | Literal | NamedNode;
 
 /**
  * Object-position term type for a quad. Aligned with the rdf/js spec
  * `Quad_Object = NamedNode | Literal | BlankNode` (no `Variable`).
  */
+/** Deliberate lint exception: a union of external rdfjs interface types cannot be expressed as a TS `interface` (interfaces are object shapes only). Kept as a type alias by design. */
 export type QuadObjectType = BlankNode | Literal | NamedNode;

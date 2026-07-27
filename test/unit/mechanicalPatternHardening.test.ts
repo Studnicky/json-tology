@@ -4,7 +4,7 @@
  * Covers:
  *  1. InvariantStore.runAll  — throwing invariant wraps as InstantiationError
  *  2. Lift.resolveNodeForType — POINTER_NOT_FOUND is swallowed; other GraphErrors rethrow
- *  3. RefResolutionLoader    — non-string $id throws SchemaLoadError(SCHEMA_LOAD_FAILED)
+ *  3. ReferenceResolutionLoader    — non-string $id throws SchemaLoadError(SCHEMA_LOAD_FAILED)
  */
 
 import assert from 'node:assert/strict';
@@ -14,7 +14,7 @@ import {
 
 import { InvariantStore } from '../../src/modules/registry/InvariantStore.js';
 import { Lift } from '../../src/modules/rdf/Lift.js';
-import { RefResolutionLoader } from '../../src/modules/registry/RefResolutionLoader.js';
+import { ReferenceResolutionLoader } from '../../src/modules/registry/ReferenceResolutionLoader.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { GraphError } from '../../src/errors/GraphError.js';
 import { SchemaLoadError } from '../../src/errors/SchemaLoadError.js';
@@ -197,7 +197,7 @@ void describe('Lift.resolveNodeForType — discriminated-catch', { 'concurrency'
 });
 
 // ---------------------------------------------------------------------------
-// 3. RefResolutionLoader — non-string $id throws SchemaLoadError(SCHEMA_LOAD_FAILED)
+// 3. ReferenceResolutionLoader — non-string $id throws SchemaLoadError(SCHEMA_LOAD_FAILED)
 // ---------------------------------------------------------------------------
 
 const loaderWithNumericId = async (_iri: string): Promise<JsonSchemaType | null> => {
@@ -217,14 +217,14 @@ const loaderWithMissingId = async (iri: string): Promise<JsonSchemaType | null> 
   return null;
 };
 
-void describe('RefResolutionLoader — non-string $id', { 'concurrency': true }, () => {
+void describe('ReferenceResolutionLoader — non-string $id', { 'concurrency': true }, () => {
   void it('loadRootIds throws SchemaLoadError missing-id when loader returns schema with non-string $id', async () => {
     const registry = new SchemaRegistry();
-    const refLoader = new RefResolutionLoader(registry);
+    const referenceLoader = new ReferenceResolutionLoader(registry);
 
     await assert.rejects(
       () => {
-        return refLoader.loadRootIds(['https://ex/NullId'], loaderWithNumericId);
+        return referenceLoader.loadRootIds(['https://ex/NullId'], loaderWithNumericId);
       },
       (err: unknown) => {
         assert.ok(err instanceof SchemaLoadError, `expected SchemaLoadError, got: ${String(err)}`);
@@ -245,11 +245,11 @@ void describe('RefResolutionLoader — non-string $id', { 'concurrency': true },
       'type': 'object'
     });
 
-    const refLoader = new RefResolutionLoader(registry);
+    const referenceLoader = new ReferenceResolutionLoader(registry);
 
     await assert.rejects(
       () => {
-        return refLoader.resolveAll(loaderWithMissingId);
+        return referenceLoader.resolveAll(loaderWithMissingId);
       },
       (err: unknown) => {
         assert.ok(err instanceof SchemaLoadError, `expected SchemaLoadError, got: ${String(err)}`);

@@ -1,10 +1,10 @@
+import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraphRelationInterface.js';
 import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
 // Type-only imports of internal interfaces — required by the SchemaGraph + SchemaRegistry assertions below; not surfaced publicly.
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
-import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistryInterface.js';
 import type { VocabularyPluginInterface } from '../../src/interfaces/VocabularyPluginInterface.js';
 import {
@@ -105,7 +105,7 @@ void describe('VocabularyPlugin', () => {
     }> = [
       {
         assertions() {
-          const customRelation: SchemaGraphRelationType = {
+          const customRelation: SchemaGraphRelationInterface = {
             'predicate': `${ACME_NS}priority`,
             'source': {
               'id': 'placeholder',

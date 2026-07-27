@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * if (label.length > HOSTNAME_LABEL_MAX_LENGTH) return false;
+ * if (label.length > HOSTNAME_LABEL_MAXIMUM_LENGTH) return false;
  * ```
  *
  * @category Format validation
@@ -16,7 +16,7 @@
  * @defaultValue `63`
  * @group Constants
  */
-export const HOSTNAME_LABEL_MAX_LENGTH = 63;
+export const HOSTNAME_LABEL_MAXIMUM_LENGTH = 63;
 
 /**
  * Expected character length of an ISO 8601 date string (`YYYY-MM-DD`).
@@ -64,16 +64,16 @@ export const DATE_YEAR_DIGIT_COUNT = 4;
  *
  * @example
  * ```ts
- * if (month < 1 || month > DATE_MONTH_MAX) return false;
+ * if (month < 1 || month > DATE_MONTH_MAXIMUM) return false;
  * ```
  *
  * @category Format validation
  * @since 0.1.0
- * @see DATE_DAY_MAX
+ * @see DATE_DAY_MAXIMUM
  * @defaultValue `12`
  * @group Constants
  */
-export const DATE_MONTH_MAX = 12;
+export const DATE_MONTH_MAXIMUM = 12;
 
 /**
  * Maximum valid day value (1-based) in an ISO 8601 date string.
@@ -84,16 +84,16 @@ export const DATE_MONTH_MAX = 12;
  *
  * @example
  * ```ts
- * if (day < 1 || day > DATE_DAY_MAX) return false;
+ * if (day < 1 || day > DATE_DAY_MAXIMUM) return false;
  * ```
  *
  * @category Format validation
  * @since 0.1.0
- * @see DATE_MONTH_MAX
+ * @see DATE_MONTH_MAXIMUM
  * @defaultValue `31`
  * @group Constants
  */
-export const DATE_DAY_MAX = 31;
+export const DATE_DAY_MAXIMUM = 31;
 
 /**
  * Maximum valid hour value (0-based) in an ISO 8601 time string.
@@ -103,16 +103,16 @@ export const DATE_DAY_MAX = 31;
  *
  * @example
  * ```ts
- * if (hour > TIME_HOUR_MAX) return false;
+ * if (hour > TIME_HOUR_MAXIMUM) return false;
  * ```
  *
  * @category Format validation
  * @since 0.1.0
- * @see TIME_MINUTE_MAX
+ * @see TIME_MINUTE_MAXIMUM
  * @defaultValue `23`
  * @group Constants
  */
-export const TIME_HOUR_MAX = 23;
+export const TIME_HOUR_MAXIMUM = 23;
 
 /**
  * Maximum valid minute value (0-based) in an ISO 8601 time string.
@@ -122,16 +122,16 @@ export const TIME_HOUR_MAX = 23;
  *
  * @example
  * ```ts
- * if (minute > TIME_MINUTE_MAX) return false;
+ * if (minute > TIME_MINUTE_MAXIMUM) return false;
  * ```
  *
  * @category Format validation
  * @since 0.1.0
- * @see TIME_HOUR_MAX
+ * @see TIME_HOUR_MAXIMUM
  * @defaultValue `59`
  * @group Constants
  */
-export const TIME_MINUTE_MAX = 59;
+export const TIME_MINUTE_MAXIMUM = 59;
 
 /**
  * Maximum valid second value (0-based, inclusive) in an ISO 8601 time string.
@@ -142,7 +142,7 @@ export const TIME_MINUTE_MAX = 59;
  *
  * @example
  * ```ts
- * if (second > TIME_SECOND_MAX) return false;
+ * if (second > TIME_SECOND_MAXIMUM) return false;
  * ```
  *
  * @category Format validation
@@ -151,7 +151,7 @@ export const TIME_MINUTE_MAX = 59;
  * @defaultValue `60`
  * @group Constants
  */
-export const TIME_SECOND_MAX = 60;
+export const TIME_SECOND_MAXIMUM = 60;
 
 /**
  * Character length of the base time portion `HH:MM:SS` in an ISO 8601 time string.
@@ -225,7 +225,7 @@ export const TIME_OFFSET_HOUR2 = 2;
  *
  * @category Format validation
  * @since 0.1.0
- * @see TIME_OFFSET_MIN1
+ * @see TIME_OFFSET_MINUTE1
  * @defaultValue `3`
  * @group Constants
  */
@@ -239,16 +239,16 @@ export const TIME_OFFSET_COLON = 3;
  *
  * @example
  * ```ts
- * const offsetMin1 = offset[TIME_OFFSET_MIN1]; // first digit of minute
+ * const offsetMin1 = offset[TIME_OFFSET_MINUTE1]; // first digit of minute
  * ```
  *
  * @category Format validation
  * @since 0.1.0
- * @see TIME_OFFSET_MIN2
+ * @see TIME_OFFSET_MINUTE2
  * @defaultValue `4`
  * @group Constants
  */
-export const TIME_OFFSET_MIN1 = 4;
+export const TIME_OFFSET_MINUTE1 = 4;
 
 /**
  * Character offset of the second digit of the minute in a timezone offset string (`±HH:MM`).
@@ -258,16 +258,16 @@ export const TIME_OFFSET_MIN1 = 4;
  *
  * @example
  * ```ts
- * const offsetMin2 = offset[TIME_OFFSET_MIN2]; // second digit of minute
+ * const offsetMin2 = offset[TIME_OFFSET_MINUTE2]; // second digit of minute
  * ```
  *
  * @category Format validation
  * @since 0.1.0
- * @see TIME_OFFSET_MIN1
+ * @see TIME_OFFSET_MINUTE1
  * @defaultValue `5`
  * @group Constants
  */
-export const TIME_OFFSET_MIN2 = 5;
+export const TIME_OFFSET_MINUTE2 = 5;
 
 /**
  * Total character length of a timezone offset string (`±HH:MM`).
@@ -455,7 +455,7 @@ export const TIME_SECONDS_DIGIT_2_OFFSET = 7;
  *
  * @category Format validation
  * @since 0.1.0
- * @see IPV4_OCTET_MAX_VALUE
+ * @see IPV4_OCTET_MAXIMUM_VALUE
  * @defaultValue `4`
  * @group Constants
  */
@@ -470,16 +470,16 @@ export const IPV4_PARTS_COUNT = 4;
  *
  * @example
  * ```ts
- * if (octet.length > IPV4_OCTET_MAX_LENGTH) return false;
+ * if (octet.length > IPV4_OCTET_MAXIMUM_LENGTH) return false;
  * ```
  *
  * @category Format validation
  * @since 0.1.0
- * @see IPV4_OCTET_MAX_VALUE
+ * @see IPV4_OCTET_MAXIMUM_VALUE
  * @defaultValue `3`
  * @group Constants
  */
-export const IPV4_OCTET_MAX_LENGTH = 3;
+export const IPV4_OCTET_MAXIMUM_LENGTH = 3;
 
 /**
  * Maximum numeric value of a single IPv4 octet.
@@ -489,7 +489,7 @@ export const IPV4_OCTET_MAX_LENGTH = 3;
  *
  * @example
  * ```ts
- * if (octetValue > IPV4_OCTET_MAX_VALUE) return false;
+ * if (octetValue > IPV4_OCTET_MAXIMUM_VALUE) return false;
  * ```
  *
  * @category Format validation
@@ -498,7 +498,7 @@ export const IPV4_OCTET_MAX_LENGTH = 3;
  * @defaultValue `255`
  * @group Constants
  */
-export const IPV4_OCTET_MAX_VALUE = 255;
+export const IPV4_OCTET_MAXIMUM_VALUE = 255;
 
 /**
  * Maximum number of colon-separated groups in a full IPv6 address.
@@ -509,7 +509,7 @@ export const IPV4_OCTET_MAX_VALUE = 255;
  *
  * @example
  * ```ts
- * if (groups.length > IPV6_MAX_GROUPS) return false;
+ * if (groups.length > IPV6_MAXIMUM_GROUPS) return false;
  * ```
  *
  * @category Format validation
@@ -517,7 +517,7 @@ export const IPV4_OCTET_MAX_VALUE = 255;
  * @defaultValue `8`
  * @group Constants
  */
-export const IPV6_MAX_GROUPS = 8;
+export const IPV6_MAXIMUM_GROUPS = 8;
 
 /**
  * Number of days in January.
@@ -760,7 +760,7 @@ export const DAYS_IN_DEC = 31;
  *
  * @category Format validation
  * @since 0.1.0
- * @see BASE64_MAX_PADDING
+ * @see BASE64_MAXIMUM_PADDING
  * @defaultValue `4`
  * @group Constants
  */
@@ -775,7 +775,7 @@ export const BASE64_CHUNK_SIZE = 4;
  *
  * @example
  * ```ts
- * if (paddingCount > BASE64_MAX_PADDING) return false;
+ * if (paddingCount > BASE64_MAXIMUM_PADDING) return false;
  * ```
  *
  * @category Format validation
@@ -784,7 +784,7 @@ export const BASE64_CHUNK_SIZE = 4;
  * @defaultValue `2`
  * @group Constants
  */
-export const BASE64_MAX_PADDING = 2;
+export const BASE64_MAXIMUM_PADDING = 2;
 
 /**
  * Minimum character length of a valid ISO 8601 date-time string.
@@ -796,7 +796,7 @@ export const BASE64_MAX_PADDING = 2;
  *
  * @example
  * ```ts
- * if (value.length < DATETIME_MIN_LENGTH) return false;
+ * if (value.length < DATETIME_MINIMUM_LENGTH) return false;
  * ```
  *
  * @category Format validation
@@ -805,7 +805,7 @@ export const BASE64_MAX_PADDING = 2;
  * @defaultValue `15`
  * @group Constants
  */
-export const DATETIME_MIN_LENGTH = 15;
+export const DATETIME_MINIMUM_LENGTH = 15;
 
 /**
  * Radix (base) used for decimal integer parsing.

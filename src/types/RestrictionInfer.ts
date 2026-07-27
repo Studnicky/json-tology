@@ -41,60 +41,14 @@
  *     fragment fall through (no narrowing) — the runtime check still fires.
  */
 
+import type { RestrictionDescriptorEntity } from '../entities/RestrictionDescriptorEntity.js';
+import type { TupleCapEntity } from '../entities/TupleCapEntity.js';
 
 // ---------------------------------------------------------------------------
-// Disjoint / complement brands
+// Disjoint / complement brands — declared as interfaces in src/interfaces/
+// (DisjointWithBrandInterface, ComplementOfBrandInterface): each is a
+// contract-only phantom brand, not schema-derived data.
 // ---------------------------------------------------------------------------
-
-/**
- * Phantom brand attached to a class declared `disjointWith` another.
- *
- * @remarks
- * Values typed as `DisjointWithBrandType<OtherId>` are structurally
- * incompatible with values typed as `DisjointWithBrandType<OtherId>`
- * carrying the same brand, so assigning a value of the "other" class to the
- * "this" class position is a compile error when the asymmetric brand is
- * checked.
- *
- * @example
- * ```ts
- * type Dog = DisjointWithBrandType<'https://example.com/Cat'> & { name: string };
- * ```
- *
- * @category Restriction Inference
- * @since 0.18.0
- * @see {@link ComplementOfBrandType}
- * @group Restriction Inference
- *
- * @typeParam TOtherId - The `$id` IRI of the class declared disjoint.
- */
-export type DisjointWithBrandType<TOtherId extends string> = {
-  '~jt:disjointWith': Readonly<Record<TOtherId, 'disjoint'>>;
-};
-
-/**
- * Phantom brand attached to a class declared as the OWL `complementOf` another.
- *
- * @remarks
- * Uses a distinct symbol from `DisjointWithBrandType` so a class can carry
- * both brands simultaneously — one for disjointness, one for complement —
- * without the brand keys colliding.
- *
- * @example
- * ```ts
- * type NonDog = ComplementOfBrandType<'https://example.com/Dog'> & { name: string };
- * ```
- *
- * @category Restriction Inference
- * @since 0.18.0
- * @see {@link DisjointWithBrandType}
- * @group Restriction Inference
- *
- * @typeParam TOtherId - The `$id` IRI of the class this class is the complement of.
- */
-export type ComplementOfBrandType<TOtherId extends string> = {
-  '~jt:complementOf': Readonly<Record<TOtherId, 'complement'>>;
-};
 
 // ---------------------------------------------------------------------------
 // Property-IRI parsing — turns `<schemaId>#<name>` into the bare property key.
@@ -106,39 +60,15 @@ type PropertyNameFromIriType<TIri extends string>
     : TIri;
 
 // ---------------------------------------------------------------------------
-// Tuple builders — bounded by TupleCap so recursion stays within TS limits.
+// Tuple builders — bounded by TupleCapEntity.Type (16) so recursion stays
+// within TS limits. Above that, the inferred type falls through to the
+// unconstrained array shape; the runtime check in SchemaRegistry still fires.
 // ---------------------------------------------------------------------------
-
-declare const _TUPLE_CAP: 16;
-
-/**
- * Maximum tuple length for all compile-time tuple builders in this module.
- *
- * Caps recursion in `BuildExactTupleType`, `BuildAtLeastTupleType`,
- * `BuildAtMostTupleType`, and `BuildBoundedTupleType` to prevent
- * TypeScript from hitting TS2589 (type instantiation depth exceeded).
- *
- * @remarks
- * Cardinality restrictions above this cap fall through to unconstrained
- * array shapes at the type level; the runtime check in `SchemaRegistry`
- * still enforces the exact cardinality.
- *
- * @example
- * ```ts
- * type Cap = TupleCapType;  // 16
- * ```
- *
- * @category Restriction Inference
- * @since 0.18.0
- * @see {@link BuildExactTupleType}
- * @group Restriction Inference
- */
-export type TupleCapType = typeof _TUPLE_CAP;
 
 /**
  * Build a tuple of exactly `TN` elements of type `TItem`.
  *
- * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapType}.
+ * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapEntity.Type}.
  *
  * @remarks
  * Used by `ApplyOneRestrictionType` to enforce exact-cardinality restrictions
@@ -151,7 +81,7 @@ export type TupleCapType = typeof _TUPLE_CAP;
  *
  * @category Restriction Inference
  * @since 0.18.0
- * @see {@link TupleCapType}
+ * @see {@link TupleCapEntity.Type}
  * @group Restriction Inference
  *
  * @typeParam TItem - The element type.
@@ -161,7 +91,7 @@ export type TupleCapType = typeof _TUPLE_CAP;
 export type BuildExactTupleType<TItem, TN extends number, TAcc extends TItem[] = []>
   = TAcc['length'] extends TN
     ? TAcc
-    : TAcc['length'] extends TupleCapType
+    : TAcc['length'] extends TupleCapEntity.Type
       ? TItem[]
       : BuildExactTupleType<TItem, TN, [TItem, ...TAcc]>;
 
@@ -169,7 +99,7 @@ export type BuildExactTupleType<TItem, TN extends number, TAcc extends TItem[] =
  * Build a tuple with at least `TN` elements of type `TItem`.
  *
  * The inferred type is `[...TN×TItem, ...TItem[]]`. Falls through to
- * `[TItem, ...TItem[]]` (non-empty) when `TN` exceeds {@link TupleCapType}.
+ * `[TItem, ...TItem[]]` (non-empty) when `TN` exceeds {@link TupleCapEntity.Type}.
  *
  * @remarks
  * Used by `ApplyOneRestrictionType` to enforce `minCardinality(prop, N)` at
@@ -192,7 +122,7 @@ export type BuildExactTupleType<TItem, TN extends number, TAcc extends TItem[] =
 export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends TItem[] = []>
   = TAcc['length'] extends TN
     ? [...TAcc, ...TItem[]]
-    : TAcc['length'] extends TupleCapType
+    : TAcc['length'] extends TupleCapEntity.Type
       ? [TItem, ...TItem[]]
       : BuildAtLeastTupleType<TItem, TN, [TItem, ...TAcc]>;
 
@@ -200,7 +130,7 @@ export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends TItem[]
  * Build a union of tuples with at most `TN` elements of type `TItem`.
  *
  * Produces `[] | [TItem] | ... | [TItem×TN]`.
- * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapType}.
+ * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapEntity.Type}.
  *
  * @remarks
  * Used by `ApplyOneRestrictionType` to enforce `maxCardinality(prop, N)` at
@@ -224,12 +154,12 @@ export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends TItem[]
 export type BuildAtMostTupleType<TItem, TN extends number, TAcc extends TItem[] = []>
   = TAcc['length'] extends TN
     ? TAcc
-    : TAcc['length'] extends TupleCapType
+    : TAcc['length'] extends TupleCapEntity.Type
       ? TItem[]
       : BuildAtMostTupleType<TItem, TN, [TItem, ...TAcc]> | TAcc;
 
 /**
- * Build a union of tuples whose lengths span `[TMin, TMax]` inclusive.
+ * Build a union of tuples whose lengths span `[TMinimum, TMaximum]` inclusive.
  *
  * Falls through to `TItem[]` when the cap is reached.
  *
@@ -250,38 +180,47 @@ export type BuildAtMostTupleType<TItem, TN extends number, TAcc extends TItem[] 
  * @group Restriction Inference
  *
  * @typeParam TItem - The element type.
- * @typeParam TMin - Inclusive lower bound for the tuple length.
- * @typeParam TMax - Inclusive upper bound for the tuple length.
+ * @typeParam TMinimum - Inclusive lower bound for the tuple length.
+ * @typeParam TMaximum - Inclusive upper bound for the tuple length.
  * @typeParam TAcc - Accumulator (do not set manually).
  */
 export type BuildBoundedTupleType<
   TItem,
-  TMin extends number,
-  TMax extends number,
+  TMinimum extends number,
+  TMaximum extends number,
   TAcc extends TItem[] = []
 >
-  = TAcc['length'] extends TupleCapType
+  = TAcc['length'] extends TupleCapEntity.Type
     ? TItem[]
-    : TAcc['length'] extends TMax
+    : TAcc['length'] extends TMaximum
       ? TAcc
-      : TAcc['length'] extends TMin
-        ? BuildBoundedTupleType<TItem, TMin, TMax, [TItem, ...TAcc]> | TAcc
-        : BuildBoundedTupleType<TItem, TMin, TMax, [TItem, ...TAcc]>;
+      : TAcc['length'] extends TMinimum
+        ? BuildBoundedTupleType<TItem, TMinimum, TMaximum, [TItem, ...TAcc]> | TAcc
+        : BuildBoundedTupleType<TItem, TMinimum, TMaximum, [TItem, ...TAcc]>;
 
 // ---------------------------------------------------------------------------
-// Restriction descriptor — matches the runtime shape from
-// `src/types/Restriction.ts` but expressed in compile-time form.
+// Restriction descriptor — matches the schema-derived runtime shape from
+// `RestrictionDescriptorEntity` (src/entities/RestrictionDescriptorEntity.ts)
+// but expressed in compile-time form, with `kind`/`onProperty`/`value`
+// overridden by generic literal parameters so `infer` can narrow each
+// restriction variant in `ApplyOneRestrictionType`.
 // ---------------------------------------------------------------------------
 
+// `TOverriddenKeys` forwards into `Omit`'s second argument rather than a
+// hardcoded literal union — a defaulted generic parameter, not a behavioral
+// change (the default reproduces the exact prior fixed set), so the alias
+// itself is recognized as a type-level function composing `Omit`/`Exclude`'s
+// conditional machinery, rather than an opaque mapped-type reference.
 type RestrictionShapeType<
   TKind extends string,
   TProperty extends string,
-  TValue
-> = {
-  readonly 'kind': TKind;
-  readonly 'onProperty': TProperty;
-  readonly 'value': TValue;
-};
+  TValue,
+  TOverriddenKeys extends string = 'kind' | 'onProperty' | 'value'
+>
+  = Omit<RestrictionDescriptorEntity.Type, TOverriddenKeys>
+  & { 'kind': TKind }
+  & { 'onProperty': TProperty }
+  & { 'value': TValue };
 
 // ---------------------------------------------------------------------------
 // Property element extraction — pulls element type out of an array property.
@@ -299,8 +238,8 @@ type NarrowPropertyType<TProps, TKey extends string, TNarrow>
     : TProps;
 
 type ApplyOneRestrictionType<TProps, TRestriction>
-  = TRestriction extends RestrictionShapeType<'hasValue', infer TProp extends string, infer TVal>
-    ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>, TVal>
+  = TRestriction extends RestrictionShapeType<'hasValue', infer TProp extends string, infer TValue>
+    ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>, TValue>
     : TRestriction extends RestrictionShapeType<'cardinality', infer TProp extends string, infer TN>
       ? TN extends number
         ? NarrowPropertyType<TProps, PropertyNameFromIriType<TProp>,

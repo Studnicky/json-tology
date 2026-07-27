@@ -20,7 +20,7 @@ const strategy = Skolemize.compose(
   Skolemize.hash({ 'baseIri': 'https://shop.example.com' })
 );
 
-const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': strategy });
+const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriForFunction': strategy });
 
 const rootIri = quads[0]?.subject.value ?? '';
 

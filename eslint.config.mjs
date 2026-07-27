@@ -1,7 +1,6 @@
 import js from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
-import { plugin as studnickyPlugin } from '@studnicky/eslint-config';
-import { v8Plugin as studnickyV8Plugin } from '@studnicky/eslint-config/v8';
+import { plugin as studnickyPlugin, v8Plugin as studnickyV8Plugin } from '@studnicky/eslint-config';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import perfectionist from 'eslint-plugin-perfectionist';
@@ -572,7 +571,7 @@ export default [
       ...regexpPluginRules,
       ...studnickyPluginRules,
       ...studnickyV8PluginRules,
-      '@studnicky/interface-must-be-contract': ['error', { 'allow': ['JsonTologyReferencesInterface', 'JsonTologyTypeConfigInterface'] }]
+      '@studnicky/interface-must-be-contract': 'error'
     }
   },
 
@@ -591,52 +590,145 @@ export default [
     rules: { '@typescript-eslint/consistent-indexed-object-style': 'off' }
   },
 
-  // Authoring-input contracts: `@studnicky/no-readonly-in-data-type` targets
-  // GENERATED/INFERRED output types (InferType, ParseOutputType,
-  // MaterializedSchemaType, and friends — see docs/types/infer.md#mutability)
-  // where the library invents and hands back a value, so forcing `readonly`
-  // would be an unwanted opinion the consumer cannot escape. Schema.ts is the
-  // opposite direction: JsonSchemaDocumentObjectType/JsonSchemaDocumentType
-  // describe the shape of what a consumer AUTHORS and hands TO the library,
-  // always as an `as const` literal per this repo's mandatory authoring
-  // convention (see CLAUDE.md's own canonical schema example). `as const`
-  // infers deeply readonly array/tuple fields, so the array-typed fields on
-  // these types must accept `readonly T[]` to be wide enough for both a
-  // mutable array and an `as const` literal — the rule's blanket ban doesn't
-  // yet distinguish an authoring-input contract from a generated-output type.
-  // Scoped here at the config level, not via inline eslint-disable comments,
-  // so @studnicky/no-suppression-comments has nothing to flag in source. A
-  // future patch to the upstream rule that recognizes this distinction
-  // natively can remove this override.
+  // PrefixMapInterface: the rule's preferred `Record<string, string>` form is
+  // itself a `@studnicky/type-alias-invariants` violation (`Record` is a
+  // generic mapped-type alias in the TypeScript standard library, so any
+  // top-level reference to it carries type-function computation the alias-
+  // purity rule treats as a behavioral contract). The `readonly` index
+  // signature is the only form that satisfies both rules at once.
   {
-    files: ['src/types/Schema.ts', 'src/types/JsonSchemaObjectType.ts'],
-    rules: { '@studnicky/no-readonly-in-data-type': 'off' }
+    files: ['src/interfaces/PrefixMapInterface.ts'],
+    rules: { '@typescript-eslint/consistent-indexed-object-style': 'off' }
   },
 
-  // Generic constraints that accept authored input: `TSchemas extends readonly
-  // unknown[]` (JsonTologyOptionsType, UniqueSchemaIdsType), `TStages extends
-  // readonly AnyTransformStageType[]` (ValidateChainType), and `graphs: readonly
-  // SchemaGraphInterface[]` (BuildOutputOptionsType) all widen a constraint or
-  // field to `readonly` so an `as const` consumer literal (a schema tuple, a
-  // transform-stage array) or a readonly getter's return value (SchemaGraph[]
-  // from SchemaRegistry.listGraphs()) satisfies them — the same
-  // accept-both-mutable-and-readonly rationale as the authoring-input contracts
-  // above, just expressed as a generic bound or an internal field instead of a
-  // schema property. The rule's own carve-out already exempts `readonly` inside
-  // a `TSConditionalType`'s `extends`/`check` clause for exactly this reason
-  // (narrows what's accepted, not what's produced); it does not yet extend that
-  // exemption to a type parameter's `extends` constraint or to a field that
-  // merely re-exposes another readonly-returning API. Scoped here at the config
-  // level, not via inline eslint-disable comments, so
-  // @studnicky/no-suppression-comments has nothing to flag in source.
+  // SchemaGraphRelationInterface's `predicate` member references `RelationPredicateType`
+  // (src/types/SchemaGraph.ts), which itself carries a `type-alias-invariants` exception for an
+  // open `(string & {})` union with no schema-derived equivalent (see the SchemaGraph.ts override
+  // below). Referencing an already-exempt type here inherits the same "no named-entity remedy"
+  // condition — there is no separate fix available at this call site.
+  {
+    files: ['src/interfaces/SchemaGraphRelationInterface.ts'],
+    rules: { '@studnicky/interfaces-compose-named-types': 'off' }
+  },
+
+  // ConstraintBrands.ts: branded-primitive intersections (`FormatBrandType<F> & string`, etc.).
+  // Verified against the compiled rule source (typeAliasInvariants.js/TypeContractClassification.js
+  // in node_modules/@studnicky/eslint-config): `findAliasContract` walks every member of a
+  // union/intersection and returns on the FIRST one that carries brand evidence — a symbol-keyed
+  // member (`{ [FORMAT]: TF }`, the shape `FormatBrandType<TF>` reduces to) unconditionally
+  // classifies the whole alias `interfaceContract`/`brand`, with no carve-out for a co-intersected
+  // schema-derived member (confirmed empirically: replacing the bare `string` with
+  // `InferType<typeof FormatSchema>` does not change the classification — the brand member alone
+  // already resolves the verdict before the schema-derived member is even considered). The
+  // `aliasMustBeInterface` remedy this classification implies is then syntactically impossible:
+  // `interface X extends string {}` is invalid TypeScript — interfaces cannot extend a primitive.
+  // The only fix that would actually satisfy the rule is boxing every branded value in an object
+  // wrapper (`{ readonly value: string; readonly [FORMAT]: 'email' }`), which changes the runtime
+  // representation of all 24 formats from a plain string/number to a boxed object — a breaking
+  // change across every coercion/materialization call site that currently treats these as bare
+  // primitives. Filed upstream:
+  // noocodec-substrate/docs/eslint/known-issues/type-alias-invariants-primitive-brands.md.
+  {
+    files: ['src/types/ConstraintBrands.ts'],
+    rules: { '@studnicky/type-alias-invariants': 'off' }
+  },
+
+
+  // Bootstrapping meta-schema types: JsonSchemaType, ReadonlySchemaMapType/ArrayType and
+  // siblings, JsonSchemaDocumentObjectType, JsonSchemaDocumentType (Schema.ts),
+  // NestedSchemaKeysType/OwlOnlyKeysType/ExcludedKeysType/JsonSchemaObjectType and readonly
+  // definition wrappers (JsonSchemaObjectType.ts), and JsonSchemaDefinitionType
+  // (JsonSchemaDefinitionType.ts) describe the shape of JSON Schema itself — deriving them FROM a
+  // JSON Schema would be circular (the meta-schema cannot describe itself via the very mechanism
+  // it defines). This is the `derivedFromSchema`/`aliasMustBeInterface` classification, distinct
+  // from the `noReadonly` override already scoped on Schema.ts/JsonSchemaObjectType.ts below.
   {
     files: [
-      'src/types/BuildOutputOptionsType.ts',
-      'src/types/JsonTologyOptionsType.ts',
-      'src/types/Registry.ts',
-      'src/types/Transform.ts'
+      'src/types/JsonSchemaDefinitionType.ts',
+      'src/types/JsonSchemaObjectType.ts',
+      'src/types/Schema.ts'
     ],
-    rules: { '@studnicky/no-readonly-in-data-type': 'off' }
+    rules: { '@studnicky/type-alias-invariants': 'off' }
+  },
+
+  // SchemaGraph.ts: RelationPredicateType has a trailing `(string & {})` open-string escape hatch
+  // — it intentionally accepts any predicate IRI beyond the enumerated literals, which JSON
+  // Schema's `enum` cannot express ("these literals, or anything else"). RelationStructureType is
+  // a genuine 4-variant discriminated union with a polymorphic `unknown` field — no interface can
+  // express a union.
+  {
+    files: ['src/types/SchemaGraph.ts'],
+    rules: { '@studnicky/type-alias-invariants': 'off' }
+  },
+
+  // Quad.ts: TermType and QuadObjectType both mirror @rdfjs/types' term-kind unions (NamedNode |
+  // BlankNode | Literal | ...) — third-party interface unions with no JSON Schema representation
+  // and no single interface that can express a union.
+  {
+    files: ['src/types/Quad.ts'],
+    rules: { '@studnicky/type-alias-invariants': 'off' }
+  },
+
+  // ResolvedReferenceTargetType: a union of two interfaces — an `interface` cannot express a
+  // union, and the union has no independent schema-derived shape (it aliases two already-real
+  // contract types).
+  {
+    files: ['src/types/ResolvedReferenceTargetType.ts'],
+    rules: { '@studnicky/type-alias-invariants': 'off' }
+  },
+
+  // SchemaReferenceType: `keyof TReferences & string` is a compile-time-only generic key lookup
+  // over a type parameter — no runtime shape (not schema data) and not expressible as an
+  // interface (interfaces cannot be unions/key-lookups over a type parameter).
+  {
+    files: ['src/types/SchemaReferenceType.ts'],
+    rules: { '@studnicky/type-alias-invariants': 'off' }
+  },
+
+  // FacetDescriptorType/FacetEntryType: `key`/`jsonSchemaDescriptor.key` is `keyof
+  // JsonSchemaDocumentObjectType` — a TS-only key-introspection with no JSON Schema
+  // representation. Widening to a plain string would drop the compile-time guarantee that every
+  // facet maps to a real JSON Schema keyword.
+  {
+    files: ['src/types/FacetDescriptorType.ts', 'src/types/FacetEntryType.ts'],
+    rules: { '@studnicky/type-alias-invariants': 'off' }
+  },
+
+  // ExecContextOverridesType: ExecContextInterface (the type it overrides) carries `Set<>`
+  // runtime state, which is not JSON-representable — so unlike ProblemDetailsOverridesEntity
+  // (a genuine JSON Schema `anyOf`), no schema-derived remedy exists here.
+  {
+    files: ['src/types/ExecContextOverridesType.ts'],
+    rules: { '@studnicky/type-alias-invariants': 'off' }
+  },
+
+  // Transform.ts: TransformedType intersects TransformBrandInterface<TWire> (a genuine brand
+  // interface) with TSchema, a free/unconstrained generic type parameter. Verified against the
+  // rule source (same mechanism as ConstraintBrands.ts): findAliasContract resolves
+  // TransformBrandInterface<TWire> to a genuine interface reference with classification 'contract'
+  // (TransformBrandInterface has real brand-symbol evidence), which unconditionally classifies the
+  // whole intersection 'interfaceContract' regardless of the other member. Converting to an
+  // interface is doubly impossible here (worse than ConstraintBrands.ts's primitive case):
+  // `interface X<TSchema> extends TransformBrandInterface<TWire>, TSchema` is invalid TypeScript
+  // because an interface cannot extend a bare, unconstrained type parameter at all — not even the
+  // "box it in an object" workaround applies, since TSchema's own shape is unknown at this level.
+  {
+    files: ['src/types/Transform.ts'],
+    rules: { '@studnicky/type-alias-invariants': 'off' }
+  },
+
+  // EmitSchemaConstantsOptionsEntity/RegistryDirContextEntity/SingleFileBodyOptionsEntity: each
+  // carries a `JsonSchemaDocumentObjectType[]`/similar "array of schemas" field that transitively
+  // hits the same mapped-type/Record contract evidence deep in the schema-of-schemas graph as
+  // Schema.ts's bootstrapping meta-schema types above — no schema-derived remedy exists for a
+  // schema that describes other schemas.
+  {
+    files: [
+      'src/entities/EmitSchemaConstantsOptionsEntity.ts',
+      'src/entities/RegistryDirContextEntity.ts',
+      'src/entities/SingleFileBodyOptionsEntity.ts'
+    ],
+    rules: { '@studnicky/type-alias-invariants': 'off' }
   },
 
   // Test files (relaxed rules)

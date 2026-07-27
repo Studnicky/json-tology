@@ -1,8 +1,9 @@
 import type { ComputedExtensionBrandType } from '../types/ComputedExtensionBrandType.js';
-import type { TransformBrandType } from '../types/TransformBrandType.js';
-import type { AnyTransformStageType } from '../types/TransformStage.js';
+import type { TransformBrandInterface } from '../interfaces/TransformBrandInterface.js';
+import type { AnyTransformStageInterface } from '../interfaces/AnyTransformStageInterface.js';
 import type { InferSchemaType } from './Infer.js';
 import type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
+import type { ChainRecursionCapEntity } from '../entities/ChainRecursionCapEntity.js';
 import type {
   ChainMismatchType,
   ChainSchemaMismatchType
@@ -15,8 +16,13 @@ import type {
  * canonical form; the brand records `TWire` so `encode`/`dump` can recover the
  * wire representation. `InferType<T>` still gives the JSON-level type;
  * `ParseOutputType<T>` gives the canonical (validated) type.
+ *
+ * No-fix exception: `@studnicky/type-alias-invariants` flags this alias because
+ * `TransformBrandInterface<TWire>` is a behavioral brand contract, and `TSchema` is
+ * a free type parameter — TypeScript interfaces cannot `extends` a bare type
+ * parameter, so there is no interface form; this stays a `type` intersection.
  */
-export type TransformedType<TSchema, TWire> = TransformBrandType<TWire> & TSchema;
+export type TransformedType<TSchema, TWire> = TransformBrandInterface<TWire> & TSchema;
 
 /**
  * Resolve the output type of instantiate() for a schema.
@@ -29,7 +35,7 @@ export type TransformedType<TSchema, TWire> = TransformBrandType<TWire> & TSchem
  * @typeParam TReferences - Cross-schema references map for $ref resolution.
  */
 export type ParseOutputType<TSchema, TReferences = JsonTologyReferencesInterface>
-  = TSchema extends TransformBrandType<unknown>
+  = TSchema extends TransformBrandInterface<unknown>
     ? InferSchemaType<TSchema, TSchema, TReferences>
     : InferSchemaType<TSchema, TSchema, TReferences>
       & (TSchema extends ComputedExtensionBrandType<infer TFields> ? TFields : unknown);
@@ -39,18 +45,16 @@ export type ParseOutputType<TSchema, TReferences = JsonTologyReferencesInterface
  * the schema carries no transform brand.
  */
 export type TransformWireType<TSchema>
-  = TSchema extends TransformBrandType<infer TWire> ? TWire : never;
+  = TSchema extends TransformBrandInterface<infer TWire> ? TWire : never;
 
 // ---------------------------------------------------------------------------
 // Chain compatibility (compile-time pairwise validation)
 // ---------------------------------------------------------------------------
 
 /**
- * Recursion budget for chain validation. Matches the project-wide
- * `TupleRecursionCap` in `Infer.ts`. Chains longer than this fall through
- * unchecked.
+ * Recursion budget for chain validation. Chains longer than this fall
+ * through unchecked.
  */
-type ChainRecursionCap = 10;
 
 /**
  * Walk a chain pairwise and verify each stage's output type matches the next
@@ -71,21 +75,21 @@ type ChainRecursionCap = 10;
  * pair — or the tail — fails.
  */
 export type ValidateChainType<
-  TStages extends readonly AnyTransformStageType[],
+  TStages extends AnyTransformStageInterface[],
   TCanonical,
   TIndex extends unknown[] = []
-> = TIndex['length'] extends ChainRecursionCap
+> = TIndex['length'] extends ChainRecursionCapEntity.Type
   ? TStages
-  : TStages extends readonly [infer THead, ...infer TRest]
-    ? TRest extends readonly AnyTransformStageType[]
+  : TStages extends [infer THead, ...infer TRest]
+    ? TRest extends AnyTransformStageInterface[]
       ? THead extends { 'decode': (input: never) => infer TOutHead }
-        ? TRest extends readonly []
+        ? TRest extends []
           ? TOutHead extends TCanonical
             ? [THead]
             : [ChainSchemaMismatchType<TCanonical, TOutHead>]
-          : TRest extends readonly [
+          : TRest extends [
             { 'decode': (input: infer TInNext) => unknown },
-            ...readonly unknown[]
+            ...unknown[]
           ]
             ? TOutHead extends TInNext
               ? [
@@ -107,7 +111,7 @@ export type ValidateChainType<
  * stage. Recorded on the transformed schema's brand so `encode`/`dump` can
  * recover the wire form.
  */
-export type ChainWireType<TStages extends readonly AnyTransformStageType[]>
-  = TStages extends readonly [infer THead, ...readonly unknown[]]
+export type ChainWireType<TStages extends AnyTransformStageInterface[]>
+  = TStages extends [infer THead, ...unknown[]]
     ? THead extends { 'decode': (input: infer TIn) => unknown } ? TIn : unknown
     : unknown;

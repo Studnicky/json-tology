@@ -11,7 +11,7 @@
  * rating to exercise both field and form errors.
  */
 
-import type { ValidationErrorType } from '../../../src/types/index.js';
+import type { ValidationErrorEntity } from '../../../src/types/index.js';
 import {
   bookstoreEntities, ReviewSchema
 } from '../bookstore/index.js';
@@ -31,15 +31,15 @@ const messages = errs.items.map((err) => {
 });
 
 // Group by path.
-const grouped: Record<string, ValidationErrorType[]> = {};
+const grouped: Record<string, ValidationErrorEntity.Type[]> = {};
 
 for (const err of errs) {
   (grouped[err.path || '_root'] ??= []).push(err);
 }
 
 // Field vs form errors.
-const fieldErrors: ValidationErrorType[] = [];
-const formErrors: ValidationErrorType[] = [];
+const fieldErrors: ValidationErrorEntity.Type[] = [];
+const formErrors: ValidationErrorEntity.Type[] = [];
 
 for (const err of errs) {
   if (err.path) {

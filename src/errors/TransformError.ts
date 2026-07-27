@@ -8,13 +8,13 @@
  * filled in automatically.
  */
 
-import type { TransformErrorOptionsType } from '../types/ErrorOptions.js';
+import type { TransformErrorOptionsInterface } from '../interfaces/TransformErrorOptionsInterface.js';
 import { BaseError } from './BaseError.js';
 
 export class TransformError extends BaseError {
-  public readonly direction: TransformErrorOptionsType['direction'];
-  public readonly path?: string;
-  public readonly schemaId?: string;
+  public readonly direction: TransformErrorOptionsInterface['direction'];
+  public readonly path: string | undefined;
+  public readonly schemaId: string | undefined;
 
   /**
    * Create a TransformError with a direction, code, and optional context.
@@ -23,16 +23,12 @@ export class TransformError extends BaseError {
    * @param options - Options bag containing `options.code`, `options.direction`,
    *   optional `options.schemaId`, `options.path`, `options.cause`, and `options.retryable`
    */
-  public constructor(message: string, options: TransformErrorOptionsType) {
+  public constructor(message: string, options: TransformErrorOptionsInterface) {
     super(message, options);
     this.name = 'TransformError';
     this.direction = options.direction;
-    if (options.schemaId !== undefined) {
-      this.schemaId = options.schemaId;
-    }
-    if (options.path !== undefined) {
-      this.path = options.path;
-    }
+    this.schemaId = options.schemaId;
+    this.path = options.path;
   }
 
   /**

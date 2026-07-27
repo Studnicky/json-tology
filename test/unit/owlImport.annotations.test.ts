@@ -27,9 +27,8 @@ import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../src/types/OwlImport.js';
+import type { OwlImportContextInterface } from '../../src/interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../src/interfaces/OwlImportFragmentInterface.js';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -37,7 +36,7 @@ import type {
 
 const curie = new Curie(STANDARD_PREFIXES);
 
-function makeCtx(quads: QuadInterface[] = []): OwlImportContextType & { 'unsupportedLog': Array<{ 'axiomIri': string;
+function makeCtx(quads: QuadInterface[] = []): OwlImportContextInterface & { 'unsupportedLog': Array<{ 'axiomIri': string;
   'subjectIri': null | string }> } {
   const unsupportedLog: Array<{ 'axiomIri': string;
     'subjectIri': null | string }> = [];
@@ -66,7 +65,7 @@ function makeCtx(quads: QuadInterface[] = []): OwlImportContextType & { 'unsuppo
 }
 
 /** Run the Annotations dispatcher with a graph derived from the same quads. */
-function runAnnotations(quads: QuadInterface[]): OwlImportFragmentType {
+function runAnnotations(quads: QuadInterface[]): OwlImportFragmentInterface {
   return Annotations.dispatch(quads, makeCtx(quads));
 }
 

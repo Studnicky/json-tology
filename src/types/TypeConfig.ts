@@ -76,29 +76,7 @@
  * ```
  */
 import type { JsonTologyTypeConfigInterface } from '../interfaces/JsonTologyTypeConfigInterface.js';
-
-/**
- * Closed set of recognised brand-configuration flags.
- *
- * The augmentation interface above carries a string index signature so consumer
- * `declare module` augmentations merge cleanly — but an index signature widens
- * `keyof` to `string | number`, which would let typo'd flag names silently
- * resolve to a default instead of erroring. {@link IsEnabledType} is therefore
- * constrained by this explicit union, not by `keyof` of the interface, so an
- * unknown flag (e.g. `IsEnabledType<'tihgtIntegerRanges'>`) is a compile error.
- * Augmentability and closed-key typo-safety are kept independent.
- */
-export type BrandFlagType
-  = 'arrayBrands'
-    | 'brands'
-    | 'contentBrands'
-    | 'formatBrands'
-    | 'nominalBrands'
-    | 'numericBrands'
-    | 'objectBrands'
-    | 'stringBrands'
-    | 'tightIntegerRanges'
-    | 'tightStringLengths';
+import type { BrandFlagEntity } from '../entities/BrandFlagEntity.js';
 
 /**
  * Check whether a brand category is enabled, respecting the master switch.
@@ -107,7 +85,7 @@ export type BrandFlagType
  * augmented to `false` (or the master `brands: false` switch is set). Strict,
  * most-precise types are the default; consumers opt out per-flag.
  */
-export type IsEnabledType<K extends BrandFlagType>
+export type IsEnabledType<K extends BrandFlagEntity.Type>
   = JsonTologyTypeConfigInterface['brands'] extends false ? false
     : JsonTologyTypeConfigInterface[K] extends false ? false
       : true;

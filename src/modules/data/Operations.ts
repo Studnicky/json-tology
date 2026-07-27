@@ -6,8 +6,9 @@
  * by call sites; `Value` no longer wraps them.
  */
 
-import type { DiffOpType } from '../../types/Diff.js';
+import type { DiffOpEntity } from '../../entities/DiffOpEntity.js';
 import { DataType } from './DataType.js';
+import { DangerousObjectKeyEntity } from '../../entities/DangerousObjectKeyEntity.js';
 
 export class Operations {
   /** Deep clone a value using `structuredClone`. */
@@ -27,7 +28,7 @@ export class Operations {
    * @param operation - The diff operation containing `op`, `path`, and optionally `value`.
    * @returns The patched value.
    */
-  static patch(root: unknown, operation: DiffOpType): unknown {
+  static patch(root: unknown, operation: DiffOpEntity.Type): unknown {
     const path = operation.path === '/' ? '' : operation.path;
     const segments = path.split('/').filter(Boolean);
 
@@ -55,7 +56,7 @@ export class Operations {
         break;
       }
 
-      if (segment === '__proto__' || segment === 'constructor' || segment === 'prototype') {
+      if (DangerousObjectKeyEntity.validate(segment)) {
         return result;
       }
 
@@ -82,7 +83,7 @@ export class Operations {
 
     const lastSegment: string = segments.at(-1) ?? '';
 
-    if (lastSegment === '__proto__' || lastSegment === 'constructor' || lastSegment === 'prototype') {
+    if (DangerousObjectKeyEntity.validate(lastSegment)) {
       return result;
     }
 

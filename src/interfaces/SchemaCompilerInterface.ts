@@ -1,4 +1,4 @@
-import type { CompiledValidatorType } from '../types/Compiler.js';
+import type { CompiledValidatorInterface } from './CompiledValidatorInterface.js';
 import type { GraphEngineInterface } from './GraphEngineInterface.js';
 import type { SchemaGraphInterface } from './SchemaGraphInterface.js';
 
@@ -11,6 +11,6 @@ export interface SchemaCompilerInterface {
    *   on first lazy access (validate/cast/instantiate), never as a silent
    *   accept-all validator.
    */
-  compile(engine: GraphEngineInterface, graph: SchemaGraphInterface): CompiledValidatorType;
-  readonly 'lookupCompiled': ((schemaId: string) => CompiledValidatorType | undefined) | undefined;
+  compile(engine: GraphEngineInterface, graph: SchemaGraphInterface): CompiledValidatorInterface;
+  readonly 'lookupCompiled': ((schemaId: string) => CompiledValidatorInterface | undefined) | undefined;
 }

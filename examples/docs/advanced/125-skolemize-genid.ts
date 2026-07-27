@@ -19,7 +19,7 @@ import { Skolemize } from '../../../src/index.js';
 // Produce a well-known genid IRI by minting quads with the wellKnownGenid strategy.
 const genidStrategy = Skolemize.wellKnownGenid('https://shop.example.com');
 const customer = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
-const quads = bookstoreEntities.toQuads(CustomerSchema, customer, { 'iriFor': genidStrategy });
+const quads = bookstoreEntities.toQuads(CustomerSchema, customer, { 'iriForFunction': genidStrategy });
 
 const subjectIri = quads[0]?.subject.value ?? '';
 

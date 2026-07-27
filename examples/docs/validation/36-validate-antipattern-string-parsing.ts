@@ -3,7 +3,7 @@
  * Demonstrates: fragile string parsing (bad) vs iterating structured errors (correct)
  *
  * An invalid customer body surfaces errors; the correct approach reads .path
- * directly from each ValidationErrorType rather than parsing formatted strings.
+ * directly from each ValidationErrorEntity.Type rather than parsing formatted strings.
  */
 
 import {
@@ -25,7 +25,7 @@ const _fragileExtract = msg.split(':')[0];
 
 void _fragileExtract;
 
-// Correct approach: iterate the structured ValidationErrorType objects
+// Correct approach: iterate the structured ValidationErrorEntity.Type objects
 const structured = bookstoreEntities.validate(CustomerSchema.$id, invalidBody);
 
 for (const err of structured) {

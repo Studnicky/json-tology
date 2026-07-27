@@ -11,7 +11,7 @@ import type { CliWriterInterface } from '../../interfaces/CliWriterInterface.js'
 export class CliWriter implements CliWriterInterface {
   public static readonly default: CliWriter = new CliWriter();
 
-  public err(message: string): void {
+  public error(message: string): void {
     process.stderr.write(`${message}\n`);
   }
 

@@ -28,6 +28,8 @@
  * vs. parameter constraint).
  */
 
+import type { IdentityType } from './IdentityType.js';
+
 // ---------------------------------------------------------------------------
 // Validator-result interfaces (Clusters B, D, E)
 // ---------------------------------------------------------------------------
@@ -53,10 +55,10 @@
  *
  * @typeParam TKey - The offending key (either the map key or a dependency entry).
  */
-export type DependentRequiredKeyNotInPropertiesType<TKey extends string> = {
+export type DependentRequiredKeyNotInPropertiesType<TKey extends string> = IdentityType<{
   'invalidKey': TKey;
   'kind': 'DependentRequiredKeyNotInProperties';
-};
+}>;
 
 /**
  * Emitted when an `if.properties` discriminator key is not a key of the parent
@@ -79,10 +81,10 @@ export type DependentRequiredKeyNotInPropertiesType<TKey extends string> = {
  *
  * @typeParam TKey - The offending discriminator property name.
  */
-export type IfDiscriminatorNotInPropertiesType<TKey extends string> = {
+export type IfDiscriminatorNotInPropertiesType<TKey extends string> = IdentityType<{
   'invalidKey': TKey;
   'kind': 'IfDiscriminatorNotInProperties';
-};
+}>;
 
 /**
  * Emitted when a `required` array entry is not a key of `properties`.
@@ -109,11 +111,11 @@ export type IfDiscriminatorNotInPropertiesType<TKey extends string> = {
 export type RequiredKeyNotInPropertiesType<
   TKey extends string,
   TActual extends string
-> = {
+> = IdentityType<{
   'actualPropertyKeys': TActual;
   'invalidKey': TKey;
   'kind': 'RequiredKeyNotInProperties';
-};
+}>;
 
 /**
  * Emitted when a `JsonTology.create({ schemas: [...] })` tuple contains two
@@ -134,15 +136,15 @@ export type RequiredKeyNotInPropertiesType<
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link RefNotFoundType}
+ * @see {@link ReferenceNotFoundType}
  * @group Type Errors
  *
  * @typeParam TId - The duplicated `$id` IRI literal.
  */
-export type DuplicateSchemaIdType<TId extends string> = {
+export type DuplicateSchemaIdType<TId extends string> = IdentityType<{
   'duplicateId': TId;
   'kind': 'DuplicateSchemaId';
-};
+}>;
 
 /**
  * Emitted when an absolute `$ref` IRI is not present in the schema
@@ -157,7 +159,7 @@ export type DuplicateSchemaIdType<TId extends string> = {
  * @example
  * ```ts
  * // InferType<{ $ref: 'https://missing.example/' }, { 'https://other/': ... }>
- * // → RefNotFoundType<'https://missing.example/'>
+ * // → ReferenceNotFoundType<'https://missing.example/'>
  * ```
  *
  * @category Type Errors
@@ -165,12 +167,12 @@ export type DuplicateSchemaIdType<TId extends string> = {
  * @see {@link AnchorNotFoundType}
  * @group Type Errors
  *
- * @typeParam TRef - The unresolved `$ref` IRI literal.
+ * @typeParam TReference - The unresolved `$ref` IRI literal.
  */
-export type RefNotFoundType<TRef extends string> = {
+export type ReferenceNotFoundType<TReference extends string> = IdentityType<{
   'kind': 'RefNotFound';
-  'unresolvedRef': TRef;
-};
+  'unresolvedRef': TReference;
+}>;
 
 /**
  * Emitted when a cross-schema fragment ref of the form `<base>#<anchor>`
@@ -178,7 +180,7 @@ export type RefNotFoundType<TRef extends string> = {
  * JSON pointer fragment lands outside the schema graph).
  *
  * @remarks
- * Like `RefNotFoundType`, this brand only appears when the references
+ * Like `ReferenceNotFoundType`, this brand only appears when the references
  * map is non-empty; otherwise the type falls back to `unknown` to preserve
  * usability in permissive contexts.
  *
@@ -191,7 +193,7 @@ export type RefNotFoundType<TRef extends string> = {
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link RefNotFoundType}
+ * @see {@link ReferenceNotFoundType}
  * @group Type Errors
  *
  * @typeParam TBase - The base IRI portion of the ref.
@@ -200,11 +202,11 @@ export type RefNotFoundType<TRef extends string> = {
 export type AnchorNotFoundType<
   TBase extends string,
   TAnchor extends string
-> = {
+> = IdentityType<{
   'inSchema': TBase;
   'kind': 'AnchorNotFound';
   'unresolvedAnchor': TAnchor;
-};
+}>;
 
 /**
  * Emitted when a `Transform.chain` stage's decoded output type does not match
@@ -236,12 +238,12 @@ export type ChainMismatchType<
   TStageIndex extends number,
   TProduced,
   TExpected
-> = {
+> = IdentityType<{
   'expectedByThisStage': TExpected;
   'kind': 'ChainMismatch';
   'producedByPriorStage': TProduced;
   'stageIndex': TStageIndex;
-};
+}>;
 
 /**
  * Emitted when a `Transform.chain`'s last stage decoded output type does not
@@ -271,18 +273,18 @@ export type ChainMismatchType<
 export type ChainSchemaMismatchType<
   TCanonical,
   TLastStageOut
-> = {
+> = IdentityType<{
   'kind': 'ChainSchemaMismatch';
   'lastStageDecodeOutput': TLastStageOut;
   'schemaCanonicalType': TCanonical;
-};
+}>;
 
 /**
  * True when a references map is present (has at least one key).
  *
  * @remarks
  * Used throughout `InferSchemaType` to decide whether unresolved refs should
- * surface as diagnostic brands (`RefNotFoundType`, `AnchorNotFoundType`)
+ * surface as diagnostic brands (`ReferenceNotFoundType`, `AnchorNotFoundType`)
  * or silently fall back to `unknown`. The distinction exists so consumers who
  * do not provide a references map are not flooded with errors.
  *
@@ -294,7 +296,7 @@ export type ChainSchemaMismatchType<
  *
  * @category Type Errors
  * @since 0.18.0
- * @see {@link RefNotFoundType}
+ * @see {@link ReferenceNotFoundType}
  * @group Type Errors
  *
  * @typeParam TReferences - The references map type to test.
@@ -308,9 +310,9 @@ export type HasReferencesType<TReferences>
 
 declare const TYPE_ERROR_TAG: unique symbol;
 
-type TypeErrorBrandType<TName extends string> = {
-  readonly [TYPE_ERROR_TAG]: TName;
-};
+type TypeErrorBrandType<TName extends string> = IdentityType<{
+  [TYPE_ERROR_TAG]: TName;
+}>;
 
 /**
  * Compose.subClassOf body's $id collides with the parent's $id.
@@ -333,9 +335,9 @@ type TypeErrorBrandType<TName extends string> = {
  *
  * @typeParam TId - The `$id` IRI that collides with the parent's identifier.
  */
-export type SelfSubClassType<TId extends string> = never & TypeErrorBrandType<'SelfSubClass'> & {
-  readonly 'collidingId': TId;
-};
+export type SelfSubClassType<TId extends string> = IdentityType<{
+  'collidingId': TId;
+}> & never & TypeErrorBrandType<'SelfSubClass'>;
 
 /**
  * Compose.discriminatedUnion variant is missing a const discriminator on `prop`.
@@ -362,10 +364,10 @@ export type SelfSubClassType<TId extends string> = never & TypeErrorBrandType<'S
 export type DiscriminatorMissingType<
   TProp extends string,
   TVariant
-> = never & TypeErrorBrandType<'DiscriminatorMissing'> & {
-  readonly 'discriminator': TProp;
-  readonly 'variant': TVariant;
-};
+> = IdentityType<{
+  'discriminator': TProp;
+  'variant': TVariant;
+}> & never & TypeErrorBrandType<'DiscriminatorMissing'>;
 
 /**
  * Compose.equivalent options.$id collides with source.$id.
@@ -388,9 +390,9 @@ export type DiscriminatorMissingType<
  *
  * @typeParam TId - The `$id` IRI that collides with the source schema's identifier.
  */
-export type SelfEquivalentType<TId extends string> = never & TypeErrorBrandType<'SelfEquivalent'> & {
-  readonly 'collidingId': TId;
-};
+export type SelfEquivalentType<TId extends string> = IdentityType<{
+  'collidingId': TId;
+}> & never & TypeErrorBrandType<'SelfEquivalent'>;
 
 /**
  * Compose.intersection newId collides with one of the input schemas' $ids.
@@ -413,9 +415,9 @@ export type SelfEquivalentType<TId extends string> = never & TypeErrorBrandType<
  *
  * @typeParam TId - The `$id` IRI that collides with one of the input schemas.
  */
-export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorBrandType<'IntersectionIdCollision'> & {
-  readonly 'collidingId': TId;
-};
+export type IntersectionIdCollisionType<TId extends string> = IdentityType<{
+  'collidingId': TId;
+}> & never & TypeErrorBrandType<'IntersectionIdCollision'>;
 
 // ---------------------------------------------------------------------------
 // OWL 2 property-characteristic conflict brands (Cluster F)
@@ -454,11 +456,11 @@ export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorB
 export type PropertyCharacteristicConflictType<
   TProperty extends string,
   TConflicts extends string[]
-> = {
+> = IdentityType<{
   'conflicts': TConflicts;
   'kind': 'PropertyCharacteristicConflict';
   'property': TProperty;
-};
+}>;
 
 /**
  * Check a single property schema for conflicting OWL 2 characteristics.
@@ -563,5 +565,5 @@ export type ValidatePropertyCharacteristicsType<T>
   = T extends { readonly 'properties': infer TProps }
     ? [PropertyCharacteristicErrorsType<TProps>] extends [never]
       ? T
-      : T & { readonly 'schemaErrors': PropertyCharacteristicErrorsType<TProps> }
+      : IdentityType<{ 'schemaErrors': PropertyCharacteristicErrorsType<TProps> }> & T
     : T;

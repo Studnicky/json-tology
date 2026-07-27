@@ -1,11 +1,11 @@
+import type { SchemaGraphNodeInterface } from '../../src/interfaces/SchemaGraphNodeInterface.js';
 import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { EffectiveProperties } from '../../src/modules/graph/EffectiveProperties.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import type { SchemaGraphNodeType } from '../../src/types/SchemaGraph.js';
-import type { EffectivePropertyMapType } from '../../src/types/EffectivePropertyMapType.js';
+import type { EffectivePropertyMapInterface } from '../../src/interfaces/EffectivePropertyMapInterface.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -235,7 +235,7 @@ void describe('collectEffectiveProperties', { 'concurrency': false }, () => {
       'properties': { 'a': { 'type': 'string' } },
       'type': 'object'
     });
-    const cache = new WeakMap<SchemaGraphNodeType, EffectivePropertyMapType>();
+    const cache = new WeakMap<SchemaGraphNodeInterface, EffectivePropertyMapInterface>();
     const result1 = EffectiveProperties.collectMemo(cache, graph, root);
     const result2 = EffectiveProperties.collectMemo(cache, graph, root);
 

@@ -27,41 +27,15 @@ export const BaseTypes = {
     id: TId
   ) => {
     return {
+      ...PAGE_DEF,
       '$id': id,
-      'description': 'A page of results with pagination metadata',
       'properties': {
-        'hasNext': { 'type': 'boolean' },
-        'hasPrev': { 'type': 'boolean' },
+        ...PAGE_DEF.properties,
         'items': {
           'items': itemSchema,
           'type': 'array'
-        },
-        'nextCursor': { 'type': 'string' },
-        'page': {
-          'minimum': 1,
-          'type': 'number'
-        },
-        'pageSize': {
-          'minimum': 1,
-          'type': 'number'
-        },
-        'prevCursor': { 'type': 'string' },
-        'total': {
-          'minimum': 0,
-          'type': 'number'
-        },
-        'totalPages': {
-          'minimum': 0,
-          'type': 'number'
         }
-      },
-      'required': [
-        'items',
-        'total',
-        'page',
-        'pageSize'
-      ],
-      'type': 'object'
+      }
     } as const;
   },
 
@@ -80,17 +54,12 @@ export const BaseTypes = {
     id: TId
   ) => {
     return {
+      ...RESPONSE_DEF,
       '$id': id,
-      'description': 'Generic response container',
       'properties': {
-        'body': bodySchema,
-        'message': { 'type': 'string' },
-        'statusCode': { 'type': 'number' },
-        'success': { 'type': 'boolean' },
-        'timestamp': { 'type': 'number' }
-      },
-      'required': ['success'],
-      'type': 'object'
+        ...RESPONSE_DEF.properties,
+        'body': bodySchema
+      }
     } as const;
   },
 
@@ -104,20 +73,12 @@ export const BaseTypes = {
     id: TId
   ) => {
     return {
+      ...RESULT_DEF,
       '$id': id,
-      'description': 'Generic result container',
       'properties': {
-        'data': dataSchema,
-        'errorCode': { 'type': 'string' },
-        'errors': {
-          'items': { 'type': 'string' },
-          'type': 'array'
-        },
-        'success': { 'type': 'boolean' },
-        'timestamp': { 'type': 'number' }
-      },
-      'required': ['success'],
-      'type': 'object'
+        ...RESULT_DEF.properties,
+        'data': dataSchema
+      }
     } as const;
   },
 

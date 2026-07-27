@@ -1,20 +1,21 @@
-import type { DuplicateReportEntryType } from '../types/DuplicateReportEntryType.js';
-import type { SchemaRegistryEntryType } from '../types/SchemaRegistryEntryType.js';
+import type { DuplicateReportEntryEntity } from '../entities/DuplicateReportEntryEntity.js';
+import type { NumberValueEntity } from '../entities/NumberValueEntity.js';
+import type { SchemaRegistryEntryInterface } from './SchemaRegistryEntryInterface.js';
 
 export interface SchemaEntryStoreInterface {
   /** Store an entry under schemaId; also record the content hash → id mapping. */
-  add(schemaId: string, entry: SchemaRegistryEntryType): void;
+  add(schemaId: string, entry: SchemaRegistryEntryInterface): void;
   /** Remove all entries and all hash mappings. Returns true if anything was cleared. */
   clear(): boolean;
 
   /** Remove a single entry by schemaId. Returns true if it existed. */
   delete(schemaId: string): boolean;
   /** Iterate [schemaId, entry] pairs. */
-  entries(): IterableIterator<[string, SchemaRegistryEntryType]>;
+  entries(): IterableIterator<[string, SchemaRegistryEntryInterface]>;
   /** Return all duplicate sub-schema shapes detected across registered schemas. */
-  findDuplicates(): readonly DuplicateReportEntryType[];
+  findDuplicates(): readonly DuplicateReportEntryEntity.Type[];
   /** Return the entry for schemaId, or undefined. */
-  get(schemaId: string): SchemaRegistryEntryType | undefined;
+  get(schemaId: string): SchemaRegistryEntryInterface | undefined;
   /** Return the schemaId currently registered under hash, or undefined. */
   getByHash(hash: string): string | undefined;
   /** True if schemaId has an entry. */
@@ -24,9 +25,9 @@ export interface SchemaEntryStoreInterface {
   /** Iterate all schemaIds. */
   keys(): IterableIterator<string>;
   /** Monotonically increasing counter; bumped on every mutation. */
-  readonly 'revision': number;
+  readonly 'revision': NumberValueEntity.Type;
   /** Number of registered schemas. */
-  readonly 'size': number;
+  readonly 'size': NumberValueEntity.Type;
   /** Iterate all entries. */
-  values(): IterableIterator<SchemaRegistryEntryType>;
+  values(): IterableIterator<SchemaRegistryEntryInterface>;
 }

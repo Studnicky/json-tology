@@ -16,9 +16,9 @@ import { Compose } from '../../../src/index.js';
 const PARENT_PROP = 'urn:example:parent';
 
 const AdultSchema = Compose.subClassOf(
-  Compose.minCardinality(PARENT_PROP, 1),
+  Compose.minimumCardinality(PARENT_PROP, 1),
   Compose.subClassOf(
-    Compose.maxCardinality(PARENT_PROP, 2),
+    Compose.maximumCardinality(PARENT_PROP, 2),
     {
       '$id': 'urn:example:Adult',
       'type': 'object'

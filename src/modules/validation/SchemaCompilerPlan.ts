@@ -2,64 +2,55 @@
  * SchemaCompilerPlan — plan-time graph helpers and node validation plan builder.
  *
  * Exports:
- *   SchemaCompilerPlan.buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
+ *   SchemaCompilerPlan.buildNodePlan — single keyword traversal → CompiledNodeValidationPlanInterface
  */
 
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
-import type {
-  SchemaGraphNodeType, SchemaGraphSemanticsType
-} from '../../types/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { KeywordDefinitionType } from '../../types/GraphEngine.js';
-import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
-import type { ExecContextType } from '../../types/ExecContextType.js';
-import type { DynamicScopeEntryType } from '../../types/DynamicScopeEntryType.js';
-import type { CustomKeywordEntryType } from '../../types/CustomKeywordEntryType.js';
-import type { CompiledNodeValidationPlanType } from '../../types/CompiledNodeValidationPlanType.js';
-import type { SchemaCompilerValidatePlanContextType } from '../../types/SchemaCompilerValidatePlanContextType.js';
-import type {
-  BranchRefResultType,
-  ConditionalPropertyKeySetType,
-  CustomKeywordEntriesResultType,
-  DependentSchemaValidatorsResultType,
-  DepRequiredEntriesType,
-  EnumPrimitiveSetType,
-  InheritedPropertyKeySetType,
-  JtStrictPerFieldMapType,
-  OptionalValidateWithErrorsFnType,
-  PatternPropValidatorsResultType,
-  PropertyDefaultsMapType,
-  PropValidatorsMapType,
-  ValidateWithErrorsResultType
-} from '../../types/Validation.js';
-import type { AllowedKeysResultType } from '../../types/AllowedKeysResultType.js';
-import type { CompositionValidatorsResultType } from '../../types/CompositionValidatorsResultType.js';
-import type { ConditionalValidatorsResultType } from '../../types/ConditionalValidatorsResultType.js';
-import type { DependentSchemaValidatorEntryType } from '../../types/DependentSchemaValidatorEntryType.js';
-import type { PatternPropValidatorEntryType } from '../../types/PatternPropValidatorEntryType.js';
-import type { PlanArrayValidatorsType } from '../../types/PlanArrayValidatorsType.js';
-import type { LookupSchemaFnType } from '../../types/LookupSchemaFnType.js';
-import type { PlanCompileWithSemanticsType } from '../../types/PlanCompileWithSemanticsType.js';
-import type { CollectBranchOptionsType } from '../../types/CollectBranchOptionsType.js';
-import type { PlanAllowedKeysOptionsType } from '../../types/PlanAllowedKeysOptionsType.js';
-import type { PlanPreludeType } from '../../types/PlanPreludeType.js';
-import type { PropertyDefaultsOptionsType } from '../../types/PropertyDefaultsOptionsType.js';
-import type { PropertyValidatorsOptionsType } from '../../types/PropertyValidatorsOptionsType.js';
-import type { RefValidatorOptionsType } from '../../types/RefValidatorOptionsType.js';
-import type { RefTargetType } from '../../types/RefTargetType.js';
-import type { DynamicRefValidatorOptionsType } from '../../types/DynamicRefValidatorOptionsType.js';
-import type { ResolveScanRefOptionsType } from '../../types/ResolveScanRefOptionsType.js';
-import type { ScanConditionalOptionsType } from '../../types/ScanConditionalOptionsType.js';
-import type { WalkInheritedRefOptionsType } from '../../types/WalkInheritedRefOptionsType.js';
-import type { ConstraintValidatorsResultType } from '../../types/ConstraintValidatorsResultType.js';
-import type { ArrayValidationOptionsType } from '../../types/ArrayValidationOptionsType.js';
-import type { ObjectValidationOptionsType } from '../../types/ObjectValidationOptionsType.js';
-import type { ResolveDynamicRefTargetOptionsType } from '../../types/ResolveDynamicRefTargetOptionsType.js';
-import type { BuildNodePlanOptionsType } from '../../types/BuildNodePlanOptionsType.js';
+import type { KeywordDefinitionInterface } from '../../interfaces/KeywordDefinitionInterface.js';
+import type { ValidateWithErrorsFunctionInterface } from '../../interfaces/ValidateWithErrorsFunctionInterface.js';
+import type { ExecContextInterface } from '../../interfaces/ExecContextInterface.js';
+import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntryInterface.js';
+import type { CustomKeywordEntryInterface } from '../../interfaces/CustomKeywordEntryInterface.js';
+import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlanInterface.js';
+import type { SchemaCompilerValidatePlanContextInterface } from '../../interfaces/SchemaCompilerValidatePlanContextInterface.js';
+import type { ConditionalPropertyKeySetInterface } from '../../interfaces/ConditionalPropertyKeySetInterface.js';
+import type { InheritedPropertyKeySetInterface } from '../../interfaces/InheritedPropertyKeySetInterface.js';
+import type { JtStrictPerFieldMapInterface } from '../../interfaces/JtStrictPerFieldMapInterface.js';
+import type { EnumPrimitiveSetInterface } from '../../interfaces/EnumPrimitiveSetInterface.js';
+import type { PropertyDefaultsMapInterface } from '../../interfaces/PropertyDefaultsMapInterface.js';
+import type { PropValidatorsMapInterface } from '../../interfaces/PropValidatorsMapInterface.js';
+import type { ValidateWithErrorsResultEntity } from '../../entities/ValidateWithErrorsResultEntity.js';
+import type { AllowedKeysResultInterface } from '../../interfaces/AllowedKeysResultInterface.js';
+import type { CompositionValidatorsResultInterface } from '../../interfaces/CompositionValidatorsResultInterface.js';
+import type { ConditionalValidatorsResultInterface } from '../../interfaces/ConditionalValidatorsResultInterface.js';
+import type { DependentSchemaValidatorEntryInterface } from '../../interfaces/DependentSchemaValidatorEntryInterface.js';
+import type { PatternPropValidatorEntryInterface } from '../../interfaces/PatternPropValidatorEntryInterface.js';
+import type { PlanArrayValidatorsInterface } from '../../interfaces/PlanArrayValidatorsInterface.js';
+import type { LookupSchemaFunctionInterface } from '../../interfaces/LookupSchemaFunctionInterface.js';
+import type { PlanCompileWithSemanticsInterface } from '../../interfaces/PlanCompileWithSemanticsInterface.js';
+import type { CollectBranchOptionsInterface } from '../../interfaces/CollectBranchOptionsInterface.js';
+import type { PlanAllowedKeysOptionsInterface } from '../../interfaces/PlanAllowedKeysOptionsInterface.js';
+import type { PlanPreludeInterface } from '../../interfaces/PlanPreludeInterface.js';
+import type { PropertyDefaultsOptionsInterface } from '../../interfaces/PropertyDefaultsOptionsInterface.js';
+import type { PropertyValidatorsOptionsInterface } from '../../interfaces/PropertyValidatorsOptionsInterface.js';
+import type { ReferenceValidatorOptionsInterface } from '../../interfaces/ReferenceValidatorOptionsInterface.js';
+import type { ReferenceTargetInterface } from '../../interfaces/ReferenceTargetInterface.js';
+import type { DynamicReferenceValidatorOptionsInterface } from '../../interfaces/DynamicReferenceValidatorOptionsInterface.js';
+import type { ResolveScanReferenceOptionsInterface } from '../../interfaces/ResolveScanReferenceOptionsInterface.js';
+import type { ScanConditionalOptionsInterface } from '../../interfaces/ScanConditionalOptionsInterface.js';
+import type { WalkInheritedReferenceOptionsInterface } from '../../interfaces/WalkInheritedReferenceOptionsInterface.js';
+import type { ConstraintValidatorsResultInterface } from '../../interfaces/ConstraintValidatorsResultInterface.js';
+import type { ArrayValidationOptionsInterface } from '../../interfaces/ArrayValidationOptionsInterface.js';
+import type { ObjectValidationOptionsInterface } from '../../interfaces/ObjectValidationOptionsInterface.js';
+import type { ResolveDynamicReferenceTargetOptionsInterface } from '../../interfaces/ResolveDynamicReferenceTargetOptionsInterface.js';
+import type { BuildNodePlanOptionsInterface } from '../../interfaces/BuildNodePlanOptionsInterface.js';
 import { DataType } from '../data/DataType.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
-import { RefResolver } from '../graph/RefResolver.js';
+import { ReferenceResolver } from '../graph/ReferenceResolver.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
@@ -70,60 +61,14 @@ import { VALIDATION_MESSAGES } from '../../constants/VALIDATION_MESSAGES.js';
 // Compile-time monomorphic type predicates (avoids per-value Map.get dispatch)
 // ---------------------------------------------------------------------------
 
-// Named predicates bound at module load — one allocation each, reused across all plans.
-const typePredicateString = (value: unknown): boolean => {
-  return typeof value === 'string';
-};
-const typePredicateNumber = (value: unknown): boolean => {
-  return typeof value === 'number' && Number.isFinite(value);
-};
-const typePredicateInteger = (value: unknown): boolean => {
-  return typeof value === 'number' && Number.isInteger(value);
-};
-const typePredicateBoolean = (value: unknown): boolean => {
-  return typeof value === 'boolean';
-};
-const typePredicateNull = (value: unknown): boolean => {
-  return value === null;
-};
-const typePredicateArray = (value: unknown): boolean => {
-  const result = Array.isArray(value);
-
-  return result;
-};
-const singleTypePredicates = new Map<string, (v: unknown) => boolean>([
-  [
-    'array',
-    typePredicateArray
-  ],
-  [
-    'boolean',
-    typePredicateBoolean
-  ],
-  [
-    'integer',
-    typePredicateInteger
-  ],
-  [
-    'null',
-    typePredicateNull
-  ],
-  [
-    'number',
-    typePredicateNumber
-  ],
-  [
-    'object',
-    DataType.isRecord
-  ],
-  [
-    'string',
-    typePredicateString
-  ]
-]);
-
 /** Compile-time construction of the monomorphic type-predicate closure for a schema's `type` keyword. */
 class TypePredicate {
+  // Lazily built and memoized on first use — methods it references are installed
+  // as part of class definition, but a static-field initializer (evaluated in
+  // source order) cannot forward-reference a method declared later in the class
+  // body, so construction is deferred to first call instead of an eager field.
+  private static singleTypePredicatesCache: Map<string, (v: unknown) => boolean> | undefined;
+
   static build(types: string[]): ((v: unknown) => boolean) | undefined {
     if (types.length === 0) {
       return undefined;
@@ -136,7 +81,7 @@ class TypePredicate {
         return undefined;
       }
 
-      const pred = singleTypePredicates.get(singleType);
+      const pred = TypePredicate.getSingleTypePredicates().get(singleType);
 
       // Return the specialized predicate if known; fall back to the string-comparison fallback for exotic types.
       if (pred !== undefined) {
@@ -160,7 +105,7 @@ class TypePredicate {
     const preds: Array<(value: unknown) => boolean> = [];
 
     for (const type of types) {
-      const pred = singleTypePredicates.get(type);
+      const pred = TypePredicate.getSingleTypePredicates().get(type);
 
       if (pred === undefined) {
         const capturedType = type;
@@ -190,140 +135,131 @@ class TypePredicate {
       return false;
     };
   }
-}
 
-// ---------------------------------------------------------------------------
-// Module-scope singletons — boolean schema fast paths (A.1)
-// ---------------------------------------------------------------------------
+  private static getSingleTypePredicates(): Map<string, (v: unknown) => boolean> {
+    TypePredicate.singleTypePredicatesCache ??= new Map<string, (v: unknown) => boolean>([
+      [
+        'array',
+        TypePredicate.typePredicateArray
+      ],
+      [
+        'boolean',
+        TypePredicate.typePredicateBoolean
+      ],
+      [
+        'integer',
+        TypePredicate.typePredicateInteger
+      ],
+      [
+        'null',
+        TypePredicate.typePredicateNull
+      ],
+      [
+        'number',
+        TypePredicate.typePredicateNumber
+      ],
+      [
+        'object',
+        DataType.isRecord
+      ],
+      [
+        'string',
+        TypePredicate.typePredicateString
+      ]
+    ]);
 
-const TRUE_VALIDATOR: ValidateWithErrorsFnType = (value: unknown): ValidateWithErrorsResultType => {
-  return {
-    'valid': true,
-    value
-  };
-};
-
-const FALSE_VALIDATOR: ValidateWithErrorsFnType = (
-  value: unknown,
-  path: string,
-  ctx: ExecContextType
-): ValidateWithErrorsResultType => {
-  if (ctx.collectErrors) {
-    ctx.errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
+    return TypePredicate.singleTypePredicatesCache;
   }
 
-  return {
-    'valid': false,
-    value
-  };
-};
+  // Named predicates bound at module load — one allocation each, reused across all plans.
+  private static typePredicateArray(value: unknown): boolean {
+    const result = Array.isArray(value);
+
+    return result;
+  }
+
+  private static typePredicateBoolean(value: unknown): boolean {
+    return typeof value === 'boolean';
+  }
+
+  private static typePredicateInteger(value: unknown): boolean {
+    return typeof value === 'number' && Number.isInteger(value);
+  }
+
+  private static typePredicateNull(value: unknown): boolean {
+    return value === null;
+  }
+
+  private static typePredicateNumber(value: unknown): boolean {
+    return typeof value === 'number' && Number.isFinite(value);
+  }
+
+  private static typePredicateString(value: unknown): boolean {
+    return typeof value === 'string';
+  }
+}
+
+/** Boolean-schema fast paths (A.1) — reused across all plans. */
+class BooleanSchemaValidator {
+  static booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFunctionInterface {
+    return schema ? BooleanSchemaValidator.trueValidator : BooleanSchemaValidator.falseValidator;
+  }
+
+  static falseValidator(
+    value: unknown,
+    path: string,
+    context: ExecContextInterface
+  ): ValidateWithErrorsResultEntity.Type {
+    if (context.collectErrors) {
+      context.errors.push(BaseError.validationError(path, 'falseSchema', VALIDATION_MESSAGES.falseSchema));
+    }
+
+    return {
+      'valid': false,
+      value
+    };
+  }
+
+  static trueValidator(value: unknown): ValidateWithErrorsResultEntity.Type {
+    return {
+      'valid': true,
+      value
+    };
+  }
+}
+
+/** Rejects every unevaluated item/property — used when `unevaluatedItems`/`unevaluatedProperties` is the boolean schema `false`. */
+class UnevaluatedRejectValidator {
+  static forKeyword(keyword: 'unevaluatedItems' | 'unevaluatedProperties'): ValidateWithErrorsFunctionInterface {
+    return (value: unknown, path: string, context: ExecContextInterface): ValidateWithErrorsResultEntity.Type => {
+      if (context.collectErrors) {
+        context.errors.push(BaseError.validationError(path, keyword, VALIDATION_MESSAGES[keyword]));
+      }
+
+      return {
+        'valid': false,
+        value
+      };
+    };
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Internal helpers (graph context)
 // ---------------------------------------------------------------------------
 
-/**
- * Resolve a `$ref` string to its target graph and node within the `walk` traversal,
- * then continue collecting property names.
- */
-function walkInheritedRef(opts: WalkInheritedRefOptionsType): void {
-  const {
-    currentGraph, lookupGraph, ref, walkFn
-  } = opts;
-
-  if (ref.startsWith('#')) {
-    walkFn(currentGraph, currentGraph.resolveFragment(ref.slice(1)));
-
-    return;
-  }
-
-  if (lookupGraph === undefined) {
-    return;
-  }
-
-  // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
-  // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
-  // fragment-stripped resolution when no such registration matches exactly.
-  const literalGraph = ref.includes('#') ? lookupGraph(ref) : undefined;
-
-  if (literalGraph !== undefined) {
-    walkFn(literalGraph, literalGraph.resolveFragment(''));
-
-    return;
-  }
-
-  const {
-    fragment, id
-  } = SchemaIri.parseRef(ref);
-  const targetGraph = lookupGraph(id);
-
-  if (targetGraph !== undefined) {
-    walkFn(targetGraph, targetGraph.resolveFragment(fragment));
-  }
-}
-
-/**
- * Walk `allOf` parents (recursively, resolving `$ref` into the parent's
- * graph) and collect every property name the schema effectively
- * declares. Without this, `allowedKeys` only contains the body's own
- * properties and `removeAdditionalProperties: true` strips parent
- * fields supplied at the wire level — values that the rest of the
- * validator already accepts through the allOf member chain.
- */
-function collectInheritedAllOfPropertyKeys(
-  sem: SchemaGraphSemanticsType,
-  graph: SchemaGraphInterface,
-  lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
-): InheritedPropertyKeySetType {
-  const inherited = new Set<string>();
-  const visited = new Set<SchemaGraphNodeType>();
-
-  const walk = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeType): void => {
-    if (visited.has(node)) {
-      return;
-    }
-    visited.add(node);
-
-    const nodeSem = currentGraph.semantics(node);
-
-    if (nodeSem.ref !== undefined) {
-      walkInheritedRef({
-        currentGraph,
-        lookupGraph,
-        'ref': nodeSem.ref,
-        'walkFn': walk
-      });
-
-      return;
-    }
-
-    for (const name of nodeSem.properties.keys()) {
-      inherited.add(name);
-    }
-    for (const member of nodeSem.allOf) {
-      walk(currentGraph, member);
-    }
-  };
-
-  for (const member of sem.allOf) {
-    walk(graph, member);
-  }
-
-  return inherited;
-}
-
 /** Resolution of a `$ref` to its target graph and fragment node during branch collection. */
-class BranchRef {
+class BranchReference {
   /** Resolve a `$ref` to the target graph and fragment node during branch collection. */
   static resolve(
-    ref: string,
+    reference: string,
     currentGraph: SchemaGraphInterface,
     lookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined
-  ): BranchRefResultType {
-    if (ref.startsWith('#')) {
+  ): ReferenceTargetInterface | undefined {
+    if (reference.startsWith('#')) {
       return {
         'graph': currentGraph,
-        'node': currentGraph.resolveFragment(ref.slice(1))
+        'node': currentGraph.resolveFragment(reference.slice(1))
       };
     }
 
@@ -334,7 +270,7 @@ class BranchRef {
     // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
     // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
     // fragment-stripped resolution when no such registration matches exactly.
-    const literalGraph = ref.includes('#') ? lookupGraph(ref) : undefined;
+    const literalGraph = reference.includes('#') ? lookupGraph(reference) : undefined;
 
     if (literalGraph !== undefined) {
       return {
@@ -345,7 +281,7 @@ class BranchRef {
 
     const {
       fragment, id
-    } = SchemaIri.parseRef(ref);
+    } = SchemaIri.parseReference(reference);
     const targetGraph = lookupGraph(id);
 
     return targetGraph === undefined
@@ -357,307 +293,280 @@ class BranchRef {
   }
 }
 
-/** Resolution of a `$ref` encountered during conditional-branch scanning. */
-class ScanRef {
+/** Traversal helpers for `allOf`-inherited property-key collection. */
+class InheritedProperties {
+  /**
+   * Walk `allOf` parents (recursively, resolving `$ref` into the parent's
+   * graph) and collect every property name the schema effectively
+   * declares. Without this, `allowedKeys` only contains the body's own
+   * properties and `removeAdditionalProperties: true` strips parent
+   * fields supplied at the wire level — values that the rest of the
+   * validator already accepts through the allOf member chain.
+   */
+  static collectAllOfPropertyKeys(
+    sem: SchemaGraphSemanticsInterface,
+    graph: SchemaGraphInterface,
+    lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
+  ): InheritedPropertyKeySetInterface {
+    const inherited = new Set<string>();
+    const visited = new Set<SchemaGraphNodeInterface>();
+
+    const walk = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeInterface): void => {
+      if (visited.has(node)) {
+        return;
+      }
+      visited.add(node);
+
+      const nodeSem = currentGraph.semantics(node);
+
+      if (nodeSem.ref !== undefined) {
+        InheritedProperties.walkReference({
+          currentGraph,
+          lookupGraph,
+          'ref': nodeSem.ref,
+          'walkFn': walk
+        });
+
+        return;
+      }
+
+      for (const name of nodeSem.properties.keys()) {
+        inherited.add(name);
+      }
+      for (const member of nodeSem.allOf) {
+        walk(currentGraph, member);
+      }
+    };
+
+    for (const member of sem.allOf) {
+      walk(graph, member);
+    }
+
+    return inherited;
+  }
+
+  /**
+   * Resolve a `$ref` string to its target graph and node within the `walk` traversal,
+   * then continue collecting property names.
+   */
+  static walkReference(options: WalkInheritedReferenceOptionsInterface): void {
+    const {
+      currentGraph, lookupGraph, 'ref': reference, 'walkFn': walkFunction
+    } = options;
+    const resolved = BranchReference.resolve(reference, currentGraph, lookupGraph);
+
+    if (resolved !== undefined) {
+      walkFunction(resolved.graph, resolved.node);
+    }
+  }
+}
+
+/** Conditional (`if`/`then`/`else`) branch traversal for strip-protection key collection. */
+class ConditionalProperties {
+  /**
+   * Collect every property name reachable from a conditional branch node
+   * (its own properties plus those behind `allOf`, `$ref`, and nested `then`/`else`).
+   */
+  static collectBranchPropertyNames(options: CollectBranchOptionsInterface): void {
+    const {
+      branchNode, scanState, startGraph
+    } = options;
+    const {
+      collectVisited, lookupGraph, target
+    } = scanState;
+
+    const collectFunction = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeInterface): void => {
+      if (collectVisited.has(node)) {
+        return;
+      }
+      collectVisited.add(node);
+
+      const nodeSem = currentGraph.semantics(node);
+
+      if (nodeSem.ref !== undefined) {
+        const resolved = BranchReference.resolve(nodeSem.ref, currentGraph, lookupGraph);
+
+        if (resolved !== undefined) {
+          collectFunction(resolved.graph, resolved.node);
+        }
+
+        return;
+      }
+
+      for (const name of nodeSem.properties.keys()) {
+        target.add(name);
+      }
+      for (const member of nodeSem.allOf) {
+        collectFunction(currentGraph, member);
+      }
+      if (nodeSem.thenNode !== undefined) {
+        collectFunction(currentGraph, nodeSem.thenNode);
+      }
+      if (nodeSem.elseNode !== undefined) {
+        collectFunction(currentGraph, nodeSem.elseNode);
+      }
+    };
+
+    collectFunction(startGraph, branchNode);
+  }
+
+  /**
+   * Collect property names declared in the `then` / `else` branches of an
+   * if/then/else conditional (recursively, including any `allOf` or `$ref`
+   * inside those branches). A property that exists ONLY inside an active
+   * conditional branch (e.g. `EBook` requires `epubVersion` when
+   * `fileFormat === 'epub'`) is a legitimately-evaluated property; without
+   * including it here, `removeAdditionalProperties: true` strips it before the
+   * branch validator runs, and the subsequent branch re-check then fails on the
+   * now-missing required property. Used solely to widen `allowedKeysForStrip`
+   * (strip-protection); the strict `additionalProperties: false` check still
+   * uses the own-only `allowedKeys` set per JSON Schema semantics.
+   */
+  static collectConditionalPropertyKeys(
+    sem: SchemaGraphSemanticsInterface,
+    graph: SchemaGraphInterface,
+    lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
+  ): ConditionalPropertyKeySetInterface {
+    const conditional = new Set<string>();
+    const collectVisited = new Set<SchemaGraphNodeInterface>();
+    const scanVisited = new Set<SchemaGraphNodeInterface>();
+
+    ConditionalProperties.scanForConditionalBranches({
+      'currentGraph': graph,
+      'scanSem': sem,
+      'scanState': {
+        collectVisited,
+        lookupGraph,
+        scanVisited,
+        'target': conditional
+      }
+    });
+
+    return conditional;
+  }
+
   /**
    * Resolve a `$ref` encountered during conditional-branch scanning.
    */
-  static resolve(opts: ResolveScanRefOptionsType): void {
+  static resolveReference(options: ResolveScanReferenceOptionsInterface): void {
     const {
-      currentGraph, ref, scanState
-    } = opts;
+      currentGraph, 'ref': reference, scanState
+    } = options;
     const { lookupGraph } = scanState;
+    const resolved = BranchReference.resolve(reference, currentGraph, lookupGraph);
 
-    if (ref.startsWith('#')) {
-      const refSem = currentGraph.semantics(currentGraph.resolveFragment(ref.slice(1)));
-
-      scanForConditionalBranches({
-        currentGraph,
-        'scanSem': refSem,
-        scanState
-      });
-
-      return;
-    }
-
-    if (lookupGraph === undefined) {
-      return;
-    }
-
-    // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
-    // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
-    // fragment-stripped resolution when no such registration matches exactly.
-    const literalGraph = ref.includes('#') ? lookupGraph(ref) : undefined;
-
-    if (literalGraph !== undefined) {
-      const literalSem = literalGraph.semantics(literalGraph.resolveFragment(''));
-
-      scanForConditionalBranches({
-        'currentGraph': literalGraph,
-        'scanSem': literalSem,
-        scanState
-      });
-
-      return;
-    }
-
-    const {
-      fragment, id
-    } = SchemaIri.parseRef(ref);
-    const targetGraph = lookupGraph(id);
-
-    if (targetGraph !== undefined) {
-      const refSem = targetGraph.semantics(targetGraph.resolveFragment(fragment));
-
-      scanForConditionalBranches({
-        'currentGraph': targetGraph,
-        'scanSem': refSem,
+    if (resolved !== undefined) {
+      ConditionalProperties.scanForConditionalBranches({
+        'currentGraph': resolved.graph,
+        'scanSem': resolved.graph.semantics(resolved.node),
         scanState
       });
     }
   }
-}
 
-/**
- * Collect every property name reachable from a conditional branch node
- * (its own properties plus those behind `allOf`, `$ref`, and nested `then`/`else`).
- */
-function collectBranchPropertyNames(opts: CollectBranchOptionsType): void {
-  const {
-    branchNode, scanState, startGraph
-  } = opts;
-  const {
-    collectVisited, lookupGraph, target
-  } = scanState;
+  /**
+   * Scan a semantics node and its `allOf` members for `if`/`then`/`else` branches,
+   * collecting all reachable property names into `target`.
+   */
+  static scanForConditionalBranches(options: ScanConditionalOptionsInterface): void {
+    const {
+      currentGraph, scanSem, scanState
+    } = options;
+    const { scanVisited } = scanState;
 
-  const collectFn = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeType): void => {
-    if (collectVisited.has(node)) {
-      return;
+    if (scanSem.thenNode !== undefined) {
+      ConditionalProperties.collectBranchPropertyNames({
+        'branchNode': scanSem.thenNode,
+        scanState,
+        'startGraph': currentGraph
+      });
     }
-    collectVisited.add(node);
+    if (scanSem.elseNode !== undefined) {
+      ConditionalProperties.collectBranchPropertyNames({
+        'branchNode': scanSem.elseNode,
+        scanState,
+        'startGraph': currentGraph
+      });
+    }
 
-    const nodeSem = currentGraph.semantics(node);
+    for (const member of scanSem.allOf) {
+      if (scanVisited.has(member)) {
+        continue;
+      }
+      scanVisited.add(member);
 
-    if (nodeSem.ref !== undefined) {
-      const resolved = BranchRef.resolve(nodeSem.ref, currentGraph, lookupGraph);
+      const memberSem = currentGraph.semantics(member);
 
-      if (resolved !== undefined) {
-        collectFn(resolved.graph, resolved.node);
+      if (memberSem.ref !== undefined) {
+        ConditionalProperties.resolveReference({
+          currentGraph,
+          'ref': memberSem.ref,
+          scanState
+        });
+        continue;
       }
 
-      return;
-    }
-
-    for (const name of nodeSem.properties.keys()) {
-      target.add(name);
-    }
-    for (const member of nodeSem.allOf) {
-      collectFn(currentGraph, member);
-    }
-    if (nodeSem.thenNode !== undefined) {
-      collectFn(currentGraph, nodeSem.thenNode);
-    }
-    if (nodeSem.elseNode !== undefined) {
-      collectFn(currentGraph, nodeSem.elseNode);
-    }
-  };
-
-  collectFn(startGraph, branchNode);
-}
-
-/**
- * Scan a semantics node and its `allOf` members for `if`/`then`/`else` branches,
- * collecting all reachable property names into `target`.
- */
-function scanForConditionalBranches(opts: ScanConditionalOptionsType): void {
-  const {
-    currentGraph, scanSem, scanState
-  } = opts;
-  const { scanVisited } = scanState;
-
-  if (scanSem.thenNode !== undefined) {
-    collectBranchPropertyNames({
-      'branchNode': scanSem.thenNode,
-      scanState,
-      'startGraph': currentGraph
-    });
-  }
-  if (scanSem.elseNode !== undefined) {
-    collectBranchPropertyNames({
-      'branchNode': scanSem.elseNode,
-      scanState,
-      'startGraph': currentGraph
-    });
-  }
-
-  for (const member of scanSem.allOf) {
-    if (scanVisited.has(member)) {
-      continue;
-    }
-    scanVisited.add(member);
-
-    const memberSem = currentGraph.semantics(member);
-
-    if (memberSem.ref !== undefined) {
-      ScanRef.resolve({
+      ConditionalProperties.scanForConditionalBranches({
         currentGraph,
-        'ref': memberSem.ref,
+        'scanSem': memberSem,
         scanState
       });
-      continue;
     }
-
-    scanForConditionalBranches({
-      currentGraph,
-      'scanSem': memberSem,
-      scanState
-    });
   }
 }
 
 /**
- * Collect property names declared in the `then` / `else` branches of an
- * if/then/else conditional (recursively, including any `allOf` or `$ref`
- * inside those branches). A property that exists ONLY inside an active
- * conditional branch (e.g. `EBook` requires `epubVersion` when
- * `fileFormat === 'epub'`) is a legitimately-evaluated property; without
- * including it here, `removeAdditionalProperties: true` strips it before the
- * branch validator runs, and the subsequent branch re-check then fails on the
- * now-missing required property. Used solely to widen `allowedKeysForStrip`
- * (strip-protection); the strict `additionalProperties: false` check still
- * uses the own-only `allowedKeys` set per JSON Schema semantics.
+ * Shared `ctx.refStack` guard used by the compiled `$ref`, `$dynamicRef`, and
+ * `rdfs:range` validators: wraps `executor` so a reference key already in-flight
+ * short-circuits to `{valid:true}` (breaking recursion) instead of re-entering,
+ * otherwise the key is marked in-flight for the call and always cleared after.
  */
-function collectConditionalPropertyKeys(
-  sem: SchemaGraphSemanticsType,
-  graph: SchemaGraphInterface,
-  lookupGraph?: (schemaId: string) => SchemaGraphInterface | undefined
-): ConditionalPropertyKeySetType {
-  const conditional = new Set<string>();
-  const collectVisited = new Set<SchemaGraphNodeType>();
-  const scanVisited = new Set<SchemaGraphNodeType>();
+class ReferenceStackGuard {
+  static wrap(key: string, executor: ValidateWithErrorsFunctionInterface): ValidateWithErrorsFunctionInterface {
+    return (
+      value: unknown,
+      path: string,
+      execContext: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
+      if (execContext.refStack.has(key)) {
+        return {
+          'valid': true,
+          value
+        };
+      }
 
-  scanForConditionalBranches({
-    'currentGraph': graph,
-    'scanSem': sem,
-    'scanState': {
-      collectVisited,
-      lookupGraph,
-      scanVisited,
-      'target': conditional
-    }
-  });
+      execContext.refStack.add(key);
 
-  return conditional;
+      try {
+        return executor(value, path, execContext);
+      } finally {
+        execContext.refStack.delete(key);
+      }
+    };
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Plan-time helpers (validate context)
 // ---------------------------------------------------------------------------
 
-function booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFnType {
-  return schema ? TRUE_VALIDATOR : FALSE_VALIDATOR;
-}
-
 /** Wrapping of an inner validator to force `coerce: false` for strict-per-field properties. */
 class StrictValidator {
-  static wrap(inner: ValidateWithErrorsFnType): ValidateWithErrorsFnType {
+  static wrap(inner: ValidateWithErrorsFunctionInterface): ValidateWithErrorsFunctionInterface {
     return (
       value: unknown,
       path: string,
-      ctx: ExecContextType
-    ): ValidateWithErrorsResultType => {
+      context: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
       // Direct construction avoids the spread overhead on the hot validation path.
-      const strictCtx: ExecContextType = {
-        ...ctx,
+      const strictContext: ExecContextInterface = {
+        ...context,
         'coerce': false
       };
 
-      return inner(value, path, strictCtx);
+      return inner(value, path, strictContext);
     };
   }
-}
-
-function compilePropertyValidators(opts: PropertyValidatorsOptionsType): PropValidatorsMapType {
-  const {
-    configStrict, context, formatRegistry, graph, lookupSchema, propertyEntries
-  } = opts;
-  const propValidators = new Map<string, ValidateWithErrorsFnType>();
-
-  for (const [
-    key,
-    propNode
-  ] of propertyEntries) {
-    const compiled = typeof propNode.schema === 'boolean'
-      ? booleanValidateWithErrors(propNode.schema)
-      : context.compileNodeValidateWithErrors(propNode, formatRegistry, graph, lookupSchema);
-
-    const propSem = typeof propNode.schema === 'boolean' ? undefined : graph.semantics(propNode);
-    const fieldStrict = propSem?.jtStrict ?? configStrict;
-
-    propValidators.set(
-      key,
-      fieldStrict === true ? StrictValidator.wrap(compiled) : compiled
-    );
-  }
-
-  return propValidators;
-}
-
-function compileRefValidator(opts: RefValidatorOptionsType): OptionalValidateWithErrorsFnType {
-  const {
-    context, formatRegistry, graph, lookupGraph, lookupSchema, ref
-  } = opts;
-
-  if (typeof ref !== 'string') {
-    return undefined;
-  }
-
-  const resolved = RefResolver.resolve(ref, graph, {
-    ...(lookupSchema !== undefined && { lookupSchema }),
-    ...(lookupGraph !== undefined && { lookupGraph })
-  });
-
-  if (resolved === undefined) {
-    throw new GraphError(`Cannot resolve $ref '${ref}' — schema not found`, {
-      'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
-      'pointer': ref
-    });
-  }
-
-  const {
-    'graph': targetGraph, 'node': targetNode
-  } = resolved;
-
-  if (typeof targetNode.schema === 'boolean') {
-    return booleanValidateWithErrors(targetNode.schema);
-  }
-
-  const refKey = `${GraphEngineSupport.schemaId(targetGraph.rootSchema) ?? '<anonymous>'}::${ref}`;
-
-  let cached: OptionalValidateWithErrorsFnType;
-
-  return (
-    value: unknown,
-    path: string,
-    ctx: ExecContextType
-  ): ValidateWithErrorsResultType => {
-    if (ctx.refStack.has(refKey)) {
-      return {
-        'valid': true,
-        value
-      };
-    }
-
-    ctx.refStack.add(refKey);
-
-    try {
-      cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, targetGraph, lookupSchema);
-
-      return cached(value, path, ctx);
-    } finally {
-      ctx.refStack.delete(refKey);
-    }
-  };
 }
 
 /**
@@ -671,18 +580,18 @@ function compileRefValidator(opts: RefValidatorOptionsType): OptionalValidateWit
  *     - Else: scan dynamicScope START-TO-END for first matching anchor entry.
  *     - Fallback: static resolved target.
  */
-class DynamicRefTarget {
+class DynamicReferenceTarget {
   static resolve(
-    dynamicRef: string,
+    dynamicReference: string,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryType[],
-    opts?: ResolveDynamicRefTargetOptionsType
-  ): RefTargetType | undefined {
+    dynamicScope: DynamicScopeEntryInterface[],
+    options?: ResolveDynamicReferenceTargetOptionsInterface
+  ): ReferenceTargetInterface | undefined {
     const {
       lookupGraph, lookupSchema
-    } = opts ?? {};
+    } = options ?? {};
 
-    if (dynamicRef === '#') {
+    if (dynamicReference === '#') {
       for (let index = dynamicScope.length - 1; index >= 0; index--) {
         const scopeEntry = dynamicScope[index];
 
@@ -701,7 +610,7 @@ class DynamicRefTarget {
       return undefined;
     }
 
-    const resolved = RefResolver.resolve(dynamicRef, graph, {
+    const resolved = ReferenceResolver.resolve(dynamicReference, graph, {
       ...(lookupSchema !== undefined && { lookupSchema }),
       ...(lookupGraph !== undefined && { lookupGraph })
     });
@@ -710,7 +619,7 @@ class DynamicRefTarget {
       return undefined;
     }
 
-    const fragment = GraphEngineSupport.extractNamedFragment(dynamicRef);
+    const fragment = GraphEngineSupport.extractNamedFragment(dynamicReference);
     const resolvedSem = resolved.graph.semantics(resolved.node);
     const resolvedAnchor = resolvedSem.dynamicAnchor;
 
@@ -731,98 +640,12 @@ class DynamicRefTarget {
   }
 }
 
-/**
- * Compile a `$dynamicRef` validator.
- *
- * Resolution is deferred to runtime (depends on `ctx.dynamicScope`); per-target
- * validators are lazily compiled and cached via `context.compileNodeValidateWithErrors`.
- *
- * The `ctx.refStack` guard (refKey = `${schemaId}::dynamic::${dynamicRef}`) prevents
- * infinite recursion, mirroring `Refs.resolveDynamicRef` (Refs.ts:22).
- *
- * Compile-time invariant: for non-`#` refs the static target MUST resolve. If
- * `RefResolver.resolve` returns `undefined`, throw `GraphError(REF_NOT_FOUND)` now
- * rather than silently producing an accept-all validator at runtime.
- * A `dynamicRef === '#'` with no matching scope entry at runtime is a spec-legal
- * no-op (no dynamic anchor in scope), so that path may remain `{valid:true}`.
- */
-function compileDynamicRefValidator(opts: DynamicRefValidatorOptionsType): ValidateWithErrorsFnType {
-  const {
-    context, dynamicRef, formatRegistry, graph, lookupGraph, lookupSchema
-  } = opts;
-
-  // Verify static resolution at compile time for all non-# refs.
-  if (dynamicRef !== '#') {
-    const staticCheck = RefResolver.resolve(dynamicRef, graph, {
-      ...(lookupSchema !== undefined && { lookupSchema }),
-      ...(lookupGraph !== undefined && { lookupGraph })
-    });
-
-    if (staticCheck === undefined) {
-      throw new GraphError(
-        `Cannot resolve $dynamicRef '${dynamicRef}' — schema not found`,
-        {
-          'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
-          'pointer': dynamicRef
-        }
-      );
-    }
-  }
-
-  const schemaId = GraphEngineSupport.schemaId(graph.rootSchema) ?? '<anonymous>';
-  const refKey = `${schemaId}::dynamic::${dynamicRef}`;
-
-  // Per-node validator cache: resolved node → compiled validator.
-  const validatorCache = new WeakMap<SchemaGraphNodeType, ValidateWithErrorsFnType>();
-
-  return (
-    value: unknown,
-    path: string,
-    ctx: ExecContextType
-  ): ValidateWithErrorsResultType => {
-    if (ctx.refStack.has(refKey)) {
-      return {
-        'valid': true,
-        value
-      };
-    }
-
-    const target = DynamicRefTarget.resolve(dynamicRef, graph, ctx.dynamicScope, {
-      ...(lookupGraph !== undefined && { lookupGraph }),
-      ...(lookupSchema !== undefined && { lookupSchema })
-    });
-
-    if (target === undefined) {
-      // Spec-legal no-op: dynamicRef === '#' with no matching root anchor in scope.
-      return {
-        'valid': true,
-        value
-      };
-    }
-
-    ctx.refStack.add(refKey);
-
-    try {
-      let cached = validatorCache.get(target.node);
-
-      if (cached === undefined) {
-        cached = context.compileNodeValidateWithErrors(target.node, formatRegistry, target.graph, lookupSchema);
-        validatorCache.set(target.node, cached);
-      }
-
-      return cached(value, path, ctx);
-    } finally {
-      ctx.refStack.delete(refKey);
-    }
-  };
-}
-
 /** Construction of the property-default map for a node's `properties` entries. */
 class PropertyDefaults {
-  static build(opts: PropertyDefaultsOptionsType): PropertyDefaultsMapType {
+  static build(options: PropertyDefaultsOptionsInterface): PropertyDefaultsMapInterface {
     const {
       context, graph, lookupSchema, propertyEntries
-    } = opts;
+    } = options;
     const propertyDefaults = new Map<string, { 'defaultValue': unknown;
       'hasDefault': boolean; }>();
 
@@ -860,21 +683,23 @@ class PropertyDefaults {
 /** Construction of the compiled custom-keyword entry list for a node's active keywords. */
 class CustomKeywordEntries {
   static build(
-    activeCustomKeywords: KeywordDefinitionType[],
-    sem: SchemaGraphSemanticsType
-  ): CustomKeywordEntriesResultType {
+    activeCustomKeywords: KeywordDefinitionInterface[],
+    sem: SchemaGraphSemanticsInterface
+  ): CustomKeywordEntryInterface[] | undefined {
     if (activeCustomKeywords.length === 0) {
       return undefined;
     }
 
-    const entries: CustomKeywordEntryType[] = [];
+    const entries: CustomKeywordEntryInterface[] = [];
 
     for (const kw of activeCustomKeywords) {
       if (kw.keyword in sem.extensions) {
+        const schemaValue = sem.extensions[kw.keyword];
+
         entries.push({
           'allowedTypes': SchemaCompilerSupport.normalizeKeywordTypes(kw.type),
           'keyword': kw.keyword,
-          'schemaValue': sem.extensions[kw.keyword],
+          'schemaValue': schemaValue,
           'validate': kw.validate
         });
       }
@@ -887,9 +712,9 @@ class CustomKeywordEntries {
 /** Construction of the per-field `jtStrict` map for a node's `properties` entries. */
 class JtStrictPerField {
   static build(
-    propertyEntries: ReadonlyMap<string, SchemaGraphNodeType>,
+    propertyEntries: ReadonlyMap<string, SchemaGraphNodeInterface>,
     graph: SchemaGraphInterface
-  ): JtStrictPerFieldMapType {
+  ): JtStrictPerFieldMapInterface | undefined {
     const result = new Map<string, boolean>();
 
     for (const [
@@ -914,7 +739,7 @@ class JtStrictPerField {
 /** Construction of the enum fast-path `Set` when all values are primitives. */
 class EnumSet {
   /** Build the enum fast-path `Set` when all values are primitives. */
-  static build(enumValues: undefined | unknown[]): EnumPrimitiveSetType {
+  static build(enumValues: undefined | unknown[]): EnumPrimitiveSetInterface | undefined {
     if (enumValues === undefined) {
       return undefined;
     }
@@ -934,27 +759,6 @@ class EnumSet {
 }
 
 /**
- * Compile one pattern-property validator entry. Isolated in its own function
- * scope (rather than inline in the `patternPropValidators` loop) so the
- * `new RegExp` construction — which cannot be hoisted since the pattern
- * string varies per entry — sits outside the loop's lexical scope.
- */
-function patternValidatorEntry(
-  pat: string,
-  patNode: SchemaGraphNodeType,
-  opts: PlanCompileWithSemanticsType
-): PatternPropValidatorEntryType {
-  const {
-    context, formatRegistry, graph, lookupSchema
-  } = opts;
-
-  return {
-    'regex': new RegExp(pat, 'u'),
-    'validator': context.compileNodeOrBooleanValidateWithErrors(patNode, formatRegistry, graph, lookupSchema)
-  };
-}
-
-/**
  * `buildNodePlan` decomposition — one static method per plan fragment. Grouped
  * into a single class because every method is an internal helper used only
  * within {@link SchemaCompilerPlan.buildNodePlan} and several call each other
@@ -962,10 +766,10 @@ function patternValidatorEntry(
  */
 class PlanBuilders {
   /** Build the property-alias map and allowed-keys sets for the plan. */
-  static allowedKeys(opts: PlanAllowedKeysOptionsType): AllowedKeysResultType {
+  static allowedKeys(options: PlanAllowedKeysOptionsInterface): AllowedKeysResultInterface {
     const {
       graph, lookupGraph, propertyEntries, sem
-    } = opts;
+    } = options;
     const propertyAliases = new Map<string, string>();
 
     for (const [
@@ -987,8 +791,8 @@ class PlanBuilders {
       }
     }
 
-    const inheritedKeys = collectInheritedAllOfPropertyKeys(sem, graph, lookupGraph);
-    const conditionalKeys = collectConditionalPropertyKeys(sem, graph, lookupGraph);
+    const inheritedKeys = InheritedProperties.collectAllOfPropertyKeys(sem, graph, lookupGraph);
+    const conditionalKeys = ConditionalProperties.collectConditionalPropertyKeys(sem, graph, lookupGraph);
 
     const allowedKeysForStrip = inheritedKeys.size > 0 || conditionalKeys.size > 0
       ? new Set<string>([
@@ -1006,11 +810,11 @@ class PlanBuilders {
   }
 
   /** Build the array-related validators for a node plan. */
-  static arrayValidators(opts: PlanCompileWithSemanticsType): PlanArrayValidatorsType {
+  static arrayValidators(options: PlanCompileWithSemanticsInterface): PlanArrayValidatorsInterface {
     const {
       context, formatRegistry, graph, lookupSchema, sem
-    } = opts;
-    let prefixValidators: undefined | ValidateWithErrorsFnType[];
+    } = options;
+    let prefixValidators: undefined | ValidateWithErrorsFunctionInterface[];
 
     if (sem.prefixItems.length > 0) {
       prefixValidators = [];
@@ -1034,12 +838,275 @@ class PlanBuilders {
     };
   }
 
+  /**
+   * Compile a `$dynamicRef` validator.
+   *
+   * Resolution is deferred to runtime (depends on `ctx.dynamicScope`); per-target
+   * validators are lazily compiled and cached via `context.compileNodeValidateWithErrors`.
+   *
+   * The `ctx.refStack` guard (refKey = `${schemaId}::dynamic::${dynamicRef}`) prevents
+   * infinite recursion, mirroring `Refs.resolveDynamicRef` (Refs.ts:22).
+   *
+   * Compile-time invariant: for non-`#` refs the static target MUST resolve. If
+   * `ReferenceResolver.resolve` returns `undefined`, throw `GraphError(REF_NOT_FOUND)` now
+   * rather than silently producing an accept-all validator at runtime.
+   * A `dynamicRef === '#'` with no matching scope entry at runtime is a spec-legal
+   * no-op (no dynamic anchor in scope), so that path may remain `{valid:true}`.
+   */
+  static compileDynamicReferenceValidator(options: DynamicReferenceValidatorOptionsInterface): ValidateWithErrorsFunctionInterface {
+    const {
+      context, 'dynamicRef': dynamicReference, formatRegistry, graph, lookupGraph, lookupSchema
+    } = options;
+
+    // Verify static resolution at compile time for all non-# refs.
+    if (dynamicReference !== '#') {
+      const staticCheck = ReferenceResolver.resolve(dynamicReference, graph, {
+        ...(lookupSchema !== undefined && { lookupSchema }),
+        ...(lookupGraph !== undefined && { lookupGraph })
+      });
+
+      if (staticCheck === undefined) {
+        throw new GraphError(
+          `Cannot resolve $dynamicRef '${dynamicReference}' — schema not found`,
+          {
+            'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
+            'pointer': dynamicReference
+          }
+        );
+      }
+    }
+
+    const schemaId = GraphEngineSupport.schemaId(graph.rootSchema) ?? '<anonymous>';
+    const referenceKey = `${schemaId}::dynamic::${dynamicReference}`;
+
+    // Per-node validator cache: resolved node → compiled validator.
+    const validatorCache = new WeakMap<SchemaGraphNodeInterface, ValidateWithErrorsFunctionInterface>();
+
+    return ReferenceStackGuard.wrap(referenceKey, (
+      value: unknown,
+      path: string,
+      execContext: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
+      const target = DynamicReferenceTarget.resolve(dynamicReference, graph, execContext.dynamicScope, {
+        ...(lookupGraph !== undefined && { lookupGraph }),
+        ...(lookupSchema !== undefined && { lookupSchema })
+      });
+
+      if (target === undefined) {
+        // Spec-legal no-op: dynamicRef === '#' with no matching root anchor in scope.
+        return {
+          'valid': true,
+          value
+        };
+      }
+
+      let cached = validatorCache.get(target.node);
+
+      if (cached === undefined) {
+        cached = context.compileNodeValidateWithErrors(target.node, formatRegistry, target.graph, lookupSchema);
+        validatorCache.set(target.node, cached);
+      }
+
+      return cached(value, path, execContext);
+    });
+  }
+
+  static compilePropertyValidators(options: PropertyValidatorsOptionsInterface): PropValidatorsMapInterface {
+    const {
+      configStrict, context, formatRegistry, graph, lookupSchema, propertyEntries
+    } = options;
+    const propValidators = new Map<string, ValidateWithErrorsFunctionInterface>();
+
+    for (const [
+      key,
+      propNode
+    ] of propertyEntries) {
+      const compiled = typeof propNode.schema === 'boolean'
+        ? BooleanSchemaValidator.booleanValidateWithErrors(propNode.schema)
+        : context.compileNodeValidateWithErrors(propNode, formatRegistry, graph, lookupSchema);
+
+      const propSem = typeof propNode.schema === 'boolean' ? undefined : graph.semantics(propNode);
+      const fieldStrict = propSem?.jtStrict ?? configStrict;
+
+      propValidators.set(
+        key,
+        fieldStrict === true ? StrictValidator.wrap(compiled) : compiled
+      );
+    }
+
+    return propValidators;
+  }
+
+  /**
+   * Compile an `rdfs:range` validator that replicates the interpreter semantics from
+   * `Unevaluated.rdfsRange` (Unevaluated.ts:125-169).
+   *
+   * At compile time the range schema IRI is resolved via `lookupSchema`. If found,
+   * a compiled validator is built for it. If not found at compile time, the validator
+   * returns valid immediately (matching interpreter behaviour where an unregistered
+   * range IRI is a no-op).
+   *
+   * The runtime validator:
+   * 1. Guards against recursive range validation via `ctx.refStack`.
+   * 2. Validates record values and array-element records against the range schema.
+   *
+   * `rdfs:domain` has no runtime validation semantics in the interpreter — it is
+   * ontology/TBox projection metadata only. No validator is compiled for it.
+   */
+  static compileRdfsRangeValidator(
+    rdfsRange: string | undefined,
+    context: SchemaCompilerValidatePlanContextInterface,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
+    lookupSchema: LookupSchemaFunctionInterface | undefined,
+    lookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined
+  ): undefined | ValidateWithErrorsFunctionInterface {
+    if (rdfsRange === undefined) {
+      return undefined;
+    }
+
+    // Resolve at compile time. If the range schema is not registered, the
+    // validator is a no-op (matching the interpreter which also does nothing
+    // when lookupSchema returns undefined).
+    const rangeSchemaRecord = lookupSchema?.(rdfsRange);
+
+    if (rangeSchemaRecord === undefined) {
+      return undefined;
+    }
+
+    // Resolve the graph for the range schema, falling back to the current graph.
+    const rangeGraph = lookupGraph?.(rdfsRange) ?? graph;
+    const rangeNode = rangeGraph.node(rangeSchemaRecord) ?? rangeGraph.rootNode;
+    const rangeValidator = context.compileNodeValidateWithErrors(
+      rangeNode,
+      formatRegistry,
+      rangeGraph,
+      lookupSchema
+    );
+    const rangeReferenceKey = `rdfs:range::${rdfsRange}`;
+
+    return ReferenceStackGuard.wrap(rangeReferenceKey, (
+      value: unknown,
+      path: string,
+      execContext: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
+      if (DataType.isRecord(value)) {
+        return rangeValidator(value, path, execContext);
+      }
+
+      if (Array.isArray(value)) {
+        // `Array.isArray` narrows `unknown` to `any[]`; restore the honest element
+        // type (instance data is arbitrary, not a schema).
+        const items: unknown[] = value;
+        let valid = true;
+
+        for (const [
+          i,
+          item
+        ] of items.entries()) {
+          if (DataType.isRecord(item) || Array.isArray(item)) {
+            const itemRes = rangeValidator(item, `${path}/${i}`, execContext);
+
+            if (!itemRes.valid) {
+              if (!execContext.collectErrors) {
+                return {
+                  'valid': false,
+                  value
+                };
+              }
+              valid = false;
+            }
+          }
+        }
+
+        return {
+          valid,
+          value
+        };
+      }
+
+      return {
+        'valid': true,
+        value
+      };
+    });
+  }
+
+  static compileReferenceValidator(options: ReferenceValidatorOptionsInterface): undefined | ValidateWithErrorsFunctionInterface {
+    const {
+      context, formatRegistry, graph, lookupGraph, lookupSchema, 'ref': reference
+    } = options;
+
+    if (typeof reference !== 'string') {
+      return undefined;
+    }
+
+    const resolved = ReferenceResolver.resolve(reference, graph, {
+      ...(lookupSchema !== undefined && { lookupSchema }),
+      ...(lookupGraph !== undefined && { lookupGraph })
+    });
+
+    if (resolved === undefined) {
+      throw new GraphError(`Cannot resolve $ref '${reference}' — schema not found`, {
+        'code': GRAPH_ERROR_CODE.REF_NOT_FOUND,
+        'pointer': reference
+      });
+    }
+
+    const {
+      'graph': targetGraph, 'node': targetNode
+    } = resolved;
+
+    if (typeof targetNode.schema === 'boolean') {
+      return BooleanSchemaValidator.booleanValidateWithErrors(targetNode.schema);
+    }
+
+    const referenceKey = `${GraphEngineSupport.schemaId(targetGraph.rootSchema) ?? '<anonymous>'}::${reference}`;
+
+    let cached: undefined | ValidateWithErrorsFunctionInterface;
+
+    return ReferenceStackGuard.wrap(referenceKey, (
+      value: unknown,
+      path: string,
+      execContext: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
+      cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, targetGraph, lookupSchema);
+
+      return cached(value, path, execContext);
+    });
+  }
+
+  /**
+   * Compile a `unevaluatedProperties` or `unevaluatedItems` node to a validator that
+   * rejects every unevaluated entry when the node is the boolean schema `false`.
+   *
+   * Returns `undefined` when no unevaluated node is present.
+   */
+  static compileUnevaluatedNode(
+    node: SchemaGraphNodeInterface | undefined,
+    keyword: 'unevaluatedItems' | 'unevaluatedProperties',
+    context: SchemaCompilerValidatePlanContextInterface,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
+    lookupSchema: LookupSchemaFunctionInterface | undefined
+  ): undefined | ValidateWithErrorsFunctionInterface {
+    if (node === undefined) {
+      return undefined;
+    }
+
+    if (typeof node.schema === 'boolean') {
+      return node.schema ? undefined : UnevaluatedRejectValidator.forKeyword(keyword);
+    }
+
+    return context.compileNodeValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+  }
+
   /** Compile `allOf` / `anyOf` / `oneOf` validators and checks from the semantics node. */
-  static compositionValidators(opts: PlanCompileWithSemanticsType): CompositionValidatorsResultType {
+  static compositionValidators(options: PlanCompileWithSemanticsInterface): CompositionValidatorsResultInterface {
     const {
       context, formatRegistry, graph, lookupSchema, sem
-    } = opts;
-    let allOfValidators: undefined | ValidateWithErrorsFnType[];
+    } = options;
+    let allOfValidators: undefined | ValidateWithErrorsFunctionInterface[];
 
     if (sem.allOf.length > 0) {
       allOfValidators = [];
@@ -1048,7 +1115,7 @@ class PlanBuilders {
       }
     }
 
-    let anyOfValidators: undefined | ValidateWithErrorsFnType[];
+    let anyOfValidators: undefined | ValidateWithErrorsFunctionInterface[];
 
     if (sem.anyOf.length > 0) {
       anyOfValidators = [];
@@ -1057,7 +1124,7 @@ class PlanBuilders {
       }
     }
 
-    let oneOfValidators: undefined | ValidateWithErrorsFnType[];
+    let oneOfValidators: undefined | ValidateWithErrorsFunctionInterface[];
 
     if (sem.oneOf.length > 0) {
       oneOfValidators = [];
@@ -1074,10 +1141,10 @@ class PlanBuilders {
   }
 
   /** Compile `if` / `then` / `else` validators from the semantics node. */
-  static conditionalValidators(opts: PlanCompileWithSemanticsType): ConditionalValidatorsResultType {
+  static conditionalValidators(options: PlanCompileWithSemanticsInterface): ConditionalValidatorsResultInterface {
     const {
       context, formatRegistry, graph, lookupSchema, sem
-    } = opts;
+    } = options;
     const ifValidator = sem.ifNode === undefined
       ? undefined
       : context.compileNodeOrBooleanValidateWithErrors(sem.ifNode, formatRegistry, graph, lookupSchema);
@@ -1095,10 +1162,10 @@ class PlanBuilders {
     };
   }
 
-  static constraintValidators(opts: PlanCompileWithSemanticsType): ConstraintValidatorsResultType {
+  static constraintValidators(options: PlanCompileWithSemanticsInterface): ConstraintValidatorsResultInterface {
     const {
       context, formatRegistry, graph, lookupSchema, sem
-    } = opts;
+    } = options;
     const additionalPropertiesNode = sem.additionalPropertiesNode;
     const additionalValidator = additionalPropertiesNode !== undefined
       && additionalPropertiesNode !== true
@@ -1120,16 +1187,16 @@ class PlanBuilders {
   }
 
   /** Compile `dependentSchemas` validators from the semantics node. */
-  static dependentSchemaValidators(opts: PlanCompileWithSemanticsType): DependentSchemaValidatorsResultType {
+  static dependentSchemaValidators(options: PlanCompileWithSemanticsInterface): DependentSchemaValidatorEntryInterface[] | undefined {
     const {
       context, formatRegistry, graph, lookupSchema, sem
-    } = opts;
+    } = options;
 
     if (sem.dependentSchemaEntries.length === 0) {
       return undefined;
     }
 
-    const depValidators: DependentSchemaValidatorEntryType[] = [];
+    const depValidators: DependentSchemaValidatorEntryInterface[] = [];
 
     for (const [
       trigger,
@@ -1145,17 +1212,17 @@ class PlanBuilders {
   }
 
   /** Collect `dependentRequired` entries with non-empty arrays from semantics. */
-  static depRequired(dependentRequired: Readonly<Record<string, unknown>>): DepRequiredEntriesType {
-    const entries: DepRequiredEntriesType = [];
+  static depRequired(dependentRequired: Readonly<Record<string, unknown>>): Array<[string, string[]]> {
+    const entries: Array<[string, string[]]> = [];
 
     for (const entry of Object.entries(dependentRequired)) {
       const key = entry[0];
-      const val = entry[1];
+      const value = entry[1];
 
-      if (Array.isArray(val) && val.length > 0) {
+      if (Array.isArray(value) && value.length > 0) {
         entries.push([
           key,
-          val as string[]
+          value as string[]
         ]);
       }
     }
@@ -1164,37 +1231,58 @@ class PlanBuilders {
   }
 
   /** Compile pattern-property validators from the semantics node. */
-  static patternPropValidators(opts: PlanCompileWithSemanticsType): PatternPropValidatorsResultType {
-    const { sem } = opts;
+  static patternPropValidators(options: PlanCompileWithSemanticsInterface): PatternPropValidatorEntryInterface[] | undefined {
+    const { sem } = options;
 
     if (sem.patternPropertyEntries.length === 0) {
       return undefined;
     }
 
-    const patternValidators: PatternPropValidatorEntryType[] = [];
+    const patternValidators: PatternPropValidatorEntryInterface[] = [];
 
     for (const [
       pat,
       patNode
     ] of sem.patternPropertyEntries) {
-      patternValidators.push(patternValidatorEntry(pat, patNode, opts));
+      patternValidators.push(PlanBuilders.patternValidatorEntry(pat, patNode, options));
     }
 
     return patternValidators;
   }
 
+  /**
+   * Compile one pattern-property validator entry. Isolated in its own method
+   * scope (rather than inline in the `patternPropValidators` loop) so the
+   * `new RegExp` construction — which cannot be hoisted since the pattern
+   * string varies per entry — sits outside the loop's lexical scope.
+   */
+  static patternValidatorEntry(
+    pat: string,
+    patNode: SchemaGraphNodeInterface,
+    options: PlanCompileWithSemanticsInterface
+  ): PatternPropValidatorEntryInterface {
+    const {
+      context, formatRegistry, graph, lookupSchema
+    } = options;
+
+    return {
+      'regex': new RegExp(pat, 'u'),
+      'validator': context.compileNodeOrBooleanValidateWithErrors(patNode, formatRegistry, graph, lookupSchema)
+    };
+  }
+
   /** Compute scalar validators that have no mutual dependencies. */
-  static prelude(opts: PlanCompileWithSemanticsType): PlanPreludeType {
+  static prelude(options: PlanCompileWithSemanticsInterface): PlanPreludeInterface {
     const {
       context, formatRegistry, sem
-    } = opts;
+    } = options;
     const patternRegex = sem.pattern === undefined ? undefined : new RegExp(sem.pattern, 'u');
     const formatValidator = (sem.format !== undefined && context.appliesFormatAssertions(sem))
       ? formatRegistry.get(sem.format)
       : undefined;
     const {
       additionalValidator, complementValidator, propertyNamesValidator
-    } = PlanBuilders.constraintValidators(opts);
+    } = PlanBuilders.constraintValidators(options);
 
     return {
       additionalValidator,
@@ -1208,140 +1296,9 @@ class PlanBuilders {
 }
 
 // ---------------------------------------------------------------------------
-// buildNodePlan — single keyword traversal → CompiledNodeValidationPlanType
+// buildNodePlan — single keyword traversal → CompiledNodeValidationPlanInterface
 // ---------------------------------------------------------------------------
 
-/**
- * Compile a `unevaluatedProperties` or `unevaluatedItems` node to a validator or
- * the sentinel `false` (meaning: reject all unevaluated items/properties).
- *
- * Returns `undefined` when no unevaluated node is present.
- */
-function compileUnevaluatedNode(
-  node: SchemaGraphNodeType | undefined,
-  context: SchemaCompilerValidatePlanContextType,
-  formatRegistry: FormatRegistryInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema: LookupSchemaFnType | undefined
-): false | undefined | ValidateWithErrorsFnType {
-  if (node === undefined) {
-    return undefined;
-  }
-
-  if (typeof node.schema === 'boolean') {
-    return node.schema ? undefined : false;
-  }
-
-  return context.compileNodeValidateWithErrors(node, formatRegistry, graph, lookupSchema);
-}
-
-/**
- * Compile an `rdfs:range` validator that replicates the interpreter semantics from
- * `Unevaluated.rdfsRange` (Unevaluated.ts:125-169).
- *
- * At compile time the range schema IRI is resolved via `lookupSchema`. If found,
- * a compiled validator is built for it. If not found at compile time, the validator
- * returns valid immediately (matching interpreter behaviour where an unregistered
- * range IRI is a no-op).
- *
- * The runtime validator:
- * 1. Guards against recursive range validation via `ctx.refStack`.
- * 2. Validates record values and array-element records against the range schema.
- *
- * `rdfs:domain` has no runtime validation semantics in the interpreter — it is
- * ontology/TBox projection metadata only. No validator is compiled for it.
- */
-function compileRdfsRangeValidator(
-  rdfsRange: string | undefined,
-  context: SchemaCompilerValidatePlanContextType,
-  formatRegistry: FormatRegistryInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema: LookupSchemaFnType | undefined,
-  lookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined
-): undefined | ValidateWithErrorsFnType {
-  if (rdfsRange === undefined) {
-    return undefined;
-  }
-
-  // Resolve at compile time. If the range schema is not registered, the
-  // validator is a no-op (matching the interpreter which also does nothing
-  // when lookupSchema returns undefined).
-  const rangeSchemaRecord = lookupSchema?.(rdfsRange);
-
-  if (rangeSchemaRecord === undefined) {
-    return undefined;
-  }
-
-  // Resolve the graph for the range schema, falling back to the current graph.
-  const rangeGraph = lookupGraph?.(rdfsRange) ?? graph;
-  const rangeNode = rangeGraph.node(rangeSchemaRecord) ?? rangeGraph.rootNode;
-  const rangeValidator = context.compileNodeValidateWithErrors(
-    rangeNode,
-    formatRegistry,
-    rangeGraph,
-    lookupSchema
-  );
-  const rangeRefKey = `rdfs:range::${rdfsRange}`;
-
-  return (
-    value: unknown,
-    path: string,
-    ctx: ExecContextType
-  ): ValidateWithErrorsResultType => {
-    if (ctx.refStack.has(rangeRefKey)) {
-      return {
-        'valid': true,
-        value
-      };
-    }
-
-    ctx.refStack.add(rangeRefKey);
-
-    try {
-      if (DataType.isRecord(value)) {
-        return rangeValidator(value, path, ctx);
-      }
-
-      if (Array.isArray(value)) {
-        // `Array.isArray` narrows `unknown` to `any[]`; restore the honest element
-        // type (instance data is arbitrary, not a schema).
-        const items: unknown[] = value;
-        let valid = true;
-
-        for (const [
-          i,
-          item
-        ] of items.entries()) {
-          if (DataType.isRecord(item) || Array.isArray(item)) {
-            const itemRes = rangeValidator(item, `${path}/${i}`, ctx);
-
-            if (!itemRes.valid) {
-              if (!ctx.collectErrors) {
-                return {
-                  'valid': false,
-                  value
-                };
-              }
-              valid = false;
-            }
-          }
-        }
-
-        return {
-          valid,
-          value
-        };
-      }
-
-      return {
-        'valid': true,
-        value
-      };
-    } finally {
-      ctx.refStack.delete(rangeRefKey);
-    }
-  };
-}
 
 /**
  * Build a compiled validation plan from a single graph node.
@@ -1350,8 +1307,8 @@ function compileRdfsRangeValidator(
  * @param graphNode - The graph node to compile.
  * @param formatRegistry - Registry for format validators.
  * @param graph - The schema graph containing `graphNode`.
- * @param opts - Optional cross-schema (`lookupSchema`) and cross-graph (`lookupGraph`) lookups.
- * @returns A `CompiledNodeValidationPlanType` ready for use by the execute layer.
+ * @param options - Optional cross-schema (`lookupSchema`) and cross-graph (`lookupGraph`) lookups.
+ * @returns A `CompiledNodeValidationPlanInterface` ready for use by the execute layer.
  *
  * @remarks
  * Performs a single traversal of the node's keywords, compiling each into
@@ -1366,24 +1323,24 @@ function compileRdfsRangeValidator(
  *
  * @category Validation
  * @since 0.1.0
- * @see {@link CompiledNodeValidationPlanType}
+ * @see {@link CompiledNodeValidationPlanInterface}
  * @group SchemaCompiler
  */
 export class SchemaCompilerPlan {
   static buildNodePlan(
-    context: SchemaCompilerValidatePlanContextType,
-    graphNode: SchemaGraphNodeType,
+    context: SchemaCompilerValidatePlanContextInterface,
+    graphNode: SchemaGraphNodeInterface,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
-    opts?: BuildNodePlanOptionsType
-  ): CompiledNodeValidationPlanType {
+    options?: BuildNodePlanOptionsInterface
+  ): CompiledNodeValidationPlanInterface {
     const {
       lookupGraph, lookupSchema
-    } = opts ?? {};
+    } = options ?? {};
     const sem = graph.semantics(graphNode);
     const propertyEntries = sem.properties;
 
-    const planSemOpts: PlanCompileWithSemanticsType = {
+    const planSemanticsOptions: PlanCompileWithSemanticsInterface = {
       context,
       formatRegistry,
       graph,
@@ -1398,29 +1355,29 @@ export class SchemaCompilerPlan {
       formatValidator,
       patternRegex,
       propertyNamesValidator
-    } = PlanBuilders.prelude(planSemOpts);
+    } = PlanBuilders.prelude(planSemanticsOptions);
 
-    const patternPropValidators = PlanBuilders.patternPropValidators(planSemOpts);
+    const patternPropValidators = PlanBuilders.patternPropValidators(planSemanticsOptions);
 
     const {
       containsValidator,
       itemValidator,
       prefixValidators
-    } = PlanBuilders.arrayValidators(planSemOpts);
+    } = PlanBuilders.arrayValidators(planSemanticsOptions);
 
     const {
       allOfValidators,
       anyOfValidators,
       oneOfValidators
-    } = PlanBuilders.compositionValidators(planSemOpts);
+    } = PlanBuilders.compositionValidators(planSemanticsOptions);
 
     const {
       elseValidator,
       ifValidator,
       thenValidator
-    } = PlanBuilders.conditionalValidators(planSemOpts);
+    } = PlanBuilders.conditionalValidators(planSemanticsOptions);
 
-    const depSchemaValidators = PlanBuilders.dependentSchemaValidators(planSemOpts);
+    const depSchemaValidators = PlanBuilders.dependentSchemaValidators(planSemanticsOptions);
     const enumSet = EnumSet.build(sem.enumValues);
 
     const {
@@ -1466,7 +1423,7 @@ export class SchemaCompilerPlan {
     }
 
     const additionalIsFalse = sem.additionalPropertiesNode === false;
-    const propValidators = compilePropertyValidators({
+    const propValidators = PlanBuilders.compilePropertyValidators({
       'configStrict': sem.jtConfig?.strict,
       context,
       formatRegistry,
@@ -1480,10 +1437,10 @@ export class SchemaCompilerPlan {
       'lookupSchema': lookupSchema,
       'propertyEntries': propertyEntries
     });
-    const requiredArr = sem.required.length > 0 ? sem.required : undefined;
+    const requiredArray = sem.required.length > 0 ? sem.required : undefined;
 
     // Precompute option bags once at compile time — avoids per-value object allocation.
-    const arrOpts: ArrayValidationOptionsType = {
+    const arrayOptions: ArrayValidationOptionsInterface = {
       containsValidator,
       itemValidator,
       'maxContains': sem.maxContains,
@@ -1494,7 +1451,7 @@ export class SchemaCompilerPlan {
       'uniqueItems': sem.uniqueItems
     };
 
-    const objOpts: ObjectValidationOptionsType = {
+    const objectOptions: ObjectValidationOptionsInterface = {
       additionalIsFalse,
       additionalValidator,
       allowedKeys,
@@ -1507,7 +1464,7 @@ export class SchemaCompilerPlan {
       propertyDefaults,
       propertyZeroValueSynthesizers,
       propValidators,
-      'required': requiredArr
+      'required': requiredArray
     };
 
     return {
@@ -1517,7 +1474,7 @@ export class SchemaCompilerPlan {
       allowedKeys,
       allowedKeysForStrip,
       anyOfValidators,
-      arrOpts,
+      'arrOpts': arrayOptions,
       complementValidator,
       'constVal': sem.constValue,
       containsValidator,
@@ -1529,7 +1486,7 @@ export class SchemaCompilerPlan {
       depRequiredEntries,
       depSchemaValidators,
       'dynamicRefValidator': typeof sem.dynamicRef === 'string'
-        ? compileDynamicRefValidator({
+        ? PlanBuilders.compileDynamicReferenceValidator({
           context,
           'dynamicRef': sem.dynamicRef,
           formatRegistry,
@@ -1569,7 +1526,7 @@ export class SchemaCompilerPlan {
       'minLength': sem.minLength,
       'minProperties': sem.minProperties,
       'multipleOf': sem.multipleOf,
-      objOpts,
+      'objOpts': objectOptions,
       oneOfValidators,
       'pattern': sem.pattern,
       patternPropValidators,
@@ -1580,7 +1537,7 @@ export class SchemaCompilerPlan {
       propertyNamesValidator,
       propertyZeroValueSynthesizers,
       propValidators,
-      'rdfsRangeValidator': compileRdfsRangeValidator(
+      'rdfsRangeValidator': PlanBuilders.compileRdfsRangeValidator(
         sem.rdfsRange,
         context,
         formatRegistry,
@@ -1588,7 +1545,7 @@ export class SchemaCompilerPlan {
         lookupSchema,
         lookupGraph
       ),
-      'refValidator': compileRefValidator({
+      'refValidator': PlanBuilders.compileReferenceValidator({
         context,
         formatRegistry,
         graph,
@@ -1596,19 +1553,21 @@ export class SchemaCompilerPlan {
         'lookupSchema': lookupSchema,
         'ref': sem.ref
       }),
-      'required': requiredArr,
+      'required': requiredArray,
       thenValidator,
       'typePredicate': TypePredicate.build(sem.schemaTypes),
       'types': sem.schemaTypes,
-      'unevaluatedItemsValidator': compileUnevaluatedNode(
+      'unevaluatedItemsValidator': PlanBuilders.compileUnevaluatedNode(
         sem.unevaluatedItemsNode,
+        'unevaluatedItems',
         context,
         formatRegistry,
         graph,
         lookupSchema
       ),
-      'unevaluatedPropertiesValidator': compileUnevaluatedNode(
+      'unevaluatedPropertiesValidator': PlanBuilders.compileUnevaluatedNode(
         sem.unevaluatedPropertiesNode,
+        'unevaluatedProperties',
         context,
         formatRegistry,
         graph,

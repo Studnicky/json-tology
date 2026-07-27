@@ -28,7 +28,7 @@ export const UUID_BYTE_LENGTH = 16;
  *
  * @example
  * ```ts
- * const clampedByte = rawByte % UUID_BYTE_MAX_PLUS_ONE;
+ * const clampedByte = rawByte % UUID_BYTE_MAXIMUM_PLUS_ONE;
  * ```
  *
  * @category UUID
@@ -37,7 +37,7 @@ export const UUID_BYTE_LENGTH = 16;
  * @defaultValue `256`
  * @group Constants
  */
-export const UUID_BYTE_MAX_PLUS_ONE = 256;
+export const UUID_BYTE_MAXIMUM_PLUS_ONE = 256;
 
 /**
  * Bitmask used to clear the upper nibble of the version byte before setting the version.

@@ -13,18 +13,19 @@
  * not bare strings. Use `.value` to extract the IRI string.
  */
 
-import type { Quad } from '@rdfjs/types';
+import type {
+  BlankNode, NamedNode, Quad
+} from '@rdfjs/types';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
-import type {
-  QuadFactoryIriOptsType,
-  QuadFactoryLiteralOptsType,
-  QuadFactoryQuadOptsType
-} from '../../types/QuadFactoryOpts.js';
+import type { QuadFactoryIriOptionsInterface } from '../../interfaces/QuadFactoryIriOptionsInterface.js';
+import type { QuadFactoryLiteralOptionsInterface } from '../../interfaces/QuadFactoryLiteralOptionsInterface.js';
+import type { QuadOptionsInterface } from '../../interfaces/QuadOptionsInterface.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
-import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { JsonLdDatasetQuadEntity } from '../../entities/JsonLdDatasetQuadEntity.js';
 
 import { Lists } from './Lists.js';
 import { Terms } from './Terms.js';
@@ -37,25 +38,6 @@ import {
 // ---------------------------------------------------------------------------
 
 let bnodeCounter = 0;
-
-/**
- * Validate that a finalized predicate IRI is absolute. A predicate that is
- * still a compact CURIE (`prefix:local` with an unregistered prefix) after
- * expansion would otherwise be emitted as an invalid IRI. Absolute forms
- * recognised: `://` (with a non-empty scheme) or a `urn:` namespace.
- *
- * Predicates may never be blank nodes, so a `_:` value is also rejected.
- */
-function assertAbsolutePredicate(predicate: string): void {
-  if (predicate.indexOf('://') > 0 || predicate.startsWith('urn:')) {
-    return;
-  }
-
-  throw new GraphError(
-    `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`,
-    { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
-  );
-}
 
 // ---------------------------------------------------------------------------
 // QuadFactory — static-only class
@@ -99,16 +81,33 @@ export class QuadFactory {
     tripleTerm: Quad,
     annotationPredicate: string,
     annotationValue: QuadObjectType,
-    options?: QuadFactoryQuadOptsType
+    options?: QuadOptionsInterface
   ): QuadInterface {
     const {
       curie, graph
     } = options ?? {};
-    const expandedPredicate = curie ? curie.expandIfNeeded(annotationPredicate) : annotationPredicate;
-
-    assertAbsolutePredicate(expandedPredicate);
+    const expandedPredicate = QuadFactory.resolvePredicate(annotationPredicate, curie);
 
     return Terms.quad(tripleTerm, Terms.iri(expandedPredicate), annotationValue, graph);
+  }
+
+  /**
+   * Validate that a finalized predicate IRI is absolute. A predicate that is
+   * still a compact CURIE (`prefix:local` with an unregistered prefix) after
+   * expansion would otherwise be emitted as an invalid IRI. Absolute forms
+   * recognised: `://` (with a non-empty scheme) or a `urn:` namespace.
+   *
+   * Predicates may never be blank nodes, so a `_:` value is also rejected.
+   */
+  private static assertAbsolutePredicate(predicate: string): void {
+    if (predicate.indexOf('://') > 0 || predicate.startsWith('urn:')) {
+      return;
+    }
+
+    throw new GraphError(
+      `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`,
+      { 'code': GRAPH_ERROR_CODE.INVALID_PREDICATE_IRI }
+    );
   }
 
   static bnode(id: string): QuadObjectType {
@@ -120,7 +119,7 @@ export class QuadFactory {
   /**
    * Construct a `QuadInterface` from a jsonld dataset quad object.
    */
-  static fromDatasetQuad(datasetQuad: JsonLdDatasetQuadType): QuadInterface {
+  static fromDatasetQuad(datasetQuad: JsonLdDatasetQuadEntity.Type): QuadInterface {
     const subject = datasetQuad.subject.termType === 'BlankNode'
       ? Terms.blank(datasetQuad.subject.value)
       : Terms.iri(datasetQuad.subject.value);
@@ -128,20 +127,20 @@ export class QuadFactory {
     const predicate = Terms.iri(datasetQuad.predicate.value);
 
     let object: QuadObjectType;
-    const obj = datasetQuad.object;
+    const rawObject = datasetQuad.object;
 
-    if (obj.termType === 'BlankNode') {
-      object = Terms.blank(obj.value);
-    } else if (obj.termType === 'Literal') {
-      const datatypeIri = obj.datatype?.value ?? XSD.string;
-      const language = obj.language ?? '';
+    if (rawObject.termType === 'BlankNode') {
+      object = Terms.blank(rawObject.value);
+    } else if (rawObject.termType === 'Literal') {
+      const datatypeIri = rawObject.datatype?.value ?? XSD.string;
+      const language = rawObject.language ?? '';
 
-      object = Terms.literal(obj.value, {
+      object = Terms.literal(rawObject.value, {
         'datatype': Terms.iri(datatypeIri),
         language
       });
     } else {
-      object = Terms.iri(obj.value);
+      object = Terms.iri(rawObject.value);
     }
 
     let graph;
@@ -158,24 +157,44 @@ export class QuadFactory {
   }
 
   /**
-   * Group quads by subject value into a `Map<string, QuadInterface[]>`.
-   *
-   * Each key is `quad.subject.value` (an IRI string or blank-node identifier).
-   * Insertion order within each bucket preserves the iteration order of `quads`.
+   * Group items into a `Map<string, T[]>` keyed by `keyOf(item)`. Items for
+   * which `keyOf` returns `undefined` are skipped. Insertion order within
+   * each bucket preserves the iteration order of `items`.
    */
-  static indexBySubject(quads: readonly QuadInterface[]): Map<string, QuadInterface[]> {
-    const index = new Map<string, QuadInterface[]>();
+  static groupByKey<T>(items: readonly T[], keyOf: (item: T) => string | undefined): Map<string, T[]> {
+    const index = new Map<string, T[]>();
 
-    for (const quad of quads) {
-      const key = quad.subject.value;
+    for (const item of items) {
+      const key = keyOf(item);
+
+      if (key === undefined) {
+        continue;
+      }
+
       let list = index.get(key);
 
       if (list === undefined) {
         list = [];
         index.set(key, list);
       }
-      list.push(quad);
+      list.push(item);
     }
+
+    return index;
+  }
+
+  /**
+   * Group quads by subject value into a `Map<string, QuadInterface[]>`.
+   *
+   * Each key is `quad.subject.value` (an IRI string or blank-node identifier).
+   * Insertion order within each bucket preserves the iteration order of `quads`.
+   */
+  static indexBySubject(quads: readonly QuadInterface[]): Map<string, QuadInterface[]> {
+    const index = QuadFactory.groupByKey(quads, (quad: QuadInterface): string => {
+      const key = quad.subject.value;
+
+      return key;
+    });
 
     return index;
   }
@@ -184,7 +203,7 @@ export class QuadFactory {
    * Build an IRI term. When `options.curie` is provided, compact CURIEs
    * (`prefix:local`) are expanded against the shared `Curie` instance.
    */
-  static iri(value: string, options?: QuadFactoryIriOptsType): QuadObjectType {
+  static iri(value: string, options?: QuadFactoryIriOptionsInterface): QuadObjectType {
     const curie = options?.curie;
     const expandedValue = curie === undefined ? value : curie.expandIfNeeded(value);
 
@@ -195,7 +214,7 @@ export class QuadFactory {
    * Build a typed literal term. `datatype` is expanded from compact CURIE
    * form when `options.curie` is provided.
    */
-  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptsType): QuadObjectType {
+  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptionsInterface): QuadObjectType {
     const curie = options?.curie;
     const language = options?.language;
 
@@ -242,19 +261,13 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptsType
+    options?: QuadOptionsInterface
   ): QuadInterface {
     const {
       curie, graph
     } = options ?? {};
-    const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
-    const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
-
-    assertAbsolutePredicate(expandedPredicate);
-
-    const subjectTerm = expandedSubject.startsWith('_:')
-      ? Terms.blank(expandedSubject)
-      : Terms.iri(expandedSubject);
+    const expandedPredicate = QuadFactory.resolvePredicate(predicate, curie);
+    const subjectTerm = QuadFactory.resolveSubjectTerm(subject, curie);
 
     return Terms.quad(subjectTerm, Terms.iri(expandedPredicate), object, graph);
   }
@@ -293,6 +306,31 @@ export class QuadFactory {
   }
 
   /**
+   * Expand a predicate against `curie` (when provided) and validate that the
+   * result is an absolute IRI. Shared by every factory method that emits a
+   * predicate position.
+   */
+  private static resolvePredicate(predicate: string, curie: CurieInterface | undefined): string {
+    const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
+
+    QuadFactory.assertAbsolutePredicate(expandedPredicate);
+
+    return expandedPredicate;
+  }
+
+  /**
+   * Expand a subject against `curie` (when provided) and build the term:
+   * a `_:`-prefixed value becomes a blank node, otherwise a named node.
+   */
+  private static resolveSubjectTerm(subject: string, curie: CurieInterface | undefined): BlankNode | NamedNode {
+    const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
+
+    return expandedSubject.startsWith('_:')
+      ? Terms.blank(expandedSubject)
+      : Terms.iri(expandedSubject);
+  }
+
+  /**
    * Build an RDF 1.2 triple term (quoted triple) from string subject/predicate
    * plus an already-built object term. The returned `Quad` carries
    * `termType: 'Quad'` and is intended for use as the subject of an annotation
@@ -306,17 +344,11 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: QuadFactoryQuadOptsType
+    options?: QuadOptionsInterface
   ): Quad {
     const { curie } = options ?? {};
-    const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
-    const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
-
-    assertAbsolutePredicate(expandedPredicate);
-
-    const subjectTerm = expandedSubject.startsWith('_:')
-      ? Terms.blank(expandedSubject)
-      : Terms.iri(expandedSubject);
+    const expandedPredicate = QuadFactory.resolvePredicate(predicate, curie);
+    const subjectTerm = QuadFactory.resolveSubjectTerm(subject, curie);
 
     return Terms.tripleTerm(subjectTerm, Terms.iri(expandedPredicate), object);
   }

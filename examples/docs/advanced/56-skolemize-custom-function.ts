@@ -1,5 +1,5 @@
 /**
- * Custom iriFor function — derive the root subject from a domain id.
+ * Custom iriForFunction — derive the root subject from a domain id.
  *
  * Returning undefined from a custom strategy falls through to the
  * default Skolemize.hash minter, so nested objects still receive
@@ -15,7 +15,7 @@ const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 const quads = bookstoreEntities.toQuads(OrderSchema, order, {
   // Mint at depth 0 from the value's `id` field; nested objects and
   // non-record values fall through to the default hash minter.
-  'iriFor': (ctx) => {
+  'iriForFunction': (ctx) => {
     const isRootRecord = ctx.depth === 0 && typeof ctx.value === 'object' && ctx.value !== null;
     const id = isRootRecord ? (ctx.value as { 'orderId'?: string }).orderId : undefined;
 

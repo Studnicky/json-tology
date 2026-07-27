@@ -5,7 +5,7 @@
       "public": true
     },
     "depcheckIgnore": [
-      "license-checker",
+      "license-checker-rseidelsohn",
       "madge"
     ]
   },

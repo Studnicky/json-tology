@@ -9,7 +9,7 @@
  * For hash operations use Hash.value().
  */
 
-import type { DiffOpType } from '../../types/Diff.js';
+import type { DiffOpEntity } from '../../entities/DiffOpEntity.js';
 import type { ValueInterface } from '../../interfaces/ValueInterface.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistryInterface.js';
 import { DataType } from './DataType.js';
@@ -28,11 +28,73 @@ export class Value implements ValueInterface {
    * @returns Changeset containing the operations needed to transform before into after
    */
   public static diff(before: unknown, after: unknown): Changeset {
-    const operations: DiffOpType[] = [];
+    const operations: DiffOpEntity.Type[] = [];
 
-    diffAt('', before, after, operations);
+    Value.diffAt('', before, after, operations);
 
     return new Changeset(operations);
+  }
+
+  private static diffAt(path: string, before: unknown, after: unknown, ops: DiffOpEntity.Type[]): void {
+    if (DataType.isRecord(before) && DataType.isRecord(after)) {
+      const beforeObject = before;
+      const afterObject = after;
+
+      for (const key of Object.keys(beforeObject)) {
+        const child = `${path}/${key}`;
+
+        if (key in afterObject) {
+          Value.diffAt(child, beforeObject[key], afterObject[key], ops);
+        } else {
+          ops.push({
+            'op': 'delete',
+            'path': child
+          });
+        }
+      }
+      for (const key of Object.keys(afterObject)) {
+        if (!(key in beforeObject)) {
+          const value = afterObject[key];
+
+          ops.push({
+            'op': 'set',
+            'path': `${path}/${key}`,
+            'value': value
+          });
+        }
+      }
+    } else if (Array.isArray(before) && Array.isArray(after)) {
+      const bl = before.length;
+      const al = after.length;
+      const minimumLength = Math.min(bl, al);
+
+      for (let i = 0; i < minimumLength; i++) {
+        Value.diffAt(`${path}/${i}`, before[i], after[i], ops);
+      }
+      const afterArray = after as unknown[];
+
+      for (let i = minimumLength; i < al; i++) {
+        const value = afterArray[i];
+
+        ops.push({
+          'op': 'set',
+          'path': `${path}/${i}`,
+          'value': value
+        });
+      }
+      for (let i = minimumLength; i < bl; i++) {
+        ops.push({
+          'op': 'delete',
+          'path': `${path}/${i}`
+        });
+      }
+    } else if (before !== after) {
+      ops.push({
+        'op': 'set',
+        'path': path || '/',
+        'value': after
+      });
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -116,66 +178,6 @@ export class Value implements ValueInterface {
     const result = this.registry.instantiate(schemaId, data);
 
     return result;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-function diffAt(path: string, before: unknown, after: unknown, ops: DiffOpType[]): void {
-  if (DataType.isRecord(before) && DataType.isRecord(after)) {
-    const beforeObj = before;
-    const afterObj = after;
-
-    for (const key of Object.keys(beforeObj)) {
-      const child = `${path}/${key}`;
-
-      if (key in afterObj) {
-        diffAt(child, beforeObj[key], afterObj[key], ops);
-      } else {
-        ops.push({
-          'op': 'delete',
-          'path': child
-        });
-      }
-    }
-    for (const key of Object.keys(afterObj)) {
-      if (!(key in beforeObj)) {
-        ops.push({
-          'op': 'set',
-          'path': `${path}/${key}`,
-          'value': afterObj[key]
-        });
-      }
-    }
-  } else if (Array.isArray(before) && Array.isArray(after)) {
-    const bl = before.length;
-    const al = after.length;
-    const min = Math.min(bl, al);
-
-    for (let i = 0; i < min; i++) {
-      diffAt(`${path}/${i}`, before[i], after[i], ops);
-    }
-    for (let i = min; i < al; i++) {
-      ops.push({
-        'op': 'set',
-        'path': `${path}/${i}`,
-        'value': (after as unknown[])[i]
-      });
-    }
-    for (let i = min; i < bl; i++) {
-      ops.push({
-        'op': 'delete',
-        'path': `${path}/${i}`
-      });
-    }
-  } else if (before !== after) {
-    ops.push({
-      'op': 'set',
-      'path': path || '/',
-      'value': after
-    });
   }
 }
 

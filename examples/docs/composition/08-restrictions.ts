@@ -39,7 +39,7 @@ const OneAuthorBookSchema = Compose.subClassOf(
 
 // minCardinality + allValuesFrom — Book with two-or-more named authors.
 const MultiAuthoredBookSchema = Compose.subClassOf(
-  Compose.minCardinality(AUTHORS_PROP, 2),
+  Compose.minimumCardinality(AUTHORS_PROP, 2),
   Compose.subClassOf(
     Compose.allValuesFrom(AUTHORS_PROP, AuthorNameSchema.$id),
     Compose.subClassOf(BookSchema, {

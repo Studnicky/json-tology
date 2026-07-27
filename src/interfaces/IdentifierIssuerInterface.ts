@@ -1,3 +1,6 @@
+import type { NumberValueEntity } from '../entities/NumberValueEntity.js';
+import type { StringValueEntity } from '../entities/StringValueEntity.js';
+
 /**
  * Interface contract for per-call blank-node identifier issuers.
  *
@@ -13,7 +16,7 @@ export interface IdentifierIssuerInterface {
   clone(): IdentifierIssuerInterface;
 
   /** Number of identifiers issued so far (mapped or unmapped). */
-  readonly 'count': number;
+  readonly 'count': NumberValueEntity.Type;
 
   /**
    * Issue (or retrieve) a deterministic identifier for `existing`.
@@ -37,7 +40,7 @@ export interface IdentifierIssuerInterface {
   hasId(existing: string): boolean;
 
   /** The prefix string prepended to every issued identifier. */
-  readonly 'identifierPrefix': string;
+  readonly 'identifierPrefix': StringValueEntity.Type;
 
   /** Reset counter and clear all issued mappings. */
   reset(): void;

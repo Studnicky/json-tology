@@ -16,10 +16,10 @@ import {
 } from 'node:test';
 
 import type {
-  MaxItemsBrandType,
-  MaxLengthBrandType,
-  MinItemsBrandType,
-  MinLengthBrandType
+  MaximumItemsBrandType,
+  MaximumLengthBrandType,
+  MinimumItemsBrandType,
+  MinimumLengthBrandType
 } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
@@ -36,7 +36,7 @@ function assert<T extends true>(): void {
 // minItems: 20 is well below the integer-range cap, but the TUPLE cap
 // (_INTEGER_RANGE_CAP = 50 items) gates NarrowArrayByItemsBoundsType.
 // Even if tuple narrowing bails out and the array element type widens,
-// MinItemsBrandType<20> must still be intersected on the result.
+// MinimumItemsBrandType<20> must still be intersected on the result.
 // ---------------------------------------------------------------------------
 
 const _MinItems20Schema = {
@@ -50,9 +50,9 @@ void _MinItems20Schema;
 type MinItems20Arr = InferType<typeof _MinItems20Schema>;
 
 // The brand is present regardless of whether tuple narrowing fires
-assert<AssertAssignableType<MinItems20Arr, MinItemsBrandType<20>>>();
+assert<AssertAssignableType<MinItems20Arr, MinimumItemsBrandType<20>>>();
 
-// Above-cap with maxItems — MaxItemsBrandType still present
+// Above-cap with maxItems — MaximumItemsBrandType still present
 const _MaxItems60Schema = {
   'items': { 'type': 'string' },
   'maxItems': 60,
@@ -63,14 +63,14 @@ void _MaxItems60Schema;
 
 type MaxItems60Arr = InferType<typeof _MaxItems60Schema>;
 
-assert<AssertAssignableType<MaxItems60Arr, MaxItemsBrandType<60>>>();
+assert<AssertAssignableType<MaxItems60Arr, MaximumItemsBrandType<60>>>();
 
 // ---------------------------------------------------------------------------
 // 2. String brands persist above _STRING_LENGTH_CAP (8)
 //
 // The tight template-literal narrowing caps at 8 characters. Above it the
-// inferred type widens to `string`. But MinLengthBrandType and
-// MaxLengthBrandType must still be intersected.
+// inferred type widens to `string`. But MinimumLengthBrandType and
+// MaximumLengthBrandType must still be intersected.
 // ---------------------------------------------------------------------------
 
 const _MinLen50Schema = {
@@ -86,7 +86,7 @@ type MinLen50 = InferType<typeof _MinLen50Schema>;
 assert<AssertAssignableType<MinLen50, string>>();
 
 // Brand is still present above the string-length cap
-assert<AssertAssignableType<MinLen50, MinLengthBrandType<50>>>();
+assert<AssertAssignableType<MinLen50, MinimumLengthBrandType<50>>>();
 
 const _MaxLen100Schema = {
   'maxLength': 100,
@@ -101,7 +101,7 @@ type MaxLen100 = InferType<typeof _MaxLen100Schema>;
 assert<AssertAssignableType<MaxLen100, string>>();
 
 // Brand persists above the cap
-assert<AssertAssignableType<MaxLen100, MaxLengthBrandType<100>>>();
+assert<AssertAssignableType<MaxLen100, MaximumLengthBrandType<100>>>();
 
 // Both length brands when both keywords present above the cap
 const _BothLenAboveCapSchema = {
@@ -115,7 +115,7 @@ void _BothLenAboveCapSchema;
 type BothLenAboveCap = InferType<typeof _BothLenAboveCapSchema>;
 
 assert<AssertAssignableType<BothLenAboveCap, string>>();
-assert<AssertAssignableType<BothLenAboveCap, MaxLengthBrandType<64> & MinLengthBrandType<32>>>();
+assert<AssertAssignableType<BothLenAboveCap, MaximumLengthBrandType<64> & MinimumLengthBrandType<32>>>();
 
 void describe('brand persistence above tight-narrowing caps', () => {
   void it('compiles - all assertions are static', () => {

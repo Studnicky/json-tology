@@ -1,0 +1,116 @@
+name: Detect Changes
+
+on:
+  workflow_call:
+    inputs:
+      base-sha:
+        description: 'Base SHA to diff from (auto-resolved from event context if omitted)'
+        required: false
+        type: string
+      head-sha:
+        description: 'Head SHA to diff to (auto-resolved from event context if omitted)'
+        required: false
+        type: string
+    outputs:
+      src:
+        description: 'src/**, package.json, package-lock.json, or tsconfig*.json changed'
+        value: ${{ jobs.classify.outputs.src }}
+      docs:
+        description: 'docs/**, README.md, or examples/docs/** (excluding benchmarks) changed'
+        value: ${{ jobs.classify.outputs.docs }}
+      bench:
+        description: 'examples/docs/benchmarks/** changed'
+        value: ${{ jobs.classify.outputs.bench }}
+      deps:
+        description: 'package.json or package-lock.json changed'
+        value: ${{ jobs.classify.outputs.deps }}
+      ci_config:
+        description: '.github/workflows/** or .github/actions/** changed'
+        value: ${{ jobs.classify.outputs.ci_config }}
+
+jobs:
+  classify:
+    name: Classify Changed Paths
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      src: ${{ steps.classify.outputs.src }}
+      docs: ${{ steps.classify.outputs.docs }}
+      bench: ${{ steps.classify.outputs.bench }}
+      deps: ${{ steps.classify.outputs.deps }}
+      ci_config: ${{ steps.classify.outputs.ci_config }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed paths
+        id: classify
+        run: |
+          if [ -n "${{ inputs.base-sha }}" ] && [ -n "${{ inputs.head-sha }}" ]; then
+            BASE="${{ inputs.base-sha }}"
+            HEAD="${{ inputs.head-sha }}"
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.sha }}"
+          else
+            BASE="HEAD~1"
+            HEAD="HEAD"
+          fi
+
+          if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            BASE="HEAD~1"
+          fi
+          if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            BASE=$(git rev-list --max-parents=0 HEAD | tail -1)
+          fi
+
+          CHANGED=$(git diff --name-only "${BASE}...${HEAD}")
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          SRC=false
+          DOCS=false
+          BENCH=false
+          DEPS=false
+          CI_CONFIG=false
+
+          if echo "$CHANGED" | grep -qE '^(src/|package\.json$|package-lock\.json$|tsconfig.*\.json$)'; then
+            SRC=true
+          fi
+
+          NON_BENCH=$(echo "$CHANGED" | grep -vE '^examples/docs/benchmarks/')
+          if echo "$NON_BENCH" | grep -qE '^(docs/|README\.md$|examples/docs/)'; then
+            DOCS=true
+          fi
+
+          if echo "$CHANGED" | grep -qE '^examples/docs/benchmarks/'; then
+            BENCH=true
+          fi
+
+          if echo "$CHANGED" | grep -qE '^(package\.json$|package-lock\.json$)'; then
+            DEPS=true
+          fi
+
+          if echo "$CHANGED" | grep -qE '^\.github/(workflows|actions)/'; then
+            CI_CONFIG=true
+          fi
+
+          if [ "$CI_CONFIG" = "true" ]; then
+            SRC=true
+            DOCS=true
+            BENCH=true
+          fi
+
+          {
+            echo "src=$SRC"
+            echo "docs=$DOCS"
+            echo "bench=$BENCH"
+            echo "deps=$DEPS"
+            echo "ci_config=$CI_CONFIG"
+          } >> "$GITHUB_OUTPUT"

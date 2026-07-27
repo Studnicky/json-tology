@@ -10,21 +10,21 @@ export class Frozen {
       return value;
     }
 
-    const obj = value as object;
+    const object = value as object;
 
-    if (seen.has(obj)) {
+    if (seen.has(object)) {
       return value;
     }
 
-    seen.add(obj);
-    Object.freeze(obj);
+    seen.add(object);
+    Object.freeze(object);
 
-    if (Array.isArray(obj)) {
-      for (const item of obj) {
+    if (Array.isArray(object)) {
+      for (const item of object) {
         Frozen.freezeValue(item, seen);
       }
     } else {
-      for (const child of Object.values(obj)) {
+      for (const child of Object.values(object)) {
         Frozen.freezeValue(child, seen);
       }
     }

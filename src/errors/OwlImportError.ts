@@ -6,7 +6,7 @@
  * (`PEER_DEPENDENCY_MISSING`).
  */
 
-import type { OwlImportErrorOptionsType } from '../types/ErrorOptions.js';
+import type { OwlImportErrorOptionsInterface } from '../interfaces/OwlImportErrorOptionsInterface.js';
 import { BaseError } from './BaseError.js';
 
 export class OwlImportError extends BaseError {
@@ -23,7 +23,7 @@ export class OwlImportError extends BaseError {
    * @param options - Options bag containing `options.code`, `options.axiomIri`,
    *   `options.subjectIri`, and optional `options.cause` for error chaining
    */
-  public constructor(message: string, options: OwlImportErrorOptionsType) {
+  public constructor(message: string, options: OwlImportErrorOptionsInterface) {
     super(message, options);
     this.name = 'OwlImportError';
     this.axiomIri = options.axiomIri;

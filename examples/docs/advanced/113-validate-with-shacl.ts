@@ -23,7 +23,7 @@
  */
 
 import type { QuadInterface } from '../../../src/interfaces/QuadInterface.js';
-import type { ShaclValidationReportType } from '../../../src/types/ShaclValidationReportType.js';
+import type { ShaclValidationReportEntity } from '../../../src/entities/ShaclValidationReportEntity.js';
 import { JsonTology } from '../../../src/index.js';
 import { Terms } from '../../../src/modules/quads/Terms.js';
 import {
@@ -84,7 +84,7 @@ const shapes = jt.toShacl();
 // A valid Book (title present) projected through toQuads().
 
 const conformingData = jt.toQuads(BookSchema, { 'title': 'Die unendliche Geschichte' });
-const conformingReport: ShaclValidationReportType = jt.validateWithShacl(shapes, conformingData);
+const conformingReport: ShaclValidationReportEntity.Type = jt.validateWithShacl(shapes, conformingData);
 
 console.assert(
   conformingReport.conforms,
@@ -133,7 +133,7 @@ function makeTypeQuad(subject: string, classIri: string): QuadInterface {
 // Title absent — violates sh:minCount 1 on the title property shape.
 const nonConformingData: QuadInterface[] = [makeTypeQuad(focusNode, `${BASE}/Book`)];
 
-const nonConformingReport: ShaclValidationReportType = jt.validateWithShacl(shapes, nonConformingData);
+const nonConformingReport: ShaclValidationReportEntity.Type = jt.validateWithShacl(shapes, nonConformingData);
 
 console.assert(
   !nonConformingReport.conforms,
@@ -184,7 +184,7 @@ const fullBookData = jt.toQuads(BookSchema, {
   'author': { 'name': 'Michael Ende' },
   'title': 'Die unendliche Geschichte'
 });
-const fullBookReport: ShaclValidationReportType = jt.validateWithShacl(shapes, fullBookData);
+const fullBookReport: ShaclValidationReportEntity.Type = jt.validateWithShacl(shapes, fullBookData);
 
 console.assert(
   fullBookReport.conforms,
@@ -211,7 +211,7 @@ const noNameFocusNode = `${BASE}/instances/author-no-name`;
 // An Author node with rdf:type but no name predicate.
 const noNameData: QuadInterface[] = [makeTypeQuad(noNameFocusNode, `${BASE}/Author`)];
 
-const noNameReport: ShaclValidationReportType = jt.validateWithShacl(shapes, noNameData);
+const noNameReport: ShaclValidationReportEntity.Type = jt.validateWithShacl(shapes, noNameData);
 
 console.assert(
   !noNameReport.conforms,

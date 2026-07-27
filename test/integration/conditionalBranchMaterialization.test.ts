@@ -100,9 +100,11 @@ void describe('if/then/else conditional-branch materialization parity', { 'concu
     () => {
       const { mat } = makeRegistry();
       const execResult = mat.execute(ConditionalSchema, {
-        'epubVersion': '3.1',
-        'fileFormat': 'epub',
-        'title': 'Another Doc'
+        'data': {
+          'epubVersion': '3.1',
+          'fileFormat': 'epub',
+          'title': 'Another Doc'
+        }
       });
 
       assert.ok(execResult.valid, 'execute() must produce a valid result');

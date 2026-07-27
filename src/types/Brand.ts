@@ -1,6 +1,6 @@
 import type { ParseOutputType } from './Transform.js';
 
-declare const BRAND: unique symbol;
+declare const _BRAND: unique symbol;
 
 /**
  * Compile-time phantom tag interface that marks a type as carrying a named brand.
@@ -16,7 +16,7 @@ declare const BRAND: unique symbol;
  * @example
  * ```ts
  * declare const tag: BrandTagType<'UserId'>;
- * // tag[BRAND] is 'UserId' at compile time, absent at runtime
+ * // tag[_BRAND] is 'UserId' at compile time, absent at runtime
  * ```
  *
  * @category Schema Utilities
@@ -26,7 +26,7 @@ declare const BRAND: unique symbol;
  *
  * @typeParam TBrand - The string literal that identifies this brand.
  */
-export type BrandTagType<TBrand extends string> = { [BRAND]: TBrand };
+export type BrandTagType<TBrand extends string> = Record<typeof _BRAND, TBrand>;
 
 /**
  * A schema annotated with a brand name.

@@ -13,8 +13,8 @@ import {
   aboxFixtures, bookstoreEntities, ReviewSchema
 } from '../bookstore/index.js';
 
-const firstPass = bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, { 'iriFor': Skolemize.uuid() });
-const secondPass = bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, { 'iriFor': Skolemize.uuid() });
+const firstPass = bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, { 'iriForFunction': Skolemize.uuid() });
+const secondPass = bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, { 'iriForFunction': Skolemize.uuid() });
 
 const firstSubject = firstPass[0]?.subject.value ?? '';
 const secondSubject = secondPass[0]?.subject.value ?? '';

@@ -13,13 +13,7 @@ import type {
   SelfEquivalentType,
   SelfSubClassType
 } from './TypeErrors.js';
-
-// ---------------------------------------------------------------------------
-// Recursion limits (type-level cap to prevent infinite tuple expansion)
-// ---------------------------------------------------------------------------
-
-declare const _TUPLE_RECURSION_CAP: 10;
-type TupleRecursionCap = typeof _TUPLE_RECURSION_CAP;
+import type { TupleRecursionCapEntity } from '../entities/TupleRecursionCapEntity.js';
 
 /**
  * Extract the union of required field names from a schema's `required` array.
@@ -146,7 +140,7 @@ type HasConstDiscriminatorType<TVariant, TProp extends string>
  * `properties[prop]` as a `const` and list `prop` in `required`.
  *
  * @remarks
- * Walks the variant tuple (capped at `TupleRecursionCap = 10`) and substitutes
+ * Walks the variant tuple (capped at `TupleRecursionCapEntity.Type = 10`) and substitutes
  * a `DiscriminatorMissingType` brand for any non-conforming variant, producing
  * a compile-time error at the call site. Recursion is bounded by the
  * `TDepth` accumulator tuple; once its length reaches the cap the remaining
@@ -174,17 +168,17 @@ export type ValidateDiscriminatedVariantsType<
   TVariants,
   TProp extends string,
   TDepth extends readonly unknown[] = []
-> = TDepth['length'] extends TupleRecursionCap
+> = TDepth['length'] extends TupleRecursionCapEntity.Type
   ? TVariants
   : TVariants extends readonly [infer THead, ...infer TTail]
-    ? readonly [
+    ? [
       HasConstDiscriminatorType<THead, TProp> extends true
         ? THead
         : DiscriminatorMissingType<TProp, THead>,
-      ...ValidateDiscriminatedVariantsType<TTail, TProp, readonly [unknown, ...TDepth]>
+      ...ValidateDiscriminatedVariantsType<TTail, TProp, [unknown, ...TDepth]>
     ]
     : TVariants extends readonly []
-      ? readonly []
+      ? []
       : TVariants;
 
 /**
@@ -217,7 +211,7 @@ export type ValidateEquivalentOptionsType<
   TSource extends { readonly '$id': string },
   TOptions extends { readonly '$id': string }
 > = TOptions['$id'] extends TSource['$id']
-  ? Omit<TOptions, '$id'> & { readonly '$id': SelfEquivalentType<TOptions['$id']> }
+  ? Omit<TOptions, '$id'> & { '$id': SelfEquivalentType<TOptions['$id']> }
   : TOptions;
 
 /**
@@ -365,127 +359,8 @@ export type PartialSchemaType<TSchema, TId extends string>
 export type RequiredSchemaType<TSchema, TId extends string>
   = Omit<TSchema, '$id' | 'required'> & {
     '$id': TId;
-    'required': ReadonlyArray<keyof ExtractPropertiesType<TSchema>>;
+    'required': Array<keyof ExtractPropertiesType<TSchema>>;
   };
-
-/**
- * Schema shape produced by `Compose.annotatedEdge`.
- *
- * Carries the edge predicate IRI, a `$ref` to the target class, and a map of
- * annotation property names to their `$ref`-valued subschemas. The `jt:annotatedEdge`
- * keyword signals to the graph translator and ABox projector that this property
- * is an annotated edge — i.e. a base triple plus one quad per annotation where
- * the subject is a triple term (RDF 1.2 `<< s p o >>`).
- *
- * Literal field types are preserved as the narrowest literal string so that
- * `$ref` resolution, graph keying, and type inference all operate on the concrete
- * IRI rather than widened `string`.
- *
- * @remarks
- * The `jt:annotatedEdge` descriptor is consumed during graph translation: the
- * predicate IRI names the edge, `targetRef` resolves the object class node, and
- * each annotation entry becomes an extra quad whose subject is the reified triple
- * term `<< source predicate target >>`.
- *
- * @example
- * ```ts
- * const edge = Compose.annotatedEdge(
- *   'https://example.com/knows',
- *   'https://example.com/Person',
- *   { since: { '$ref': 'https://example.com/Date' } }
- * );
- * ```
- *
- * @typeParam TPredicate - Literal IRI string for the edge predicate.
- * @typeParam TTargetRef - Literal IRI string for the target class `$ref`.
- * @typeParam TAnnotations - Record mapping annotation property names to their `$ref` subschemas.
- * @category Compose
- * @since 0.1.0
- * @see {@link https://www.w3.org/TR/rdf12-concepts/#section-triple-terms RDF 1.2 Triple Terms}
- * @group Compose
- */
-export type AnnotatedEdgeSchemaType<
-  TPredicate extends string,
-  TTargetRef extends string,
-  TAnnotations extends Record<string, { '$ref': string }>
-> = {
-  '$id'?: string;
-  'jt:annotatedEdge': {
-    'annotations': TAnnotations;
-    'predicate': TPredicate;
-    'targetRef': TTargetRef;
-  };
-};
-
-/**
- * Schema shape produced by `Compose.intersection` — an `allOf` composition
- * under a named `$id`.
- *
- * @remarks
- * Represents a JSON Schema intersection of multiple member schemas combined
- * via `allOf`. The graph engine validates data against every member in the
- * array; the TBox emits `rdfs:subClassOf` relations for OWL intersection
- * class expressions.
- *
- * @example
- * ```ts
- * const Schema = Compose.intersection(
- *   [PersonSchema, EmployeeSchema],
- *   'https://example.com/PersonEmployee'
- * );
- * ```
- *
- * @typeParam TSchemas - Tuple of member schemas combined in the intersection.
- * @typeParam TId - Literal IRI string for the schema `$id`.
- * @category Compose
- * @since 0.1.0
- * @see {@link https://json-schema.org/understanding-json-schema/reference/combining#allof JSON Schema allOf}
- * @group Compose
- */
-export type IntersectionSchemaType<
-  TSchemas extends ReadonlyArray<Record<string, unknown>>,
-  TId extends string
-> = {
-  '$id': TId;
-  'allOf': TSchemas;
-};
-
-/**
- * Schema shape produced by `Compose.discriminatedUnion` — a `oneOf` union
- * with a `discriminator` property selector.
- *
- * @remarks
- * The `discriminator.propertyName` field names the property whose value
- * selects the concrete variant at runtime. The graph engine uses this to
- * fast-path variant resolution rather than testing every `oneOf` branch.
- * The TBox emits `owl:unionOf` for the union class.
- *
- * @example
- * ```ts
- * const Shape = Compose.discriminatedUnion(
- *   'kind',
- *   [CircleSchema, RectSchema],
- *   'https://example.com/Shape'
- * );
- * ```
- *
- * @typeParam TDiscriminator - Literal property name used as the discriminator key.
- * @typeParam TVariants - Tuple of variant schemas in the union.
- * @typeParam TId - Literal IRI string for the schema `$id`.
- * @category Compose
- * @since 0.1.0
- * @see {@link https://json-schema.org/understanding-json-schema/reference/combining#oneOf JSON Schema oneOf}
- * @group Compose
- */
-export type DiscriminatedUnionSchemaType<
-  TDiscriminator extends string,
-  TVariants extends ReadonlyArray<Record<string, unknown>>,
-  TId extends string
-> = {
-  '$id': TId;
-  'discriminator': { 'propertyName': TDiscriminator };
-  'oneOf': TVariants;
-};
 
 /**
  * Schema shape produced by `Compose.pick` — a structural subset of a base
@@ -514,12 +389,14 @@ export type PickSchemaType<
   TSchema,
   TKeys extends string,
   TId extends string
-> = {
-  '$id': TId;
-  'properties': Pick<ExtractPropertiesType<TSchema>, keyof ExtractPropertiesType<TSchema> & TKeys>;
-  'required': ReadonlyArray<ExtractRequiredType<TSchema> & TKeys>;
-  'type': 'object';
-};
+> = [TSchema] extends [unknown]
+  ? {
+    '$id': TId;
+    'properties': { [K in keyof ExtractPropertiesType<TSchema> & TKeys]: ExtractPropertiesType<TSchema>[K] };
+    'required': Array<ExtractRequiredType<TSchema> & TKeys>;
+    'type': 'object';
+  }
+  : never;
 
 /**
  * Schema shape produced by `Compose.omit` — a structural subset of a base
@@ -548,19 +425,23 @@ export type OmitSchemaType<
   TSchema,
   TKeys extends string,
   TId extends string
-> = {
-  '$id': TId;
-  'properties': Omit<ExtractPropertiesType<TSchema>, TKeys>;
-  'required': ReadonlyArray<Exclude<ExtractRequiredType<TSchema>, TKeys>>;
-  'type': 'object';
-};
+> = [TSchema] extends [unknown]
+  ? {
+    '$id': TId;
+    'properties': {
+      [K in Exclude<keyof ExtractPropertiesType<TSchema>, TKeys>]: ExtractPropertiesType<TSchema>[K];
+    };
+    'required': Array<Exclude<ExtractRequiredType<TSchema>, TKeys>>;
+    'type': 'object';
+  }
+  : never;
 
 type SubClassOfAllOfType<TParent, TBody>
   = TParent extends ReadonlyArray<infer TItem>
-    ? readonly [...readonly TItem[], Omit<TBody, '$id'>]
+    ? [...TItem[], Omit<TBody, '$id'>]
     : TParent extends { readonly '$id': string }
-      ? readonly [TParent, Omit<TBody, '$id'>]
-      : ReadonlyArray<Record<string, unknown>>;
+      ? [TParent, Omit<TBody, '$id'>]
+      : Array<Record<string, unknown>>;
 
 /**
  * Schema shape produced by `Compose.subClassOf` — a named schema that

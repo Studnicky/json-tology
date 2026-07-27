@@ -143,7 +143,7 @@ export interface CursorInterface {
   union(other: CursorInterface): CursorInterface;
 
   /**
-   * Lift each current IRI to its typed instance and keep those where `fn` returns `true`.
+   * Lift each current IRI to its typed instance and keep those where `predicateFunction` returns `true`.
    */
-  where(fn: (instance: unknown) => boolean): CursorInterface;
+  where(predicateFunction: (instance: unknown) => boolean): CursorInterface;
 }

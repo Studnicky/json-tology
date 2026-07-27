@@ -26,12 +26,11 @@
  * preserved without scanning raw quads.
  */
 
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../../types/OwlImport.js';
-import type { SchemaGraphRelationType } from '../../../types/SchemaGraph.js';
-import type { AnnotationAccumulatorType } from '../../../types/AnnotationAccumulatorType.js';
+import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
+import type { AnnotationAccumulatorEntity } from '../../../entities/AnnotationAccumulatorEntity.js';
 import {
   ALT_LABEL_PREDICATES,
   ANNOTATION_PROPERTY_PREDICATES,
@@ -43,37 +42,6 @@ import {
   VERSION_INFO_PREDICATES
 } from '../../../constants/ONTOLOGY_PREDICATES.js';
 import { ImportRelation } from './ImportRelation.js';
-
-// ---------------------------------------------------------------------------
-// Relation-target extraction helpers — read from graph relations
-// ---------------------------------------------------------------------------
-
-/**
- * Extract the language tag of a Literal-typed relation target.
- * Returns the empty string for untagged literals or non-literal targets.
- */
-function literalLanguage(relation: SchemaGraphRelationType): string {
-  if (relation.termType !== 'Literal') {
-    return '';
-  }
-
-  return relation.language ?? '';
-}
-
-/**
- * Append a string value into a lang-keyed map.
- * Uses `''` (empty string) as the key for untagged literals.
- */
-function appendLangValue(map: Map<string, string[]>, lang: string, value: string): void {
-  const key = lang === '' ? '' : lang.toLowerCase();
-  const existing = map.get(key);
-
-  if (existing === undefined) {
-    map.set(key, [value]);
-  } else {
-    existing.push(value);
-  }
-}
 
 /**
  * Process OWL 2 and RDFS annotation axioms (rdfs:label, rdfs:comment,
@@ -93,33 +61,50 @@ function appendLangValue(map: Map<string, string[]>, lang: string, value: string
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragmentType with schemaDeltas patched for title/description/deprecated.
+ * @returns OwlImportFragmentInterface with schemaDeltas patched for title/description/deprecated.
  *
  * @category OWL Import
  * @since 0.18.0
- * @see {@link OwlImportFragmentType}
+ * @see {@link OwlImportFragmentInterface}
  * @group OWL Import
  */
 export class Annotations {
+  /**
+   * Append a string value into a lang-keyed bucket.
+   * Uses `''` (empty string) as the key for untagged literals.
+   */
+  private static appendLangValue(bucket: Record<string, string[]>, lang: string, value: string): void {
+    const key = lang === '' ? '' : lang.toLowerCase();
+    const existing = bucket[key];
+
+    if (existing === undefined) {
+      bucket[key] = [value];
+    } else {
+      existing.push(value);
+    }
+  }
+
   /** Process a single comment relation and append to the accumulator. */
   private static applyCommentRelation(
-    relation: SchemaGraphRelationType,
-    acc: AnnotationAccumulatorType
+    relation: SchemaGraphRelationInterface,
+    acc: AnnotationAccumulatorEntity.Type
   ): void {
     const value = ImportRelation.literalString(relation);
 
     if (value !== null) {
-      appendLangValue(acc.comments, literalLanguage(relation), value);
+      Annotations.appendLangValue(acc.comments, Annotations.literalLanguage(relation), value);
     }
   }
 
   /** Apply i18n label and description records to a delta. */
-  private static applyI18nFields(delta: Record<string, unknown>, acc: AnnotationAccumulatorType): void {
+  private static applyI18nFields(delta: Record<string, unknown>, acc: AnnotationAccumulatorEntity.Type): void {
     const labelI18n = Annotations.buildI18nRecord(acc.labels);
 
     if (labelI18n !== null) {
+      const existingLabelI18n = delta['jt:i18n'] as Record<string, unknown> | undefined;
+
       delta['jt:i18n'] = {
-        ...delta['jt:i18n'] as Record<string, unknown> | undefined,
+        ...existingLabelI18n,
         'label': labelI18n
       };
     }
@@ -127,17 +112,17 @@ export class Annotations {
     const commentI18n = Annotations.buildI18nRecord(acc.comments);
 
     if (commentI18n !== null) {
-      const existingI18n = delta['jt:i18n'] as Record<string, unknown> | undefined ?? {};
+      const existingCommentI18n = delta['jt:i18n'] as Record<string, unknown> | undefined ?? {};
 
       delta['jt:i18n'] = {
-        ...existingI18n,
+        ...existingCommentI18n,
         'description': commentI18n
       };
     }
   }
 
   /** Apply title and description fields to a delta record from accumulators. */
-  private static applyLabelFields(delta: Record<string, unknown>, acc: AnnotationAccumulatorType): void {
+  private static applyLabelFields(delta: Record<string, unknown>, acc: AnnotationAccumulatorEntity.Type): void {
     const title = Annotations.resolveLangValue(acc.labels);
 
     if (title !== null) {
@@ -157,22 +142,22 @@ export class Annotations {
 
   /** Process a single label relation and append to the accumulator. */
   private static applyLabelRelation(
-    relation: SchemaGraphRelationType,
-    acc: AnnotationAccumulatorType
+    relation: SchemaGraphRelationInterface,
+    acc: AnnotationAccumulatorEntity.Type
   ): void {
     const value = ImportRelation.literalString(relation);
 
     if (value !== null) {
-      appendLangValue(acc.labels, literalLanguage(relation), value);
+      Annotations.appendLangValue(acc.labels, Annotations.literalLanguage(relation), value);
     }
   }
 
   /** Build the $comment string from versionInfo, isDefinedBy, and seeAlso arrays. */
-  private static buildCommentString(acc: AnnotationAccumulatorType): string {
+  private static buildCommentString(acc: AnnotationAccumulatorEntity.Type): string {
     const commentParts: string[] = [];
 
-    for (const versionStr of acc.versionInfo) {
-      commentParts.push(`version: ${versionStr}`);
+    for (const versionString of acc.versionInfo) {
+      commentParts.push(`version: ${versionString}`);
     }
     for (const iri of acc.isDefinedBy) {
       commentParts.push(`definedBy: ${iri}`);
@@ -184,16 +169,16 @@ export class Annotations {
     return commentParts.join('; ');
   }
 
-  /** Convert an AnnotationAccumulatorType into a partial schema delta. */
-  private static buildDelta(acc: AnnotationAccumulatorType): Record<string, unknown> {
+  /** Convert an AnnotationAccumulatorEntity into a partial schema delta. */
+  private static buildDelta(acc: AnnotationAccumulatorEntity.Type): Record<string, unknown> {
     const delta: Record<string, unknown> = {};
 
     Annotations.applyLabelFields(delta, acc);
 
-    const commentStr = Annotations.buildCommentString(acc);
+    const commentString = Annotations.buildCommentString(acc);
 
-    if (commentStr !== '') {
-      delta.$comment = commentStr;
+    if (commentString !== '') {
+      delta.$comment = commentString;
     }
 
     Annotations.applyI18nFields(delta, acc);
@@ -202,13 +187,13 @@ export class Annotations {
   }
 
   /**
-   * Build a jt:i18n record from a lang-keyed map when multiple language tags
-   * are present. Returns null when only one language (or none) is in the map.
+   * Build a jt:i18n record from a lang-keyed bucket when multiple language
+   * tags are present. Returns null when only one language (or none) is present.
    */
-  private static buildI18nRecord(map: Map<string, string[]>): null | Record<string, string> {
+  private static buildI18nRecord(bucket: Record<string, string[]>): null | Record<string, string> {
     // Only emit i18n when there are values in more than one language bucket
     // (exclude the untagged bucket from the count — it is absorbed into the primary field)
-    const taggedKeys = [...map.keys()].filter((k: string): boolean => {
+    const taggedKeys = Object.keys(bucket).filter((k: string): boolean => {
       return k !== '';
     });
 
@@ -221,7 +206,7 @@ export class Annotations {
     for (const [
       lang,
       values
-    ] of map.entries()) {
+    ] of Object.entries(bucket)) {
       if (lang !== '') {
         i18n[lang] = values.join('\n\n');
       }
@@ -231,7 +216,7 @@ export class Annotations {
   }
 
   /** Build the schemaDeltas map from populated accumulators. */
-  private static buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulatorType>): Map<string, Record<string, unknown>> {
+  private static buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulatorEntity.Type>): Map<string, Record<string, unknown>> {
     const schemaDeltas = new Map<string, Record<string, unknown>>();
 
     for (const [
@@ -250,18 +235,18 @@ export class Annotations {
 
   /** Process all graph relations and populate the accumulator map. */
   private static collectAnnotations(
-    ctx: OwlImportContextType,
-    accumulators: Map<string, AnnotationAccumulatorType>
+    context: OwlImportContextInterface,
+    accumulators: Map<string, AnnotationAccumulatorEntity.Type>
   ): void {
-    for (const relation of ctx.graph.allRelations()) {
+    for (const relation of context.graph.allRelations()) {
       Annotations.dispatchRelation(relation, accumulators);
     }
   }
 
-  public static dispatch(_quads: QuadInterface[], ctx: OwlImportContextType): OwlImportFragmentType {
-    const accumulators = new Map<string, AnnotationAccumulatorType>();
+  public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
+    const accumulators = new Map<string, AnnotationAccumulatorEntity.Type>();
 
-    Annotations.collectAnnotations(ctx, accumulators);
+    Annotations.collectAnnotations(context, accumulators);
 
     return {
       'characteristics': [],
@@ -275,9 +260,9 @@ export class Annotations {
 
   /** Dispatch one relation to accumulate IRI-typed annotation values. */
   private static dispatchIriRelation(
-    relation: SchemaGraphRelationType,
+    relation: SchemaGraphRelationInterface,
     predicateIri: string,
-    acc: AnnotationAccumulatorType
+    acc: AnnotationAccumulatorEntity.Type
   ): void {
     if (IS_DEFINED_BY_PREDICATES.has(predicateIri)) {
       const iri = ImportRelation.namedNodeIri(relation) ?? ImportRelation.literalString(relation);
@@ -301,16 +286,16 @@ export class Annotations {
       const value = ImportRelation.literalString(relation);
 
       if (value !== null) {
-        appendLangValue(acc.altLabels, literalLanguage(relation), value);
+        Annotations.appendLangValue(acc.altLabels, Annotations.literalLanguage(relation), value);
       }
     }
   }
 
   /** Dispatch one relation to the appropriate accumulator update based on predicate sets. */
   private static dispatchLiteralRelation(
-    relation: SchemaGraphRelationType,
+    relation: SchemaGraphRelationInterface,
     predicateIri: string,
-    acc: AnnotationAccumulatorType
+    acc: AnnotationAccumulatorEntity.Type
   ): void {
     if (LABEL_PREDICATES.has(predicateIri)) {
       Annotations.applyLabelRelation(relation, acc);
@@ -342,8 +327,8 @@ export class Annotations {
 
   /** Dispatch one graph relation to the matching accumulator update. */
   private static dispatchRelation(
-    relation: SchemaGraphRelationType,
-    accumulators: Map<string, AnnotationAccumulatorType>
+    relation: SchemaGraphRelationInterface,
+    accumulators: Map<string, AnnotationAccumulatorEntity.Type>
   ): void {
     const predicateIri = relation.predicate;
 
@@ -359,11 +344,11 @@ export class Annotations {
     Annotations.dispatchIriRelation(relation, predicateIri, acc);
   }
 
-  /** Get or create an AnnotationAccumulatorType for a subject IRI. */
+  /** Get or create an AnnotationAccumulatorEntity for a subject IRI. */
   private static getOrCreateAccumulator(
-    accumulators: Map<string, AnnotationAccumulatorType>,
+    accumulators: Map<string, AnnotationAccumulatorEntity.Type>,
     subjectIri: string
-  ): AnnotationAccumulatorType {
+  ): AnnotationAccumulatorEntity.Type {
     const existing = accumulators.get(subjectIri);
 
     if (existing !== undefined) {
@@ -376,49 +361,62 @@ export class Annotations {
     return acc;
   }
 
+  /**
+   * Extract the language tag of a Literal-typed relation target.
+   * Returns the empty string for untagged literals or non-literal targets.
+   */
+  private static literalLanguage(relation: SchemaGraphRelationInterface): string {
+    if (relation.termType !== 'Literal') {
+      return '';
+    }
+
+    return relation.language ?? '';
+  }
+
   /** Accumulator factory. */
-  private static makeAccumulator(): AnnotationAccumulatorType {
+  private static makeAccumulator(): AnnotationAccumulatorEntity.Type {
     return {
-      'altLabels': new Map(),
-      'comments': new Map(),
+      'altLabels': {},
+      'comments': {},
       'deprecated': false,
       'isDefinedBy': [],
-      'labels': new Map(),
+      'labels': {},
       'seeAlso': [],
       'versionInfo': []
     };
   }
 
   /**
-   * Resolve the best string value from a lang-keyed map.
+   * Resolve the best string value from a lang-keyed bucket.
    *
    * Priority: English ('en') → untagged ('') → first available.
    * Multiple values for the same language are joined with '\n\n'.
    */
-  private static resolveLangValue(map: Map<string, string[]>): null | string {
-    if (map.size === 0) {
+  private static resolveLangValue(bucket: Record<string, string[]>): null | string {
+    const keys = Object.keys(bucket);
+
+    if (keys.length === 0) {
       return null;
     }
 
-    const enValues = map.get('en');
+    const enValues = bucket.en;
 
     if (enValues !== undefined && enValues.length > 0) {
       return enValues.join('\n\n');
     }
 
-    const untaggedValues = map.get('');
+    const untaggedValues = bucket[''];
 
     if (untaggedValues !== undefined && untaggedValues.length > 0) {
       return untaggedValues.join('\n\n');
     }
 
     // Fall back to the first available language
-    const firstEntry = map.entries().next();
+    const firstKey = keys[0];
+    const firstValues = firstKey === undefined ? undefined : bucket[firstKey];
 
-    if (firstEntry.done === false) {
-      const values = firstEntry.value[1];
-
-      return values.join('\n\n');
+    if (firstValues !== undefined) {
+      return firstValues.join('\n\n');
     }
 
     return null;

@@ -8,7 +8,7 @@
  * - `init`: passes RequestInit overrides (headers, credentials, etc.).
  *
  * Demonstrates: Loaders.fetch is callable with all three option shapes;
- * all three return a valid LoaderType function.
+ * all three return a valid LoaderInterface function.
  */
 
 import { Loaders } from '../../../src/index.js';
@@ -22,7 +22,7 @@ const withBase = Loaders.fetch({ 'base': 'https://schemas.example/v1/' });
 // With RequestInit — add auth headers
 const withHeaders = Loaders.fetch({ 'init': { 'headers': { 'X-Api-Key': 'demo-key' } } });
 
-// All three produce LoaderType functions
+// All three produce LoaderInterface functions
 console.assert(typeof direct === 'function', 'Loaders.fetch() returns a function');
 console.assert(typeof withBase === 'function', 'Loaders.fetch({ base }) returns a function');
 console.assert(typeof withHeaders === 'function', 'Loaders.fetch({ init }) returns a function');

@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { JsonTology } from '../../src/index.js';
 import { OwlCodegen } from '../../src/modules/codegen/OwlCodegen.js';
 import { bookstoreEntities } from '../../examples/docs/bookstore/index.js';
-import type { OwlImportResultType } from '../../src/types/OwlImport.js';
+import type { OwlImportResultInterface } from '../../src/interfaces/OwlImportResultInterface.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,8 +47,8 @@ function cleanTmpDir(): void {
   }
 }
 
-/** Wrap an array of schemas as a minimal OwlImportResultType for codegen. */
-function resultFromSchemas(schemas: Array<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultType {
+/** Wrap an array of schemas as a minimal OwlImportResultInterface for codegen. */
+function resultFromSchemas(schemas: Array<Record<string, unknown> & { readonly '$id': string }>): OwlImportResultInterface {
   return {
     'characteristics': [],
     'differentFrom': [],
@@ -210,7 +210,7 @@ void describe('OwlCodegen round-trip integration', () => {
   void it('threads the reference map so cross-class $refs resolve to sibling types (not unknown)', () => {
     // Class A references class B by absolute IRI. The generated per-class type
     // must thread the schema-set reference map so `A['link']` resolves to B's
-    // inferred shape. If it degraded to `unknown` or `RefNotFoundType`, the
+    // inferred shape. If it degraded to `unknown` or `ReferenceNotFoundType`, the
     // appended compile-time proof would fail to compile and fail this test —
     // guarding the ontology → TypeScript → (resolved types) round-trip.
     const schemaB = {

@@ -22,10 +22,8 @@ import {
 } from 'node:test';
 import { PropertyRestrictions } from '../../src/modules/ontology/importDispatch/PropertyRestrictions.js';
 import { OwlImporter } from '../../src/modules/ontology/OwlImporter.js';
-import type {
-  OwlImportContextType,
-  OwlImportFragmentType
-} from '../../src/types/OwlImport.js';
+import type { OwlImportContextInterface } from '../../src/interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../src/interfaces/OwlImportFragmentInterface.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Curie } from '../../src/modules/quads/Curie.js';
@@ -42,9 +40,9 @@ const PROP_IRI = `${CLASS_IRI}#items`;
 const RANGE_IRI = 'urn:example:Item';
 
 /**
- * Build a minimal OwlImportContextType from a SchemaGraph backed by the given quads.
+ * Build a minimal OwlImportContextInterface from a SchemaGraph backed by the given quads.
  */
-function makeCtx(quads: QuadInterface[]): OwlImportContextType {
+function makeCtx(quads: QuadInterface[]): OwlImportContextInterface {
   const graph = SchemaGraph.fromQuads(quads, { 'baseIri': 'urn:example' });
   const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{
@@ -87,7 +85,7 @@ function makeCtx(quads: QuadInterface[]): OwlImportContextType {
  * Build quads + context for a schema that carries jt:restrictions via Compose.
  */
 function quadsForSchema(schema: Record<string, unknown>): {
-  'ctx': OwlImportContextType;
+  'ctx': OwlImportContextInterface;
   'quads': QuadInterface[];
 } {
   const graph = new SchemaGraph(schema);
@@ -102,7 +100,7 @@ function quadsForSchema(schema: Record<string, unknown>): {
 /**
  * Run importPropertyRestrictions against a schema and return the fragment.
  */
-function importFromSchema(schema: Record<string, unknown>): OwlImportFragmentType {
+function importFromSchema(schema: Record<string, unknown>): OwlImportFragmentInterface {
   const {
     ctx,
     quads
@@ -115,7 +113,7 @@ function importFromSchema(schema: Record<string, unknown>): OwlImportFragmentTyp
  * Get the properties delta for a class IRI from the fragment.
  */
 function getProps(
-  fragment: OwlImportFragmentType,
+  fragment: OwlImportFragmentInterface,
   classIri: string
 ): Record<string, unknown> {
   const delta = fragment.schemaDeltas.get(classIri);
@@ -256,7 +254,7 @@ void describe('importPropertyRestrictions', () => {
   void describe('owl:minCardinality', () => {
     void it('sets minItems', () => {
       const schema = Compose.subClassOf(
-        Compose.minCardinality(PROP_IRI, 2),
+        Compose.minimumCardinality(PROP_IRI, 2),
         {
           '$id': CLASS_IRI,
           'type': 'object'
@@ -276,7 +274,7 @@ void describe('importPropertyRestrictions', () => {
   void describe('owl:maxCardinality', () => {
     void it('sets maxItems', () => {
       const schema = Compose.subClassOf(
-        Compose.maxCardinality(PROP_IRI, 5),
+        Compose.maximumCardinality(PROP_IRI, 5),
         {
           '$id': CLASS_IRI,
           'type': 'object'
@@ -296,9 +294,9 @@ void describe('importPropertyRestrictions', () => {
   void describe('multiple restrictions on the same property', () => {
     void it('merges minCardinality + maxCardinality into a single property delta', () => {
       const schema = Compose.subClassOf(
-        Compose.minCardinality(PROP_IRI, 1),
+        Compose.minimumCardinality(PROP_IRI, 1),
         Compose.subClassOf(
-          Compose.maxCardinality(PROP_IRI, 5),
+          Compose.maximumCardinality(PROP_IRI, 5),
           {
             '$id': CLASS_IRI,
             'type': 'object'
@@ -374,7 +372,7 @@ void describe('importPropertyRestrictions', () => {
   void describe('OwlImporter integration', () => {
     void it('PropertyRestrictions projects owl:maxCardinality without marking it unsupported', () => {
       const schema = Compose.subClassOf(
-        Compose.maxCardinality(PROP_IRI, 3),
+        Compose.maximumCardinality(PROP_IRI, 3),
         {
           '$id': CLASS_IRI,
           'type': 'object'

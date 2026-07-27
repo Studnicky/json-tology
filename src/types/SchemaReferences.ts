@@ -12,7 +12,7 @@
  *
  * Empty by default: with no augmentation `keyof` is `never`, so resolution is
  * identical to passing no references — an unreachable `$ref` is a
- * `RefNotFoundType` brand, never a silent `unknown`. Augmentation only
+ * `ReferenceNotFoundType` brand, never a silent `unknown`. Augmentation only
  * ADDS `$id` keys, so it merges cleanly with no conflicting declarations (unlike
  * {@link JsonTologyTypeConfigInterface}, which carries an index signature
  * because its flags are overridden rather than added).

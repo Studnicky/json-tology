@@ -4,7 +4,7 @@
  * Use this when you need to map errors to specific form fields.
  */
 
-import type { ValidationErrorType } from '../../../src/types/index.js';
+import type { ValidationErrorEntity } from '../../../src/types/index.js';
 import {
   bookstoreEntities, ReviewSchema
 } from '../bookstore/index.js';
@@ -19,7 +19,7 @@ const errs = bookstoreEntities.validate(ReviewSchema.$id, {
 });
 
 // Recipe: group by path (equivalent to removed format())
-const grouped: Record<string, ValidationErrorType[]> = {};
+const grouped: Record<string, ValidationErrorEntity.Type[]> = {};
 
 for (const err of errs) {
   const key = err.path || '_root';

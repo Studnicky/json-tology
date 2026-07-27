@@ -46,20 +46,20 @@ export class DataType {
     }
 
     if (DataType.isRecord(left) && DataType.isRecord(right)) {
-      const leftObj = left;
-      const rightObj = right;
-      const leftKeys = Object.keys(leftObj);
-      const rightKeys = Object.keys(rightObj);
+      const leftObject = left;
+      const rightObject = right;
+      const leftKeys = Object.keys(leftObject);
+      const rightKeys = Object.keys(rightObject);
 
       if (leftKeys.length !== rightKeys.length) {
         return false;
       }
 
       for (const key of leftKeys) {
-        if (!(key in rightObj)) {
+        if (!(key in rightObject)) {
           return false;
         }
-        if (!DataType.deepEqual(leftObj[key], rightObj[key])) {
+        if (!DataType.deepEqual(leftObject[key], rightObject[key])) {
           return false;
         }
       }

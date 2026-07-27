@@ -32,32 +32,23 @@
  * Does NOT materialise JSON Schema objects — that is the phase-1 dispatchers' job.
  */
 
-import type {
-  ListItemType,
-  NormIRType,
-  SchemaGraphNodeType, SchemaGraphRelationType,
-  SchemaGraphSemanticsType, StructureWarningType
-} from '../../types/SchemaGraph.js';
+import type { LiteralTagsEntity } from '../../entities/LiteralTagsEntity.js';
+import type { NodeMapInterface } from '../../interfaces/NodeMapInterface.js';
+import type { SubjectPredicateQuadsIndexInterface } from '../../interfaces/SubjectPredicateQuadsIndexInterface.js';
+import type { StructureWarningEntity } from '../../entities/StructureWarningEntity.js';
+import type { ListItemEntity } from '../../entities/ListItemEntity.js';
+import type { NormIRInterface } from '../../interfaces/NormIRInterface.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraphRelationInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type {
-  PrefixMapType, SubjectIndexType
-} from '../../types/OwlImport.js';
-import type {
-  CollectedListType,
-  LiteralTagsType,
-  NodeEntriesType,
-  NodeMapType,
-  OptionalChildNodeType,
-  OptionalNodeType,
-  OptionalRestrictionType,
-  RootSchemaRecordType,
-  SubjectPredicateQuadsIndexType,
-  SubjectRelationsType
-} from '../../types/QuadBackedSchemaGraph.js';
-import type { BuildRelationsOptionsType } from '../../types/BuildRelationsOptionsType.js';
-import type { ResolveRestrictionOptionsType } from '../../types/ResolveRestrictionOptionsType.js';
+import type { PrefixMapInterface } from '../../interfaces/PrefixMapInterface.js';
+import type { SubjectIndexInterface } from '../../interfaces/SubjectIndexInterface.js';
+import type { BuildRelationsOptionsInterface } from '../../interfaces/BuildRelationsOptionsInterface.js';
+import type { RestrictionResultInterface } from '../../interfaces/RestrictionResultInterface.js';
+import type { ResolveRestrictionOptionsInterface } from '../../interfaces/ResolveRestrictionOptionsInterface.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
@@ -75,88 +66,13 @@ import { Lists } from '../quads/Lists.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { Terms } from '../quads/Terms.js';
 import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
+import { IRI_LIKE_RE } from '../../constants/GRAPH_REGEXES.js';
 
 // OWL_NODE_TYPE_IRIS, RDF_TYPE_PREDICATES, OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
 
 // ---------------------------------------------------------------------------
-// Build SchemaGraphRelationType[] from indexed quads
+// Build SchemaGraphRelationInterface[] from indexed quads
 // ---------------------------------------------------------------------------
-
-function objectIriValue(quad: QuadInterface, curie: CurieInterface): string {
-  if (quad.object.termType === 'NamedNode') {
-    return curie.compact(quad.object.value);
-  }
-  if (quad.object.termType === 'BlankNode') {
-    return quad.object.value;
-  }
-  if (quad.object.termType === 'Literal') {
-    return quad.object.value;
-  }
-
-  // Variable or embedded Quad (rdf/js RDF*) — neither has an IRI form,
-  // so return the empty string and let downstream dispatch ignore it.
-  return '';
-}
-
-/**
- * Build the optional language / datatype / termType fields that ride along
- * on a relation, preserving the source literal's tags when the target is a
- * Literal. NamedNode and BlankNode targets carry only `termType`; the
- * language/datatype tags are emitted strictly for Literal terms.
- */
-function literalTagsForQuad(quad: QuadInterface): LiteralTagsType {
-  switch (quad.object.termType) {
-    case 'BlankNode':
-      return { 'termType': 'BlankNode' };
-    case 'Literal':
-      return {
-        'datatype': quad.object.datatype.value,
-        'language': quad.object.language,
-        'termType': 'Literal'
-      };
-    case 'NamedNode':
-      return { 'termType': 'NamedNode' };
-    case 'Quad':
-    case 'Variable':
-      return {};
-    default:
-      return {};
-  }
-}
-
-/**
- * Resolve or synthesise a node for `subject`. Subjects without a recognised
- * OWL type (typically blank nodes carrying restriction / list / facet shapes)
- * get a synthetic stub so their outgoing relations can be returned by
- * `relationsForSubject` without scanning the full relation list.
- */
-function nodeOrStub(
-  subject: string,
-  nodeMap: Map<string, SchemaGraphNodeType>,
-  stubMap: Map<string, SchemaGraphNodeType>
-): SchemaGraphNodeType {
-  const existing = nodeMap.get(subject);
-
-  if (existing !== undefined) {
-    return existing;
-  }
-
-  const cachedStub = stubMap.get(subject);
-
-  if (cachedStub !== undefined) {
-    return cachedStub;
-  }
-
-  const stub: SchemaGraphNodeType = {
-    'id': subject,
-    'pointer': '',
-    'schema': { '$id': subject }
-  };
-
-  stubMap.set(subject, stub);
-
-  return stub;
-}
 
 // ---------------------------------------------------------------------------
 // QuadGraphBuilder — cohesive graph-construction helpers used by the
@@ -165,12 +81,38 @@ function nodeOrStub(
 // ---------------------------------------------------------------------------
 
 class QuadGraphBuilder {
+  /**
+   * Build the optional language / datatype / termType fields that ride along
+   * on a relation, preserving the source literal's tags when the target is a
+   * Literal. NamedNode and BlankNode targets carry only `termType`; the
+   * language/datatype tags are emitted strictly for Literal terms.
+   */
+  public static literalTagsForQuad(quad: QuadInterface): LiteralTagsEntity.Type {
+    switch (quad.object.termType) {
+      case 'BlankNode':
+        return { 'termType': 'BlankNode' };
+      case 'Literal':
+        return {
+          'datatype': quad.object.datatype.value,
+          'language': quad.object.language,
+          'termType': 'Literal'
+        };
+      case 'NamedNode':
+        return { 'termType': 'NamedNode' };
+      case 'Quad':
+      case 'Variable':
+        return {};
+      default:
+        return {};
+    }
+  }
+
   public static nodeMap(
-    subjectIndex: SubjectIndexType,
-    predicateIndex: SubjectPredicateQuadsIndexType,
+    subjectIndex: SubjectIndexInterface,
+    predicateIndex: SubjectPredicateQuadsIndexInterface,
     curie: CurieInterface
-  ): NodeMapType {
-    const nodeMap: NodeMapType = new Map();
+  ): NodeMapInterface {
+    const nodeMap: NodeMapInterface = new Map();
 
     for (const [
       subject,
@@ -206,8 +148,57 @@ class QuadGraphBuilder {
     return nodeMap;
   }
 
-  public static predicateIndex(subjectIndex: SubjectIndexType): SubjectPredicateQuadsIndexType {
-    const index: SubjectPredicateQuadsIndexType = new Map();
+  /**
+   * Resolve or synthesise a node for `subject`. Subjects without a recognised
+   * OWL type (typically blank nodes carrying restriction / list / facet shapes)
+   * get a synthetic stub so their outgoing relations can be returned by
+   * `relationsForSubject` without scanning the full relation list.
+   */
+  public static nodeOrStub(
+    subject: string,
+    nodeMap: Map<string, SchemaGraphNodeInterface>,
+    stubMap: Map<string, SchemaGraphNodeInterface>
+  ): SchemaGraphNodeInterface {
+    const existing = nodeMap.get(subject);
+
+    if (existing !== undefined) {
+      return existing;
+    }
+
+    const cachedStub = stubMap.get(subject);
+
+    if (cachedStub !== undefined) {
+      return cachedStub;
+    }
+
+    const stub: SchemaGraphNodeInterface = {
+      'id': subject,
+      'pointer': '',
+      'schema': { '$id': subject }
+    };
+
+    stubMap.set(subject, stub);
+
+    return stub;
+  }
+
+  public static objectIriValue(quad: QuadInterface, curie: CurieInterface): string {
+    if (quad.object.termType === 'NamedNode') {
+      return curie.compact(quad.object.value);
+    }
+    if (quad.object.termType === 'BlankNode') {
+      return quad.object.value;
+    }
+    if (quad.object.termType === 'Literal') {
+      return quad.object.value;
+    }
+
+    // Variable or embedded Quad (rdf/js RDF*) — neither has an IRI form,
+    // so return the empty string and let downstream dispatch ignore it.
+    return '';
+  }
+  public static predicateIndex(subjectIndex: SubjectIndexInterface): SubjectPredicateQuadsIndexInterface {
+    const index: SubjectPredicateQuadsIndexInterface = new Map();
 
     for (const [
       subject,
@@ -231,20 +222,27 @@ class QuadGraphBuilder {
     return index;
   }
 
-  public static relations(opts: BuildRelationsOptionsType): SchemaGraphRelationType[] {
+  /** Probe-term `.equals` stub for `Lists.collect` — never invoked on the probe itself. */
+  public static probeNeverEquals(): boolean {
+    const result = false;
+
+    return result;
+  }
+
+  public static relations(argumentList: BuildRelationsOptionsInterface): SchemaGraphRelationInterface[] {
     const {
       curie,
       nodeMap,
       predicateIndex,
       stubMap
-    } = opts;
-    const relations: SchemaGraphRelationType[] = [];
+    } = argumentList;
+    const relations: SchemaGraphRelationInterface[] = [];
 
     for (const [
       subject,
       predicateMap
     ] of predicateIndex) {
-      const sourceNode = nodeOrStub(subject, nodeMap, stubMap);
+      const sourceNode = QuadGraphBuilder.nodeOrStub(subject, nodeMap, stubMap);
       const isNamedSubject = nodeMap.has(subject);
 
       for (const [
@@ -321,9 +319,9 @@ class QuadGraphBuilder {
 
         // All other predicates — emit a relation per quad with literal-tag preservation.
         for (const quad of quads) {
-          const targetValue = objectIriValue(quad, curie);
+          const targetValue = QuadGraphBuilder.objectIriValue(quad, curie);
           const targetNode = nodeMap.get(targetValue);
-          const tags = literalTagsForQuad(quad);
+          const tags = QuadGraphBuilder.literalTagsForQuad(quad);
 
           relations.push({
             ...tags,
@@ -339,12 +337,12 @@ class QuadGraphBuilder {
   }
 
   // OWL_RESTRICTION_CONSTRAINT_IRIS imported from ONTOLOGY_PREDICATES
-  private static restrictionBnode(opts: ResolveRestrictionOptionsType): OptionalRestrictionType {
+  private static restrictionBnode(argumentList: ResolveRestrictionOptionsInterface): RestrictionResultInterface | undefined {
     const {
       bnodeId,
       bnodePredicateMap,
       curie
-    } = opts;
+    } = argumentList;
 
     if (bnodePredicateMap === undefined) {
       return undefined;
@@ -454,30 +452,27 @@ class QuadGraphBuilder {
  * Instantiate via SchemaGraph.fromQuads(quads, options) — do not construct directly.
  */
 export class QuadBackedSchemaGraph implements SchemaGraphInterface {
-  private readonly _rootSchema: Record<string, unknown>;
-  private readonly nodeList: SchemaGraphNodeType[];
-  private readonly nodeMap: Map<string, SchemaGraphNodeType>;
+  readonly #rootSchema: Record<string, unknown>;
+  private readonly nodeList: SchemaGraphNodeInterface[];
+  private readonly nodeMap: Map<string, SchemaGraphNodeInterface>;
   /** Quads supplied to the constructor — retained so `collectList` can walk
    * `rdf:first`/`rdf:rest` chains directly via the canonical Lists helper. */
   private readonly quads: readonly QuadInterface[];
-  private readonly relationList: SchemaGraphRelationType[];
+  private readonly relationList: SchemaGraphRelationInterface[];
   /** Lazy subject → outgoing relations index. Built on first
    * `relationsForSubject` call and cached. */
-  private relationsBySubject: Map<string, SchemaGraphRelationType[]> | undefined = undefined;
+  private relationsBySubject: Map<string, SchemaGraphRelationInterface[]> | undefined = undefined;
 
   public constructor(
     quads: readonly QuadInterface[],
     options?: { 'baseIri'?: string;
-      'prefixes'?: PrefixMapType }
+      'prefixes'?: PrefixMapInterface }
   ) {
-    const mergedPrefixes: PrefixMapType = {
-      ...STANDARD_PREFIXES,
-      ...options?.prefixes
-    };
+    const mergedPrefixes: PrefixMapInterface = Object.assign({}, STANDARD_PREFIXES, options?.prefixes);
     const curie = new Curie(mergedPrefixes);
     const subjectIndex = QuadFactory.indexBySubject(quads);
     const predicateIndex = QuadGraphBuilder.predicateIndex(subjectIndex);
-    const stubMap = new Map<string, SchemaGraphNodeType>();
+    const stubMap = new Map<string, SchemaGraphNodeInterface>();
 
     this.quads = quads;
     this.nodeMap = QuadGraphBuilder.nodeMap(subjectIndex, predicateIndex, curie);
@@ -491,17 +486,17 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     });
 
     // Root schema stub — carries the base IRI so callers can inspect it.
-    this._rootSchema = { '$id': options?.baseIri ?? '' };
+    this.#rootSchema = { '$id': options?.baseIri ?? '' };
   }
 
-  public allRelations(): SchemaGraphRelationType[] {
+  public allRelations(): SchemaGraphRelationInterface[] {
     return this.relationList;
   }
 
   // SchemaGraphInterface shape methods — not meaningful for quad-backed graphs;
   // dispatchers traverse allRelations() and nodes() directly.
 
-  public child(_node: SchemaGraphNodeType, _key: string): OptionalChildNodeType {
+  public child(_node: SchemaGraphNodeInterface, _key: string): SchemaGraphNodeInterface | undefined {
     const result = undefined;
 
     return result;
@@ -518,7 +513,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
    * the IRI / bnode-id string for NamedNode / BlankNode items, preserving
    * the term-type so dispatchers can branch on the kind.
    */
-  public collectList(head: string): CollectedListType {
+  public collectList(head: string): ListItemEntity.Type[] {
     if (head === '' || head === RDF.nil || head === 'rdf:nil') {
       return [];
     }
@@ -534,28 +529,20 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     // appear in the wild depending on the producer, so the relation target
     // string we received is the authoritative match).
     const looksLikeIri = !head.startsWith('_:')
-      && /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|#|\/)/u.test(head);
+      && IRI_LIKE_RE.test(head);
     const headTerm = looksLikeIri
       ? {
-        'equals': () => {
-          const result = false;
-
-          return result;
-        },
+        'equals': QuadGraphBuilder.probeNeverEquals,
         'termType': 'NamedNode' as const,
         'value': head
       }
       : {
-        'equals': () => {
-          const result = false;
-
-          return result;
-        },
+        'equals': QuadGraphBuilder.probeNeverEquals,
         'termType': 'BlankNode' as const,
         'value': head
       };
     const items = Lists.collect(headTerm, this.quads);
-    const result: ListItemType[] = [];
+    const result: ListItemEntity.Type[] = [];
 
     for (const item of items) {
       switch (item.termType) {
@@ -586,7 +573,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
    * directly as rdfs:domain relations in allRelations(); there is no pre-built
    * WeakMap index. Returns undefined for all nodes.
    */
-  public domainOf(_node: SchemaGraphNodeType): SchemaGraphNodeType | undefined {
+  public domainOf(_node: SchemaGraphNodeInterface): SchemaGraphNodeInterface | undefined {
     const result = undefined;
 
     return result;
@@ -597,7 +584,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
    * from serialised OWL quads rather than from a live JSON Schema document.
    * Returns undefined for all ids.
    */
-  public embeddedNode(_id: string): SchemaGraphNodeType | undefined {
+  public embeddedNode(_id: string): SchemaGraphNodeInterface | undefined {
     const result = undefined;
 
     return result;
@@ -614,11 +601,11 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return result;
   }
 
-  public entries(_node: SchemaGraphNodeType, _key: string): NodeEntriesType {
+  public entries(_node: SchemaGraphNodeInterface, _key: string): Array<[string, SchemaGraphNodeInterface]> {
     return [];
   }
 
-  public getNormIR(): NormIRType {
+  public getNormIR(): NormIRInterface {
     return {
       'anchors': {},
       'children': {},
@@ -630,15 +617,15 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
           'pointer': node.pointer
         };
       }),
-      'rootSchema': this._rootSchema
+      'rootSchema': this.#rootSchema
     };
   }
 
-  public indexedChildren(_node: SchemaGraphNodeType, _key: string): SchemaGraphNodeType[] {
+  public indexedChildren(_node: SchemaGraphNodeInterface, _key: string): SchemaGraphNodeInterface[] {
     return [];
   }
 
-  public keywordValue(node: SchemaGraphNodeType, key: string): unknown {
+  public keywordValue(node: SchemaGraphNodeInterface, key: string): unknown {
     const schema = node.schema;
 
     if (typeof schema === 'boolean') {
@@ -651,11 +638,11 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
   /**
    * Decode a `Literal` list item collected by `collectList`. Encodes the
    * typed JS value via String() so the `target` field remains a plain
-   * string per the ListItemType contract; callers recover the typed value
+   * string per the ListItemEntity.Type contract; callers recover the typed value
    * by re-applying Terms.decodeLiteral semantics through the `datatype`
    * IRI preserved here.
    */
-  private literalListItem(item: Extract<QuadObjectType, { 'termType': 'Literal' }>): ListItemType {
+  private literalListItem(item: Extract<QuadObjectType, { 'termType': 'Literal' }>): ListItemEntity.Type {
     const decoded = Terms.decodeLiteral(item);
 
     return {
@@ -666,7 +653,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     };
   }
 
-  public node(schema: Record<string, unknown>): OptionalNodeType {
+  public node(schema: Record<string, unknown>): SchemaGraphNodeInterface | undefined {
     const id = schema.$id;
 
     if (typeof id !== 'string') {
@@ -676,11 +663,11 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return this.nodeMap.get(id);
   }
 
-  public nodes(): SchemaGraphNodeType[] {
+  public nodes(): SchemaGraphNodeInterface[] {
     return this.nodeList;
   }
 
-  public relations(node: SchemaGraphNodeType): SchemaGraphRelationType[] {
+  public relations(node: SchemaGraphNodeInterface): SchemaGraphRelationInterface[] {
     const result = this.relationList.filter((rel) => {
       return rel.source.id === node.id;
     });
@@ -688,9 +675,9 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return result;
   }
 
-  public relationsForSubject(subjectIri: string): SubjectRelationsType {
+  public relationsForSubject(subjectIri: string): SchemaGraphRelationInterface[] {
     if (this.relationsBySubject === undefined) {
-      const index = new Map<string, SchemaGraphRelationType[]>();
+      const index = new Map<string, SchemaGraphRelationInterface[]>();
 
       for (const relation of this.relationList) {
         const key = relation.source.id;
@@ -708,7 +695,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return this.relationsBySubject.get(subjectIri) ?? [];
   }
 
-  public resolveFragment(fragment: string): SchemaGraphNodeType {
+  public resolveFragment(fragment: string): SchemaGraphNodeInterface {
     const node = this.nodeMap.get(fragment);
 
     if (node === undefined) {
@@ -721,7 +708,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return node;
   }
 
-  public resolvePointer(pointer: string): SchemaGraphNodeType {
+  public resolvePointer(pointer: string): SchemaGraphNodeInterface {
     const node = this.nodeMap.get(pointer);
 
     if (node === undefined) {
@@ -734,39 +721,39 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return node;
   }
 
-  public resolveRefId(ref: string): string {
-    if (!ref.startsWith('#')) {
-      return ref;
+  public resolveReferenceId(reference: string): string {
+    if (!reference.startsWith('#')) {
+      return reference;
     }
-    const fragment = ref.slice(1);
+    const fragment = reference.slice(1);
     const node = this.nodeMap.get(fragment);
 
-    return node?.id ?? ref;
+    return node?.id ?? reference;
   }
 
-  public get rootNode(): SchemaGraphNodeType {
+  public get rootNode(): SchemaGraphNodeInterface {
     // The first named-class node, or a synthetic stub.
     const first = this.nodeList.at(0);
 
     return first ?? {
-      'id': String(this._rootSchema.$id ?? ''),
+      'id': String(this.#rootSchema.$id ?? ''),
       'pointer': '',
-      'schema': this._rootSchema
+      'schema': this.#rootSchema
     };
   }
 
-  public get rootSchema(): RootSchemaRecordType {
-    return this._rootSchema;
+  public get rootSchema(): Record<string, unknown> {
+    return this.#rootSchema;
   }
 
-  public semantics(_node: SchemaGraphNodeType): SchemaGraphSemanticsType {
+  public semantics(_node: SchemaGraphNodeInterface): SchemaGraphSemanticsInterface {
     // Quad-backed graphs do not populate semantics — dispatchers use allRelations().
     const result = EMPTY_SEMANTICS;
 
     return result;
   }
 
-  public validateStructure(): StructureWarningType[] {
+  public validateStructure(): StructureWarningEntity.Type[] {
     return [];
   }
 }

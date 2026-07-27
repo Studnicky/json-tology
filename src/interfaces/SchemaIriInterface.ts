@@ -5,6 +5,8 @@
  * consumers can depend on the interface rather than the concrete class.
  */
 
+import type { SplitSubjectResultEntity } from '../entities/SplitSubjectResultEntity.js';
+
 export interface SchemaIriInterface {
   /** Encodes a string for use as a URI path segment, preserving forward slashes. */
   escapeSegment(value: string): string;
@@ -22,10 +24,7 @@ export interface SchemaIriInterface {
   propertyIri(classId: string, propertyName: string): string;
 
   /** Split a subject IRI into base and fragment parts at the `#` boundary. */
-  splitSubject(subject: string): {
-    'base': string;
-    'fragment': null | string;
-  };
+  splitSubject(subject: string): SplitSubjectResultEntity.Type;
 
   /** Derive the structural parent of a subject by removing the last `/properties/...` segment. */
   structuralParent(subject: string): string;
