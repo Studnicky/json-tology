@@ -1,13 +1,16 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { BooleanValueEntity } from './BooleanValueEntity.js';
 
 /** Whether implicit defaults are synthesized for properties with no explicit schema default. */
 export namespace SynthesizeDefaultsFlagEntity {
-  export const Schema = { 'type': 'boolean' } as const satisfies JSONSchema;
+  export const Schema = { ...BooleanValueEntity.Schema } as const satisfies JSONSchema;
 
   export type Type = InferType<typeof Schema>;
 
   export function validate(candidate: unknown): candidate is Type {
-    return typeof candidate === 'boolean';
+    const isBoolean = BooleanValueEntity.validate(candidate);
+
+    return isBoolean;
   }
 }

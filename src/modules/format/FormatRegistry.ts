@@ -1,5 +1,5 @@
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
-import type { FormatPredicateType } from '../../types/FormatPredicateType.js';
+import type { FormatPredicateInterface } from '../../interfaces/FormatPredicateInterface.js';
 import {
   DIGITS_ONLY, IPV6_DOUBLE_COLON_MARKER, IPV6_FULL, IPV6_MIXED, IPV6_MIXED_COMPRESSED, IPV6_WITH_DOUBLE_COLON
 } from '../../constants/FORMAT_REGEXES.js';
@@ -731,7 +731,7 @@ class FormatValidators {
   }
 }
 
-const STRING_FORMAT_VALIDATORS: Record<string, FormatPredicateType> = {
+const STRING_FORMAT_VALIDATORS: Record<string, FormatPredicateInterface> = {
   'binary': (value: unknown): boolean => {
     return typeof value === 'string' && FormatValidators.binary(value);
   },
@@ -804,7 +804,7 @@ STRING_FORMAT_VALIDATORS['uri-template'] = (value: unknown): boolean => {
 // Built-in number format validators
 // ---------------------------------------------------------------------------
 
-const NUMBER_FORMAT_VALIDATORS: Record<string, FormatPredicateType> = {
+const NUMBER_FORMAT_VALIDATORS: Record<string, FormatPredicateInterface> = {
   'double': (value: unknown): boolean => {
     return typeof value === 'number' && Number.isFinite(value);
   },
@@ -890,13 +890,13 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @since 0.25.0
    * @group Format
    */
-  static isTrustedFormatPredicate(validator: FormatPredicateType): boolean {
+  static isTrustedFormatPredicate(validator: FormatPredicateInterface): boolean {
     const result = Object.hasOwn(validator, TRUSTED_MARKER);
 
     return result;
   }
 
-  private readonly validators = new Map<string, FormatPredicateType>();
+  private readonly validators = new Map<string, FormatPredicateInterface>();
 
   /**
    * Look up a format validator by name.
@@ -904,7 +904,7 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @param name - Format name (e.g. "email", "uri", "int32")
    * @returns Validator function, or undefined if the format is not registered
    */
-  get(name: string): FormatPredicateType | undefined {
+  get(name: string): FormatPredicateInterface | undefined {
     const result = this.validators.get(name);
 
     return result;
@@ -931,7 +931,7 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @param name - Format name to register
    * @param validator - Validation function that returns true when the value matches the format
    */
-  set(name: string, validator: FormatPredicateType): void {
+  set(name: string, validator: FormatPredicateInterface): void {
     this.validators.set(name, validator);
   }
 
@@ -941,7 +941,7 @@ export class FormatRegistry implements FormatRegistryInterface {
    * Brands the function with a {@link TRUSTED_MARKER} property so the
    * hot-path executor can call it without a try/catch guard.
    */
-  private setBuiltin(name: string, validator: FormatPredicateType): void {
+  private setBuiltin(name: string, validator: FormatPredicateInterface): void {
     const marker: Record<string, boolean> = {};
 
     marker[TRUSTED_MARKER] = true;

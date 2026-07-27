@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { ShaclSeverityEntity } from './ShaclSeverityEntity.js';
 
 /**
  * ShaclValidationResultEntity — a single SHACL validation result entry.
@@ -50,7 +51,7 @@ export namespace ShaclValidationResultEntity {
 
     return typeof value.focusNode === 'string'
       && typeof value.resultMessage === 'string'
-      && (value.resultSeverity === 'Info' || value.resultSeverity === 'Violation' || value.resultSeverity === 'Warning')
+      && ShaclSeverityEntity.validate(value.resultSeverity)
       && typeof value.sourceConstraintComponent === 'string';
   }
 }

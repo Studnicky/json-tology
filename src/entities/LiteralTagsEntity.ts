@@ -1,4 +1,5 @@
 import type { InferType } from '../types/Schema.js';
+import { RdfTermKindEntity } from './RdfTermKindEntity.js';
 
 /**
  * The optional `termType`, `language`, and `datatype` annotations that travel
@@ -42,6 +43,6 @@ export namespace LiteralTagsEntity {
 
     return (value.datatype === undefined || typeof value.datatype === 'string')
       && (value.language === undefined || typeof value.language === 'string')
-      && (value.termType === undefined || value.termType === 'BlankNode' || value.termType === 'Literal' || value.termType === 'NamedNode');
+      && (value.termType === undefined || RdfTermKindEntity.validate(value.termType));
   }
 }

@@ -11,9 +11,28 @@ import type { ListItemEntity } from '../../../entities/ListItemEntity.js';
 import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraphRelationInterface.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
 import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
+import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { Terms } from '../../quads/Terms.js';
 
 export class ImportRelation {
+  /**
+   * Build an `OwlImportFragmentInterface` whose only populated bucket is
+   * `schemaDeltas`; all registry-level buckets (characteristics, individuals,
+   * sameAs, differentFrom, invariants) are empty arrays.
+   *
+   * Used by dispatchers that only ever emit structural schemaDeltas patches.
+   */
+  static buildFragment(schemaDeltas: Map<string, JsonSchemaDocumentObjectType>): OwlImportFragmentInterface {
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      schemaDeltas
+    };
+  }
+
   /**
    * Filter outgoing relations on a subject by predicate membership set.
    *
@@ -32,6 +51,22 @@ export class ImportRelation {
     });
 
     return result;
+  }
+
+  /**
+   * Walk an RDF list rooted at `listHead` and collect the IRIs of its
+   * NamedNode members, skipping any BlankNode / Literal members.
+   */
+  static collectNamedNodeIris(graph: SchemaGraphInterface, listHead: string): string[] {
+    const members: string[] = [];
+
+    for (const item of graph.collectList(listHead)) {
+      if (item.termType === 'NamedNode') {
+        members.push(item.target);
+      }
+    }
+
+    return members;
   }
 
   /**
@@ -76,6 +111,23 @@ export class ImportRelation {
     }
 
     return typeof relation.target === 'string' ? relation.target : relation.target.id;
+  }
+
+  /**
+   * Merge `patch` into the `schemaDeltas` entry for `subjectIri`, preserving
+   * any fields already recorded by another axiom arm for the same subject.
+   */
+  static mergeSchemaDelta(
+    schemaDeltas: Map<string, JsonSchemaDocumentObjectType>,
+    subjectIri: string,
+    patch: JsonSchemaDocumentObjectType
+  ): void {
+    const existing = schemaDeltas.get(subjectIri) ?? {};
+
+    schemaDeltas.set(subjectIri, {
+      ...existing,
+      ...patch
+    });
   }
 
   /**

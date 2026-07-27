@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { REGISTRY_DIRECTORY_RESULT_SHARED_SCHEMA } from '../constants/SCHEMAS.js';
 import { GenerateRegistryDirectoryEntityFileEntity } from './GenerateRegistryDirectoryEntityFileEntity.js';
 
 /**
@@ -13,12 +14,11 @@ export namespace GenerateRegistryDirectoryResultEntity {
         'items': GenerateRegistryDirectoryEntityFileEntity.Schema,
         'type': 'array'
       },
-      /** Generated source for `index.ts`. */
-      'indexSource': { 'type': 'string' }
+      ...REGISTRY_DIRECTORY_RESULT_SHARED_SCHEMA.properties
     },
     'required': [
       'entityFiles',
-      'indexSource'
+      ...REGISTRY_DIRECTORY_RESULT_SHARED_SCHEMA.required
     ],
     'type': 'object'
   } as const satisfies JSONSchema;
@@ -32,7 +32,16 @@ export namespace GenerateRegistryDirectoryResultEntity {
 
     const value = candidate as Record<string, unknown>;
 
-    return Array.isArray(value.entityFiles)
-      && typeof value.indexSource === 'string';
+    if (!Array.isArray(value.entityFiles) || typeof value.indexSource !== 'string') {
+      return false;
+    }
+
+    for (const entry of value.entityFiles) {
+      if (!GenerateRegistryDirectoryEntityFileEntity.validate(entry)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

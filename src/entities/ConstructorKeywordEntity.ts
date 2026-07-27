@@ -1,20 +1,16 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
 
-/** The rdf/js term-type discriminator (`'BlankNode' | 'Literal' | 'NamedNode'`). */
-export namespace RdfTermTypeEntity {
+/** The `constructor` object-key literal — a prototype-pollution vector. */
+export namespace ConstructorKeywordEntity {
   export const Schema = {
-    'enum': [
-      'BlankNode',
-      'Literal',
-      'NamedNode'
-    ],
+    'const': 'constructor',
     'type': 'string'
   } as const satisfies JSONSchema;
 
   export type Type = InferType<typeof Schema>;
 
   export function validate(candidate: unknown): candidate is Type {
-    return candidate === 'BlankNode' || candidate === 'Literal' || candidate === 'NamedNode';
+    return candidate === 'constructor';
   }
 }

@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { CODEGEN_PROVENANCE_OPTIONS_DEF } from '../constants/CODEGEN_OPTION_DEFS.js';
 
 /**
  * Options object for the {@link buildEntityFileSource} helper.
@@ -26,16 +27,14 @@ export namespace BuildEntityFileOptionsEntity {
       'name': { 'type': 'string' },
       'refsName': { 'type': 'string' },
       'schema': { 'type': 'object' },
-      'sourceLabel': { 'type': 'string' },
-      'ts': { 'type': 'string' }
+      ...CODEGEN_PROVENANCE_OPTIONS_DEF.properties
     },
     'required': [
       'iri',
       'name',
       'refsName',
       'schema',
-      'sourceLabel',
-      'ts'
+      ...CODEGEN_PROVENANCE_OPTIONS_DEF.required
     ],
     'type': 'object'
   } as const satisfies JSONSchema;

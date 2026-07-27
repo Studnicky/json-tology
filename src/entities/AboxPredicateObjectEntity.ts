@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { RdfTermKindEntity } from './RdfTermKindEntity.js';
 
 /** A (predicate IRI, object IRI-or-literal-value) pair stored in the bySubject index. */
 export namespace AboxPredicateObjectEntity {
@@ -34,6 +35,6 @@ export namespace AboxPredicateObjectEntity {
 
     return typeof value.object === 'string'
       && typeof value.predicate === 'string'
-      && (value.objectTermType === 'BlankNode' || value.objectTermType === 'Literal' || value.objectTermType === 'NamedNode');
+      && RdfTermKindEntity.validate(value.objectTermType);
   }
 }

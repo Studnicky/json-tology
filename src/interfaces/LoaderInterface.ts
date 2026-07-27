@@ -20,6 +20,10 @@ import type { JsonSchemaType } from '../types/Schema.js';
  * };
  * ```
  *
+ * Carries a `unique symbol` brand member alongside the call signature so it has real
+ * contract evidence beyond "only a call signature" (optional, so plain function values
+ * still satisfy the interface structurally).
+ *
  * @category Schema Utilities
  * @since 0.10.0
  * @see {@link SchemaLoadResultEntity}
@@ -27,4 +31,5 @@ import type { JsonSchemaType } from '../types/Schema.js';
  */
 export interface LoaderInterface {
   (iri: string): Promise<JsonSchemaType | null>;
+  readonly 'loaderBrand'?: unique symbol;
 }

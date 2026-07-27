@@ -1,18 +1,17 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { SCHEMA_OUTPUT_OPTIONS_DEF } from '../constants/CLI_OPTION_DEFS.js';
 
 /** @internal — CLI visualization option shape; consumed only by the viz subpath, not the public package surface. */
 export namespace VizOptionsEntity {
   export const Schema = {
     'properties': {
       'noOpen': { 'type': 'boolean' },
-      'output': { 'type': 'string' },
-      'schema': { 'type': 'string' }
+      ...SCHEMA_OUTPUT_OPTIONS_DEF.properties
     },
     'required': [
       'noOpen',
-      'output',
-      'schema'
+      ...SCHEMA_OUTPUT_OPTIONS_DEF.required
     ],
     'type': 'object'
   } as const satisfies JSONSchema;

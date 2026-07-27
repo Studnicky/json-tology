@@ -1,5 +1,5 @@
 import type { JsonSchemaType } from '../../types/Schema.js';
-import type { PredicateForType } from '../../types/PredicateForType.js';
+import type { PredicateForInterface } from '../../interfaces/PredicateForInterface.js';
 import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import { DataType } from '../data/DataType.js';
 import { BaseError } from '../../errors/BaseError.js';
@@ -109,7 +109,7 @@ class PredicateResolutionStep {
    * Wraps callback errors as `GraphError` with code `INVALID_PREDICATE_IRI`.
    */
   static viaCallback(
-    predicateFor: PredicateForType | undefined,
+    predicateFor: PredicateForInterface | undefined,
     classId: string,
     propertyName: string
   ): string | undefined {
@@ -166,7 +166,7 @@ export const PredicateResolver = {
   forConfig(config: {
     'baseIri': string;
     'enableCanonicalPredicates': boolean | undefined;
-    'predicateFor': PredicateForType | undefined;
+    'predicateFor': PredicateForInterface | undefined;
   }): PredicateResolverInterface {
     return (context: { readonly 'classId': string;
       readonly 'propertyName': string;
@@ -196,7 +196,7 @@ export const PredicateResolver = {
     'baseIri': string;
     'classId': string;
     'enableCanonicalPredicates': boolean | undefined;
-    'predicateFor': PredicateForType | undefined;
+    'predicateFor': PredicateForInterface | undefined;
     'propertyName': string;
     'propertySchema': JsonSchemaType;
   }): string {

@@ -176,16 +176,7 @@ export class Individuals {
       if (iriB === null || iriA === iriB || iriA.startsWith('_:') || iriB.startsWith('_:')) {
         continue;
       }
-      const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
-
-      if (seenSameAs.has(pairKey)) {
-        continue;
-      }
-      seenSameAs.add(pairKey);
-      sameAs.push([
-        iriA,
-        iriB
-      ]);
+      Individuals.recordUniquePair(seenSameAs, sameAs, iriA, iriB);
     }
 
     // ---- owl:differentFrom — pairs flow to differentFrom array --------------
@@ -202,16 +193,7 @@ export class Individuals {
       if (iriB === null || iriA.startsWith('_:') || iriB.startsWith('_:')) {
         continue;
       }
-      const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
-
-      if (seenDifferentFrom.has(pairKey)) {
-        continue;
-      }
-      seenDifferentFrom.add(pairKey);
-      differentFrom.push([
-        iriA,
-        iriB
-      ]);
+      Individuals.recordUniquePair(seenDifferentFrom, differentFrom, iriA, iriB);
     }
 
     // ---- owl:AllDifferent + owl:distinctMembers (RDF list) ------------------
@@ -230,14 +212,7 @@ export class Individuals {
         }
 
         const listHead = ImportRelation.targetValue(dmRelation);
-        const memberIris: string[] = [];
-
-        for (const item of context.graph.collectList(listHead)) {
-          if (item.termType === 'NamedNode') {
-            memberIris.push(item.target);
-          }
-        }
-
+        const memberIris = ImportRelation.collectNamedNodeIris(context.graph, listHead);
         const memberCount = memberIris.length;
 
         for (let i = 0; i < memberCount; i++) {
@@ -249,16 +224,7 @@ export class Individuals {
               continue;
             }
 
-            const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
-
-            if (seenDifferentFrom.has(pairKey)) {
-              continue;
-            }
-            seenDifferentFrom.add(pairKey);
-            differentFrom.push([
-              iriA,
-              iriB
-            ]);
+            Individuals.recordUniquePair(seenDifferentFrom, differentFrom, iriA, iriB);
           }
         }
       }
@@ -322,13 +288,7 @@ export class Individuals {
       }
 
       const listHead = ImportRelation.targetValue(relation);
-      const propertyIris: string[] = [];
-
-      for (const item of context.graph.collectList(listHead)) {
-        if (item.termType === 'NamedNode') {
-          propertyIris.push(item.target);
-        }
-      }
+      const propertyIris = ImportRelation.collectNamedNodeIris(context.graph, listHead);
 
       if (propertyIris.length === 0) {
         context.reportUnsupported('owl:hasKey', classIri);
@@ -340,11 +300,9 @@ export class Individuals {
         'schemaId': classIri
       });
 
-      const existing = schemaDeltas.get(classIri) ?? {};
-      const existingKeys = existing['jt:hasKey'] ?? [];
+      const existingKeys = schemaDeltas.get(classIri)?.['jt:hasKey'] ?? [];
 
-      schemaDeltas.set(classIri, {
-        ...existing,
+      ImportRelation.mergeSchemaDelta(schemaDeltas, classIri, {
         'jt:hasKey': [
           ...existingKeys,
           propertyIris
@@ -456,18 +414,13 @@ export class Individuals {
       if (propertyValue === undefined) {
         return null;
       }
+      const violation = `owl:NegativePropertyAssertion violation: <${sourceIri}> must not have <${propertyIri}> = ${JSON.stringify(assertionValue)}`;
+
       if (Array.isArray(propertyValue)) {
-        if ((propertyValue as unknown[]).includes(assertionValue)) {
-          return `owl:NegativePropertyAssertion violation: <${sourceIri}> must not have <${propertyIri}> = ${JSON.stringify(assertionValue)}`;
-        }
-
-        return null;
-      }
-      if (propertyValue === assertionValue) {
-        return `owl:NegativePropertyAssertion violation: <${sourceIri}> must not have <${propertyIri}> = ${JSON.stringify(assertionValue)}`;
+        return (propertyValue as unknown[]).includes(assertionValue) ? violation : null;
       }
 
-      return null;
+      return propertyValue === assertionValue ? violation : null;
     };
 
     return {
@@ -483,6 +436,31 @@ export class Individuals {
     const result = set.has(relation.predicate);
 
     return result;
+  }
+
+  /**
+   * Record `[iriA, iriB]` in `pairs` under a canonical (order-independent) key,
+   * skipping if that logical pair has already been recorded. Shared by
+   * owl:sameAs, owl:differentFrom, and owl:AllDifferent + distinctMembers,
+   * which each emit unordered individual pairs that may appear in both
+   * directions or across overlapping sources.
+   */
+  private static recordUniquePair(
+    seen: Set<string>,
+    pairs: Array<[string, string]>,
+    iriA: string,
+    iriB: string
+  ): void {
+    const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
+
+    if (seen.has(pairKey)) {
+      return;
+    }
+    seen.add(pairKey);
+    pairs.push([
+      iriA,
+      iriB
+    ]);
   }
 
   /**

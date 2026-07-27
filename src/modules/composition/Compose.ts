@@ -7,15 +7,15 @@
  */
 
 import type {
-  AnnotatedEdgeSchemaType,
   ComplementOfSchemaType,
-  DiscriminatedUnionSchemaType,
   DisjointWithSchemaType,
-  IntersectionSchemaType,
   OmitSchemaType,
   PickSchemaType,
   SubClassOfSchemaType
 } from '../../types/Compose.js';
+import type { AnnotatedEdgeSchemaInterface } from '../../interfaces/AnnotatedEdgeSchemaInterface.js';
+import type { IntersectionSchemaInterface } from '../../interfaces/IntersectionSchemaInterface.js';
+import type { DiscriminatedUnionSchemaInterface } from '../../interfaces/DiscriminatedUnionSchemaInterface.js';
 import type {
   ExtendSchemaType,
   ExtractPropertiesType,
@@ -113,7 +113,7 @@ export class Compose {
     readonly 'annotations': TAnnotations;
     readonly 'predicate': TPredicate;
     readonly 'targetRef': TTargetReference;
-  }): AnnotatedEdgeSchemaType<TPredicate, TTargetReference, TAnnotations> {
+  }): AnnotatedEdgeSchemaInterface<TPredicate, TTargetReference, TAnnotations> {
     return {
       'jt:annotatedEdge': {
         'annotations': options.annotations,
@@ -309,7 +309,7 @@ export class Compose {
     discriminatorProperty: TDiscriminator,
     variants: TVariants & ValidateDiscriminatedVariantsType<TVariants, TDiscriminator>,
     newId: TId
-  ): DiscriminatedUnionSchemaType<TDiscriminator, TVariants, TId> {
+  ): DiscriminatedUnionSchemaInterface<TDiscriminator, TVariants, TId> {
     return {
       '$id': newId,
       'discriminator': { 'propertyName': discriminatorProperty },
@@ -513,7 +513,7 @@ export class Compose {
   >(
     schemas: TSchemas,
     newId: TId & ValidateIntersectionIdType<TSchemas, TId>
-  ): IntersectionSchemaType<TSchemas, TId> {
+  ): IntersectionSchemaInterface<TSchemas, TId> {
     return {
       '$id': newId,
       'allOf': schemas

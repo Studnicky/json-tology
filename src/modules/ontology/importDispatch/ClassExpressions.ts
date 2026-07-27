@@ -94,59 +94,38 @@ const MAXIMUM_BNODE_DEPTH = 20;
  */
 export class ClassExpressions {
   /**
-   * Apply `owl:disjointUnionOf` relations for a single class subject.
+   * Resolve list members for every relation on `subjectId` matching
+   * `predicates`, merging `buildPatch(members)` into schemaDeltas for each
+   * non-empty member list. Shared by the disjointUnionOf and intersectionOf
+   * arms, which differ only in predicate set and patch shape.
+   *
+   * Returns whether any relation matched `predicates` at all (used by callers
+   * that branch on presence, independent of whether members resolved).
    */
-  private static applyDisjointUnionOf(subjectId: string, context: ClassExprContextInterface): boolean {
-    const disjointUnion = ImportRelation.byPredicate(context.graph, subjectId, DISJOINT_UNION_OF_IRIS);
-
-    for (const duq of disjointUnion) {
-      const members = ClassExpressions.resolveListMembers({
-        'allClassIris': context.allClassIris,
-        'depth': 0,
-        'graph': context.graph,
-        'listHead': ImportRelation.targetValue(duq)
-      });
-
-      if (members.length > 0) {
-        const existing = context.schemaDeltas.get(subjectId) ?? {};
-
-        context.schemaDeltas.set(subjectId, {
-          ...existing,
-          'oneOf': members
-        });
-      }
-    }
-
-    return disjointUnion.length > 0;
-  }
-
-  /**
-   * Apply `owl:intersectionOf` relations for a single class subject.
-   */
-  private static applyIntersectionOf(
+  private static applyMemberListPatch(
     subjectId: string,
-    context: ClassExprContextInterface
-  ): void {
-    const intersection = ImportRelation.byPredicate(context.graph, subjectId, INTERSECTION_OF_IRIS);
+    context: ClassExprContextInterface,
+    predicates: ReadonlySet<string>,
+    buildPatch: (members: JsonSchemaDocumentObjectType[]) => JsonSchemaDocumentObjectType
+  ): boolean {
+    const relations = ImportRelation.byPredicate(context.graph, subjectId, predicates);
 
-    for (const iq of intersection) {
+    for (const rel of relations) {
       const members = ClassExpressions.resolveListMembers({
         'allClassIris': context.allClassIris,
         'depth': 0,
         'graph': context.graph,
-        'listHead': ImportRelation.targetValue(iq)
+        'listHead': ImportRelation.targetValue(rel)
       });
 
       if (members.length > 0) {
-        const existing = context.schemaDeltas.get(subjectId) ?? {};
-
-        context.schemaDeltas.set(subjectId, {
-          ...existing,
-          'allOf': members
-        });
+        ImportRelation.mergeSchemaDelta(context.schemaDeltas, subjectId, buildPatch(members));
       }
     }
+
+    return relations.length > 0;
   }
+
 
   /**
    * Apply `owl:oneOf` (enum) relations for a single class subject.
@@ -159,12 +138,7 @@ export class ClassExpressions {
       const enumValues = ClassExpressions.extractEnumValues(ImportRelation.targetValue(oq), context.graph);
 
       if (enumValues.length > 0) {
-        const existing = context.schemaDeltas.get(subjectId) ?? {};
-
-        context.schemaDeltas.set(subjectId, {
-          ...existing,
-          'enum': enumValues
-        });
+        ImportRelation.mergeSchemaDelta(context.schemaDeltas, subjectId, { 'enum': enumValues });
       }
     }
   }
@@ -195,12 +169,7 @@ export class ClassExpressions {
       });
 
       if (members.length > 0) {
-        const existing = context.schemaDeltas.get(subjectId) ?? {};
-
-        context.schemaDeltas.set(subjectId, {
-          ...existing,
-          'oneOf': members
-        });
+        ImportRelation.mergeSchemaDelta(context.schemaDeltas, subjectId, { 'oneOf': members });
       }
     }
 
@@ -276,40 +245,21 @@ export class ClassExpressions {
         continue;
       }
 
-      ClassExpressions.applyIntersectionOf(subjectId, expressionContext);
+      ClassExpressions.applyMemberListPatch(subjectId, expressionContext, INTERSECTION_OF_IRIS, (members: JsonSchemaDocumentObjectType[]): JsonSchemaDocumentObjectType => {
+        return { 'allOf': members };
+      });
 
       const hasUnion = ClassExpressions.applyUnionOf(subjectId, expressionContext);
-      const hasDisjointUnion = ClassExpressions.applyDisjointUnionOf(subjectId, expressionContext);
+      const hasDisjointUnion = ClassExpressions.applyMemberListPatch(subjectId, expressionContext, DISJOINT_UNION_OF_IRIS, (members: JsonSchemaDocumentObjectType[]): JsonSchemaDocumentObjectType => {
+        return { 'oneOf': members };
+      });
 
       if (!hasUnion && !hasDisjointUnion) {
         ClassExpressions.applyOneOf(subjectId, expressionContext);
       }
     }
 
-    if (schemaDeltas.size === 0) {
-      return ClassExpressions.emptyFragment();
-    }
-
-    return {
-      'characteristics': [],
-      'differentFrom': [],
-      'individuals': [],
-      'invariants': [],
-      'sameAs': [],
-      schemaDeltas
-    };
-  }
-
-  /** Return an empty OwlImportFragmentInterface with all buckets initialised. */
-  private static emptyFragment(): OwlImportFragmentInterface {
-    return {
-      'characteristics': [],
-      'differentFrom': [],
-      'individuals': [],
-      'invariants': [],
-      'sameAs': [],
-      'schemaDeltas': new Map()
-    };
+    return ImportRelation.buildFragment(schemaDeltas);
   }
 
   /**

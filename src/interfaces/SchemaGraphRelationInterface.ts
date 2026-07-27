@@ -3,7 +3,7 @@ import type {
   RelationPredicateType, RelationStructureType
 } from '../types/SchemaGraph.js';
 import type { StringValueEntity } from '../entities/StringValueEntity.js';
-import type { RdfTermTypeEntity } from '../entities/RdfTermTypeEntity.js';
+import type { RdfTermKindEntity } from '../entities/RdfTermKindEntity.js';
 
 /**
  * A directed edge in the canonical schema graph connecting a source node to a
@@ -65,5 +65,5 @@ export interface SchemaGraphRelationInterface {
    * the quad-backed graph during construction; left undefined by the
    * forward-projection graph (whose targets are always graph nodes or IRIs).
    */
-  'termType'?: RdfTermTypeEntity.Type;
+  'termType'?: RdfTermKindEntity.Type;
 }

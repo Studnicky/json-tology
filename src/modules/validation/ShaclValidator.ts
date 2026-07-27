@@ -66,27 +66,34 @@ class Indexes {
         continue;
       }
 
-      const subjectId = quad.subject.value;
-      let pmap = index.get(subjectId);
-
-      if (pmap === undefined) {
-        pmap = new Map();
-        index.set(subjectId, pmap);
-      }
-
-      const predId = quad.predicate.value;
-      let datatypeValues = pmap.get(predId);
-
-      if (datatypeValues === undefined) {
-        datatypeValues = [];
-        pmap.set(predId, datatypeValues);
-      }
-
-      // Object is guaranteed Literal here (non-Literal cases continued above)
-      datatypeValues.push(quad.object.datatype.value);
+      Indexes.push(index, quad.subject.value, quad.predicate.value, quad.object.datatype.value);
     }
 
     return index;
+  }
+
+  /**
+   * Insert `value` into a subject → predicate → value[] index, creating the
+   * nested map/array as needed. Shared get-or-create-then-push plumbing for
+   * {@link datatype} and {@link subject}, which differ only in which value
+   * they extract from each quad before pushing.
+   */
+  private static push(index: SubjectPredicateIndexInterface, subjectId: string, predicateId: string, value: string): void {
+    let pmap = index.get(subjectId);
+
+    if (pmap === undefined) {
+      pmap = new Map();
+      index.set(subjectId, pmap);
+    }
+
+    let values = pmap.get(predicateId);
+
+    if (values === undefined) {
+      values = [];
+      pmap.set(predicateId, values);
+    }
+
+    values.push(value);
   }
 
   /**
@@ -97,23 +104,7 @@ class Indexes {
     const index: SubjectPredicateIndexInterface = new Map();
 
     for (const quad of quads) {
-      const subjectId = quad.subject.value;
-      let pmap = index.get(subjectId);
-
-      if (pmap === undefined) {
-        pmap = new Map();
-        index.set(subjectId, pmap);
-      }
-
-      const predId = quad.predicate.value;
-      let objs = pmap.get(predId);
-
-      if (objs === undefined) {
-        objs = [];
-        pmap.set(predId, objs);
-      }
-
-      objs.push(quad.object.value);
+      Indexes.push(index, quad.subject.value, quad.predicate.value, quad.object.value);
     }
 
     return index;
@@ -479,27 +470,12 @@ class Shape {
       return [];
     }
 
-    const results: ShaclValidationResultEntity.Type[] = [];
+    return Shape.evaluatePerValueAndItem(argumentList, classArray, SH.ClassConstraintComponent, (value, requiredClass) => {
+      const types = argumentList.dataTypeIndex.get(value);
+      const hasClass = types?.has(requiredClass) ?? false;
 
-    for (const value of argumentList.values) {
-      for (const requiredClass of classArray) {
-        const types = argumentList.dataTypeIndex.get(value);
-        const hasClass = types?.has(requiredClass) ?? false;
-
-        if (!hasClass) {
-          results.push(Shape.violation(
-            argumentList.focusNode,
-            argumentList.path,
-            SH.ClassConstraintComponent,
-            `Value <${value}> does not have required rdf:type <${requiredClass}>.`,
-            value,
-            argumentList.shapeId
-          ));
-        }
-      }
-    }
-
-    return results;
+      return hasClass ? undefined : `Value <${value}> does not have required rdf:type <${requiredClass}>.`;
+    });
   }
 
   /**
@@ -660,26 +636,11 @@ class Shape {
       return [];
     }
 
-    const results: ShaclValidationResultEntity.Type[] = [];
+    return Shape.evaluatePerValueAndItem(argumentList, nodeArray, SH.NodeConstraintComponent, (value, nodeShapeIri) => {
+      const nested = Shape.validate(value, nodeShapeIri, context);
 
-    for (const value of argumentList.values) {
-      for (const nodeShapeIri of nodeArray) {
-        const nested = Shape.validate(value, nodeShapeIri, context);
-
-        if (nested.length > 0) {
-          results.push(Shape.violation(
-            argumentList.focusNode,
-            argumentList.path,
-            SH.NodeConstraintComponent,
-            `Value <${value}> does not conform to node shape <${nodeShapeIri}>.`,
-            value,
-            argumentList.shapeId
-          ));
-        }
-      }
-    }
-
-    return results;
+      return nested.length > 0 ? `Value <${value}> does not conform to node shape <${nodeShapeIri}>.` : undefined;
+    });
   }
 
   /**
@@ -785,38 +746,15 @@ class Shape {
       return [];
     }
 
-    const results: ShaclValidationResultEntity.Type[] = [];
+    return Shape.evaluatePerValueAndItem(argumentList, patternArray, SH.PatternConstraintComponent, (value, pattern) => {
+      const matches = Shape.testPatternConstraint(pattern, value);
 
-    for (const value of argumentList.values) {
-      for (const pattern of patternArray) {
-        const matches = Shape.testPatternConstraint(pattern, value);
-
-        if (matches === undefined) {
-          results.push(Shape.violation(
-            argumentList.focusNode,
-            argumentList.path,
-            SH.PatternConstraintComponent,
-            `sh:pattern "${pattern}" is not a valid regular expression.`,
-            value,
-            argumentList.shapeId
-          ));
-          continue;
-        }
-
-        if (!matches) {
-          results.push(Shape.violation(
-            argumentList.focusNode,
-            argumentList.path,
-            SH.PatternConstraintComponent,
-            `Value "${value}" does not match pattern "${pattern}".`,
-            value,
-            argumentList.shapeId
-          ));
-        }
+      if (matches === undefined) {
+        return `sh:pattern "${pattern}" is not a valid regular expression.`;
       }
-    }
 
-    return results;
+      return matches ? undefined : `Value "${value}" does not match pattern "${pattern}".`;
+    });
   }
 
   /** Evaluate qualified value shape cardinality constraints. */
@@ -937,72 +875,40 @@ class Shape {
 
   /** Evaluate sh:maxExclusive constraint. */
   private static evaluateMaximumExclusive(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
-    const maximumArray = argumentList.constraints.get(SH.maxExclusive);
+    const result = Shape.evaluateRangeConstraint(
+      argumentList,
+      SH.maxExclusive,
+      SH.MaxExclusiveConstraintComponent,
+      (parsedNumber, maximum) => {
+        return parsedNumber >= maximum;
+      },
+      (value, maximumExclusiveValue) => {
+        const message = `Value ${value} must be less than sh:maxExclusive ${maximumExclusiveValue}.`;
 
-    if (maximumArray === undefined || maximumArray.length === 0) {
-      return [];
-    }
-
-    const maximumExclusiveValue = maximumArray.at(0);
-
-    if (maximumExclusiveValue === undefined) {
-      return [];
-    }
-
-    const maximum = Numeric.parse(maximumExclusiveValue);
-    const results: ShaclValidationResultEntity.Type[] = [];
-
-    for (const value of argumentList.values) {
-      const parsedNumber = Numeric.parse(value);
-
-      if (Number.isNaN(parsedNumber) || parsedNumber >= maximum) {
-        results.push(Shape.violation(
-          argumentList.focusNode,
-          argumentList.path,
-          SH.MaxExclusiveConstraintComponent,
-          `Value ${value} must be less than sh:maxExclusive ${maximumExclusiveValue}.`,
-          value,
-          argumentList.shapeId
-        ));
+        return message;
       }
-    }
+    );
 
-    return results;
+    return result;
   }
 
   /** Evaluate sh:maxInclusive constraint. */
   private static evaluateMaximumInclusive(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
-    const maximumArray = argumentList.constraints.get(SH.maxInclusive);
+    const result = Shape.evaluateRangeConstraint(
+      argumentList,
+      SH.maxInclusive,
+      SH.MaxInclusiveConstraintComponent,
+      (parsedNumber, maximum) => {
+        return parsedNumber > maximum;
+      },
+      (value, maximumInclusiveValue) => {
+        const message = `Value ${value} exceeds sh:maxInclusive ${maximumInclusiveValue}.`;
 
-    if (maximumArray === undefined || maximumArray.length === 0) {
-      return [];
-    }
-
-    const maximumInclusiveValue = maximumArray.at(0);
-
-    if (maximumInclusiveValue === undefined) {
-      return [];
-    }
-
-    const maximum = Numeric.parse(maximumInclusiveValue);
-    const results: ShaclValidationResultEntity.Type[] = [];
-
-    for (const value of argumentList.values) {
-      const parsedNumber = Numeric.parse(value);
-
-      if (Number.isNaN(parsedNumber) || parsedNumber > maximum) {
-        results.push(Shape.violation(
-          argumentList.focusNode,
-          argumentList.path,
-          SH.MaxInclusiveConstraintComponent,
-          `Value ${value} exceeds sh:maxInclusive ${maximumInclusiveValue}.`,
-          value,
-          argumentList.shapeId
-        ));
+        return message;
       }
-    }
+    );
 
-    return results;
+    return result;
   }
 
   /** Evaluate sh:maxLength constraint. */
@@ -1070,72 +976,40 @@ class Shape {
 
   /** Evaluate sh:minExclusive constraint. */
   private static evaluateMinimumExclusive(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
-    const minimumArray = argumentList.constraints.get(SH.minExclusive);
+    const result = Shape.evaluateRangeConstraint(
+      argumentList,
+      SH.minExclusive,
+      SH.MinExclusiveConstraintComponent,
+      (parsedNumber, minimum) => {
+        return parsedNumber <= minimum;
+      },
+      (value, minimumExclusiveValue) => {
+        const message = `Value ${value} must be greater than sh:minExclusive ${minimumExclusiveValue}.`;
 
-    if (minimumArray === undefined || minimumArray.length === 0) {
-      return [];
-    }
-
-    const minimumExclusiveValue = minimumArray.at(0);
-
-    if (minimumExclusiveValue === undefined) {
-      return [];
-    }
-
-    const minimum = Numeric.parse(minimumExclusiveValue);
-    const results: ShaclValidationResultEntity.Type[] = [];
-
-    for (const value of argumentList.values) {
-      const parsedNumber = Numeric.parse(value);
-
-      if (Number.isNaN(parsedNumber) || parsedNumber <= minimum) {
-        results.push(Shape.violation(
-          argumentList.focusNode,
-          argumentList.path,
-          SH.MinExclusiveConstraintComponent,
-          `Value ${value} must be greater than sh:minExclusive ${minimumExclusiveValue}.`,
-          value,
-          argumentList.shapeId
-        ));
+        return message;
       }
-    }
+    );
 
-    return results;
+    return result;
   }
 
   /** Evaluate sh:minInclusive constraint. */
   private static evaluateMinimumInclusive(argumentList: EvalArgumentsInterface): ShaclValidationResultEntity.Type[] {
-    const minimumArray = argumentList.constraints.get(SH.minInclusive);
+    const result = Shape.evaluateRangeConstraint(
+      argumentList,
+      SH.minInclusive,
+      SH.MinInclusiveConstraintComponent,
+      (parsedNumber, minimum) => {
+        return parsedNumber < minimum;
+      },
+      (value, minimumInclusiveValue) => {
+        const message = `Value ${value} is less than sh:minInclusive ${minimumInclusiveValue}.`;
 
-    if (minimumArray === undefined || minimumArray.length === 0) {
-      return [];
-    }
-
-    const minimumInclusiveValue = minimumArray.at(0);
-
-    if (minimumInclusiveValue === undefined) {
-      return [];
-    }
-
-    const minimum = Numeric.parse(minimumInclusiveValue);
-    const results: ShaclValidationResultEntity.Type[] = [];
-
-    for (const value of argumentList.values) {
-      const parsedNumber = Numeric.parse(value);
-
-      if (Number.isNaN(parsedNumber) || parsedNumber < minimum) {
-        results.push(Shape.violation(
-          argumentList.focusNode,
-          argumentList.path,
-          SH.MinInclusiveConstraintComponent,
-          `Value ${value} is less than sh:minInclusive ${minimumInclusiveValue}.`,
-          value,
-          argumentList.shapeId
-        ));
+        return message;
       }
-    }
+    );
 
-    return results;
+    return result;
   }
 
   /** Evaluate sh:minLength constraint. */
@@ -1162,6 +1036,85 @@ class Shape {
           argumentList.path,
           SH.MinLengthConstraintComponent,
           `Value "${value}" has length ${value.length} which is less than sh:minLength ${minimum}.`,
+          value,
+          argumentList.shapeId
+        ));
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Shared double-loop evaluator: for each value node and each constraint-list
+   * item, `check` returns a violation message (or `undefined` when it
+   * conforms). Used by sh:class, sh:node, and sh:pattern, which all iterate
+   * values × a constraint array and differ only in what `check` does.
+   */
+  private static evaluatePerValueAndItem(
+    argumentList: EvalArgumentsInterface,
+    items: string[],
+    component: string,
+    check: (value: string, item: string) => string | undefined
+  ): ShaclValidationResultEntity.Type[] {
+    const results: ShaclValidationResultEntity.Type[] = [];
+
+    for (const value of argumentList.values) {
+      for (const item of items) {
+        const violationMessage = check(value, item);
+
+        if (violationMessage !== undefined) {
+          results.push(Shape.violation(
+            argumentList.focusNode,
+            argumentList.path,
+            component,
+            violationMessage,
+            value,
+            argumentList.shapeId
+          ));
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Shared evaluator for the four numeric range constraints (sh:minExclusive,
+   * sh:maxExclusive, sh:minInclusive, sh:maxInclusive), which differ only in
+   * the constraint/component IRIs, the failing comparison, and the message.
+   */
+  private static evaluateRangeConstraint(
+    argumentList: EvalArgumentsInterface,
+    constraintPredicate: string,
+    component: string,
+    fails: (parsedValue: number, boundary: number) => boolean,
+    message: (value: string, boundaryValue: string) => string
+  ): ShaclValidationResultEntity.Type[] {
+    const boundaryArray = argumentList.constraints.get(constraintPredicate);
+
+    if (boundaryArray === undefined || boundaryArray.length === 0) {
+      return [];
+    }
+
+    const boundaryValue = boundaryArray.at(0);
+
+    if (boundaryValue === undefined) {
+      return [];
+    }
+
+    const boundary = Numeric.parse(boundaryValue);
+    const results: ShaclValidationResultEntity.Type[] = [];
+
+    for (const value of argumentList.values) {
+      const parsedNumber = Numeric.parse(value);
+
+      if (Number.isNaN(parsedNumber) || fails(parsedNumber, boundary)) {
+        results.push(Shape.violation(
+          argumentList.focusNode,
+          argumentList.path,
+          component,
+          message(value, boundaryValue),
           value,
           argumentList.shapeId
         ));

@@ -15,6 +15,60 @@ import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 
 /**
+ * ReferenceRecursion — shared `$ref`/`$dynamicRef` resolution step used by both
+ * {@link ImplicitDefaultValue} and {@link ZeroValueSynthesis}. Both classes recurse
+ * into a resolved reference target the same way; only the recursive `create`
+ * they call back into differs.
+ */
+class ReferenceRecursion {
+  /**
+   * If `sem` declares `$ref` or `$dynamicRef`, resolve it and recurse via `continuation`.
+   * Returns `handled: false` when neither is present, signalling the caller to fall
+   * through to its own type-specific resolution.
+   */
+  static resolve(
+    sem: SchemaGraphSemanticsInterface,
+    state: DefaultResolutionStateInterface,
+    depth: number,
+    continuation: (state: DefaultResolutionStateInterface, node: SchemaGraphNodeInterface, depth: number) => unknown
+  ): { 'handled': boolean;
+    'value': unknown } {
+    if (typeof sem.ref === 'string') {
+      const {
+        'graph': rGraph, 'node': rNode
+      } = state.context.resolveReference(sem.ref, state.graph);
+
+      return {
+        'handled': true,
+        'value': continuation({
+          ...state,
+          'graph': rGraph
+        }, rNode, depth + 1)
+      };
+    }
+
+    if (typeof sem.dynamicRef === 'string') {
+      const {
+        'graph': rGraph, 'node': rNode
+      } = state.context.resolveDynamicReference(sem.dynamicRef, state.graph, state.dynamicScope);
+
+      return {
+        'handled': true,
+        'value': continuation({
+          ...state,
+          'graph': rGraph
+        }, rNode, depth + 1)
+      };
+    }
+
+    return {
+      'handled': false,
+      'value': undefined
+    };
+  }
+}
+
+/**
  * ImplicitDefaultValue — recursively resolves a node's implicit default value,
  * including the object-tree case where the default is assembled from each
  * property's own implicit default. The two resolution steps are mutually
@@ -66,31 +120,15 @@ class ImplicitDefaultValue {
 
     const sem = state.graph.semantics(node);
     const defaultValue = sem.hasDefault ? sem.defaultValue : undefined;
-    const reference = sem.ref;
-    const dynamicReference = sem.dynamicRef;
 
     if (defaultValue !== undefined) {
       return GraphEngineSupport.cloneDefault(defaultValue);
     }
-    if (typeof reference === 'string') {
-      const {
-        'graph': rGraph, 'node': rNode
-      } = state.context.resolveReference(reference, state.graph);
 
-      return ImplicitDefaultValue.create({
-        ...state,
-        'graph': rGraph
-      }, rNode, depth + 1);
-    }
-    if (typeof dynamicReference === 'string') {
-      const {
-        'graph': rGraph, 'node': rNode
-      } = state.context.resolveDynamicReference(dynamicReference, state.graph, state.dynamicScope);
+    const referenceResult = ReferenceRecursion.resolve(sem, state, depth, ImplicitDefaultValue.create);
 
-      return ImplicitDefaultValue.create({
-        ...state,
-        'graph': rGraph
-      }, rNode, depth + 1);
+    if (referenceResult.handled) {
+      return referenceResult.value;
     }
 
     const hasProperties = sem.properties.size > 0;
@@ -173,25 +211,10 @@ class ZeroValueSynthesis {
       return sem.enumValues[0];
     }
 
-    if (typeof sem.ref === 'string') {
-      const {
-        'graph': rGraph, 'node': rNode
-      } = state.context.resolveReference(sem.ref, state.graph);
+    const referenceResult = ReferenceRecursion.resolve(sem, state, depth, ZeroValueSynthesis.create);
 
-      return ZeroValueSynthesis.create({
-        ...state,
-        'graph': rGraph
-      }, rNode, depth + 1);
-    }
-    if (typeof sem.dynamicRef === 'string') {
-      const {
-        'graph': rGraph, 'node': rNode
-      } = state.context.resolveDynamicReference(sem.dynamicRef, state.graph, state.dynamicScope);
-
-      return ZeroValueSynthesis.create({
-        ...state,
-        'graph': rGraph
-      }, rNode, depth + 1);
+    if (referenceResult.handled) {
+      return referenceResult.value;
     }
 
     const types = sem.schemaTypes;

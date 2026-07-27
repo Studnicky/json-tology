@@ -428,7 +428,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
   private buildValidateWithErrorsExecution(plan: CompiledNodeValidationPlanInterface): ValidateWithErrorsFunctionInterface {
     const {
-      allOfValidators, anyOfValidators, complementValidator, dynamicScopeEntry,
+      allOfValidators, anyOfValidators, complementValidator,
       ifValidator, oneOfValidators,
       rdfsRangeValidator, unevaluatedItemsValidator, unevaluatedPropertiesValidator
     } = plan;
@@ -444,79 +444,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       || unevaluatedItemsValidator !== undefined
       || rdfsRangeValidator !== undefined;
 
-    if (!hasComposition) {
-      return (
-        value: unknown,
-        path: string,
-        context: ExecContextInterface
-      ): ValidateWithErrorsResultEntity.Type => {
-        if (context.depth >= context.maxDepth) {
-          return {
-            'valid': true,
-            value
-          };
-        }
-        // Mutate depth on the shared context — no allocation. Restore in finally so the
-        // depth is correct even if executeValidateSimple throws.
-        context.depth++;
-
-        // Push $dynamicAnchor into scope only when this node declares one (rare).
-        // Save and restore the array reference; the common path skips this entirely.
-        const savedDynamicScope = dynamicScopeEntry === undefined ? undefined : context.dynamicScope;
-
-        if (dynamicScopeEntry !== undefined) {
-          context.dynamicScope = [
-            ...context.dynamicScope,
-            dynamicScopeEntry
-          ];
-        }
-
-        try {
-          return this.executeValidateSimple(plan, value, path, context);
-        } finally {
-          context.depth--;
-
-          if (savedDynamicScope !== undefined) {
-            context.dynamicScope = savedDynamicScope;
-          }
-        }
-      };
-    }
-
-    return (
-      value: unknown,
-      path: string,
-      context: ExecContextInterface
-    ): ValidateWithErrorsResultEntity.Type => {
-      if (context.depth >= context.maxDepth) {
-        return {
-          'valid': true,
-          value
-        };
-      }
-      // Mutate depth on the shared context — no allocation. Restore in finally.
-      context.depth++;
-
-      // Push $dynamicAnchor into scope only when this node declares one (rare).
-      const savedDynamicScope = dynamicScopeEntry === undefined ? undefined : context.dynamicScope;
-
-      if (dynamicScopeEntry !== undefined) {
-        context.dynamicScope = [
-          ...context.dynamicScope,
-          dynamicScopeEntry
-        ];
-      }
-
-      try {
-        return this.executeValidateComposed(plan, value, path, context);
-      } finally {
-        context.depth--;
-
-        if (savedDynamicScope !== undefined) {
-          context.dynamicScope = savedDynamicScope;
-        }
-      }
-    };
+    return this.wrapDepthGuard(plan, hasComposition);
   }
 
   // ---------------------------------------------------------------------------
@@ -1939,6 +1867,56 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
 
     return valid ? VS_VALID : VS_INVALID;
+  }
+
+  /**
+   * Shared depth guard and `$dynamicAnchor` scope push/pop wrapping every compiled node
+   * validator, regardless of whether it executes the simple or composed path. Mutates
+   * `context.depth`/`context.dynamicScope` in place — no allocation — and restores both
+   * in `finally` so they are correct even if `executor` throws.
+   */
+  private wrapDepthGuard(
+    plan: CompiledNodeValidationPlanInterface,
+    composed: boolean
+  ): ValidateWithErrorsFunctionInterface {
+    const { dynamicScopeEntry } = plan;
+
+    return (
+      value: unknown,
+      path: string,
+      context: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
+      if (context.depth >= context.maxDepth) {
+        return {
+          'valid': true,
+          value
+        };
+      }
+      context.depth++;
+
+      // Push $dynamicAnchor into scope only when this node declares one (rare).
+      // Save and restore the array reference; the common path skips this entirely.
+      const savedDynamicScope = dynamicScopeEntry === undefined ? undefined : context.dynamicScope;
+
+      if (dynamicScopeEntry !== undefined) {
+        context.dynamicScope = [
+          ...context.dynamicScope,
+          dynamicScopeEntry
+        ];
+      }
+
+      try {
+        return composed
+          ? this.executeValidateComposed(plan, value, path, context)
+          : this.executeValidateSimple(plan, value, path, context);
+      } finally {
+        context.depth--;
+
+        if (savedDynamicScope !== undefined) {
+          context.dynamicScope = savedDynamicScope;
+        }
+      }
+    };
   }
 }
 

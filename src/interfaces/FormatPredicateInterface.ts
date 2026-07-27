@@ -7,9 +7,13 @@
  * narrow before passing. Returns `true` when the value satisfies the format and
  * `false` otherwise.
  *
+ * Carries a `unique symbol` brand member alongside the call signature so it has real
+ * contract evidence beyond "only a call signature" (optional, so plain function values
+ * still satisfy the interface structurally).
+ *
  * @example
  * ```ts
- * const isEmail: FormatPredicateType = (value: unknown) =>
+ * const isEmail: FormatPredicateInterface = (value: unknown) =>
  *   typeof value === 'string' && value.includes('@');
  * ```
  *
@@ -17,8 +21,7 @@
  * @since 0.1.0
  * @group Validation
  */
-// eslint rule conflict, no available fix: `@studnicky/type-alias-invariants` requires this
-// callable contract be declared as an `interface`, but an `interface` with only a call
-// signature then trips `@typescript-eslint/prefer-function-type`, which requires a `type`
-// function signature instead. No declaration form satisfies both rules simultaneously.
-export type FormatPredicateType = (value: unknown) => boolean;
+export interface FormatPredicateInterface {
+  (value: unknown): boolean;
+  readonly 'formatPredicateBrand'?: unique symbol;
+}

@@ -17,6 +17,10 @@ import type { ListBuildResultInterface } from '../../interfaces/ListBuildResultI
 import type { CollectStepResultInterface } from '../../interfaces/CollectStepResultInterface.js';
 import { RDF } from '../../constants/IRI.js';
 import { Terms } from './Terms.js';
+import { RdfTermKindEntity } from '../../entities/RdfTermKindEntity.js';
+import { GraphTermKindEntity } from '../../entities/GraphTermKindEntity.js';
+import { ResourceTermKindEntity } from '../../entities/ResourceTermKindEntity.js';
+import { NamedNodeKindEntity } from '../../entities/NamedNodeKindEntity.js';
 
 /**
  * RDF list utilities — build, traverse, and filter standard rdf:first/rdf:rest chains.
@@ -64,7 +68,7 @@ export class Lists {
    * @group Lists
    */
   static asQuadObject(rawObject: Quad['object']): QuadObjectType | undefined {
-    if (Lists.isValidQuadObjectTermType(rawObject.termType)) {
+    if (RdfTermKindEntity.validate(rawObject.termType)) {
       return rawObject as QuadObjectType;
     }
 
@@ -206,7 +210,7 @@ export class Lists {
       };
     }
 
-    const item: QuadObjectType | undefined = Lists.isValidQuadObjectTermType(firstQuad.object.termType)
+    const item: QuadObjectType | undefined = RdfTermKindEntity.validate(firstQuad.object.termType)
       ? firstQuad.object as QuadObjectType
       : undefined;
 
@@ -269,20 +273,6 @@ export class Lists {
     return quad.subject.equals(cursor) && Lists.isRdfRest(quad.predicate.value);
   }
 
-  private static isValidGraph(quad: Quad): boolean {
-    return quad.graph.termType === 'NamedNode'
-      || quad.graph.termType === 'BlankNode'
-      || quad.graph.termType === 'DefaultGraph';
-  }
-
-  private static isValidQuadObjectTermType(termType: string): boolean {
-    return termType === 'NamedNode' || termType === 'BlankNode' || termType === 'Literal';
-  }
-
-  private static isValidSubject(quad: Quad): boolean {
-    return quad.subject.termType === 'NamedNode' || quad.subject.termType === 'BlankNode';
-  }
-
   /**
    * Filter an external quad array to only include structurally valid quads.
    *
@@ -312,10 +302,10 @@ export class Lists {
 
     for (const quad of quads) {
       if (
-        Lists.isValidSubject(quad)
-        && quad.predicate.termType === 'NamedNode'
+        ResourceTermKindEntity.validate(quad.subject.termType)
+        && NamedNodeKindEntity.validate(quad.predicate.termType)
         && Lists.asQuadObject(quad.object) !== undefined
-        && Lists.isValidGraph(quad)
+        && GraphTermKindEntity.validate(quad.graph.termType)
       ) {
         result.push(quad);
       }

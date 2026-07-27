@@ -13,17 +13,10 @@ import type { OwlImportFragmentInterface } from './OwlImportFragmentInterface.js
  * deep-merges the returned fragments into the final `OwlImportResultInterface`.
  *
  * Authored as a call-signature interface rather than a function-type alias:
- * a bare function type is behavioral, not schema-derived data.
- *
- * @remarks
- * `@typescript-eslint/prefer-function-type` flags this as a call-signature-only
- * interface, but converting it to a type alias reintroduces the
- * `@studnicky/type-alias-invariants` / `folder-content-shape` violation this
- * shape exists to satisfy. `@studnicky/eslint-config`'s own `entitySuite`
- * disables `prefer-function-type` for exactly this reason (see its README);
- * the project's `eslint.config.mjs` re-enables it globally, which reintroduces
- * the contradiction for every callable interface in `src/interfaces/`. Left as
- * a documented exception pending a scoped config fix.
+ * a bare function type is behavioral, not schema-derived data. Carries a
+ * `unique symbol` brand member alongside the call signature so it has real
+ * contract evidence beyond "only a call signature" (optional, so plain
+ * function values still satisfy the interface structurally).
  *
  * @example
  * ```ts
@@ -39,4 +32,5 @@ import type { OwlImportFragmentInterface } from './OwlImportFragmentInterface.js
  */
 export interface DispatcherInterface {
   (quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface;
+  readonly 'dispatcherBrand'?: unique symbol;
 }

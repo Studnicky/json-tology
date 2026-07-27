@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { RdfJsTermEntity } from './RdfJsTermEntity.js';
 
 /**
  * JsonLdDatasetQuadEntity — shape of a single quad as emitted by `jsonld.toRDF()`.
@@ -29,26 +30,12 @@ export namespace JsonLdDatasetQuadEntity {
         'properties': {
           'datatype': { '$ref': '#/definitions/DatasetTerm' },
           'language': { 'type': 'string' },
-          'termType': { 'type': 'string' },
-          'value': { 'type': 'string' }
+          ...RdfJsTermEntity.Schema.properties
         },
-        'required': [
-          'termType',
-          'value'
-        ],
+        'required': RdfJsTermEntity.Schema.required,
         'type': 'object'
       },
-      'DatasetTerm': {
-        'properties': {
-          'termType': { 'type': 'string' },
-          'value': { 'type': 'string' }
-        },
-        'required': [
-          'termType',
-          'value'
-        ],
-        'type': 'object'
-      }
+      'DatasetTerm': RdfJsTermEntity.Schema
     },
     'properties': {
       'graph': { '$ref': '#/definitions/DatasetTerm' },
@@ -74,15 +61,9 @@ export namespace JsonLdDatasetQuadEntity {
 
     const value = candidate as Record<string, unknown>;
 
-    const isDatasetTerm = (term: unknown): boolean => {
-      return typeof term === 'object' && term !== null
-        && typeof (term as Record<string, unknown>).termType === 'string'
-        && typeof (term as Record<string, unknown>).value === 'string';
-    };
-
-    return isDatasetTerm(value.graph)
-      && isDatasetTerm(value.object)
-      && isDatasetTerm(value.predicate)
-      && isDatasetTerm(value.subject);
+    return RdfJsTermEntity.validate(value.graph)
+      && RdfJsTermEntity.validate(value.object)
+      && RdfJsTermEntity.validate(value.predicate)
+      && RdfJsTermEntity.validate(value.subject);
   }
 }

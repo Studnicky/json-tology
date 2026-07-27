@@ -21,6 +21,7 @@ import { SchemaIri } from './SchemaIri.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessorInterface.js';
 import type { JtConfigEntity } from '../../entities/JtConfigEntity.js';
+import { JtExtraEntity } from '../../entities/JtExtraEntity.js';
 import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
 import type { RawRestrictionDescriptorEntity } from '../../entities/RawRestrictionDescriptorEntity.js';
 import type { AnnotatedEdgeDescriptorEntity } from '../../entities/AnnotatedEdgeDescriptorEntity.js';
@@ -272,7 +273,7 @@ class SchemaFieldExtractor {
     if (typeof raw.frozen === 'boolean') {
       config.frozen = raw.frozen;
     }
-    if (raw.extra === 'allow' || raw.extra === 'forbid' || raw.extra === 'ignore') {
+    if (JtExtraEntity.validate(raw.extra)) {
       config.extra = raw.extra;
     }
 

@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { ProblemDetailsEntity } from './ProblemDetailsEntity.js';
 
 /**
  * Caller-supplied overrides accepted by `ValidationErrors.report()` — the
@@ -12,11 +13,14 @@ import type { InferType } from '../types/Schema.js';
  * @since 0.1.0
  */
 export namespace ProblemDetailsOverridesEntity {
+  const {
+    instance, status, title, type
+  } = ProblemDetailsEntity.Schema.properties;
   const properties = {
-    'instance': { 'type': 'string' },
-    'status': { 'type': 'number' },
-    'title': { 'type': 'string' },
-    'type': { 'type': 'string' }
+    instance,
+    status,
+    title,
+    type
   } as const;
 
   export const Schema = {

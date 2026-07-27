@@ -50,7 +50,7 @@ import type { ComputedExtensionBrandType } from './types/ComputedExtensionBrandT
 import type {
   SchemaReferencesMapType, UniqueSchemaIdsType
 } from './types/Registry.js';
-import type { PredicateForType } from './types/PredicateForType.js';
+import type { PredicateForInterface } from './interfaces/PredicateForInterface.js';
 import type { PredicateResolverInterface } from './interfaces/PredicateResolverInterface.js';
 import type { SchemaReferenceType } from './types/SchemaReferenceType.js';
 import type { SkolemizeFunctionInterface } from './interfaces/SkolemizeFunctionInterface.js';
@@ -810,7 +810,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   } = null;
   private readonly ontologySerializer: GraphOntologySerializer;
 
-  private readonly predicateFor: PredicateForType | undefined;
+  private readonly predicateFor: PredicateForInterface | undefined;
 
   private readonly predicateResolver: PredicateResolverInterface;
 

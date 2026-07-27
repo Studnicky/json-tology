@@ -9,7 +9,10 @@ import type { QuadInterface } from './QuadInterface.js';
  * `instantiate`).
  *
  * A callable signature, not schema-derived data — authored as an interface
- * with a call signature rather than a type alias.
+ * with a call signature rather than a type alias. Carries a `unique symbol`
+ * brand member alongside the call signature so it has real contract evidence
+ * beyond "only a call signature" (optional, so plain function values still
+ * satisfy the interface structurally).
  *
  * @example
  * ```ts
@@ -23,4 +26,5 @@ import type { QuadInterface } from './QuadInterface.js';
  */
 export interface AboxLiftSubjectFunctionInterface {
   (classId: string, quads: QuadInterface[]): unknown[];
+  readonly 'aboxLiftSubjectFunctionBrand'?: unique symbol;
 }

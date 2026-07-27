@@ -26,6 +26,7 @@ import type { RecordCharacteristicOptionsInterface } from '../../../interfaces/R
 import {
   OWL, RDF
 } from '../../../constants/IRI.js';
+import { ImportRelation } from './ImportRelation.js';
 
 // ---------------------------------------------------------------------------
 // OWL 2 IRI prefix for characteristic class URIs.
@@ -130,7 +131,7 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
  */
 export class Characteristics {
   public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
-    const fragment = Characteristics.emptyFragment();
+    const fragment = ImportRelation.emptyFragment();
     const seen = new Set<string>();
 
     for (const relation of context.graph.allRelations()) {
@@ -159,18 +160,6 @@ export class Characteristics {
     }
 
     return fragment;
-  }
-
-  /** Return an empty OwlImportFragmentInterface with all buckets initialised. */
-  private static emptyFragment(): OwlImportFragmentInterface {
-    return {
-      'characteristics': [],
-      'differentFrom': [],
-      'individuals': [],
-      'invariants': [],
-      'sameAs': [],
-      'schemaDeltas': new Map()
-    };
   }
 
   /**

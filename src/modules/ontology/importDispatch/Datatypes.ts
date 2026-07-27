@@ -21,7 +21,6 @@
  * preserved on relations and list items.
  */
 
-import type { ListItemEntity } from '../../../entities/ListItemEntity.js';
 import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../../interfaces/QuadInterface.js';
 import type { OwlImportContextInterface } from '../../../interfaces/OwlImportContextInterface.js';
@@ -30,7 +29,6 @@ import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterf
 import type { ExtractFacetOptionsInterface } from '../../../interfaces/ExtractFacetOptionsInterface.js';
 import type { ApplyRestrictionsOptionsInterface } from '../../../interfaces/ApplyRestrictionsOptionsInterface.js';
 import type { ApplyFacetRelationOptionsInterface } from '../../../interfaces/ApplyFacetRelationOptionsInterface.js';
-import { Terms } from '../../quads/Terms.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { XSD_FACETS } from '../../../constants/XSD_FACETS.js';
 import { XSD_TO_SCHEMA_TYPE } from '../../../constants/XSD_REVERSE_MAPS.js';
@@ -309,16 +307,6 @@ export class Datatypes {
     }
   }
 
-  /** Decode a Literal ListItemEntity.Type back to its typed JS value. */
-  private static decodeListItemLiteral(item: ListItemEntity.Type): unknown {
-    const literalTerm = Terms.literal(item.target, {
-      'datatype': Terms.iri(item.datatype ?? ''),
-      'language': item.language ?? ''
-    });
-
-    return Terms.decodeLiteral(literalTerm);
-  }
-
   public static dispatch(_quads: QuadInterface[], context: OwlImportContextInterface): OwlImportFragmentInterface {
     const graph = context.graph;
     const datatypeIris = new Set<string>();
@@ -335,7 +323,7 @@ export class Datatypes {
     }
 
     if (datatypeIris.size === 0) {
-      return Datatypes.emptyFragment();
+      return ImportRelation.emptyFragment();
     }
 
     const schemaDeltas = new Map<string, JsonSchemaDocumentObjectType>();
@@ -346,26 +334,7 @@ export class Datatypes {
       schemaDeltas.set(datatypeIri, delta);
     }
 
-    return {
-      'characteristics': [],
-      'differentFrom': [],
-      'individuals': [],
-      'invariants': [],
-      'sameAs': [],
-      schemaDeltas
-    };
-  }
-
-  /** Return an empty OwlImportFragmentInterface with all buckets initialised. */
-  private static emptyFragment(): OwlImportFragmentInterface {
-    return {
-      'characteristics': [],
-      'differentFrom': [],
-      'individuals': [],
-      'invariants': [],
-      'sameAs': [],
-      'schemaDeltas': new Map()
-    };
+    return ImportRelation.buildFragment(schemaDeltas);
   }
 
   /**
@@ -381,7 +350,7 @@ export class Datatypes {
 
     for (const item of items) {
       if (item.termType === 'Literal') {
-        values.push(Datatypes.decodeListItemLiteral(item));
+        values.push(ImportRelation.decodeListItem(item));
       } else if (item.termType === 'NamedNode') {
         values.push(item.target);
       }

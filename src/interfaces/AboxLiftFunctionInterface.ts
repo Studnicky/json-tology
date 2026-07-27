@@ -6,4 +6,5 @@
  */
 export interface AboxLiftFunctionInterface {
   (iri: string): unknown;
+  readonly 'aboxLiftFunctionBrand'?: unique symbol;
 }

@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { ValidationIssueEntity } from './ValidationIssueEntity.js';
 
 /**
  * JSON Schema for a single validation error produced by the graph engine.
@@ -8,7 +9,8 @@ import type { InferType } from '../types/Schema.js';
  * Describes one constraint violation found during validation or coercion.
  * Each error carries the `keyword` that triggered it (e.g. `'type'`, `'required'`),
  * a human-readable `message`, a `params` object with keyword-specific context,
- * and a JSON Pointer `path` to the failing value in the input document.
+ * and a JSON Pointer `path` to the failing value in the input document. Composes
+ * `ValidationIssueEntity`, adding a stable `$id` and per-field descriptions.
  *
  * @example
  * ```ts
@@ -28,43 +30,31 @@ export namespace ValidationErrorEntity {
     '$id': 'https://json-tology.dev/ValidationError',
     'properties': {
       'keyword': {
-        'description': 'Schema keyword that triggered the error',
-        'type': 'string'
+        ...ValidationIssueEntity.Schema.properties.keyword,
+        'description': 'Schema keyword that triggered the error'
       },
       'message': {
-        'description': 'Human-readable error message',
-        'type': 'string'
+        ...ValidationIssueEntity.Schema.properties.message,
+        'description': 'Human-readable error message'
       },
       'params': {
-        'description': 'Keyword-specific parameters',
-        'type': 'object'
+        ...ValidationIssueEntity.Schema.properties.params,
+        'description': 'Keyword-specific parameters'
       },
       'path': {
-        'description': 'JSON Pointer path to the failing value',
-        'type': 'string'
+        ...ValidationIssueEntity.Schema.properties.path,
+        'description': 'JSON Pointer path to the failing value'
       }
     },
-    'required': [
-      'keyword',
-      'message',
-      'params',
-      'path'
-    ],
-    'type': 'object'
+    'required': ValidationIssueEntity.Schema.required,
+    'type': ValidationIssueEntity.Schema.type
   } as const satisfies JSONSchema;
 
   export type Type = InferType<typeof Schema>;
 
   export function validate(candidate: unknown): candidate is Type {
-    if (typeof candidate !== 'object' || candidate === null) {
-      return false;
-    }
+    const result = ValidationIssueEntity.validate(candidate);
 
-    const value = candidate as Record<string, unknown>;
-
-    return typeof value.keyword === 'string'
-      && typeof value.message === 'string'
-      && typeof value.params === 'object' && value.params !== null
-      && typeof value.path === 'string';
+    return result;
   }
 }

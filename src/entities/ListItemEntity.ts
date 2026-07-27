@@ -1,4 +1,5 @@
 import type { InferType } from '../types/Schema.js';
+import { RdfTermKindEntity } from './RdfTermKindEntity.js';
 
 /**
  * Item produced by `SchemaGraphInterface.collectList` when walking an
@@ -40,7 +41,7 @@ export namespace ListItemEntity {
     const value = candidate as Record<string, unknown>;
 
     return typeof value.target === 'string'
-      && (value.termType === 'BlankNode' || value.termType === 'Literal' || value.termType === 'NamedNode')
+      && RdfTermKindEntity.validate(value.termType)
       && (value.datatype === undefined || typeof value.datatype === 'string')
       && (value.language === undefined || typeof value.language === 'string');
   }

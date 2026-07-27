@@ -42,6 +42,7 @@
  */
 
 import type { RestrictionDescriptorEntity } from '../entities/RestrictionDescriptorEntity.js';
+import type { TupleCapEntity } from '../entities/TupleCapEntity.js';
 
 // ---------------------------------------------------------------------------
 // Disjoint / complement brands — declared as interfaces in src/interfaces/
@@ -59,43 +60,15 @@ type PropertyNameFromIriType<TIri extends string>
     : TIri;
 
 // ---------------------------------------------------------------------------
-// Tuple builders — bounded by TupleCap so recursion stays within TS limits.
+// Tuple builders — bounded by TupleCapEntity.Type (16) so recursion stays
+// within TS limits. Above that, the inferred type falls through to the
+// unconstrained array shape; the runtime check in SchemaRegistry still fires.
 // ---------------------------------------------------------------------------
-
-declare const _TUPLE_CAP: 16;
-
-/**
- * Maximum tuple length for all compile-time tuple builders in this module.
- *
- * Caps recursion in `BuildExactTupleType`, `BuildAtLeastTupleType`,
- * `BuildAtMostTupleType`, and `BuildBoundedTupleType` to prevent
- * TypeScript from hitting TS2589 (type instantiation depth exceeded).
- *
- * @remarks
- * Cardinality restrictions above this cap fall through to unconstrained
- * array shapes at the type level; the runtime check in `SchemaRegistry`
- * still enforces the exact cardinality.
- *
- * @example
- * ```ts
- * type Cap = TupleCapType;  // 16
- * ```
- *
- * @category Restriction Inference
- * @since 0.18.0
- * @see {@link BuildExactTupleType}
- * @group Restriction Inference
- *
- * @remarks
- * Kept as a `type`: this is a numeric literal type (`typeof _TUPLE_CAP`), not
- * an object contract, so it has no interface form to declare it as.
- */
-export type TupleCapType = typeof _TUPLE_CAP;
 
 /**
  * Build a tuple of exactly `TN` elements of type `TItem`.
  *
- * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapType}.
+ * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapEntity.Type}.
  *
  * @remarks
  * Used by `ApplyOneRestrictionType` to enforce exact-cardinality restrictions
@@ -108,7 +81,7 @@ export type TupleCapType = typeof _TUPLE_CAP;
  *
  * @category Restriction Inference
  * @since 0.18.0
- * @see {@link TupleCapType}
+ * @see {@link TupleCapEntity.Type}
  * @group Restriction Inference
  *
  * @typeParam TItem - The element type.
@@ -118,7 +91,7 @@ export type TupleCapType = typeof _TUPLE_CAP;
 export type BuildExactTupleType<TItem, TN extends number, TAcc extends TItem[] = []>
   = TAcc['length'] extends TN
     ? TAcc
-    : TAcc['length'] extends TupleCapType
+    : TAcc['length'] extends TupleCapEntity.Type
       ? TItem[]
       : BuildExactTupleType<TItem, TN, [TItem, ...TAcc]>;
 
@@ -126,7 +99,7 @@ export type BuildExactTupleType<TItem, TN extends number, TAcc extends TItem[] =
  * Build a tuple with at least `TN` elements of type `TItem`.
  *
  * The inferred type is `[...TN×TItem, ...TItem[]]`. Falls through to
- * `[TItem, ...TItem[]]` (non-empty) when `TN` exceeds {@link TupleCapType}.
+ * `[TItem, ...TItem[]]` (non-empty) when `TN` exceeds {@link TupleCapEntity.Type}.
  *
  * @remarks
  * Used by `ApplyOneRestrictionType` to enforce `minCardinality(prop, N)` at
@@ -149,7 +122,7 @@ export type BuildExactTupleType<TItem, TN extends number, TAcc extends TItem[] =
 export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends TItem[] = []>
   = TAcc['length'] extends TN
     ? [...TAcc, ...TItem[]]
-    : TAcc['length'] extends TupleCapType
+    : TAcc['length'] extends TupleCapEntity.Type
       ? [TItem, ...TItem[]]
       : BuildAtLeastTupleType<TItem, TN, [TItem, ...TAcc]>;
 
@@ -157,7 +130,7 @@ export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends TItem[]
  * Build a union of tuples with at most `TN` elements of type `TItem`.
  *
  * Produces `[] | [TItem] | ... | [TItem×TN]`.
- * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapType}.
+ * Falls through to `TItem[]` when `TN` exceeds {@link TupleCapEntity.Type}.
  *
  * @remarks
  * Used by `ApplyOneRestrictionType` to enforce `maxCardinality(prop, N)` at
@@ -181,7 +154,7 @@ export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends TItem[]
 export type BuildAtMostTupleType<TItem, TN extends number, TAcc extends TItem[] = []>
   = TAcc['length'] extends TN
     ? TAcc
-    : TAcc['length'] extends TupleCapType
+    : TAcc['length'] extends TupleCapEntity.Type
       ? TItem[]
       : BuildAtMostTupleType<TItem, TN, [TItem, ...TAcc]> | TAcc;
 
@@ -217,7 +190,7 @@ export type BuildBoundedTupleType<
   TMaximum extends number,
   TAcc extends TItem[] = []
 >
-  = TAcc['length'] extends TupleCapType
+  = TAcc['length'] extends TupleCapEntity.Type
     ? TItem[]
     : TAcc['length'] extends TMaximum
       ? TAcc
@@ -233,21 +206,21 @@ export type BuildBoundedTupleType<
 // restriction variant in `ApplyOneRestrictionType`.
 // ---------------------------------------------------------------------------
 
-// Kept as a `type`: this is a compile-time-only generic computation (an `Omit` +
-// intersection over `RestrictionDescriptorEntity.Type`'s shape, re-parameterized
-// so `infer` can narrow each restriction variant in `ApplyOneRestrictionType`
-// below). It has no runtime value and no interface form to declare it as — an
-// `interface` cannot express the `Omit<...> & {...}` computation, and there is
-// no schema to derive it from beyond the entity it already narrows.
+// `TOverriddenKeys` forwards into `Omit`'s second argument rather than a
+// hardcoded literal union — a defaulted generic parameter, not a behavioral
+// change (the default reproduces the exact prior fixed set), so the alias
+// itself is recognized as a type-level function composing `Omit`/`Exclude`'s
+// conditional machinery, rather than an opaque mapped-type reference.
 type RestrictionShapeType<
   TKind extends string,
   TProperty extends string,
-  TValue
+  TValue,
+  TOverriddenKeys extends string = 'kind' | 'onProperty' | 'value'
 >
-  = Omit<RestrictionDescriptorEntity.Type, 'kind' | 'onProperty' | 'value'>
-  & { readonly 'kind': TKind }
-  & { readonly 'onProperty': TProperty }
-  & { readonly 'value': TValue };
+  = Omit<RestrictionDescriptorEntity.Type, TOverriddenKeys>
+  & { 'kind': TKind }
+  & { 'onProperty': TProperty }
+  & { 'value': TValue };
 
 // ---------------------------------------------------------------------------
 // Property element extraction — pulls element type out of an array property.

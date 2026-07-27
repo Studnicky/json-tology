@@ -10,6 +10,49 @@ import { Predicates } from '../../data/Predicates.js';
 import { VALIDATION_MESSAGES } from '../../../constants/VALIDATION_MESSAGES.js';
 
 /**
+ * Merges a branch/scratch context's accumulated `evaluatedProperties`/`evaluatedItems`
+ * back into the parent context. Used everywhere a composition branch runs in its own
+ * (spread-copied) context so `unevaluatedProperties`/`unevaluatedItems` post-passes on
+ * the parent see what the branch evaluated.
+ */
+class EvaluatedMerge {
+  static mergeInto(target: ExecContextInterface, source: ExecContextInterface): void {
+    if (source.evaluatedProperties !== undefined) {
+      for (const key of source.evaluatedProperties) {
+        (target.evaluatedProperties ??= new Set()).add(key);
+      }
+    }
+    if (source.evaluatedItems !== undefined) {
+      for (const index of source.evaluatedItems) {
+        (target.evaluatedItems ??= new Set()).add(index);
+      }
+    }
+  }
+}
+
+/** Tags a validator result as early-exit when it fails and the caller isn't collecting errors. */
+class BranchOutcome {
+  static from(
+    result: ValidateWithErrorsResultEntity.Type,
+    collectErrors: boolean
+  ): ValidateWithErrorsResultEntity.Type & { 'earlyExit': boolean } {
+    if (!result.valid && !collectErrors) {
+      return {
+        'earlyExit': true,
+        'valid': false,
+        'value': result.value
+      };
+    }
+
+    return {
+      'earlyExit': false,
+      'valid': result.valid,
+      'value': result.value
+    };
+  }
+}
+
+/**
  * Composition — validation helpers for JSON Schema composition keywords.
  *
  * Implements `allOf`, `anyOf`, `oneOf`, `not`, `if/then/else`,
@@ -45,33 +88,27 @@ export class Composition {
     };
     const result = validator(current, path, memberContext);
 
-    // Propagate evaluated sets from the member context back to the outer context so that
-    // unevaluatedProperties/unevaluatedItems post-passes see what the allOf branch
-    // evaluated. Mirrors VisitComposition.allOf (VisitComposition.ts:60-70).
-    if (memberContext.evaluatedProperties !== undefined) {
-      for (const key of memberContext.evaluatedProperties) {
-        (context.evaluatedProperties ??= new Set()).add(key);
-      }
-    }
-    if (memberContext.evaluatedItems !== undefined) {
-      for (const index of memberContext.evaluatedItems) {
-        (context.evaluatedItems ??= new Set()).add(index);
-      }
-    }
+    // Mirrors VisitComposition.allOf (VisitComposition.ts:60-70).
+    EvaluatedMerge.mergeInto(context, memberContext);
 
-    if (!result.valid && !context.collectErrors) {
-      return {
-        'earlyExit': true,
-        'valid': false,
-        'value': result.value
-      };
-    }
+    return BranchOutcome.from(result, context.collectErrors);
+  }
 
-    return {
-      'earlyExit': false,
-      'valid': result.valid,
-      'value': result.value
-    };
+  private static applyBranch(
+    workingValue: unknown,
+    path: string,
+    validator: ValidateWithErrorsFunctionInterface,
+    context: ExecContextInterface
+  ): ValidateWithErrorsResultEntity.Type & { 'earlyExit': boolean } {
+    // The then/else branch's compiled validator creates its own childCtx (via spread),
+    // accumulates evaluated keys/indices onto that childCtx, and never writes back to
+    // the caller — so explicit propagation is required here.
+    const branchContext: ExecContextInterface = { ...context };
+    const result = validator(workingValue, path, branchContext);
+
+    EvaluatedMerge.mergeInto(context, branchContext);
+
+    return BranchOutcome.from(result, context.collectErrors);
   }
 
   private static applyDependentSchemaMember(
@@ -82,96 +119,7 @@ export class Composition {
   ): ValidateWithErrorsResultEntity.Type & { 'earlyExit': boolean } {
     const result = validator(current, path, context);
 
-    if (!result.valid && !context.collectErrors) {
-      return {
-        'earlyExit': true,
-        'valid': false,
-        'value': result.value
-      };
-    }
-
-    return {
-      'earlyExit': false,
-      'valid': result.valid,
-      'value': result.value
-    };
-  }
-
-  private static applyElseBranch(
-    workingValue: unknown,
-    path: string,
-    elseValidator: ValidateWithErrorsFunctionInterface,
-    context: ExecContextInterface
-  ): ValidateWithErrorsResultEntity.Type & { 'earlyExit': boolean } {
-    const branchContext: ExecContextInterface = { ...context };
-    const elseResult = elseValidator(workingValue, path, branchContext);
-
-    // Propagate evaluated sets from the else branch back to the outer context.
-    // The else branch's compiled validator creates its own childCtx (via spread),
-    // accumulates evaluated keys/indices onto that childCtx, and never writes
-    // back to the caller — so explicit propagation is required here.
-    if (branchContext.evaluatedProperties !== undefined) {
-      for (const key of branchContext.evaluatedProperties) {
-        (context.evaluatedProperties ??= new Set()).add(key);
-      }
-    }
-    if (branchContext.evaluatedItems !== undefined) {
-      for (const index of branchContext.evaluatedItems) {
-        (context.evaluatedItems ??= new Set()).add(index);
-      }
-    }
-
-    if (!elseResult.valid && !context.collectErrors) {
-      return {
-        'earlyExit': true,
-        'valid': false,
-        'value': elseResult.value
-      };
-    }
-
-    return {
-      'earlyExit': false,
-      'valid': elseResult.valid,
-      'value': elseResult.value
-    };
-  }
-
-  private static applyThenBranch(
-    workingValue: unknown,
-    path: string,
-    thenValidator: ValidateWithErrorsFunctionInterface,
-    context: ExecContextInterface
-  ): ValidateWithErrorsResultEntity.Type & { 'earlyExit': boolean } {
-    const branchContext: ExecContextInterface = { ...context };
-    const thenResult = thenValidator(workingValue, path, branchContext);
-
-    // Propagate evaluated sets from the then branch back to the outer context.
-    // Mirror of applyElseBranch: branch validators create child contexts via spread;
-    // evaluated sets are accumulated on the child and must be explicitly merged back.
-    if (branchContext.evaluatedProperties !== undefined) {
-      for (const key of branchContext.evaluatedProperties) {
-        (context.evaluatedProperties ??= new Set()).add(key);
-      }
-    }
-    if (branchContext.evaluatedItems !== undefined) {
-      for (const index of branchContext.evaluatedItems) {
-        (context.evaluatedItems ??= new Set()).add(index);
-      }
-    }
-
-    if (!thenResult.valid && !context.collectErrors) {
-      return {
-        'earlyExit': true,
-        'valid': false,
-        'value': thenResult.value
-      };
-    }
-
-    return {
-      'earlyExit': false,
-      'valid': thenResult.valid,
-      'value': thenResult.value
-    };
+    return BranchOutcome.from(result, context.collectErrors);
   }
 
   static validateAllOf(
@@ -288,16 +236,7 @@ export class Composition {
             winnerBranchContext = branchContext;
           } else if (context.trackEvaluated) {
             // Merge evaluated sets from additional passing branches
-            if (branchContext.evaluatedProperties !== undefined) {
-              for (const key of branchContext.evaluatedProperties) {
-                (context.evaluatedProperties ??= new Set()).add(key);
-              }
-            }
-            if (branchContext.evaluatedItems !== undefined) {
-              for (const index of branchContext.evaluatedItems) {
-                (context.evaluatedItems ??= new Set()).add(index);
-              }
-            }
+            EvaluatedMerge.mergeInto(context, branchContext);
           }
         }
       } else {
@@ -323,16 +262,7 @@ export class Composition {
 
           if (context.trackEvaluated) {
             // Merge evaluated sets from ALL passing branches immediately
-            if (branchContext.evaluatedProperties !== undefined) {
-              for (const key of branchContext.evaluatedProperties) {
-                (context.evaluatedProperties ??= new Set()).add(key);
-              }
-            }
-            if (branchContext.evaluatedItems !== undefined) {
-              for (const index of branchContext.evaluatedItems) {
-                (context.evaluatedItems ??= new Set()).add(index);
-              }
-            }
+            EvaluatedMerge.mergeInto(context, branchContext);
           } else {
             // In check mode without unevaluated tracking, break early
             break;
@@ -344,16 +274,7 @@ export class Composition {
     if (matched) {
       // When NOT tracking evaluated, merge winner's sets now
       if (!context.trackEvaluated && winnerBranchContext !== undefined) {
-        if (winnerBranchContext.evaluatedProperties !== undefined) {
-          for (const key of winnerBranchContext.evaluatedProperties) {
-            (context.evaluatedProperties ??= new Set()).add(key);
-          }
-        }
-        if (winnerBranchContext.evaluatedItems !== undefined) {
-          for (const index of winnerBranchContext.evaluatedItems) {
-            (context.evaluatedItems ??= new Set()).add(index);
-          }
-        }
+        EvaluatedMerge.mergeInto(context, winnerBranchContext);
       }
 
       return {
@@ -493,10 +414,10 @@ export class Composition {
 
     if (ifResult.valid) {
       if (thenValidator !== undefined) {
-        return Composition.applyThenBranch(workingValue, path, thenValidator, context);
+        return Composition.applyBranch(workingValue, path, thenValidator, context);
       }
     } else if (elseValidator !== undefined) {
-      return Composition.applyElseBranch(workingValue, path, elseValidator, context);
+      return Composition.applyBranch(workingValue, path, elseValidator, context);
     }
 
     return {
@@ -617,16 +538,7 @@ export class Composition {
     if (matchCount === 1) {
       // Merge evaluated sets from winner into parent context
       if (context.trackEvaluated && winnerBranchContext !== undefined) {
-        if (winnerBranchContext.evaluatedProperties !== undefined) {
-          for (const key of winnerBranchContext.evaluatedProperties) {
-            (context.evaluatedProperties ??= new Set()).add(key);
-          }
-        }
-        if (winnerBranchContext.evaluatedItems !== undefined) {
-          for (const index of winnerBranchContext.evaluatedItems) {
-            (context.evaluatedItems ??= new Set()).add(index);
-          }
-        }
+        EvaluatedMerge.mergeInto(context, winnerBranchContext);
       }
 
       return {

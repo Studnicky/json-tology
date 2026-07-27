@@ -25,18 +25,20 @@ import type { EmitPropertyShapeConstraintsArgumentListInterface } from '../../in
 import type { EmitCountConstraintArgumentListInterface } from '../../interfaces/EmitCountConstraintArgumentListInterface.js';
 import type { EmitRangeConstraintArgumentListInterface } from '../../interfaces/EmitRangeConstraintArgumentListInterface.js';
 import type { EmitContainsQualifiedCardinalityArgumentListInterface } from '../../interfaces/EmitContainsQualifiedCardinalityArgumentListInterface.js';
-import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
+import type { ProjectionGraphOptionsInterface } from '../../interfaces/ProjectionGraphOptionsInterface.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { OWL_CARDINALITY_PREDICATE_IRIS } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { XSD_IRI_PREFIX } from '../../constants/XSD_IRI_PREFIX.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
+import { ResourceTermKindEntity } from '../../entities/ResourceTermKindEntity.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { QuadEmit } from './QuadEmit.js';
 import { PropertyProjection } from './PropertyProjection.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
+import { ProjectionSetup } from './ProjectionSetup.js';
 import { VocabProjection } from './VocabProjection.js';
 
 // ---------------------------------------------------------------------------
@@ -538,7 +540,9 @@ class ShaclVocabProjection extends VocabProjection {
     // SHACL: branches are already in the correct sh:or form — pass through without
     // wrapping in an additional union node (unlike OWL which wraps in owl:unionOf).
     const result = branches.filter((branch: QuadObjectType): boolean => {
-      return branch.termType === 'BlankNode' || branch.termType === 'NamedNode';
+      const isResource = ResourceTermKindEntity.validate(branch.termType);
+
+      return isResource;
     });
 
     return result;
@@ -898,26 +902,15 @@ export class ShaclProjection {
     return psBnode;
   }
 
-  public static graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined;
-    'issuer'?: IdentifierIssuerInterface | undefined;
-    'predicateResolver'?: PredicateResolverInterface | undefined }): QuadInterface[] {
-    const { curie } = options ?? {};
-    const { predicateResolver } = options ?? {};
-    const issuer = options?.issuer ?? new IdentifierIssuer();
-    const quads: QuadInterface[] = [];
-    const allRelations = graph.allRelations();
-    const index = ProjectionIndex.build(allRelations);
+  public static graph(graph: SchemaGraphInterface, options?: ProjectionGraphOptionsInterface): QuadInterface[] {
+    const {
+      context, index
+    } = ProjectionSetup.build(graph, options);
+    const {
+      predicateResolver, quads
+    } = context;
     const propertyIndex = ShaclProjection.buildPropertyIndex(index);
-
     const shaclVocab = new ShaclVocabProjection(index, graph, predicateResolver);
-    const context: ProjectionEmitContextInterface = {
-      curie,
-      graph,
-      index,
-      'issuer': issuer,
-      predicateResolver,
-      quads
-    };
 
     for (const [
       subject,

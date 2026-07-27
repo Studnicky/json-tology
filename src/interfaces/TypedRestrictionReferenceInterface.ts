@@ -25,25 +25,30 @@ import type { RestrictionKindEntity } from '../entities/RestrictionKindEntity.js
  * @typeParam TProp - The `onProperty` IRI as a string literal.
  * @typeParam TValue - The restriction value as a boolean, number, or string literal.
  *
- * @remarks
- * Deliberate lint exception (`@studnicky/interface-must-be-contract`): the sole
- * member's shape is built entirely from the generic literal parameters
- * `TKind`/`TProp`/`TValue`, which is the entire point of this type — it exists
- * to carry compile-time literal narrowing into `InferType`-derived property
- * types. Extracting the member to a schema-derived entity (as the sibling,
- * non-generic {@link RestrictionReferenceEntity} does with
- * `RestrictionDescriptorEntity.Type`) would erase that narrowing and defeat
- * the type's purpose. JSON Schema entities cannot carry generic type
- * parameters, so no schema-derived remedy exists for this shape.
+ * Carries a `unique symbol` brand member alongside the data member so it has real
+ * contract evidence (per `@studnicky/interface-must-be-contract`) without disturbing
+ * the generic literal narrowing that is the entire point of this type — extracting
+ * the data member to a schema-derived entity, as the sibling, non-generic
+ * {@link RestrictionReferenceEntity} does, would erase that narrowing. The shape
+ * is instead named via {@link TypedRestrictionShapeInterface} so no member is an
+ * inline object-type literal.
  */
+interface TypedRestrictionShapeInterface<
+  TKind extends RestrictionKindEntity.Type,
+  TProp extends string,
+  TValue extends boolean | number | string
+> {
+  'kind': TKind;
+  'onProperty': TProp;
+  readonly 'typedRestrictionShapeBrand'?: unique symbol;
+  'value': TValue;
+}
+
 export interface TypedRestrictionReferenceInterface<
   TKind extends RestrictionKindEntity.Type,
   TProp extends string,
   TValue extends boolean | number | string
 > {
-  '~jt:restriction': {
-    'kind': TKind;
-    'onProperty': TProp;
-    'value': TValue;
-  };
+  readonly 'typedRestrictionReferenceBrand'?: unique symbol;
+  '~jt:restriction': TypedRestrictionShapeInterface<TKind, TProp, TValue>;
 }

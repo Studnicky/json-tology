@@ -13,7 +13,9 @@
  * not bare strings. Use `.value` to extract the IRI string.
  */
 
-import type { Quad } from '@rdfjs/types';
+import type {
+  BlankNode, NamedNode, Quad
+} from '@rdfjs/types';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { GraphError } from '../../errors/GraphError.js';
@@ -22,6 +24,7 @@ import type { QuadFactoryIriOptionsInterface } from '../../interfaces/QuadFactor
 import type { QuadFactoryLiteralOptionsInterface } from '../../interfaces/QuadFactoryLiteralOptionsInterface.js';
 import type { QuadOptionsInterface } from '../../interfaces/QuadOptionsInterface.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { JsonLdDatasetQuadEntity } from '../../entities/JsonLdDatasetQuadEntity.js';
 
 import { Lists } from './Lists.js';
@@ -83,9 +86,7 @@ export class QuadFactory {
     const {
       curie, graph
     } = options ?? {};
-    const expandedPredicate = curie ? curie.expandIfNeeded(annotationPredicate) : annotationPredicate;
-
-    QuadFactory.assertAbsolutePredicate(expandedPredicate);
+    const expandedPredicate = QuadFactory.resolvePredicate(annotationPredicate, curie);
 
     return Terms.quad(tripleTerm, Terms.iri(expandedPredicate), annotationValue, graph);
   }
@@ -156,24 +157,44 @@ export class QuadFactory {
   }
 
   /**
-   * Group quads by subject value into a `Map<string, QuadInterface[]>`.
-   *
-   * Each key is `quad.subject.value` (an IRI string or blank-node identifier).
-   * Insertion order within each bucket preserves the iteration order of `quads`.
+   * Group items into a `Map<string, T[]>` keyed by `keyOf(item)`. Items for
+   * which `keyOf` returns `undefined` are skipped. Insertion order within
+   * each bucket preserves the iteration order of `items`.
    */
-  static indexBySubject(quads: readonly QuadInterface[]): Map<string, QuadInterface[]> {
-    const index = new Map<string, QuadInterface[]>();
+  static groupByKey<T>(items: readonly T[], keyOf: (item: T) => string | undefined): Map<string, T[]> {
+    const index = new Map<string, T[]>();
 
-    for (const quad of quads) {
-      const key = quad.subject.value;
+    for (const item of items) {
+      const key = keyOf(item);
+
+      if (key === undefined) {
+        continue;
+      }
+
       let list = index.get(key);
 
       if (list === undefined) {
         list = [];
         index.set(key, list);
       }
-      list.push(quad);
+      list.push(item);
     }
+
+    return index;
+  }
+
+  /**
+   * Group quads by subject value into a `Map<string, QuadInterface[]>`.
+   *
+   * Each key is `quad.subject.value` (an IRI string or blank-node identifier).
+   * Insertion order within each bucket preserves the iteration order of `quads`.
+   */
+  static indexBySubject(quads: readonly QuadInterface[]): Map<string, QuadInterface[]> {
+    const index = QuadFactory.groupByKey(quads, (quad: QuadInterface): string => {
+      const key = quad.subject.value;
+
+      return key;
+    });
 
     return index;
   }
@@ -245,14 +266,8 @@ export class QuadFactory {
     const {
       curie, graph
     } = options ?? {};
-    const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
-    const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
-
-    QuadFactory.assertAbsolutePredicate(expandedPredicate);
-
-    const subjectTerm = expandedSubject.startsWith('_:')
-      ? Terms.blank(expandedSubject)
-      : Terms.iri(expandedSubject);
+    const expandedPredicate = QuadFactory.resolvePredicate(predicate, curie);
+    const subjectTerm = QuadFactory.resolveSubjectTerm(subject, curie);
 
     return Terms.quad(subjectTerm, Terms.iri(expandedPredicate), object, graph);
   }
@@ -291,6 +306,31 @@ export class QuadFactory {
   }
 
   /**
+   * Expand a predicate against `curie` (when provided) and validate that the
+   * result is an absolute IRI. Shared by every factory method that emits a
+   * predicate position.
+   */
+  private static resolvePredicate(predicate: string, curie: CurieInterface | undefined): string {
+    const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
+
+    QuadFactory.assertAbsolutePredicate(expandedPredicate);
+
+    return expandedPredicate;
+  }
+
+  /**
+   * Expand a subject against `curie` (when provided) and build the term:
+   * a `_:`-prefixed value becomes a blank node, otherwise a named node.
+   */
+  private static resolveSubjectTerm(subject: string, curie: CurieInterface | undefined): BlankNode | NamedNode {
+    const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
+
+    return expandedSubject.startsWith('_:')
+      ? Terms.blank(expandedSubject)
+      : Terms.iri(expandedSubject);
+  }
+
+  /**
    * Build an RDF 1.2 triple term (quoted triple) from string subject/predicate
    * plus an already-built object term. The returned `Quad` carries
    * `termType: 'Quad'` and is intended for use as the subject of an annotation
@@ -307,14 +347,8 @@ export class QuadFactory {
     options?: QuadOptionsInterface
   ): Quad {
     const { curie } = options ?? {};
-    const expandedPredicate = curie ? curie.expandIfNeeded(predicate) : predicate;
-    const expandedSubject = curie ? curie.expandIfNeeded(subject) : subject;
-
-    QuadFactory.assertAbsolutePredicate(expandedPredicate);
-
-    const subjectTerm = expandedSubject.startsWith('_:')
-      ? Terms.blank(expandedSubject)
-      : Terms.iri(expandedSubject);
+    const expandedPredicate = QuadFactory.resolvePredicate(predicate, curie);
+    const subjectTerm = QuadFactory.resolveSubjectTerm(subject, curie);
 
     return Terms.tripleTerm(subjectTerm, Terms.iri(expandedPredicate), object);
   }

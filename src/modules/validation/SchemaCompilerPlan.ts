@@ -248,6 +248,51 @@ class UnevaluatedRejectValidator {
 // Internal helpers (graph context)
 // ---------------------------------------------------------------------------
 
+/** Resolution of a `$ref` to its target graph and fragment node during branch collection. */
+class BranchReference {
+  /** Resolve a `$ref` to the target graph and fragment node during branch collection. */
+  static resolve(
+    reference: string,
+    currentGraph: SchemaGraphInterface,
+    lookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined
+  ): ReferenceTargetInterface | undefined {
+    if (reference.startsWith('#')) {
+      return {
+        'graph': currentGraph,
+        'node': currentGraph.resolveFragment(reference.slice(1))
+      };
+    }
+
+    if (lookupGraph === undefined) {
+      return undefined;
+    }
+
+    // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
+    // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
+    // fragment-stripped resolution when no such registration matches exactly.
+    const literalGraph = reference.includes('#') ? lookupGraph(reference) : undefined;
+
+    if (literalGraph !== undefined) {
+      return {
+        'graph': literalGraph,
+        'node': literalGraph.resolveFragment('')
+      };
+    }
+
+    const {
+      fragment, id
+    } = SchemaIri.parseReference(reference);
+    const targetGraph = lookupGraph(id);
+
+    return targetGraph === undefined
+      ? undefined
+      : {
+        'graph': targetGraph,
+        'node': targetGraph.resolveFragment(fragment)
+      };
+  }
+}
+
 /** Traversal helpers for `allOf`-inherited property-key collection. */
 class InheritedProperties {
   /**
@@ -308,81 +353,11 @@ class InheritedProperties {
     const {
       currentGraph, lookupGraph, 'ref': reference, 'walkFn': walkFunction
     } = options;
+    const resolved = BranchReference.resolve(reference, currentGraph, lookupGraph);
 
-    if (reference.startsWith('#')) {
-      walkFunction(currentGraph, currentGraph.resolveFragment(reference.slice(1)));
-
-      return;
+    if (resolved !== undefined) {
+      walkFunction(resolved.graph, resolved.node);
     }
-
-    if (lookupGraph === undefined) {
-      return;
-    }
-
-    // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
-    // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
-    // fragment-stripped resolution when no such registration matches exactly.
-    const literalGraph = reference.includes('#') ? lookupGraph(reference) : undefined;
-
-    if (literalGraph !== undefined) {
-      walkFunction(literalGraph, literalGraph.resolveFragment(''));
-
-      return;
-    }
-
-    const {
-      fragment, id
-    } = SchemaIri.parseReference(reference);
-    const targetGraph = lookupGraph(id);
-
-    if (targetGraph !== undefined) {
-      walkFunction(targetGraph, targetGraph.resolveFragment(fragment));
-    }
-  }
-}
-
-/** Resolution of a `$ref` to its target graph and fragment node during branch collection. */
-class BranchReference {
-  /** Resolve a `$ref` to the target graph and fragment node during branch collection. */
-  static resolve(
-    reference: string,
-    currentGraph: SchemaGraphInterface,
-    lookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined
-  ): ReferenceTargetInterface | undefined {
-    if (reference.startsWith('#')) {
-      return {
-        'graph': currentGraph,
-        'node': currentGraph.resolveFragment(reference.slice(1))
-      };
-    }
-
-    if (lookupGraph === undefined) {
-      return undefined;
-    }
-
-    // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
-    // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
-    // fragment-stripped resolution when no such registration matches exactly.
-    const literalGraph = reference.includes('#') ? lookupGraph(reference) : undefined;
-
-    if (literalGraph !== undefined) {
-      return {
-        'graph': literalGraph,
-        'node': literalGraph.resolveFragment('')
-      };
-    }
-
-    const {
-      fragment, id
-    } = SchemaIri.parseReference(reference);
-    const targetGraph = lookupGraph(id);
-
-    return targetGraph === undefined
-      ? undefined
-      : {
-        'graph': targetGraph,
-        'node': targetGraph.resolveFragment(fragment)
-      };
   }
 }
 
@@ -478,51 +453,12 @@ class ConditionalProperties {
       currentGraph, 'ref': reference, scanState
     } = options;
     const { lookupGraph } = scanState;
+    const resolved = BranchReference.resolve(reference, currentGraph, lookupGraph);
 
-    if (reference.startsWith('#')) {
-      const referenceSemantics = currentGraph.semantics(currentGraph.resolveFragment(reference.slice(1)));
-
+    if (resolved !== undefined) {
       ConditionalProperties.scanForConditionalBranches({
-        currentGraph,
-        'scanSem': referenceSemantics,
-        scanState
-      });
-
-      return;
-    }
-
-    if (lookupGraph === undefined) {
-      return;
-    }
-
-    // Literal full-ref lookup first: a `#`-bearing absolute IRI may itself be a
-    // registered hash-namespace `$id` (e.g. `https://ns#Class`); only fall to
-    // fragment-stripped resolution when no such registration matches exactly.
-    const literalGraph = reference.includes('#') ? lookupGraph(reference) : undefined;
-
-    if (literalGraph !== undefined) {
-      const literalSem = literalGraph.semantics(literalGraph.resolveFragment(''));
-
-      ConditionalProperties.scanForConditionalBranches({
-        'currentGraph': literalGraph,
-        'scanSem': literalSem,
-        scanState
-      });
-
-      return;
-    }
-
-    const {
-      fragment, id
-    } = SchemaIri.parseReference(reference);
-    const targetGraph = lookupGraph(id);
-
-    if (targetGraph !== undefined) {
-      const referenceSemantics = targetGraph.semantics(targetGraph.resolveFragment(fragment));
-
-      ConditionalProperties.scanForConditionalBranches({
-        'currentGraph': targetGraph,
-        'scanSem': referenceSemantics,
+        'currentGraph': resolved.graph,
+        'scanSem': resolved.graph.semantics(resolved.node),
         scanState
       });
     }
@@ -576,6 +512,37 @@ class ConditionalProperties {
         scanState
       });
     }
+  }
+}
+
+/**
+ * Shared `ctx.refStack` guard used by the compiled `$ref`, `$dynamicRef`, and
+ * `rdfs:range` validators: wraps `executor` so a reference key already in-flight
+ * short-circuits to `{valid:true}` (breaking recursion) instead of re-entering,
+ * otherwise the key is marked in-flight for the call and always cleared after.
+ */
+class ReferenceStackGuard {
+  static wrap(key: string, executor: ValidateWithErrorsFunctionInterface): ValidateWithErrorsFunctionInterface {
+    return (
+      value: unknown,
+      path: string,
+      execContext: ExecContextInterface
+    ): ValidateWithErrorsResultEntity.Type => {
+      if (execContext.refStack.has(key)) {
+        return {
+          'valid': true,
+          value
+        };
+      }
+
+      execContext.refStack.add(key);
+
+      try {
+        return executor(value, path, execContext);
+      } finally {
+        execContext.refStack.delete(key);
+      }
+    };
   }
 }
 
@@ -915,18 +882,11 @@ class PlanBuilders {
     // Per-node validator cache: resolved node → compiled validator.
     const validatorCache = new WeakMap<SchemaGraphNodeInterface, ValidateWithErrorsFunctionInterface>();
 
-    return (
+    return ReferenceStackGuard.wrap(referenceKey, (
       value: unknown,
       path: string,
       execContext: ExecContextInterface
     ): ValidateWithErrorsResultEntity.Type => {
-      if (execContext.refStack.has(referenceKey)) {
-        return {
-          'valid': true,
-          value
-        };
-      }
-
       const target = DynamicReferenceTarget.resolve(dynamicReference, graph, execContext.dynamicScope, {
         ...(lookupGraph !== undefined && { lookupGraph }),
         ...(lookupSchema !== undefined && { lookupSchema })
@@ -940,21 +900,15 @@ class PlanBuilders {
         };
       }
 
-      execContext.refStack.add(referenceKey);
+      let cached = validatorCache.get(target.node);
 
-      try {
-        let cached = validatorCache.get(target.node);
-
-        if (cached === undefined) {
-          cached = context.compileNodeValidateWithErrors(target.node, formatRegistry, target.graph, lookupSchema);
-          validatorCache.set(target.node, cached);
-        }
-
-        return cached(value, path, execContext);
-      } finally {
-        execContext.refStack.delete(referenceKey);
+      if (cached === undefined) {
+        cached = context.compileNodeValidateWithErrors(target.node, formatRegistry, target.graph, lookupSchema);
+        validatorCache.set(target.node, cached);
       }
-    };
+
+      return cached(value, path, execContext);
+    });
   }
 
   static compilePropertyValidators(options: PropertyValidatorsOptionsInterface): PropValidatorsMapInterface {
@@ -1031,64 +985,51 @@ class PlanBuilders {
     );
     const rangeReferenceKey = `rdfs:range::${rdfsRange}`;
 
-    return (
+    return ReferenceStackGuard.wrap(rangeReferenceKey, (
       value: unknown,
       path: string,
       execContext: ExecContextInterface
     ): ValidateWithErrorsResultEntity.Type => {
-      if (execContext.refStack.has(rangeReferenceKey)) {
-        return {
-          'valid': true,
-          value
-        };
+      if (DataType.isRecord(value)) {
+        return rangeValidator(value, path, execContext);
       }
 
-      execContext.refStack.add(rangeReferenceKey);
+      if (Array.isArray(value)) {
+        // `Array.isArray` narrows `unknown` to `any[]`; restore the honest element
+        // type (instance data is arbitrary, not a schema).
+        const items: unknown[] = value;
+        let valid = true;
 
-      try {
-        if (DataType.isRecord(value)) {
-          return rangeValidator(value, path, execContext);
-        }
+        for (const [
+          i,
+          item
+        ] of items.entries()) {
+          if (DataType.isRecord(item) || Array.isArray(item)) {
+            const itemRes = rangeValidator(item, `${path}/${i}`, execContext);
 
-        if (Array.isArray(value)) {
-          // `Array.isArray` narrows `unknown` to `any[]`; restore the honest element
-          // type (instance data is arbitrary, not a schema).
-          const items: unknown[] = value;
-          let valid = true;
-
-          for (const [
-            i,
-            item
-          ] of items.entries()) {
-            if (DataType.isRecord(item) || Array.isArray(item)) {
-              const itemRes = rangeValidator(item, `${path}/${i}`, execContext);
-
-              if (!itemRes.valid) {
-                if (!execContext.collectErrors) {
-                  return {
-                    'valid': false,
-                    value
-                  };
-                }
-                valid = false;
+            if (!itemRes.valid) {
+              if (!execContext.collectErrors) {
+                return {
+                  'valid': false,
+                  value
+                };
               }
+              valid = false;
             }
           }
-
-          return {
-            valid,
-            value
-          };
         }
 
         return {
-          'valid': true,
+          valid,
           value
         };
-      } finally {
-        execContext.refStack.delete(rangeReferenceKey);
       }
-    };
+
+      return {
+        'valid': true,
+        value
+      };
+    });
   }
 
   static compileReferenceValidator(options: ReferenceValidatorOptionsInterface): undefined | ValidateWithErrorsFunctionInterface {
@@ -1124,28 +1065,15 @@ class PlanBuilders {
 
     let cached: undefined | ValidateWithErrorsFunctionInterface;
 
-    return (
+    return ReferenceStackGuard.wrap(referenceKey, (
       value: unknown,
       path: string,
       execContext: ExecContextInterface
     ): ValidateWithErrorsResultEntity.Type => {
-      if (execContext.refStack.has(referenceKey)) {
-        return {
-          'valid': true,
-          value
-        };
-      }
+      cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, targetGraph, lookupSchema);
 
-      execContext.refStack.add(referenceKey);
-
-      try {
-        cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, targetGraph, lookupSchema);
-
-        return cached(value, path, execContext);
-      } finally {
-        execContext.refStack.delete(referenceKey);
-      }
-    };
+      return cached(value, path, execContext);
+    });
   }
 
   /**

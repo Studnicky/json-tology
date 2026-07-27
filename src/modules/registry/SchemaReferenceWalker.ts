@@ -31,7 +31,15 @@ export class SchemaReferenceWalker implements SchemaReferenceWalkerInterface {
     resolve: (id: string) => string
   ): void {
     this.logger.trace(LogScope.format('SchemaReferenceWalker', 'assertResolvable', `asserting cross-schema refs resolvable for ${parentSchemaId}`));
-    this.walkAssert(node, parentSchemaId, embeddedIds, knownIds, resolve);
+    this.walkUnresolvedRefs(node, embeddedIds, knownIds, resolve, (reference) => {
+      throw new GraphError(
+        `unresolved $ref: ${reference} (referenced from ${parentSchemaId})`,
+        {
+          'code': GRAPH_ERROR_CODE.REF_UNRESOLVED,
+          'pointer': reference
+        }
+      );
+    });
   }
 
   public collectRefsInNode(
@@ -41,9 +49,44 @@ export class SchemaReferenceWalker implements SchemaReferenceWalkerInterface {
     knownIds: (id: string) => boolean,
     resolve: (id: string) => string
   ): void {
+    this.walkUnresolvedRefs(node, embeddedIds, knownIds, resolve, (_reference, resolved, referenceIri) => {
+      out.add(resolved === referenceIri ? referenceIri : resolved);
+    });
+  }
+
+  public collectUnresolved(
+    schema: Record<string, unknown>,
+    embeddedIds: Set<string>,
+    knownIds: (id: string) => boolean,
+    resolve: (id: string) => string
+  ): ReadonlySet<string> {
+    this.logger.trace(LogScope.format('SchemaReferenceWalker', 'collectUnresolved', 'collecting unresolved cross-schema refs'));
+
+    const unresolved = new Set<string>();
+
+    this.collectRefsInNode(schema, embeddedIds, unresolved, knownIds, resolve);
+
+    return unresolved;
+  }
+
+  /**
+   * Shared traversal core for both public entry points. Walks arrays and
+   * records recursively; for each non-fragment `$ref` that resolves to neither
+   * a known id nor an embedded id, invokes `onUnresolved` with the reference
+   * as authored plus its resolved and parsed forms. `assertResolvable` throws
+   * from the callback; `collectRefsInNode` accumulates into a set instead —
+   * the traversal and resolution logic itself is identical either way.
+   */
+  private walkUnresolvedRefs(
+    node: unknown,
+    embeddedIds: Set<string>,
+    knownIds: (id: string) => boolean,
+    resolve: (id: string) => string,
+    onUnresolved: (reference: string, resolved: string, referenceIri: string) => void
+  ): void {
     if (Array.isArray(node)) {
       for (const item of node) {
-        this.collectRefsInNode(item, embeddedIds, out, knownIds, resolve);
+        this.walkUnresolvedRefs(item, embeddedIds, knownIds, resolve, onUnresolved);
       }
 
       return;
@@ -65,68 +108,12 @@ export class SchemaReferenceWalker implements SchemaReferenceWalkerInterface {
       const resolved = resolve(referenceIri);
 
       if (!knownIds(resolved) && !knownIds(referenceIri) && !embeddedIds.has(referenceIri)) {
-        out.add(resolved === referenceIri ? referenceIri : resolved);
+        onUnresolved(reference, resolved, referenceIri);
       }
     }
 
     for (const value of Object.values(node)) {
-      this.collectRefsInNode(value, embeddedIds, out, knownIds, resolve);
-    }
-  }
-
-  public collectUnresolved(
-    schema: Record<string, unknown>,
-    embeddedIds: Set<string>,
-    knownIds: (id: string) => boolean,
-    resolve: (id: string) => string
-  ): ReadonlySet<string> {
-    this.logger.trace(LogScope.format('SchemaReferenceWalker', 'collectUnresolved', 'collecting unresolved cross-schema refs'));
-
-    const unresolved = new Set<string>();
-
-    this.collectRefsInNode(schema, embeddedIds, unresolved, knownIds, resolve);
-
-    return unresolved;
-  }
-
-  private walkAssert(
-    node: unknown,
-    parentSchemaId: string,
-    embeddedIds: Set<string>,
-    knownIds: (id: string) => boolean,
-    resolve: (id: string) => string
-  ): void {
-    if (Array.isArray(node)) {
-      for (const item of node) {
-        this.walkAssert(item, parentSchemaId, embeddedIds, knownIds, resolve);
-      }
-
-      return;
-    }
-
-    if (!DataType.isRecord(node)) {
-      return;
-    }
-
-    const reference = node.$ref;
-
-    if (typeof reference === 'string' && !reference.startsWith('#') && !knownIds(reference) && !knownIds(resolve(reference))) {
-      const referenceIri = SchemaIri.parseReference(reference).id;
-      const resolved = resolve(referenceIri);
-
-      if (!knownIds(resolved) && !knownIds(referenceIri) && !embeddedIds.has(referenceIri)) {
-        throw new GraphError(
-          `unresolved $ref: ${reference} (referenced from ${parentSchemaId})`,
-          {
-            'code': GRAPH_ERROR_CODE.REF_UNRESOLVED,
-            'pointer': reference
-          }
-        );
-      }
-    }
-
-    for (const value of Object.values(node)) {
-      this.walkAssert(value, parentSchemaId, embeddedIds, knownIds, resolve);
+      this.walkUnresolvedRefs(value, embeddedIds, knownIds, resolve, onUnresolved);
     }
   }
 }

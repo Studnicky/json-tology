@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { ValidationIssueEntity } from './ValidationIssueEntity.js';
 
 /**
  * A single error entry in an RFC 7807 Problem Details response.
@@ -7,7 +8,8 @@ import type { InferType } from '../types/Schema.js';
  * @remarks
  * Each entry describes one validation failure: the JSON Schema keyword that
  * triggered it, a human-readable message, structured keyword-specific
- * parameters, and the JSON Pointer path to the offending value.
+ * parameters, and the JSON Pointer path to the offending value. Composes
+ * `ValidationIssueEntity` with `additionalProperties: false`.
  *
  * @example
  * ```ts
@@ -24,34 +26,15 @@ import type { InferType } from '../types/Schema.js';
  */
 export namespace ProblemDetailsErrorEntryEntity {
   export const Schema = {
-    'additionalProperties': false,
-    'properties': {
-      'keyword': { 'type': 'string' },
-      'message': { 'type': 'string' },
-      'params': { 'type': 'object' },
-      'path': { 'type': 'string' }
-    },
-    'required': [
-      'keyword',
-      'message',
-      'params',
-      'path'
-    ],
-    'type': 'object'
+    ...ValidationIssueEntity.Schema,
+    'additionalProperties': false
   } as const satisfies JSONSchema;
 
   export type Type = InferType<typeof Schema>;
 
   export function validate(candidate: unknown): candidate is Type {
-    if (typeof candidate !== 'object' || candidate === null) {
-      return false;
-    }
+    const result = ValidationIssueEntity.validate(candidate);
 
-    const value = candidate as Record<string, unknown>;
-
-    return typeof value.keyword === 'string'
-      && typeof value.message === 'string'
-      && typeof value.params === 'object' && value.params !== null
-      && typeof value.path === 'string';
+    return result;
   }
 }

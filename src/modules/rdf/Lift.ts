@@ -26,6 +26,7 @@ import type { ReferenceTargetInterface } from '../../interfaces/ReferenceTargetI
 import type { TripleTermIndexInterface } from '../../interfaces/TripleTermIndexInterface.js';
 import type { PredicateIndexInterface } from '../../interfaces/PredicateIndexInterface.js';
 import type { LiftedObjectEntity } from '../../entities/LiftedObjectEntity.js';
+import { DangerousObjectKeyEntity } from '../../entities/DangerousObjectKeyEntity.js';
 import type { SubjectKindEntity } from '../../entities/SubjectKindEntity.js';
 import type { EffectivePropertyMapInterface } from '../../interfaces/EffectivePropertyMapInterface.js';
 import type { FindPropertyQuadsArgumentListInterface } from '../../interfaces/FindPropertyQuadsArgumentListInterface.js';
@@ -47,7 +48,11 @@ import { GraphError } from '../../errors/GraphError.js';
 
 import { Lists } from '../quads/Lists.js';
 import { Terms } from '../quads/Terms.js';
+import { QuadFactory } from '../quads/QuadFactory.js';
 import { PropertyProjection } from './PropertyProjection.js';
+import type { CurieInterface } from '../../interfaces/CurieInterface.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
+import type { JsonSchemaType } from '../../types/Schema.js';
 
 /**
  * Lift typed JS objects from RDF quads.
@@ -93,18 +98,11 @@ export class Lift {
   >();
 
   private static buildPredicateIndex(subjectQuads: QuadInterface[]): PredicateIndexInterface {
-    const index: PredicateIndexInterface = new Map();
+    const index = QuadFactory.groupByKey(subjectQuads, (quad: QuadInterface): string => {
+      const key = quad.predicate.value;
 
-    for (const quad of subjectQuads) {
-      const predicateValue = quad.predicate.value;
-      let list = index.get(predicateValue);
-
-      if (list === undefined) {
-        list = [];
-        index.set(predicateValue, list);
-      }
-      list.push(quad);
-    }
+      return key;
+    });
 
     return index;
   }
@@ -191,24 +189,11 @@ export class Lift {
   }
 
   private static groupBySubject(quads: QuadInterface[]): SubjectGroupInterface {
-    const groups: SubjectGroupInterface = new Map();
-
-    for (const quad of quads) {
-      // Triple-term-subject quads (annotation quads) are grouped separately by
-      // their quoted inner triple, not by the (empty) Quad subject value.
-      if (quad.subject.termType === 'Quad') {
-        continue;
-      }
-
-      const subjectValue = quad.subject.value;
-      let entry = groups.get(subjectValue);
-
-      if (!entry) {
-        entry = [];
-        groups.set(subjectValue, entry);
-      }
-      entry.push(quad);
-    }
+    // Triple-term-subject quads (annotation quads) are grouped separately by
+    // their quoted inner triple, not by the (empty) Quad subject value.
+    const groups: SubjectGroupInterface = QuadFactory.groupByKey(quads, (quad: QuadInterface): string | undefined => {
+      return quad.subject.termType === 'Quad' ? undefined : quad.subject.value;
+    });
 
     // Deduplicate quads within each group: RDF is a set, not a bag. A shared
     // node IRI appearing as the object of multiple parent properties causes the
@@ -244,24 +229,13 @@ export class Lift {
    * handled by the ordinary subject grouping.
    */
   private static indexTripleTermQuads(quads: QuadInterface[]): TripleTermIndexInterface {
-    const index: TripleTermIndexInterface = new Map();
-
-    for (const quad of quads) {
+    const index = QuadFactory.groupByKey(quads, (quad: QuadInterface): string | undefined => {
       const subject = quad.subject;
 
-      if (subject.termType !== 'Quad') {
-        continue;
-      }
-
-      const key = Lift.tripleTermKey(subject.subject.value, subject.predicate.value, subject.object.value);
-      let list = index.get(key);
-
-      if (list === undefined) {
-        list = [];
-        index.set(key, list);
-      }
-      list.push(quad);
-    }
+      return subject.termType === 'Quad'
+        ? Lift.tripleTermKey(subject.subject.value, subject.predicate.value, subject.object.value)
+        : undefined;
+    });
 
     return index;
   }
@@ -339,11 +313,6 @@ export class Lift {
     // Use a null-prototype object so setting any annotation key (including
     // adversarial keys like '__proto__', 'constructor', 'prototype') cannot
     // walk up to Object.prototype. Sec 3.2 guard.
-    const FORBIDDEN_ANNOTATION_KEYS: ReadonlySet<string> = new Set([
-      '__proto__',
-      'constructor',
-      'prototype'
-    ]);
     const annotations = Object.create(null) as Record<string, unknown>;
     const annotationQuads = tripleTermIndex.get(Lift.tripleTermKey(subjectIri, edge.edgePredicate, targetIri)) ?? [];
     const annotationQuadsByPredicate = new Map<string, QuadInterface>();
@@ -358,18 +327,17 @@ export class Lift {
       const propName = annotation.propertyName;
 
       // Skip any key that could pollute the prototype chain.
-      if (FORBIDDEN_ANNOTATION_KEYS.has(propName)) {
+      if (DangerousObjectKeyEntity.validate(propName)) {
         continue;
       }
 
-      const rawPredicate = predicateResolver === undefined
-        ? `${classId}#${annotation.propertyName}`
-        : predicateResolver({
-          'classId': classId,
-          'propertyName': annotation.propertyName,
-          'propertySchema': annotation.propertySchema
-        });
-      const annotationPredicate = curie === undefined ? rawPredicate : curie.expandIfNeeded(rawPredicate);
+      const annotationPredicate = Lift.resolvePropertyPredicateIri(
+        classId,
+        annotation.propertyName,
+        annotation.propertySchema,
+        predicateResolver,
+        curie
+      );
       const match = annotationQuadsByPredicate.get(annotationPredicate);
 
       if (match === undefined) {
@@ -488,6 +456,25 @@ export class Lift {
     return results;
   }
 
+  /** Narrow a single matched quad's object and lift it against `targetNode`. Shared by both `liftMatchingQuads` branches. */
+  private static liftMatchedQuad(
+    quad: QuadInterface,
+    context: LiftContextInterface,
+    parentGraph: SchemaGraphInterface,
+    targetNode: SchemaGraphNodeInterface
+  ): unknown {
+    const narrowed = Lists.asQuadObject(quad.object);
+
+    return narrowed === undefined
+      ? undefined
+      : Lift.liftSingleValue({
+        'context': context,
+        'object': narrowed,
+        parentGraph,
+        targetNode
+      });
+  }
+
   private static liftMatchingQuads(matchingQuadsArgumentList: LiftMatchingQuadsArgumentListInterface): unknown {
     const {
       context, isArray, matching, nestedNode, propGraph, resolvedNode
@@ -495,16 +482,9 @@ export class Lift {
 
     if (isArray || matching.length > 1) {
       return matching.map((quad: QuadInterface): unknown => {
-        const narrowed = Lists.asQuadObject(quad.object);
+        const lifted = Lift.liftMatchedQuad(quad, context, propGraph, nestedNode);
 
-        return narrowed === undefined
-          ? undefined
-          : Lift.liftSingleValue({
-            'context': context,
-            'object': narrowed,
-            'parentGraph': propGraph,
-            'targetNode': nestedNode
-          });
+        return lifted;
       });
     }
 
@@ -514,16 +494,7 @@ export class Lift {
       return undefined;
     }
 
-    const narrowed = Lists.asQuadObject(firstMatch.object);
-
-    return narrowed === undefined
-      ? undefined
-      : Lift.liftSingleValue({
-        'context': context,
-        'object': narrowed,
-        'parentGraph': propGraph,
-        'targetNode': resolvedNode
-      });
+    return Lift.liftMatchedQuad(firstMatch, context, propGraph, resolvedNode);
   }
 
   private static liftPropertyValue(propertyValueArgumentList: LiftPropertyValueArgumentListInterface): unknown {
@@ -546,16 +517,15 @@ export class Lift {
       });
     }
 
-    const rawPredicateIri = context.predicateResolver === undefined
-      ? `${classId}#${propName}`
-      : context.predicateResolver({
-        'classId': classId,
-        'propertyName': propName,
-        'propertySchema': propNode.schema
-      });
     // Expand CURIE predicates (e.g. 'bk:title' → full IRI) so they match the
     // full-IRI predicates emitted by toQuads/QuadFactory.
-    const predicateIri = context.curie === undefined ? rawPredicateIri : context.curie.expandIfNeeded(rawPredicateIri);
+    const predicateIri = Lift.resolvePropertyPredicateIri(
+      classId,
+      propName,
+      propNode.schema,
+      context.predicateResolver,
+      context.curie
+    );
     const matching = Lift.findPropertyQuads({
       index,
       predicateIri,
@@ -764,6 +734,29 @@ export class Lift {
 
       throw error;
     }
+  }
+
+  /**
+   * Resolve the predicate IRI for a class/property pair: `predicateResolver`
+   * when supplied, else the `classId#propertyName` default, then CURIE-expanded.
+   * Shared by property lifting and annotated-edge lifting.
+   */
+  private static resolvePropertyPredicateIri(
+    classId: string,
+    propertyName: string,
+    propertySchema: JsonSchemaType,
+    predicateResolver: PredicateResolverInterface | undefined,
+    curie: CurieInterface | undefined
+  ): string {
+    const rawPredicate = predicateResolver === undefined
+      ? `${classId}#${propertyName}`
+      : predicateResolver({
+        'classId': classId,
+        'propertyName': propertyName,
+        'propertySchema': propertySchema
+      });
+
+    return curie === undefined ? rawPredicate : curie.expandIfNeeded(rawPredicate);
   }
 
   private static tripleTermKey(subject: string, predicate: string, object: string): string {

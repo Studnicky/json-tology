@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { CODEGEN_REGISTRY_OPTIONS_DEF } from '../constants/CODEGEN_OPTION_DEFS.js';
 
 /**
  * Options object for {@link buildIndexSource}.
@@ -27,24 +28,17 @@ export namespace BuildIndexSourceOptionsEntity {
         'items': { 'type': 'string' },
         'type': 'array'
       },
-      /** Effective base IRI for `JsonTology.create`. */
-      'effectiveBaseIri': { 'type': 'string' },
       /** Extra comment lines for the banner. */
       'header': {
         'items': { 'type': 'string' },
         'type': 'array'
       },
-      /** Name of the exported registry constant. */
-      'registryConstName': { 'type': 'string' },
-      /** Name of the schemas array constant. */
-      'schemasConst': { 'type': 'string' }
+      ...CODEGEN_REGISTRY_OPTIONS_DEF.properties
     },
     'required': [
       'collisions',
-      'effectiveBaseIri',
       'header',
-      'registryConstName',
-      'schemasConst'
+      ...CODEGEN_REGISTRY_OPTIONS_DEF.required
     ],
     'type': 'object'
   } as const satisfies JSONSchema;

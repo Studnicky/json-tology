@@ -11,7 +11,7 @@
  * asserted at the type level (exact branded-type equality), and the negative
  * side (a value of the wrong arity) is proved with `@ts-expect-error`.
  *
- * Cap behaviour: bounds at or beyond `TupleCapType = 16` fall through to
+ * Cap behaviour: bounds at or beyond `TupleCapEntity.Type = 16` fall through to
  * `T[]` so that recursion stays within TS limits — the brands are
  * still applied.
  */
@@ -175,7 +175,7 @@ const _rangeLong: RangeTwoToFour = [
 void _rangeLong;
 
 // ---------------------------------------------------------------------------
-// 5. Beyond cap — bounds at or beyond TupleCapType = 16 fall through to
+// 5. Beyond cap — bounds at or beyond TupleCapEntity.Type = 16 fall through to
 //    T[]; the brands are still applied.
 // ---------------------------------------------------------------------------
 

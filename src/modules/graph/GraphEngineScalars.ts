@@ -54,11 +54,11 @@ class ContainerCoercion {
   }
 }
 
-/** Numeric-constraint error accumulation for `GraphEngineScalars.validateNumberConstraints`. */
-class NumberConstraintErrors {
-  static pushFormat(
+/** Shared `format` constraint check for `NumberConstraintErrors`/`StringConstraintErrors`. */
+class FormatConstraintErrors {
+  static push(
     path: string,
-    value: number,
+    value: number | string,
     format: string | undefined,
     formatRegistry: FormatRegistryInterface,
     formatAssertions: boolean,
@@ -73,7 +73,10 @@ class NumberConstraintErrors {
       errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format), { format }));
     }
   }
+}
 
+/** Numeric-constraint error accumulation for `GraphEngineScalars.validateNumberConstraints`. */
+class NumberConstraintErrors {
   static pushMultipleOf(
     path: string,
     value: number,
@@ -146,24 +149,6 @@ class StringConstraintErrors {
     }
   }
 
-  static pushFormat(
-    path: string,
-    value: string,
-    format: string | undefined,
-    formatRegistry: FormatRegistryInterface,
-    formatAssertions: boolean,
-    errors: ValidationErrorEntity.Type[]
-  ): void {
-    if (format === undefined) {
-      return;
-    }
-    const validator = formatRegistry.get(format);
-
-    if (validator !== undefined && formatAssertions && !validator(value)) {
-      errors.push(BaseError.validationError(path, 'format', VALIDATION_MESSAGES.format(format), { format }));
-    }
-  }
-
   static pushLength(
     path: string,
     value: string,
@@ -225,7 +210,7 @@ export const GraphEngineScalars = {
     const errors: ValidationErrorEntity.Type[] = [];
 
     NumberConstraintErrors.pushRange(path, value, sem, errors);
-    NumberConstraintErrors.pushFormat(path, value, sem.format, formatRegistry, formatAssertions, errors);
+    FormatConstraintErrors.push(path, value, sem.format, formatRegistry, formatAssertions, errors);
 
     return errors;
   },
@@ -243,7 +228,7 @@ export const GraphEngineScalars = {
 
     StringConstraintErrors.pushLength(path, value, sem, errors);
     StringConstraintErrors.pushPattern(path, value, sem.pattern, regexFor, errors);
-    StringConstraintErrors.pushFormat(path, value, sem.format, formatRegistry, formatAssertions, errors);
+    FormatConstraintErrors.push(path, value, sem.format, formatRegistry, formatAssertions, errors);
     StringConstraintErrors.pushContentEncoding(path, value, sem.contentEncoding, contentAssertions, errors);
     StringConstraintErrors.pushContentMediaType(path, value, sem.contentMediaType, sem.contentEncoding, contentAssertions, errors);
 

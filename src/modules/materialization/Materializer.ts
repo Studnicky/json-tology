@@ -12,16 +12,14 @@ import type { AboxOptionsInterface } from '../../interfaces/AboxOptionsInterface
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type { EffectivePropertyMapInterface } from '../../interfaces/EffectivePropertyMapInterface.js';
 import type { ValidationErrorEntity } from '../../entities/ValidationErrorEntity.js';
+import type { CompiledValidationResultEntity } from '../../entities/CompiledValidationResultEntity.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import type { AboxProjectorInterface } from '../../interfaces/AboxProjectorInterface.js';
-import type { ComputedFunctionInterface } from '../../interfaces/ComputedFunctionInterface.js';
 import type { MaterializerExecuteOptionsEntity } from '../../entities/MaterializerExecuteOptionsEntity.js';
 import type { PartialInferSchemaType } from '../../types/PartialInferSchemaType.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
-import {
-  INSTANTIATION_ERROR_CODE, MATERIALIZATION_ERROR_CODE
-} from '../../constants/ERROR_CODES.js';
+import { MATERIALIZATION_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { Frozen } from '../data/Frozen.js';
 import { DataType } from '../data/DataType.js';
 import { EffectiveProperties } from '../graph/EffectiveProperties.js';
@@ -29,8 +27,7 @@ import { ReferenceResolution } from '../graph/ReferenceResolution.js';
 import { GraphEngineDefaults } from '../graph/GraphEngineDefaults.js';
 import { Terms } from '../quads/Terms.js';
 import { OWL } from '../../constants/IRI.js';
-import { ValidationErrors } from '../../errors/ValidationErrors.js';
-import { InstantiationError } from '../../errors/InstantiationError.js';
+import { ComputedFields } from '../registry/ComputedFields.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 import { LogScope } from '../data/LogScope.js';
 
@@ -199,31 +196,6 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     }
   }
 
-  private applyComputedField(
-    name: string,
-    computeFunction: ComputedFunctionInterface,
-    value: Record<string, unknown>
-  ): void {
-    try {
-      value[name] = computeFunction(value);
-    } catch (error) {
-      const causeError = BaseError.toCause(error);
-
-      throw new InstantiationError(
-        new ValidationErrors([{
-          'keyword': 'COMPUTED_FN_MISSING',
-          'message': `Compute function for "${name}" threw: ${causeError.message}`,
-          'params': {},
-          'path': `/${name}`
-        }]),
-        {
-          'cause': causeError,
-          'code': INSTANTIATION_ERROR_CODE.INSTANTIATION_FAILED
-        }
-      );
-    }
-  }
-
   private applyComputedFields(schemaId: string, value: Record<string, unknown>): void {
     const computedMap = this.registry.computedStore.getMap(schemaId);
 
@@ -231,7 +203,7 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       name,
       computeFunction
     ] of Object.entries(computedMap)) {
-      this.applyComputedField(name, computeFunction, value);
+      ComputedFields.assign(name, computeFunction, value);
     }
   }
 
@@ -356,6 +328,37 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     }
 
     this.fillImplicitProperties(propertyGraph, propertyTargetNode, propertyValue, visited);
+  }
+
+  /**
+   * Build the final MaterializationResultInterface shared by both `run()`
+   * branches: project ABox quads when a baseIri was supplied, format the
+   * compiled errors, and log a warning on failure.
+   */
+  private finalizeMaterializationResult(
+    compiledResult: CompiledValidationResultEntity.Type,
+    materialized: unknown,
+    graph: SchemaGraphInterface,
+    entryNode: SchemaGraphNodeInterface,
+    baseIri: string | undefined,
+    aboxOptions: AboxOptionsInterface | undefined
+  ): MaterializationResultInterface {
+    const abox = baseIri === undefined
+      ? []
+      : this.projectAboxFromExecution(graph, entryNode, materialized, baseIri, aboxOptions);
+
+    const errors = this.formatErrors(compiledResult.errors);
+
+    if (!compiledResult.valid) {
+      this.logger.warn(LogScope.format('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
+    }
+
+    return {
+      abox,
+      errors,
+      'valid': compiledResult.valid,
+      'value': materialized
+    };
   }
 
   private formatErrors(errors: ValidationErrorEntity.Type[]): string[] {
@@ -491,6 +494,19 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
     return quads;
   }
 
+  private resolveGraphOrThrow(id: string): SchemaGraphInterface {
+    const graph = this.registry.graph(id);
+
+    if (graph === undefined) {
+      throw new MaterializationError(id, {
+        'code': MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED,
+        'validationErrors': [`No graph found for schema: ${id}`]
+      });
+    }
+
+    return graph;
+  }
+
   /**
    * Resolve a node that may carry a $ref into the (graph, node) pair where
    * its semantics actually live. Cross-graph refs are common in the
@@ -541,20 +557,12 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       this.registry.set(schema);
     }
 
+    const graph = this.resolveGraphOrThrow(id);
+    const entryNode = graph.rootNode;
+    const validator = this.registry.validator(id);
+
     if (synthesizeDefaults || this.allowAdditionalProperties) {
-      const graph = this.registry.graph(id);
-
-      if (graph === undefined) {
-        throw new MaterializationError(id, {
-          'code': MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED,
-          'validationErrors': [`No graph found for schema: ${id}`]
-        });
-      }
-
-      const entryNode = graph.rootNode;
-
       const validateOptions = synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults;
-      const validator = this.registry.validator(id);
       const seedData = synthesizeDefaults && data === undefined
         ? GraphEngineDefaults.synthesizeZeroValueForLookups(entryNode, graph, this.lookupSchemaFunction, this.lookupGraphFunction)
         : data;
@@ -563,55 +571,14 @@ export class Materializer implements DefaultCreatorInterface, MaterializerInterf
       const materialized = synthesizeDefaults
         ? compiledResult.value
         : this.materializeResult(graph, entryNode, compiledResult.value);
-      const abox = baseIri === undefined
-        ? []
-        : this.projectAboxFromExecution(graph, entryNode, materialized, baseIri, aboxOptions);
 
-      const errors = this.formatErrors(compiledResult.errors);
-
-      if (!compiledResult.valid) {
-        this.logger.warn(LogScope.format('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
-      }
-
-      return {
-        abox,
-        errors,
-        'valid': compiledResult.valid,
-        'value': materialized
-      };
+      return this.finalizeMaterializationResult(compiledResult, materialized, graph, entryNode, baseIri, aboxOptions);
     }
 
     // Default materialization path — compiled validator with defaults and coercion applied.
-    const validator = this.registry.validator(id);
     const compiledResult = validator.validate(data, this.cachedOverridesNoDefaults);
-
-    const graph = this.registry.graph(id);
-
-    if (graph === undefined) {
-      throw new MaterializationError(id, {
-        'code': MATERIALIZATION_ERROR_CODE.MATERIALIZATION_FAILED,
-        'validationErrors': [`No graph found for schema: ${id}`]
-      });
-    }
-
-    const entryNode = graph.rootNode;
     const materialized = this.materializeResult(graph, entryNode, compiledResult.value);
 
-    const abox = baseIri === undefined
-      ? []
-      : this.projectAboxFromExecution(graph, entryNode, materialized, baseIri, aboxOptions);
-
-    const errors = this.formatErrors(compiledResult.errors);
-
-    if (!compiledResult.valid) {
-      this.logger.warn(LogScope.format('Materializer', 'run', `materialization failed with ${errors.length} error(s)`));
-    }
-
-    return {
-      abox,
-      errors,
-      'valid': compiledResult.valid,
-      'value': materialized
-    };
+    return this.finalizeMaterializationResult(compiledResult, materialized, graph, entryNode, baseIri, aboxOptions);
   }
 }

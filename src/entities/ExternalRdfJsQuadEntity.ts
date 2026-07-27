@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { RdfJsTermEntity } from './RdfJsTermEntity.js';
 
 /**
  * ExternalRdfJsQuadEntity — minimal RDF/JS quad shape as returned by jsonld.js v8
@@ -19,13 +20,9 @@ export namespace ExternalRdfJsQuadEntity {
             'type': 'object'
           },
           'language': { 'type': 'string' },
-          'termType': { 'type': 'string' },
-          'value': { 'type': 'string' }
+          ...RdfJsTermEntity.Schema.properties
         },
-        'required': [
-          'termType',
-          'value'
-        ],
+        'required': RdfJsTermEntity.Schema.required,
         'type': 'object'
       },
       'predicate': {

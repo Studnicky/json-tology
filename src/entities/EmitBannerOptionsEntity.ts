@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { CODEGEN_PROVENANCE_OPTIONS_DEF } from '../constants/CODEGEN_OPTION_DEFS.js';
 
 /**
  * Options object for the {@link emitBanner} helper.
@@ -32,16 +33,12 @@ export namespace EmitBannerOptionsEntity {
         'items': { 'type': 'string' },
         'type': 'array'
       },
-      /** Human-readable source label (file path or IRI), or empty string. */
-      'sourceLabel': { 'type': 'string' },
-      /** ISO-8601 timestamp string. */
-      'ts': { 'type': 'string' }
+      ...CODEGEN_PROVENANCE_OPTIONS_DEF.properties
     },
     'required': [
       'collisions',
       'header',
-      'sourceLabel',
-      'ts'
+      ...CODEGEN_PROVENANCE_OPTIONS_DEF.required
     ],
     'type': 'object'
   } as const satisfies JSONSchema;

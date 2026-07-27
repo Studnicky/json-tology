@@ -110,27 +110,13 @@ export class OwlCodegen {
   /** Build all per-entity RegistryFileEntryEntity.Type objects in dependency order. */
   static buildEntityFiles(context: RegistryDirContextEntity.Type): RegistryFileEntryEntity.Type[] {
     const entityFiles: RegistryFileEntryEntity.Type[] = [];
-    const schemasByIri = new Map<string, JsonSchemaDocumentObjectType>();
+    const schemasByIri = OwlCodegen.buildSchemasByIri(context.schemas);
 
-    for (const schemaEntry of context.schemas) {
-      if (schemaEntry.$id !== undefined) {
-        schemasByIri.set(schemaEntry.$id, schemaEntry);
-      }
-    }
-
-    for (const iri of context.sortedIris) {
-      const name = context.nameMap[iri];
-
-      if (name === undefined || name === '') {
-        continue;
-      }
-
-      const schema = schemasByIri.get(iri);
-
-      if (schema === undefined) {
-        continue;
-      }
-
+    for (const [
+      iri,
+      name,
+      schema
+    ] of OwlCodegen.namedSchemaEntries(context.sortedIris, context.nameMap, schemasByIri)) {
       entityFiles.push({
         'iri': iri,
         name,
@@ -299,6 +285,19 @@ export class OwlCodegen {
     };
   }
 
+  /** Index schemas by `$id` for O(1) lookup by IRI. */
+  private static buildSchemasByIri(schemas: readonly JsonSchemaDocumentObjectType[]): Map<string, JsonSchemaDocumentObjectType> {
+    const schemasByIri = new Map<string, JsonSchemaDocumentObjectType>();
+
+    for (const schemaEntry of schemas) {
+      if (schemaEntry.$id !== undefined) {
+        schemasByIri.set(schemaEntry.$id, schemaEntry);
+      }
+    }
+
+    return schemasByIri;
+  }
+
   /** Emit the body of a single-file output: constants, registry, types, post-processing, footer. */
   static buildSingleFileBody(
     lines: string[],
@@ -328,6 +327,24 @@ export class OwlCodegen {
     lines.push('// END AUTO-GENERATED');
     lines.push('// ============================================================');
     lines.push('');
+  }
+
+  /**
+   * Capitalise the segment of `source` following the last occurrence of
+   * `separator`. Returns `undefined` when `separator` is absent or the
+   * trailing segment is empty. Shared by {@link OwlCodegen.localName}'s
+   * '/'- and ':'-delimited resolution steps.
+   */
+  private static capitalizedSegmentAfter(source: string, separator: string): string | undefined {
+    const index = source.lastIndexOf(separator);
+
+    if (index === -1) {
+      return undefined;
+    }
+
+    const segment = source.slice(index + 1);
+
+    return segment.length > 0 ? segment.charAt(0).toUpperCase() + segment.slice(1) : undefined;
   }
 
   /** Collect all $ref IRIs from an object tree that are present in the known set. */
@@ -520,27 +537,13 @@ export class OwlCodegen {
       schemas,
       sortedIris
     } = options;
-    const schemasByIri = new Map<string, JsonSchemaDocumentObjectType>();
+    const schemasByIri = OwlCodegen.buildSchemasByIri(schemas);
 
-    for (const schemaEntry of schemas) {
-      if (schemaEntry.$id !== undefined) {
-        schemasByIri.set(schemaEntry.$id, schemaEntry);
-      }
-    }
-
-    for (const iri of sortedIris) {
-      const name = nameMap[iri];
-
-      if (name === undefined || name === '') {
-        continue;
-      }
-
-      const schema = schemasByIri.get(iri);
-
-      if (schema === undefined) {
-        continue;
-      }
-
+    for (const [
+      ,
+      name,
+      schema
+    ] of OwlCodegen.namedSchemaEntries(sortedIris, nameMap, schemasByIri)) {
       const literal = OwlCodegen.serializeSchemaLiteral(schema, 0);
 
       lines.push(`export const ${name}Schema = ${literal} as const;`);
@@ -661,24 +664,16 @@ export class OwlCodegen {
       return parts.fragment.charAt(0).toUpperCase() + parts.fragment.slice(1);
     }
 
-    const slashIndex = iri.lastIndexOf('/');
+    const bySlash = OwlCodegen.capitalizedSegmentAfter(iri, '/');
 
-    if (slashIndex !== -1) {
-      const segment = iri.slice(slashIndex + 1);
-
-      if (segment.length > 0) {
-        return segment.charAt(0).toUpperCase() + segment.slice(1);
-      }
+    if (bySlash !== undefined) {
+      return bySlash;
     }
 
-    const colonIndex = iri.lastIndexOf(':');
+    const byColon = OwlCodegen.capitalizedSegmentAfter(iri, ':');
 
-    if (colonIndex !== -1) {
-      const segment = iri.slice(colonIndex + 1);
-
-      if (segment.length > 0) {
-        return segment.charAt(0).toUpperCase() + segment.slice(1);
-      }
+    if (byColon !== undefined) {
+      return byColon;
     }
 
     return iri
@@ -689,6 +684,79 @@ export class OwlCodegen {
         return word.charAt(0).toUpperCase() + word.slice(1);
       })
       .join('');
+  }
+
+  /**
+   * Pair each dependency-ordered IRI with its assigned name and schema,
+   * skipping IRIs with no assigned name or no matching schema. Shared by
+   * entity-file building and per-class schema-constant emission.
+   */
+  private static namedSchemaEntries(
+    sortedIris: readonly string[],
+    nameMap: Record<string, string>,
+    schemasByIri: Map<string, JsonSchemaDocumentObjectType>
+  ): Array<[string, string, JsonSchemaDocumentObjectType]> {
+    const entries: Array<[string, string, JsonSchemaDocumentObjectType]> = [];
+
+    for (const iri of sortedIris) {
+      const name = nameMap[iri];
+
+      if (name === undefined || name === '') {
+        continue;
+      }
+
+      const schema = schemasByIri.get(iri);
+
+      if (schema === undefined) {
+        continue;
+      }
+
+      entries.push([
+        iri,
+        name,
+        schema
+      ]);
+    }
+
+    return entries;
+  }
+
+  /**
+   * Shared setup for both emission modes: filter to consumer-facing classes,
+   * resolve dependency order, assign collision-free names, and compute the
+   * effective base IRI. Returns a tuple (rather than a named result type) so
+   * the pure preparation step stays free of any single mode's shape.
+   */
+  private static prepareCodegenSetup(
+    result: OwlImportResultInterface,
+    baseIri: string
+  ): [
+    JsonSchemaDocumentObjectType[],
+    string[],
+    Record<string, string>,
+    string[],
+    string
+  ] {
+    const schemas = OwlCodegen.filterSchemas(result.schemas);
+    const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
+      const id = schema.$id as string;
+
+      return id;
+    });
+    const sortedIris = OwlCodegen.topoSort(iris, schemas);
+    const {
+      collisions,
+      nameMap
+    } = OwlCodegen.buildNameMap(sortedIris);
+    const effectiveBaseIri = baseIri === '' ? OwlCodegen.deriveBaseIri(iris[0] ?? '') : baseIri;
+
+    return [
+      schemas,
+      sortedIris,
+      nameMap,
+      collisions,
+      effectiveBaseIri
+    ];
   }
 
   /** Serialize an array to a stable TS `as const` literal string. */
@@ -826,18 +894,13 @@ export class OwlCodegen {
       sourceLabel = ''
     } = options;
 
-    const schemas = OwlCodegen.filterSchemas(result.schemas);
-    const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
-      const id = schema.$id as string;
-
-      return id;
-    });
-    const sortedIris = OwlCodegen.topoSort(iris, schemas);
-    const {
+    const [
+      schemas,
+      sortedIris,
+      nameMap,
       collisions,
-      nameMap
-    } = OwlCodegen.buildNameMap(sortedIris);
-    const effectiveBaseIri = baseIri === '' ? OwlCodegen.deriveBaseIri(iris[0] ?? '') : baseIri;
+      effectiveBaseIri
+    ] = OwlCodegen.prepareCodegenSetup(result, baseIri);
     const schemasConst = `${registryConstName}Schemas`;
     const context: RegistryDirContextEntity.Type = {
       nameMap,
@@ -896,20 +959,13 @@ export class OwlCodegen {
       sourceLabel = ''
     } = options;
 
-    const schemas = OwlCodegen.filterSchemas(result.schemas);
-    const iris = schemas.map((schema: JsonSchemaDocumentObjectType): string => {
-      const id = schema.$id as string;
-
-      return id;
-    });
-
-    const sortedIris = OwlCodegen.topoSort(iris, schemas);
-    const {
+    const [
+      schemas,
+      sortedIris,
+      nameMap,
       collisions,
-      nameMap
-    } = OwlCodegen.buildNameMap(sortedIris);
-
-    const effectiveBaseIri = baseIri === '' ? OwlCodegen.deriveBaseIri(iris[0] ?? '') : baseIri;
+      effectiveBaseIri
+    ] = OwlCodegen.prepareCodegenSetup(result, baseIri);
     const lines: string[] = [];
     const ts = new Date().toISOString();
 

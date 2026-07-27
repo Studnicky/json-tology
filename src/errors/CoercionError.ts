@@ -1,8 +1,7 @@
 import type { CoercionErrorOptionsInterface } from '../interfaces/CoercionErrorOptionsInterface.js';
-import type { ErrorJsonEntity } from '../entities/ErrorJsonEntity.js';
 import type { ValidationErrorEntity } from '../entities/ValidationErrorEntity.js';
-import { ValidationErrors } from './ValidationErrors.js';
-import { BaseError } from './BaseError.js';
+import type { ValidationErrors } from './ValidationErrors.js';
+import { ValidationCollectionError } from './ValidationCollectionError.js';
 
 /**
  * CoercionError — carries a {@link ValidationErrors} collection describing why a value could not be coerced to its schema.
@@ -28,9 +27,7 @@ import { BaseError } from './BaseError.js';
  * @see {@link ValidationErrors}
  * @group Errors
  */
-export class CoercionError extends BaseError {
-  public readonly errors: ValidationErrors;
-
+export class CoercionError extends ValidationCollectionError {
   /**
    * Create a CoercionError from validation errors, joining their messages as the error message.
    *
@@ -38,47 +35,10 @@ export class CoercionError extends BaseError {
    * @param options - Options bag with required `code` and optional `cause`
    */
   public constructor(errors: ValidationErrorEntity.Type[] | ValidationErrors, options: CoercionErrorOptionsInterface) {
-    const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
-    const message = validationErrors.items.map((error: ValidationErrorEntity.Type): string => {
-      const result = `${error.path || 'root'}: ${error.message}`;
+    const validationErrors = ValidationCollectionError.normalize(errors);
+    const message = ValidationCollectionError.joinMessages(validationErrors);
 
-      return result;
-    }).join('; ');
-
-    super(message, options);
+    super(message, options, validationErrors);
     this.name = 'CoercionError';
-    this.errors = validationErrors;
-  }
-
-  /**
-   * Walk the cause chain and append individual validation error items as additional entries.
-   *
-   * @returns Flat array of error JSON objects including per-field validation details
-   */
-  public override flatten(): ErrorJsonEntity.Type[] {
-    return [
-      ...super.flatten(),
-      ...this.errors.items.map((item: ValidationErrorEntity.Type): ErrorJsonEntity.Type => {
-        return {
-          'code': item.keyword,
-          'message': `${item.path || 'root'}: ${item.message}`,
-          'retryable': false
-        };
-      })
-    ];
-  }
-
-  /**
-   * Serialize to a JSON-safe object, including the structured validation errors array.
-   *
-   * @returns Plain object with code, message, retryable, and errors list
-   */
-  public override toJson() {
-    return {
-      ...super.toJson(),
-      'errors': this.errors.items.map((item: ValidationErrorEntity.Type): ValidationErrorEntity.Type => {
-        return { ...item };
-      })
-    };
   }
 }

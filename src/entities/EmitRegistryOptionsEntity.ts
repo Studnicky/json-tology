@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { CODEGEN_REGISTRY_OPTIONS_DEF } from '../constants/CODEGEN_OPTION_DEFS.js';
 
 /**
  * Options object for the {@link emitRegistryConstruction} helper.
@@ -22,23 +23,16 @@ export namespace EmitRegistryOptionsEntity {
   export const Schema = {
     'additionalProperties': false,
     'properties': {
-      /** Effective base IRI for `JsonTology.create`. */
-      'effectiveBaseIri': { 'type': 'string' },
-      /** Name of the exported registry constant. */
-      'registryConstName': { 'type': 'string' },
       /** Ordered list of PascalCase schema identifiers. */
       'schemaNames': {
         'items': { 'type': 'string' },
         'type': 'array'
       },
-      /** Name of the exported schemas array constant. */
-      'schemasConst': { 'type': 'string' }
+      ...CODEGEN_REGISTRY_OPTIONS_DEF.properties
     },
     'required': [
-      'effectiveBaseIri',
-      'registryConstName',
       'schemaNames',
-      'schemasConst'
+      ...CODEGEN_REGISTRY_OPTIONS_DEF.required
     ],
     'type': 'object'
   } as const satisfies JSONSchema;

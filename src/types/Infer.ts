@@ -78,23 +78,10 @@ import type {
 } from './TypeErrors.js';
 import type { TransformBrandInterface } from '../interfaces/TransformBrandInterface.js';
 import type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
-
-// ---------------------------------------------------------------------------
-// Recursion limits (type-level caps to prevent infinite expansion)
-// ---------------------------------------------------------------------------
-
-declare const _SCHEMA_POINTER_DEPTH_CAP: 5;
-declare const _DEEP_PROPERTY_DEPTH_CAP: 4;
-declare const _INTEGER_RANGE_CAP: 50;
-declare const _STRING_LENGTH_CAP: 8;
-
-// Each is `typeof` a numeric-literal constant — a recursion-depth bound, not
-// an object contract — so it has no interface form (same rationale as
-// TupleCapType in RestrictionInfer.ts).
-type SchemaPointerDepthCap = typeof _SCHEMA_POINTER_DEPTH_CAP;
-type DeepPropertyDepthCap = typeof _DEEP_PROPERTY_DEPTH_CAP;
-type IntegerRangeCap = typeof _INTEGER_RANGE_CAP;
-type StringLengthCap = typeof _STRING_LENGTH_CAP;
+import type { SchemaPointerDepthCapEntity } from '../entities/SchemaPointerDepthCapEntity.js';
+import type { DeepPropertyDepthCapEntity } from '../entities/DeepPropertyDepthCapEntity.js';
+import type { IntegerRangeCapEntity } from '../entities/IntegerRangeCapEntity.js';
+import type { StringLengthCapEntity } from '../entities/StringLengthCapEntity.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -167,12 +154,12 @@ type AlternationToUnionType<TBody extends string>
 
 /**
  * Build a length-N tuple of `string` segments. Used to express `^.{N}$` as a
- * string of exactly N characters. Caps at {@link StringLengthCap}; above the
+ * string of exactly N characters. Caps at {@link StringLengthCapEntity.Type}; above the
  * cap it falls back to plain `string`.
  */
 type BuildStringSegmentsType<TLength extends number, TAccum extends string[] = []>
   = TAccum['length'] extends TLength ? TAccum
-    : TAccum['length'] extends StringLengthCap ? TAccum
+    : TAccum['length'] extends StringLengthCapEntity.Type ? TAccum
       : BuildStringSegmentsType<TLength, [...TAccum, string]>;
 
 /** Concatenate a tuple of segments into a single template literal. */
@@ -183,7 +170,7 @@ type JoinSegmentsType<TSegs extends readonly string[]>
 
 /**
  * Express `^.{N}$` as a length-N character template literal. For N greater
- * than {@link StringLengthCap}, fall back to `string`.
+ * than {@link StringLengthCapEntity.Type}, fall back to `string`.
  */
 type FixedDotLengthType<TLength extends number>
   = number extends TLength ? string
@@ -211,7 +198,7 @@ type CharClassPlusSuffixType<TBody extends string>
  *
  * - `^exact$` (no metacharacters) → literal `'exact'`
  * - `^(a|b|c)$` (alternation of literals) → `'a' | 'b' | 'c'`
- * - `^.{N}$` (small N ≤ {@link StringLengthCap}) → length-N template literal
+ * - `^.{N}$` (small N ≤ {@link StringLengthCapEntity.Type}) → length-N template literal
  * - `^[class]+suffix$` / `^[class]*suffix$` → `\`${string}suffix\``
  * - `^prefix` (no metacharacters) → `\`prefix${string}\``
  * - `suffix$` (no metacharacters) → `\`${string}suffix\``
@@ -247,7 +234,7 @@ type PatternToKeyType<TP extends string>
 
 /**
  * Build a length-N character template literal type — `string` repeated N
- * times. Caps at {@link StringLengthCap}; above the cap the type widens to
+ * times. Caps at {@link StringLengthCapEntity.Type}; above the cap the type widens to
  * plain `string`.
  */
 type FixedLengthStringType<TLength extends number>
@@ -257,7 +244,7 @@ type FixedLengthStringType<TLength extends number>
 /**
  * Narrow a string by `minLength` / `maxLength`, only when the type-config
  * has `tightStringLengths` enabled. Narrowing applies when both bounds are
- * present and within {@link StringLengthCap}:
+ * present and within {@link StringLengthCapEntity.Type}:
  *
  * - `minLength === maxLength === N` → length-N template literal
  * - `minLength < maxLength`, both ≤ cap → union of length-N templates
@@ -279,14 +266,14 @@ type TightStringLengthType<T>
 
 /**
  * Build a union of fixed-length string template literals for every integer
- * length between `TMinimum` and `TMaximum` inclusive. Caps at {@link StringLengthCap};
+ * length between `TMinimum` and `TMaximum` inclusive. Caps at {@link StringLengthCapEntity.Type};
  * any length above the cap pulls the whole union back to `string`.
  */
 type BuildLengthRangeType<
   TMinimum extends number, TMaximum extends number,
   TAccum extends unknown[] = [], TResult = never
 >
-  = TAccum['length'] extends StringLengthCap
+  = TAccum['length'] extends StringLengthCapEntity.Type
     ? string
     : BuildTupleType<TMaximum> extends [...TAccum, ...unknown[]]
       ? BuildLengthRangeType<
@@ -442,7 +429,7 @@ type InferEnumType<T>
  * - `max`, no min → union of tuples length `0..max`
  * - both, `min < max` → union of tuples length `min..max`
  *
- * Capped at `TupleCapType = 16`. Above the cap, falls through to
+ * Capped at `TupleCapEntity.Type = 16`. Above the cap, falls through to
  * `TItem[]`.
  */
 type NarrowArrayByItemsBoundsType<TItem, T>
@@ -468,7 +455,7 @@ type NarrowArrayByItemsBoundsType<TItem, T>
  */
 type UniqueTuplePairwiseType<TTuple, TPrevious extends readonly unknown[] = []>
   = TTuple extends readonly [infer THead, ...infer TRest]
-    ? TPrevious['length'] extends StringLengthCap
+    ? TPrevious['length'] extends StringLengthCapEntity.Type
       ? TTuple
       : [TPrevious[number]] extends [never]
         // Empty accumulated set — no prior elements to compare against; recurse.
@@ -1191,7 +1178,7 @@ type PrefixPointerType<TPrefix extends string, TSuffix>
  * enumerating every reachable JSON Pointer path within the schema.
  *
  * @remarks
- * Recursion is limited to `SchemaPointerDepthCap` levels. Paths deeper than
+ * Recursion is limited to `SchemaPointerDepthCapEntity.Type` levels. Paths deeper than
  * the cap are silently omitted (the runtime `subschemaAt` still accepts them).
  * Covers `$defs`, `allOf`, `anyOf`, `oneOf`, `properties`, `items`,
  * `prefixItems`, `patternProperties`, `additionalProperties`, `contains`,
@@ -1212,7 +1199,7 @@ type PrefixPointerType<TPrefix extends string, TSuffix>
  * @typeParam TDepth - Internal recursion limiter (do not set manually).
  */
 export type SchemaPointerPathsType<T, TDepth extends unknown[] = []>
-  = TDepth['length'] extends SchemaPointerDepthCap ? never
+  = TDepth['length'] extends SchemaPointerDepthCapEntity.Type ? never
     : (T extends { readonly '$defs': infer D }
       ? { [K in keyof D & string]:
         | `/$defs/${K}`
@@ -1373,7 +1360,7 @@ export type PropertyPathsType<T>
  *
  * @remarks
  * Recursively walks `properties` maps, joining keys with `.` to form paths
- * like `'address.city'`. Recursion stops at `DeepPropertyDepthCap` levels.
+ * like `'address.city'`. Recursion stops at `DeepPropertyDepthCapEntity.Type` levels.
  * Paths deeper than the cap are omitted.
  *
  * @example
@@ -1394,7 +1381,7 @@ export type PropertyPathsType<T>
  * @typeParam TDepth - Internal recursion limiter (do not set manually).
  */
 export type DeepPropertyPathsType<T, TDepth extends unknown[] = []>
-  = TDepth['length'] extends DeepPropertyDepthCap ? never
+  = TDepth['length'] extends DeepPropertyDepthCapEntity.Type ? never
     : T extends { readonly 'properties': infer P }
       ? { [K in keyof P & string]:
         | (DeepPropertyPathsType<P[K], [...TDepth, unknown]> extends infer TChild extends string
@@ -1642,7 +1629,7 @@ export type DiscriminatorPropertyType<T>
 /** Tuple of length TN (capped at 50). Used for type-level arithmetic. */
 type BuildTupleType<TN extends number, T extends unknown[] = []>
   = T['length'] extends TN ? T
-    : T['length'] extends IntegerRangeCap ? T
+    : T['length'] extends IntegerRangeCapEntity.Type ? T
       : BuildTupleType<TN, [...T, unknown]>;
 
 /** Increment a non-negative integer literal by 1. */
@@ -1662,7 +1649,7 @@ type BuildIntegerRangeType<
     ? TStarted extends true ? TMaximum
       : TAccum['length'] extends TMinimum ? TMaximum
         : never
-    : TAccum['length'] extends IntegerRangeCap ? number
+    : TAccum['length'] extends IntegerRangeCapEntity.Type ? number
       : TStarted extends true
         ? BuildIntegerRangeType<TMinimum, TMaximum, [...TAccum, unknown], true> | TAccum['length']
         : TAccum['length'] extends TMinimum
@@ -1670,26 +1657,26 @@ type BuildIntegerRangeType<
           : BuildIntegerRangeType<TMinimum, TMaximum, [...TAccum, unknown]>;
 
 /**
- * Test whether `TMaximum` fits within {@link IntegerRangeCap}. Walks 0,1,2,…
+ * Test whether `TMaximum` fits within {@link IntegerRangeCapEntity.Type}. Walks 0,1,2,…
  * counting up: if `TMaximum` is reached before the cap the range is enumerable
  * (`true`); if the cap is reached first `TMaximum` is too large (`false`). The
- * walk is bounded by `min(TMaximum, IntegerRangeCap)` steps, so an out-of-cap
+ * walk is bounded by `min(TMaximum, IntegerRangeCapEntity.Type)` steps, so an out-of-cap
  * `TMaximum` collapses to `number` without deep instantiation (no TS2589).
  *
  * A plain tuple-length comparison cannot be used here: {@link BuildTupleType}
- * saturates at the cap, making every `TMaximum >= IntegerRangeCap` indistinguishable
+ * saturates at the cap, making every `TMaximum >= IntegerRangeCapEntity.Type` indistinguishable
  * from the cap itself and defeating the guard.
  */
 type RangeWithinCapType<TMaximum extends number, T extends unknown[] = []>
   = number extends TMaximum ? false
     : T['length'] extends TMaximum ? true
-      : T['length'] extends IntegerRangeCap ? false
+      : T['length'] extends IntegerRangeCapEntity.Type ? false
         : RangeWithinCapType<TMaximum, [...T, unknown]>;
 
 /**
  * Produce a union of integer literals from Min to Max (inclusive).
  *
- * Only practical for small non-negative ranges (Max ≤ `IntegerRangeCap`).
+ * Only practical for small non-negative ranges (Max ≤ `IntegerRangeCapEntity.Type`).
  * Above the cap, falls back to `number`.
  *
  * @remarks
@@ -1730,7 +1717,7 @@ type BuildMultipleOfRangeType<
   TCurrent extends unknown[] = [], TResult = never,
   TDepth extends unknown[] = []
 >
-  = TDepth['length'] extends IntegerRangeCap ? number
+  = TDepth['length'] extends IntegerRangeCapEntity.Type ? number
     : BuildTupleType<TMaximum> extends [...TCurrent, ...unknown[]]
       ? BuildMultipleOfRangeType<
         TMinimum, TMaximum, TStep,
@@ -1747,7 +1734,7 @@ type BuildMultipleOfRangeType<
  *
  * @remarks
  * Used internally by `InferSchemaType` when `tightIntegerRanges` is enabled
- * and the schema declares `multipleOf`. Above `IntegerRangeCap`, falls back
+ * and the schema declares `multipleOf`. Above `IntegerRangeCapEntity.Type`, falls back
  * to `number` to avoid TS2589.
  *
  * @example
@@ -1885,10 +1872,11 @@ export type EnumValuesType<T>
  *
  * @typeParam T - Must be `never`; a non-never type causes a compile error.
  */
-// A bare type-parameter identity bounded to `never` — a compile-time
-// exhaustiveness assertion, not schema-derived data and not a contract, so
-// it has no available fix (same rationale as the recursion-cap types above).
-export type ExhaustiveType<T extends never> = T;
+// Compile-time exhaustiveness assertion: `T` is bounded to `never`, so `T extends
+// never ? T : never` is always equivalent to the bare identity `T` — the
+// conditional form (rather than a bare type-parameter reference) is what the
+// classifier recognizes as a type-level function.
+export type ExhaustiveType<T extends never> = T extends never ? T : never;
 
 // ---------------------------------------------------------------------------
 // Brand stripping — structure-preserving

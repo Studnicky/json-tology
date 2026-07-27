@@ -231,8 +231,8 @@ import {
       void it(scenarioName, () => {
         const result = Compose.intersection(schemaList, id);
 
-        // interop: IntersectionSchemaType lacks index signature; no direct widening to Record.
-        checkFn(result);
+        // interop: IntersectionSchemaInterface lacks index signature; unknown intermediate required.
+        checkFn(result as unknown as Record<string, unknown>);
       });
     }
   });
@@ -1669,7 +1669,7 @@ import {
   void describe('Compose.intersection() edge cases', { 'concurrency': true }, () => {
     for (const scenario of intersectionScenarios) {
       void it(scenario.name, () => {
-        // interop: IntersectionSchemaType lacks index signature; unknown intermediate required.
+        // interop: IntersectionSchemaInterface lacks index signature; unknown intermediate required.
         const result = Compose.intersection(
           scenario.schemas,
           scenario.newId

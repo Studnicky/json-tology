@@ -6,6 +6,7 @@
  */
 
 import type { StructureWarningEntity } from '../../entities/StructureWarningEntity.js';
+import type { CompiledValidateOptionsEntity } from '../../entities/CompiledValidateOptionsEntity.js';
 import type { CompiledValidatorInterface } from '../../interfaces/CompiledValidatorInterface.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistryInterface.js';
@@ -32,6 +33,7 @@ import { CoercionError } from '../../errors/CoercionError.js';
 import { DecodeError } from '../../errors/DecodeError.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { TransformError } from '../../errors/TransformError.js';
+import { ComputedFields } from './ComputedFields.js';
 import { ComputedStore } from './ComputedStore.js';
 import { SchemaEntryStore } from './SchemaEntryStore.js';
 import { SchemaReferenceWalker } from './SchemaReferenceWalker.js';
@@ -164,6 +166,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly formatRegistry: FormatRegistryInterface | undefined;
   private readonly instantiateOptions: Readonly<Record<string, boolean>>;
   private readonly invariants: InvariantStore;
+  private readonly isKnownSchemaId: (id: string) => boolean;
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
   private readonly lookupGraphFunction: (id: string) => SchemaGraphInterface | undefined;
@@ -174,6 +177,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     'resolveSchemaId': (rawId: string) => string;
   };
   private readonly refs: SchemaReferenceWalkerInterface;
+  private readonly resolveIdCallback: (id: string) => string;
 
   public readonly sameAsStore: SameAsStore;
 
@@ -209,6 +213,16 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.invariants = new InvariantStore(options?.invariants);
     this.lookupGraphFunction = (id: string): SchemaGraphInterface | undefined => {
       const result = this.graph(id);
+
+      return result;
+    };
+    this.isKnownSchemaId = (id: string): boolean => {
+      const result = this.store.has(id);
+
+      return result;
+    };
+    this.resolveIdCallback = (id: string): string => {
+      const result = this.resolve(id);
 
       return result;
     };
@@ -326,31 +340,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * Apply registered compute functions to a validated and coerced record.
    * Throws `InstantiationError` if any compute function throws.
    */
-  private applyComputedField(
-    name: string,
-    computeFunction: (data: Record<string, unknown>) => unknown,
-    coerced: Record<string, unknown>
-  ): void {
-    try {
-      coerced[name] = computeFunction(coerced);
-    } catch (error) {
-      const causeError = BaseError.toCause(error);
-
-      throw new InstantiationError(
-        new ValidationErrors([{
-          'keyword': 'COMPUTED_FN_MISSING',
-          'message': `Compute function for "${name}" threw: ${causeError.message}`,
-          'params': {},
-          'path': `/${name}`
-        }]),
-        {
-          'cause': causeError,
-          'code': INSTANTIATION_ERROR_CODE.INSTANTIATION_FAILED
-        }
-      );
-    }
-  }
-
   private applyComputedFields(
     computedNames: string[],
     computedMap: Record<string, (data: Record<string, unknown>) => unknown>,
@@ -364,7 +353,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       name,
       computeFunction
     ] of Object.entries(computedMap)) {
-      this.applyComputedField(name, computeFunction, coerced);
+      ComputedFields.assign(name, computeFunction, coerced);
     }
   }
 
@@ -610,16 +599,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       entry.schema,
       schemaId,
       embeddedIds,
-      (id: string): boolean => {
-        const result = this.store.has(id);
-
-        return result;
-      },
-      (id: string): string => {
-        const result = this.resolve(id);
-
-        return result;
-      }
+      this.isKnownSchemaId,
+      this.resolveIdCallback
     );
     entry.refsChecked = true;
   }
@@ -760,29 +741,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public cast(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown {
-    const schemaId = this.resolveSchemaId(schemaOrId);
-    const compiled = this.compiled(schemaId);
+    const compiled = this.compiledOrThrow(schemaOrId);
 
-    if (compiled === undefined) {
-      throw new SchemaError(`Schema not registered: ${schemaId}. Register it first.`, {
-        'code': SCHEMA_ERROR_CODE.NOT_REGISTERED,
-        schemaId
-      });
-    }
-
-    const input = options?.clone === false ? data : structuredClone(data);
-    const result = compiled.validate(input, CAST_OPTIONS);
-
-    if (!result.valid) {
-      const diagnostic = compiled.validate(structuredClone(data), {
-        ...CAST_OPTIONS,
-        'collectErrors': true
-      });
-
-      throw new CoercionError(new ValidationErrors(diagnostic.errors), { 'code': COERCION_ERROR_CODE.COERCION_FAILED });
-    }
-
-    return result.value;
+    return this.validateWithCoercion(compiled, data, CAST_OPTIONS, options?.clone);
   }
 
   /**
@@ -863,15 +824,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public clean(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
-    const schemaId = this.resolveSchemaId(schemaOrId);
-    const compiled = this.compiled(schemaId);
-
-    if (compiled === undefined) {
-      throw new SchemaError(`Schema not registered: ${schemaId}. Register it first.`, {
-        'code': SCHEMA_ERROR_CODE.NOT_REGISTERED,
-        schemaId
-      });
-    }
+    const compiled = this.compiledOrThrow(schemaOrId);
 
     return compiled.validate(structuredClone(data), CLEAN_OPTIONS).value;
   }
@@ -927,16 +880,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.refs.collectUnresolved(
       schema,
       embeddedIds,
-      (id: string): boolean => {
-        const result = this.store.has(id);
-
-        return result;
-      },
-      (id: string): string => {
-        const result = this.resolve(id);
-
-        return result;
-      }
+      this.isKnownSchemaId,
+      this.resolveIdCallback
     );
   }
 
@@ -962,7 +907,13 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return entry.compiled;
   }
 
-  public convert(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown {
+  /**
+   * Resolve a schema (or its id) to its compiled validator, or throw
+   * `SchemaError(NOT_REGISTERED)` when the schema was never registered.
+   * Shared by cast/clean/convert, which all require a compiled validator
+   * before running their respective execution options.
+   */
+  private compiledOrThrow(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string): CompiledValidatorInterface {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId);
 
@@ -973,19 +924,13 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       });
     }
 
-    const input = options?.clone === false ? data : structuredClone(data);
-    const result = compiled.validate(input, CONVERT_OPTIONS);
+    return compiled;
+  }
 
-    if (!result.valid) {
-      const diagnostic = compiled.validate(structuredClone(data), {
-        ...CONVERT_OPTIONS,
-        'collectErrors': true
-      });
+  public convert(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown {
+    const compiled = this.compiledOrThrow(schemaOrId);
 
-      throw new CoercionError(new ValidationErrors(diagnostic.errors), { 'code': COERCION_ERROR_CODE.COERCION_FAILED });
-    }
-
-    return result.value;
+    return this.validateWithCoercion(compiled, data, CONVERT_OPTIONS, options?.clone);
   }
 
   public create(schemaId: string): unknown {
@@ -1600,6 +1545,33 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
       throw new InstantiationError(new ValidationErrors(errors), { 'code': INSTANTIATION_ERROR_CODE.INSTANTIATION_FAILED });
     }
+  }
+
+  /**
+   * Run a compiled validator with cast/convert-style coercion options, throwing
+   * `CoercionError` with the full diagnostic error set when the primary validate
+   * call (which stops at the first error) fails. Shared by cast() and convert(),
+   * which differ only in which execution-options constant they pass.
+   */
+  private validateWithCoercion(
+    compiled: CompiledValidatorInterface,
+    data: unknown,
+    options: CompiledValidateOptionsEntity.Type,
+    cloneInput: boolean | undefined
+  ): unknown {
+    const input = cloneInput === false ? data : structuredClone(data);
+    const result = compiled.validate(input, options);
+
+    if (!result.valid) {
+      const diagnostic = compiled.validate(structuredClone(data), {
+        ...options,
+        'collectErrors': true
+      });
+
+      throw new CoercionError(new ValidationErrors(diagnostic.errors), { 'code': COERCION_ERROR_CODE.COERCION_FAILED });
+    }
+
+    return result.value;
   }
 
   public validator(schemaId: string): CompiledValidatorInterface {

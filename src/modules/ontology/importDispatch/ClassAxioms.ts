@@ -96,13 +96,8 @@ export class ClassAxioms {
       'graph': context.graph
     };
 
-    for (const relation of context.graph.allRelations()) {
+    for (const relation of ClassAxioms.classSubjectRelations(context)) {
       const subjectIri = relation.source.id;
-
-      if (!context.allClassIris.has(subjectIri)) {
-        continue;
-      }
-
       const predicate = relation.predicate;
 
       if (EQUIVALENT_CLASS_PREDICATES.has(predicate)) {
@@ -129,18 +124,13 @@ export class ClassAxioms {
     const {
       'axiomCtx': axiomContext, relation, subjectIri
     } = options;
-    const targetIri = axiomContext.resolveIri(relation.target);
+    const targetIri = ClassAxioms.resolveNamedTargetIri(axiomContext, relation);
 
-    if (targetIri.startsWith('_:')) {
+    if (targetIri === undefined) {
       return;
     }
 
-    const existing = axiomContext.schemaDeltas.get(subjectIri) ?? {};
-
-    axiomContext.schemaDeltas.set(subjectIri, {
-      ...existing,
-      'not': { '$ref': targetIri }
-    });
+    ImportRelation.mergeSchemaDelta(axiomContext.schemaDeltas, subjectIri, { 'not': { '$ref': targetIri } });
 
     const inv: InvariantType = {
       'fn': ClassAxioms.complementOfInvariantFunction,
@@ -167,24 +157,14 @@ export class ClassAxioms {
     }
 
     const listHead = ImportRelation.targetValue(relation);
-    const members: string[] = [];
-
-    for (const item of options.graph.collectList(listHead)) {
-      if (item.termType === 'NamedNode') {
-        members.push(item.target);
-      }
-    }
+    const members = ImportRelation.collectNamedNodeIris(options.graph, listHead);
 
     if (members.length > 0) {
-      const oneOf: JsonSchemaDocumentObjectType[] = members.map((memberIri: string): { '$ref': string } => {
+      const oneOf: JsonSchemaDocumentObjectType[] = members.map((memberIri: string): JsonSchemaDocumentObjectType => {
         return { '$ref': memberIri };
       });
-      const existing = options.axiomCtx.schemaDeltas.get(subjectIri) ?? {};
 
-      options.axiomCtx.schemaDeltas.set(subjectIri, {
-        ...existing,
-        'oneOf': oneOf
-      });
+      ImportRelation.mergeSchemaDelta(options.axiomCtx.schemaDeltas, subjectIri, { 'oneOf': oneOf });
     }
   }
 
@@ -195,18 +175,13 @@ export class ClassAxioms {
     const {
       'axiomCtx': axiomContext, relation, subjectIri
     } = options;
-    const otherIri = axiomContext.resolveIri(relation.target);
+    const otherIri = ClassAxioms.resolveNamedTargetIri(axiomContext, relation);
 
-    if (otherIri.startsWith('_:')) {
+    if (otherIri === undefined) {
       return;
     }
 
-    const existing = axiomContext.schemaDeltas.get(subjectIri) ?? {};
-
-    axiomContext.schemaDeltas.set(subjectIri, {
-      ...existing,
-      'disjointWith': otherIri
-    });
+    ImportRelation.mergeSchemaDelta(axiomContext.schemaDeltas, subjectIri, { 'disjointWith': otherIri });
 
     if (axiomContext.allClassIris.has(otherIri)) {
       const otherExisting = axiomContext.schemaDeltas.get(otherIri) ?? {};
@@ -232,15 +207,11 @@ export class ClassAxioms {
     const members = ClassAxioms.extractEquivalentMembersFromGraph(ImportRelation.targetValue(relation), options.graph);
 
     if (members.length > 1) {
-      const anyOf: JsonSchemaDocumentObjectType[] = members.map((memberIri: string): { '$ref': string } => {
+      const anyOf: JsonSchemaDocumentObjectType[] = members.map((memberIri: string): JsonSchemaDocumentObjectType => {
         return { '$ref': memberIri };
       });
-      const existing = options.axiomCtx.schemaDeltas.get(subjectIri) ?? {};
 
-      options.axiomCtx.schemaDeltas.set(subjectIri, {
-        ...existing,
-        'anyOf': anyOf
-      });
+      ImportRelation.mergeSchemaDelta(options.axiomCtx.schemaDeltas, subjectIri, { 'anyOf': anyOf });
     } else if (members.length === 1) {
       const singleMember = members[0];
 
@@ -248,12 +219,7 @@ export class ClassAxioms {
         return;
       }
 
-      const existing = options.axiomCtx.schemaDeltas.get(subjectIri) ?? {};
-
-      options.axiomCtx.schemaDeltas.set(subjectIri, {
-        ...existing,
-        '$ref': singleMember
-      });
+      ImportRelation.mergeSchemaDelta(options.axiomCtx.schemaDeltas, subjectIri, { '$ref': singleMember });
     }
   }
 
@@ -280,12 +246,7 @@ export class ClassAxioms {
         return;
       }
 
-      const existing = schemaDeltas.get(subjectIri) ?? {};
-
-      schemaDeltas.set(subjectIri, {
-        ...existing,
-        '$ref': firstMember
-      });
+      ImportRelation.mergeSchemaDelta(schemaDeltas, subjectIri, { '$ref': firstMember });
 
       return;
     }
@@ -300,31 +261,21 @@ export class ClassAxioms {
     const {
       'axiomCtx': axiomContext, relation, subjectIri
     } = options;
-    const targetIri = axiomContext.resolveIri(relation.target);
+    const targetIri = ClassAxioms.resolveNamedTargetIri(axiomContext, relation);
 
-    if (targetIri.startsWith('_:')) {
+    if (targetIri === undefined) {
       return;
     }
 
-    const existing = axiomContext.schemaDeltas.get(subjectIri) ?? {};
-
-    axiomContext.schemaDeltas.set(subjectIri, {
-      ...existing,
-      '$ref': targetIri
-    });
+    ImportRelation.mergeSchemaDelta(axiomContext.schemaDeltas, subjectIri, { '$ref': targetIri });
   }
 
   /**
    * Pass 2: walk all relations on class subjects and apply named-node axiom arms.
    */
   private static applyNamedNodeAxioms(context: OwlImportContextInterface, axiomContext: AxiomContextInterface): void {
-    for (const relation of context.graph.allRelations()) {
+    for (const relation of ClassAxioms.classSubjectRelations(context)) {
       const subjectIri = relation.source.id;
-
-      if (!context.allClassIris.has(subjectIri)) {
-        continue;
-      }
-
       const predicate = relation.predicate;
       const relationOptions: ApplyRelationOptionsInterface = {
         'axiomCtx': axiomContext,
@@ -365,13 +316,31 @@ export class ClassAxioms {
       return;
     }
 
-    const targetIri = axiomContext.resolveIri(relation.target);
+    const targetIri = ClassAxioms.resolveNamedTargetIri(axiomContext, relation);
 
-    if (targetIri.startsWith('_:')) {
+    if (targetIri === undefined) {
       return;
     }
 
     ClassAxioms.mergeAllOfReference(axiomContext.schemaDeltas, subjectIri, targetIri);
+  }
+
+  /**
+   * Relations from `context.graph.allRelations()` whose subject is a known
+   * class IRI. Shared by the named-node and blank-node/literal axiom passes,
+   * which both walk the full relation set but dispatch on different
+   * predicate groups.
+   */
+  private static classSubjectRelations(context: OwlImportContextInterface): SchemaGraphRelationInterface[] {
+    const result: SchemaGraphRelationInterface[] = [];
+
+    for (const relation of context.graph.allRelations()) {
+      if (context.allClassIris.has(relation.source.id)) {
+        result.push(relation);
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -476,15 +445,8 @@ export class ClassAxioms {
     }
 
     const listHead = ImportRelation.targetValue(firstUnionRelation);
-    const members: string[] = [];
 
-    for (const item of graph.collectList(listHead)) {
-      if (item.termType === 'NamedNode') {
-        members.push(item.target);
-      }
-    }
-
-    return members;
+    return ImportRelation.collectNamedNodeIris(graph, listHead);
   }
 
   /** Extract `@id` string values from a JSON-LD `@list` array. */
@@ -536,10 +498,7 @@ export class ClassAxioms {
       { '$ref': referenceIri }
     ];
 
-    deltas.set(classIri, {
-      ...existing,
-      'allOf': newAllOf
-    });
+    ImportRelation.mergeSchemaDelta(deltas, classIri, { 'allOf': newAllOf });
   }
 
   /**
@@ -580,5 +539,20 @@ export class ClassAxioms {
     }
 
     return ClassAxioms.extractIdsFromList(list);
+  }
+
+  /**
+   * Resolve a relation's target to a full IRI via `axiomCtx.resolveIri`,
+   * returning undefined when the target is a blank node — the shared
+   * "named target or skip" guard for the complementOf / disjointWith /
+   * equivalentClass / subClassOf axiom arms.
+   */
+  private static resolveNamedTargetIri(
+    axiomContext: AxiomContextInterface,
+    relation: SchemaGraphRelationInterface
+  ): string | undefined {
+    const targetIri = axiomContext.resolveIri(relation.target);
+
+    return targetIri.startsWith('_:') ? undefined : targetIri;
   }
 }

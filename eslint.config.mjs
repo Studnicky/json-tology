@@ -601,34 +601,6 @@ export default [
     rules: { '@typescript-eslint/consistent-indexed-object-style': 'off' }
   },
 
-  // Call-signature-only interfaces: `@typescript-eslint/prefer-function-type` demands a
-  // function-type alias here, but `@studnicky/type-alias-invariants`/`folder-content-shape`
-  // demand the opposite — a bare callable is behavioral, not schema-derived data, and (when
-  // declared in `src/interfaces/`) a `type` alias there is flagged as a data shape living where
-  // only runtime contracts belong. There is no third declaration form; every file below holds
-  // the `interface` form (satisfying the @studnicky rules) and documents this as a rule conflict.
-  // Filed upstream: noocodec-substrate/docs/eslint/known-issues/type-alias-invariants-prefer-function-type.md.
-  // Scoped here at the config level, not via inline eslint-disable comments, so
-  // @studnicky/no-suppression-comments has nothing to flag in source.
-  {
-    files: [
-      'src/interfaces/AboxLiftFunctionInterface.ts',
-      'src/interfaces/AboxLiftSubjectFunctionInterface.ts',
-      'src/interfaces/ComputedFunctionInterface.ts',
-      'src/interfaces/DispatcherInterface.ts',
-      'src/interfaces/GraphLookupInterface.ts',
-      'src/interfaces/InvariantFunctionInterface.ts',
-      'src/interfaces/LoaderInterface.ts',
-      'src/interfaces/LookupGraphFunctionInterface.ts',
-      'src/interfaces/LookupSchemaFunctionInterface.ts',
-      'src/interfaces/PredicateResolverInterface.ts',
-      'src/interfaces/SchemaRegistryForEachCallbackInterface.ts',
-      'src/interfaces/SkolemizeFunctionInterface.ts',
-      'src/interfaces/ValidateWithErrorsFunctionInterface.ts'
-    ],
-    rules: { '@typescript-eslint/prefer-function-type': 'off' }
-  },
-
   // SchemaGraphRelationInterface's `predicate` member references `RelationPredicateType`
   // (src/types/SchemaGraph.ts), which itself carries a `type-alias-invariants` exception for an
   // open `(string & {})` union with no schema-derived equivalent (see the SchemaGraph.ts override
@@ -639,43 +611,28 @@ export default [
     rules: { '@studnicky/interfaces-compose-named-types': 'off' }
   },
 
-  // TypedRestrictionReferenceInterface is a generic interface `<TKind,TProp,TValue>` whose sole
-  // member's shape IS the generic literal narrowing supplied by the caller — extracting it to a
-  // named entity (as its non-generic sibling `RestrictionReferenceEntity` does) would erase the
-  // compile-time narrowing that is the entire point of the type. JSON Schema entities cannot
-  // carry generic type parameters, so no schema-derived remedy exists.
-  {
-    files: ['src/interfaces/TypedRestrictionReferenceInterface.ts'],
-    rules: { '@studnicky/interface-must-be-contract': 'off' }
-  },
-
-  // Branded-primitive intersections (`SomeBrandType & string`, etc.): a phantom brand intersected
-  // with a JSON primitive can neither derive from schema (the brand is a compile-time-only
-  // marker, never a real value) nor become an interface (TS interfaces cannot `extends` a
-  // primitive type). Filed upstream:
+  // ConstraintBrands.ts: branded-primitive intersections (`FormatBrandType<F> & string`, etc.).
+  // Verified against the compiled rule source (typeAliasInvariants.js/TypeContractClassification.js
+  // in node_modules/@studnicky/eslint-config): `findAliasContract` walks every member of a
+  // union/intersection and returns on the FIRST one that carries brand evidence — a symbol-keyed
+  // member (`{ [FORMAT]: TF }`, the shape `FormatBrandType<TF>` reduces to) unconditionally
+  // classifies the whole alias `interfaceContract`/`brand`, with no carve-out for a co-intersected
+  // schema-derived member (confirmed empirically: replacing the bare `string` with
+  // `InferType<typeof FormatSchema>` does not change the classification — the brand member alone
+  // already resolves the verdict before the schema-derived member is even considered). The
+  // `aliasMustBeInterface` remedy this classification implies is then syntactically impossible:
+  // `interface X extends string {}` is invalid TypeScript — interfaces cannot extend a primitive.
+  // The only fix that would actually satisfy the rule is boxing every branded value in an object
+  // wrapper (`{ readonly value: string; readonly [FORMAT]: 'email' }`), which changes the runtime
+  // representation of all 24 formats from a plain string/number to a boxed object — a breaking
+  // change across every coercion/materialization call site that currently treats these as bare
+  // primitives. Filed upstream:
   // noocodec-substrate/docs/eslint/known-issues/type-alias-invariants-primitive-brands.md.
   {
-    files: ['src/types/ConstraintBrands.ts', 'src/types/FormatPredicateType.ts'],
+    files: ['src/types/ConstraintBrands.ts'],
     rules: { '@studnicky/type-alias-invariants': 'off' }
   },
 
-  // Infer.ts: SchemaPointerDepthCap/DeepPropertyDepthCap/IntegerRangeCap/StringLengthCap are
-  // `typeof someConstant` recursion-depth caps — numeric-literal types, not object contracts, so
-  // neither a schema nor an interface applies. ExhaustiveType is a bare type-parameter identity
-  // bounded to `never` (`type Foo<T extends never> = T`) — a compile-time exhaustiveness
-  // assertion utility, not data.
-  {
-    files: ['src/types/Infer.ts'],
-    rules: { '@studnicky/type-alias-invariants': 'off' }
-  },
-
-  // RestrictionInfer.ts: TupleCapType (typeof-constant recursion cap, same category as Infer.ts's
-  // caps) and RestrictionShapeType (compile-time-only generic type computation) have no
-  // schema/interface remedy.
-  {
-    files: ['src/types/RestrictionInfer.ts'],
-    rules: { '@studnicky/type-alias-invariants': 'off' }
-  },
 
   // Bootstrapping meta-schema types: JsonSchemaType, ReadonlySchemaMapType/ArrayType and
   // siblings, JsonSchemaDocumentObjectType, JsonSchemaDocumentType (Schema.ts),
@@ -728,14 +685,6 @@ export default [
     rules: { '@studnicky/type-alias-invariants': 'off' }
   },
 
-  // PredicateForType: a bare callable type. Kept in src/types/ as a `type` alias (rather than
-  // moved to src/interfaces/ as a call-signature interface) specifically to avoid also tripping
-  // `folder-content-shape` — this file only needs `type-alias-invariants` scoped off.
-  {
-    files: ['src/types/PredicateForType.ts'],
-    rules: { '@studnicky/type-alias-invariants': 'off' }
-  },
-
   // FacetDescriptorType/FacetEntryType: `key`/`jsonSchemaDescriptor.key` is `keyof
   // JsonSchemaDocumentObjectType` — a TS-only key-introspection with no JSON Schema
   // representation. Widening to a plain string would drop the compile-time guarantee that every
@@ -753,15 +702,18 @@ export default [
     rules: { '@studnicky/type-alias-invariants': 'off' }
   },
 
-  // Compose.ts: AnnotatedEdgeSchemaType/IntersectionSchemaType/DiscriminatedUnionSchemaType are
-  // generic builder-return shapes whose entire body is the caller's literal type parameters
-  // (TPredicate, TSchemas, TId, etc.) — the rule's static analysis classifies any
-  // type-parameter-valued member as non-schema-derivable, and there is no interface remedy either
-  // (this is plain data, not a contract). TransformedType (Transform.ts) intersects a genuine
-  // brand interface with a free generic type parameter — TS forbids `interface X<T> extends T`
-  // for a bare type parameter, so no interface form is mechanically possible either.
+  // Transform.ts: TransformedType intersects TransformBrandInterface<TWire> (a genuine brand
+  // interface) with TSchema, a free/unconstrained generic type parameter. Verified against the
+  // rule source (same mechanism as ConstraintBrands.ts): findAliasContract resolves
+  // TransformBrandInterface<TWire> to a genuine interface reference with classification 'contract'
+  // (TransformBrandInterface has real brand-symbol evidence), which unconditionally classifies the
+  // whole intersection 'interfaceContract' regardless of the other member. Converting to an
+  // interface is doubly impossible here (worse than ConstraintBrands.ts's primitive case):
+  // `interface X<TSchema> extends TransformBrandInterface<TWire>, TSchema` is invalid TypeScript
+  // because an interface cannot extend a bare, unconstrained type parameter at all — not even the
+  // "box it in an object" workaround applies, since TSchema's own shape is unknown at this level.
   {
-    files: ['src/types/Compose.ts', 'src/types/Transform.ts'],
+    files: ['src/types/Transform.ts'],
     rules: { '@studnicky/type-alias-invariants': 'off' }
   },
 

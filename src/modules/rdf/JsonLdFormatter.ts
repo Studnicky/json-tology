@@ -15,6 +15,7 @@ import { JSONLD } from '../../constants/JSONLD.js';
 import { Lists } from '../quads/Lists.js';
 import { QuadFactory } from '../quads/QuadFactory.js';
 import { Terms } from '../quads/Terms.js';
+import { ResourceTermKindEntity } from '../../entities/ResourceTermKindEntity.js';
 
 /**
  * Generic quad-to-JSON-LD converter.
@@ -196,7 +197,7 @@ export class JsonLdFormatter {
   }
 
   private static objectToJsonLd(object: QuadObjectType): unknown {
-    if (object.termType === 'BlankNode' || object.termType === 'NamedNode') {
+    if (ResourceTermKindEntity.validateObject(object)) {
       const idNode: Record<string, unknown> = {};
 
       idNode[JSONLD.id] = object.value;
@@ -283,7 +284,7 @@ export class JsonLdFormatter {
     subjectQuads: ReadonlyMap<string, QuadInterface[]>,
     listSegmentIds: ReadonlySet<string>
   ): unknown {
-    if ((narrowed.termType === 'BlankNode' || narrowed.termType === 'NamedNode')
+    if (ResourceTermKindEntity.validate(narrowed.termType)
       && listSegmentIds.has(narrowed.value)) {
       const listItems = JsonLdFormatter.walkListHead(narrowed.value, subjectQuads, new Set());
 

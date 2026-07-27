@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { RawRestrictionDescriptorEntity } from './RawRestrictionDescriptorEntity.js';
 
 /**
  * Descriptor payload embedded inside a restriction phantom tag
@@ -40,7 +41,7 @@ export namespace RestrictionDescriptorEntity {
           'someValuesFrom'
         ]
       },
-      'onProperty': { 'type': 'string' },
+      'onProperty': RawRestrictionDescriptorEntity.Schema.properties.onProperty,
       'value': {
         'type': [
           'boolean',
@@ -49,12 +50,8 @@ export namespace RestrictionDescriptorEntity {
         ]
       }
     },
-    'required': [
-      'kind',
-      'onProperty',
-      'value'
-    ],
-    'type': 'object'
+    'required': RawRestrictionDescriptorEntity.Schema.required,
+    'type': RawRestrictionDescriptorEntity.Schema.type
   } as const satisfies JSONSchema;
 
   export type Type = InferType<typeof Schema>;

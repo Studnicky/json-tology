@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
 import type { InferType } from '../types/Schema.js';
+import { REGISTRY_DIRECTORY_RESULT_SHARED_SCHEMA } from '../constants/SCHEMAS.js';
 import { RegistryFileEntryEntity } from './RegistryFileEntryEntity.js';
 
 /**
@@ -17,12 +18,11 @@ export namespace RegistryFilesResultEntity {
         'items': RegistryFileEntryEntity.Schema,
         'type': 'array'
       },
-      /** Source content for the generated `index.ts` file. */
-      'indexSource': { 'type': 'string' }
+      ...REGISTRY_DIRECTORY_RESULT_SHARED_SCHEMA.properties
     },
     'required': [
       'entityFiles',
-      'indexSource'
+      ...REGISTRY_DIRECTORY_RESULT_SHARED_SCHEMA.required
     ],
     'type': 'object'
   } as const satisfies JSONSchema;
@@ -36,18 +36,16 @@ export namespace RegistryFilesResultEntity {
 
     const value = candidate as Record<string, unknown>;
 
-    return Array.isArray(value.entityFiles) && value.entityFiles.every((entry) => {
-      if (typeof entry !== 'object' || entry === null) {
+    if (!Array.isArray(value.entityFiles) || typeof value.indexSource !== 'string') {
+      return false;
+    }
+
+    for (const entry of value.entityFiles) {
+      if (!RegistryFileEntryEntity.validate(entry)) {
         return false;
       }
+    }
 
-      const entryValue = entry as Record<string, unknown>;
-
-      return typeof entryValue.iri === 'string'
-        && typeof entryValue.name === 'string'
-        && typeof entryValue.path === 'string'
-        && typeof entryValue.source === 'string';
-    })
-      && typeof value.indexSource === 'string';
+    return true;
   }
 }

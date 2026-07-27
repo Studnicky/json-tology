@@ -13,7 +13,6 @@
 import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraphRelationInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
@@ -22,6 +21,7 @@ import type { EmitQualifiedCardinalityRestrictionArgumentListInterface } from '.
 import type { EmitRestrictionArgumentListInterface } from '../../interfaces/EmitRestrictionArgumentListInterface.js';
 import type { TypedLiteralObjectEntity } from '../../entities/TypedLiteralObjectEntity.js';
 import type { EmitPatternPropertyEntryArgumentListInterface } from '../../interfaces/EmitPatternPropertyEntryArgumentListInterface.js';
+import type { ProjectionGraphOptionsInterface } from '../../interfaces/ProjectionGraphOptionsInterface.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
@@ -36,7 +36,7 @@ import { QuadEmit } from './QuadEmit.js';
 
 import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
-import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
+import { ProjectionSetup } from './ProjectionSetup.js';
 import { VocabProjection } from './VocabProjection.js';
 import { PropertyProjection } from './PropertyProjection.js';
 import { GraphError } from '../../errors/GraphError.js';
@@ -77,6 +77,27 @@ class RestrictionEmit {
     quads.push(QuadFactory.quad(rBnode, constraint, constraintValue, { curie }));
 
     return rBnode;
+  }
+
+  /**
+   * Emit the "without trigger" bnode: an `owl:Class` that is `owl:complementOf`
+   * an `owl:minCardinality 1` restriction on `propertyIri`. Shared by
+   * `emitDependentSchemaBranch` and `emitNotTriggerBranch`, which both negate
+   * "property is present" to express "property is absent".
+   */
+  static emitWithoutTriggerBnode(
+    propertyIri: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined,
+    issuer: IdentifierIssuerInterface | undefined
+  ): string {
+    const restrictionBnode = RestrictionEmit.emitMinimumCardinalityOneRestriction(propertyIri, quads, curie, issuer);
+    const withoutTriggerBnode = QuadFactory.nextBnode(issuer);
+
+    quads.push(QuadFactory.quad(withoutTriggerBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
+    quads.push(QuadFactory.quad(withoutTriggerBnode, OWL.complementOf, QuadFactory.bnode(restrictionBnode), { curie }));
+
+    return withoutTriggerBnode;
   }
 }
 
@@ -167,12 +188,7 @@ class OwlVocabProjection extends VocabProjection {
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const restrictionBnode = RestrictionEmit.emitMinimumCardinalityOneRestriction(ifReference, quads, curie, issuer);
-
-    const withoutTriggerBnode = QuadFactory.nextBnode(issuer);
-
-    quads.push(QuadFactory.quad(withoutTriggerBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
-    quads.push(QuadFactory.quad(withoutTriggerBnode, OWL.complementOf, QuadFactory.bnode(restrictionBnode), { curie }));
+    const withoutTriggerBnode = RestrictionEmit.emitWithoutTriggerBnode(ifReference, quads, curie, issuer);
 
     const unionBnode = QuadFactory.nextBnode(issuer);
 
@@ -191,12 +207,7 @@ class OwlVocabProjection extends VocabProjection {
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const restrictionBnode = RestrictionEmit.emitMinimumCardinalityOneRestriction(triggerPropIri, quads, curie, issuer);
-
-    const withoutTriggerBnode = QuadFactory.nextBnode(issuer);
-
-    quads.push(QuadFactory.quad(withoutTriggerBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
-    quads.push(QuadFactory.quad(withoutTriggerBnode, OWL.complementOf, QuadFactory.bnode(restrictionBnode), { curie }));
+    const withoutTriggerBnode = RestrictionEmit.emitWithoutTriggerBnode(triggerPropIri, quads, curie, issuer);
 
     return QuadFactory.bnode(withoutTriggerBnode);
   }
@@ -787,6 +798,28 @@ export class OwlProjection {
   // Pattern property emission
   // ---------------------------------------------------------------------------
 
+  /** Push an `RDFS.range` quad from the first relation's target IRI, if any. */
+  private static emitFirstRelAsRangeQuad(
+    subject: string,
+    rels: SchemaGraphRelationInterface[],
+    curie: CurieInterface | undefined,
+    quads: QuadInterface[]
+  ): void {
+    const firstRel = rels.at(0);
+
+    if (firstRel === undefined) {
+      return;
+    }
+
+    const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstRel), { curie });
+
+    quads.push(QuadFactory.quad(subject, RDFS.range, rangeIri, { curie }));
+  }
+
+  // ---------------------------------------------------------------------------
+  // PrefixItems emission (rdf:_N restrictions)
+  // ---------------------------------------------------------------------------
+
   /** Emit OWL quads for a single pattern-property entry. */
   private static emitPatternPropertyEntry(argumentList: EmitPatternPropertyEntryArgumentListInterface): void {
     const {
@@ -816,23 +849,11 @@ export class OwlProjection {
     quads.push(QuadFactory.quad(propIri, SH.pattern, QuadFactory.literal(pattern, XSD.string, { curie }), { curie }));
 
     if (hasDatatype) {
-      const firstDatatypeRel = datatypeRels.at(0);
-
-      if (firstDatatypeRel !== undefined) {
-        const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstDatatypeRel), { curie });
-
-        quads.push(QuadFactory.quad(propIri, RDFS.range, datatypeIri, { curie }));
-      }
+      OwlProjection.emitFirstRelAsRangeQuad(propIri, datatypeRels, curie, quads);
     }
 
     if (hasRange) {
-      const firstRangeRel = rangeRels.at(0);
-
-      if (firstRangeRel !== undefined) {
-        const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstRangeRel), { curie });
-
-        quads.push(QuadFactory.quad(propIri, RDFS.range, rangeIri, { curie }));
-      }
+      OwlProjection.emitFirstRelAsRangeQuad(propIri, rangeRels, curie, quads);
     }
 
     if (patternEntry !== undefined) {
@@ -841,7 +862,7 @@ export class OwlProjection {
   }
 
   // ---------------------------------------------------------------------------
-  // PrefixItems emission (rdf:_N restrictions)
+  // Property node emission helpers
   // ---------------------------------------------------------------------------
 
   // Site 2 fix: resolve the pattern-property IRI via predicateResolver when
@@ -872,10 +893,6 @@ export class OwlProjection {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Property node emission helpers
-  // ---------------------------------------------------------------------------
-
   private static emitPrefixItemQuads(
     subject: string,
     entry: RelationIndexInterface,
@@ -904,6 +921,10 @@ export class OwlProjection {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Property node emission
+  // ---------------------------------------------------------------------------
+
   private static emitPropertyAnnotations(
     canonicalId: string,
     entry: RelationIndexInterface,
@@ -929,10 +950,6 @@ export class OwlProjection {
 
     QuadEmit.emitLiterals(canonicalId, entry, DCT.format, DCT.format, quads, { curie });
   }
-
-  // ---------------------------------------------------------------------------
-  // Property node emission
-  // ---------------------------------------------------------------------------
 
   private static emitPropertyCharacteristics(
     canonicalId: string,
@@ -1008,21 +1025,9 @@ export class OwlProjection {
     if (!hasMaximumCount) {
       quads.push(QuadFactory.quad(canonicalId, RDFS.range, QuadFactory.iri(RDF.List, { curie }), { curie }));
     } else if (rangeRels.length > 0) {
-      const firstRangeRel = rangeRels.at(0);
-
-      if (firstRangeRel !== undefined) {
-        const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstRangeRel), { curie });
-
-        quads.push(QuadFactory.quad(canonicalId, RDFS.range, rangeIri, { curie }));
-      }
+      OwlProjection.emitFirstRelAsRangeQuad(canonicalId, rangeRels, curie, quads);
     } else if (datatypeRels.length > 0) {
-      const firstDatatypeRangeRel = datatypeRels.at(0);
-
-      if (firstDatatypeRangeRel !== undefined) {
-        const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(firstDatatypeRangeRel), { curie });
-
-        quads.push(QuadFactory.quad(canonicalId, RDFS.range, datatypeIri, { curie }));
-      }
+      OwlProjection.emitFirstRelAsRangeQuad(canonicalId, datatypeRels, curie, quads);
     }
 
     const unionOfListRels = entry.all.filter((relation: SchemaGraphRelationInterface): boolean => {
@@ -1106,23 +1111,11 @@ export class OwlProjection {
     return result;
   }
 
-  public static graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined;
-    'issuer'?: IdentifierIssuerInterface | undefined;
-    'predicateResolver'?: PredicateResolverInterface | undefined }): QuadInterface[] {
-    const { curie } = options ?? {};
-    const { predicateResolver } = options ?? {};
-    const issuer = options?.issuer ?? new IdentifierIssuer();
-    const quads: QuadInterface[] = [];
-    const allRelations = graph.allRelations();
-    const index = ProjectionIndex.build(allRelations);
-    const context: ProjectionEmitContextInterface = {
-      curie,
-      graph,
-      index,
-      issuer,
-      predicateResolver,
-      quads
-    };
+  public static graph(graph: SchemaGraphInterface, options?: ProjectionGraphOptionsInterface): QuadInterface[] {
+    const {
+      context, index
+    } = ProjectionSetup.build(graph, options);
+    const { quads } = context;
 
     for (const [
       sourceId,

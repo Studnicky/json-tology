@@ -38,6 +38,7 @@ import {
 import { Cursor } from './Cursor.js';
 import { SchemaCursor } from './SchemaCursor.js';
 import { Terms } from '../quads/Terms.js';
+import { ResourceTermKindEntity } from '../../entities/ResourceTermKindEntity.js';
 
 
 /** Quad-object helpers shared by `AboxGraph`'s indexing and lift logic. */
@@ -266,7 +267,7 @@ export class AboxGraph implements AboxGraphInterface {
         collected.push(quad);
 
         if (
-          (quad.object.termType === 'NamedNode' || quad.object.termType === 'BlankNode')
+          ResourceTermKindEntity.validate(quad.object.termType)
           && !visited.has(quad.object.value)
         ) {
           queue.push(quad.object.value);
@@ -425,7 +426,7 @@ export class AboxGraph implements AboxGraphInterface {
     });
     this.bySubject.set(subjectValue, subjectEntries);
 
-    if (objectTermType === 'NamedNode' || objectTermType === 'BlankNode') {
+    if (ResourceTermKindEntity.validate(objectTermType)) {
       const objectEntries = this.byObject.get(quad.object.value) ?? [];
 
       objectEntries.push({
@@ -628,7 +629,7 @@ export class AboxGraph implements AboxGraphInterface {
     const result: string[] = [];
 
     for (const entry of entries) {
-      if (entry.objectTermType === 'NamedNode' || entry.objectTermType === 'BlankNode') {
+      if (ResourceTermKindEntity.validate(entry.objectTermType)) {
         result.push(entry.object);
       }
     }
