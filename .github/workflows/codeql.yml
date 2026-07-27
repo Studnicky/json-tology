@@ -30,12 +30,17 @@ jobs:
         with:
           path: repos/${{ github.repository }}/code-scanning/alerts
 
+      # The default-setup endpoint may require repo-admin access GITHUB_TOKEN
+      # doesn't have, regardless of the `permissions:` granted above — fail
+      # closed (assume "configured", skip the scan) on any error rather than
+      # falling through to "not-configured" and hitting the same SARIF
+      # rejection this check exists to avoid.
       - name: Check code-scanning default setup
         id: default-setup
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          state=$(gh api "repos/${{ github.repository }}/code-scanning/default-setup" --jq '.state' 2>/dev/null || echo "not-configured")
+          state=$(gh api "repos/${{ github.repository }}/code-scanning/default-setup" --jq '.state' 2>/dev/null || echo "configured")
           echo "state=$state" >> "$GITHUB_OUTPUT"
 
       # GitHub's automatic "default setup" CodeQL scanning and this workflow's
