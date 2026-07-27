@@ -16,15 +16,7 @@ jobs:
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          cache: npm
-          node-version: '24'
-
-      - name: Install dependencies
-        run: npm ci --include=dev --include=optional
+      - uses: ./.github/actions/node-setup
 
       - name: Build
         run: npm run build
@@ -49,7 +41,7 @@ jobs:
             2>&1 | tee coverage-report.txt
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage-report
           path: coverage-report.txt

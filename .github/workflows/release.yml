@@ -22,7 +22,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with: { fetch-depth: 0 }
 
       - name: Resolve tag
@@ -52,9 +52,9 @@ jobs:
         run: |
           VERSION='${{ steps.tag.outputs.version }}'
           awk -v v="$VERSION" '
-            $0 ~ "^## \\[" v "\\]" { capture = 1; next }
-            capture && /^## \[/    { exit }
-            capture                { print }
+            $0 ~ "^## \\[?" v "\\]?" { capture = 1; next }
+            capture && /^## /       { exit }
+            capture                 { print }
           ' CHANGELOG.md > /tmp/section.md
           if [ ! -s /tmp/section.md ]; then
             echo "::error::No CHANGELOG section found for [$VERSION]"

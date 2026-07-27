@@ -14,15 +14,7 @@ jobs:
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          cache: npm
-          node-version: '24'
-
-      - name: Install dependencies
-        run: npm ci --include=dev --include=optional
+      - uses: ./.github/actions/node-setup
 
       - name: Verify version-stamped SVGs are in sync
         run: npm run stamp-version:check
@@ -53,18 +45,11 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
+      - uses: ./.github/actions/node-setup
         with:
-          cache: npm
-          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm ci --include=dev --include=optional
 
       - name: Build
         run: npm run build
@@ -102,131 +87,5 @@ jobs:
         run: |
           npm publish --provenance --access public
           echo "published=true" >> $GITHUB_OUTPUT
-
-    timeout-minutes: 15
-
-  publish-gpr:
-    name: Publish to GitHub Packages
-    needs: validate
-    outputs:
-      published: ${{ steps.publish-package.outputs.published }}
-      version: ${{ steps.check-version.outputs.version }}
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          cache: npm
-          node-version: '24'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@studnicky'
-
-      - name: Install dependencies
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm ci --include=dev --include=optional
-
-      - name: Build
-        run: npm run build
-
-      - name: Validate changelog has version entry
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          if [ -f CHANGELOG.md ] && ! grep -qE "^## \[?${VERSION}\]?" CHANGELOG.md; then
-            echo "::error::CHANGELOG.md does not contain entry for version ${VERSION}"
-            exit 1
-          fi
-
-      - name: Rewrite package.json name for GitHub Packages
-        run: |
-          node -e "
-            const fs = require('node:fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.name = '@studnicky/json-tology';
-            pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
-
-      - name: Check if version already published
-        id: check-version
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PKG_NAME=$(node -p "require('./package.json').name")
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          echo "version=${PKG_VERSION}" >> $GITHUB_OUTPUT
-
-          if npm view "${PKG_NAME}@${PKG_VERSION}" version 2>/dev/null; then
-            echo "Version ${PKG_VERSION} already published on GitHub Packages, skipping"
-            echo "already_published=true" >> $GITHUB_OUTPUT
-          else
-            echo "Version ${PKG_VERSION} not found on GitHub Packages, will publish"
-            echo "already_published=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Publish to GitHub Packages
-        id: publish-package
-        if: steps.check-version.outputs.already_published == 'false'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm publish --provenance --access public
-          echo "published=true" >> $GITHUB_OUTPUT
-
-    timeout-minutes: 15
-
-  release:
-    if: ${{ always() && (needs.publish-gpr.outputs.published == 'true' || needs.publish.outputs.published == 'true') }}
-    needs: [publish, publish-gpr]
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Check if release exists
-        id: check-release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="v${{ needs.publish-gpr.outputs.version }}"
-          if gh release view "$VERSION" &>/dev/null; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Extract changelog notes
-        if: steps.check-release.outputs.exists == 'false'
-        run: |
-          VERSION="${{ needs.publish-gpr.outputs.version }}"
-          NOTES=""
-          if [ -f CHANGELOG.md ]; then
-            NOTES=$(awk -v ver="$VERSION" '
-              /^## \[?'"$VERSION"'\]?/ { found=1; next }
-              found && /^## / { exit }
-              found { print }
-            ' CHANGELOG.md | sed '/^$/N;/^\n$/d')
-          fi
-          if [ -z "$NOTES" ]; then
-            NOTES="Release v${VERSION}"
-          fi
-          echo "$NOTES" > release_notes.md
-
-      - name: Create GitHub Release
-        if: steps.check-release.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="v${{ needs.publish-gpr.outputs.version }}"
-          gh release create "$VERSION" \
-            --title "$VERSION" \
-            --notes-file release_notes.md \
-            --verify-tag=false
 
     timeout-minutes: 15

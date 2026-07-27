@@ -15,6 +15,7 @@ npm run test:e2e         # Real-world scenario tests
 npm run test:types       # Compile-time type assertion tests
 npm run test:all         # All tiers
 npm run clean            # Remove dist/
+npx changeset add        # Author a changeset for your change (required for PRs into develop)
 
 # Run a single test file
 npx tsx --test 'test/unit/schemaRegistry.test.ts'

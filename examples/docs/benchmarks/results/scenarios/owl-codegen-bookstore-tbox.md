@@ -1,3 +1,3 @@
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 1,019 | 981058 | - |
+| json-tology | 948 | 1054970 | - |
