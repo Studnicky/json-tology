@@ -123,7 +123,7 @@
     "@codemirror/lang-javascript": "^6.2.5",
     "@eslint/js": "^10.0.1",
     "@sinclair/typebox": "^0.34.52",
-    "@studnicky/eslint-config": "^9.1.1",
+    "@studnicky/eslint-config": "^9.2.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/json-schema": "^7.0.15",
     "@types/jsonld": "^1.5.15",
