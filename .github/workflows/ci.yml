@@ -63,6 +63,8 @@ jobs:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TSX_CACHE: 1
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
       - uses: ./.github/actions/node-setup
 
       - name: Build
@@ -95,6 +97,8 @@ jobs:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TSX_CACHE: 1
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
       - uses: ./.github/actions/node-setup
 
       - name: Build
@@ -124,6 +128,8 @@ jobs:
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
       - uses: ./.github/actions/node-setup
 
       - name: ESLint
@@ -140,6 +146,8 @@ jobs:
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
       - uses: ./.github/actions/node-setup
 
       - name: Check circular dependencies

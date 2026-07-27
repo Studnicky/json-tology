@@ -1,4 +1,4 @@
-description: Checks out the repository, sets up Node.js with npm caching, and installs dependencies.
+description: Sets up Node.js with npm caching and installs dependencies. Callers must check out the repository first — a composite action referenced via a local path cannot check itself out, since GitHub Actions must already have the repo on disk to resolve the action's own definition.
 inputs:
   node-version:
     default: '24'
@@ -13,8 +13,6 @@ inputs:
 name: node-setup
 runs:
   steps:
-    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
     - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
       with:
         cache: npm
