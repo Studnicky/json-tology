@@ -30,14 +30,27 @@ jobs:
         with:
           path: repos/${{ github.repository }}/code-scanning/alerts
 
+      - name: Check code-scanning default setup
+        id: default-setup
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh api "repos/${{ github.repository }}/code-scanning/default-setup" --jq '.state' 2>/dev/null || echo "not-configured")
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+
+      # GitHub's automatic "default setup" CodeQL scanning and this workflow's
+      # custom ("advanced configuration") scan are mutually exclusive — a SARIF
+      # upload from an advanced configuration is rejected outright while default
+      # setup is active for the same language. Skip entirely rather than upload
+      # a scan GitHub will refuse to process.
       - name: Initialize CodeQL
-        if: steps.probe.outputs.enabled == 'true'
+        if: steps.probe.outputs.enabled == 'true' && steps.default-setup.outputs.state != 'configured'
         uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           languages: ${{ matrix.language }}
 
       - name: Perform CodeQL Analysis
-        if: steps.probe.outputs.enabled == 'true'
+        if: steps.probe.outputs.enabled == 'true' && steps.default-setup.outputs.state != 'configured'
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           category: /language:${{ matrix.language }}
