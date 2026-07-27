@@ -5,7 +5,7 @@ import {
 // ✗ Don't do this — minCardinality on a multi-valued property is an OWL axiom;
 // it does NOT add a minItems constraint on the JSON Schema array
 const authoredBook = Compose.subClassOf(
-  Compose.minCardinality('https://bookstore.example/authors', 2),
+  Compose.minimumCardinality('https://bookstore.example/authors', 2),
   {
     '$id': 'https://bookstore.example/AuthoredBook',
     'type': 'object'

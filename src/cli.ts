@@ -32,13 +32,16 @@ import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { VizDataCollector } from './modules/viz/VizDataCollector.js';
 import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphInterface.js';
-import type { BuildOptionsType } from './types/BuildOptionsType.js';
-import type { VizOptionsType } from './types/VizOptionsType.js';
-import type { BuildOutputOptionsType } from './types/BuildOutputOptionsType.js';
+import type { BuildOptionsEntity } from './entities/BuildOptionsEntity.js';
+import type { VizOptionsEntity } from './entities/VizOptionsEntity.js';
+import type { BuildOutputOptionsInterface } from './interfaces/BuildOutputOptionsInterface.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
 import { SchemaIri } from './modules/graph/SchemaIri.js';
+import {
+  NON_ALPHANUMERIC_ASCII, NON_WORD_CHARS, NUMERIC_DOTTED_SEGMENT, TRAILING_SLASH, UNSAFE_FILENAME_CHARS
+} from './constants/PATH.js';
 
 const writer = CliWriter.default;
 
@@ -54,7 +57,7 @@ const CLI_PREFIXES: Record<string, string> = {
 class SchemaLoader {
   static findFiles(pattern: string): string[] {
     if (pattern.includes('*')) {
-      const dir = pattern.slice(0, pattern.indexOf('*')).replace(/\/$/u, '') || '.';
+      const dir = pattern.slice(0, pattern.indexOf('*')).replace(TRAILING_SLASH, '') || '.';
       const ext = pattern.slice(pattern.lastIndexOf('.'));
       const entries = readdirSync(resolve(dir), {
         'encoding': 'utf8',
@@ -62,16 +65,13 @@ class SchemaLoader {
       });
 
       return entries
-        .filter((entry: string): boolean => {
-          const result = entry.endsWith(ext);
+        .reduce((matched: string[], entry: string): string[] => {
+          if (entry.endsWith(ext)) {
+            matched.push(resolve(dir, entry));
+          }
 
-          return result;
-        })
-        .map((entry: string): string => {
-          const result = resolve(dir, entry);
-
-          return result;
-        })
+          return matched;
+        }, [])
         .sort();
     }
 
@@ -82,7 +82,7 @@ class SchemaLoader {
     const files = SchemaLoader.findFiles(schemaGlob);
 
     if (files.length === 0) {
-      writer.err(`No files matched: ${schemaGlob}`);
+      writer.error(`No files matched: ${schemaGlob}`);
       writer.exit(1);
     }
 
@@ -129,12 +129,12 @@ class SchemaLoader {
 
 class BaseIri {
   static deriveFromSchemaId(schemaId: string): string {
-    // parseRef extracts the IRI base (before '#') in the canonical way.
-    const withoutHash = SchemaIri.parseRef(schemaId).id;
+    // parseReference extracts the IRI base (before '#') in the canonical way.
+    const withoutHash = SchemaIri.parseReference(schemaId).id;
 
     try {
       const parsed = new URL(withoutHash);
-      const pathname = parsed.pathname.replace(/\/$/u, '');
+      const pathname = parsed.pathname.replace(TRAILING_SLASH, '');
       const lastSlash = pathname.lastIndexOf('/');
 
       parsed.hash = '';
@@ -183,69 +183,71 @@ class BaseIri {
 // Prefix derivation
 // ---------------------------------------------------------------------------
 
-function derivePrefixFromIri(iri: URL): string {
-  const segments = iri.pathname.split('/').filter(Boolean);
-
-  segments.pop();
-
-  for (let i = segments.length - 1; i >= 0; i--) {
-    const segment = segments[i];
-
-    if (segment === undefined) {
-      continue;
-    }
-
-    const candidate = segment.replaceAll(/\W/gu, '').toLowerCase();
-
-    if (candidate !== '' && !/^\d[\d.]*$/u.test(segment)) {
-      return candidate;
-    }
-  }
-
-  const host = iri.hostname.split('.');
-  const domain = host.length > 1 ? host.at(-2) : host[0];
-
-  return (domain ?? 'ns').toLowerCase();
-}
-
 class IdUrl {
   static parse(id: string): undefined | URL {
     try {
       return new URL(id);
     } catch {
-      writer.err(`Skipping prefix derivation for unparseable $id URL: ${id}`);
+      writer.error(`Skipping prefix derivation for unparseable $id URL: ${id}`);
 
       return undefined;
     }
   }
 }
 
-function derivePrefixesFromSchemas(schemas: ReadonlyArray<Record<string, unknown>>): Record<string, string> {
-  const prefixes: Record<string, string> = {};
+class PrefixDerivation {
+  static fromIri(iri: URL): string {
+    const segments = iri.pathname.split('/').filter(Boolean);
 
-  for (const schema of schemas) {
-    const id = schema.$id;
+    segments.pop();
 
-    if (typeof id !== 'string') {
-      continue;
+    for (let i = segments.length - 1; i >= 0; i--) {
+      const segment = segments[i];
+
+      if (segment === undefined) {
+        continue;
+      }
+
+      const candidate = segment.replaceAll(NON_WORD_CHARS, '').toLowerCase();
+
+      if (candidate !== '' && !NUMERIC_DOTTED_SEGMENT.test(segment)) {
+        return candidate;
+      }
     }
 
-    const parsed = IdUrl.parse(id);
+    const host = iri.hostname.split('.');
+    const domain = host.length > 1 ? host.at(-2) : host[0];
 
-    if (parsed === undefined) {
-      continue;
-    }
-
-    const lastSlash = id.lastIndexOf('/');
-    const namespace = `${id.slice(0, lastSlash)}/`;
-    const prefix = derivePrefixFromIri(parsed);
-
-    if (prefix !== '' && !Object.hasOwn(prefixes, prefix)) {
-      prefixes[prefix] = namespace;
-    }
+    return (domain ?? 'ns').toLowerCase();
   }
 
-  return prefixes;
+  static fromSchemas(schemas: ReadonlyArray<Record<string, unknown>>): Record<string, string> {
+    const prefixes: Record<string, string> = {};
+
+    for (const schema of schemas) {
+      const id = schema.$id;
+
+      if (typeof id !== 'string') {
+        continue;
+      }
+
+      const parsed = IdUrl.parse(id);
+
+      if (parsed === undefined) {
+        continue;
+      }
+
+      const lastSlash = id.lastIndexOf('/');
+      const namespace = `${id.slice(0, lastSlash)}/`;
+      const prefix = PrefixDerivation.fromIri(parsed);
+
+      if (prefix !== '' && !Object.hasOwn(prefixes, prefix)) {
+        prefixes[prefix] = namespace;
+      }
+    }
+
+    return prefixes;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -265,7 +267,7 @@ class Browser {
 
     execFile(cmd, [filePath], (error: ExecFileException | null): void => {
       if (error) {
-        writer.err(`Failed to open browser: ${error.message}`);
+        writer.error(`Failed to open browser: ${error.message}`);
       }
     });
   }
@@ -289,7 +291,7 @@ class Build {
       }
 
       const schemaId = rootSchema.$id;
-      const safeName = basename(schemaId).replaceAll(/[^\w-]/gu, '_');
+      const safeName = basename(schemaId).replaceAll(UNSAFE_FILENAME_CHARS, '_');
 
       if (format === 'artifact') {
         const artifact = GraphArtifact.toArtifact(graph);
@@ -307,7 +309,7 @@ class Build {
           JSON.stringify(result, null, 2)
         );
       } else {
-        writer.err(`Unknown format: ${format}`);
+        writer.error(`Unknown format: ${format}`);
         writer.exit(1);
       }
     }
@@ -315,10 +317,10 @@ class Build {
     writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
   }
 
-  private static ontologyOutput(opts: BuildOutputOptionsType): void {
+  private static ontologyOutput(options: BuildOutputOptionsInterface): void {
     const {
       baseIri, graphs, output, outputFile
-    } = opts;
+    } = options;
     const serializer = new GraphOntologySerializer();
     const quads = serializer.serializeQuads(graphs);
     const builder = new OntologyBuilder({
@@ -344,7 +346,7 @@ class Build {
     return result;
   }
 
-  static async run(options: BuildOptionsType): Promise<void> {
+  static async run(options: BuildOptionsEntity.Type): Promise<void> {
     const {
       'baseIri': configuredBaseIri, format, output, outputFile, 'schema': schemaGlob
     } = options;
@@ -357,26 +359,26 @@ class Build {
     const graphs = registry.listGraphs();
     const baseIri = BaseIri.resolve(graphs, configuredBaseIri);
 
-    const buildOpts: BuildOutputOptionsType = {
+    const buildOptions: BuildOutputOptionsInterface = {
       baseIri,
-      graphs,
+      'graphs': [...graphs],
       output,
       outputFile
     };
 
     if (format === 'ontology') {
-      Build.ontologyOutput(buildOpts);
+      Build.ontologyOutput(buildOptions);
     } else if (format === 'shacl') {
-      Build.shaclOutput(buildOpts);
+      Build.shaclOutput(buildOptions);
     } else {
       Build.graphOutput(graphs, format, output);
     }
   }
 
-  private static shaclOutput(opts: BuildOutputOptionsType): void {
+  private static shaclOutput(options: BuildOutputOptionsInterface): void {
     const {
       baseIri, graphs, output, outputFile
-    } = opts;
+    } = options;
     const serializer = new GraphShaclSerializer();
     const shaclQuads = serializer.serializeQuads(graphs);
     const builder = new OntologyBuilder({
@@ -395,12 +397,12 @@ class Build {
 // ---------------------------------------------------------------------------
 
 class Viz {
-  static async run(options: VizOptionsType): Promise<void> {
+  static async run(options: VizOptionsEntity.Type): Promise<void> {
     const {
       noOpen, output, 'schema': schemaGlob
     } = options;
     const schemas = SchemaLoader.loadFiles(schemaGlob);
-    const prefixes = derivePrefixesFromSchemas(schemas);
+    const prefixes = PrefixDerivation.fromSchemas(schemas);
     const registry = new SchemaRegistry(Object.keys(prefixes).length > 0 ? { prefixes } : undefined);
 
     for (const schema of schemas) {
@@ -436,23 +438,23 @@ class Viz {
 // Owl-gen command
 // ---------------------------------------------------------------------------
 
-async function readStdin(): Promise<string> {
-  return new Promise<string>((res: (value: string) => void): void => {
-    const chunks: Buffer[] = [];
-
-    process.stdin.on('data', (chunk: Buffer): void => {
-      chunks.push(chunk);
-    });
-    process.stdin.on('end', (): void => {
-      res(Buffer.concat(chunks).toString('utf8'));
-    });
-  });
-}
-
 class OwlGen {
+  private static async readStdin(): Promise<string> {
+    return new Promise<string>((res: (value: string) => void): void => {
+      const chunks: Buffer[] = [];
+
+      process.stdin.on('data', (chunk: Buffer): void => {
+        chunks.push(chunk);
+      });
+      process.stdin.on('end', (): void => {
+        res(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+  }
+
   static async run(
     input: string,
-    opts: { 'baseIri'?: string;
+    options: { 'baseIri'?: string;
       'mode'?: string;
       'name'?: string;
       'out': string }
@@ -464,19 +466,19 @@ class OwlGen {
     const path = await import('node:path');
 
     const jsonLdSource = input === '-'
-      ? await readStdin()
+      ? await OwlGen.readStdin()
       : fs.readFileSync(resolve(input), 'utf8');
 
     const parsed = JSON.parse(jsonLdSource) as Record<string, unknown>;
-    const inferredName = opts.name ?? basename(input, path.extname(input)).replaceAll(/[^a-zA-Z0-9]+/gu, '_');
-    const outPath = opts.out;
-    const isDirectoryMode = opts.mode === 'directory'
-      || (opts.mode !== 'single' && !outPath.endsWith('.ts'));
+    const inferredName = options.name ?? basename(input, path.extname(input)).replaceAll(NON_ALPHANUMERIC_ASCII, '_');
+    const outPath = options.out;
+    const isDirectoryMode = options.mode === 'directory'
+      || (options.mode !== 'single' && !outPath.endsWith('.ts'));
 
     if (isDirectoryMode) {
       const outDir = resolve(outPath);
       const fileResult = writeRegistryDirectory({
-        ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
+        ...(!(options.baseIri === undefined) && { 'baseIri': options.baseIri }),
         'input': parsed,
         'name': inferredName,
         'outDir': outDir,
@@ -486,14 +488,14 @@ class OwlGen {
       writer.out(`Generated registry directory (${fileResult.entityFiles.length} entities + index.ts) → ${outPath}`);
     } else {
       writeFromTbox({
-        ...(!(opts.baseIri === undefined) && { 'baseIri': opts.baseIri }),
+        ...(!(options.baseIri === undefined) && { 'baseIri': options.baseIri }),
         'input': parsed,
         'name': inferredName,
         'output': resolve(outPath),
         'sourceLabel': input
       });
 
-      writer.out(`Generated ${opts.out} from ${input}`);
+      writer.out(`Generated ${options.out} from ${input}`);
     }
   }
 }
@@ -517,12 +519,12 @@ program
   .option('--format <type>', 'Output format: artifact, schema, ontology, shacl', 'artifact')
   .option('--base-iri <iri>', 'Base IRI for ontology output')
   .option('--output-file <filename>', 'Override output filename (for single-file formats)')
-  .action(async (opts: { 'baseIri'?: string;
+  .action(async (options: { 'baseIri'?: string;
     'format': string;
     'output': string;
     'outputFile'?: string;
     'schema': string }): Promise<void> => {
-    await Build.run(opts);
+    await Build.run(options);
   });
 
 program
@@ -531,10 +533,10 @@ program
   .requiredOption('--schema <glob>', 'Schema file glob pattern')
   .option('--output <file>', 'Output HTML file', 'schema-graph.html')
   .option('--no-open', 'Do not open browser automatically')
-  .action(async (opts: { 'noOpen': boolean;
+  .action(async (options: { 'noOpen': boolean;
     'output': string;
     'schema': string }): Promise<void> => {
-    await Viz.run(opts);
+    await Viz.run(options);
   });
 
 program
@@ -544,16 +546,16 @@ program
   .option('--name <name>', 'Registry constant name (defaults to the input filename basename)')
   .option('--base-iri <iri>', 'Override the base IRI used in the generated registry')
   .option('--mode <mode>', 'Emission mode: "single" (default when --out ends in .ts) or "directory"')
-  .action(async (input: string, opts: { 'baseIri'?: string;
+  .action(async (input: string, options: { 'baseIri'?: string;
     'mode'?: string;
     'name'?: string;
     'out': string }): Promise<void> => {
-    await OwlGen.run(input, opts);
+    await OwlGen.run(input, options);
   });
 
 try {
   await program.parseAsync(process.argv);
 } catch (error) {
-  writer.err(String(error));
+  writer.error(String(error));
   writer.exit(1);
 }

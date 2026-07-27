@@ -1,5 +1,5 @@
 import type {
-  InferType, ValidationErrorType
+  InferType, ValidationErrorEntity
 } from '../../../src/types/index.js';
 import { JsonTology } from '../../../src/index.js';
 
@@ -30,6 +30,6 @@ console.log('Config with narrowed keys:', config);
 // An unknown key fails runtime validation.
 const unknownKeyErrors = JsonTology.validate(ConfigSchema, { 'timeout': '30' });
 
-console.log('Errors for unknown key "timeout":', unknownKeyErrors.items.map((err: ValidationErrorType) => {
+console.log('Errors for unknown key "timeout":', unknownKeyErrors.items.map((err: ValidationErrorEntity.Type) => {
   return err.message;
 }));

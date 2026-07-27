@@ -1,0 +1,24 @@
+description: Probes a GitHub API path and reports whether it's accessible (e.g. to detect GHAS availability).
+inputs:
+  path:
+    description: 'GitHub API path to probe, e.g. repos/OWNER/REPO/code-scanning/alerts'
+    required: true
+name: gh-api-probe
+outputs:
+  enabled:
+    description: 'true if the API path was accessible, false otherwise'
+    value: ${{ steps.probe.outputs.enabled }}
+runs:
+  steps:
+    - env:
+        GH_TOKEN: ${{ github.token }}
+        PROBE_PATH: ${{ inputs.path }}
+      id: probe
+      run: |
+        if gh api "$PROBE_PATH" --silent 2>/dev/null; then
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+        fi
+      shell: bash
+  using: composite

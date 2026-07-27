@@ -1,0 +1,58 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Analyze
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        language: ['javascript-typescript']
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Probe GHAS availability
+        id: probe
+        uses: ./.github/actions/gh-api-probe
+        with:
+          path: repos/${{ github.repository }}/code-scanning/alerts
+
+      # GitHub's automatic "default setup" CodeQL scanning and this workflow's
+      # custom ("advanced configuration") scan are mutually exclusive — a SARIF
+      # upload from an advanced configuration is rejected outright while default
+      # setup is active for the same language ("CodeQL analyses from advanced
+      # configurations cannot be processed when the default setup is enabled").
+      # There's no reliable way to detect this from within the job itself: the
+      # code-scanning/default-setup endpoint needs repo-admin visibility that
+      # GITHUB_TOKEN doesn't have regardless of the `permissions:` granted
+      # above, and it answers with a misleading 200 "not-configured" rather
+      # than an error when it lacks that visibility — so a runtime probe can't
+      # distinguish "genuinely not configured" from "can't tell." Gate on a
+      # repository variable a maintainer sets by hand instead (same pattern as
+      # NPM_PUBLISH_ENABLED in publish.yml). Set CODEQL_ADVANCED_ENABLED=true
+      # only after confirming (Settings > Code security > Code scanning) that
+      # default setup is OFF for this repo.
+      - name: Initialize CodeQL
+        if: ${{ steps.probe.outputs.enabled == 'true' && vars.CODEQL_ADVANCED_ENABLED == 'true' }}
+        uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Perform CodeQL Analysis
+        if: ${{ steps.probe.outputs.enabled == 'true' && vars.CODEQL_ADVANCED_ENABLED == 'true' }}
+        uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
+        with:
+          category: /language:${{ matrix.language }}

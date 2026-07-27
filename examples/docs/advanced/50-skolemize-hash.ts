@@ -10,7 +10,7 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': Skolemize.hash({ 'baseIri': 'https://shop.example.com' }) });
+const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriForFunction': Skolemize.hash({ 'baseIri': 'https://shop.example.com' }) });
 
 console.assert(quads.length > 0, 'hash-minted IRIs emit quads');
 console.assert(

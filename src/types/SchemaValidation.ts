@@ -93,9 +93,11 @@ type IfDiscriminatorErrorsType<T, TPropKeys extends string>
  * `never` when the schema is sound.
  */
 export type SchemaValidationErrorsType<T>
-  = DependentRequiredErrorsType<T, SchemaPropertyKeysType<T>>
-    | IfDiscriminatorErrorsType<T, SchemaPropertyKeysType<T>>
-    | RequiredErrorsType<T, SchemaPropertyKeysType<T>>;
+  = [T] extends [unknown]
+    ? DependentRequiredErrorsType<T, SchemaPropertyKeysType<T>>
+      | IfDiscriminatorErrorsType<T, SchemaPropertyKeysType<T>>
+      | RequiredErrorsType<T, SchemaPropertyKeysType<T>>
+    : never;
 
 /**
  * Pass `T` through if it has no cross-keyword errors. Otherwise produce a
@@ -109,4 +111,4 @@ export type SchemaValidationErrorsType<T>
 export type ValidateSchemaType<T>
   = [SchemaValidationErrorsType<T>] extends [never]
     ? T
-    : T & { readonly 'schemaErrors': SchemaValidationErrorsType<T> };
+    : T & { 'schemaErrors': SchemaValidationErrorsType<T> };

@@ -1,0 +1,26 @@
+description: Sets up Node.js with npm caching and installs dependencies. Callers must check out the repository first — a composite action referenced via a local path cannot check itself out, since GitHub Actions must already have the repo on disk to resolve the action's own definition.
+inputs:
+  node-version:
+    default: '24'
+    description: 'Node.js version to install'
+    required: false
+  registry-url:
+    description: 'Optional registry URL to configure for npm (e.g. for publish workflows)'
+    required: false
+  scope:
+    description: 'Optional scope to associate with the registry (e.g. for scoped GitHub Packages publish)'
+    required: false
+name: node-setup
+runs:
+  steps:
+    - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      with:
+        cache: npm
+        node-version: ${{ inputs.node-version }}
+        registry-url: ${{ inputs.registry-url }}
+        scope: ${{ inputs.scope }}
+
+    - name: Install dependencies
+      run: npm ci --include=dev --include=optional
+      shell: bash
+  using: composite

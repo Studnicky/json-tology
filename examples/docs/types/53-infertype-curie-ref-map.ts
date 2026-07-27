@@ -37,7 +37,7 @@ function assert<T extends true>(_proof?: T): void {
   return;
 }
 
-// The CURIE-keyed map resolved `label` to `string`, not RefNotFoundType.
+// The CURIE-keyed map resolved `label` to `string`, not ReferenceNotFoundType.
 assert<AssertExtendsType<BookGenre['label'], string>>();
 
 console.log('BookGenreSchema $id:', BookGenreSchema.$id);

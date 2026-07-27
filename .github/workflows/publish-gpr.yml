@@ -29,19 +29,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - uses: actions/setup-node@v6
+      - uses: ./.github/actions/node-setup
         with:
-          cache: npm
-          node-version: '24'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@studnicky'
-
-      - name: Install dependencies
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm ci --include=dev --include=optional
 
       - name: Build
         run: npm run build

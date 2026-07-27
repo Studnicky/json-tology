@@ -1,6 +1,6 @@
-import type { SchemaGraphNodeType } from '../../types/SchemaGraph.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
-import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapType.js';
+import type { EffectivePropertyMapInterface } from '../../interfaces/EffectivePropertyMapInterface.js';
 
 /**
  * Collect the effective property set for a schema graph node.
@@ -8,7 +8,7 @@ import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapT
  * Walks own `properties`, then `allOf` members (recursively), then
  * `thenNode` and `elseNode` conditional branches. Cross-graph `$ref` members
  * (where `sem.ref` is not `'#'`-prefixed) are resolved via `resolveGraph` when
- * provided: the caller passes `(refId) => registry.graph(refId)` for
+ * provided: the caller passes `(referenceId) => registry.graph(referenceId)` for
  * registry-backed callers, or a local lookup closure for standalone callers.
  *
  * First-declaration-wins: a property declared in own `properties` shadows the
@@ -29,7 +29,7 @@ import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapT
  *
  * @param graph - Graph containing `node`.
  * @param node - Root node from which to start the walk.
- * @param resolveGraph - Optional resolver: `(refId) => SchemaGraphInterface | undefined`.
+ * @param resolveGraph - Optional resolver: `(referenceId) => SchemaGraphInterface | undefined`.
  *   When provided and a non-fragment `$ref` resolves to a registered graph, the
  *   walk descends into that graph's `rootNode`. When absent, cross-graph `$ref`
  *   nodes are skipped. Pass `(id) => registry.graph(id)` to resolve cross-graph
@@ -39,7 +39,7 @@ import type { EffectivePropertyMapType } from '../../types/EffectivePropertyMapT
  *
  * @category Graph
  * @since 0.22.0
- * @see {@link EffectivePropertyMapType}
+ * @see {@link EffectivePropertyMapInterface}
  * @group Graph
  */
 export class EffectiveProperties {
@@ -57,11 +57,11 @@ export class EffectiveProperties {
    */
   public static collect(
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
-    resolveGraph?: (refId: string) => SchemaGraphInterface | undefined
-  ): EffectivePropertyMapType {
-    const collected: EffectivePropertyMapType = new Map();
-    const visited = new Set<SchemaGraphNodeType>();
+    node: SchemaGraphNodeInterface,
+    resolveGraph?: (referenceId: string) => SchemaGraphInterface | undefined
+  ): EffectivePropertyMapInterface {
+    const collected: EffectivePropertyMapInterface = new Map();
+    const visited = new Set<SchemaGraphNodeInterface>();
 
     EffectiveProperties.walk(graph, node, resolveGraph, collected, visited);
 
@@ -81,11 +81,11 @@ export class EffectiveProperties {
    * @returns Memoized effective property map.
    */
   public static collectMemo(
-    cache: WeakMap<SchemaGraphNodeType, EffectivePropertyMapType>,
+    cache: WeakMap<SchemaGraphNodeInterface, EffectivePropertyMapInterface>,
     graph: SchemaGraphInterface,
-    node: SchemaGraphNodeType,
-    resolveGraph?: (refId: string) => SchemaGraphInterface | undefined
-  ): EffectivePropertyMapType {
+    node: SchemaGraphNodeInterface,
+    resolveGraph?: (referenceId: string) => SchemaGraphInterface | undefined
+  ): EffectivePropertyMapInterface {
     const cached = cache.get(node);
 
     if (cached !== undefined) {
@@ -104,10 +104,10 @@ export class EffectiveProperties {
    */
   private static walk(
     currentGraph: SchemaGraphInterface,
-    current: SchemaGraphNodeType,
-    resolveGraph: ((refId: string) => SchemaGraphInterface | undefined) | undefined,
-    collected: EffectivePropertyMapType,
-    visited: Set<SchemaGraphNodeType>
+    current: SchemaGraphNodeInterface,
+    resolveGraph: ((referenceId: string) => SchemaGraphInterface | undefined) | undefined,
+    collected: EffectivePropertyMapInterface,
+    visited: Set<SchemaGraphNodeInterface>
   ): void {
     if (visited.has(current)) {
       return;
@@ -117,13 +117,13 @@ export class EffectiveProperties {
     const sem = currentGraph.semantics(current);
 
     // Cross-graph $ref: when a node carries a non-fragment $ref, resolve the
-    // target refId and look it up via the caller-supplied resolver. If found,
+    // target referenceId and look it up via the caller-supplied resolver. If found,
     // descend into the target graph's rootNode instead of reading local
     // properties (the local node is a bare $ref stub with no properties).
     if (sem.ref !== undefined && !sem.ref.startsWith('#')) {
       if (resolveGraph !== undefined) {
-        const refId = currentGraph.resolveRefId(sem.ref);
-        const targetGraph = resolveGraph(refId);
+        const referenceId = currentGraph.resolveReferenceId(sem.ref);
+        const targetGraph = resolveGraph(referenceId);
 
         if (targetGraph !== undefined) {
           const rootNode = targetGraph.rootNode;

@@ -165,7 +165,7 @@ All error classes extend `BaseError`. Internal imports reference each file direc
 - `EncodeError.ts` — failure inside an `encode` transform function; extends `TransformError`; code: `TRANSFORM_ENCODE_FAILED`
 - `GraphError.ts` — pointer resolution, anchor lookup, ref resolution, dialect issues; codes: see `GRAPH_ERROR_CODE` in `src/constants/ERROR_CODES.ts`
 - `InstantiationError.ts` — schema instantiation failures; codes: `INSTANTIATION_FAILED`, `EXTRA_FORBIDDEN`
-- _(no LoadError class)_ — loader failures use `SchemaLoadErrorType` in `src/types/Loader.ts` (a discriminated union type, not an error class)
+- `SchemaLoadError.ts` — schema loader fetch/parse failures; carries `file`, `reason`, optional `status`; code: `SCHEMA_LOAD_FAILED`; `toLoadError()` projects to `SchemaLoadErrorEntity.Type` in `src/entities/SchemaLoadErrorEntity.ts`
 - `MaterializationError.ts` — materialization and ABox projection failures; codes: `MATERIALIZATION_FAILED`, `CYCLIC_DATA`, `INVALID_IRI_VALUE`, `NON_FINITE_NUMBER`, `MISSING_GRAPH_IRI`
 - `OwlImportError.ts` — OWL import fatal conditions; carries `axiomIri` and `subjectIri`; code: `OWL_IMPORT_NOT_IMPLEMENTED`
 - `SchemaError.ts` — registration, missing `$id`, structure validation; codes: see `SCHEMA_ERROR_CODE` in `src/constants/ERROR_CODES.ts`; includes `SCHEMA_ERROR_CODE.DUPLICATE_ID` (`SCHEMA_DUPLICATE_ID`) and `SCHEMA_ERROR_CODE.DUPLICATE_SHAPE` (`SCHEMA_DUPLICATE_SHAPE`) used by `SchemaRegistry` for duplicate detection

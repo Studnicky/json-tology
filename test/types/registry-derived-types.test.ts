@@ -21,7 +21,7 @@ import type {
   RegisteredOutputType,
   RegistryReferencesType
 } from '../../src/types/RegisteredTypes.js';
-import type { RefNotFoundType } from '../../src/types/TypeErrors.js';
+import type { ReferenceNotFoundType } from '../../src/types/TypeErrors.js';
 
 type AssertAssignable<TSource, TTarget>
   = [TSource] extends [TTarget] ? true : false;
@@ -80,7 +80,7 @@ assert<AssertAssignable<'urn:demo:Channel' | 'urn:demo:Message', keyof Refs & st
 // ---------------------------------------------------------------------------
 // 2. RegisteredCanonicalType — cross-schema $ref resolves via the registry,
 // no references map passed by hand. `channel` is the Channel shape, NOT
-// RefNotFoundType.
+// ReferenceNotFoundType.
 // ---------------------------------------------------------------------------
 
 type Message = RegisteredCanonicalType<typeof jt, 'urn:demo:Message'>;
@@ -91,7 +91,7 @@ assert<AssertAssignable<Message['text'], string>>();
 // Negative: it must NOT be the unresolved brand the bare `CanonicalShapeType`
 // (no references) would have produced.
 assert<AssertAssignable<
-  Message['channel'] extends RefNotFoundType<string> ? false : true,
+  Message['channel'] extends ReferenceNotFoundType<string> ? false : true,
   true
 >>();
 

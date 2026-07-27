@@ -32,7 +32,7 @@ import {
   describe, it
 } from 'node:test';
 import { JsonTology } from '../../src/index.js';
-import type { CompiledValidatorType } from '../../src/types/Compiler.js';
+import type { CompiledValidatorInterface } from '../../src/interfaces/CompiledValidatorInterface.js';
 
 // ---------------------------------------------------------------------------
 // CURRENTLY_FALLS_BACK allowlist
@@ -105,7 +105,7 @@ function runCorpusEntry(entry: CorpusEntry): void {
   jt.set(fullSchema as Record<string, unknown> & { readonly '$id': string });
 
   // Access compiled flag via registry.validator()
-  const validator: CompiledValidatorType = jt.registry.validator(schemaId);
+  const validator: CompiledValidatorInterface = jt.registry.validator(schemaId);
   const isCompiled = validator.compiled;
   const fallbackAllowed = CURRENTLY_FALLS_BACK.has(entry.key);
 
@@ -625,7 +625,7 @@ void describe('compilation-coverage: compiled keywords', () => {
       'type': 'object'
     });
 
-    const validator: CompiledValidatorType = jt.registry.validator(idA);
+    const validator: CompiledValidatorInterface = jt.registry.validator(idA);
 
     // mutual-ref is not allowlisted — Wave 0's ctx.refStack guard makes the
     // mutually-recursive plan a finite cyclic graph that compiles.
@@ -692,7 +692,7 @@ void describe('compilation-coverage: compiled keywords', () => {
 
     jt.set(CycleSchema);
 
-    const validator: CompiledValidatorType = jt.registry.validator(CycleSchema.$id);
+    const validator: CompiledValidatorInterface = jt.registry.validator(CycleSchema.$id);
 
     // Wave 0's IRI-keyed two-pass plan makes a self-referential $ref a finite
     // cyclic plan graph — it compiles, no fallback.
@@ -956,7 +956,7 @@ void describe('compilation-coverage: fallback-detected keywords (Wave targets)',
 
     jt.set(schema as Record<string, unknown> & { readonly '$id': string });
 
-    const validator: CompiledValidatorType = jt.registry.validator(schemaId);
+    const validator: CompiledValidatorInterface = jt.registry.validator(schemaId);
     const fallbackAllowed = CURRENTLY_FALLS_BACK.has('dynamicRef-basic');
 
     if (!validator.compiled) {
@@ -1005,7 +1005,7 @@ void describe('compilation-coverage: fallback-detected keywords (Wave targets)',
     jt.set(ExtSchema as Record<string, unknown> & { readonly '$id': string });
     jt.set(ConcreteSchema as Record<string, unknown> & { readonly '$id': string });
 
-    const validator: CompiledValidatorType = jt.registry.validator(`${baseIri}Base`);
+    const validator: CompiledValidatorInterface = jt.registry.validator(`${baseIri}Base`);
     const fallbackAllowed = CURRENTLY_FALLS_BACK.has('dynamicRef-with-anchor');
 
     if (!validator.compiled) {

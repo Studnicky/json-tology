@@ -95,7 +95,7 @@ console.assert(
   'entry.equivalentTo points to the uniquely-authoritative named IsbnSchema'
 );
 // entry.shape is the raw inline sub-schema object (always present on the
-// DuplicateReportEntryType — confirmed non-nullable by the type system).
+// DuplicateReportEntryEntity.Type — confirmed non-nullable by the type system).
 void entry.shape;
 
 console.log(

@@ -1,7 +1,7 @@
-import type { SchemaGraphSemanticsType } from '../types/SchemaGraph.js';
+import type { SchemaGraphSemanticsInterface } from '../interfaces/SchemaGraphSemanticsInterface.js';
 
 /**
- * Canonical frozen blank SchemaGraphSemanticsType.
+ * Canonical frozen blank SchemaGraphSemanticsInterface.
  *
  * Used wherever a graph node carries no schema-derived semantics — for example
  * when QuadBackedSchemaGraph dispatchers call `semantics()` on a quad-backed
@@ -14,7 +14,7 @@ import type { SchemaGraphSemanticsType } from '../types/SchemaGraph.js';
  */
 const EMPTY_PROPERTIES: ReadonlyMap<string, never> = new Map<string, never>();
 
-export const EMPTY_SEMANTICS: SchemaGraphSemanticsType = Object.freeze({
+export const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
   'additionalItemsNode': undefined,
   'additionalPropertiesNode': undefined,
   'aliases': [],

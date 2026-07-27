@@ -86,7 +86,7 @@ export const stripHyphensSchema = Transform.create(RawIsbnSchema, {
 // ---------------------------------------------------------------------------
 // Transform.chain — multi-stage chain bound to IsbnSchema
 //
-// Stage declarations as standalone TransformStageType objects so they
+// Stage declarations as standalone TransformStageInterface objects so they
 // can be unit-tested or reused in other chains independently.
 // ---------------------------------------------------------------------------
 

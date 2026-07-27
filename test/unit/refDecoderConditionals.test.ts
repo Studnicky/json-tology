@@ -1,5 +1,5 @@
 /**
- * Regression tests for RefDecoder not walking if/then/else and not (complement) branches.
+ * Regression tests for ReferenceDecoder not walking if/then/else and not (complement) branches.
  *
  * Before the fix, walkComposition only walked oneOf/anyOf/allOf. Transform
  * decoders attached to schemas inside then/else/not branches were silently
@@ -37,7 +37,7 @@ function makeUpperSchema(id: string): ReturnType<typeof Transform.create> {
   });
 }
 
-void describe('RefDecoder — then/else/not branch decoding', { 'concurrency': false }, () => {
+void describe('ReferenceDecoder — then/else/not branch decoding', { 'concurrency': false }, () => {
   // The inline then/else/not structure in registered schemas fails strict-graph
   // validation (inline shapes must be extracted), so we use enableStrictGraph:false
   // to register the schema as a warning rather than an error. This is the same

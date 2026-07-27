@@ -1,30 +1,31 @@
-import type { MaterializationResultType } from '../types/Materializer.js';
+import type { MaterializationResultInterface } from './MaterializationResultInterface.js';
 import type { QuadInterface } from './QuadInterface.js';
 import type { InferSchemaType } from '../types/Infer.js';
 
 import type { JsonSchemaDocumentType } from '../types/Schema.js';
-import type { AboxOptionsType } from '../types/AboxOptionsType.js';
+import type { AboxOptionsInterface } from './AboxOptionsInterface.js';
+import type { SchemaWithIdEntity } from '../entities/SchemaWithIdEntity.js';
+import type { MaterializerExecuteOptionsEntity } from '../entities/MaterializerExecuteOptionsEntity.js';
+import type { PartialInferSchemaType } from '../types/PartialInferSchemaType.js';
 
 export interface MaterializerInterface {
-  createDefault(schema: Record<string, unknown> & { '$id': string }): unknown;
+  createDefault(schema: SchemaWithIdEntity.Type): unknown;
   execute(
-    schema: Record<string, unknown> & { '$id': string },
-    data?: unknown,
-    options?: { 'baseIri'?: string;
-      'synthesizeDefaults'?: boolean }
-  ): MaterializationResultType;
+    schema: SchemaWithIdEntity.Type,
+    options?: MaterializerExecuteOptionsEntity.Type
+  ): MaterializationResultInterface;
   materialize<TSchema extends JsonSchemaDocumentType & { readonly '$id': string }>(
     schema: TSchema,
-    partial?: Partial<InferSchemaType<TSchema>>,
+    partial?: PartialInferSchemaType<TSchema>,
   ): InferSchemaType<TSchema>;
   materialize(
-    schema: Record<string, unknown> & { '$id': string },
+    schema: SchemaWithIdEntity.Type,
     partial?: Record<string, unknown>
   ): unknown;
   projectAbox(
-    schema: Record<string, unknown> & { '$id': string },
+    schema: SchemaWithIdEntity.Type,
     data: unknown,
     baseIri: string,
-    options?: AboxOptionsType
+    options?: AboxOptionsInterface
   ): QuadInterface[];
 }

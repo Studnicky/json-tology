@@ -2,7 +2,7 @@
  * Compile-time assertions for constraint brand preservation through Compose operations.
  *
  * When a schema property carries a phantom constraint brand (e.g. `minLength: 1`
- * produces `MinLengthBrandType<1>` on the inferred string type), that brand must
+ * produces `MinimumLengthBrandType<1>` on the inferred string type), that brand must
  * survive the structural transformations that Compose operations apply to the
  * schema's `properties` and `required` arrays.
  *
@@ -35,7 +35,7 @@
  *
  * ## Type-config note
  *
- * String brands (`MinLengthBrandType`, `PatternBrandType`) are emitted only when
+ * String brands (`MinimumLengthBrandType`, `PatternBrandType`) are emitted only when
  * `stringBrands` is enabled in `JsonTologyTypeConfigInterface`. The default
  * configuration has `stringBrands: true`. This file does not augment the config;
  * it tests the default state.
@@ -46,7 +46,7 @@ import {
 } from 'node:test';
 
 import type {
-  MinLengthBrandType,
+  MinimumLengthBrandType,
   PatternBrandType
 } from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
@@ -66,7 +66,7 @@ function assert<T extends true>(): void {
 // ---------------------------------------------------------------------------
 // Base schema with branded properties
 //
-// `name` carries minLength:1 → InferType gives MinLengthBrandType<1> & string
+// `name` carries minLength:1 → InferType gives MinimumLengthBrandType<1> & string
 // `slug` carries pattern → InferType gives PatternBrandType<'^[a-z-]+$'> & string
 // `description` is plain string — no brands
 // ---------------------------------------------------------------------------
@@ -95,7 +95,7 @@ void BookSchema;
 
 // Baseline — brands are present on the base schema
 type BookType = InferType<typeof BookSchema>;
-assert<AssertAssignable<BookType['name'], MinLengthBrandType<1>>>();
+assert<AssertAssignable<BookType['name'], MinimumLengthBrandType<1>>>();
 assert<AssertAssignable<BookType['slug'], PatternBrandType<'^[a-z-]+$'>>>();
 
 // ---------------------------------------------------------------------------
@@ -107,7 +107,7 @@ const PartialBookSchema = Compose.partial(BookSchema, 'https://example.com/test/
 type PartialBookType = InferType<typeof PartialBookSchema>;
 
 // Properties become optional but their schemas (and hence brands) are unchanged
-assert<AssertAssignable<NonNullable<PartialBookType['name']>, MinLengthBrandType<1>>>();
+assert<AssertAssignable<NonNullable<PartialBookType['name']>, MinimumLengthBrandType<1>>>();
 assert<AssertAssignable<NonNullable<PartialBookType['slug']>, PatternBrandType<'^[a-z-]+$'>>>();
 
 // ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ const RequiredBookSchema = Compose.required(BookSchema, 'https://example.com/tes
 
 type RequiredBookType = InferType<typeof RequiredBookSchema>;
 
-assert<AssertAssignable<RequiredBookType['name'], MinLengthBrandType<1>>>();
+assert<AssertAssignable<RequiredBookType['name'], MinimumLengthBrandType<1>>>();
 assert<AssertAssignable<RequiredBookType['slug'], PatternBrandType<'^[a-z-]+$'>>>();
 assert<AssertAssignable<RequiredBookType['description'], string>>();
 
@@ -138,7 +138,7 @@ const PickNameSlugSchema = Compose.pick(
 );
 
 type PickNameSlugType = InferType<typeof PickNameSlugSchema>;
-assert<AssertAssignable<PickNameSlugType['name'], MinLengthBrandType<1>>>();
+assert<AssertAssignable<PickNameSlugType['name'], MinimumLengthBrandType<1>>>();
 assert<AssertAssignable<PickNameSlugType['slug'], PatternBrandType<'^[a-z-]+$'>>>();
 
 // Pick only the branded name; slug is omitted from the schema
@@ -149,7 +149,7 @@ const PickNameOnlySchema = Compose.pick(
 );
 
 type PickNameOnlyType = InferType<typeof PickNameOnlySchema>;
-assert<AssertAssignable<PickNameOnlyType['name'], MinLengthBrandType<1>>>();
+assert<AssertAssignable<PickNameOnlyType['name'], MinimumLengthBrandType<1>>>();
 
 // ---------------------------------------------------------------------------
 // 4. Compose.omit — remove specified keys, remaining schemas preserved
@@ -162,7 +162,7 @@ const OmitDescriptionSchema = Compose.omit(
 );
 
 type OmitDescriptionType = InferType<typeof OmitDescriptionSchema>;
-assert<AssertAssignable<OmitDescriptionType['name'], MinLengthBrandType<1>>>();
+assert<AssertAssignable<OmitDescriptionType['name'], MinimumLengthBrandType<1>>>();
 assert<AssertAssignable<OmitDescriptionType['slug'], PatternBrandType<'^[a-z-]+$'>>>();
 
 // ---------------------------------------------------------------------------
@@ -183,10 +183,10 @@ const ExtendedBookSchema = Compose.extend(
 type ExtendedBookType = InferType<typeof ExtendedBookSchema>;
 
 // Existing brands survive
-assert<AssertAssignable<ExtendedBookType['name'], MinLengthBrandType<1>>>();
+assert<AssertAssignable<ExtendedBookType['name'], MinimumLengthBrandType<1>>>();
 assert<AssertAssignable<ExtendedBookType['slug'], PatternBrandType<'^[a-z-]+$'>>>();
 // New branded property also carries its brand
-assert<AssertAssignable<NonNullable<ExtendedBookType['isbn']>, MinLengthBrandType<10>>>();
+assert<AssertAssignable<NonNullable<ExtendedBookType['isbn']>, MinimumLengthBrandType<10>>>();
 
 // ---------------------------------------------------------------------------
 // 6. Compose.intersection — allOf merge; all constituent brands survive
@@ -217,9 +217,9 @@ const BookWithAuthorSchema = Compose.intersection(
 
 type BookWithAuthorType = InferType<typeof BookWithAuthorSchema>;
 
-assert<AssertAssignable<BookWithAuthorType['name'], MinLengthBrandType<1>>>();
+assert<AssertAssignable<BookWithAuthorType['name'], MinimumLengthBrandType<1>>>();
 assert<AssertAssignable<BookWithAuthorType['slug'], PatternBrandType<'^[a-z-]+$'>>>();
-assert<AssertAssignable<BookWithAuthorType['pen'], MinLengthBrandType<1>>>();
+assert<AssertAssignable<BookWithAuthorType['pen'], MinimumLengthBrandType<1>>>();
 
 // ---------------------------------------------------------------------------
 // Suppress unused variable warnings

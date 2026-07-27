@@ -7,15 +7,15 @@
  */
 
 import type {
-  AnnotatedEdgeSchemaType,
   ComplementOfSchemaType,
-  DiscriminatedUnionSchemaType,
   DisjointWithSchemaType,
-  IntersectionSchemaType,
   OmitSchemaType,
   PickSchemaType,
   SubClassOfSchemaType
 } from '../../types/Compose.js';
+import type { AnnotatedEdgeSchemaInterface } from '../../interfaces/AnnotatedEdgeSchemaInterface.js';
+import type { IntersectionSchemaInterface } from '../../interfaces/IntersectionSchemaInterface.js';
+import type { DiscriminatedUnionSchemaInterface } from '../../interfaces/DiscriminatedUnionSchemaInterface.js';
 import type {
   ExtendSchemaType,
   ExtractPropertiesType,
@@ -26,11 +26,12 @@ import type {
   ValidateIntersectionIdType,
   ValidateSubClassOfBodyType
 } from '../../types/Compose.js';
-import type {
-  RestrictionDescriptorType, RestrictionKindType, RestrictionRefType, TypedRestrictionRefType
-} from '../../types/Restriction.js';
+import type { RestrictionKindEntity } from '../../entities/RestrictionKindEntity.js';
+import type { RestrictionDescriptorEntity } from '../../entities/RestrictionDescriptorEntity.js';
+import type { RestrictionReferenceEntity } from '../../entities/RestrictionReferenceEntity.js';
+import type { TypedRestrictionReferenceInterface } from '../../interfaces/TypedRestrictionReferenceInterface.js';
 import type { ValidateSchemaType } from '../../types/SchemaValidation.js';
-import { isRestrictionRef } from '../../types/Restriction.js';
+import { RestrictionGuards } from '../../types/Restriction.js';
 import { RESTRICTION_TAG } from '../../constants/RESTRICTION.js';
 import { DataType } from '../data/DataType.js';
 import { Brand } from '../../modules/data/Brand.js';
@@ -75,7 +76,7 @@ export class Compose {
   public static allValuesFrom<TProp extends string, TRange extends string>(
     propIri: TProp,
     rangeClassIri: TRange
-  ): TypedRestrictionRefType<'allValuesFrom', TProp, TRange> {
+  ): TypedRestrictionReferenceInterface<'allValuesFrom', TProp, TRange> {
     const result = Compose.makeRestriction('allValuesFrom', propIri, rangeClassIri);
 
     return result;
@@ -106,13 +107,13 @@ export class Compose {
    */
   public static annotatedEdge<
     const TPredicate extends string,
-    const TTargetRef extends string,
+    const TTargetReference extends string,
     const TAnnotations extends Record<string, { readonly '$ref': string }>
   >(options: {
     readonly 'annotations': TAnnotations;
     readonly 'predicate': TPredicate;
-    readonly 'targetRef': TTargetRef;
-  }): AnnotatedEdgeSchemaType<TPredicate, TTargetRef, TAnnotations> {
+    readonly 'targetRef': TTargetReference;
+  }): AnnotatedEdgeSchemaInterface<TPredicate, TTargetReference, TAnnotations> {
     return {
       'jt:annotatedEdge': {
         'annotations': options.annotations,
@@ -167,7 +168,7 @@ export class Compose {
   public static cardinality<TProp extends string, TN extends number>(
     propIri: TProp,
     n: TN
-  ): TypedRestrictionRefType<'cardinality', TProp, TN> {
+  ): TypedRestrictionReferenceInterface<'cardinality', TProp, TN> {
     const result = Compose.makeRestriction('cardinality', propIri, n);
 
     return result;
@@ -212,9 +213,9 @@ export class Compose {
 
       for (const [
         key,
-        val
+        value
       ] of Object.entries(memberDefaults)) {
-        merged[key] = val;
+        merged[key] = value;
       }
     }
 
@@ -274,10 +275,10 @@ export class Compose {
 
     for (const [
       key,
-      val
+      value
     ] of Object.entries(body as Record<string, unknown>)) {
       if (!CLASS_AXIOM_BODY_SKIP_KEYS.has(key) && key !== 'not') {
-        result[key] = val;
+        result[key] = value;
       }
     }
 
@@ -308,7 +309,7 @@ export class Compose {
     discriminatorProperty: TDiscriminator,
     variants: TVariants & ValidateDiscriminatedVariantsType<TVariants, TDiscriminator>,
     newId: TId
-  ): DiscriminatedUnionSchemaType<TDiscriminator, TVariants, TId> {
+  ): DiscriminatedUnionSchemaInterface<TDiscriminator, TVariants, TId> {
     return {
       '$id': newId,
       'discriminator': { 'propertyName': discriminatorProperty },
@@ -345,10 +346,10 @@ export class Compose {
 
     for (const [
       key,
-      val
+      value
     ] of Object.entries(body as Record<string, unknown>)) {
       if (!CLASS_AXIOM_BODY_SKIP_KEYS.has(key) && key !== 'disjointWith') {
-        result[key] = val;
+        result[key] = value;
       }
     }
 
@@ -447,10 +448,10 @@ export class Compose {
 
     for (const [
       key,
-      val
+      value
     ] of Object.entries(additions)) {
       if (!EXTEND_SKIP_KEYS.has(key)) {
-        child[key] = val;
+        child[key] = value;
       }
     }
 
@@ -487,7 +488,7 @@ export class Compose {
   public static hasValue<TProp extends string, TValue extends boolean | number | string>(
     propIri: TProp,
     value: TValue
-  ): TypedRestrictionRefType<'hasValue', TProp, TValue> {
+  ): TypedRestrictionReferenceInterface<'hasValue', TProp, TValue> {
     const result = Compose.makeRestriction('hasValue', propIri, value);
 
     return result;
@@ -512,7 +513,7 @@ export class Compose {
   >(
     schemas: TSchemas,
     newId: TId & ValidateIntersectionIdType<TSchemas, TId>
-  ): IntersectionSchemaType<TSchemas, TId> {
+  ): IntersectionSchemaInterface<TSchemas, TId> {
     return {
       '$id': newId,
       'allOf': schemas
@@ -526,14 +527,14 @@ export class Compose {
    * `maxCardinality`, `minCardinality`, `someValuesFrom`).
    */
   private static makeRestriction<
-    TKind extends RestrictionKindType,
+    TKind extends RestrictionKindEntity.Type,
     TProp extends string,
     TValue extends boolean | number | string
   >(
     kind: TKind,
     onProperty: TProp,
     value: TValue
-  ): TypedRestrictionRefType<TKind, TProp, TValue> {
+  ): TypedRestrictionReferenceInterface<TKind, TProp, TValue> {
     const restriction: Record<string, unknown> = {};
 
     restriction[RESTRICTION_TAG] = {
@@ -542,16 +543,16 @@ export class Compose {
       value
     };
 
-    return Brand.cast<TypedRestrictionRefType<TKind, TProp, TValue>>(restriction);
+    return Brand.cast<TypedRestrictionReferenceInterface<TKind, TProp, TValue>>(restriction);
   }
 
   /**
    * Restrict a property to at most `n` values (`owl:maxCardinality`).
    */
-  public static maxCardinality<TProp extends string, TN extends number>(
+  public static maximumCardinality<TProp extends string, TN extends number>(
     propIri: TProp,
     n: TN
-  ): TypedRestrictionRefType<'maxCardinality', TProp, TN> {
+  ): TypedRestrictionReferenceInterface<'maxCardinality', TProp, TN> {
     const result = Compose.makeRestriction('maxCardinality', propIri, n);
 
     return result;
@@ -576,10 +577,10 @@ export class Compose {
   /**
    * Restrict a property to at least `n` values (`owl:minCardinality`).
    */
-  public static minCardinality<TProp extends string, TN extends number>(
+  public static minimumCardinality<TProp extends string, TN extends number>(
     propIri: TProp,
     n: TN
-  ): TypedRestrictionRefType<'minCardinality', TProp, TN> {
+  ): TypedRestrictionReferenceInterface<'minCardinality', TProp, TN> {
     const result = Compose.makeRestriction('minCardinality', propIri, n);
 
     return result;
@@ -767,7 +768,7 @@ export class Compose {
   public static someValuesFrom<TProp extends string, TRange extends string>(
     propIri: TProp,
     rangeClassIri: TRange
-  ): TypedRestrictionRefType<'someValuesFrom', TProp, TRange> {
+  ): TypedRestrictionReferenceInterface<'someValuesFrom', TProp, TRange> {
     const result = Compose.makeRestriction('someValuesFrom', propIri, rangeClassIri);
 
     return result;
@@ -801,12 +802,12 @@ export class Compose {
    * );
    */
   public static subClassOf<
-    TKind extends RestrictionKindType,
+    TKind extends RestrictionKindEntity.Type,
     TProp extends string,
     TValue extends boolean | number | string,
     const TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
-    parent: TypedRestrictionRefType<TKind, TProp, TValue>,
+    parent: TypedRestrictionReferenceInterface<TKind, TProp, TValue>,
     body: ValidateSchemaType<TBody>
   ): TBody extends { readonly 'jt:restrictions': infer TExisting extends readonly unknown[] }
     ? Omit<TBody, 'jt:restrictions'> & {
@@ -834,14 +835,14 @@ export class Compose {
   public static subClassOf<
     TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
-    parent: ReadonlyArray<{ readonly '$id': string }> | RestrictionRefType | { readonly '$id': string },
+    parent: ReadonlyArray<{ readonly '$id': string }> | RestrictionReferenceEntity.Type | { readonly '$id': string },
     body: TBody
   ): SubClassOfSchemaType<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody> | TBody {
-    if (isRestrictionRef(parent)) {
+    if (RestrictionGuards.isRestrictionReference(parent)) {
       const bodyCopy: Record<string, unknown> = { ...(body as Record<string, unknown>) };
       const existing = bodyCopy[RESTRICTIONS_KEY];
-      const list: RestrictionDescriptorType[] = Array.isArray(existing)
-        ? [...(existing as RestrictionDescriptorType[])]
+      const list: RestrictionDescriptorEntity.Type[] = Array.isArray(existing)
+        ? [...(existing as RestrictionDescriptorEntity.Type[])]
         : [];
 
       list.push(parent[RESTRICTION_TAG]);
@@ -864,10 +865,10 @@ export class Compose {
 
     for (const [
       key,
-      val
+      value
     ] of Object.entries(body as Record<string, unknown>)) {
       if (!CLASS_AXIOM_BODY_SKIP_KEYS.has(key)) {
-        bodySchema[key] = val;
+        bodySchema[key] = value;
       }
     }
 

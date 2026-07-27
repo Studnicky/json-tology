@@ -25,54 +25,6 @@
  */
 
 import type { SameAsStoreInterface } from '../../interfaces/SameAsStoreInterface.js';
+import { SymmetricPairStore } from '../data/SymmetricPairStore.js';
 
-export class SameAsStore implements SameAsStoreInterface {
-  private readonly pairs: Array<readonly [string, string]> = [];
-
-  /**
-   * Record an `owl:sameAs` assertion between two instance IRIs.
-   *
-   * Idempotent: re-recording the same pair (in either direction) is a no-op.
-   * Self-pairs (`a sameAs a`) are silently dropped.
-   */
-  public add(iriA: string, iriB: string): void {
-    if (iriA === iriB) {
-      return;
-    }
-    if (this.has(iriA, iriB)) {
-      return;
-    }
-    this.pairs.push([
-      iriA,
-      iriB
-    ] as const);
-  }
-
-  /**
-   * Returns the recorded pairs (one entry per declared assertion).
-   * Symmetric quad emission is the consumer's responsibility.
-   */
-  public all(): ReadonlyArray<readonly [string, string]> {
-    return this.pairs;
-  }
-
-  /**
-   * Clear all recorded sameAs assertions.
-   */
-  public clear(): void {
-    this.pairs.length = 0;
-  }
-
-  public has(iriA: string, iriB: string): boolean {
-    for (const [
-      a,
-      b
-    ] of this.pairs) {
-      if ((a === iriA && b === iriB) || (a === iriB && b === iriA)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-}
+export class SameAsStore extends SymmetricPairStore implements SameAsStoreInterface {}

@@ -879,7 +879,7 @@ import {
       assert.ok(typeof resultFirst.message === 'string');
     });
 
-    void it('is iterable over ValidationErrorType items', () => {
+    void it('is iterable over ValidationErrorEntity.Type items', () => {
       const result = entities.validate(UserSchema.$id, { 'name': 'Alice' });
       const collected = [...result];
 

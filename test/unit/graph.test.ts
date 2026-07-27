@@ -1,12 +1,12 @@
 // Merged from: schemaGraph.test.ts, relations.test.ts, domainRange.test.ts, graphArtifact.test.ts, schemaEngine.test.ts, schemaIri.test.ts
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
+import type { NormIRInterface } from '../../src/interfaces/NormIRInterface.js';
+import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraphRelationInterface.js';
 import assert from 'node:assert/strict';
 // Graph-node identity tests are inherently white-box — interfaces and internal classes below
 // are not surfaced by the public API, but the tests need them to assert graph structure.
-import type { GraphArtifactType } from '../../src/types/GraphArtifactType.js';
-import type { NormIRType } from '../../src/types/SchemaGraph.js';
-import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
+import type { GraphArtifactInterface } from '../../src/interfaces/GraphArtifactInterface.js';
 import {
   describe, it
 } from 'node:test';
@@ -869,13 +869,13 @@ function expandCurie(value: string): string {
 // Source: relations.test.ts
 // ===========================================================================
 {
-  function graphRelations(schema: Record<string, unknown>): SchemaGraphRelationType[] {
+  function graphRelations(schema: Record<string, unknown>): SchemaGraphRelationInterface[] {
     const graph = new SchemaGraph(schema);
 
     return graph.allRelations();
   }
 
-  function nodeRelations(schema: Record<string, unknown>, pointer = ''): SchemaGraphRelationType[] {
+  function nodeRelations(schema: Record<string, unknown>, pointer = ''): SchemaGraphRelationInterface[] {
     const graph = new SchemaGraph(schema);
     const node = pointer === '' ? graph.rootNode : graph.resolvePointer(pointer);
 
@@ -883,9 +883,9 @@ function expandCurie(value: string): string {
   }
 
   function findRelations(
-    rels: SchemaGraphRelationType[],
+    rels: SchemaGraphRelationInterface[],
     predicate: string
-  ): SchemaGraphRelationType[] {
+  ): SchemaGraphRelationInterface[] {
     return rels.filter((rel) => {
       return rel.predicate === predicate;
     });
@@ -962,13 +962,13 @@ function expandCurie(value: string): string {
 
         const struct = conditional0.structure;
 
-        assert.ok(struct.ifRef !== '', `${label}: expected ifRef`);
-        assert.ok(struct.thenRef !== undefined && struct.thenRef !== '', `${label}: expected thenRef`);
+        assert.ok(struct.ifReference !== '', `${label}: expected ifReference`);
+        assert.ok(struct.thenReference !== undefined && struct.thenReference !== '', `${label}: expected thenReference`);
 
         if (expectElse) {
-          assert.ok(struct.elseRef !== undefined && struct.elseRef !== '', `${label}: expected elseRef`);
+          assert.ok(struct.elseReference !== undefined && struct.elseReference !== '', `${label}: expected elseReference`);
         } else {
-          assert.equal(struct.elseRef, undefined, `${label}: expected no elseRef`);
+          assert.equal(struct.elseReference, undefined, `${label}: expected no elseReference`);
         }
       }
     });
@@ -1662,7 +1662,7 @@ function expandCurie(value: string): string {
 
     void it('handles edge-case schemas with no properties, boolean subschema, and empty oneOf', () => {
       const edgeScenarios: Array<{
-        'assertions': (rels: SchemaGraphRelationType[]) => void;
+        'assertions': (rels: SchemaGraphRelationInterface[]) => void;
         'name': string;
         'schema': Record<string, unknown>;
       }> = [
@@ -2413,7 +2413,7 @@ function expandCurie(value: string): string {
   void describe('GraphArtifact', { 'concurrency': true }, () => {
     void describe('toArtifact', { 'concurrency': true }, () => {
       const toArtifactScenarios: Array<{
-        'check': (artifact: GraphArtifactType) => void;
+        'check': (artifact: GraphArtifactInterface) => void;
         'name': string;
         'schema': Record<string, unknown>;
       }> = [
@@ -2690,7 +2690,7 @@ function expandCurie(value: string): string {
 
     void describe('NormIR', { 'concurrency': true }, () => {
       const normIRScenarios: Array<{
-        'check': (normIR: NormIRType, fromConstructor: SchemaGraph) => void;
+        'check': (normIR: NormIRInterface, fromConstructor: SchemaGraph) => void;
         'name': string;
         'schema': Record<string, unknown>;
       }> = [
@@ -2711,7 +2711,7 @@ function expandCurie(value: string): string {
 
             // JSON-serializable
             const json = JSON.stringify(normIR);
-            const deserialized = JSON.parse(json) as NormIRType;
+            const deserialized = JSON.parse(json) as NormIRInterface;
             const graph = SchemaGraph.fromNormIR(deserialized);
 
             assert.equal(graph.nodes().length, fromConstructor.nodes().length);

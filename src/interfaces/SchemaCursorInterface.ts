@@ -1,3 +1,5 @@
+import type { SubClassOfOptionsEntity } from '../entities/SubClassOfOptionsEntity.js';
+
 /**
  * SchemaCursorInterface — a lazy, immutable selection of class IRIs in the TBox.
  *
@@ -39,8 +41,8 @@ export interface SchemaCursorInterface {
    * Navigate to the direct superclasses (`rdfs:subClassOf`) of every class in
    * the current selection.
    *
-   * @param opts.transitive - When `true`, walk the full superclass chain (BFS,
+   * @param options.transitive - When `true`, walk the full superclass chain (BFS,
    *   cycle-guarded) rather than stopping at direct parents.
    */
-  subClassOf(opts?: { 'transitive'?: boolean }): SchemaCursorInterface;
+  subClassOf(options?: SubClassOfOptionsEntity.Type): SchemaCursorInterface;
 }

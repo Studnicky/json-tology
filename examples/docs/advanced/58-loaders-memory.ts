@@ -2,7 +2,7 @@
  * Loaders.memory — in-memory loader for local schema bundles.
  *
  * `Loaders.memory` accepts a `Map` or plain object keyed by $id IRI. It
- * returns a `LoaderType` that resolves schemas with zero I/O — useful for
+ * returns a `LoaderInterface` that resolves schemas with zero I/O — useful for
  * pre-bundled schemas at build time and for testing.
  *
  * Demonstrates: Loaders.memory with bookstore schemas as the lookup map.

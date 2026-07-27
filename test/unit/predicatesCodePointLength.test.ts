@@ -1,14 +1,14 @@
 /**
  * Optimized Unicode code-point length predicate tests.
  *
- * Verifies that `satisfiesMinLength` and `satisfiesMaxLength` return identical
+ * Verifies that `satisfiesMinimumLength` and `satisfiesMaximumLength` return identical
  * results to the reference `[...str].length` implementation across ASCII
  * strings, astral-plane (emoji / musical symbols) strings, and strings that
  * straddle each fast-path boundary.
  *
  * Boundary cases per predicate:
- *   satisfiesMinLength(m): len < m, len == m, len == 2m-1, len == 2m
- *   satisfiesMaxLength(M): len == M, len == M+1
+ *   satisfiesMinimumLength(m): len < m, len == m, len == 2m-1, len == 2m
+ *   satisfiesMaximumLength(M): len == M, len == M+1
  *
  * A "pure-surrogate" string (only astral characters, each costing 2 UTF-16
  * units) exercises the case where code-point length is half the UTF-16 length.
@@ -65,31 +65,31 @@ const MIXED3 = 'ab𝄞';
 
 function assertMinLength(value: string, minimum: number): void {
   const expected = referenceMinLength(value, minimum);
-  const actual = Predicates.satisfiesMinLength(value, minimum);
+  const actual = Predicates.satisfiesMinimumLength(value, minimum);
 
   assert.equal(
     actual,
     expected,
-    `satisfiesMinLength(${JSON.stringify(value)}, ${minimum}): expected ${String(expected)}, got ${String(actual)}`
+    `satisfiesMinimumLength(${JSON.stringify(value)}, ${minimum}): expected ${String(expected)}, got ${String(actual)}`
   );
 }
 
 function assertMaxLength(value: string, maximum: number): void {
   const expected = referenceMaxLength(value, maximum);
-  const actual = Predicates.satisfiesMaxLength(value, maximum);
+  const actual = Predicates.satisfiesMaximumLength(value, maximum);
 
   assert.equal(
     actual,
     expected,
-    `satisfiesMaxLength(${JSON.stringify(value)}, ${maximum}): expected ${String(expected)}, got ${String(actual)}`
+    `satisfiesMaximumLength(${JSON.stringify(value)}, ${maximum}): expected ${String(expected)}, got ${String(actual)}`
   );
 }
 
 // ---------------------------------------------------------------------------
-// satisfiesMinLength — ASCII
+// satisfiesMinimumLength — ASCII
 // ---------------------------------------------------------------------------
 
-void describe('Predicates.satisfiesMinLength — ASCII', () => {
+void describe('Predicates.satisfiesMinimumLength — ASCII', () => {
   // m = 3, str.length = 3, cp = 3  → len < 2m so residual band is hit (m <= len < 2m)
   void it('ASCII str len == m — returns true (boundary: len == m)', () => {
     assertMinLength(ASCII3, 3);
@@ -125,10 +125,10 @@ void describe('Predicates.satisfiesMinLength — ASCII', () => {
 });
 
 // ---------------------------------------------------------------------------
-// satisfiesMinLength — astral-plane strings
+// satisfiesMinimumLength — astral-plane strings
 // ---------------------------------------------------------------------------
 
-void describe('Predicates.satisfiesMinLength — astral-plane', () => {
+void describe('Predicates.satisfiesMinimumLength — astral-plane', () => {
   // ASTRAL1: len=2, cp=1.  m=1: len >= 2*m=2 → fast-path true
   void it('single astral char, m=1 — fast-path true (len == 2*m)', () => {
     assertMinLength(ASTRAL1, 1);
@@ -166,10 +166,10 @@ void describe('Predicates.satisfiesMinLength — astral-plane', () => {
 });
 
 // ---------------------------------------------------------------------------
-// satisfiesMinLength — mixed strings
+// satisfiesMinimumLength — mixed strings
 // ---------------------------------------------------------------------------
 
-void describe('Predicates.satisfiesMinLength — mixed ASCII + astral', () => {
+void describe('Predicates.satisfiesMinimumLength — mixed ASCII + astral', () => {
   // MIXED3: 'ab𝄞', len=4, cp=3.  m=3: len < 2m=6, len >= m=3 → residual band → true
   void it('mixed str cp=3, m=3 — residual band returns true', () => {
     assertMinLength(MIXED3, 3);
@@ -187,10 +187,10 @@ void describe('Predicates.satisfiesMinLength — mixed ASCII + astral', () => {
 });
 
 // ---------------------------------------------------------------------------
-// satisfiesMaxLength — ASCII
+// satisfiesMaximumLength — ASCII
 // ---------------------------------------------------------------------------
 
-void describe('Predicates.satisfiesMaxLength — ASCII', () => {
+void describe('Predicates.satisfiesMaximumLength — ASCII', () => {
   // M=5, str.length=5 → len <= M fast-path true
   void it('ASCII str len == M — fast-path true', () => {
     assertMaxLength(ASCII5, 5);
@@ -216,10 +216,10 @@ void describe('Predicates.satisfiesMaxLength — ASCII', () => {
 });
 
 // ---------------------------------------------------------------------------
-// satisfiesMaxLength — astral-plane strings
+// satisfiesMaximumLength — astral-plane strings
 // ---------------------------------------------------------------------------
 
-void describe('Predicates.satisfiesMaxLength — astral-plane', () => {
+void describe('Predicates.satisfiesMaximumLength — astral-plane', () => {
   // ASTRAL1: len=2, cp=1.  M=1: len > M → scan; cp=1 <= M=1 → true
   void it('single astral char, M=1 — scan returns true (cp == M)', () => {
     assertMaxLength(ASTRAL1, 1);
@@ -257,10 +257,10 @@ void describe('Predicates.satisfiesMaxLength — astral-plane', () => {
 });
 
 // ---------------------------------------------------------------------------
-// satisfiesMaxLength — mixed strings
+// satisfiesMaximumLength — mixed strings
 // ---------------------------------------------------------------------------
 
-void describe('Predicates.satisfiesMaxLength — mixed ASCII + astral', () => {
+void describe('Predicates.satisfiesMaximumLength — mixed ASCII + astral', () => {
   // MIXED3: 'ab𝄞', len=4, cp=3.  M=3: len > M → scan; cp=3 <= M → true
   void it('mixed str cp=3, M=3 — scan returns true (cp == M)', () => {
     assertMaxLength(MIXED3, 3);
@@ -285,22 +285,22 @@ void describe('pure-surrogate strings — cp == len/2', () => {
   // 𝄞 repeated 4 times: len=8, cp=4
   const ASTRAL4 = '𝄞😀𝄞😀';
 
-  // satisfiesMinLength m=4: len=8 >= 2*4=8 → fast-path true
+  // satisfiesMinimumLength m=4: len=8 >= 2*4=8 → fast-path true
   void it('four astral chars, m=4 — fast-path true (len == 2*m)', () => {
     assertMinLength(ASTRAL4, 4);
   });
 
-  // satisfiesMinLength m=5: len=8 < 2*5=10, len >= m=5 → residual; cp=4 < 5 → false
+  // satisfiesMinimumLength m=5: len=8 < 2*5=10, len >= m=5 → residual; cp=4 < 5 → false
   void it('four astral chars, m=5 — residual returns false', () => {
     assertMinLength(ASTRAL4, 5);
   });
 
-  // satisfiesMaxLength M=4: len=8 > M=4 → scan; cp=4 <= M → true
+  // satisfiesMaximumLength M=4: len=8 > M=4 → scan; cp=4 <= M → true
   void it('four astral chars, M=4 — scan returns true (cp == M)', () => {
     assertMaxLength(ASTRAL4, 4);
   });
 
-  // satisfiesMaxLength M=3: len=8 > M=3 → scan; cp=4 > M=3 → false
+  // satisfiesMaximumLength M=3: len=8 > M=3 → scan; cp=4 > M=3 → false
   void it('four astral chars, M=3 — scan returns false (cp > M)', () => {
     assertMaxLength(ASTRAL4, 3);
   });
@@ -340,10 +340,10 @@ void describe('exhaustive cross-check against reference spread-based implementat
 
   for (const str of strings) {
     for (const limit of limits) {
-      void it(`satisfiesMinLength(${JSON.stringify(str)}, ${limit})`, () => {
+      void it(`satisfiesMinimumLength(${JSON.stringify(str)}, ${limit})`, () => {
         assertMinLength(str, limit);
       });
-      void it(`satisfiesMaxLength(${JSON.stringify(str)}, ${limit})`, () => {
+      void it(`satisfiesMaximumLength(${JSON.stringify(str)}, ${limit})`, () => {
         assertMaxLength(str, limit);
       });
     }

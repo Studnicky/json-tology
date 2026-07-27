@@ -2,11 +2,10 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
-// Validation type aliases (ValidateWithErrorsFnType, ValidationErrorType) are internal contracts for the exec primitives below.
-import type {
-  ValidateWithErrorsFnType, ValidationErrorType
-} from '../../src/types/Validation.js';
-import type { ExecContextType } from '../../src/types/ExecContextType.js';
+// Validation type aliases (ValidateWithErrorsFunctionInterface, ValidationErrorEntity.Type) are internal contracts for the exec primitives below.
+import type { ValidateWithErrorsFunctionInterface } from '../../src/interfaces/ValidateWithErrorsFunctionInterface.js';
+import type { ValidationErrorEntity } from '../../src/entities/ValidationErrorEntity.js';
+import type { ExecContextInterface } from '../../src/interfaces/ExecContextInterface.js';
 import {
   describe, it
 } from 'node:test';
@@ -4270,7 +4269,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // Test helpers — exec context factory
 // ===========================================================================
 
-function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefaults = false, coerce = false, stripUnknown = false): ExecContextType {
+function makeCtx(errors: ValidationErrorEntity.Type[], collectErrors = true, applyDefaults = false, coerce = false, stripUnknown = false): ExecContextInterface {
   return {
     applyDefaults,
     coerce,
@@ -4293,13 +4292,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 // Source: arrays.test.ts
 // ===========================================================================
 {
-  const passing: ValidateWithErrorsFnType = (value: unknown) => {
+  const passing: ValidateWithErrorsFunctionInterface = (value: unknown) => {
     return {
       'valid': true,
       value
     };
   };
-  const failing: ValidateWithErrorsFnType = (value, path, ctx) => {
+  const failing: ValidateWithErrorsFunctionInterface = (value, path, ctx) => {
     if (ctx.collectErrors) {
       ctx.errors.push(BaseError.validationError(path, 'type', 'mock'));
     }
@@ -4310,7 +4309,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     };
   };
 
-  const oneMatchValidator: ValidateWithErrorsFnType = (value: unknown) => {
+  const oneMatchValidator: ValidateWithErrorsFunctionInterface = (value: unknown) => {
     return {
       'valid': value === 1,
       value
@@ -4320,7 +4319,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
   void describe('Arrays — Good/Bad/Ugly', () => {
     void it('validateBounds: within-bounds, minItems, maxItems, uniqueItems', () => {
       // Good: within bounds
-      const e1: ValidationErrorType[] = [];
+      const e1: ValidationErrorEntity.Type[] = [];
       const r1 = Arrays.validateBounds('/a', [
         1,
         2,
@@ -4331,7 +4330,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e1.length, 0);
 
       // Bad: below minItems
-      const e2: ValidationErrorType[] = [];
+      const e2: ValidationErrorEntity.Type[] = [];
       const r2 = Arrays.validateBounds('/a', [1], 3, undefined, false, e2);
 
       assert.equal(r2, false);
@@ -4344,7 +4343,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e2item0.keyword, 'minItems');
 
       // Bad: above maxItems
-      const e3: ValidationErrorType[] = [];
+      const e3: ValidationErrorEntity.Type[] = [];
       const r3 = Arrays.validateBounds('/a', [
         1,
         2,
@@ -4362,7 +4361,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e3item0.keyword, 'maxItems');
 
       // Ugly: uniqueItems with duplicates
-      const e4: ValidationErrorType[] = [];
+      const e4: ValidationErrorEntity.Type[] = [];
       const r4 = Arrays.validateBounds('/a', [
         1,
         2,
@@ -4380,7 +4379,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e4item0.keyword, 'uniqueItems');
 
       // Good: uniqueItems all unique
-      const e5: ValidationErrorType[] = [];
+      const e5: ValidationErrorEntity.Type[] = [];
       const r5 = Arrays.validateBounds('/a', [
         1,
         2,
@@ -4393,7 +4392,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
     void it('validateContains: undefined, match, no-match, minContains, maxContains', () => {
       // Good: no containsValidator = valid
-      const e1: ValidationErrorType[] = [];
+      const e1: ValidationErrorEntity.Type[] = [];
       const r1 = Arrays.validateContains('/a', [
         1,
         2
@@ -4403,7 +4402,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e1.length, 0);
 
       // Good: at least one matches
-      const e2: ValidationErrorType[] = [];
+      const e2: ValidationErrorEntity.Type[] = [];
       const r2 = Arrays.validateContains('/a', [
         1,
         2,
@@ -4414,7 +4413,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e2.length, 0);
 
       // Bad: no item matches
-      const e3: ValidationErrorType[] = [];
+      const e3: ValidationErrorEntity.Type[] = [];
       const r3 = Arrays.validateContains('/a', [
         1,
         2,
@@ -4431,7 +4430,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e3c0.keyword, 'contains');
 
       // Bad: below minContains
-      const e4: ValidationErrorType[] = [];
+      const e4: ValidationErrorEntity.Type[] = [];
       const r4 = Arrays.validateContains('/a', [
         1,
         2,
@@ -4448,7 +4447,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.match(e4c0.message, /at least 2/u);
 
       // Bad: above maxContains
-      const e5: ValidationErrorType[] = [];
+      const e5: ValidationErrorEntity.Type[] = [];
       const r5 = Arrays.validateContains('/a', [
         1,
         2,
@@ -4467,7 +4466,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
     void it('validateItems: undefined validator, all-pass, earlyExit, collect-errors, prefix-skip', () => {
       // Good: no validator = valid
-      const e1: ValidationErrorType[] = [];
+      const e1: ValidationErrorEntity.Type[] = [];
       const r1 = Arrays.validateItems('/a', [
         1,
         2
@@ -4477,7 +4476,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r1.earlyExit, false);
 
       // Good: all items pass
-      const e2: ValidationErrorType[] = [];
+      const e2: ValidationErrorEntity.Type[] = [];
       const r2 = Arrays.validateItems('/a', [
         1,
         2,
@@ -4488,7 +4487,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r2.earlyExit, false);
 
       // Bad: earlyExit when fails and collectErrors is false
-      const e3: ValidationErrorType[] = [];
+      const e3: ValidationErrorEntity.Type[] = [];
       const r3 = Arrays.validateItems('/a', [
         1,
         2
@@ -4498,7 +4497,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r3.earlyExit, true);
 
       // Bad: collects errors when collectErrors is true
-      const e4: ValidationErrorType[] = [];
+      const e4: ValidationErrorEntity.Type[] = [];
       const r4 = Arrays.validateItems('/a', [
         1,
         2
@@ -4509,7 +4508,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e4.length, 2);
 
       // Ugly: skips prefix-covered indices when prefixValidators present
-      const e5: ValidationErrorType[] = [];
+      const e5: ValidationErrorEntity.Type[] = [];
       const r5 = Arrays.validateItems('/a', [
         1,
         2,
@@ -4526,7 +4525,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
     void it('validatePrefixItems: undefined, all-pass, earlyExit, collect-errors', () => {
       // Good: no prefixValidators = valid
-      const e1: ValidationErrorType[] = [];
+      const e1: ValidationErrorEntity.Type[] = [];
       const r1 = Arrays.validatePrefixItems('/a', [
         1,
         2
@@ -4536,7 +4535,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r1.earlyExit, false);
 
       // Good: all prefix items pass
-      const e2: ValidationErrorType[] = [];
+      const e2: ValidationErrorEntity.Type[] = [];
       const r2 = Arrays.validatePrefixItems('/a', [
         1,
         2,
@@ -4550,7 +4549,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r2.earlyExit, false);
 
       // Bad: earlyExit when fails and collectErrors is false
-      const e3: ValidationErrorType[] = [];
+      const e3: ValidationErrorEntity.Type[] = [];
       const r3 = Arrays.validatePrefixItems('/a', [
         1,
         2
@@ -4563,7 +4562,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r3.earlyExit, true);
 
       // Bad: collects errors when collectErrors is true
-      const e4: ValidationErrorType[] = [];
+      const e4: ValidationErrorEntity.Type[] = [];
       const r4 = Arrays.validatePrefixItems('/a', [
         1,
         2
@@ -4583,24 +4582,24 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 // Source: objects.test.ts
 // ===========================================================================
 {
-  const passingValidatorImpl: ValidateWithErrorsFnType = (value: unknown) => {
+  const passingValidatorImpl: ValidateWithErrorsFunctionInterface = (value: unknown) => {
     return {
       'valid': true,
       'value': value
     };
   };
 
-  const failingValidatorImpl: ValidateWithErrorsFnType = (
+  const failingValidatorImpl: ValidateWithErrorsFunctionInterface = (
     value: unknown,
     path: string,
-    ctx: ExecContextType
+    ctx: ExecContextInterface
   ) => {
     ctx.errors.push({
       'instancePath': path,
       'keyword': 'type',
       'message': 'mock failure',
       'params': {}
-    } as unknown as ValidationErrorType);
+    } as unknown as ValidationErrorEntity.Type);
 
     return {
       'valid': false,
@@ -4608,16 +4607,16 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     };
   };
 
-  function passingValidator(): ValidateWithErrorsFnType {
+  function passingValidator(): ValidateWithErrorsFunctionInterface {
     return passingValidatorImpl;
   }
 
-  function failingValidator(): ValidateWithErrorsFnType {
+  function failingValidator(): ValidateWithErrorsFunctionInterface {
     return failingValidatorImpl;
   }
 
-  function coercingValidator(coercedValue: unknown): ValidateWithErrorsFnType {
-    const impl: ValidateWithErrorsFnType = () => {
+  function coercingValidator(coercedValue: unknown): ValidateWithErrorsFunctionInterface {
+    const impl: ValidateWithErrorsFunctionInterface = () => {
       return {
         'valid': true,
         'value': coercedValue
@@ -4674,7 +4673,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
     void it('validateDependentRequired: empty, trigger+dep, trigger+miss, non-object, earlyExit', () => {
       // Good: no entries = valid
-      const e1: ValidationErrorType[] = [];
+      const e1: ValidationErrorEntity.Type[] = [];
       const r1 = Objects.validateDependentRequired('', { 'a': 1 }, [], makeCtx(e1, true));
 
       assert.equal(r1.valid, true);
@@ -4682,7 +4681,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e1.length, 0);
 
       // Good: trigger present and dep present = valid
-      const e2: ValidationErrorType[] = [];
+      const e2: ValidationErrorEntity.Type[] = [];
       const r2 = Objects.validateDependentRequired('', {
         'a': 1,
         'b': 2
@@ -4695,7 +4694,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e2.length, 0);
 
       // Bad: trigger present but dep missing = invalid
-      const e3: ValidationErrorType[] = [];
+      const e3: ValidationErrorEntity.Type[] = [];
       const r3 = Objects.validateDependentRequired('', { 'a': 1 }, [[
         'a',
         ['b']
@@ -4705,7 +4704,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(e3.length, 1);
 
       // Ugly: non-object value = valid (skipped)
-      const e4: ValidationErrorType[] = [];
+      const e4: ValidationErrorEntity.Type[] = [];
       const r4 = Objects.validateDependentRequired('', 'not-an-object', [[
         'a',
         ['b']
@@ -4714,7 +4713,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r4.valid, true);
 
       // Ugly: earlyExit when collectErrors is false
-      const e5: ValidationErrorType[] = [];
+      const e5: ValidationErrorEntity.Type[] = [];
       const r5 = Objects.validateDependentRequired('', { 'a': 1 }, [[
         'a',
         [
@@ -4730,13 +4729,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
     void it('validateRequired + validatePropertyCount + validatePropertyNames: table-driven', () => {
       // validateRequired
-      const err1: ValidationErrorType[] = [];
+      const err1: ValidationErrorEntity.Type[] = [];
       const rr1 = Objects.validateRequired('', { 'a': 1 }, undefined, err1);
 
       assert.equal(rr1, true);
       assert.equal(err1.length, 0);
 
-      const err2: ValidationErrorType[] = [];
+      const err2: ValidationErrorEntity.Type[] = [];
       const rr2 = Objects.validateRequired('', {
         'a': 1,
         'b': 2
@@ -4747,7 +4746,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(rr2, true);
 
-      const err3: ValidationErrorType[] = [];
+      const err3: ValidationErrorEntity.Type[] = [];
       const rr3 = Objects.validateRequired('/root', { 'a': 1 }, [
         'a',
         'b'
@@ -4757,7 +4756,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(err3.length, 1);
 
       // validatePropertyCount
-      const erc1: ValidationErrorType[] = [];
+      const erc1: ValidationErrorEntity.Type[] = [];
       const rc1 = Objects.validatePropertyCount('', {
         'a': 1,
         'b': 2
@@ -4766,13 +4765,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(rc1, true);
       assert.equal(erc1.length, 0);
 
-      const erc2: ValidationErrorType[] = [];
+      const erc2: ValidationErrorEntity.Type[] = [];
       const rc2 = Objects.validatePropertyCount('', { 'a': 1 }, 2, undefined, erc2);
 
       assert.equal(rc2, false);
       assert.equal(erc2.length, 1);
 
-      const erc3: ValidationErrorType[] = [];
+      const erc3: ValidationErrorEntity.Type[] = [];
       const rc3 = Objects.validatePropertyCount('', {
         'a': 1,
         'b': 2,
@@ -4783,19 +4782,19 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(erc3.length, 1);
 
       // validatePropertyNames
-      const e1: ValidationErrorType[] = [];
+      const e1: ValidationErrorEntity.Type[] = [];
       const rn1 = Objects.validatePropertyNames('', { 'a': 1 }, undefined, makeCtx(e1, true));
 
       assert.equal(rn1.valid, true);
       assert.equal(rn1.earlyExit, false);
 
-      const e2: ValidationErrorType[] = [];
+      const e2: ValidationErrorEntity.Type[] = [];
       const rn2 = Objects.validatePropertyNames('', { 'ok': 1 }, passingValidator(), makeCtx(e2, true));
 
       assert.equal(rn2.valid, true);
       assert.equal(rn2.earlyExit, false);
 
-      const e3: ValidationErrorType[] = [];
+      const e3: ValidationErrorEntity.Type[] = [];
       const rn3 = Objects.validatePropertyNames('', { 'bad': 1 }, failingValidator(), makeCtx(e3, true));
 
       assert.equal(rn3.valid, false);
@@ -4810,7 +4809,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       };
 
       // Good: validates known property
-      const e1: ValidationErrorType[] = [];
+      const e1: ValidationErrorEntity.Type[] = [];
       const r1 = Objects.validateProperties('', { 'name': 'Alice' }, new Map([[
         'name',
         passingValidator()
@@ -4820,7 +4819,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r1.earlyExit, false);
 
       // Bad: invalid for unknown property with additionalIsFalse
-      const e2: ValidationErrorType[] = [];
+      const e2: ValidationErrorEntity.Type[] = [];
       const r2 = Objects.validateProperties('', { 'extra': 'bad' }, new Map(), undefined, true, undefined, undefined, false, emptyDefaults(), makeCtx(e2, true));
 
       assert.equal(r2.valid, false);
@@ -4831,7 +4830,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
         'extra': 'removed',
         'name': 'Alice'
       };
-      const e3: ValidationErrorType[] = [];
+      const e3: ValidationErrorEntity.Type[] = [];
 
       Objects.validateProperties('', obj3, new Map([[
         'name',
@@ -4842,7 +4841,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       // Ugly: matches pattern property
       const obj4: Record<string, unknown> = { 'x-custom': 'original' };
-      const e4: ValidationErrorType[] = [];
+      const e4: ValidationErrorEntity.Type[] = [];
       const r4 = Objects.validateProperties('', obj4, new Map(), [{
         'regex': /^x-/u,
         'validator': coercingValidator('coerced')
@@ -4876,19 +4875,19 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       ]);
 
       // validateConst
-      const ec1: ValidationErrorType[] = [];
+      const ec1: ValidationErrorEntity.Type[] = [];
       const rc1 = Scalars.validateConst('/x', 'anything', false, undefined, ec1);
 
       assert.equal(rc1, true);
       assert.equal(ec1.length, 0);
 
-      const ec2: ValidationErrorType[] = [];
+      const ec2: ValidationErrorEntity.Type[] = [];
       const rc2 = Scalars.validateConst('/x', 42, true, 42, ec2);
 
       assert.equal(rc2, true);
       assert.equal(ec2.length, 0);
 
-      const ec3: ValidationErrorType[] = [];
+      const ec3: ValidationErrorEntity.Type[] = [];
       const rc3 = Scalars.validateConst('/x', 'wrong', true, 'expected', ec3);
 
       assert.equal(rc3, false);
@@ -4902,15 +4901,15 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(ec3item0.path, '/x');
 
       // validateEnum
-      const ee1: ValidationErrorType[] = [];
+      const ee1: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Scalars.validateEnum('/x', 'anything', undefined, undefined, ee1), true);
 
-      const ee2: ValidationErrorType[] = [];
+      const ee2: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Scalars.validateEnum('/x', 'b', enumVals, enumSet, ee2), true);
 
-      const ee3: ValidationErrorType[] = [];
+      const ee3: ValidationErrorEntity.Type[] = [];
       const re3 = Scalars.validateEnum('/x', 'z', enumVals, enumSet, ee3);
 
       assert.equal(re3, false);
@@ -4924,15 +4923,15 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(ee3item0.path, '/x');
 
       // validateFormat
-      const ef1: ValidationErrorType[] = [];
+      const ef1: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Scalars.validateFormat('/x', 'anything', undefined, undefined, ef1), true);
 
-      const ef2: ValidationErrorType[] = [];
+      const ef2: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Scalars.validateFormat('/x', 'a@b.com', 'email', emailValidator, ef2), true);
 
-      const ef3: ValidationErrorType[] = [];
+      const ef3: ValidationErrorEntity.Type[] = [];
       const rf3 = Scalars.validateFormat('/x', 'not-an-email', 'email', emailValidator, ef3);
 
       assert.equal(rf3, false);
@@ -4948,13 +4947,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
     void it('validateString + validateNumber + validateType: table-driven', () => {
       // validateString
-      const es1: ValidationErrorType[] = [];
+      const es1: ValidationErrorEntity.Type[] = [];
       const rs1 = Scalars.validateString('/x', 'hello', 2, 10, undefined, undefined, es1);
 
       assert.equal(rs1, true);
       assert.equal(es1.length, 0);
 
-      const es2: ValidationErrorType[] = [];
+      const es2: ValidationErrorEntity.Type[] = [];
       const rs2 = Scalars.validateString('/x', 'hi', 5, undefined, undefined, undefined, es2);
 
       assert.equal(rs2, false);
@@ -4965,7 +4964,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       }
       assert.equal(es2item0.keyword, 'minLength');
 
-      const es3: ValidationErrorType[] = [];
+      const es3: ValidationErrorEntity.Type[] = [];
       const rs3 = Scalars.validateString('/x', 'hello world', undefined, 5, undefined, undefined, es3);
 
       assert.equal(rs3, false);
@@ -4976,12 +4975,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       }
       assert.equal(es3item0.keyword, 'maxLength');
 
-      const es4: ValidationErrorType[] = [];
+      const es4: ValidationErrorEntity.Type[] = [];
       const rs4 = Scalars.validateString('/x', 'abc123', undefined, undefined, /^[a-z]+\d+$/u, '^[a-z]+\\d+$', es4);
 
       assert.equal(rs4, true);
 
-      const es5: ValidationErrorType[] = [];
+      const es5: ValidationErrorEntity.Type[] = [];
       const rs5 = Scalars.validateString('/x', '!!!', undefined, undefined, /^[a-z]+$/u, '^[a-z]+$', es5);
 
       assert.equal(rs5, false);
@@ -4992,16 +4991,16 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       }
       assert.equal(es5item0.keyword, 'pattern');
 
-      const es6: ValidationErrorType[] = [];
+      const es6: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Scalars.validateString('/x', 'anything', undefined, undefined, undefined, undefined, es6), true);
 
       // validateNumber
-      const en1: ValidationErrorType[] = [];
+      const en1: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Scalars.validateNumber('/x', 42, undefined, undefined, undefined, undefined, undefined, en1), true);
 
-      const en2: ValidationErrorType[] = [];
+      const en2: ValidationErrorEntity.Type[] = [];
 
       Scalars.validateNumber('/x', 3, 5, undefined, undefined, undefined, undefined, en2);
       const en2item0 = en2.at(0);
@@ -5011,7 +5010,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       }
       assert.equal(en2item0.keyword, 'minimum');
 
-      const en3: ValidationErrorType[] = [];
+      const en3: ValidationErrorEntity.Type[] = [];
 
       Scalars.validateNumber('/x', 20, undefined, 10, undefined, undefined, undefined, en3);
       const en3item0 = en3.at(0);
@@ -5021,7 +5020,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       }
       assert.equal(en3item0.keyword, 'maximum');
 
-      const en4: ValidationErrorType[] = [];
+      const en4: ValidationErrorEntity.Type[] = [];
 
       Scalars.validateNumber('/x', 5, undefined, undefined, 5, undefined, undefined, en4);
       const en4item0 = en4.at(0);
@@ -5031,7 +5030,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       }
       assert.equal(en4item0.keyword, 'exclusiveMinimum');
 
-      const en5: ValidationErrorType[] = [];
+      const en5: ValidationErrorEntity.Type[] = [];
 
       Scalars.validateNumber('/x', 10, undefined, undefined, undefined, 10, undefined, en5);
       const en5item0 = en5.at(0);
@@ -5041,7 +5040,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       }
       assert.equal(en5item0.keyword, 'exclusiveMaximum');
 
-      const en6: ValidationErrorType[] = [];
+      const en6: ValidationErrorEntity.Type[] = [];
       const rn6 = Scalars.validateNumber('/x', 7, undefined, undefined, undefined, undefined, 3, en6);
 
       assert.equal(rn6, false);
@@ -5054,22 +5053,22 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(en6item0.keyword, 'multipleOf');
 
       // validateType
-      const et1: ValidationErrorType[] = [];
+      const et1: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Scalars.validateType('/x', [], 'anything', et1), true);
 
-      const et2: ValidationErrorType[] = [];
+      const et2: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Scalars.validateType('/x', ['string'], 'hello', et2), true);
 
-      const et3: ValidationErrorType[] = [];
+      const et3: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Scalars.validateType('/x', [
         'string',
         'number'
       ], 42, et3), true);
 
-      const et4: ValidationErrorType[] = [];
+      const et4: ValidationErrorEntity.Type[] = [];
       const rt4 = Scalars.validateType('/x', ['string'], 42, et4);
 
       assert.equal(rt4, false);
@@ -5089,24 +5088,24 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 // Source: compositionExec.test.ts
 // ===========================================================================
 {
-  const passingValidatorImpl: ValidateWithErrorsFnType = (value: unknown) => {
+  const passingValidatorImpl: ValidateWithErrorsFunctionInterface = (value: unknown) => {
     return {
       'valid': true,
       'value': value
     };
   };
 
-  const failingValidatorImpl: ValidateWithErrorsFnType = (
+  const failingValidatorImpl: ValidateWithErrorsFunctionInterface = (
     value: unknown,
     path: string,
-    ctx: ExecContextType
+    ctx: ExecContextInterface
   ) => {
     ctx.errors.push({
       'instancePath': path,
       'keyword': 'type',
       'message': 'mock failure',
       'params': {}
-    } as unknown as ValidationErrorType);
+    } as unknown as ValidationErrorEntity.Type);
 
     return {
       'valid': false,
@@ -5114,24 +5113,24 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
     };
   };
 
-  function passingValidator(): ValidateWithErrorsFnType {
+  function passingValidator(): ValidateWithErrorsFunctionInterface {
     return passingValidatorImpl;
   }
 
-  function failingValidator(): ValidateWithErrorsFnType {
+  function failingValidator(): ValidateWithErrorsFunctionInterface {
     return failingValidatorImpl;
   }
 
   void describe('Composition — Good/Bad/Ugly', () => {
     void it('validateAllOf: undefined, all-pass, earlyExit, collect-errors', () => {
-      const e1: ValidationErrorType[] = [];
+      const e1: ValidationErrorEntity.Type[] = [];
       const r1 = Composition.validateAllOf('test', '', undefined, makeCtx(e1, true));
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
       assert.equal(r1.value, 'test');
 
-      const e2: ValidationErrorType[] = [];
+      const e2: ValidationErrorEntity.Type[] = [];
       const r2 = Composition.validateAllOf('test', '', [
         passingValidator(),
         passingValidator()
@@ -5140,7 +5139,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r2.valid, true);
       assert.equal(r2.earlyExit, false);
 
-      const e3: ValidationErrorType[] = [];
+      const e3: ValidationErrorEntity.Type[] = [];
       const r3 = Composition.validateAllOf('test', '/root', [
         passingValidator(),
         failingValidator()
@@ -5149,7 +5148,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(r3.valid, false);
       assert.equal(r3.earlyExit, true);
 
-      const e4: ValidationErrorType[] = [];
+      const e4: ValidationErrorEntity.Type[] = [];
       const r4 = Composition.validateAllOf('test', '/root', [
         passingValidator(),
         failingValidator()
@@ -5162,12 +5161,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
     void it('validateAnyOf + validateOneOf + validateNot: table-driven', () => {
       // anyOf
-      const ea1: ValidationErrorType[] = [];
+      const ea1: ValidationErrorEntity.Type[] = [];
       const ra1 = Composition.validateAnyOf('', 'test', undefined, makeCtx(ea1, true));
 
       assert.equal(ra1.valid, true);
 
-      const ea2: ValidationErrorType[] = [];
+      const ea2: ValidationErrorEntity.Type[] = [];
       const ra2 = Composition.validateAnyOf('', 'test', [
         failingValidator(),
         passingValidator()
@@ -5175,7 +5174,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(ra2.valid, true);
 
-      const ea3: ValidationErrorType[] = [];
+      const ea3: ValidationErrorEntity.Type[] = [];
       const ra3 = Composition.validateAnyOf('/root', 'test', [
         failingValidator(),
         failingValidator()
@@ -5184,12 +5183,12 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(ra3.valid, false);
 
       // oneOf
-      const eo1: ValidationErrorType[] = [];
+      const eo1: ValidationErrorEntity.Type[] = [];
       const ro1 = Composition.validateOneOf('', 'test', undefined, makeCtx(eo1, true));
 
       assert.equal(ro1.valid, true);
 
-      const eo2: ValidationErrorType[] = [];
+      const eo2: ValidationErrorEntity.Type[] = [];
       const ro2 = Composition.validateOneOf('', 'test', [
         failingValidator(),
         passingValidator(),
@@ -5198,7 +5197,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(ro2.valid, true);
 
-      const eo3: ValidationErrorType[] = [];
+      const eo3: ValidationErrorEntity.Type[] = [];
       const ro3 = Composition.validateOneOf('/root', 'test', [
         failingValidator(),
         failingValidator()
@@ -5206,7 +5205,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
 
       assert.equal(ro3.valid, false);
 
-      const eo4: ValidationErrorType[] = [];
+      const eo4: ValidationErrorEntity.Type[] = [];
       const ro4 = Composition.validateOneOf('/root', 'test', [
         passingValidator(),
         passingValidator()
@@ -5215,51 +5214,51 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(ro4.valid, false);
 
       // not
-      const en1: ValidationErrorType[] = [];
+      const en1: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Composition.validateNot('', 'test', undefined, makeCtx(en1, true)), true);
 
-      const en2: ValidationErrorType[] = [];
+      const en2: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Composition.validateNot('', 'test', failingValidator(), makeCtx(en2, true)), true);
 
-      const en3: ValidationErrorType[] = [];
+      const en3: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Composition.validateNot('/root', 'test', passingValidator(), makeCtx(en3, true)), false);
     });
 
     void it('validateIfThenElse + validateDependentSchemas + validateCustomKeywords', () => {
       // validateIfThenElse
-      const ei1: ValidationErrorType[] = [];
+      const ei1: ValidationErrorEntity.Type[] = [];
       const rite1 = Composition.validateIfThenElse('test', '', undefined, undefined, undefined, makeCtx(ei1, true));
 
       assert.equal(rite1.valid, true);
       assert.equal(rite1.value, 'test');
 
-      const ei2: ValidationErrorType[] = [];
+      const ei2: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Composition.validateIfThenElse('test', '', passingValidator(), passingValidator(), undefined, makeCtx(ei2, true)).valid, true);
 
-      const ei3: ValidationErrorType[] = [];
+      const ei3: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Composition.validateIfThenElse('test', '/root', passingValidator(), failingValidator(), undefined, makeCtx(ei3, true)).valid, false);
 
-      const ei4: ValidationErrorType[] = [];
+      const ei4: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Composition.validateIfThenElse('test', '', failingValidator(), undefined, passingValidator(), makeCtx(ei4, true)).valid, true);
 
-      const ei5: ValidationErrorType[] = [];
+      const ei5: ValidationErrorEntity.Type[] = [];
 
       assert.equal(Composition.validateIfThenElse('test', '', failingValidator(), undefined, undefined, makeCtx(ei5, true)).valid, true);
 
       // validateDependentSchemas
-      const ed1: ValidationErrorType[] = [];
+      const ed1: ValidationErrorEntity.Type[] = [];
       const rds1 = Composition.validateDependentSchemas({ 'a': 1 }, '', undefined, makeCtx(ed1, true));
 
       assert.equal(rds1.valid, true);
       assert.equal(rds1.earlyExit, false);
 
-      const ed2: ValidationErrorType[] = [];
+      const ed2: ValidationErrorEntity.Type[] = [];
       const rds2 = Composition.validateDependentSchemas({ 'a': 1 }, '', [{
         'trigger': 'a',
         'validator': passingValidator()
@@ -5268,7 +5267,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(rds2.valid, true);
       assert.equal(rds2.earlyExit, false);
 
-      const ed3: ValidationErrorType[] = [];
+      const ed3: ValidationErrorEntity.Type[] = [];
       const rds3 = Composition.validateDependentSchemas('not-an-object', '', [{
         'trigger': 'a',
         'validator': failingValidator()
@@ -5277,13 +5276,13 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(rds3.valid, true);
 
       // validateCustomKeywords
-      const eck1: ValidationErrorType[] = [];
+      const eck1: ValidationErrorEntity.Type[] = [];
       const rck1 = Composition.validateCustomKeywords('', 'test', undefined, eck1);
 
       assert.equal(rck1, true);
       assert.equal(eck1.length, 0);
 
-      const eck2: ValidationErrorType[] = [];
+      const eck2: ValidationErrorEntity.Type[] = [];
       const rck2 = Composition.validateCustomKeywords('', 42, [{
         'allowedTypes': undefined,
         'keyword': 'x-even',
@@ -5296,7 +5295,7 @@ function makeCtx(errors: ValidationErrorType[], collectErrors = true, applyDefau
       assert.equal(rck2, true);
       assert.equal(eck2.length, 0);
 
-      const eck3: ValidationErrorType[] = [];
+      const eck3: ValidationErrorEntity.Type[] = [];
       const rck3 = Composition.validateCustomKeywords('/root', 42, [{
         'allowedTypes': undefined,
         'keyword': 'x-fail',

@@ -9,10 +9,10 @@ import { DataType } from '../data/DataType.js';
 import { SchemaIri } from './SchemaIri.js';
 
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
-import type { RootDialectPlanType } from '../../types/RootDialectPlanType.js';
+import type { RootDialectPlanEntity } from '../../entities/RootDialectPlanEntity.js';
 
 export const GraphEngineSupport = {
-  buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanType {
+  buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanEntity.Type {
     if (!DataType.isRecord(rootSchema)) {
       return {
         'contentAssertions': true,
@@ -46,7 +46,7 @@ export const GraphEngineSupport = {
         }
       }
 
-      const formatAssertionValue = rawVocabulary[VOCABULARY_FORMAT_ASSERTION];
+      const formatAssertionValue = Reflect.get(rawVocabulary, VOCABULARY_FORMAT_ASSERTION);
 
       if (typeof formatAssertionValue === 'boolean') {
         formatAssertions = formatAssertionValue;
@@ -79,9 +79,9 @@ export const GraphEngineSupport = {
     return structuredClone(value);
   },
 
-  extractNamedFragment(ref: string): string | undefined {
+  extractNamedFragment(reference: string): string | undefined {
     // splitSubject returns fragment: null when no '#' is present.
-    const { fragment } = SchemaIri.splitSubject(ref);
+    const { fragment } = SchemaIri.splitSubject(reference);
 
     if (fragment === null || fragment === '' || fragment.startsWith('/')) {
       return undefined;

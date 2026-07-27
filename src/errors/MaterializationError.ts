@@ -2,7 +2,7 @@
  * MaterializationError — thrown when materialization or ABox projection fails validation
  */
 
-import type { MaterializationErrorOptionsType } from '../types/ErrorOptions.js';
+import type { MaterializationErrorOptionsInterface } from '../interfaces/MaterializationErrorOptionsInterface.js';
 
 import { BaseError } from './BaseError.js';
 
@@ -16,7 +16,7 @@ export class MaterializationError extends BaseError {
    * @param schemaId - The $id of the schema that failed materialization
    * @param options - Options bag with required `code`, `validationErrors`, and optional `cause` and `message`
    */
-  public constructor(schemaId: string, options: MaterializationErrorOptionsType) {
+  public constructor(schemaId: string, options: MaterializationErrorOptionsInterface) {
     const message = options.message ?? `Invalid ${schemaId}: ${options.validationErrors.join('; ')}`;
 
     super(message, options);

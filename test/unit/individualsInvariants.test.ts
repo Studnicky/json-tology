@@ -17,9 +17,8 @@ import {
   describe, it
 } from 'node:test';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
-import type {
-  OwlImportContextType, OwlImportFragmentType
-} from '../../src/types/OwlImport.js';
+import type { OwlImportContextInterface } from '../../src/interfaces/OwlImportContextInterface.js';
+import type { OwlImportFragmentInterface } from '../../src/interfaces/OwlImportFragmentInterface.js';
 import type { InvariantType } from '../../src/types/Invariant.js';
 import { Individuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
 import { Terms } from '../../src/modules/quads/Terms.js';
@@ -55,8 +54,8 @@ function runIndividuals(
   quads: QuadInterface[],
   allClassIris: string[] = [],
   allPropertyIris: string[] = []
-): OwlImportFragmentType {
-  const ctx: OwlImportContextType = {
+): OwlImportFragmentInterface {
+  const ctx: OwlImportContextInterface = {
     'allClassIris': new Set<string>(allClassIris),
     'allPropertyIris': new Set<string>(allPropertyIris),
     'baseIri': 'urn:test',
@@ -85,7 +84,7 @@ function runIndividuals(
 /**
  * Extract the first invariant from the fragment whose name includes `tag`.
  */
-function findInvariant(fragment: OwlImportFragmentType, tag: string): InvariantType {
+function findInvariant(fragment: OwlImportFragmentInterface, tag: string): InvariantType {
   const entry = fragment.invariants.find((inv) => {
     return inv.invariant.name.includes(tag);
   });

@@ -14,130 +14,164 @@
 
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { TokenParseResultType } from '../../types/TokenParseResultType.js';
-import type { NQuadLineResultType } from '../../types/NQuadLineResultType.js';
-import type { ParsedLiteralType } from '../../types/ParsedLiteralType.js';
-import type { ConversionContextType } from '../../types/ConversionContextType.js';
+import type { TokenParseResultEntity } from '../../entities/TokenParseResultEntity.js';
+import type { ParsedLiteralEntity } from '../../entities/ParsedLiteralEntity.js';
+import type { ConversionContextInterface } from '../../interfaces/ConversionContextInterface.js';
 import {
   RDF, XSD
 } from '../../constants/IRI.js';
+import {
+  NQUAD_DATATYPE_PREFIX_LENGTH, NQUAD_MINIMUM_TOKENS
+} from '../../constants/NUMERIC.js';
 import { Lists } from '../quads/Lists.js';
 import { Terms } from '../quads/Terms.js';
 import { IdentifierIssuer } from '../quads/IdentifierIssuer.js';
 import { Curie } from '../quads/Curie.js';
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/** Minimum number of tokens required to form a valid N-Quad line. */
-const NQUAD_MIN_TOKENS = 3;
-
-/** Number of characters consumed by the `^^<` datatype prefix in N-Quads. */
-const NQUAD_DATATYPE_PREFIX_LENGTH = 3;
-
 /**
- * Return true when a plain JSON string value should be treated as a literal
- * rather than an IRI reference. A string is a literal when it cannot be a
- * valid IRI or CURIE: no colon, not starting with `_:` / `http:` / `https:`
- * / `urn:`. Covers JSON Schema format values (`email`, `date-time`, `uri`,
- * `uuid`, `int32`) and other plain-string annotations produced by
- * JsonLdFormatter.
+ * JsonLdToQuads — converts compact JSON-LD (and jsonld.js N-Quads output) to quads.
  */
-function isLiteralString(value: string, context: Record<string, string>): boolean {
-  if (
-    value.startsWith('_:')
-    || value.startsWith('http://')
-    || value.startsWith('https://')
-    || value.startsWith('urn:')
-  ) {
-    return false;
+export class JsonLdToQuads {
+  private static advancePastLiteralQuotes(line: string, startPos: number): number {
+    let end = startPos + 1;
+
+    while (end < line.length) {
+      if (line[end] === '\\') {
+        end += 2;
+        continue;
+      }
+      if (line[end] === '"') {
+        end++;
+        break;
+      }
+      end++;
+    }
+
+    return end;
   }
 
-  const colonIndex = value.indexOf(':');
+  private static advancePastLiteralSuffix(line: string, endPos: number): number {
+    if (endPos < line.length && line[endPos] === '^') {
+      const afterCaret = endPos + 2;
+      const dtEnd = line.indexOf('>', afterCaret);
 
-  if (colonIndex === -1) {
-    return true;
+      return dtEnd === -1 ? line.length : dtEnd + 1;
+    }
+    if (endPos < line.length && line[endPos] === '@') {
+      const langEnd = line.indexOf(' ', endPos);
+
+      return langEnd === -1 ? line.length : langEnd;
+    }
+
+    return endPos;
   }
 
-  const prefix = value.slice(0, colonIndex);
+  private static consumeBnodeToken(line: string, pos: number, tokens: string[]): number {
+    const [
+      token,
+      nextPos
+    ] = JsonLdToQuads.tokenizeBnodeAt(line, pos);
 
-  return !(prefix in context);
-}
+    tokens.push(token);
 
-// ---------------------------------------------------------------------------
-// JSON-LD value conversion — grouped as methods on a single internal
-// namespace object (see `Lists`/`Terms`) because their names collide with
-// the project's banned freestanding verb-prefix list (make/convert/...).
-// ---------------------------------------------------------------------------
+    return nextPos;
+  }
 
-const Convert = {
-  convertIdObject(
-    obj: Record<string, unknown>,
+  private static consumeIriToken(line: string, pos: number, tokens: string[]): number {
+    const [
+      token,
+      nextPos
+    ] = JsonLdToQuads.tokenizeIriAt(line, pos);
+
+    if (token === '') {
+      // No closing bracket — malformed, stop tokenizing this line.
+      return line.length;
+    }
+    tokens.push(token);
+
+    return nextPos;
+  }
+
+  private static consumeLiteralToken(line: string, pos: number, tokens: string[]): number {
+    const [
+      token,
+      nextPos
+    ] = JsonLdToQuads.tokenizeLiteralAt(line, pos);
+
+    tokens.push(token);
+
+    return nextPos;
+  }
+
+  private static convertIdObject(
+    object: Record<string, unknown>,
     iriValue: string,
-    ctx: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): QuadObjectType {
     if (iriValue.startsWith('_:')) {
       return Terms.blank(iriValue.slice(2));
     }
 
     // Inlined blank node (has keys beyond @id)
-    if (Object.keys(obj).length > 1) {
-      const bnodeId = Convert.convertInlinedBnode(obj, ctx);
+    if (Object.keys(object).length > 1) {
+      const bnodeId = JsonLdToQuads.convertInlinedBnode(object, conversionContext);
 
       return Terms.blank(bnodeId.slice(2));
     }
 
-    return Terms.iri(Curie.expandWithContext(iriValue, ctx.context));
-  },
+    return Terms.iri(Curie.expandWithContext(iriValue, conversionContext.context));
+  }
 
-  convertInlinedBnode(
-    obj: Record<string, unknown>,
-    ctx: ConversionContextType
+  private static convertInlinedBnode(
+    object: Record<string, unknown>,
+    conversionContext: ConversionContextInterface
   ): string {
-    const existingId = ctx.bnodeMap.get(obj);
-    const bnodeId = existingId ?? ctx.counter.getId();
+    const existingId = conversionContext.bnodeMap.get(object);
+    const bnodeId = existingId ?? conversionContext.counter.getId();
 
     if (existingId === undefined) {
-      ctx.bnodeMap.set(obj, bnodeId);
-      emitNodeQuads(bnodeId, obj, ctx);
+      conversionContext.bnodeMap.set(object, bnodeId);
+      JsonLdToQuads.emitNodeQuads(bnodeId, object, conversionContext);
     }
 
     return bnodeId;
-  },
+  }
 
-  convertObjectValue(
-    obj: Record<string, unknown>,
+  /**
+   * Convert a JSON-LD object value (`@list` / `@id` / `@value` / inlined bnode) to a quad object term.
+   */
+  private static convertObjectValue(
+    object: Record<string, unknown>,
     originalValue: unknown,
-    ctx: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): null | QuadObjectType {
-    if ('@list' in obj && Array.isArray(obj['@list'])) {
-      return Convert.convertRdfList(obj['@list'] as unknown[], ctx);
+    if ('@list' in object && Array.isArray(object['@list'])) {
+      return JsonLdToQuads.convertRdfList(object['@list'] as unknown[], conversionContext);
     }
 
-    if ('@id' in obj && typeof obj['@id'] === 'string') {
-      return Convert.convertIdObject(obj, obj['@id'], ctx);
+    if ('@id' in object && typeof object['@id'] === 'string') {
+      return JsonLdToQuads.convertIdObject(object, object['@id'], conversionContext);
     }
 
-    if ('@value' in obj) {
-      return Terms.literal(obj['@value']);
+    if ('@value' in object) {
+      return Terms.literal(object['@value']);
     }
 
-    if (Object.keys(obj).length > 0) {
-      return Terms.blank(Convert.convertInlinedBnode(obj, ctx).slice(2));
+    if (Object.keys(object).length > 0) {
+      return Terms.blank(JsonLdToQuads.convertInlinedBnode(object, conversionContext).slice(2));
     }
 
     return Terms.literal(originalValue);
-  },
+  }
 
-  convertRdfList(
+  private static convertRdfList(
     rawList: unknown[],
-    ctx: ConversionContextType
+    conversionContext: ConversionContextInterface
   ): QuadObjectType {
     const items: QuadObjectType[] = [];
 
     for (const rawItem of rawList) {
-      const term = jsonLdValueToTerm(rawItem, ctx);
+      const term = JsonLdToQuads.jsonLdValueToTerm(rawItem, conversionContext);
 
       if (term !== null) {
         items.push(term);
@@ -146,214 +180,84 @@ const Convert = {
 
     const {
       head, triples
-    } = Lists.build(items, ctx.counter);
+    } = Lists.build(items, conversionContext.counter);
 
     for (const triple of triples) {
-      ctx.allQuads.push(triple);
+      conversionContext.allQuads.push(triple);
     }
 
     return head;
-  },
+  }
 
-  convertStringValue(value: string, ctx: ConversionContextType): QuadObjectType {
-    if (isLiteralString(value, ctx.context)) {
+  private static convertStringValue(value: string, conversionContext: ConversionContextInterface): QuadObjectType {
+    if (JsonLdToQuads.isLiteralString(value, conversionContext.context)) {
       return Terms.literal(value);
     }
 
-    return Terms.iri(Curie.expandWithContext(value, ctx.context));
-  },
-
-  /** Groups per-call mutable state to avoid passing 4-5 arguments through every recursive call. */
-  makeConversionContext(context: Record<string, string>): ConversionContextType {
-    return {
-      'allQuads': [],
-      'bnodeMap': new Map(),
-      'context': context,
-      'counter': new IdentifierIssuer({ 'prefix': '_:jld' })
-    };
-  }
-} as const;
-
-function jsonLdValueToTerm(
-  value: unknown,
-  ctx: ConversionContextType
-): null | QuadObjectType {
-  if (typeof value === 'string') {
-    return Convert.convertStringValue(value, ctx);
+    return Terms.iri(Curie.expandWithContext(value, conversionContext.context));
   }
 
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return Terms.literal(value);
-  }
+  private static emitNodeQuads(
+    subjectId: string,
+    node: Record<string, unknown>,
+    conversionContext: ConversionContextInterface
+  ): void {
+    const subjectTerm = subjectId.startsWith('_:')
+      ? Terms.blank(subjectId.slice(2))
+      : Terms.iri(subjectId);
 
-  if (typeof value !== 'object' || value === null) {
-    return null;
-  }
-
-  return Convert.convertObjectValue(value as Record<string, unknown>, value, ctx);
-}
-
-// ---------------------------------------------------------------------------
-// Emit quads for a single JSON-LD node
-// ---------------------------------------------------------------------------
-
-function emitTypeQuads(
-  subjectTerm: ReturnType<typeof Terms.blank> | ReturnType<typeof Terms.iri>,
-  types: unknown[],
-  ctx: ConversionContextType
-): void {
-  for (const typeValue of types) {
-    if (typeof typeValue !== 'string') {
-      continue;
-    }
-    ctx.allQuads.push(Terms.quad(
-      subjectTerm,
-      Terms.iri(RDF.type),
-      Terms.iri(Curie.expandWithContext(typeValue, ctx.context)),
-      Terms.defaultGraph()
-    ));
-  }
-}
-
-function emitNodeQuads(
-  subjectId: string,
-  node: Record<string, unknown>,
-  ctx: ConversionContextType
-): void {
-  const subjectTerm = subjectId.startsWith('_:')
-    ? Terms.blank(subjectId.slice(2))
-    : Terms.iri(subjectId);
-
-  for (const [
-    key,
-    rawValue
-  ] of Object.entries(node)) {
-    if (key === '@id') {
-      continue;
-    }
-    if (key === '@type') {
-      const types = Array.isArray(rawValue) ? rawValue : [rawValue];
-
-      emitTypeQuads(subjectTerm, types, ctx);
-      continue;
-    }
-
-    const predicateIri = Curie.expandWithContext(key, ctx.context);
-    const predicateTerm = Terms.iri(predicateIri);
-    const values = Array.isArray(rawValue) ? rawValue : [rawValue];
-
-    for (const itemValue of values) {
-      const objectTerm = jsonLdValueToTerm(itemValue, ctx);
-
-      if (objectTerm === null) {
+    for (const [
+      key,
+      rawValue
+    ] of Object.entries(node)) {
+      if (key === '@id') {
         continue;
       }
-      ctx.allQuads.push(Terms.quad(
+      if (key === '@type') {
+        const types = Array.isArray(rawValue) ? rawValue : [rawValue];
+
+        JsonLdToQuads.emitTypeQuads(subjectTerm, types, conversionContext);
+        continue;
+      }
+
+      const predicateIri = Curie.expandWithContext(key, conversionContext.context);
+      const predicateTerm = Terms.iri(predicateIri);
+      const values = Array.isArray(rawValue) ? rawValue : [rawValue];
+
+      for (const itemValue of values) {
+        const objectTerm = JsonLdToQuads.jsonLdValueToTerm(itemValue, conversionContext);
+
+        if (objectTerm === null) {
+          continue;
+        }
+        conversionContext.allQuads.push(Terms.quad(
+          subjectTerm,
+          predicateTerm,
+          objectTerm,
+          Terms.defaultGraph()
+        ));
+      }
+    }
+  }
+
+  private static emitTypeQuads(
+    subjectTerm: ReturnType<typeof Terms.blank> | ReturnType<typeof Terms.iri>,
+    types: unknown[],
+    conversionContext: ConversionContextInterface
+  ): void {
+    for (const typeValue of types) {
+      if (typeof typeValue !== 'string') {
+        continue;
+      }
+      conversionContext.allQuads.push(Terms.quad(
         subjectTerm,
-        predicateTerm,
-        objectTerm,
+        Terms.iri(RDF.type),
+        Terms.iri(Curie.expandWithContext(typeValue, conversionContext.context)),
         Terms.defaultGraph()
       ));
     }
   }
-}
 
-// ---------------------------------------------------------------------------
-// N-Quads parser (for jsonld.js v8 output with format: 'application/n-quads')
-// — grouped for the same reason as `Convert` above.
-// ---------------------------------------------------------------------------
-
-const NQuadParse = {
-  parseLiteralToken(token: string): ParsedLiteralType {
-    const closingQuote = token.lastIndexOf('"');
-
-    if (closingQuote <= 0) {
-      return {
-        'datatype': XSD.string,
-        'language': '',
-        'value': token.slice(1, -1)
-      };
-    }
-    const value = token.slice(1, closingQuote)
-      .replaceAll('\\"', '"')
-      .replaceAll('\\n', '\n')
-      .replaceAll('\\t', '\t');
-    const suffix = token.slice(closingQuote + 1);
-
-    if (suffix.startsWith('^^<')) {
-      return {
-        'datatype': suffix.slice(NQUAD_DATATYPE_PREFIX_LENGTH, -1),
-        'language': '',
-        value
-      };
-    }
-    if (suffix.startsWith('@')) {
-      return {
-        'datatype': RDF.langString,
-        'language': suffix.slice(1),
-        value
-      };
-    }
-
-    return {
-      'datatype': XSD.string,
-      'language': '',
-      value
-    };
-  },
-
-  parseNQuadLine(body: string): NQuadLineResultType {
-    const tokens = tokenizeNQuadLine(body);
-
-    if (tokens.length < NQUAD_MIN_TOKENS) {
-      return undefined;
-    }
-
-    const subjectToken = tokens[0];
-    const predicateToken = tokens[1];
-    const objectToken = tokens[2];
-
-    if (subjectToken === undefined || predicateToken === undefined || objectToken === undefined) {
-      return undefined;
-    }
-
-    const subjectTerm = subjectToken.startsWith('_:')
-      ? Terms.blank(subjectToken.slice(2))
-      : Terms.iri(subjectToken.slice(1, -1));
-    const predicateTerm = Terms.iri(predicateToken.slice(1, -1));
-    const objectTerm = NQuadParse.parseNQuadObjectTerm(objectToken);
-
-    return Terms.quad(subjectTerm, predicateTerm, objectTerm, Terms.defaultGraph());
-  },
-
-  parseNQuadObjectTerm(objectToken: string): QuadObjectType {
-    if (objectToken.startsWith('"')) {
-      const {
-        datatype, language, value
-      } = NQuadParse.parseLiteralToken(objectToken);
-
-      return Terms.literal(value, {
-        'datatype': Terms.iri(datatype),
-        'language': language
-      });
-    }
-
-    if (objectToken.startsWith('_:')) {
-      return Terms.blank(objectToken.slice(2));
-    }
-
-    return Terms.iri(objectToken.slice(1, -1));
-  }
-} as const;
-
-// ---------------------------------------------------------------------------
-// Public entry point
-// ---------------------------------------------------------------------------
-
-/**
- * JsonLdToQuads — converts compact JSON-LD (and jsonld.js N-Quads output) to quads.
- */
-export class JsonLdToQuads {
   /**
    * Convert a compact JSON-LD node array to a flat array of RDF quads.
    *
@@ -382,7 +286,7 @@ export class JsonLdToQuads {
     nodes: Array<Record<string, unknown>>,
     prefixMap: Record<string, string>
   ): QuadInterface[] {
-    const ctx = Convert.makeConversionContext(prefixMap);
+    const conversionContext = JsonLdToQuads.makeConversionContext(prefixMap);
 
     for (const node of nodes) {
       const subjectRaw = node['@id'];
@@ -390,12 +294,12 @@ export class JsonLdToQuads {
       if (typeof subjectRaw !== 'string') {
         continue;
       }
-      const subjectId = Curie.expandWithContext(subjectRaw, ctx.context);
+      const subjectId = Curie.expandWithContext(subjectRaw, conversionContext.context);
 
-      emitNodeQuads(subjectId, node, ctx);
+      JsonLdToQuads.emitNodeQuads(subjectId, node, conversionContext);
     }
 
-    return ctx.allQuads;
+    return conversionContext.allQuads;
   }
 
   /**
@@ -431,7 +335,7 @@ export class JsonLdToQuads {
         continue;
       }
       const body = trimmed.endsWith(' .') ? trimmed.slice(0, -2).trimEnd() : trimmed;
-      const quad = NQuadParse.parseNQuadLine(body);
+      const quad = JsonLdToQuads.parseNQuadLine(body);
 
       if (quad !== undefined) {
         quads.push(quad);
@@ -440,146 +344,214 @@ export class JsonLdToQuads {
 
     return quads;
   }
-}
 
-function advancePastLiteralQuotes(line: string, startPos: number): number {
-  let end = startPos + 1;
-
-  while (end < line.length) {
-    if (line[end] === '\\') {
-      end += 2;
-      continue;
+  /**
+   * Return true when a plain JSON string value should be treated as a literal
+   * rather than an IRI reference. A string is a literal when it cannot be a
+   * valid IRI or CURIE: no colon, not starting with `_:` / `http:` / `https:`
+   * / `urn:`. Covers JSON Schema format values (`email`, `date-time`, `uri`,
+   * `uuid`, `int32`) and other plain-string annotations produced by
+   * JsonLdFormatter.
+   */
+  private static isLiteralString(value: string, context: Record<string, string>): boolean {
+    if (
+      value.startsWith('_:')
+      || value.startsWith('http://')
+      || value.startsWith('https://')
+      || value.startsWith('urn:')
+    ) {
+      return false;
     }
-    if (line[end] === '"') {
-      end++;
-      break;
+
+    const colonIndex = value.indexOf(':');
+
+    if (colonIndex === -1) {
+      return true;
     }
-    end++;
+
+    const prefix = value.slice(0, colonIndex);
+
+    return !(prefix in context);
   }
 
-  return end;
-}
+  private static jsonLdValueToTerm(
+    value: unknown,
+    conversionContext: ConversionContextInterface
+  ): null | QuadObjectType {
+    if (typeof value === 'string') {
+      return JsonLdToQuads.convertStringValue(value, conversionContext);
+    }
 
-function advancePastLiteralSuffix(line: string, endPos: number): number {
-  if (endPos < line.length && line[endPos] === '^') {
-    const afterCaret = endPos + 2;
-    const dtEnd = line.indexOf('>', afterCaret);
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return Terms.literal(value);
+    }
 
-    return dtEnd === -1 ? line.length : dtEnd + 1;
+    if (typeof value !== 'object' || value === null) {
+      return null;
+    }
+
+    return JsonLdToQuads.convertObjectValue(value as Record<string, unknown>, value, conversionContext);
   }
-  if (endPos < line.length && line[endPos] === '@') {
-    const langEnd = line.indexOf(' ', endPos);
 
-    return langEnd === -1 ? line.length : langEnd;
+  /** Groups per-call mutable state to avoid passing 4-5 arguments through every recursive call. */
+  private static makeConversionContext(context: Record<string, string>): ConversionContextInterface {
+    return {
+      'allQuads': [],
+      'bnodeMap': new Map(),
+      'context': context,
+      'counter': new IdentifierIssuer({ 'prefix': '_:jld' })
+    };
   }
 
-  return endPos;
-}
+  private static parseLiteralToken(token: string): ParsedLiteralEntity.Type {
+    const closingQuote = token.lastIndexOf('"');
 
-function tokenizeLiteralAt(line: string, pos: number): TokenParseResultType {
-  const afterQuotes = advancePastLiteralQuotes(line, pos);
-  const end = advancePastLiteralSuffix(line, afterQuotes);
+    if (closingQuote <= 0) {
+      return {
+        'datatype': XSD.string,
+        'language': '',
+        'value': token.slice(1, -1)
+      };
+    }
+    const value = token.slice(1, closingQuote)
+      .replaceAll('\\"', '"')
+      .replaceAll('\\n', '\n')
+      .replaceAll('\\t', '\t');
+    const suffix = token.slice(closingQuote + 1);
 
-  return [
-    line.slice(pos, end),
-    end
-  ];
-}
+    if (suffix.startsWith('^^<')) {
+      return {
+        'datatype': suffix.slice(NQUAD_DATATYPE_PREFIX_LENGTH, -1),
+        'language': '',
+        value
+      };
+    }
+    if (suffix.startsWith('@')) {
+      return {
+        'datatype': RDF.langString,
+        'language': suffix.slice(1),
+        value
+      };
+    }
 
-function tokenizeIriAt(line: string, pos: number): TokenParseResultType {
-  const end = line.indexOf('>', pos);
+    return {
+      'datatype': XSD.string,
+      'language': '',
+      value
+    };
+  }
 
-  if (end === -1) {
+  private static parseNQuadLine(body: string): QuadInterface | undefined {
+    const tokens = JsonLdToQuads.tokenizeNQuadLine(body);
+
+    if (tokens.length < NQUAD_MINIMUM_TOKENS) {
+      return undefined;
+    }
+
+    const subjectToken = tokens.at(0);
+    const predicateToken = tokens.at(1);
+    const objectToken = tokens.at(2);
+
+    if (subjectToken === undefined || predicateToken === undefined || objectToken === undefined) {
+      return undefined;
+    }
+
+    const subjectTerm = subjectToken.startsWith('_:')
+      ? Terms.blank(subjectToken.slice(2))
+      : Terms.iri(subjectToken.slice(1, -1));
+    const predicateTerm = Terms.iri(predicateToken.slice(1, -1));
+    const objectTerm = JsonLdToQuads.parseNQuadObjectTerm(objectToken);
+
+    return Terms.quad(subjectTerm, predicateTerm, objectTerm, Terms.defaultGraph());
+  }
+
+  private static parseNQuadObjectTerm(objectToken: string): QuadObjectType {
+    if (objectToken.startsWith('"')) {
+      const {
+        datatype, language, value
+      } = JsonLdToQuads.parseLiteralToken(objectToken);
+
+      return Terms.literal(value, {
+        'datatype': Terms.iri(datatype),
+        'language': language
+      });
+    }
+
+    if (objectToken.startsWith('_:')) {
+      return Terms.blank(objectToken.slice(2));
+    }
+
+    return Terms.iri(objectToken.slice(1, -1));
+  }
+
+  private static tokenizeBnodeAt(line: string, pos: number): TokenParseResultEntity.Type {
+    const end = line.indexOf(' ', pos);
+    const token = end === -1 ? line.slice(pos) : line.slice(pos, end);
+
     return [
-      '',
-      line.length
+      token,
+      end === -1 ? line.length : end
     ];
   }
 
-  return [
-    line.slice(pos, end + 1),
-    end + 1
-  ];
-}
+  private static tokenizeIriAt(line: string, pos: number): TokenParseResultEntity.Type {
+    const end = line.indexOf('>', pos);
 
-function tokenizeBnodeAt(line: string, pos: number): TokenParseResultType {
-  const end = line.indexOf(' ', pos);
-  const token = end === -1 ? line.slice(pos) : line.slice(pos, end);
+    if (end === -1) {
+      return [
+        '',
+        line.length
+      ];
+    }
 
-  return [
-    token,
-    end === -1 ? line.length : end
-  ];
-}
-
-function consumeLiteralToken(line: string, pos: number, tokens: string[]): number {
-  const [
-    token,
-    nextPos
-  ] = tokenizeLiteralAt(line, pos);
-
-  tokens.push(token);
-
-  return nextPos;
-}
-
-function consumeIriToken(line: string, pos: number, tokens: string[]): number {
-  const [
-    token,
-    nextPos
-  ] = tokenizeIriAt(line, pos);
-
-  if (token === '') {
-    // No closing bracket — malformed, stop tokenizing this line.
-    return line.length;
+    return [
+      line.slice(pos, end + 1),
+      end + 1
+    ];
   }
-  tokens.push(token);
 
-  return nextPos;
-}
+  private static tokenizeLiteralAt(line: string, pos: number): TokenParseResultEntity.Type {
+    const afterQuotes = JsonLdToQuads.advancePastLiteralQuotes(line, pos);
+    const end = JsonLdToQuads.advancePastLiteralSuffix(line, afterQuotes);
 
-function consumeBnodeToken(line: string, pos: number, tokens: string[]): number {
-  const [
-    token,
-    nextPos
-  ] = tokenizeBnodeAt(line, pos);
+    return [
+      line.slice(pos, end),
+      end
+    ];
+  }
 
-  tokens.push(token);
+  private static tokenizeNQuadLine(line: string): string[] {
+    const tokens: string[] = [];
+    let pos = 0;
 
-  return nextPos;
-}
-
-function tokenizeNQuadLine(line: string): string[] {
-  const tokens: string[] = [];
-  let pos = 0;
-
-  while (pos < line.length) {
-    // Skip whitespace
-    while (pos < line.length && line[pos] === ' ') {
-      pos++;
-    }
-    if (pos >= line.length) {
-      break;
-    }
-    const ch = line[pos];
-
-    switch (ch) {
-      case '"':
-        pos = consumeLiteralToken(line, pos, tokens);
-        break;
-      case '<':
-        pos = consumeIriToken(line, pos, tokens);
-        break;
-      case '_':
-        pos = consumeBnodeToken(line, pos, tokens);
-        break;
-      case undefined:
-        break;
-      default:
-        // Unknown token character — skip
+    while (pos < line.length) {
+      // Skip whitespace
+      while (pos < line.length && line[pos] === ' ') {
         pos++;
-    }
-  }
+      }
+      if (pos >= line.length) {
+        break;
+      }
+      const ch = line[pos];
 
-  return tokens;
+      switch (ch) {
+        case '"':
+          pos = JsonLdToQuads.consumeLiteralToken(line, pos, tokens);
+          break;
+        case '<':
+          pos = JsonLdToQuads.consumeIriToken(line, pos, tokens);
+          break;
+        case '_':
+          pos = JsonLdToQuads.consumeBnodeToken(line, pos, tokens);
+          break;
+        case undefined:
+          break;
+        default:
+          // Unknown token character — skip
+          pos++;
+      }
+    }
+
+    return tokens;
+  }
 }

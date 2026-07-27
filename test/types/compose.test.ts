@@ -386,7 +386,7 @@ assertType<TwoItems extends { readonly 'items': [string, string] } ? true : fals
 
 // minCardinality(N) → at least N elements (non-empty tuple prefix + variadic tail).
 const AtLeastOneItem = Compose.subClassOf(
-  Compose.minCardinality(ITEMS_PROP, 1),
+  Compose.minimumCardinality(ITEMS_PROP, 1),
   Compose.subClassOf(ContainerSchema, {
     '$id': 'https://example.io/AtLeastOneItem',
     'type': 'object'
@@ -398,7 +398,7 @@ assertType<AtLeast1 extends { readonly 'items': [string, ...string[]] } ? true :
 
 // maxCardinality(N) → union of tuples with length 0..N.
 const AtMostTwoItems = Compose.subClassOf(
-  Compose.maxCardinality(ITEMS_PROP, 2),
+  Compose.maximumCardinality(ITEMS_PROP, 2),
   Compose.subClassOf(ContainerSchema, {
     '$id': 'https://example.io/AtMostTwoItems',
     'type': 'object'

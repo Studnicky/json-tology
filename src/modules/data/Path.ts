@@ -1,4 +1,6 @@
-import { VALID_IDENTIFIER } from '../../constants/PATH.js';
+import {
+  NUMERIC_SEGMENT, VALID_IDENTIFIER
+} from '../../constants/PATH.js';
 
 export class Path {
   /**
@@ -23,7 +25,7 @@ export class Path {
     let result = '';
 
     for (const segment of segments) {
-      if (/^\d+$/u.test(segment)) {
+      if (NUMERIC_SEGMENT.test(segment)) {
         result += `[${segment}]`;
       } else if (VALID_IDENTIFIER.test(segment)) {
         result += result === '' ? segment : `.${segment}`;

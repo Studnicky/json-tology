@@ -5,7 +5,7 @@
  * Two layered approaches verified here:
  *
  *   1. For arrays generally — the inferred type carries
- *      `UniqueArrayBrandType<T>` so raw `T[]` cannot satisfy it.
+ *      `UniqueArrayBrandInterface<T>` so raw `T[]` cannot satisfy it.
  *   2. For literal-typed tuples (length ≤ 8, from `prefixItems`) — the
  *      pairwise-distinctness type collapses tuples with duplicate literal
  *      elements to `never`.
@@ -20,10 +20,8 @@ import {
   describe, it
 } from 'node:test';
 
-import type {
-  UniqueArrayBrandType,
-  UniqueItemsBrandType
-} from '../../src/types/ConstraintBrands.js';
+import type { UniqueArrayBrandInterface } from '../../src/interfaces/UniqueArrayBrandInterface.js';
+import type { UniqueItemsBrandInterface } from '../../src/interfaces/UniqueItemsBrandInterface.js';
 import type { InferType } from '../../src/types/Schema.js';
 
 type AssertType<T extends true> = T;
@@ -44,14 +42,14 @@ type UniqueStrings = InferType<typeof _UniqueStringsSchema>;
 
 // Carries the parametric brand
 type IsBrandedString
-  = UniqueStrings extends UniqueArrayBrandType<string> ? true : false;
+  = UniqueStrings extends UniqueArrayBrandInterface<string> ? true : false;
 type Test1 = AssertType<IsBrandedString>;
 
 void 0 as unknown as Test1;
 
 // Also carries the legacy non-generic brand (back-compat)
 type IsLegacyBranded
-  = UniqueStrings extends UniqueItemsBrandType ? true : false;
+  = UniqueStrings extends UniqueItemsBrandInterface ? true : false;
 type Test2 = AssertType<IsLegacyBranded>;
 
 void 0 as unknown as Test2;
@@ -157,7 +155,7 @@ void _plainOk;
 
 // And the type does NOT carry the unique brand
 type NotBranded
-  = NotUnique extends UniqueItemsBrandType ? false : true;
+  = NotUnique extends UniqueItemsBrandInterface ? false : true;
 type Test5 = AssertType<NotBranded>;
 
 void 0 as unknown as Test5;

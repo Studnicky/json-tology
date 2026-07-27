@@ -19,23 +19,25 @@
 
 import type { JsonSchemaDocumentType } from './types/Schema.js';
 
-import type { OwlImportResultType } from './types/OwlImport.js';
-import type { DumpOptionsType } from './types/DumpOptionsType.js';
+import type { OwlImportResultInterface } from './interfaces/OwlImportResultInterface.js';
+import type { DumpOptionsEntity } from './entities/DumpOptionsEntity.js';
+import type { DumpFilterOptionsEntity } from './entities/DumpFilterOptionsEntity.js';
+import type { PartialCanonicalShapeType } from './types/PartialCanonicalShapeType.js';
+import type { PartialInferSchemaType } from './types/PartialInferSchemaType.js';
 import type { InvariantType } from './types/Invariant.js';
-import type { ComputedFnType } from './types/ComputedFnType.js';
-import type { JsonTologyOptionsType } from './types/JsonTologyOptionsType.js';
+import type { ComputedFunctionInterface } from './interfaces/ComputedFunctionInterface.js';
+import type { JsonTologyOptionsInterface } from './interfaces/JsonTologyOptionsInterface.js';
 import type { JsonSchemaType } from './types/Schema.js';
-import type {
-  LoaderType, SchemaLoadResultType
-} from './types/Loader.js';
+import type { LoaderInterface } from './interfaces/LoaderInterface.js';
+import type { SchemaLoadResultEntity } from './entities/SchemaLoadResultEntity.js';
 import type { LoggerInterface } from './interfaces/LoggerInterface.js';
 import type { MaterializerInterface } from './interfaces/MaterializerInterface.js';
-import type { PrefetchOptionsType } from './types/PrefetchOptionsType.js';
+import type { PrefetchOptionsInterface } from './interfaces/PrefetchOptionsInterface.js';
 import type { QuadInterface } from './interfaces/QuadInterface.js';
-import type { RegistryOptionsType } from './types/Registry.js';
+import type { RegistryOptionsInterface } from './interfaces/RegistryOptionsInterface.js';
 import type { SchemaRegistryInterface } from './interfaces/SchemaRegistryInterface.js';
-import type { SnapshotType } from './types/Snapshot.js';
-import type { TransformFnsType } from './types/TransformFnsType.js';
+import type { SnapshotInterface } from './interfaces/SnapshotInterface.js';
+import type { TransformFnsInterface } from './interfaces/TransformFnsInterface.js';
 import type { ValueInterface } from './interfaces/ValueInterface.js';
 import type { ValidationErrors } from './errors/ValidationErrors.js';
 import type {
@@ -48,17 +50,17 @@ import type { ComputedExtensionBrandType } from './types/ComputedExtensionBrandT
 import type {
   SchemaReferencesMapType, UniqueSchemaIdsType
 } from './types/Registry.js';
-import type { PredicateForType } from './types/PredicateForType.js';
-import type { PredicateResolverFnType } from './types/PredicateResolverFnType.js';
-import type { SchemaRefType } from './types/SchemaRefType.js';
-import type { SkolemizeFnType } from './types/SkolemizeFnType.js';
-import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOptionsType.js';
-import type { ToQuadsOptionsType } from './types/ToQuadsOptionsType.js';
+import type { PredicateForInterface } from './interfaces/PredicateForInterface.js';
+import type { PredicateResolverInterface } from './interfaces/PredicateResolverInterface.js';
+import type { SchemaReferenceType } from './types/SchemaReferenceType.js';
+import type { SkolemizeFunctionInterface } from './interfaces/SkolemizeFunctionInterface.js';
+import type { NormalizedToQuadsOptionsInterface } from './interfaces/NormalizedToQuadsOptionsInterface.js';
+import type { ToQuadsOptionsInterface } from './interfaces/ToQuadsOptionsInterface.js';
 
-import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
+import { ReferenceResolutionLoader } from './modules/registry/ReferenceResolutionLoader.js';
 import { AboxGraph } from './modules/graph/AboxGraph.js';
 import type { AboxGraphInterface } from './interfaces/AboxGraphInterface.js';
-import type { AboxIdentityDescriptorType } from './types/AboxGraph.js';
+import type { AboxIdentityDescriptorEntity } from './entities/AboxIdentityDescriptorEntity.js';
 import { DataType } from './modules/data/DataType.js';
 import type { CurieInterface } from './interfaces/CurieInterface.js';
 import { Curie } from './modules/quads/Curie.js';
@@ -80,13 +82,13 @@ import { TransformError } from './errors/TransformError.js';
 import { PredicateResolver } from './modules/graph/PredicateResolver.js';
 import { SchemaIri } from './modules/graph/SchemaIri.js';
 import { SchemaError } from './errors/SchemaError.js';
-import type { DuplicateReportEntryType } from './types/DuplicateReportEntryType.js';
+import type { DuplicateReportEntryEntity } from './entities/DuplicateReportEntryEntity.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
 import { Brand } from './modules/data/Brand.js';
 import { Value } from './modules/data/Value.js';
 import { ShaclValidator } from './modules/validation/ShaclValidator.js';
-import type { ShaclValidationReportType } from './types/ShaclValidationReportType.js';
+import type { ShaclValidationReportEntity } from './entities/ShaclValidationReportEntity.js';
 
 import { SILENT_LOGGER } from './constants/LOGGER.js';
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
@@ -97,119 +99,136 @@ import {
   BLANK_NODE_IRI_FOR, JT_STATIC_BASE_IRI
 } from './constants/IRI.js';
 
-function rootIriOnly(iri: string): SkolemizeFnType {
-  return (ctx): string | undefined => {
-    return ctx.depth === 0 ? iri : undefined;
-  };
-}
-
-function blankNodeStrategy(): SkolemizeFnType {
-  let counter = 0;
-
-  return (_ctx: { 'depth': number;
-    'path': string;
-    'value': unknown }): string => {
-    const name = `_:b${counter}`;
-
-    counter++;
-
-    return name;
-  };
-}
-
-function blankNodeNameFor(iri: string): string {
-  const slash = iri.lastIndexOf('/');
-
-  return slash === -1 ? iri : iri.slice(slash + 1);
-}
-
-/**
- * Rewrite a single quad's subject and/or object from well-known genid IRIs
- * to blank nodes. Returns the original quad when no deskolemization is needed.
- * Named function so the complexity is separate from `deskolemizeQuads`.
- */
-function deskolemizeQuad(quad: QuadInterface): QuadInterface {
-  // Narrow rdf/js Quad_Subject (`NamedNode | BlankNode | Quad | Variable`)
-  // to the project pipeline subjects (`NamedNode | BlankNode`). RDF*
-  // (`Quad`) and `Variable` subjects pass through untouched.
-  if (quad.subject.termType !== 'NamedNode' && quad.subject.termType !== 'BlankNode') {
-    return quad;
-  }
-  if (quad.predicate.termType !== 'NamedNode') {
-    return quad;
-  }
-  if (quad.graph.termType !== 'NamedNode' && quad.graph.termType !== 'BlankNode' && quad.graph.termType !== 'DefaultGraph') {
-    return quad;
-  }
-
-  const subjectGenid = Skolemize.isWellKnownGenid(quad.subject.value);
-  const objectGenid = quad.object.termType === 'NamedNode'
-    && Skolemize.isWellKnownGenid(quad.object.value);
-
-  if (!subjectGenid && !objectGenid) {
-    return quad;
-  }
-
-  const subject = subjectGenid
-    ? Terms.blank(blankNodeNameFor(quad.subject.value))
-    : quad.subject;
-  const object = objectGenid && quad.object.termType === 'NamedNode'
-    ? Terms.blank(blankNodeNameFor(quad.object.value))
-    : quad.object;
-
-  // Object may still be a Variable or embedded Quad after the above narrow.
-  // In that case, fall back to the original quad rather than fabricating a
-  // shape the pipeline does not handle.
-  if (object.termType !== 'NamedNode' && object.termType !== 'BlankNode' && object.termType !== 'Literal') {
-    return quad;
-  }
-
-  return Terms.quad(subject, quad.predicate, object, quad.graph);
-}
-
 /**
  * Reconstructs blank-node-style references from well-known genid IRIs.
  * Quads whose subject or object is a NamedNode matching the well-known
  * genid pattern are rewritten to BlankNode terms so downstream lifting
  * sees them as anonymous nodes.
  */
-function deskolemizeQuads(quads: readonly QuadInterface[]): QuadInterface[] {
-  const result = quads.map((quad: QuadInterface): QuadInterface => {
-    const deskolemized = deskolemizeQuad(quad);
+class Deskolemizer {
+  static blankNodeNameFor(iri: string): string {
+    const slash = iri.lastIndexOf('/');
 
-    return deskolemized;
-  });
+    return slash === -1 ? iri : iri.slice(slash + 1);
+  }
 
-  return result;
+  /**
+   * Rewrite a single quad's subject and/or object from well-known genid IRIs
+   * to blank nodes. Returns the original quad when no deskolemization is needed.
+   * Separate method so the complexity is isolated from {@link Deskolemizer.quads}.
+   */
+  static quad(quad: QuadInterface): QuadInterface {
+    // Narrow rdf/js Quad_Subject (`NamedNode | BlankNode | Quad | Variable`)
+    // to the project pipeline subjects (`NamedNode | BlankNode`). RDF*
+    // (`Quad`) and `Variable` subjects pass through untouched.
+    if (quad.subject.termType !== 'NamedNode' && quad.subject.termType !== 'BlankNode') {
+      return quad;
+    }
+    if (quad.predicate.termType !== 'NamedNode') {
+      return quad;
+    }
+    if (quad.graph.termType !== 'NamedNode' && quad.graph.termType !== 'BlankNode' && quad.graph.termType !== 'DefaultGraph') {
+      return quad;
+    }
+
+    const subjectGenid = Skolemize.isWellKnownGenid(quad.subject.value);
+    const objectGenid = quad.object.termType === 'NamedNode'
+      && Skolemize.isWellKnownGenid(quad.object.value);
+
+    if (!subjectGenid && !objectGenid) {
+      return quad;
+    }
+
+    const subject = subjectGenid
+      ? Terms.blank(Deskolemizer.blankNodeNameFor(quad.subject.value))
+      : quad.subject;
+    const object = objectGenid && quad.object.termType === 'NamedNode'
+      ? Terms.blank(Deskolemizer.blankNodeNameFor(quad.object.value))
+      : quad.object;
+
+    // Object may still be a Variable or embedded Quad after the above narrow.
+    // In that case, fall back to the original quad rather than fabricating a
+    // shape the pipeline does not handle.
+    if (object.termType !== 'NamedNode' && object.termType !== 'BlankNode' && object.termType !== 'Literal') {
+      return quad;
+    }
+
+    return Terms.quad(subject, quad.predicate, object, quad.graph);
+  }
+
+  static quads(quads: readonly QuadInterface[]): QuadInterface[] {
+    const result = quads.map((quad: QuadInterface): QuadInterface => {
+      const deskolemized = Deskolemizer.quad(quad);
+
+      return deskolemized;
+    });
+
+    return result;
+  }
 }
 
-function liftIriForOption(raw: SkolemizeFnType | string | undefined): SkolemizeFnType | undefined {
-  if (raw === undefined) {
-    return undefined;
+class IriForOption {
+  static blankNodeStrategy(): SkolemizeFunctionInterface {
+    let counter = 0;
+
+    return (_context: { 'depth': number;
+      'path': string;
+      'value': unknown }): string => {
+      const name = `_:b${counter}`;
+
+      counter++;
+
+      return name;
+    };
   }
 
-  if (typeof raw !== 'string') {
-    return raw;
+  /**
+   * Resolves the string and function halves of the `iriFor` option into a single
+   * minting strategy. Takes two separate parameters — rather than one
+   * `SkolemizeFunctionInterface | string | undefined` union — because that union
+   * mixes a callable constituent with a data one, which `@studnicky/no-mixed-callable-shapes`
+   * forbids in any single type position; the same reasoning is why the public
+   * option itself is split into `iriFor` (string) and `iriForFunction` (function) on
+   * {@link JsonTologyOptionsInterface} and {@link ToQuadsOptionsInterface}.
+   * `iriForFunction` takes precedence when both are supplied.
+   */
+  static lift(
+    iriForValue: string | undefined,
+    iriForFunction: SkolemizeFunctionInterface | undefined
+  ): SkolemizeFunctionInterface | undefined {
+    if (iriForFunction !== undefined) {
+      return iriForFunction;
+    }
+
+    if (iriForValue === undefined) {
+      return undefined;
+    }
+
+    return iriForValue === BLANK_NODE_IRI_FOR ? IriForOption.blankNodeStrategy() : IriForOption.rootIriOnly(iriForValue);
   }
 
-  return raw === BLANK_NODE_IRI_FOR ? blankNodeStrategy() : rootIriOnly(raw);
+  static rootIriOnly(iri: string): SkolemizeFunctionInterface {
+    return (context): string | undefined => {
+      return context.depth === 0 ? iri : undefined;
+    };
+  }
 }
 
 class ToQuadsOptions {
-  static normalize(options: ToQuadsOptionsType | undefined): NormalizedToQuadsOptionsType {
+  static normalize(options: ToQuadsOptionsInterface | undefined): NormalizedToQuadsOptionsInterface {
     if (options === undefined) {
       return {};
     }
 
     const annotationEmitMode = options.annotationEmitMode;
     const graphIri = options.graphIri;
-    const iriFor = liftIriForOption(options.iriFor);
+    const iriFor = IriForOption.lift(options.iriFor, options.iriForFunction);
 
-    const base: NormalizedToQuadsOptionsType = graphIri === undefined
+    const base: NormalizedToQuadsOptionsInterface = graphIri === undefined
       ? {}
       : { graphIri };
 
-    const withIriFor: NormalizedToQuadsOptionsType = iriFor === undefined
+    const withIriFor: NormalizedToQuadsOptionsInterface = iriFor === undefined
       ? base
       : {
         ...base,
@@ -273,8 +292,8 @@ export class JsonTology<TRefs = Record<never, never>> {
    * Assign non-boolean fields that are defined in the options onto an existing partial.
    */
   private static assignDefinedRegistryFields(
-    partial: Partial<RegistryOptionsType>,
-    options: JsonTologyOptionsType
+    partial: RegistryOptionsInterface,
+    options: JsonTologyOptionsInterface
   ): void {
     if (options.prefixes !== undefined) {
       partial.prefixes = options.prefixes;
@@ -299,7 +318,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   /**
    * Build a `FormatRegistry` with the built-in formats plus any user-supplied validators.
    */
-  private static buildFormatRegistry(formats: JsonTologyOptionsType['formats']): FormatRegistry {
+  private static buildFormatRegistry(formats: JsonTologyOptionsInterface['formats']): FormatRegistry {
     const registry = FormatRegistry.builtin();
 
     if (formats !== undefined) {
@@ -319,15 +338,15 @@ export class JsonTology<TRefs = Record<never, never>> {
   // ---------------------------------------------------------------------------
 
   /**
-   * Build the `RegistryOptionsType` object from the public `JsonTologyOptionsType`.
+   * Build the `RegistryOptionsInterface` object from the public `JsonTologyOptionsInterface`.
    * Only defined options are forwarded; undefined values are omitted so `SchemaRegistry`
    * defaults are applied naturally.
    */
   private static buildRegistryOptions(
-    options: JsonTologyOptionsType,
+    options: JsonTologyOptionsInterface,
     formatRegistry: FormatRegistry
-  ): RegistryOptionsType {
-    const base: RegistryOptionsType = { 'formatRegistry': formatRegistry };
+  ): RegistryOptionsInterface {
+    const base: RegistryOptionsInterface = { 'formatRegistry': formatRegistry };
     const partial = JsonTology.pickDefinedRegistryFlags(options);
 
     JsonTology.assignDefinedRegistryFields(partial, options);
@@ -345,7 +364,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param options - `baseIri`, optional `schemas`, optional `prefetched`, prefixes, dialect.
    */
-  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsType<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaReferencesMapType<TSchemas>> {
+  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsInterface<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaReferencesMapType<TSchemas>> {
     const jt = new JsonTology(options);
 
     if (options.schemas) {
@@ -385,7 +404,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public static dump<TSchema extends Record<string, unknown> & { readonly '$id': string }>(
     schema: TSchema,
     value: InferSchemaType<TSchema>,
-    options?: DumpOptionsType
+    options?: DumpOptionsEntity.Type
   ): unknown {
     const jt = JsonTology.ephemeral(schema);
 
@@ -403,7 +422,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public static dumpJson(
     schema: Record<string, unknown> & { readonly '$id': string },
     value: unknown,
-    options?: Omit<DumpOptionsType, 'mode'>
+    options?: DumpFilterOptionsEntity.Type
   ): string {
     const jt = JsonTology.ephemeral(schema);
 
@@ -452,14 +471,14 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param jsonLd - The OWL 2 TBox input as a QuadInterface array, a JSON-LD
    *   object, or a JSON-LD string.
    * @param options - Optional baseIri and prefix overrides for the import session.
-   * @returns OwlImportResultType with reconstructed schemas, invariants,
+   * @returns OwlImportResultInterface with reconstructed schemas, invariants,
    *   characteristics, sameAs pairs, individuals, and unsupported axiom log.
    */
   public static fromTbox(
     jsonLd: QuadInterface[] | Record<string, unknown> | string,
     options?: { 'baseIri'?: string;
       'prefixes'?: Record<string, string> }
-  ): OwlImportResultType {
+  ): OwlImportResultInterface {
     const importer = new OwlImporter({
       'baseIri': options?.baseIri ?? JT_STATIC_BASE_IRI,
       ...(!(options?.prefixes === undefined) && { 'prefixes': options.prefixes })
@@ -512,7 +531,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    */
   public static materialize<TSchema extends Record<string, unknown> & { readonly '$id': string }>(
     schema: TSchema,
-    data?: Partial<InferSchemaType<TSchema, TSchema, Record<never, never>>>,
+    data?: PartialInferSchemaType<TSchema, TSchema, Record<never, never>>,
     options?: { 'enablePartial'?: boolean }
   // Ephemeral single-schema registry pins empty external references — see
   // `fromQuads`. The type must not claim cross-schema resolution the one-shot
@@ -536,10 +555,10 @@ export class JsonTology<TRefs = Record<never, never>> {
   }
 
   /**
-   * Pick defined boolean flags from the options into a `Partial<RegistryOptionsType>`.
+   * Pick defined boolean flags from the options into a `RegistryOptionsInterface`.
    */
-  private static pickDefinedRegistryFlags(options: JsonTologyOptionsType): Partial<RegistryOptionsType> {
-    const partial: Partial<RegistryOptionsType> = {};
+  private static pickDefinedRegistryFlags(options: JsonTologyOptionsInterface): RegistryOptionsInterface {
+    const partial: RegistryOptionsInterface = {};
 
     if (options.enableTypeCast !== undefined) {
       partial.enableTypeCast = options.enableTypeCast;
@@ -564,7 +583,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   }
 
   /**
-   * Walks transitive `$ref` IRIs via the loader and returns a {@link SnapshotType}.
+   * Walks transitive `$ref` IRIs via the loader and returns a {@link SnapshotInterface}.
    *
    * Seeds the walk from `rootIds` (loaded directly) and `schemas` (followed for their
    * refs). Recurses until every cross-schema `$ref` resolves. Throws
@@ -575,13 +594,13 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param options - `loader`, optional `rootIds`, optional `schemas`, optional `baseIri`.
    */
-  public static async prefetch(options: PrefetchOptionsType): Promise<SnapshotType> {
+  public static async prefetch(options: PrefetchOptionsInterface): Promise<SnapshotInterface> {
     const baseIri = options.baseIri ?? JT_STATIC_BASE_IRI;
-    const tmp = new JsonTology({ 'baseIri': baseIri });
+    const temporaryRegistry = new JsonTology({ 'baseIri': baseIri });
 
     if (options.schemas) {
       for (const schema of options.schemas) {
-        tmp.registry.set(schema);
+        temporaryRegistry.registry.set(schema);
       }
     }
 
@@ -589,7 +608,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     // but before the loader walk. Used to compute successful/skipped counts.
     const preWalkIds = new Set<string>();
 
-    for (const s of tmp.registry.list()) {
+    for (const s of temporaryRegistry.registry.list()) {
       if (typeof s.$id === 'string') {
         preWalkIds.add(s.$id);
       }
@@ -605,14 +624,14 @@ export class JsonTology<TRefs = Record<never, never>> {
         }
       }
 
-      await tmp.refLoader.loadRootIds(options.rootIds, options.loader);
+      await temporaryRegistry.referenceLoader.loadRootIds(options.rootIds, options.loader);
     }
 
-    await tmp.resolveAllRefs(options.loader);
+    await temporaryRegistry.resolveAllRefs(options.loader);
 
     const schemas = new Map<string, JsonSchemaType>();
 
-    for (const schema of tmp.registry.list()) {
+    for (const schema of temporaryRegistry.registry.list()) {
       const id = schema.$id;
 
       if (typeof id === 'string') {
@@ -623,7 +642,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     // Compute how many schemas were newly fetched by the loader walk.
     const successfulCount = schemas.size - preWalkIds.size;
 
-    const loadResult: SchemaLoadResultType = {
+    const loadResult: SchemaLoadResultEntity.Type = {
       'errors': [],
       'failed': 0,
       'skipped': skippedCount,
@@ -678,13 +697,13 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param schema - A schema object with `$id`.
    * @param data - Instance data to project.
-   * @param options - Optional overrides: see {@link ToQuadsOptionsType}.
+   * @param options - Optional overrides: see {@link ToQuadsOptionsInterface}.
    * @returns The projected RDF quads.
    */
   public static toQuads(
     schema: Record<string, unknown> & { readonly '$id': string },
     data: unknown,
-    options?: ToQuadsOptionsType
+    options?: ToQuadsOptionsInterface
   ): QuadInterface[] {
     const jt = JsonTology.ephemeral(schema);
 
@@ -747,7 +766,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   private static wireComputedFields(
     registry: SchemaRegistryInterface,
     curie: CurieInterface,
-    computeds: JsonTologyOptionsType['computeds']
+    computeds: JsonTologyOptionsInterface['computeds']
   ): void {
     if (computeds === undefined) {
       return;
@@ -759,9 +778,9 @@ export class JsonTology<TRefs = Record<never, never>> {
     ] of Object.entries(computeds)) {
       for (const [
         propName,
-        fn
+        computedFunction
       ] of Object.entries(propMap)) {
-        registry.computedStore.add(curie.expand(schemaId), propName, fn);
+        registry.computedStore.add(curie.expand(schemaId), propName, computedFunction);
       }
     }
   }
@@ -770,7 +789,8 @@ export class JsonTology<TRefs = Record<never, never>> {
   private readonly defaultDeskolemize: boolean;
 
   private readonly defaultGraphIri: string | undefined;
-  private readonly defaultIriForRaw: SkolemizeFnType | string | undefined;
+  private readonly defaultIriFor: string | undefined;
+  private readonly defaultIriForFunction: SkolemizeFunctionInterface | undefined;
   private readonly enableCanonicalPredicates: boolean | undefined;
   private readonly graphSchemaSerializer: GraphSchemaSerializer;
   private readonly logger: LoggerInterface;
@@ -790,13 +810,13 @@ export class JsonTology<TRefs = Record<never, never>> {
   } = null;
   private readonly ontologySerializer: GraphOntologySerializer;
 
-  private readonly predicateFor: PredicateForType | undefined;
+  private readonly predicateFor: PredicateForInterface | undefined;
 
-  private readonly predicateResolver: PredicateResolverFnType;
+  private readonly predicateResolver: PredicateResolverInterface;
 
   private readonly prefixes: Record<string, string>;
 
-  private readonly refLoader: RefResolutionLoader;
+  private readonly referenceLoader: ReferenceResolutionLoader;
 
   /**
    * Direct access to the underlying schema registry for advanced use cases.
@@ -823,13 +843,14 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param options - Configuration including `baseIri`, prefixes, format validators, `enableTypeCast`, `enableStrictTypes`, and logger.
    */
-  private constructor(options: JsonTologyOptionsType) {
+  private constructor(options: JsonTologyOptionsInterface) {
     this.baseIri = SchemaIri.normalizeBase(options.baseIri);
     this.logger = options.logger ?? SILENT_LOGGER;
 
     this.defaultGraphIri = options.defaultGraphIri;
     this.defaultDeskolemize = options.defaultDeskolemize === true;
-    this.defaultIriForRaw = options.iriFor;
+    this.defaultIriFor = options.iriFor;
+    this.defaultIriForFunction = options.iriForFunction;
     this.enableCanonicalPredicates = options.enableCanonicalPredicates;
     this.predicateFor = options.predicateFor;
     this.predicateResolver = PredicateResolver.forConfig({
@@ -838,24 +859,19 @@ export class JsonTology<TRefs = Record<never, never>> {
       'predicateFor': this.predicateFor
     });
 
-    this.prefixes = {
-      ...STANDARD_PREFIXES,
-      ...options.prefixes
-    };
+    this.prefixes = Object.assign({}, STANDARD_PREFIXES, options.prefixes);
 
     const formatRegistry = JsonTology.buildFormatRegistry(options.formats);
     const registryOptions = JsonTology.buildRegistryOptions(options, formatRegistry);
 
-    this.registry = new SchemaRegistry({
-      ...registryOptions,
-      'defaultCreatorFactory': (registry): Materializer => {
-        return new Materializer(registry, {
-          'aboxProjector': Projection,
-          'logger': this.logger
-        });
-      }
-    });
-    this.refLoader = new RefResolutionLoader(this.registry);
+    registryOptions.defaultCreatorFactory = (registry): Materializer => {
+      return new Materializer(registry, {
+        'aboxProjector': Projection,
+        'logger': this.logger
+      });
+    };
+    this.registry = new SchemaRegistry(registryOptions);
+    this.referenceLoader = new ReferenceResolutionLoader(this.registry);
 
     // Curie with merged prefixes from registry. Assigned before any CURIE
     // expansion below (computed-field wiring) so every site uses this.curie.
@@ -865,11 +881,12 @@ export class JsonTology<TRefs = Record<never, never>> {
 
     // Cast needed: Value is unparameterized at runtime; aligns with compile-time generic TRefs
     this.value = new Value(this.registry) as unknown as ValueInterface<TRefs>;
-    this.materializer = new Materializer(this.registry, {
-      ...options.materializer,
+    const materializerOptions = Object.assign({}, options.materializer, {
       'aboxProjector': Projection,
       'logger': this.logger
     });
+
+    this.materializer = new Materializer(this.registry, materializerOptions);
 
     this.graphSchemaSerializer = new GraphSchemaSerializer();
     this.ontologySerializer = this.buildOntologySerializer(options.vocabularies);
@@ -921,7 +938,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param schemaId - The `$id` of the schema owning the computed property.
    * @param name - The property name.
-   * @param fn - Function receiving the instantiated/materialized object and returning the computed value.
+   * @param computeFunction - Function receiving the instantiated/materialized object and returning the computed value.
    */
   public addComputed<
     K extends keyof TRefs & string,
@@ -930,8 +947,8 @@ export class JsonTology<TRefs = Record<never, never>> {
   >(
     schemaId: K,
     name: TName,
-    fn: (data: ParseOutputType<TRefs[K], TRefs>) => TValue
-  ): JsonTology<Omit<TRefs, K> & Record<K, ComputedExtensionBrandType<Readonly<Record<TName, TValue>> & (TRefs[K] extends ComputedExtensionBrandType<infer Prev> ? Prev : unknown)> & TRefs[K]>>;
+    computeFunction: (data: ParseOutputType<TRefs[K], TRefs>) => TValue
+  ): JsonTology<Omit<TRefs, K> & Record<K, ComputedExtensionBrandType<Readonly<Record<TName, TValue>> & (TRefs[K] extends ComputedExtensionBrandType<infer PreviousShape> ? PreviousShape : unknown)> & TRefs[K]>>;
   // Implementation signature — must be wider than the typed overload. Returns the
   // default `JsonTology` (TRefs = Record<never, never>), the widest instance shape,
   // so the overload's augmented-TRefs return is assignable to it regardless of how
@@ -939,13 +956,13 @@ export class JsonTology<TRefs = Record<never, never>> {
   public addComputed(
     schemaId: string,
     name: string,
-    fn: (data: never) => unknown
+    computeFunction: (data: never) => unknown
   ): JsonTology {
-    // interop: the public overload types `fn` over the schema's inferred output type,
+    // interop: the public overload types `computeFunction` over the schema's inferred output type,
     // but the runtime computed store is type-erased over `Record<string, unknown>`
-    // (it invokes `fn` with the materialized object). Bridging the typed public
+    // (it invokes `computeFunction` with the materialized object). Bridging the typed public
     // surface to the erased store is the one boundary that needs an assertion.
-    this.registry.computedStore.add(this.curie.expand(schemaId), name, fn as ComputedFnType);
+    this.registry.computedStore.add(this.curie.expand(schemaId), name, computeFunction as ComputedFunctionInterface);
 
     // The typed overload augments TRefs[K] with ComputedExtensionBrandType so
     // ParseOutputType<TRefs[K], TRefs> intersects the new field on the output type.
@@ -985,7 +1002,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   >(
     schema: TSchema,
     fns: {
-      'decode': (raw: TWire) => Partial<CanonicalShapeType<TSchema, TRefs>>;
+      'decode': (raw: TWire) => PartialCanonicalShapeType<TSchema, TRefs>;
       'encode': (value: CanonicalShapeType<TSchema, TRefs>) => TWire;
     }
   ): TransformedType<TSchema, TWire> {
@@ -994,7 +1011,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     // resolved through this instance's TRefs); `encode` is the inverse. The
     // single cast is the type-erasure boundary into the transform registry
     // (identical to Transform.create), not a widening.
-    Transform.register(schema, fns as TransformFnsType);
+    Transform.register(schema, fns as TransformFnsInterface);
 
     return Brand.cast<TransformedType<TSchema, TWire>>(schema);
   }
@@ -1004,10 +1021,10 @@ export class JsonTology<TRefs = Record<never, never>> {
    * and collects them as identity predicates.
    */
   private buildAboxIdentities(): {
-    'identities': AboxIdentityDescriptorType[];
+    'identities': AboxIdentityDescriptorEntity.Type[];
     'schemaById': Map<string, unknown>;
   } {
-    const identities: AboxIdentityDescriptorType[] = [];
+    const identities: AboxIdentityDescriptorEntity.Type[] = [];
     const schemaById = new Map<string, unknown>();
 
     for (const schema of this.registry.list() as Array<Record<string, unknown> & { '$id': string }>) {
@@ -1054,7 +1071,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   /**
    * Build the OWL TBox serializer with the current curie and predicateResolver.
    */
-  private buildOntologySerializer(vocabularies: JsonTologyOptionsType['vocabularies']): GraphOntologySerializer {
+  private buildOntologySerializer(vocabularies: JsonTologyOptionsInterface['vocabularies']): GraphOntologySerializer {
     return new GraphOntologySerializer({
       'curie': this.curie,
       'predicateResolver': this.predicateResolver,
@@ -1064,7 +1081,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   /**
    * Build the SHACL serializer with the current curie and predicateResolver.
    */
-  private buildShaclSerializer(vocabularies: JsonTologyOptionsType['vocabularies']): GraphShaclSerializer {
+  private buildShaclSerializer(vocabularies: JsonTologyOptionsInterface['vocabularies']): GraphShaclSerializer {
     return new GraphShaclSerializer({
       'curie': this.curie,
       'predicateResolver': this.predicateResolver,
@@ -1082,16 +1099,16 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param options - Filtering and mode options.
    * @returns Wire-form representation of the value.
    */
-  public dump<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: DumpOptionsType): ParseOutputType<TRefs[K], TRefs>;
+  public dump<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: DumpOptionsEntity.Type): ParseOutputType<TRefs[K], TRefs>;
   public dump<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
     value: ParseOutputType<TSchema, TRefs>,
-    options?: DumpOptionsType
+    options?: DumpOptionsEntity.Type
   ): ParseOutputType<TSchema, TRefs>;
   public dump(
     schema: (keyof TRefs & string) | (Record<string, unknown> & { '$id': string; }),
     value: unknown,
-    options?: DumpOptionsType
+    options?: DumpOptionsEntity.Type
   ): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
@@ -1115,16 +1132,16 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param options - Filtering and mode options (mode is forced to `'json'`).
    * @returns JSON string.
    */
-  public dumpJson<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: Omit<DumpOptionsType, 'mode'>): string;
+  public dumpJson<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: DumpFilterOptionsEntity.Type): string;
   public dumpJson<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
     value: ParseOutputType<TSchema, TRefs>,
-    options?: Omit<DumpOptionsType, 'mode'>
+    options?: DumpFilterOptionsEntity.Type
   ): string;
   public dumpJson(
     schema: (keyof TRefs & string) | (Record<string, unknown> & { '$id': string; }),
     value: unknown,
-    options?: Omit<DumpOptionsType, 'mode'>
+    options?: DumpFilterOptionsEntity.Type
   ): string {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
@@ -1187,8 +1204,10 @@ export class JsonTology<TRefs = Record<never, never>> {
    * schemas: [...] })` or extended through `set()`. Consumers can
    * destructure the IRI as a literal without `as const` casts.
    */
-  public findDuplicates<TKey extends string = keyof TRefs & string>(): ReadonlyArray<DuplicateReportEntryType<TKey>> {
-    const result = this.registry.findDuplicates() as ReadonlyArray<DuplicateReportEntryType<TKey>>;
+  public findDuplicates<TKey extends string = keyof TRefs & string>():
+  ReadonlyArray<Omit<DuplicateReportEntryEntity.Type, 'equivalentTo'> & { 'equivalentTo': TKey }> {
+    const result = this.registry.findDuplicates() as
+      ReadonlyArray<Omit<DuplicateReportEntryEntity.Type, 'equivalentTo'> & { 'equivalentTo': TKey }>;
 
     return result;
   }
@@ -1231,14 +1250,14 @@ export class JsonTology<TRefs = Record<never, never>> {
     options?: { 'deskolemize'?: boolean }
   ): Array<ParseOutputType<TSchema, TRefs>>;
   public fromQuads(
-    schemaRef: SchemaRefType<TRefs>,
+    schemaReference: SchemaReferenceType<TRefs>,
     quads: QuadInterface[],
     options?: { 'deskolemize'?: boolean }
   ): unknown[] {
-    const schemaId = typeof schemaRef === 'string' ? schemaRef : schemaRef.$id;
+    const schemaId = typeof schemaReference === 'string' ? schemaReference : schemaReference.$id;
 
-    if (typeof schemaRef !== 'string') {
-      this.registry.set(schemaRef);
+    if (typeof schemaReference !== 'string') {
+      this.registry.set(schemaReference);
     }
 
     if (this.registry.get(schemaId) === undefined) {
@@ -1252,7 +1271,7 @@ export class JsonTology<TRefs = Record<never, never>> {
     }
 
     const deskolemize = options?.deskolemize ?? this.defaultDeskolemize;
-    const inputQuads = deskolemize ? deskolemizeQuads(quads) : quads;
+    const inputQuads = deskolemize ? Deskolemizer.quads(quads) : quads;
     const raw = Lift.instances(schemaId, inputQuads, this.registry, {
       'curie': this.curie,
       'predicateResolver': this.predicateResolver
@@ -1277,14 +1296,14 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param jsonLd - The OWL 2 TBox input as a QuadInterface array, a JSON-LD
    *   object, or a JSON-LD string.
    * @param options - Optional per-call overrides.
-   * @returns OwlImportResultType (same shape as the static variant).
+   * @returns OwlImportResultInterface (same shape as the static variant).
    * @throws {OwlImportError} code OWL_IMPORT_PARSE_FAILED when the JSON-LD input is malformed.
    * @throws {GraphError} code DIALECT_UNSUPPORTED when the input contains an unsupported JSON Schema dialect.
    */
   public fromTbox(
     jsonLd: QuadInterface[] | Record<string, unknown> | string,
     options?: { 'register'?: boolean }
-  ): OwlImportResultType {
+  ): OwlImportResultInterface {
     const register = options?.register !== false;
     const importer = new OwlImporter({
       'baseIri': this.baseIri,
@@ -1347,7 +1366,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public instantiate<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema, data: unknown, callOptions?: { 'enableDefaults'?: boolean }
   ): ParseOutputType<TSchema, TRefs>;
-  public instantiate(schema: SchemaRefType<TRefs>, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown {
+  public instantiate(schema: SchemaReferenceType<TRefs>, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
@@ -1371,7 +1390,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    */
   public is<K extends keyof TRefs & string>(schemaId: K, data: unknown): data is ParseOutputType<TRefs[K], TRefs>;
   public is<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(schema: TSchema, data: unknown): data is ParseOutputType<TSchema, TRefs>;
-  public is(schema: SchemaRefType<TRefs>, data: unknown): boolean {
+  public is(schema: SchemaReferenceType<TRefs>, data: unknown): boolean {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
@@ -1401,16 +1420,16 @@ export class JsonTology<TRefs = Record<never, never>> {
    */
   public materialize<K extends keyof TRefs & string>(
     schemaId: K,
-    partial?: Partial<CanonicalShapeType<TRefs[K], TRefs>>,
+    partial?: PartialCanonicalShapeType<TRefs[K], TRefs>,
     options?: { 'enablePartial'?: boolean }
   ): MaterializedSchemaType<TRefs[K], TRefs[K], TRefs>;
   public materialize<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
-    partial?: Partial<CanonicalShapeType<TSchema, TRefs>>,
+    partial?: PartialCanonicalShapeType<TSchema, TRefs>,
     options?: { 'enablePartial'?: boolean }
   ): MaterializedSchemaType<TSchema, TSchema, TRefs>;
   public materialize(
-    schema: SchemaRefType<TRefs>,
+    schema: SchemaReferenceType<TRefs>,
     partial?: Record<string, unknown>,
     options?: { 'enablePartial'?: boolean }
   ): unknown {
@@ -1443,8 +1462,10 @@ export class JsonTology<TRefs = Record<never, never>> {
     if (options?.enablePartial === true) {
       const result = this.materializer.execute(
         schemaObject,
-        partial,
-        { 'synthesizeDefaults': true }
+        {
+          'data': partial,
+          'synthesizeDefaults': true
+        }
       );
 
       return result.value;
@@ -1527,8 +1548,8 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * If the loader returns `null` for a required IRI, throws `GraphError('REF_UNRESOLVED')`.
    */
-  private resolveAllRefs(loader: LoaderType): Promise<void> {
-    const result = this.refLoader.resolveAll(loader);
+  private resolveAllRefs(loader: LoaderInterface): Promise<void> {
+    const result = this.referenceLoader.resolveAll(loader);
 
     return result;
   }
@@ -1597,7 +1618,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    * entities.validate(itemSchema, orderLineData);
    * entities.instantiate(itemSchema, orderLineData);
    *
-   * @param schemaRef - The `$id` of a registered schema, or a schema object with `$id`.
+   * @param schemaReference - The `$id` of a registered schema, or a schema object with `$id`.
    * @param pointer - JSON Pointer path (e.g. `/properties/name`) into the schema.
    * @returns The resolved sub-schema with a synthesized `$id`.
    * @throws {SchemaError} code SCHEMA_NOT_REGISTERED when no schema is registered for the given ID.
@@ -1613,17 +1634,17 @@ export class JsonTology<TRefs = Record<never, never>> {
     pointer: (Record<never, never> & string) | SchemaPointerPathsType<TSchema>
   ): Record<string, unknown> & { '$id': string };
   public subschemaAt(
-    schemaRef: SchemaRefType<TRefs>,
+    schemaReference: SchemaReferenceType<TRefs>,
     pointer: string
   ): Record<string, unknown> & { '$id': string } {
-    if ((schemaRef as unknown) === null || (schemaRef as unknown) === undefined) {
+    if ((schemaReference as unknown) === null || (schemaReference as unknown) === undefined) {
       throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
 
-    const parentId = typeof schemaRef === 'string' ? schemaRef : schemaRef.$id;
+    const parentId = typeof schemaReference === 'string' ? schemaReference : schemaReference.$id;
 
-    if (typeof schemaRef !== 'string') {
-      this.registry.set(schemaRef);
+    if (typeof schemaReference !== 'string') {
+      this.registry.set(schemaReference);
     }
 
     return this.registry.subschemaAt(parentId, pointer);
@@ -1649,15 +1670,16 @@ export class JsonTology<TRefs = Record<never, never>> {
    *
    * @param schema - The schema describing the data shape.
    * @param data - The instance data to project into quads.
-   * @param options - Per-call overrides typed as {@link ToQuadsOptionsType}:
+   * @param options - Per-call overrides typed as {@link ToQuadsOptionsInterface}:
    *   - `graphIri` — when set, every emitted quad's `graph` field is stamped
    *     with this IRI. Falls back to the instance-level `defaultGraphIri`.
-   *   - `iriFor` — overrides root subject IRI minting. If a string, sets the
-   *     depth-0 subject IRI. If the literal `'blank-node'`
-   *     ({@link BLANK_NODE_IRI_FOR}), every object subject is emitted as an
-   *     anonymous blank node. If a function `(ctx) => string | undefined`,
-   *     called once per object with `{ path, value, depth }`. Falls back to
-   *     the instance-level default.
+   *   - `iriFor` — overrides root subject IRI minting with a string. Sets the
+   *     depth-0 subject IRI. The literal `'blank-node'` ({@link BLANK_NODE_IRI_FOR})
+   *     emits every object subject as an anonymous blank node.
+   *   - `iriForFunction` — overrides root subject IRI minting with a function
+   *     `(ctx) => string | undefined`, called once per object with
+   *     `{ path, value, depth }`. Takes precedence over `iriFor` when both are
+   *     set. Falls back to the instance-level default.
    * @returns The projected RDF quads.
    *
    * If you want a richer wrapper (JSON-LD context, SHACL composition,
@@ -1671,14 +1693,14 @@ export class JsonTology<TRefs = Record<never, never>> {
   public toQuads<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
     data: unknown,
-    options?: ToQuadsOptionsType
+    options?: ToQuadsOptionsInterface
   ): QuadInterface[] {
     const normalized = ToQuadsOptions.normalize(options);
     const effective = {
       'annotationEmitMode': normalized.annotationEmitMode,
       'curie': this.curie,
       'graphIri': normalized.graphIri ?? this.defaultGraphIri,
-      'iriFor': normalized.iriFor ?? liftIriForOption(this.defaultIriForRaw),
+      'iriFor': normalized.iriFor ?? IriForOption.lift(this.defaultIriFor, this.defaultIriForFunction),
       'predicateResolver': this.predicateResolver
     };
 
@@ -1692,14 +1714,14 @@ export class JsonTology<TRefs = Record<never, never>> {
   /**
    * Reconstructs a JSON Schema document from the canonical graph for a registered schema.
    *
-   * @param schemaRef - The `$id` of the schema, or a schema object with `$id`.
+   * @param schemaReference - The `$id` of the schema, or a schema object with `$id`.
    * @returns The reconstructed schema object, or `undefined` if not registered.
    */
-  public toSchema(schemaRef: SchemaRefType<TRefs>): Record<string, unknown> | undefined {
-    const schemaId = typeof schemaRef === 'string' ? schemaRef : schemaRef.$id;
+  public toSchema(schemaReference: SchemaReferenceType<TRefs>): Record<string, unknown> | undefined {
+    const schemaId = typeof schemaReference === 'string' ? schemaReference : schemaReference.$id;
 
-    if (typeof schemaRef !== 'string') {
-      this.registry.set(schemaRef);
+    if (typeof schemaReference !== 'string') {
+      this.registry.set(schemaReference);
     }
 
     const graph = this.registry.graph(schemaId);
@@ -1768,7 +1790,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    */
   public validate<K extends keyof TRefs & string>(schemaId: K, data: unknown): ValidationErrors;
   public validate<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(schema: TSchema, data: unknown): ValidationErrors;
-  public validate(schema: SchemaRefType<TRefs>, data: unknown): ValidationErrors {
+  public validate(schema: SchemaReferenceType<TRefs>, data: unknown): ValidationErrors {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('schema must not be null or undefined', { 'code': SCHEMA_ERROR_CODE.INVALID_INPUT });
     }
@@ -1802,7 +1824,7 @@ export class JsonTology<TRefs = Record<never, never>> {
    * @param shapes - SHACL shape quads or an {@link OntologyBuilder} produced by
    *   `toShacl()`. When an `OntologyBuilder` is passed its `.shaclQuads()` are used.
    * @param data - ABox instance data quads to validate against the shapes.
-   * @returns A {@link ShaclValidationReportType} with `conforms: true` when
+   * @returns A {@link ShaclValidationReportEntity.Type} with `conforms: true` when
    *   no violations are found, or `conforms: false` with a populated `results` array.
    *
    * @example
@@ -1825,7 +1847,7 @@ export class JsonTology<TRefs = Record<never, never>> {
   public validateWithShacl(
     shapes: OntologyBuilder | readonly QuadInterface[],
     data: readonly QuadInterface[]
-  ): ShaclValidationReportType {
+  ): ShaclValidationReportEntity.Type {
     const shapeQuads = shapes instanceof OntologyBuilder
       ? shapes.shaclQuads()
       : shapes;

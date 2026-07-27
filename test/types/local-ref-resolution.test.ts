@@ -5,7 +5,7 @@
  *
  * A reference the document does not reach resolves to `AnchorNotFoundType`
  * (base `'#'` for same-document fragments), consistent with cross-schema misses
- * yielding `RefNotFoundType`. No local miss degrades to a silent `unknown`.
+ * yielding `ReferenceNotFoundType`. No local miss degrades to a silent `unknown`.
  *
  * Validates by compiling under `npm run type-check:tests`.
  */

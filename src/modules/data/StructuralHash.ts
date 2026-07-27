@@ -34,12 +34,12 @@ export class StructuralHash {
 
     for (const [
       key,
-      val
+      propertyValue
     ] of Object.entries(record)) {
       if (METADATA_KEYS.has(key)) {
         continue;
       }
-      result[key] = StructuralHash.strip(val);
+      result[key] = StructuralHash.strip(propertyValue);
     }
 
     return result;

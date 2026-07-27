@@ -5,13 +5,33 @@
  * All return values are full IRIs (never compact CURIEs).
  */
 
-import type { SchemaGraphSemanticsType } from '../../types/SchemaGraph.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
 import {
   BASE_TYPE_MAP, NUMBER_FORMAT_MAP, STRING_FORMAT_MAP
 } from '../../constants/XSD_MAPS.js';
 import {
   OWL, XSD
 } from '../../constants/IRI.js';
+
+/**
+ * Map lookups — kept as static class methods (rather than inline bracket
+ * access inside XsdTypes' object-literal methods) so the property lookup is
+ * not a computed MemberExpression nested inside an object literal, which
+ * breaks V8 hidden classes.
+ */
+class XsdMapLookup {
+  static baseType(type: string): null | string {
+    return BASE_TYPE_MAP[type] ?? null;
+  }
+
+  static numberFormat(format: string): null | string {
+    return format in NUMBER_FORMAT_MAP ? (NUMBER_FORMAT_MAP[format] ?? null) : null;
+  }
+
+  static stringFormat(format: string): null | string {
+    return format in STRING_FORMAT_MAP ? (STRING_FORMAT_MAP[format] ?? null) : null;
+  }
+}
 
 export const XsdTypes = {
   /**
@@ -21,7 +41,7 @@ export const XsdTypes = {
    * @returns Full IRI for the XSD type, `owl:Nothing` full IRI for null-only types,
    *   or `null` for ambiguous/composite types.
    */
-  'resolve': (semantics: SchemaGraphSemanticsType): null | string => {
+  'resolve': (semantics: SchemaGraphSemanticsInterface): null | string => {
     const types = semantics.schemaTypes;
     const format = semantics.format;
 
@@ -33,7 +53,7 @@ export const XsdTypes = {
       return types.length > 0 ? OWL.Nothing : null;
     }
     if (nonNull.length === 1) {
-      const singleType = nonNull[0];
+      const singleType = nonNull.at(0);
 
       if (singleType === undefined) {
         return null;
@@ -60,15 +80,15 @@ export const XsdTypes = {
     }
     if (type === 'string') {
       return format !== undefined && format in STRING_FORMAT_MAP
-        ? (STRING_FORMAT_MAP[format] ?? null)
+        ? XsdMapLookup.stringFormat(format)
         : XSD.string;
     }
     if (type === 'number' || type === 'integer') {
       return format !== undefined && format in NUMBER_FORMAT_MAP
-        ? (NUMBER_FORMAT_MAP[format] ?? null)
-        : (BASE_TYPE_MAP[type] ?? null);
+        ? XsdMapLookup.numberFormat(format)
+        : XsdMapLookup.baseType(type);
     }
 
-    return BASE_TYPE_MAP[type] ?? null;
+    return XsdMapLookup.baseType(type);
   }
 } as const;

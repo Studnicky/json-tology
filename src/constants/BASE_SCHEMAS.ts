@@ -1,6 +1,6 @@
 import {
   DEFAULT_PAGE_SIZE,
-  MAX_PAGE_SIZE
+  MAXIMUM_PAGE_SIZE
 } from './PAGINATION.js';
 
 /**
@@ -310,7 +310,7 @@ export const CURSOR_DEF = {
  *
  * @remarks
  * A reusable schema fragment for request objects that support offset and cursor
- * pagination. `DEFAULT_PAGE_SIZE` and `MAX_PAGE_SIZE` are sourced from PAGINATION
+ * pagination. `DEFAULT_PAGE_SIZE` and `MAXIMUM_PAGE_SIZE` are sourced from PAGINATION
  * constants. All properties are optional; callers apply server-side defaults.
  *
  * @example
@@ -335,7 +335,7 @@ export const PAGINATION_DEF = {
     },
     'pageSize': {
       'default': DEFAULT_PAGE_SIZE,
-      'maximum': MAX_PAGE_SIZE,
+      'maximum': MAXIMUM_PAGE_SIZE,
       'minimum': 1,
       'type': 'number'
     },

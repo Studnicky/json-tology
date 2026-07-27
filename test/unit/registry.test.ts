@@ -2,10 +2,9 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
-// KeywordDefinitionType is the contract for custom keyword shapes; not surfaced via the public API.
-import type { KeywordDefinitionType } from '../../src/types/GraphEngine.js';
-// ValidationErrorType is the per-error structural type used by ValidationErrors; not re-exported publicly.
-import type { ValidationErrorType } from '../../src/types/Validation.js';
+import type { KeywordDefinitionInterface } from '../../src/interfaces/KeywordDefinitionInterface.js';
+// ValidationErrorEntity.Type is the per-error structural type used by ValidationErrors; not re-exported publicly.
+import type { ValidationErrorEntity } from '../../src/entities/ValidationErrorEntity.js';
 import {
   describe, it
 } from 'node:test';
@@ -129,7 +128,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       assert.ok(!errs.ok);
 
-      const allErrors: ValidationErrorType[] = [...errs];
+      const allErrors: ValidationErrorEntity.Type[] = [...errs];
 
       assert.ok(allErrors.some((err) => {
         return err.keyword === 'EXTRA_FORBIDDEN';
@@ -613,7 +612,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 // Shared keywords
 // ---------------------------------------------------------------------------
 
-  const evenNumberKeyword: KeywordDefinitionType = {
+  const evenNumberKeyword: KeywordDefinitionInterface = {
     'keyword': 'evenNumber',
     'validate': (schema, data) => {
       if (schema !== true) {
@@ -627,7 +626,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     }
   };
 
-  const numberOnlyKeyword: KeywordDefinitionType = {
+  const numberOnlyKeyword: KeywordDefinitionInterface = {
     'keyword': 'evenNumber',
     'type': 'number',
     'validate': (schemaValue, data) => {
@@ -635,14 +634,14 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     }
   };
 
-  const rangeKeyword: KeywordDefinitionType = {
+  const rangeKeyword: KeywordDefinitionInterface = {
     'keyword': 'customRange',
     'type': 'number',
-    'validate': (schemaValue, data, context): ValidationErrorType[] => {
+    'validate': (schemaValue, data, context): ValidationErrorEntity.Type[] => {
       const spec = schemaValue as { 'max': number;
         'min': number };
       const value = data as number;
-      const errors: ValidationErrorType[] = [];
+      const errors: ValidationErrorEntity.Type[] = [];
 
       if (value < spec.min) {
         errors.push({
@@ -672,7 +671,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   void describe('Custom keyword validation', () => {
     const validationScenarios: Array<{
       'data': unknown;
-      'keyword': KeywordDefinitionType;
+      'keyword': KeywordDefinitionInterface;
       'name': string;
       'schema': Record<string, unknown>;
       'valid': boolean;

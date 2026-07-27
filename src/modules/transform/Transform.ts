@@ -38,18 +38,49 @@ import type {
   CanonicalShapeType
 } from '../../types/Infer.js';
 import type { JsonTologyReferencesInterface } from '../../interfaces/JsonTologyReferencesInterface.js';
-import type { TransformFnsType } from '../../types/TransformFnsType.js';
-import type {
-  AnyTransformStageType,
-  TransformStageType
-} from '../../types/TransformStage.js';
+import type { TransformFnsInterface } from '../../interfaces/TransformFnsInterface.js';
+import type { AnyTransformStageInterface } from '../../interfaces/AnyTransformStageInterface.js';
+import type { TransformStageInterface } from '../../interfaces/TransformStageInterface.js';
+import type { PartialCanonicalShapeType } from '../../types/PartialCanonicalShapeType.js';
 
 
 // ---------------------------------------------------------------------------
 // Internal registry — never mutates schema objects
 // ---------------------------------------------------------------------------
 
-const transformRegistry = new WeakMap<object, TransformFnsType>();
+const transformRegistry = new WeakMap<object, TransformFnsInterface>();
+
+// ---------------------------------------------------------------------------
+// Composed chain stages — real class methods instead of per-call closures
+// ---------------------------------------------------------------------------
+
+class ComposedTransformStages implements TransformFnsInterface {
+  readonly #stages: ReadonlyArray<TransformStageInterface<unknown, unknown>>;
+
+  constructor(stages: ReadonlyArray<TransformStageInterface<unknown, unknown>>) {
+    this.#stages = stages;
+  }
+
+  decode(value: unknown): unknown {
+    const result = this.#stages.reduce<unknown>((accumulator: unknown, transform: TransformStageInterface<unknown, unknown>): unknown => {
+      const decoded = transform.decode(accumulator);
+
+      return decoded;
+    }, value);
+
+    return result;
+  }
+
+  encode(value: unknown): unknown {
+    const result = [...this.#stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageInterface<unknown, unknown>): unknown => {
+      const encoded = transform.encode(accumulator);
+
+      return encoded;
+    }, value);
+
+    return result;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Transform class
@@ -84,7 +115,7 @@ const transformRegistry = new WeakMap<object, TransformFnsType>();
  *
  * @category Transform
  * @since 0.1.0
- * @see {@link TransformFnsType}
+ * @see {@link TransformFnsInterface}
  * @group Transform
  */
 export class Transform {
@@ -118,32 +149,13 @@ export class Transform {
    */
   public static chain<
     TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
-    TStages extends readonly AnyTransformStageType[]
+    TStages extends AnyTransformStageInterface[]
   >(
     schema: TSchema,
     transforms: TStages & ValidateChainType<TStages, CanonicalShapeType<TSchema>>
   ): TransformedType<TSchema, ChainWireType<TStages>> {
-    const stages = transforms as ReadonlyArray<TransformStageType<unknown, unknown>>;
-    const composed: TransformFnsType = {
-      'decode': (value: unknown): unknown => {
-        const result = stages.reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
-          const decoded = transform.decode(accumulator);
-
-          return decoded;
-        }, value);
-
-        return result;
-      },
-      'encode': (value: unknown): unknown => {
-        const result = [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageType<unknown, unknown>): unknown => {
-          const encoded = transform.encode(accumulator);
-
-          return encoded;
-        }, value);
-
-        return result;
-      }
-    };
+    const stages = transforms as unknown as ReadonlyArray<TransformStageInterface<unknown, unknown>>;
+    const composed = new ComposedTransformStages(stages);
 
     transformRegistry.set(schema, composed);
 
@@ -185,11 +197,11 @@ export class Transform {
       // Both sides speak the brand-free structural canonical (`CanonicalShapeType`):
       // `decode` produces plain values (no per-leaf `Brand.cast()`), and `validate`
       // — run by `instantiate` — is the boundary that certifies the branded form.
-      'decode': (raw: TWire) => Partial<CanonicalShapeType<TSchema, TReferences>>;
+      'decode': (raw: TWire) => PartialCanonicalShapeType<TSchema, TReferences>;
       'encode': (value: CanonicalShapeType<TSchema, TReferences>) => TWire;
     }
   ): TransformedType<TSchema, TWire> {
-    Transform.register(schema, fns as TransformFnsType);
+    Transform.register(schema, fns as TransformFnsInterface);
 
     return Brand.cast<TransformedType<TSchema, TWire>>(schema);
   }
@@ -200,7 +212,7 @@ export class Transform {
    * @param schema - The schema object to look up.
    * @returns The registered decode/encode pair, or `undefined` if none.
    */
-  public static getDecoder(schema: JsonSchemaDocumentObjectType): TransformFnsType | undefined {
+  public static getDecoder(schema: JsonSchemaDocumentObjectType): TransformFnsInterface | undefined {
     const result = transformRegistry.get(schema);
 
     return result;
@@ -211,12 +223,12 @@ export class Transform {
    *
    * The single type-erasure boundary for transforms: typed public callers
    * ({@link create}, `JsonTology.addTransform`) keep their precise lambda types
-   * and pass the erased {@link TransformFnsType} here.
+   * and pass the erased {@link TransformFnsInterface} here.
    *
    * @param schema - The schema object the decode/encode pair is keyed against.
    * @param fns - The decode/encode functions to store.
    */
-  public static register(schema: JsonSchemaDocumentObjectType, fns: TransformFnsType): void {
+  public static register(schema: JsonSchemaDocumentObjectType, fns: TransformFnsInterface): void {
     transformRegistry.set(schema, fns);
   }
 }

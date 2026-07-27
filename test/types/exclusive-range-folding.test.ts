@@ -1,7 +1,7 @@
 /**
  * Compile-time assertions confirming exclusive-bound folding in integer ranges.
  *
- * `NormalizeMinType` / `NormalizeMaxType` in Infer.ts fold exclusive bounds to
+ * `NormalizeMinimumType` / `NormalizeMaximumType` in Infer.ts fold exclusive bounds to
  * their inclusive equivalents before building the literal union:
  *
  *   - `exclusiveMaximum: N`  →  inclusive upper = N − 1  (via Sub1Type)
@@ -26,8 +26,8 @@ function assert<T extends true>(): void {
 // ---------------------------------------------------------------------------
 // 1. minimum: 0, exclusiveMaximum: 5  →  0 | 1 | 2 | 3 | 4
 //
-// NormalizeMaxType folds exclusiveMaximum: 5 to inclusive max 4 (Sub1(5) = 4).
-// NormalizeMinType reads minimum: 0 directly.
+// NormalizeMaximumType folds exclusiveMaximum: 5 to inclusive max 4 (Sub1(5) = 4).
+// NormalizeMinimumType reads minimum: 0 directly.
 // Result: integer range [0, 4] = 0 | 1 | 2 | 3 | 4.
 // ---------------------------------------------------------------------------
 
@@ -62,8 +62,8 @@ if (false as boolean) {
 // ---------------------------------------------------------------------------
 // 2. exclusiveMinimum: 0, maximum: 3  →  1 | 2 | 3
 //
-// NormalizeMinType folds exclusiveMinimum: 0 to inclusive min 1 (Add1(0) = 1).
-// NormalizeMaxType reads maximum: 3 directly.
+// NormalizeMinimumType folds exclusiveMinimum: 0 to inclusive min 1 (Add1(0) = 1).
+// NormalizeMaximumType reads maximum: 3 directly.
 // Result: integer range [1, 3] = 1 | 2 | 3.
 // ---------------------------------------------------------------------------
 

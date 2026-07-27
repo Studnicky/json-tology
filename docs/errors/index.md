@@ -6,12 +6,12 @@
 
 | Surface | Returns | Best for |
 |---------|---------|----------|
-| `.items` | `readonly ValidationErrorType[]` | Direct access to raw error objects |
+| `.items` | `readonly ValidationErrorEntity.Type[]` | Direct access to raw error objects |
 | `.ok` | `boolean` | Quick valid/invalid check |
 | `.length` | `number` | Error count |
-| `[Symbol.iterator]` | `Iterator<ValidationErrorType>` | `for...of` iteration |
+| `[Symbol.iterator]` | `Iterator<ValidationErrorEntity.Type>` | `for...of` iteration |
 | [`aggregate()`](./views#validationerrors-aggregate) | `{ count, paths, keywords }` | Structured logs, metric labels |
-| [`report()`](./views#validationerrors-report) | `ProblemDetailsType` | HTTP 422 response bodies (RFC 7807) |
+| [`report()`](./views#validationerrors-report) | `ProblemDetailsEntity.Type` | HTTP 422 response bodies (RFC 7807) |
 
 ## Usage examples
 

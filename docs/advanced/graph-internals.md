@@ -154,7 +154,7 @@ The primary surface:
 
 - `execute(value)` — returns `{ valid, errors, value, … }`
 - `check(value)` — fast boolean shortcut (no error collection)
-- `errors(value)` — returns only the `ValidationErrorType[]`
+- `errors(value)` — returns only the `ValidationErrorEntity.Type[]`
 - `keywords()` — returns any registered custom keyword definitions
 - `rootSchemaId()` — returns the `$id` of the root schema (or `undefined`)
 

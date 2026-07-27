@@ -2,20 +2,37 @@
  * ImportRelation — value-reading domain for OWL-import graph relations.
  *
  * Reads IRIs, lexical literals, and typed list items out of
- * `SchemaGraphRelationType` targets, and filters a subject's outgoing relations
+ * `SchemaGraphRelationInterface` targets, and filters a subject's outgoing relations
  * by predicate. All methods are pure, stateless, and self-contained — nothing
  * here depends on orchestrator state or cross-dispatcher concerns.
  */
 
-import type {
-  ListItemType,
-  SchemaGraphRelationType
-} from '../../../types/SchemaGraph.js';
+import type { ListItemEntity } from '../../../entities/ListItemEntity.js';
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraphRelationInterface.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphInterface.js';
-import type { OwlImportFragmentType } from '../../../types/OwlImport.js';
+import type { OwlImportFragmentInterface } from '../../../interfaces/OwlImportFragmentInterface.js';
+import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import { Terms } from '../../quads/Terms.js';
 
 export class ImportRelation {
+  /**
+   * Build an `OwlImportFragmentInterface` whose only populated bucket is
+   * `schemaDeltas`; all registry-level buckets (characteristics, individuals,
+   * sameAs, differentFrom, invariants) are empty arrays.
+   *
+   * Used by dispatchers that only ever emit structural schemaDeltas patches.
+   */
+  static buildFragment(schemaDeltas: Map<string, JsonSchemaDocumentObjectType>): OwlImportFragmentInterface {
+    return {
+      'characteristics': [],
+      'differentFrom': [],
+      'individuals': [],
+      'invariants': [],
+      'sameAs': [],
+      schemaDeltas
+    };
+  }
+
   /**
    * Filter outgoing relations on a subject by predicate membership set.
    *
@@ -26,8 +43,8 @@ export class ImportRelation {
     graph: SchemaGraphInterface,
     subject: string,
     predicates: ReadonlySet<string>
-  ): readonly SchemaGraphRelationType[] {
-    const result = graph.relationsForSubject(subject).filter((rel: SchemaGraphRelationType): boolean => {
+  ): readonly SchemaGraphRelationInterface[] {
+    const result = graph.relationsForSubject(subject).filter((rel: SchemaGraphRelationInterface): boolean => {
       const isMemberPredicate = predicates.has(rel.predicate);
 
       return isMemberPredicate;
@@ -37,12 +54,28 @@ export class ImportRelation {
   }
 
   /**
-   * Decode a Literal `ListItemType` back to its typed JS value via the canonical
+   * Walk an RDF list rooted at `listHead` and collect the IRIs of its
+   * NamedNode members, skipping any BlankNode / Literal members.
+   */
+  static collectNamedNodeIris(graph: SchemaGraphInterface, listHead: string): string[] {
+    const members: string[] = [];
+
+    for (const item of graph.collectList(listHead)) {
+      if (item.termType === 'NamedNode') {
+        members.push(item.target);
+      }
+    }
+
+    return members;
+  }
+
+  /**
+   * Decode a Literal `ListItemEntity.Type` back to its typed JS value via the canonical
    * `Terms.literal` / `Terms.decodeLiteral` round-trip.
    *
    * Preserves XSD-typed integers, booleans, Dates, etc.
    */
-  static decodeListItem(item: ListItemType): unknown {
+  static decodeListItem(item: ListItemEntity.Type): unknown {
     const literalTerm = Terms.literal(item.target, {
       'datatype': Terms.iri(item.datatype ?? ''),
       'language': item.language ?? ''
@@ -52,12 +85,12 @@ export class ImportRelation {
   }
 
   /**
-   * Return an empty `OwlImportFragmentType` — all arrays empty, schemaDeltas an
+   * Return an empty `OwlImportFragmentInterface` — all arrays empty, schemaDeltas an
    * empty Map.
    *
    * Used as a fast-exit return value when a dispatcher finds nothing to process.
    */
-  static emptyFragment(): OwlImportFragmentType {
+  static emptyFragment(): OwlImportFragmentInterface {
     return {
       'characteristics': [],
       'differentFrom': [],
@@ -72,7 +105,7 @@ export class ImportRelation {
    * Extract the string value of a Literal-typed relation target.
    * Returns null when the relation does not carry a Literal target.
    */
-  static literalString(relation: SchemaGraphRelationType): null | string {
+  static literalString(relation: SchemaGraphRelationInterface): null | string {
     if (relation.termType !== 'Literal') {
       return null;
     }
@@ -81,10 +114,27 @@ export class ImportRelation {
   }
 
   /**
+   * Merge `patch` into the `schemaDeltas` entry for `subjectIri`, preserving
+   * any fields already recorded by another axiom arm for the same subject.
+   */
+  static mergeSchemaDelta(
+    schemaDeltas: Map<string, JsonSchemaDocumentObjectType>,
+    subjectIri: string,
+    patch: JsonSchemaDocumentObjectType
+  ): void {
+    const existing = schemaDeltas.get(subjectIri) ?? {};
+
+    schemaDeltas.set(subjectIri, {
+      ...existing,
+      ...patch
+    });
+  }
+
+  /**
    * Extract the IRI of a NamedNode-typed relation target.
    * Returns null when the relation does not carry a NamedNode target.
    */
-  static namedNodeIri(relation: SchemaGraphRelationType): null | string {
+  static namedNodeIri(relation: SchemaGraphRelationInterface): null | string {
     if (relation.termType !== 'NamedNode') {
       return null;
     }
@@ -98,7 +148,7 @@ export class ImportRelation {
    * Both string-shaped targets (compact / full IRI, lexical literal) and
    * node-shaped targets (carrying an `.id` property) are accepted.
    */
-  static targetValue(relation: SchemaGraphRelationType): string {
+  static targetValue(relation: SchemaGraphRelationInterface): string {
     return typeof relation.target === 'string' ? relation.target : relation.target.id;
   }
 }

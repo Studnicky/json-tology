@@ -1,8 +1,8 @@
 /**
- * Anti-pattern: hand-rolling a type when InferType shows RefNotFoundType.
+ * Anti-pattern: hand-rolling a type when InferType shows ReferenceNotFoundType.
  *
  * Without a reference map, a cross-schema $ref that InferType cannot resolve
- * infers to RefNotFoundType<'...'> — `{ kind: 'RefNotFound'; unresolvedRef:
+ * infers to ReferenceNotFoundType<'...'> — `{ kind: 'RefNotFound'; unresolvedRef:
  * '...' }` — a deliberate compile-error brand, not a silent `unknown`.
  * Reading that shape as "inference degrades" and hand-rolling a replacement
  * type defeats InferType: the hand-rolled type silently drifts from the
@@ -31,7 +31,7 @@ function assert<T extends true>(_proof?: T): void {
   return;
 }
 
-// ⊥ Without the reference map, `label` is RefNotFoundType<'bk:BookGenreLabel'>
+// ⊥ Without the reference map, `label` is ReferenceNotFoundType<'bk:BookGenreLabel'>
 // — { kind: 'RefNotFound'; unresolvedRef: 'bk:BookGenreLabel' }.
 type UnresolvedLabel = InferType<typeof _BookGenreSchema>['label'];
 
@@ -58,5 +58,5 @@ const handRolled: BookGenreHandRolled = { 'label': 'Fantasy' };
 const derived: BookGenre = { 'label': 'Fantasy' };
 
 console.assert(handRolled.label === derived.label);
-console.log('Unresolved $ref shape (RefNotFoundType): kind + unresolvedRef fields.');
+console.log('Unresolved $ref shape (ReferenceNotFoundType): kind + unresolvedRef fields.');
 console.log('Recommended: InferType + reference map, not a hand-rolled type.');

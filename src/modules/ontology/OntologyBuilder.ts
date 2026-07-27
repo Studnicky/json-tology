@@ -7,10 +7,10 @@
  */
 
 import type { OntologyBuilderInterface } from '../../interfaces/OntologyBuilderInterface.js';
-import type { JsonLdDocInputType } from '../../types/JsonLdDocInputType.js';
-import type { OntologyBuilderOptionsType } from '../../types/OntologyBuilderOptionsType.js';
+import type { JsonLdDocumentInputEntity } from '../../entities/JsonLdDocumentInputEntity.js';
+import type { OntologyBuilderOptionsInterface } from '../../interfaces/OntologyBuilderOptionsInterface.js';
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
-import type { JsonLdDatasetQuadType } from '../../types/JsonLdDatasetQuadType.js';
+import type { JsonLdDatasetQuadEntity } from '../../entities/JsonLdDatasetQuadEntity.js';
 import type { LoggerInterface } from '../../interfaces/LoggerInterface.js';
 import jsonld from 'jsonld';
 import { JSONLD } from '../../constants/JSONLD.js';
@@ -41,7 +41,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Create an OntologyBuilder with base IRI and prefix map.
    * Graph data enters through `addFromQuads` / `addFromJsonLd` and their SHACL variants.
    */
-  public constructor(config: Readonly<OntologyBuilderOptionsType>) {
+  public constructor(config: Readonly<OntologyBuilderOptionsInterface>) {
     this.baseIri = config.baseIri;
     this.logger = config.logger ?? SILENT_LOGGER;
     this.prefixes = config.prefixes;
@@ -51,8 +51,8 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Parse a JSON-LD document to rdf/js quads via `jsonld.toRDF` and append
    * them to the canonical ontology store.
    */
-  public async addFromJsonLd(doc: JsonLdDocInputType): Promise<this> {
-    const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
+  public async addFromJsonLd(document: JsonLdDocumentInputEntity.Type): Promise<this> {
+    const dataset = await jsonld.toRDF(document as object) as JsonLdDatasetQuadEntity.Type[];
     const quads = dataset.map((datasetQuad) => {
       const result = QuadFactory.fromDatasetQuad(datasetQuad);
 
@@ -81,8 +81,8 @@ export class OntologyBuilder implements OntologyBuilderInterface {
    * Parse a JSON-LD document to rdf/js quads via `jsonld.toRDF` and append
    * them to the SHACL store.
    */
-  public async addShaclFromJsonLd(doc: JsonLdDocInputType): Promise<this> {
-    const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuadType[];
+  public async addShaclFromJsonLd(document: JsonLdDocumentInputEntity.Type): Promise<this> {
+    const dataset = await jsonld.toRDF(document as object) as JsonLdDatasetQuadEntity.Type[];
     const quads = dataset.map((datasetQuad) => {
       const result = QuadFactory.fromDatasetQuad(datasetQuad);
 
@@ -138,14 +138,14 @@ export class OntologyBuilder implements OntologyBuilderInterface {
       BaseGraphSerializer.ensureArray(node, RDFS.subClassOf);
     }
 
-    const doc: Record<string, unknown> = { 'rdfs:label': 'Generated Ontology' };
+    const document: Record<string, unknown> = { 'rdfs:label': 'Generated Ontology' };
 
-    doc[JSONLD.context] = this.prefixes;
-    doc[JSONLD.graph] = nodes;
-    doc[JSONLD.id] = `${this.baseIri}/ontology/`;
-    doc[JSONLD.type] = 'owl:Ontology';
+    document[JSONLD.context] = this.prefixes;
+    document[JSONLD.graph] = nodes;
+    document[JSONLD.id] = `${this.baseIri}/ontology/`;
+    document[JSONLD.type] = 'owl:Ontology';
 
-    return doc;
+    return document;
   }
 
   /**
@@ -172,12 +172,12 @@ export class OntologyBuilder implements OntologyBuilderInterface {
       BaseGraphSerializer.normalizeArrays(node, SHACL_ARRAY_KEYS);
     }
 
-    const doc: Record<string, unknown> = {};
+    const document: Record<string, unknown> = {};
 
-    doc[JSONLD.context] = shaclPrefixes;
-    doc[JSONLD.graph] = nodes;
+    document[JSONLD.context] = shaclPrefixes;
+    document[JSONLD.graph] = nodes;
 
-    return doc;
+    return document;
   }
 
   /**

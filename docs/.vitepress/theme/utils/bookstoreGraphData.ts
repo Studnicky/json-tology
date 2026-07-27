@@ -13,7 +13,7 @@ import {
 } from '../../../../examples/docs/bookstore/index.js';
 import { aboxFixtures } from '../../../../examples/docs/bookstore/aboxFixtures.js';
 import type { QuadInterface } from '../../../../src/interfaces/QuadInterface.js';
-import type { SkolemizeFnType } from '../../../../src/types/SkolemizeFnType.js';
+import type { SkolemizeFunctionType } from '../../../../src/types/SkolemizeFunctionType.js';
 import { JsonLdFormatter } from '../../../../src/modules/rdf/JsonLdFormatter.js';
 import { layoutLayer } from './graphLayout.js';
 import type { LayoutPosition } from './graphLayout.js';
@@ -771,7 +771,7 @@ function shortHash(input: string): string {
  * legible (`/id/the-neverending-story__a3f1k2`) instead of opaque skolem
  * hashes. The display label strips the `__hash` suffix (see {@link nodeLabel}).
  */
-const aboxIriFor: SkolemizeFnType = (ctx) => {
+const aboxIriFor: SkolemizeFunctionType = (ctx) => {
   const value = ctx.value;
 
   if (value === null || typeof value !== 'object') {
@@ -809,52 +809,52 @@ function aboxFixtureQuads(): QuadInterface[] {
   quads.push(...bookstoreEntities.toQuads(
     CustomerSchema,
     bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     OrderSchema,
     bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     RareBookSchema,
     bookstoreEntities.instantiate(RareBookSchema, aboxFixtures.rareBook),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     EBookSchema,
     bookstoreEntities.instantiate(EBookSchema, aboxFixtures.ebook),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     PrintBookSchema,
     bookstoreEntities.instantiate(PrintBookSchema, aboxFixtures.printBook),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     SignedFirstEditionSchema,
     bookstoreEntities.instantiate(SignedFirstEditionSchema, aboxFixtures.signedFirstEdition),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     SimilarBookSchema,
     bookstoreEntities.instantiate(SimilarBookSchema, aboxFixtures.similarBook),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     SequelSchema,
     bookstoreEntities.instantiate(SequelSchema, aboxFixtures.sequel),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     BookListPageSchema,
     bookstoreEntities.instantiate(BookListPageSchema, aboxFixtures.bookListPage),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     ReviewSchema,
     bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge),
-    { 'graphIri': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
+    { 'graphIri': ABOX_GRAPH_IRI, 'iriForFunction': aboxIriFor }
   ));
 
   return quads;

@@ -7,8 +7,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  detect_changes:
+    name: Detect Changes
+    uses: ./.github/workflows/detect-changes.yml
+
   license-check:
     name: Validate Dependency Licenses
+    needs: [detect_changes]
+    if: ${{ github.event_name != 'pull_request' || needs.detect_changes.outputs.deps == 'true' || needs.detect_changes.outputs.ci_config == 'true' }}
     permissions:
       contents: read
       packages: read
@@ -17,26 +23,20 @@ jobs:
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - uses: actions/setup-node@v6
-        with:
-          cache: npm
-          node-version: '24'
-
-      - name: Install dependencies
-        run: npm ci --include=dev --include=optional
+      - uses: ./.github/actions/node-setup
 
       - name: Check dependency licenses
         id: license-check
         run: |
-          npx license-checker \
+          npx license-checker-rseidelsohn \
             --failOn "GPL-2.0;GPL-3.0;AGPL-3.0;LGPL-2.1;LGPL-3.0;UNLICENSED" \
             --summary 2>&1 | tee license-report.txt
 
       - name: Comment on PR (if violations found)
         if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const fs = require('fs');

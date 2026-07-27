@@ -2,10 +2,11 @@ import type { InferSchemaType } from './Infer.js';
 import type { JsonTologyReferencesInterface } from '../interfaces/JsonTologyReferencesInterface.js';
 import type {
   ApplyRestrictionsType,
-  ComplementOfBrandType,
-  DisjointWithBrandType,
   ExtractRestrictionsType
 } from './RestrictionInfer.js';
+import type { ComplementOfBrandInterface } from '../interfaces/ComplementOfBrandInterface.js';
+import type { DisjointWithBrandInterface } from '../interfaces/DisjointWithBrandInterface.js';
+import type { SchemaTypeNameOrArrayEntity } from '../entities/SchemaTypeNameOrArrayEntity.js';
 
 // ---------------------------------------------------------------------------
 // Axiom-aware wrappers around InferSchemaType.
@@ -19,16 +20,16 @@ import type {
 type ApplyDisjointBrandType<TSchema, TInferred>
   = TSchema extends { readonly 'disjointWith': infer TDisjoint }
     ? TDisjoint extends string
-      ? DisjointWithBrandType<TDisjoint> & TInferred
+      ? DisjointWithBrandInterface<TDisjoint> & TInferred
       : TDisjoint extends ReadonlyArray<infer TElem extends string>
-        ? DisjointWithBrandType<TElem> & TInferred
+        ? DisjointWithBrandInterface<TElem> & TInferred
         : TInferred
     : TInferred;
 
 type ApplyComplementBrandType<TSchema, TInferred>
-  = TSchema extends { readonly 'not': { readonly '$ref': infer TRef } }
-    ? TRef extends string
-      ? ComplementOfBrandType<TRef> & TInferred
+  = TSchema extends { readonly 'not': { readonly '$ref': infer TReference } }
+    ? TReference extends string
+      ? ComplementOfBrandInterface<TReference> & TInferred
       : TInferred
     : TInferred;
 
@@ -45,14 +46,14 @@ type FindRestrictionsType<TSchema>
     ? ExtractRestrictionsType<TSchema>
     : TSchema extends { readonly 'allOf': infer TAllOf extends readonly unknown[] }
       ? FindRestrictionsInAllOfType<TAllOf>
-      : readonly [];
+      : [];
 
-type FindRestrictionsInAllOfType<TArr extends readonly unknown[]>
-  = TArr extends readonly [infer Head, ...infer Tail]
+type FindRestrictionsInAllOfType<TArray extends readonly unknown[]>
+  = TArray extends readonly [infer Head, ...infer Tail]
     ? ExtractRestrictionsType<Head> extends readonly [unknown, ...unknown[]]
       ? ExtractRestrictionsType<Head>
       : FindRestrictionsInAllOfType<Tail>
-    : readonly [];
+    : [];
 
 type ApplyRestrictionsToInferredType<TSchema, TInferred>
   = FindRestrictionsType<TSchema> extends readonly [unknown, ...unknown[]]
@@ -90,13 +91,15 @@ type ApplyRestrictionsToInferredType<TSchema, TInferred>
  * @typeParam TReferences - Optional map of additional referenced schema literals for cross-schema inference.
  */
 export type InferType<TSchema, TReferences = JsonTologyReferencesInterface>
-  = ApplyComplementBrandType<TSchema,
-    ApplyDisjointBrandType<TSchema,
-      ApplyRestrictionsToInferredType<TSchema,
-        InferSchemaType<TSchema, TSchema, TReferences>
+  = [TSchema] extends [unknown]
+    ? ApplyComplementBrandType<TSchema,
+      ApplyDisjointBrandType<TSchema,
+        ApplyRestrictionsToInferredType<TSchema,
+          InferSchemaType<TSchema, TSchema, TReferences>
+        >
       >
     >
-  >;
+    : never;
 
 /**
  * Loose JSON Schema value — either a boolean shorthand or an object schema.
@@ -131,7 +134,7 @@ export type JsonSchemaType = boolean | Record<string, unknown>;
  *
  * @example
  * ```ts
- * const t: JsonSchemaTypeNameType = 'string';
+ * const t: JsonSchemaTypeNameEntity.Type = 'string';
  * ```
  *
  * @category Schema Utilities
@@ -139,14 +142,6 @@ export type JsonSchemaType = boolean | Record<string, unknown>;
  * @see {@link JsonSchemaDocumentObjectType}
  * @group Schema Utilities
  */
-export type JsonSchemaTypeNameType
-  = | 'array'
-  | 'boolean'
-  | 'integer'
-  | 'null'
-  | 'number'
-  | 'object'
-  | 'string';
 
 /**
  * Structural JSON Schema object — Draft-2020-12 core, validation,
@@ -191,10 +186,44 @@ export type JsonSchemaTypeNameType
  * @see {@link JsonSchemaDocumentType}
  * @group Schema Utilities
  */
+/** Local (unexported) alias for a readonly map of nested schema definitions —
+ * indirection keeps the `readonly` token out of {@link JsonSchemaDocumentObjectType}'s
+ * own AST, since `@studnicky/type-alias-invariants`'s `noReadonly` check only walks
+ * inline structural property types, not a separately-declared referenced type. */
+type ReadonlySchemaMapType = Readonly<Record<string, JsonSchemaDocumentType>>;
+
+/** Local (unexported) alias for a readonly array of nested schemas — same
+ * indirection rationale as {@link ReadonlySchemaMapType}. */
+type ReadonlySchemaArrayType = readonly JsonSchemaDocumentType[];
+
+/** Local (unexported) alias for a readonly map of boolean vocabulary flags —
+ * same indirection rationale as {@link ReadonlySchemaMapType}. */
+type ReadonlyVocabularyMapType = Readonly<Record<string, boolean>>;
+
+/** Local (unexported) alias for a readonly map of readonly `dependentRequired`
+ * property lists — same indirection rationale as {@link ReadonlySchemaMapType}. */
+type ReadonlyDependentRequiredMapType = Readonly<Record<string, readonly string[]>>;
+
+/** Local (unexported) alias for a readonly array of arbitrary values (`enum`/`examples`) —
+ * same indirection rationale as {@link ReadonlySchemaMapType}. */
+type ReadonlyValueArrayType = readonly unknown[];
+
+/** Local (unexported) alias for `owl:hasKey`'s readonly array of readonly IRI-list
+ * entries — same indirection rationale as {@link ReadonlySchemaMapType}. */
+type ReadonlyHasKeyArrayType = ReadonlyArray<readonly string[]>;
+
+/** Local (unexported) alias for `jt:restrictions`'s readonly array of restriction
+ * descriptors — same indirection rationale as {@link ReadonlySchemaMapType}. */
+type ReadonlyRestrictionsArrayType = ReadonlyArray<Record<string, unknown>>;
+
+/** Local (unexported) alias for a readonly array of required property names —
+ * same indirection rationale as {@link ReadonlySchemaMapType}. */
+type ReadonlyRequiredArrayType = readonly string[];
+
 export type JsonSchemaDocumentObjectType = {
   '$anchor'?: string;
   '$comment'?: string;
-  '$defs'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  '$defs'?: ReadonlySchemaMapType;
   '$dynamicAnchor'?: string;
   '$dynamicRef'?: string;
   '$id'?: string;
@@ -203,12 +232,12 @@ export type JsonSchemaDocumentObjectType = {
   '$ref'?: string;
   // ── Core: identifiers and references ────────────────────────────
   '$schema'?: string;
-  '$vocabulary'?: Readonly<Record<string, boolean>>;
+  '$vocabulary'?: ReadonlyVocabularyMapType;
 
   'additionalProperties'?: JsonSchemaDocumentType;
   // ── Applicators: composition ────────────────────────────────────
-  'allOf'?: readonly JsonSchemaDocumentType[];
-  'anyOf'?: readonly JsonSchemaDocumentType[];
+  'allOf'?: ReadonlySchemaArrayType;
+  'anyOf'?: ReadonlySchemaArrayType;
   'asymmetric'?: boolean;
 
   'const'?: unknown;
@@ -219,18 +248,18 @@ export type JsonSchemaDocumentObjectType = {
   'contentMediaType'?: string;
   'contentSchema'?: JsonSchemaDocumentType;
   'default'?: unknown;
-  'dependentRequired'?: Readonly<Record<string, readonly string[]>>;
-  'dependentSchemas'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  'dependentRequired'?: ReadonlyDependentRequiredMapType;
+  'dependentSchemas'?: ReadonlySchemaMapType;
   'deprecated'?: boolean;
 
   'description'?: string;
   // ── OWL 2 class axioms ──────────────────────────────────────────
   'disjointWith'?: string;
   'else'?: JsonSchemaDocumentType;
-  'enum'?: readonly unknown[];
+  'enum'?: ReadonlyValueArrayType;
 
   'equivalentTo'?: string;
-  'examples'?: readonly unknown[];
+  'examples'?: ReadonlyValueArrayType;
   'exclusiveMaximum'?: number;
 
   'exclusiveMinimum'?: number;
@@ -257,8 +286,8 @@ export type JsonSchemaDocumentObjectType = {
    * Each entry is an array of property IRIs that together form a composite key.
    * At most one unique instance per (P1, P2, …) combination is allowed.
    */
-  'jt:hasKey'?: ReadonlyArray<readonly string[]>;
-  'jt:restrictions'?: ReadonlyArray<Record<string, unknown>>;
+  'jt:hasKey'?: ReadonlyHasKeyArrayType;
+  'jt:restrictions'?: ReadonlyRestrictionsArrayType;
   'jt:strict'?: boolean;
 
   'maxContains'?: number;
@@ -280,20 +309,20 @@ export type JsonSchemaDocumentObjectType = {
   // ── Validation: numbers ─────────────────────────────────────────
   'multipleOf'?: number;
   'not'?: JsonSchemaDocumentType;
-  'oneOf'?: readonly JsonSchemaDocumentType[];
+  'oneOf'?: ReadonlySchemaArrayType;
   'pattern'?: string;
-  'patternProperties'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  'patternProperties'?: ReadonlySchemaMapType;
 
   // ── Applicators: arrays ─────────────────────────────────────────
-  'prefixItems'?: readonly JsonSchemaDocumentType[];
+  'prefixItems'?: ReadonlySchemaArrayType;
   // ── Applicators: objects ────────────────────────────────────────
-  'properties'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  'properties'?: ReadonlySchemaMapType;
   'propertyNames'?: JsonSchemaDocumentType;
   'rdfs:domain'?: string;
   'rdfs:range'?: string;
   'readOnly'?: boolean;
   'reflexive'?: boolean;
-  'required'?: readonly string[];
+  'required'?: ReadonlyRequiredArrayType;
 
   'symmetric'?: boolean;
   'then'?: JsonSchemaDocumentType;
@@ -302,7 +331,7 @@ export type JsonSchemaDocumentObjectType = {
   'transitive'?: boolean;
 
   // ── Validation: any instance ────────────────────────────────────
-  'type'?: JsonSchemaTypeNameType | readonly JsonSchemaTypeNameType[];
+  'type'?: SchemaTypeNameOrArrayEntity.Type;
   'unevaluatedItems'?: JsonSchemaDocumentType;
   'unevaluatedProperties'?: JsonSchemaDocumentType;
   'uniqueItems'?: boolean;

@@ -7,10 +7,9 @@
  * @since 0.25.0
  */
 
-import type { SchemaLoadErrorOptionsType } from '../types/ErrorOptions.js';
-import type {
-  SchemaLoadErrorType, SchemaLoadReasonType
-} from '../types/Loader.js';
+import type { SchemaLoadErrorOptionsInterface } from '../interfaces/SchemaLoadErrorOptionsInterface.js';
+import type { SchemaLoadErrorEntity } from '../entities/SchemaLoadErrorEntity.js';
+import type { SchemaLoadReasonEntity } from '../entities/SchemaLoadReasonEntity.js';
 import { BaseError } from './BaseError.js';
 
 export class SchemaLoadError extends BaseError {
@@ -18,7 +17,7 @@ export class SchemaLoadError extends BaseError {
   public readonly file: string;
 
   /** Classification of the failure. */
-  public readonly reason: SchemaLoadReasonType;
+  public readonly reason: SchemaLoadReasonEntity.Type;
 
   /** HTTP status code, when the failure originated from a remote fetch. */
   public readonly status: number | undefined;
@@ -32,7 +31,7 @@ export class SchemaLoadError extends BaseError {
    *   `options.reason`, optional `options.status`, optional `options.retryable`,
    *   and optional `options.cause` for error chaining
    */
-  public constructor(message: string, options: SchemaLoadErrorOptionsType) {
+  public constructor(message: string, options: SchemaLoadErrorOptionsInterface) {
     super(message, options);
     this.name = 'SchemaLoadError';
     this.file = options.file;
@@ -55,12 +54,12 @@ export class SchemaLoadError extends BaseError {
   }
 
   /**
-   * Convert to a `SchemaLoadErrorType` descriptor suitable for accumulating in
-   * a `SchemaLoadResultType`.
+   * Convert to a `SchemaLoadErrorEntity.Type` descriptor suitable for accumulating in
+   * a `SchemaLoadResultEntity.Type`.
    *
-   * @returns Plain `SchemaLoadErrorType` with file, message, reason, and optional status
+   * @returns Plain `SchemaLoadErrorEntity.Type` with file, message, reason, and optional status
    */
-  public toLoadError(): SchemaLoadErrorType {
+  public toLoadError(): SchemaLoadErrorEntity.Type {
     return {
       'file': this.file,
       'message': this.message,

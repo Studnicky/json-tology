@@ -447,18 +447,40 @@ export const OWL_CARDINALITY_PREDICATE_IRIS: ReadonlySet<string> = new Set([
 // ---------------------------------------------------------------------------
 
 /**
- * Maps restriction kind strings (as stored in `SchemaGraphSemanticsType.restrictions`)
+ * Maps restriction kind strings (as stored in `SchemaGraphSemanticsInterface.restrictions`)
  * to their canonical OWL 2 predicate IRIs.
  *
  * @category Ontology
  * @since 0.1.0
  * @group Constants
  */
-export const RESTRICTION_PREDICATE_MAP: Readonly<Partial<Record<string, string>>> = Object.freeze({
+export const RESTRICTION_PREDICATE_MAP: Readonly<Partial<Record<string, string>>> = {
   'allValuesFrom': OWL.allValuesFrom,
   'cardinality': OWL.cardinality,
   'hasValue': OWL.hasValue,
   'maxCardinality': OWL.maxCardinality,
   'minCardinality': OWL.minCardinality,
   'someValuesFrom': OWL.someValuesFrom
-});
+} as const;
+
+// ---------------------------------------------------------------------------
+// OWL property characteristic IRIs
+// ---------------------------------------------------------------------------
+
+/**
+ * OWL 2 property characteristic class IRIs emitted as `rdf:type` quads for a
+ * property, in projection order.
+ *
+ * @category Ontology
+ * @since 0.1.0
+ * @group Constants
+ */
+export const OWL_PROPERTY_CHARACTERISTICS: readonly string[] = [
+  OWL.TransitiveProperty,
+  OWL.SymmetricProperty,
+  OWL.AsymmetricProperty,
+  OWL.FunctionalProperty,
+  OWL.InverseFunctionalProperty,
+  OWL.ReflexiveProperty,
+  OWL.IrreflexiveProperty
+];

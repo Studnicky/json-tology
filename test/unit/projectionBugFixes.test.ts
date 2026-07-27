@@ -16,6 +16,7 @@
  *     with code INVALID_PREDICATE_IRI must be thrown.
  */
 
+import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraphRelationInterface.js';
 import assert from 'node:assert/strict';
 import {
   describe, it
@@ -30,7 +31,6 @@ import {
 } from '../../src/constants/IRI.js';
 import type { QuadInterface } from '../../src/interfaces/QuadInterface.js';
 import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphInterface.js';
-import type { SchemaGraphRelationType } from '../../src/types/SchemaGraph.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -133,7 +133,7 @@ void describe('Fix 1 — ShaclProjection: no orphaned sh:PropertyShape on abort'
   void it('success path (valid minCardinality restriction) emits at least one sh:PropertyShape', () => {
     // Sanity-check that the collect-then-commit path still emits on success.
     const schema = Compose.subClassOf(
-      Compose.minCardinality('urn:example:Doc#title', 1),
+      Compose.minimumCardinality('urn:example:Doc#title', 1),
       {
         '$id': 'urn:example:Doc',
         'properties': { 'title': { 'type': 'string' } },
@@ -249,7 +249,7 @@ void describe('Fix 3 — OwlProjection: missing onProperty throws INVALID_PREDIC
     // Build the injected relation with OWL.Restriction predicate, OWL.Class type,
     // and metadata that is missing both propertyName and onProperty.
     const rootNode = realGraph.rootNode;
-    const injectedRelation: SchemaGraphRelationType = {
+    const injectedRelation: SchemaGraphRelationInterface = {
       'metadata': {
         // no onProperty, no propertyName — triggers the throw in emitClassRestrictionRelations
         'minCardinality': 1
@@ -260,7 +260,7 @@ void describe('Fix 3 — OwlProjection: missing onProperty throws INVALID_PREDIC
     };
 
     const wrappedGraph: SchemaGraphInterface = {
-      allRelations(): SchemaGraphRelationType[] {
+      allRelations(): SchemaGraphRelationInterface[] {
         return [
           ...realGraph.allRelations(),
           injectedRelation
@@ -311,8 +311,8 @@ void describe('Fix 3 — OwlProjection: missing onProperty throws INVALID_PREDIC
       resolvePointer(pointer) {
         return realGraph.resolvePointer(pointer);
       },
-      resolveRefId(ref) {
-        return realGraph.resolveRefId(ref);
+      resolveReferenceId(ref) {
+        return realGraph.resolveReferenceId(ref);
       },
       'rootNode': realGraph.rootNode,
       'rootSchema': realGraph.rootSchema,

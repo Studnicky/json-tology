@@ -8,7 +8,7 @@
  * the library propagates it with `schemaId`/`path` filled in.
  */
 
-import type { TransformErrorOptionsType } from '../types/ErrorOptions.js';
+import type { TransformErrorOptionsInterface } from '../interfaces/TransformErrorOptionsInterface.js';
 import { TransformError } from './TransformError.js';
 
 export class EncodeError extends TransformError {
@@ -19,7 +19,7 @@ export class EncodeError extends TransformError {
    * @param options - Options bag with required `code` and `direction`, plus optional `schemaId`,
    *   `path`, `cause`, and `retryable`
    */
-  public constructor(message: string, options: TransformErrorOptionsType) {
+  public constructor(message: string, options: TransformErrorOptionsInterface) {
     super(message, options);
     this.name = 'EncodeError';
   }

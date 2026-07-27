@@ -1,15 +1,18 @@
-import type {
-  SchemaGraphNodeType,
-  SchemaGraphSemanticsType, StructureWarningType
-} from '../../types/SchemaGraph.js';
+import type { StructureWarningEntity } from '../../entities/StructureWarningEntity.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraphSemanticsInterface.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraphNodeInterface.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GRAPH_ERROR_CODE } from '../../constants/ERROR_CODES.js';
 import { RDFS } from '../../constants/IRI.js';
 import { ALLOF_EXTENSION_RE } from '../../constants/GRAPH_REGEXES.js';
 import { EMPTY_SEMANTICS } from '../../constants/EMPTY_SEMANTICS.js';
 import {
+  BCP47_INVALID_TAG_PREFIX, BCP47_TAG_RE
+} from '../../constants/BCP47.js';
+import { EMPTY_PROPERTY_MAP } from '../../constants/EMPTY_PROPERTY_MAP.js';
+import {
   DEFS_POINTER_PARTS_LENGTH, KNOWN_SCHEMA_KEYWORDS,
-  MIN_PROPERTY_POINTER_PARTS,
+  MINIMUM_PROPERTY_POINTER_PARTS,
   PRIMITIVE_CONSTRAINT_KEYWORDS,
   PRIMITIVE_TYPES
 } from '../../constants/SCHEMA_KEYWORDS.js';
@@ -17,49 +20,79 @@ import { DataType } from '../data/DataType.js';
 import { SchemaIri } from './SchemaIri.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessorInterface.js';
-import type { JtConfigType } from '../../types/JtConfig.js';
+import type { JtConfigEntity } from '../../entities/JtConfigEntity.js';
+import { JtExtraEntity } from '../../entities/JtExtraEntity.js';
 import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
-import type { RawRestrictionDescriptorType } from '../../types/RawRestrictionDescriptorType.js';
-import type {
-  AdditionalNodesResultType,
-  AdditionalSchemaNodeType,
-  BooleanFlagsType,
-  ExtractedAnnotatedEdgeType,
-  ExtractedJtConfigType,
-  ExtractedRestrictionsType,
-  NormalizedAliasesType,
-  NormalizedDependentRequiredType,
-  NormalizedDynamicAnchorType,
-  NormalizedLanguageTagType,
-  OptionalNumberType,
-  OptionalStringType,
-  PropertyEntryType,
-  PropertyMapType,
-  ScalarFieldsType,
-  SchemaExtensionsType
-} from '../../types/SchemaGraphSupport.js';
-import type { SemanticsBuildContextType } from '../../types/SemanticsBuildContextType.js';
+import type { RawRestrictionDescriptorEntity } from '../../entities/RawRestrictionDescriptorEntity.js';
+import type { AnnotatedEdgeDescriptorEntity } from '../../entities/AnnotatedEdgeDescriptorEntity.js';
+import type { AdditionalNodesResultInterface } from '../../interfaces/AdditionalNodesResultInterface.js';
+import type { BooleanFlagsEntity } from '../../entities/BooleanFlagsEntity.js';
+import type { PropertyMapInterface } from '../../interfaces/PropertyMapInterface.js';
+import type { ScalarFieldsInterface } from '../../interfaces/ScalarFieldsInterface.js';
+import type { SemanticsBuildContextInterface } from '../../interfaces/SemanticsBuildContextInterface.js';
 
-/** BCP-47 language tag pattern: one or more subtags of 1–8 ASCII chars, hyphen-separated. */
-const BCP47_TAG_RE = /^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/u;
+/** Scalar type-guard and safe-coercion helpers shared across schema-field extraction. */
+class SchemaScalarCoercion {
+  /** Type guard for string values; used in array filters. */
+  static isString(entry: unknown): boolean {
+    return typeof entry === 'string';
+  }
 
-/** Type guard for string values; used in array filters. */
-function isString(entry: unknown): boolean {
-  return typeof entry === 'string';
+  /** Coerce a schema property to number or undefined. */
+  static numberOrUndefined(value: unknown): number | undefined {
+    return typeof value === 'number' ? value : undefined;
+  }
+
+  /** Coerce a schema property to string or undefined. */
+  static stringOrUndefined(value: unknown): string | undefined {
+    return typeof value === 'string' ? value : undefined;
+  }
 }
 
-/** Error message prefix for invalid BCP-47 language tags. */
-const BCP47_INVALID_TAG_PREFIX = 'x-jt-language value is not a valid BCP-47 language tag: ';
+/** JSON Pointer helpers used during semantics extraction and structure validation. */
+class SchemaPointerSupport {
+  static isInAllOfExtensionBlock(pointer: string): boolean {
+    // Skip direct allOf members (/allOf/0, /allOf/1, etc.) and their properties
+    // These are produced by Compose.extend and are structural, not inline definitions
+    const result = ALLOF_EXTENSION_RE.test(pointer);
 
-function unescapeJsonPointerSegment(segment: string): string {
-  const result = segment.replaceAll('~1', '/').replaceAll('~0', '~');
+    return result;
+  }
 
-  return result;
+  static isInDefs(pointer: string): boolean {
+    const result = pointer.includes('/$defs/');
+
+    return result;
+  }
+
+  static pointerId(rootSchema: JsonSchemaType, pointer: string): string {
+    if (pointer === '') {
+      return typeof rootSchema === 'object'
+        && !Array.isArray(rootSchema)
+        && typeof rootSchema.$id === 'string'
+        ? rootSchema.$id
+        : '#root';
+    }
+
+    if (typeof rootSchema === 'object'
+      && !Array.isArray(rootSchema)
+      && typeof rootSchema.$id === 'string') {
+      return `${rootSchema.$id}#${pointer}`;
+    }
+
+    return `#${pointer}`;
+  }
+
+  static unescapeSegment(segment: string): string {
+    const result = segment.replaceAll('~1', '/').replaceAll('~0', '~');
+
+    return result;
+  }
 }
 
 /** Schema-field normalization helpers. */
 class SchemaFieldNormalizer {
-  static aliases(schema: Record<string, unknown>): NormalizedAliasesType {
+  static aliases(schema: Record<string, unknown>): string[] {
     const raw = schema['jt:alias'];
 
     if (typeof raw === 'string') {
@@ -67,7 +100,7 @@ class SchemaFieldNormalizer {
     }
     if (Array.isArray(raw)) {
       return raw.filter((entry: unknown): boolean => {
-        const result = isString(entry);
+        const result = SchemaScalarCoercion.isString(entry);
 
         return result;
       }) as string[];
@@ -76,12 +109,12 @@ class SchemaFieldNormalizer {
     return [];
   }
 
-  static dependentRequired(schema: Record<string, unknown>): NormalizedDependentRequiredType {
+  static dependentRequired(schema: Record<string, unknown>): Record<string, string[]> {
     if (!DataType.isRecord(schema.dependentRequired)) {
       return {};
     }
 
-    const result: NormalizedDependentRequiredType = {};
+    const result: Record<string, string[]> = {};
 
     for (const [
       key,
@@ -91,7 +124,7 @@ class SchemaFieldNormalizer {
         continue;
       }
       const entries = value.filter((entry: unknown): boolean => {
-        const isEntryString = isString(entry);
+        const isEntryString = SchemaScalarCoercion.isString(entry);
 
         return isEntryString;
       }) as string[];
@@ -102,7 +135,7 @@ class SchemaFieldNormalizer {
     return result;
   }
 
-  static dynamicAnchor(schema: Record<string, unknown>): NormalizedDynamicAnchorType {
+  static dynamicAnchor(schema: Record<string, unknown>): string | undefined {
     if (typeof schema.$dynamicAnchor === 'string') {
       return schema.$dynamicAnchor;
     }
@@ -119,7 +152,7 @@ class SchemaFieldNormalizer {
    * matches the BCP-47 shape, `undefined` when absent, and throws a GraphError for
    * a malformed tag (e.g. `"\n"`, `"INVALID!!!"`).
    */
-  static languageTag(rawLang: unknown): NormalizedLanguageTagType {
+  static languageTag(rawLang: unknown): string | undefined {
     if (typeof rawLang !== 'string') {
       return undefined;
     }
@@ -143,7 +176,7 @@ class SchemaFieldNormalizer {
 
     if (Array.isArray(rawType)) {
       return rawType.filter((entry: unknown): boolean => {
-        const result = isString(entry);
+        const result = SchemaScalarCoercion.isString(entry);
 
         return result;
       }) as string[];
@@ -155,7 +188,7 @@ class SchemaFieldNormalizer {
 
 /** Schema-field extraction helpers. */
 class SchemaFieldExtractor {
-  static annotatedEdgeDescriptor(schema: Record<string, unknown>): ExtractedAnnotatedEdgeType {
+  static annotatedEdgeDescriptor(schema: Record<string, unknown>): AnnotatedEdgeDescriptorEntity.Type | undefined {
     const raw = schema['jt:annotatedEdge'];
 
     if (!DataType.isRecord(raw)) {
@@ -163,9 +196,9 @@ class SchemaFieldExtractor {
     }
 
     const predicate = typeof raw.predicate === 'string' ? raw.predicate : undefined;
-    const targetRef = typeof raw.targetRef === 'string' ? raw.targetRef : undefined;
+    const targetReference = typeof raw.targetRef === 'string' ? raw.targetRef : undefined;
 
-    if (predicate === undefined || targetRef === undefined) {
+    if (predicate === undefined || targetReference === undefined) {
       return undefined;
     }
 
@@ -188,27 +221,33 @@ class SchemaFieldExtractor {
     return {
       annotations,
       predicate,
-      targetRef
+      'targetRef': targetReference
     };
   }
 
   /** Extract all boolean flag fields from the schema. */
   static booleanFlags(
     schema: Record<string, unknown>,
-    jtConfig: ExtractedJtConfigType
-  ): BooleanFlagsType {
+    jtConfig: JtConfigEntity.Type | undefined
+  ): BooleanFlagsEntity.Type {
+    const {
+      'jt:computed': jtComputed,
+      'jt:frozen': jtFrozen,
+      'x-jt-iriRef': xJtIriReference
+    } = schema;
+
     return {
       'asymmetric': schema.asymmetric === true,
-      'computed': schema['jt:computed'] === true,
+      'computed': jtComputed === true,
       'deprecated': schema.deprecated === true,
       'functional': schema.functional === true,
       'hasConst': 'const' in schema,
       'hasDefault': 'default' in schema,
       'inverseFunctional': schema.inverseFunctional === true,
-      'iriRef': schema['x-jt-iriRef'] === true
+      'iriRef': xJtIriReference === true
         || (typeof schema.format === 'string' && schema.format === 'iri'),
       'irreflexive': schema.irreflexive === true,
-      'jtFrozen': schema['jt:frozen'] === true || jtConfig?.frozen === true,
+      'jtFrozen': jtFrozen === true || jtConfig?.frozen === true,
       'readOnly': schema.readOnly === true,
       'recursiveAnchor': schema.$recursiveAnchor === true,
       'reflexive': schema.reflexive === true,
@@ -219,14 +258,14 @@ class SchemaFieldExtractor {
     };
   }
 
-  static jtConfig(schema: Record<string, unknown>): ExtractedJtConfigType {
+  static jtConfig(schema: Record<string, unknown>): JtConfigEntity.Type | undefined {
     const raw = schema['jt:config'];
 
     if (!DataType.isRecord(raw)) {
       return undefined;
     }
 
-    const config: JtConfigType = {};
+    const config: JtConfigEntity.Type = {};
 
     if (typeof raw.strict === 'boolean') {
       config.strict = raw.strict;
@@ -234,14 +273,14 @@ class SchemaFieldExtractor {
     if (typeof raw.frozen === 'boolean') {
       config.frozen = raw.frozen;
     }
-    if (raw.extra === 'allow' || raw.extra === 'forbid' || raw.extra === 'ignore') {
+    if (JtExtraEntity.validate(raw.extra)) {
       config.extra = raw.extra;
     }
 
     return Object.keys(config).length > 0 ? config : undefined;
   }
 
-  static restrictions(schema: Record<string, unknown>): ExtractedRestrictionsType {
+  static restrictions(schema: Record<string, unknown>): RawRestrictionDescriptorEntity.Type[] {
     const raw = schema[RESTRICTIONS_KEY];
 
     if (!Array.isArray(raw)) {
@@ -255,70 +294,81 @@ class SchemaFieldExtractor {
       const rec = entry as Record<string, unknown>;
 
       return typeof rec.kind === 'string' && typeof rec.onProperty === 'string' && 'value' in rec;
-    }) as RawRestrictionDescriptorType[];
+    }) as RawRestrictionDescriptorEntity.Type[];
   }
 
   /** Extract all scalar (string, number, vocabulary) fields from the schema. */
-  static scalarFields(schema: Record<string, unknown>): ScalarFieldsType {
+  static scalarFields(schema: Record<string, unknown>): ScalarFieldsInterface {
     return {
-      'comment': strOrUndef(schema.$comment),
-      'contentEncoding': strOrUndef(schema.contentEncoding),
-      'contentMediaType': strOrUndef(schema.contentMediaType),
-      'description': strOrUndef(schema.description),
-      'disjointWith': strOrUndef(schema.disjointWith),
-      'dynamicRef': strOrUndef(schema.$dynamicRef),
-      'equivalentTo': strOrUndef(schema.equivalentTo),
-      'exclusiveMaximum': numOrUndef(schema.exclusiveMaximum),
-      'exclusiveMinimum': numOrUndef(schema.exclusiveMinimum),
-      'format': strOrUndef(schema.format),
-      'inverseOf': strOrUndef(schema.inverseOf),
-      'maxContains': numOrUndef(schema.maxContains),
-      'maximum': numOrUndef(schema.maximum),
-      'maxItems': numOrUndef(schema.maxItems),
-      'maxLength': numOrUndef(schema.maxLength),
-      'maxProperties': numOrUndef(schema.maxProperties),
-      'minContains': numOrUndef(schema.minContains),
-      'minimum': numOrUndef(schema.minimum),
-      'minItems': numOrUndef(schema.minItems),
-      'minLength': numOrUndef(schema.minLength),
-      'minProperties': numOrUndef(schema.minProperties),
-      'multipleOf': numOrUndef(schema.multipleOf),
-      'pattern': strOrUndef(schema.pattern),
-      'recursiveRef': strOrUndef(schema.$recursiveRef),
-      'schemaAnchor': strOrUndef(schema.$anchor),
-      'schemaDialect': strOrUndef(schema.$schema),
-      'schemaId': strOrUndef(schema.$id),
+      'comment': SchemaScalarCoercion.stringOrUndefined(schema.$comment),
+      'contentEncoding': SchemaScalarCoercion.stringOrUndefined(schema.contentEncoding),
+      'contentMediaType': SchemaScalarCoercion.stringOrUndefined(schema.contentMediaType),
+      'description': SchemaScalarCoercion.stringOrUndefined(schema.description),
+      'disjointWith': SchemaScalarCoercion.stringOrUndefined(schema.disjointWith),
+      'dynamicRef': SchemaScalarCoercion.stringOrUndefined(schema.$dynamicRef),
+      'equivalentTo': SchemaScalarCoercion.stringOrUndefined(schema.equivalentTo),
+      'exclusiveMaximum': SchemaScalarCoercion.numberOrUndefined(schema.exclusiveMaximum),
+      'exclusiveMinimum': SchemaScalarCoercion.numberOrUndefined(schema.exclusiveMinimum),
+      'format': SchemaScalarCoercion.stringOrUndefined(schema.format),
+      'inverseOf': SchemaScalarCoercion.stringOrUndefined(schema.inverseOf),
+      'maxContains': SchemaScalarCoercion.numberOrUndefined(schema.maxContains),
+      'maximum': SchemaScalarCoercion.numberOrUndefined(schema.maximum),
+      'maxItems': SchemaScalarCoercion.numberOrUndefined(schema.maxItems),
+      'maxLength': SchemaScalarCoercion.numberOrUndefined(schema.maxLength),
+      'maxProperties': SchemaScalarCoercion.numberOrUndefined(schema.maxProperties),
+      'minContains': SchemaScalarCoercion.numberOrUndefined(schema.minContains),
+      'minimum': SchemaScalarCoercion.numberOrUndefined(schema.minimum),
+      'minItems': SchemaScalarCoercion.numberOrUndefined(schema.minItems),
+      'minLength': SchemaScalarCoercion.numberOrUndefined(schema.minLength),
+      'minProperties': SchemaScalarCoercion.numberOrUndefined(schema.minProperties),
+      'multipleOf': SchemaScalarCoercion.numberOrUndefined(schema.multipleOf),
+      'pattern': SchemaScalarCoercion.stringOrUndefined(schema.pattern),
+      'recursiveRef': SchemaScalarCoercion.stringOrUndefined(schema.$recursiveRef),
+      'schemaAnchor': SchemaScalarCoercion.stringOrUndefined(schema.$anchor),
+      'schemaDialect': SchemaScalarCoercion.stringOrUndefined(schema.$schema),
+      'schemaId': SchemaScalarCoercion.stringOrUndefined(schema.$id),
       'schemaVocabulary': schema.$vocabulary,
-      'title': strOrUndef(schema.title)
+      'title': SchemaScalarCoercion.stringOrUndefined(schema.title)
     };
   }
 }
 
-const EMPTY_MAP: PropertyMapType = new Map();
+/** Property-map and extension-collection helpers for semantics extraction. */
+class SchemaPropertyExtraction {
+  static collectExtensions(schema: Record<string, unknown>): Record<string, unknown> {
+    const extensions: Record<string, unknown> = {};
 
-function propertiesMap(entries: PropertyEntryType[]): PropertyMapType {
-  return entries.length === 0 ? EMPTY_MAP : new Map(entries);
-}
-
-function collectSchemaExtensions(schema: Record<string, unknown>): SchemaExtensionsType {
-  const extensions: SchemaExtensionsType = {};
-
-  for (const key of Object.keys(schema)) {
-    if (!KNOWN_SCHEMA_KEYWORDS.has(key)) {
-      extensions[key] = schema[key];
+    for (const key of Object.keys(schema)) {
+      if (!KNOWN_SCHEMA_KEYWORDS.has(key)) {
+        extensions[key] = schema[key];
+      }
     }
+
+    return extensions;
   }
 
-  return extensions;
+  static constraintKeywordsOf(schema: Record<string, unknown>): string[] {
+    const result = Object.keys(schema).filter((key: string): boolean => {
+      const matchesConstraint = PRIMITIVE_CONSTRAINT_KEYWORDS.has(key);
+
+      return matchesConstraint;
+    });
+
+    return result;
+  }
+
+  static propertiesMap(entries: Array<[string, SchemaGraphNodeInterface]>): PropertyMapInterface {
+    return entries.length === 0 ? EMPTY_PROPERTY_MAP : new Map(entries);
+  }
 }
 
 /** additionalItems/additionalProperties node resolution. */
 class AdditionalSchemaNode {
   static resolve(
-    node: SchemaGraphNodeType,
-    child: (node: SchemaGraphNodeType, key: string) => SchemaGraphNodeType | undefined,
+    node: SchemaGraphNodeInterface,
+    child: (node: SchemaGraphNodeInterface, key: string) => SchemaGraphNodeInterface | undefined,
     key: 'additionalItems' | 'additionalProperties'
-  ): AdditionalSchemaNodeType {
+  ): boolean | SchemaGraphNodeInterface | undefined {
     if (!DataType.isRecord(node.schema) || !(key in node.schema)) {
       return undefined;
     }
@@ -334,15 +384,15 @@ class AdditionalSchemaNode {
 
   static resolveAll(
     graph: GraphAccessorInterface,
-    node: SchemaGraphNodeType
-  ): AdditionalNodesResultType {
+    node: SchemaGraphNodeInterface
+  ): AdditionalNodesResultInterface {
     return {
-      'additionalItemsNode': AdditionalSchemaNode.resolve(node, (parent: SchemaGraphNodeType, key: string): SchemaGraphNodeType | undefined => {
+      'additionalItemsNode': AdditionalSchemaNode.resolve(node, (parent: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined => {
         const result = graph.child(parent, key);
 
         return result;
       }, 'additionalItems'),
-      'additionalPropertiesNode': AdditionalSchemaNode.resolve(node, (parent: SchemaGraphNodeType, key: string): SchemaGraphNodeType | undefined => {
+      'additionalPropertiesNode': AdditionalSchemaNode.resolve(node, (parent: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined => {
         const result = graph.child(parent, key);
 
         return result;
@@ -351,83 +401,38 @@ class AdditionalSchemaNode {
   }
 }
 
-function pointerId(rootSchema: JsonSchemaType, pointer: string): string {
-  if (pointer === '') {
-    return typeof rootSchema === 'object'
-      && !Array.isArray(rootSchema)
-      && typeof rootSchema.$id === 'string'
-      ? rootSchema.$id
-      : '#root';
-  }
-
-  if (typeof rootSchema === 'object'
-    && !Array.isArray(rootSchema)
-    && typeof rootSchema.$id === 'string') {
-    return `${rootSchema.$id}#${pointer}`;
-  }
-
-  return `#${pointer}`;
-}
-
-
-function constraintKeywordsOf(schema: Record<string, unknown>): string[] {
-  const result = Object.keys(schema).filter((key: string): boolean => {
-    const matchesConstraint = PRIMITIVE_CONSTRAINT_KEYWORDS.has(key);
-
-    return matchesConstraint;
-  });
-
-  return result;
-}
-
-function isInDefs(pointer: string): boolean {
-  const result = pointer.includes('/$defs/');
-
-  return result;
-}
-
-function isInAllOfExtensionBlock(pointer: string): boolean {
-  // Skip direct allOf members (/allOf/0, /allOf/1, etc.) and their properties
-  // These are produced by Compose.extend and are structural, not inline definitions
-  const result = ALLOF_EXTENSION_RE.test(pointer);
-
-  return result;
-}
-
 // ---------------------------------------------------------------------------
 // extractSemantics — broken into focused helpers to meet the complexity limit
 // ---------------------------------------------------------------------------
-
-/** Coerce a schema property to string or undefined. */
-function strOrUndef(val: unknown): OptionalStringType {
-  return typeof val === 'string' ? val : undefined;
-}
-
-/** Coerce a schema property to number or undefined. */
-function numOrUndef(val: unknown): OptionalNumberType {
-  return typeof val === 'number' ? val : undefined;
-}
 
 // ---------------------------------------------------------------------------
 // validateGraphStructure helpers
 // ---------------------------------------------------------------------------
 
-/** Build the full SchemaGraphSemanticsType from a validated schema record. */
+/** Build the full SchemaGraphSemanticsInterface from a validated schema record. */
 class Semantics {
-  static build(ctx: SemanticsBuildContextType): SchemaGraphSemanticsType {
+  static build(context: SemanticsBuildContextInterface): SchemaGraphSemanticsInterface {
     const {
       graph,
       node,
-      ref,
-      resolveLocalRef,
+      'ref': reference,
+      'resolveLocalRef': resolveLocalReference,
       schema
-    } = ctx;
+    } = context;
 
     const jtConfig = SchemaFieldExtractor.jtConfig(schema);
     const additional = AdditionalSchemaNode.resolveAll(graph, node);
     const flags = SchemaFieldExtractor.booleanFlags(schema, jtConfig);
     const scalar = SchemaFieldExtractor.scalarFields(schema);
     const discriminator = DataType.isRecord(schema.discriminator) ? schema.discriminator : undefined;
+    const {
+      'jt:strict': jtStrictRaw,
+      'rdfs:domain': rdfsDomainCurie,
+      'rdfs:range': rdfsRangeCurie,
+      'x-jt-language': xJtLanguage
+    } = schema;
+    const rdfsDomainFull = Reflect.get(schema, RDFS.domain);
+    const rdfsRangeFull = Reflect.get(schema, RDFS.range);
 
     return {
       'additionalItemsNode': additional.additionalItemsNode,
@@ -465,7 +470,7 @@ class Semantics {
       'examples': Array.isArray(schema.examples) ? schema.examples : undefined,
       'exclusiveMaximum': scalar.exclusiveMaximum,
       'exclusiveMinimum': scalar.exclusiveMinimum,
-      'extensions': collectSchemaExtensions(schema),
+      'extensions': SchemaPropertyExtraction.collectExtensions(schema),
       'format': scalar.format,
       'functional': flags.functional,
       'hasConst': flags.hasConst,
@@ -478,8 +483,8 @@ class Semantics {
       'itemsNode': graph.child(node, 'items'),
       jtConfig,
       'jtFrozen': flags.jtFrozen,
-      'jtStrict': typeof schema['jt:strict'] === 'boolean' ? schema['jt:strict'] : undefined,
-      'language': SchemaFieldNormalizer.languageTag(schema['x-jt-language']),
+      'jtStrict': typeof jtStrictRaw === 'boolean' ? jtStrictRaw : undefined,
+      'language': SchemaFieldNormalizer.languageTag(xJtLanguage),
       'maxContains': scalar.maxContains,
       'maximum': scalar.maximum,
       'maxItems': scalar.maxItems,
@@ -495,21 +500,21 @@ class Semantics {
       'pattern': scalar.pattern,
       'patternPropertyEntries': graph.entries(node, 'patternProperties'),
       'prefixItems': graph.indexedChildren(node, 'prefixItems'),
-      'properties': propertiesMap(graph.entries(node, 'properties')),
+      'properties': SchemaPropertyExtraction.propertiesMap(graph.entries(node, 'properties')),
       'propertyNamesNode': graph.child(node, 'propertyNames'),
-      'rdfsDomain': (typeof schema['rdfs:domain'] === 'string' ? schema['rdfs:domain'] : undefined)
-      ?? (typeof schema[RDFS.domain] === 'string' ? (schema[RDFS.domain] as string) : undefined),
-      'rdfsRange': (typeof schema['rdfs:range'] === 'string' ? schema['rdfs:range'] : undefined)
-      ?? (typeof schema[RDFS.range] === 'string' ? (schema[RDFS.range] as string) : undefined),
+      'rdfsDomain': (typeof rdfsDomainCurie === 'string' ? rdfsDomainCurie : undefined)
+      ?? (typeof rdfsDomainFull === 'string' ? rdfsDomainFull : undefined),
+      'rdfsRange': (typeof rdfsRangeCurie === 'string' ? rdfsRangeCurie : undefined)
+      ?? (typeof rdfsRangeFull === 'string' ? rdfsRangeFull : undefined),
       'readOnly': flags.readOnly,
       'recursiveAnchor': flags.recursiveAnchor,
       'recursiveRef': scalar.recursiveRef,
-      ref,
+      'ref': reference,
       'reflexive': flags.reflexive,
-      'refTargetNode': ref?.startsWith('#') === true ? resolveLocalRef(ref) : undefined,
+      'refTargetNode': reference?.startsWith('#') === true ? resolveLocalReference(reference) : undefined,
       'required': Array.isArray(schema.required)
         ? schema.required.filter((entry: unknown): boolean => {
-          const result = isString(entry);
+          const result = SchemaScalarCoercion.isString(entry);
 
           return result;
         }) as string[]
@@ -538,7 +543,7 @@ class NodeStructureCheck {
   static inlineArrayItems(
     schema: Record<string, unknown>,
     pointer: string,
-    warnings: StructureWarningType[]
+    warnings: StructureWarningEntity.Type[]
   ): void {
     if (schema.type !== 'array' || !DataType.isRecord(schema.items)) {
       return;
@@ -550,7 +555,7 @@ class NodeStructureCheck {
       return;
     }
 
-    const itemConstraints = constraintKeywordsOf(items);
+    const itemConstraints = SchemaPropertyExtraction.constraintKeywordsOf(items);
 
     if (itemConstraints.length > 0) {
       warnings.push({
@@ -565,7 +570,7 @@ class NodeStructureCheck {
   static inlineObject(
     schema: Record<string, unknown>,
     pointer: string,
-    warnings: StructureWarningType[]
+    warnings: StructureWarningEntity.Type[]
   ): void {
     const rawType = schema.type;
     const hasObjectType = rawType === 'object'
@@ -584,7 +589,7 @@ class NodeStructureCheck {
   static inlinePrimitive(
     schema: Record<string, unknown>,
     pointer: string,
-    warnings: StructureWarningType[]
+    warnings: StructureWarningEntity.Type[]
   ): void {
     const rawType = schema.type;
     const isPrimitive = typeof rawType === 'string' && PRIMITIVE_TYPES.has(rawType);
@@ -593,7 +598,7 @@ class NodeStructureCheck {
       return;
     }
 
-    const constraintKeywords = constraintKeywordsOf(schema);
+    const constraintKeywords = SchemaPropertyExtraction.constraintKeywordsOf(schema);
 
     if (constraintKeywords.length > 0) {
       warnings.push({
@@ -606,8 +611,8 @@ class NodeStructureCheck {
 
   /** Validate a single node and append any warnings. */
   static node(
-    node: SchemaGraphNodeType,
-    warnings: StructureWarningType[]
+    node: SchemaGraphNodeInterface,
+    warnings: StructureWarningEntity.Type[]
   ): void {
     if (node.pointer === '' || !DataType.isRecord(node.schema)) {
       return;
@@ -615,7 +620,7 @@ class NodeStructureCheck {
     const schema = node.schema;
     const pointer = node.pointer;
 
-    if (isInDefs(pointer) || '$ref' in schema || isInAllOfExtensionBlock(pointer)) {
+    if (SchemaPointerSupport.isInDefs(pointer) || '$ref' in schema || SchemaPointerSupport.isInAllOfExtensionBlock(pointer)) {
       return;
     }
 
@@ -635,7 +640,7 @@ class NodeStructureCheck {
  * @remarks
  * Provides pure functions for normalizing schema keywords, extracting
  * semantics from schema nodes, and validating graph structure. All functions
- * operate on `SchemaGraphNodeType` objects and the plain schema records
+ * operate on `SchemaGraphNodeInterface` objects and the plain schema records
  * they carry.
  *
  * @example
@@ -646,7 +651,7 @@ class NodeStructureCheck {
  * @defaultValue Exported as a frozen `as const` object.
  * @category Graph
  * @since 0.1.0
- * @see {@link SchemaGraphNodeType}
+ * @see {@link SchemaGraphNodeInterface}
  * @group Graph
  */
 export const SchemaGraphSupport = {
@@ -658,9 +663,9 @@ export const SchemaGraphSupport = {
 
   extractSemantics(
     graph: GraphAccessorInterface,
-    node: SchemaGraphNodeType,
-    resolveLocalRef: (ref: string) => SchemaGraphNodeType
-  ): SchemaGraphSemanticsType {
+    node: SchemaGraphNodeInterface,
+    resolveLocalReference: (reference: string) => SchemaGraphNodeInterface
+  ): SchemaGraphSemanticsInterface {
     if (!DataType.isRecord(node.schema)) {
       return EMPTY_SEMANTICS;
     }
@@ -668,8 +673,8 @@ export const SchemaGraphSupport = {
     return Semantics.build({
       graph,
       node,
-      'ref': strOrUndef(node.schema.$ref),
-      resolveLocalRef,
+      'ref': SchemaScalarCoercion.stringOrUndefined(node.schema.$ref),
+      'resolveLocalRef': resolveLocalReference,
       'schema': node.schema
     });
   },
@@ -677,28 +682,28 @@ export const SchemaGraphSupport = {
   isDefsEntryPointer(pointer: string): boolean {
     const parts = pointer.split('/');
 
-    return parts.length === DEFS_POINTER_PARTS_LENGTH && parts[1] === '$defs';
+    return parts.length === DEFS_POINTER_PARTS_LENGTH && parts.at(1) === '$defs';
   },
 
   isPropertyPointer(pointer: string): boolean {
     const parts = pointer.split('/');
 
-    return parts.length >= MIN_PROPERTY_POINTER_PARTS && parts.at(-2) === 'properties';
+    return parts.length >= MINIMUM_PROPERTY_POINTER_PARTS && parts.at(-2) === 'properties';
   },
 
   nodeIdFromPointer(rootSchema: JsonSchemaType, pointer: string, schema: JsonSchemaType): string {
     if (!DataType.isRecord(schema)) {
-      return pointerId(rootSchema, pointer);
+      return SchemaPointerSupport.pointerId(rootSchema, pointer);
     }
 
     if (typeof schema.$id === 'string') {
       return schema.$id;
     }
 
-    return pointerId(rootSchema, pointer);
+    return SchemaPointerSupport.pointerId(rootSchema, pointer);
   },
 
-  parentPropertiesPointer(pointer: string): OptionalStringType {
+  parentPropertiesPointer(pointer: string): string | undefined {
     const result = SchemaIri.splitAtProperties(pointer);
 
     if (result === undefined) {
@@ -708,10 +713,10 @@ export const SchemaGraphSupport = {
     return result.parent || '';
   },
 
-  propertyNameFromPointer(pointer: string): OptionalStringType {
+  propertyNameFromPointer(pointer: string): string | undefined {
     const parts = pointer.split('/');
 
-    if (parts.length < MIN_PROPERTY_POINTER_PARTS || parts.at(-2) !== 'properties') {
+    if (parts.length < MINIMUM_PROPERTY_POINTER_PARTS || parts.at(-2) !== 'properties') {
       return undefined;
     }
 
@@ -733,7 +738,7 @@ export const SchemaGraphSupport = {
 
     const segments = pointer.slice(1).split('/')
       .map((segment: string): string => {
-        const result = unescapeJsonPointerSegment(segment);
+        const result = SchemaPointerSupport.unescapeSegment(segment);
 
         return result;
       });
@@ -745,7 +750,7 @@ export const SchemaGraphSupport = {
           pointer
         });
       }
-      current = (current as Record<string, unknown>)[segment];
+      current = Reflect.get(current as Record<string, unknown>, segment);
     }
     if (typeof current !== 'boolean' && !DataType.isRecord(current)) {
       throw new GraphError(`Pointer does not resolve to a schema: ${pointer}`, {
@@ -757,8 +762,8 @@ export const SchemaGraphSupport = {
     return current;
   },
 
-  validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeType>): StructureWarningType[] {
-    const warnings: StructureWarningType[] = [];
+  validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeInterface>): StructureWarningEntity.Type[] {
+    const warnings: StructureWarningEntity.Type[] = [];
 
     for (const node of nodeMap.values()) {
       NodeStructureCheck.node(node, warnings);

@@ -12,9 +12,9 @@
 import type { QuadInterface } from '../../interfaces/QuadInterface.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/CurieInterface.js';
-import type { RelationIndexType } from '../../types/RelationIndexType.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndexInterface.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuerInterface.js';
-import type { PredicateResolverFnType } from '../../types/PredicateResolverFnType.js';
+import type { PredicateResolverInterface } from '../../interfaces/PredicateResolverInterface.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphInterface.js';
 import { JT } from '../../constants/IRI.js';
 import { PropertyProjection } from './PropertyProjection.js';
@@ -63,15 +63,15 @@ export abstract class VocabProjection {
    * SHACL: sh:or([if, else]) bnode.
    */
   abstract emitConditionalElseBranch(
-    ifRef: string,
-    elseRef: string,
+    ifReference: string,
+    elseReference: string,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType;
 
   emitConditionals(
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
@@ -83,22 +83,23 @@ export abstract class VocabProjection {
         continue;
       }
 
-      const {
-        elseRef, ifRef, thenRef
-      } = rel.structure;
+      const conditionalStructure = rel.structure;
+      const ifReference = conditionalStructure.ifReference;
+      const elseReference = conditionalStructure.elseReference;
+      const thenReference = conditionalStructure.thenReference;
 
-      if (thenRef?.includes('/dependentSchemas/') === true) {
+      if (thenReference?.includes('/dependentSchemas/') === true) {
         continue;
       }
 
       const branches: QuadObjectType[] = [];
 
-      if (thenRef !== undefined) {
-        branches.push(this.emitConditionalThenBranch(ifRef, thenRef, quads, curie, issuer));
+      if (thenReference !== undefined) {
+        branches.push(this.emitConditionalThenBranch(ifReference, thenReference, quads, curie, issuer));
       }
 
-      if (elseRef !== undefined) {
-        branches.push(this.emitConditionalElseBranch(ifRef, elseRef, quads, curie, issuer));
+      if (elseReference !== undefined) {
+        branches.push(this.emitConditionalElseBranch(ifReference, elseReference, quads, curie, issuer));
       }
 
       if (branches.length > 0) {
@@ -115,8 +116,8 @@ export abstract class VocabProjection {
    * SHACL: sh:or([sh:not(if), then]) bnode.
    */
   abstract emitConditionalThenBranch(
-    ifRef: string,
-    thenRef: string,
+    ifReference: string,
+    thenReference: string,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
@@ -124,12 +125,12 @@ export abstract class VocabProjection {
 
   emitDependentRequired(
     subject: string,
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     options?: { 'graph'?: SchemaGraphInterface | undefined;
       'issuer'?: IdentifierIssuerInterface | undefined;
-      'predicateResolver'?: PredicateResolverFnType | undefined }
+      'predicateResolver'?: PredicateResolverInterface | undefined }
   ): QuadObjectType[] {
     const {
       graph, issuer, predicateResolver
@@ -164,8 +165,8 @@ export abstract class VocabProjection {
    */
   abstract emitDependentSchemaBranch(
     subject: string,
-    ifRef: string,
-    thenRef: string,
+    ifReference: string,
+    thenReference: string,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
@@ -173,7 +174,7 @@ export abstract class VocabProjection {
 
   emitDependentSchemas(
     subject: string,
-    entry: RelationIndexType,
+    entry: RelationIndexInterface,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
     issuer?: IdentifierIssuerInterface
@@ -185,15 +186,15 @@ export abstract class VocabProjection {
         continue;
       }
 
-      const {
-        ifRef, thenRef
-      } = rel.structure;
+      const conditionalStructure = rel.structure;
+      const ifReference = conditionalStructure.ifReference;
+      const thenReference = conditionalStructure.thenReference;
 
-      if (thenRef?.includes('/dependentSchemas/') !== true) {
+      if (thenReference?.includes('/dependentSchemas/') !== true) {
         continue;
       }
 
-      results.push(this.emitDependentSchemaBranch(subject, ifRef, thenRef, quads, curie, issuer));
+      results.push(this.emitDependentSchemaBranch(subject, ifReference, thenReference, quads, curie, issuer));
     }
 
     return results;
@@ -236,7 +237,7 @@ export abstract class VocabProjection {
     subject: string,
     propertyName: string,
     graph: SchemaGraphInterface | undefined,
-    predicateResolver: PredicateResolverFnType | undefined
+    predicateResolver: PredicateResolverInterface | undefined
   ): string {
     const result = PropertyProjection.resolvePredicateForClass(graph, subject, propertyName, predicateResolver);
 

@@ -23,7 +23,7 @@ const badOrder = {
   }
 };
 
-// validate() — invariant failure as ValidationErrorType with keyword: 'jt:invariant'
+// validate() — invariant failure as ValidationErrorEntity.Type with keyword: 'jt:invariant'
 const errs = bookstoreEntities.validate(OrderSchema.$id, badOrder);
 
 console.assert(!errs.ok);

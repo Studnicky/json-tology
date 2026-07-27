@@ -387,7 +387,7 @@ void describe('toQuads / fromQuads boundaries', () => {
     const quads = jt.toQuads(
       AuthorSchema,
       { 'name': 'Asimov' },
-      { 'iriFor': Skolemize.wellKnownGenid('https://bookstore.io') }
+      { 'iriForFunction': Skolemize.wellKnownGenid('https://bookstore.io') }
     );
 
     assert.ok(quads.length > 0);
@@ -444,7 +444,7 @@ void describe('toQuads / fromQuads boundaries', () => {
         'title': 'Foundation'
       },
       {
-        'iriFor': () => {
+        'iriForFunction': () => {
           return 'https://bookstore.io/SAME';
         }
       }
@@ -620,7 +620,7 @@ void describe('static counterparts — failure modes', () => {
   void it('static methods: toQuads wellKnown IRIs, validate/is/instantiate ephemeral, REF_UNRESOLVED lazy, subschemaAt, toSchema, dump encoder throw', () => {
     // toQuads with wellKnownGenid
     {
-      const quads = JsonTology.toQuads(AuthorSchema, { 'name': 'Asimov' }, { 'iriFor': Skolemize.wellKnownGenid('https://bookstore.io') });
+      const quads = JsonTology.toQuads(AuthorSchema, { 'name': 'Asimov' }, { 'iriForFunction': Skolemize.wellKnownGenid('https://bookstore.io') });
 
       assert.ok(quads.length > 0);
       for (const quad of quads) {
