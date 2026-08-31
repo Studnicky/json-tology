@@ -47,7 +47,7 @@ jobs:
       # default setup is OFF for this repo.
       - name: Initialize CodeQL
         if: ${{ steps.probe.outputs.enabled == 'true' && vars.CODEQL_ADVANCED_ENABLED == 'true' }}
-        uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
         with:
           languages: ${{ matrix.language }}
 
