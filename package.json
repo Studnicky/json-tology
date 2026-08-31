@@ -135,28 +135,28 @@
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "codemirror": "^6.0.2",
-    "cytoscape": "^3.33.4",
+    "cytoscape": "^3.34.2",
     "cytoscape-fcose": "^2.2.0",
     "eslint": "^10.4.0",
     "eslint-plugin-perfectionist": "^5.9.0",
     "eslint-plugin-regexp": "^3.1.0",
     "eslint-plugin-unicorn": "^66.0.0",
     "eslint-plugin-yml": "^3.3.2",
-    "eyereasoner": "^21.1.9",
+    "eyereasoner": "^21.1.18",
     "fp-ts": "^2.16.11",
-    "globals": "^17.6.0",
+    "globals": "^17.11.0",
     "io-ts": "^2.2.22",
-    "jscpd": "^5.0.12",
+    "jscpd": "^5.0.16",
     "license-checker-rseidelsohn": "^5.0.1",
     "madge": "^8.0.0",
-    "n3": "^2.0.3",
+    "n3": "^2.6.4",
     "sucrase": "^3.35.1",
-    "tsx": "^4.22.3",
+    "tsx": "^4.23.12",
     "typescript": "^6.0.3",
     "valibot": "^1.4.2",
     "vitepress": "^1.6.4",
-    "vitepress-sidebar": "^1.36.1",
-    "zod": "^4.4.3"
+    "vitepress-sidebar": "^1.39.0",
+    "zod": "^4.5.1"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -168,7 +168,7 @@
     "jsonld": "^9.0.0"
   },
   "peerDependencies": {
-    "eyereasoner": "^21.1.9"
+    "eyereasoner": "^21.1.18"
   },
   "peerDependenciesMeta": {
     "eyereasoner": {
